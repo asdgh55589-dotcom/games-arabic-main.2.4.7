@@ -32,8 +32,9 @@ export async function GET(req: NextRequest) {
     if (read === 'true') where.readAt = { not: null }
     if (read === 'false') where.readAt = null
 
-    const [total, notifications] = await Promise.all([
+    const [total, unreadCount, notifications] = await Promise.all([
       db.notification.count({ where }),
+      db.notification.count({ where: { userId: neonUser.id, readAt: null } }),
       db.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -53,12 +54,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       notifications,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit) || 1,
-      },
+      totalPages: Math.ceil(total / limit) || 1,
+      unreadCount,
     })
   } catch (err) {
     console.error('[notifications GET] failed:', err)
