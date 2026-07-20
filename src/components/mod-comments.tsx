@@ -284,6 +284,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 replyingTo={replyingTo}
                 replyText={replyText}
                 setReplyText={setReplyText}
+                currentUser={currentUser}
                 onLike={toggleLike}
                 onReply={(id) => setReplyingTo(replyingTo === id ? null : id)}
                 onSubmitReply={onSubmitReply}
@@ -334,6 +335,7 @@ function CommentItem({
   replyingTo,
   replyText,
   setReplyText,
+  currentUser,
   onLike,
   onReply,
   onSubmitReply,
@@ -347,6 +349,7 @@ function CommentItem({
   replyingTo: string | null
   replyText: string
   setReplyText: (s: string) => void
+  currentUser: CurrentUser | null
   onLike: (id: string) => void
   onReply: (id: string) => void
   onSubmitReply: (parentId: string) => void
@@ -496,6 +499,7 @@ function CommentItem({
               replyingTo={replyingTo}
               replyText={replyText}
               setReplyText={setReplyText}
+              currentUser={currentUser}
               onLike={onLike}
               onReply={onReply}
               onSubmitReply={onSubmitReply}

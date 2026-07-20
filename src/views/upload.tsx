@@ -33,6 +33,7 @@ export function UploadPage() {
   const [modFileName, setModFileName] = useState<string | null>(null)
   const [imageFileName, setImageFileName] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const { toast } = useToast()
   const modFileRef = useRef<HTMLInputElement>(null)
   const imageFileRef = useRef<HTMLInputElement>(null)
@@ -54,7 +55,7 @@ export function UploadPage() {
     if (imageFileRef.current) imageFileRef.current.value = ''
   }
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !summary || !gameSlug) {
       toast({ title: 'Missing fields', description: 'Please fill in all required fields', variant: 'destructive' })
@@ -64,11 +65,56 @@ export function UploadPage() {
       toast({ title: 'Missing mod file', description: 'Please select a mod archive to upload', variant: 'destructive' })
       return
     }
-    setSubmitted(true)
-    toast({
-      title: 'Mod submitted!',
-      description: 'Your mod is now pending review and will appear on the site shortly.',
-    })
+    const game = gameData?.game
+    if (!game) {
+      toast({ title: 'Game not found', description: 'Please select a valid game', variant: 'destructive' })
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/admin/mods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          summary,
+          description: description || summary,
+          gameId: game.id,
+          categoryId: category || undefined,
+          version,
+          tags,
+          thumbnailUrl: game.thumbnailUrl,
+          imageUrl: game.bannerUrl,
+          fileSize: 'Unknown',
+          fileFormat: 'zip',
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (res.status === 401) {
+          toast({ title: 'Authentication required', description: 'You must be logged in as a moderator to upload mods.', variant: 'destructive' })
+          return
+        }
+        if (res.status === 403) {
+          toast({ title: 'Insufficient permissions', description: 'Only moderators and admins can upload mods. Use the admin panel.', variant: 'destructive' })
+          return
+        }
+        throw new Error(data?.error || 'Failed to submit mod')
+      }
+      setSubmitted(true)
+      toast({
+        title: 'Mod submitted!',
+        description: 'Your mod has been created successfully.',
+      })
+    } catch (err) {
+      toast({
+        title: 'Submission failed',
+        description: err instanceof Error ? err.message : 'Could not submit mod',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -238,8 +284,8 @@ export function UploadPage() {
         </Card>
 
         <div className="flex gap-3">
-          <Button type="submit" size="lg" className="flex-1">
-            <Upload className="mr-2 h-4 w-4" /> Submit for Review
+          <Button type="submit" size="lg" className="flex-1" disabled={submitting}>
+            <Upload className="mr-2 h-4 w-4" /> {submitting ? 'Submitting...' : 'Submit for Review'}
           </Button>
           <Button type="button" variant="outline" size="lg" asChild>
             <Link href="/">Cancel</Link>

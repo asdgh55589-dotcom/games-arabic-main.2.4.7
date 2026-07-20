@@ -123,8 +123,6 @@ export function ModDetailPage() {
         `/api/mods/${mod.slug}/endorse`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: 'demo-user-id' }),
         }
       )
       setEndorsed(result.endorsed)
