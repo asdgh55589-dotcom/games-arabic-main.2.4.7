@@ -36,7 +36,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
 
     await db.notification.update({
       where: { id },
-      data: { readAt: new Date() },
+      data: { isRead: true, readAt: new Date() },
     })
 
     return NextResponse.json({ success: true })

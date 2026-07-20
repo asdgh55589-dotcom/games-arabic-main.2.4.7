@@ -19,7 +19,7 @@ async function markAllAsRead() {
 
   await db.notification.updateMany({
     where: { userId: neonUser.id, readAt: null },
-    data: { readAt: new Date() },
+    data: { isRead: true, readAt: new Date() },
   })
 
   return NextResponse.json({ success: true })
