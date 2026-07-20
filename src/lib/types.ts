@@ -237,3 +237,31 @@ export interface AuthorModsResponse {
 export interface ApiError {
   error: string
 }
+
+// ===== Notification types =====
+
+export interface NotificationActor {
+  id: string
+  username: string
+  avatarUrl: string | null
+}
+
+export interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string | null
+  link: string | null
+  readAt: string | null
+  createdAt: string
+  actor: NotificationActor | null
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[]
+  total: number
+  unreadCount: number
+  page: number
+  limit: number
+  totalPages: number
+}
