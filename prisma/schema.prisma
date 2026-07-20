@@ -11,101 +11,125 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  username      String     @unique
-  email         String     @unique
-  password      String?    // hashed — null للمستخدمين العاديين (OAuth لاحقاً)
-  avatarUrl     String?
-  bannerUrl     String?    // صورة الخلفية بمقاس اليوتيوب (2560×1440)
-  bio           String?
-  role          String     @default("member") // member | moderator | admin | owner
-  joinedAt      DateTime   @default(now())
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  mods          Mod[]      @relation("AuthoredMods")
-  endorsements  Endorsement[]
-  comments      ModComment[]
+  id                     String                  @id @default(cuid())
+  supabaseId             String?                 @unique // Supabase Auth user ID
+  username               String                  @unique
+  email                  String                  @unique
+  password               String? // hashed — null للمستخدمين العاديين (OAuth لاحقاً)
+  avatarUrl              String?
+  bannerUrl              String? // صورة الخلفية بمقاس اليوتيوب (2560×1440)
+  bio                    String?
+  websiteUrl             String? // الموقع الشخصي
+  twitterUrl             String? // رابط Twitter/X
+  githubUrl              String? // رابط GitHub
+  discordUrl             String? // رابط Discord
+  accentColor            String?                 @default("#ff8c00") // اللون المميز للملف الشخصي
+  role                   String                  @default("member") // member | moderator | admin | owner
+  bannedUntil            DateTime? // null = غير محظور
+  banStatus              String                  @default("active") // active | banned_temp | banned_perm | restricted
+  banReason              String? // سبب الحظر الحالي
+  bannedBy               String? // id الأدمن الذي أصدر الحظر
+  bannedAt               DateTime? // متى تم الحظر
+  tokenVersion           Int                     @default(0) // لإبطال الجلسات القديمة عند الحظر/تغيير الدور
+  lastLoginAt            DateTime?
+  loginCount             Int                     @default(0)
+  emailVerified          Boolean                 @default(false)
+  joinedAt               DateTime                @default(now())
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  mods                   Mod[]                   @relation("AuthoredMods")
+  endorsements           Endorsement[]
+  comments               ModComment[]
+  actionsAsTarget        UserAction[]            @relation("UserActionsTarget")
+  actionsAsActor         UserAction[]            @relation("UserActionsActor")
+  teamMemberships        TeamMembership[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
 }
 
 model Game {
-  id            String     @id @default(cuid())
-  slug          String     @unique
-  name          String
-  tagline       String
-  description   String
-  bannerUrl     String
-  logoUrl       String?
-  thumbnailUrl  String
-  category      String     // RPG | FPS | Strategy | Sandbox | Adventure | Simulation
-  platform      String     // PC | NS | PS1 | PS2 | PS3 | PS4
-  releaseYear   Int
-  modCount      Int        @default(0)
-  totalDownloads Int       @default(0)
-  totalEndorsements Int    @default(0)
-  featured      Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  mods          Mod[]
-  categories    Category[]
+  id                String     @id @default(cuid())
+  slug              String     @unique
+  name              String
+  tagline           String
+  description       String
+  bannerUrl         String
+  logoUrl           String?
+  thumbnailUrl      String
+  category          String // RPG | FPS | Strategy | Sandbox | Adventure | Simulation
+  platform          String // PC | NS | PS1 | PS2 | PS3 | PS4
+  releaseYear       Int
+  modCount          Int        @default(0)
+  totalDownloads    Int        @default(0)
+  totalEndorsements Int        @default(0)
+  featured          Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  mods              Mod[]
+  categories        Category[]
 }
 
 model Category {
-  id            String     @id @default(cuid())
-  name          String
-  slug          String
-  game          Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  gameId        String
-  mods          Mod[]
-  createdAt     DateTime   @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String
+  mods      Mod[]
+  createdAt DateTime @default(now())
 
   @@unique([gameId, slug])
 }
 
 model Mod {
-  id              String     @id @default(cuid())
-  slug            String     @unique
-  name            String
-  summary         String
-  description     String
-  changelog       String     @default("")  // سجل التغييرات (markdown)
-  installGuide    String     @default("")  // دليل التركيب (markdown)
-  arabicTitle     String     @default("")  // الاسم بالعربي
-  compatibility   String     @default("")  // التوافق
-  authorId        String
-  author          User       @relation("AuthoredMods", fields: [authorId], references: [id])
-  gameId          String
-  game            Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  categoryId      String?
-  category        Category?  @relation(fields: [categoryId], references: [id])
-  thumbnailUrl    String
-  imageUrl        String
-  galleryUrls     String     // comma-separated
-  version         String
-  fileSize        String
-  fileFormat      String     // 7z | zip | rar
-  downloads       Int        @default(0)
-  endorsements    Int        @default(0)
-  views           Int        @default(0)
-  comments        Int        @default(0)
-  rating          Float      @default(0)
-  ratingCount     Int        @default(0)
-  tags            String     // comma-separated
-  series          String     @default("") // اسم السلسلة (مثل God of War)
-  translationTeam String     @default("") // فريق التعريب أو المترجم المستقل
-  isFeatured      Boolean    @default(false)
-  isTrending      Boolean    @default(false)
-  isLatest        Boolean    @default(true)
-  translationType String     @default("unofficial") // official | unofficial
-  releaseDate     DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  createdAt       DateTime   @default(now())
+  id                 String           @id @default(cuid())
+  slug               String           @unique
+  name               String
+  summary            String
+  description        String
+  changelog          String           @default("") // سجل التغييرات (markdown)
+  installGuide       String           @default("") // دليل التركيب (markdown)
+  arabicTitle        String           @default("") // الاسم بالعربي
+  compatibility      String           @default("") // التوافق
+  authorId           String
+  author             User             @relation("AuthoredMods", fields: [authorId], references: [id])
+  gameId             String
+  game               Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  categoryId         String?
+  category           Category?        @relation(fields: [categoryId], references: [id])
+  thumbnailUrl       String
+  imageUrl           String
+  galleryUrls        String // comma-separated
+  version            String
+  fileSize           String
+  fileFormat         String // 7z | zip | rar
+  downloads          Int              @default(0)
+  endorsements       Int              @default(0)
+  views              Int              @default(0)
+  comments           Int              @default(0)
+  rating             Float            @default(0)
+  ratingCount        Int              @default(0)
+  tags               String // comma-separated
+  series             String           @default("") // اسم السلسلة (مثل God of War) — للتوافق العكسي
+  seriesId           String? // ربط بالسلسلة الجديدة
+  translationTeam    String           @default("") // فريق التعريب أو المترجم المستقل — للتوافق العكسي
+  teamId             String? // ربط بالفريق الجديد
+  isFeatured         Boolean          @default(false)
+  isTrending         Boolean          @default(false)
+  isLatest           Boolean          @default(true)
+  translationType    String           @default("unofficial") // official | unofficial
+  releaseDate        DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  createdAt          DateTime         @default(now())
+  seriesRelation     Series?          @relation(fields: [seriesId], references: [id])
+  teamRelation       Team?            @relation(fields: [teamId], references: [id])
   endorsementRecords Endorsement[]
-  files           ModFile[]
-  videoGroups     ModVideoGroup[]
-  teamMembers     ModTeamMember[]
-  contactLinks    ModContactLink[]
-  customTabs      ModCustomTab[]
-  commentsRecords ModComment[]
+  files              ModFile[]
+  videoGroups        ModVideoGroup[]
+  teamMembers        ModTeamMember[]
+  contactLinks       ModContactLink[]
+  customTabs         ModCustomTab[]
+  commentsRecords    ModComment[]
 }
 
 model Endorsement {
@@ -122,20 +146,20 @@ model Endorsement {
 
 // ===== ملفات التحميل المتعددة لكل تعريب =====
 model ModFile {
-  id           String        @id @default(cuid())
-  modId        String
-  mod          Mod           @relation(fields: [modId], references: [id], onDelete: Cascade)
-  title        String
-  description  String?
-  alert        String?
-  version      String
-  releaseDate  DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  fileSize     String
-  fileFormat   String
-  order        Int           @default(0)
-  links        ModFileLink[]
-  createdAt    DateTime      @default(now())
+  id          String        @id @default(cuid())
+  modId       String
+  mod         Mod           @relation(fields: [modId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  alert       String?
+  version     String
+  releaseDate DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  fileSize    String
+  fileFormat  String
+  order       Int           @default(0)
+  links       ModFileLink[]
+  createdAt   DateTime      @default(now())
 }
 
 // ===== روابط كل ملف تحميل =====
@@ -180,15 +204,15 @@ model ModVideo {
 
 // ===== أعضاء فريق التعريب =====
 model ModTeamMember {
-  id            String   @id @default(cuid())
-  modId         String
-  mod           Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
-  name          String
-  avatarUrl     String?
-  role          String   @default("مترجم")
-  contribution  String?
-  order         Int      @default(0)
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  modId        String
+  mod          Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  name         String
+  avatarUrl    String?
+  role         String   @default("مترجم")
+  contribution String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
 }
 
 // ===== روابط تواصل الفريق =====
@@ -196,7 +220,7 @@ model ModContactLink {
   id        String   @id @default(cuid())
   modId     String
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
-  type      String   // mail | website | telegram | twitter | youtube | discord
+  type      String // mail | website | telegram | twitter | youtube | discord
   label     String
   url       String
   order     Int      @default(0)
@@ -210,13 +234,125 @@ model ModCustomTab {
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
   name      String
   slug      String
-  content   String   // markdown
+  content   String // markdown
   order     Int      @default(0)
   visible   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([modId, slug])
+}
+
+// ===== سلاسل التعريبات (مستقلة) =====
+model Series {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  description       String   @default("")
+  bannerUrl         String   @default("")
+  logoUrl           String   @default("")
+  color             String   @default("") // accent hex
+  isFeatured        Boolean  @default(false)
+  isOfficial        Boolean  @default(false)
+  order             Int      @default(0)
+  modCount          Int      @default(0)
+  totalDownloads    Int      @default(0)
+  totalEndorsements Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  mods              Mod[]
+}
+
+// ===== فرق التعريب =====
+model Team {
+  id           String            @id @default(cuid())
+  slug         String            @unique
+  name         String
+  description  String            @default("")
+  logoUrl      String            @default("")
+  bannerUrl    String            @default("")
+  websiteUrl   String            @default("")
+  discordUrl   String            @default("")
+  isOfficial   Boolean           @default(false)
+  isFeatured   Boolean           @default(false)
+  ownerId      String? // leader
+  order        Int               @default(0)
+  modCount     Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  mods         Mod[]
+  memberships  TeamMembership[]
+  contactLinks TeamContactLink[]
+}
+
+model TeamMembership {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String?
+  name      String // اسم العضو (لو بدون حساب)
+  avatarUrl String?
+  role      String   @default("member") // leader | member | guest | tester
+  bio       String?
+  joinedAt  DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([teamId, userId])
+}
+
+model TeamContactLink {
+  id     String @id @default(cuid())
+  teamId String
+  type   String // mail|website|telegram|twitter|youtube|discord
+  label  String
+  url    String
+  order  Int    @default(0)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+// ===== إجراءات المستخدمين (Ban/Promote/Demote/etc) =====
+model UserAction {
+  id         String    @id @default(cuid())
+  userId     String // على من اتخذ الإجراء
+  action     String // ban | suspend | warn | promote | demote | delete | login | logout | password_change | email_verified
+  reason     String?
+  byUserId   String? // من قام بالإجراء
+  byUsername String?
+  expiresAt  DateTime? // للحظر المؤقت
+  metadata   String? // JSON
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  user       User      @relation("UserActionsTarget", fields: [userId], references: [id], onDelete: Cascade)
+  actor      User?     @relation("UserActionsActor", fields: [byUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([byUserId])
+  @@index([createdAt])
+}
+
+// ===== الأخبار =====
+model News {
+  id         String    @id @default(cuid())
+  slug       String    @unique
+  title      String
+  summary    String    @default("") // للأخبار القصيرة (ticker)
+  content    String    @default("") // markdown للتفاصيل (featured)
+  imageUrl   String    @default("")
+  linkUrl    String? // رابط خارجي اختياري
+  category   String    @default("general") // general | update | announcement | event
+  type       String    @default("ticker") // ticker | featured
+  isSticky   Boolean   @default(false) // تثبيت في التكر
+  isAnimated Boolean   @default(true) // حركة تلقائية في التكر
+  visible    Boolean   @default(true)
+  order      Int       @default(0)
+  views      Int       @default(0)
+  publishAt  DateTime  @default(now()) // جدولة النشر
+  expiresAt  DateTime? // انتهاء العرض
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([type, visible])
+  @@index([publishAt])
 }
 
 // ===== التعليقات =====
@@ -245,10 +381,10 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   username  String   @default("system")
-  action    String   // create | update | delete | login | logout | moderate
-  entity    String   // mod | game | user | comment | ad | series | setting
+  action    String // create | update | delete | login | logout | moderate
+  entity    String // mod | game | user | comment | ad | series | setting
   entityId  String?
-  details   String?  // JSON string with extra info
+  details   String? // JSON string with extra info
   ipAddress String?
   createdAt DateTime @default(now())
 
@@ -274,13 +410,83 @@ model SiteSetting {
 model HomepageAd {
   id          String   @id @default(cuid())
   type        String   @default("youtube") // youtube | image | html
-  url         String   // رابط الفيديو (لـ youtube) أو رابط الصورة (لـ image) أو كود HTML (لـ html)
+  url         String // رابط الفيديو (لـ youtube) أو رابط الصورة (لـ image) أو كود HTML (لـ html)
   title       String   @default("")
   description String   @default("")
-  link        String?  // رابط عند الضغط على الإعلان (لـ image)
+  link        String? // رابط عند الضغط على الإعلان (لـ image)
   size        String   @default("medium") // small | medium | large | full
   order       Int      @default(0)
   visible     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ===== الإشعارات =====
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs NotificationLog[]
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  emailEnabled        Boolean  @default(true) @map("email_enabled")
+  pushEnabled         Boolean  @default(true) @map("push_enabled")
+  dailySummary        Boolean  @default(true) @map("daily_summary")
+  summaryIntervalDays Int      @default(3) @map("summary_interval_days")
+  likeThreshold       Int      @default(25) @map("like_threshold")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model NotificationLog {
+  id             String    @id @default(uuid())
+  notificationId String    @map("notification_id")
+  channel        String
+  status         String
+  errorMessage   String?   @map("error_message")
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@map("notification_logs")
+}
+
+// ===== حظر عناوين IP =====
+// بيدعم حظر IP مؤقت (expiresAt) أو دائم (null)
+// يتم فحصه في middleware عبر Upstash Redis (Edge runtime)
+// وفي server-side عبر checkIpBan() مباشرة من DB
+model IpBan {
+  id               String    @id @default(cuid())
+  ipAddress        String    @unique
+  reason           String?
+  bannedBy         String? // admin userId
+  bannedByUsername String?
+  expiresAt        DateTime? // null = دائم
+  createdAt        DateTime  @default(now())
+
+  @@index([ipAddress])
+  @@index([expiresAt])
 }
