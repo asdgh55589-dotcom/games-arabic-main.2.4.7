@@ -27,6 +27,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         role: true,
         joinedAt: true,
         lastLoginAt: true,
+        tier: true,
+        specialRoles: true,
+        qualityScore: true,
         _count: {
           select: {
             mods: true,
