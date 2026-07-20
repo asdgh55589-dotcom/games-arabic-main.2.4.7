@@ -423,7 +423,7 @@ model HomepageAd {
 
 // ===== الإشعارات =====
 model Notification {
-  id        String    @id @default(uuid())
+  id        String    @id @default(cuid())
   userId    String    @map("user_id")
   type      String
   title     String
@@ -445,7 +445,7 @@ model Notification {
 }
 
 model NotificationPreference {
-  id                  String   @id @default(uuid())
+  id                  String   @id @default(cuid())
   userId              String   @unique @map("user_id")
   emailEnabled        Boolean  @default(true) @map("email_enabled")
   pushEnabled         Boolean  @default(true) @map("push_enabled")
@@ -461,7 +461,7 @@ model NotificationPreference {
 }
 
 model NotificationLog {
-  id             String    @id @default(uuid())
+  id             String    @id @default(cuid())
   notificationId String    @map("notification_id")
   channel        String
   status         String
