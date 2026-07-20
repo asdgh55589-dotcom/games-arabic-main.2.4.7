@@ -68,20 +68,3 @@ export async function getActivityLog(filters: ActivityLogFilters) {
     }
   }
 }
-
-export async function getUserActivityLog(userId: string) {
-  const logs = await db.auditLog.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    take: 100
-  })
-
-  return logs.map(log => ({
-    id: log.id,
-    action: log.action,
-    entity: log.entity,
-    entityId: log.entityId,
-    details: log.details ? JSON.parse(log.details) : null,
-    createdAt: log.createdAt
-  }))
-}

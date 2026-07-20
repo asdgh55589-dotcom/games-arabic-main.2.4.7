@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
-import { Loader2, Download, Send, BarChart3 } from 'lucide-react'
+import { Loader2, Download, Send } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -62,10 +62,12 @@ export default function AdminAnalyticsPage() {
   const [threshold, setThreshold] = useState(30)
   const [alertLoading, setAlertLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
+  const [logPage, setLogPage] = useState(1)
+  const [logPagination, setLogPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 })
 
   useEffect(() => {
     fetchAllData()
-  }, [period, threshold])
+  }, [period, threshold, logPage])
 
   const fetchAllData = async () => {
     setLoading(true)
@@ -74,7 +76,7 @@ export default function AdminAnalyticsPage() {
         fetch('/api/admin/users/analytics/summary'),
         fetch(`/api/admin/users/analytics/trends?period=${period}`),
         fetch(`/api/admin/users/analytics/inactive?daysThreshold=${threshold}`),
-        fetch('/api/admin/activity-log?limit=20')
+        fetch(`/api/admin/activity-log?page=${logPage}&limit=20`)
       ])
 
       const [summaryData, trendsData, inactiveData, logsData] = await Promise.all([
@@ -88,6 +90,7 @@ export default function AdminAnalyticsPage() {
       setTrends(trendsData)
       setInactiveUsers(inactiveData.inactiveUsers || [])
       setActivityLogs(logsData.logs || [])
+      setLogPagination(logsData.pagination || { page: 1, limit: 20, total: 0, pages: 0 })
     } catch (error) {
       console.error('Failed to fetch analytics data:', error)
     } finally {
@@ -354,6 +357,29 @@ export default function AdminAnalyticsPage() {
             </tbody>
           </table>
         </div>
+        {logPagination.pages > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              صفحة {logPagination.page} من {logPagination.pages} ({logPagination.total} سجل)
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                disabled={logPage === 1}
+                className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+              >
+                السابق
+              </button>
+              <button
+                onClick={() => setLogPage(p => Math.min(logPagination.pages, p + 1))}
+                disabled={logPage === logPagination.pages}
+                className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+              >
+                التالي
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
