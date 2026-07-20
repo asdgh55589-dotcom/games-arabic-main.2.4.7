@@ -20,6 +20,8 @@ import {
   MessageSquare,
   ThumbsUp,
   ScrollText,
+  Newspaper,
+  BarChart3,
 } from 'lucide-react'
 import type { SessionUser } from '@/lib/auth'
 
@@ -49,7 +51,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/mods', label: 'التعريبات', icon: Package },
       { href: '/admin/series', label: 'السلاسل', icon: Layers },
+      { href: '/admin/teams', label: 'فرق التعريب', icon: Users },
       { href: '/admin/ads', label: 'الإعلانات', icon: Megaphone },
+      { href: '/admin/news', label: 'الأخبار', icon: Newspaper },
     ],
   },
   {
@@ -58,6 +62,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/comments', label: 'التعليقات', icon: MessageSquare },
       { href: '/admin/endorsements', label: 'التأييدات', icon: ThumbsUp, adminOnly: true },
       { href: '/admin/users', label: 'المستخدمون', icon: Users, adminOnly: true },
+      { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
   },
   {
