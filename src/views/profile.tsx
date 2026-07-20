@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { TierBadge } from '@/components/tier-badge'
 import { useFetch } from '@/hooks/use-fetch'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
@@ -194,6 +195,9 @@ export function ProfilePage() {
                     {roleBadge.icon}
                     {roleBadge.label}
                   </span>
+                </div>
+                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
+                  <TierBadge tier={(profile as any).tier || 0} size="md" />
                 </div>
               </div>
             </div>
