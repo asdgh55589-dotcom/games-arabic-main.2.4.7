@@ -21,10 +21,7 @@ const ROLE_COOKIE_NAME = 'ga_admin_role'
 const JWT_SECRET = (() => {
   const secret = process.env.JWT_SECRET
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET environment variable is required in production')
-    }
-    return new TextEncoder().encode('fallback-dev-secret-change-in-production')
+    throw new Error('JWT_SECRET environment variable is required')
   }
   return new TextEncoder().encode(secret)
 })()

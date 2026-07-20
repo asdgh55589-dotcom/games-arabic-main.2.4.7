@@ -3,16 +3,35 @@ node_modules/
 out/
 db/*.db
 db/*.db-journal
+
+# Environment files — never commit secrets
+.env
 .env.local
 .env.production
-*.log
+.env.*.local
+
+# Build artifacts
 *.tar.gz
+*.zip
+tsconfig.tsbuildinfo
+
+# Logs
+*.log
+
+# PID files — runtime values, never commit
+*.pid
+
+# Tooling
 tool-results/
 upload/
 download/
 skills/
 mini-services/
 examples/
+.zcode/
+.zscripts/*.pid
+
+# OS files
 .DS_Store
 Thumbs.db
 .vscode/

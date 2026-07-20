@@ -37,7 +37,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 export const authOptions = {
   providers,
   session: { strategy: 'jwt' as const },
-  secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'fallback-dev-secret',
+  secret: (() => {
+    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('NEXTAUTH_SECRET or JWT_SECRET environment variable is required')
+    }
+    return secret
+  })(),
   pages: { signIn: '/admin/login' },
   callbacks: {
     async jwt({ token, user }: any) {
