@@ -22,6 +22,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         avatarUrl: true,
         bio: true,
         role: true,
+        tier: true,
+        specialRoles: true,
         bannedUntil: true,
         banStatus: true,
         banReason: true,

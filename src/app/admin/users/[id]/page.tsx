@@ -7,6 +7,9 @@ import { ArrowRight, Loader2, Crown, Shield, Star, User as UserIcon, Ban, Clock 
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo, formatNumber } from '@/lib/format'
+import { TierBadge } from '@/components/tier-badge'
+import { SpecialRoleBadge } from '@/components/special-role-badge'
+import { TierHistoryTable } from '@/components/tier-history-table'
 
 interface UserData {
   id: string
@@ -15,6 +18,8 @@ interface UserData {
   avatarUrl: string | null
   bio: string | null
   role: string
+  tier: number
+  specialRoles: string | null
   bannedUntil: string | null
   banStatus: string | null
   banReason: string | null
@@ -73,7 +78,9 @@ export default function UserDetailPage() {
   const [comments, setComments] = useState<UserComment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<'overview' | 'activity' | 'comments'>('overview')
+  const [tab, setTab] = useState<'overview' | 'activity' | 'comments' | 'tier'>('overview')
+  const [tierHistory, setTierHistory] = useState([])
+  const [specialRoles, setSpecialRoles] = useState<any[]>([])
 
   useEffect(() => {
     fetch(`/api/admin/users/${id}`)
@@ -82,6 +89,21 @@ export default function UserDetailPage() {
       .catch(() => setError('فشل تحميل بيانات المستخدم'))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/admin/users/${user.id}/tier-history`)
+        .then(r => r.json())
+        .then(data => setTierHistory(data.history || []))
+
+      fetch('/api/admin/special-roles')
+        .then(r => r.json())
+        .then(data => {
+          const userRoleKeys = (user.specialRoles || '').split(',').filter(Boolean)
+          setSpecialRoles(data.roles.filter((r: any) => userRoleKeys.includes(r.key)))
+        })
+    }
+  }, [user])
 
   const onBan = async () => {
     const reason = prompt('سبب الحظر (اختياري):')
@@ -203,9 +225,9 @@ export default function UserDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
-        {(['overview', 'activity', 'comments'] as const).map((t) => (
+        {(['overview', 'activity', 'comments', 'tier'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === t ? 'border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-            {t === 'overview' ? 'البيانات' : t === 'activity' ? 'النشاط' : 'التعليقات'}
+            {t === 'overview' ? 'البيانات' : t === 'activity' ? 'النشاط' : t === 'comments' ? 'التعليقات' : 'المستوى والأدوار'}
           </button>
         ))}
       </div>
@@ -280,6 +302,35 @@ export default function UserDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'tier' && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <h3 className="text-lg font-semibold">المستوى الحالي</h3>
+              <TierBadge tier={user.tier} size="md" />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <h3 className="text-lg font-semibold">الأدوار الخاصة</h3>
+              <div className="flex gap-2">
+                {specialRoles.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">لا توجد أدوار خاصة</span>
+                ) : (
+                  specialRoles.map((role: any) => (
+                    <SpecialRoleBadge key={role.key} roleKey={role.key} roleName={role.name} icon={role.icon} color={role.color} />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h3 className="text-lg font-semibold mb-4">سجل الترقيات</h3>
+            <TierHistoryTable history={tierHistory} />
+          </div>
         </div>
       )}
     </div>
