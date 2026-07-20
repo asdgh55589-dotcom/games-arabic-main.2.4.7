@@ -4,6 +4,7 @@ import { requireModerator } from '@/lib/auth'
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
+import { checkAndUpgradeTier } from '@/lib/tier-engine'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
 type Sort = (typeof SORTS)[number]
@@ -275,6 +276,9 @@ export async function POST(req: NextRequest) {
 
       return created
     })
+
+    // Check for tier upgrade
+    checkAndUpgradeTier(mod.authorId).catch(console.error)
 
     // تحديث عدّادات السلسلة/الفريق/اللعبة بعد الإنشاء
     if (mod.seriesId) await syncSeriesCounts(mod.seriesId).catch(() => {})
