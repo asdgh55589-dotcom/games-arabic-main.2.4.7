@@ -9,6 +9,8 @@ import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { HeroSlider } from '@/components/hero-slider'
 import { HomeSidebar } from '@/components/home-sidebar'
 import { AdSection } from '@/components/ad-section'
+import { NewsTicker } from '@/components/news-ticker'
+import { NewsFeatured } from '@/components/news-featured'
 import { formatNumber } from '@/lib/format'
 import type { HomeData } from '@/lib/types'
 
@@ -34,6 +36,9 @@ export function HomePage() {
         <HeroSlider slides={data.latestMods} />
       ) : null}
 
+      {/* ===== شريط الأخبار — تحت البنر مباشرة ===== */}
+      <NewsTicker />
+
       {/* ===== الصف الرئيسي: المحتوى + الشريط الجانبي =====
           - الشريط الجانبي على اليمين (340px)
           - المحتوى الرئيسي في الباقي (flex-1) */}
@@ -58,6 +63,9 @@ export function HomePage() {
 
         {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
         <div className="min-w-0 flex-1 space-y-8 -ml-[80px]">
+
+      {/* آخر الأخبار — قبل أقسام المنصات */}
+      {!loading && <NewsFeatured />}
 
       {/* أقسام المنصات — كل قسم يستخدم ModCard بنفس التصميم */}
       {(() => {

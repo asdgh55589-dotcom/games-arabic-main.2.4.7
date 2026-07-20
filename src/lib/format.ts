@@ -8,15 +8,19 @@ export function formatNumber(n: number): string {
   return n.toString()
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 // تنسيق التاريخ بالعربية كاملة (يوم شهر سنة) — باستخدام الأرقام العربية (1234567890)
 // مش الأرقام الهندية (١٢٣٤٥٦٧٨٩٠)
-export function formatArabicDate(date: Date | string): string {
+export function formatArabicDate(date: Date | string | null | undefined): string {
+  if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return '—'
   const months = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
@@ -27,8 +31,10 @@ export function formatArabicDate(date: Date | string): string {
   return `${day} ${month} ${year}`
 }
 
-export function timeAgo(date: Date | string): string {
+export function timeAgo(date: Date | string | null | undefined): string {
+  if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return '—'
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000)
   if (seconds < 60) return 'الآن'
   const minutes = Math.floor(seconds / 60)

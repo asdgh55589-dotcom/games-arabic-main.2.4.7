@@ -1,26 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/auth'
-import { hashPassword } from '@/lib/auth'
+import { requireAdmin, hashPassword, createSupabaseAuthUser } from '@/lib/auth'
+import { parsePagination } from '@/lib/api-utils'
 
-// GET /api/admin/users — قائمة المستخدمين
-export async function GET() {
+// GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
+export async function GET(req: NextRequest) {
   try {
     await requireAdmin()
-    const users = await db.user.findMany({
-      orderBy: { joinedAt: 'desc' },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        bio: true,
-        role: true,
-        joinedAt: true,
-        _count: { select: { mods: true } },
-      },
+    const { searchParams } = new URL(req.url)
+    const { page, limit } = parsePagination(
+      searchParams.get('page'),
+      searchParams.get('limit'),
+      { limit: 50, maxLimit: 100 }
+    )
+    const search = searchParams.get('search')?.trim() || null
+    const role = searchParams.get('role') || null
+    const banned = searchParams.get('banned') || null
+
+    const where: Record<string, unknown> = {}
+    if (search) {
+      where.OR = [
+        { username: { contains: search } },
+        { email: { contains: search } },
+      ]
+    }
+    if (role) where.role = role
+    if (banned === 'banned') where.bannedUntil = { not: null, gt: new Date() }
+    if (banned === 'active') where.OR = [{ bannedUntil: null }, { bannedUntil: { lte: new Date() } }]
+
+    const [total, users] = await Promise.all([
+      db.user.count({ where }),
+      db.user.findMany({
+        where,
+        orderBy: { joinedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+          bannedUntil: true,
+          banStatus: true,
+          banReason: true,
+          bannedBy: true,
+          bannedAt: true,
+          lastLoginAt: true,
+          loginCount: true,
+          joinedAt: true,
+          _count: { select: { mods: true, comments: true, endorsements: true } },
+        },
+      }),
+    ])
+
+    return NextResponse.json({
+      users,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     })
-    return NextResponse.json({ users })
   } catch (err) {
     console.error('[admin/users GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
@@ -38,17 +79,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'username, email, password مطلوبة' }, { status: 400 })
     }
 
-    // التحقق من عدم التكرار
     const existing = await db.user.findFirst({
-      where: {
-        OR: [{ username: body.username }, { email: body.email }],
-      },
+      where: { OR: [{ username: body.username }, { email: body.email }] },
     })
     if (existing) {
       return NextResponse.json({ error: 'اسم المستخدم أو البريد مستخدم بالفعل' }, { status: 400 })
     }
 
-    // الصلاحيات: بس owner يقدر ينشئ admin/owner
     const role = body.role || 'member'
     if ((role === 'admin' || role === 'owner') && currentUser.role !== 'owner') {
       return NextResponse.json(
@@ -58,11 +95,16 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(body.password)
+
+    // إنشاء المستخدم في Supabase Auth بنفس كلمة المرور
+    const supabaseId = await createSupabaseAuthUser(body.email, body.password, body.username)
+
     const user = await db.user.create({
       data: {
         username: body.username,
         email: body.email,
         password: passwordHash,
+        supabaseId: supabaseId || undefined,
         avatarUrl: body.avatarUrl || null,
         bio: body.bio || null,
         role,
@@ -74,7 +116,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[admin/users POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    const message = err instanceof Error ? err.message : 'Failed to create user'
-    return NextResponse.json({ error: message }, { status })
+    return NextResponse.json({ error: 'Failed to create user' }, { status })
   }
 }

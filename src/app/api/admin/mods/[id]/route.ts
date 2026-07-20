@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canEditMod, canDelete } from '@/lib/auth'
+import { syncSeriesCounts } from '@/lib/series-helpers'
+import { syncTeamCounts } from '@/lib/team-helpers'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -52,7 +54,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const body = await req.json()
 
     // التأكد إن التعريب موجود
-    const existing = await db.mod.findUnique({ where: { id }, select: { authorId: true } })
+    const existing = await db.mod.findUnique({ where: { id }, select: { authorId: true, seriesId: true, teamId: true } })
     if (!existing) {
       return NextResponse.json({ error: 'Mod not found' }, { status: 404 })
     }
@@ -65,12 +67,16 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // تتبّع تغيير seriesId/teamId لمزامنة العدّادات
+    const oldSeriesId = existing.seriesId
+    const oldTeamId = existing.teamId
+
     // تحديث الحقول الأساسية
     const updateData: Record<string, unknown> = {}
     const allowedFields = [
       'name', 'summary', 'description', 'changelog', 'installGuide', 'arabicTitle', 'compatibility',
       'categoryId', 'thumbnailUrl', 'imageUrl', 'galleryUrls', 'version', 'fileSize', 'fileFormat',
-      'tags', 'series', 'translationTeam', 'translationType',
+      'tags', 'series', 'seriesId', 'translationTeam', 'teamId', 'translationType',
       'isFeatured', 'isTrending', 'isLatest', 'releaseDate',
     ]
     for (const field of allowedFields) {
@@ -225,12 +231,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // مزامنة عدّادات السلسلة/الفريق لو تغيّرت
+    const newSeriesId = body.seriesId !== undefined ? (body.seriesId || null) : oldSeriesId
+    const newTeamId = body.teamId !== undefined ? (body.teamId || null) : oldTeamId
+    if (newSeriesId !== oldSeriesId) {
+      if (oldSeriesId) await syncSeriesCounts(oldSeriesId).catch(() => {})
+      if (newSeriesId) await syncSeriesCounts(newSeriesId).catch(() => {})
+    }
+    if (newTeamId !== oldTeamId) {
+      if (oldTeamId) await syncTeamCounts(oldTeamId).catch(() => {})
+      if (newTeamId) await syncTeamCounts(newTeamId).catch(() => {})
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/mods/[id] PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    const message = err instanceof Error ? err.message : 'Failed to update mod'
-    return NextResponse.json({ error: message }, { status })
+    return NextResponse.json({ error: 'Failed to update mod' }, { status })
   }
 }
 
@@ -247,13 +264,19 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const existing = await db.mod.findUnique({ where: { id }, select: { id: true } })
+    const existing = await db.mod.findUnique({ where: { id }, select: { id: true, seriesId: true, teamId: true } })
     if (!existing) {
       return NextResponse.json({ error: 'Mod not found' }, { status: 404 })
     }
 
+    const { seriesId, teamId } = existing
+
     // cascading deletes هتمسح كل الـ relations تلقائياً
     await db.mod.delete({ where: { id } })
+
+    // مزامنة عدّادات السلسلة/الفريق بعد الحذف
+    if (seriesId) await syncSeriesCounts(seriesId).catch(() => {})
+    if (teamId) await syncTeamCounts(teamId).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (err) {

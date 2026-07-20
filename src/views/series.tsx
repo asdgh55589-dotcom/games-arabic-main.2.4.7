@@ -1,14 +1,28 @@
 'use client'
 
 import Link from 'next/link'
-import { Package } from 'lucide-react'
+import { Package, Star } from 'lucide-react'
 import { useFetch } from '@/hooks/use-fetch'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
-import type { SeriesSummary } from '@/lib/types'
+
+interface SeriesItem {
+  id: string
+  slug: string
+  name: string
+  description: string
+  bannerUrl: string
+  logoUrl: string
+  color: string
+  isFeatured: boolean
+  isOfficial: boolean
+  modCount: number
+  totalDownloads: number
+  totalEndorsements: number
+}
 
 interface SeriesData {
-  series: SeriesSummary[]
+  series: SeriesItem[]
 }
 
 export function SeriesPage() {
@@ -27,7 +41,7 @@ export function SeriesPage() {
       {loading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       ) : !data?.series || data.series.length === 0 ? (
@@ -39,13 +53,13 @@ export function SeriesPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.series.map((s) => (
             <Link
-              key={s.name}
-              href={`/?view=series-detail&series=${encodeURIComponent(s.name)}`}
+              key={s.id}
+              href={`/?view=series-detail&series=${encodeURIComponent(s.id)}`}
               className="group relative flex h-24 items-center justify-between overflow-hidden rounded-lg border border-border bg-card p-4 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
             >
-              {s.thumbnailUrl && (
+              {(s.bannerUrl || s.logoUrl) && (
                 <img
-                  src={s.thumbnailUrl}
+                  src={s.bannerUrl || s.logoUrl}
                   alt=""
                   loading="lazy"
                   className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50"
@@ -53,9 +67,13 @@ export function SeriesPage() {
               )}
               <div className="absolute inset-0 bg-gradient-to-r from-card via-card/75 to-card/40" />
               <div className="relative">
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary">{s.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-foreground group-hover:text-primary">{s.name}</h3>
+                  {s.isFeatured && <Star className="h-4 w-4 fill-amber-400 text-amber-400" />}
+                  {s.isOfficial && <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">رسمي</span>}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {formatNumber(s.count)} تعريب · {formatNumber(s.downloads)} تحميل
+                  {formatNumber(s.modCount)} تعريب · {formatNumber(s.totalDownloads)} تحميل
                 </p>
               </div>
               <Package className="relative h-8 w-8 text-muted-foreground/30 group-hover:text-primary" />

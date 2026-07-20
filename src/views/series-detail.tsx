@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Package, Search } from 'lucide-react'
+import { ArrowRight, Package, Search, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,10 +16,22 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
 import type { PaginatedMods } from '@/lib/types'
 
+interface SeriesInfo {
+  id: string
+  slug: string
+  name: string
+  description: string
+  bannerUrl: string
+  logoUrl: string
+  isFeatured: boolean
+  isOfficial: boolean
+  modCount: number
+}
+
 export function SeriesDetailPage() {
   const searchParams = useSearchParams()
-  const seriesName = searchParams.get('series') || ''
-  useDocumentTitle(seriesName || 'سلسلة التعريبات')
+  const seriesParam = searchParams.get('series') || ''
+  useDocumentTitle('سلسلة التعريبات')
 
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('downloads')
@@ -27,25 +39,39 @@ export function SeriesDetailPage() {
 
   const debouncedSearch = useDebounced(search, 250)
 
+  // Fetch series info
+  const seriesUrl = useMemo(() => {
+    if (!seriesParam) return null
+    return `/api/series`
+  }, [seriesParam])
+
+  const { data: allSeries } = useFetch<{ series: SeriesInfo[] }>(seriesUrl, [seriesUrl])
+  const seriesInfo = useMemo(() => {
+    return allSeries?.series?.find((s) => s.id === seriesParam || s.slug === seriesParam) || null
+  }, [allSeries, seriesParam])
+
+  // Fetch mods in series
   const url = useMemo(() => {
-    if (!seriesName) return null
+    if (!seriesParam) return null
     const params = new URLSearchParams()
-    params.set('series', seriesName)
+    params.set('series', seriesParam)
     params.set('sort', sort)
     params.set('page', String(page))
     params.set('limit', '24')
     if (debouncedSearch) params.set('search', debouncedSearch)
     return `/api/series/mods?${params.toString()}`
-  }, [seriesName, sort, page, debouncedSearch])
+  }, [seriesParam, sort, page, debouncedSearch])
 
   const { data, loading } = useFetch<PaginatedMods>(url, [url])
 
-  const filterKey = `${seriesName}:${debouncedSearch}:${sort}`
+  const filterKey = `${seriesParam}:${debouncedSearch}:${sort}`
   const [lastFilterKey, setLastFilterKey] = useState(filterKey)
   if (filterKey !== lastFilterKey) {
     setLastFilterKey(filterKey)
     setPage(1)
   }
+
+  const displayName = seriesInfo?.name || seriesParam
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
@@ -53,11 +79,26 @@ export function SeriesDetailPage() {
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/?view=series" className="hover:text-foreground">سلاسل التعريبات</Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
-        <span className="text-foreground">{seriesName}</span>
+        <span className="text-foreground">{displayName}</span>
       </div>
 
+      {/* Banner */}
+      {seriesInfo?.bannerUrl && (
+        <div className="relative mb-6 h-48 overflow-hidden rounded-xl">
+          <img src={seriesInfo.bannerUrl} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+        </div>
+      )}
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{seriesName}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
+          {seriesInfo?.isFeatured && <Star className="h-5 w-5 fill-amber-400 text-amber-400" />}
+          {seriesInfo?.isOfficial && <span className="rounded bg-primary/20 px-2 py-1 text-xs font-bold text-primary">رسمي</span>}
+        </div>
+        {seriesInfo?.description && (
+          <p className="mt-2 text-muted-foreground">{seriesInfo.description}</p>
+        )}
         <p className="mt-1 text-muted-foreground">
           {data ? `${formatNumber(data.total)} تعريب` : 'جارٍ التحميل…'}
         </p>

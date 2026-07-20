@@ -38,7 +38,7 @@ export async function GET() {
       ps3Mods,
       ps2Mods,
       ps1Mods,
-      seriesRows,
+      topSeriesRaw,
     ] = await Promise.all([
       db.game.count(),
       db.mod.count(),
@@ -108,17 +108,20 @@ export async function GET() {
         take: 10,
         include: modInclude,
       }),
-      // أعلى 6 سلاسل حسب عدد التعريبات — نستخدم thumbnailUrl من أول
-      // تعريب في السلسلة كصورة معرفة للسلسلة.
-      db.mod.findMany({
-        where: { series: { not: '' } },
+      // أعلى 6 سلاسل من Series model
+      db.series.findMany({
+        orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
+        take: 6,
         select: {
-          series: true,
-          thumbnailUrl: true,
-          downloads: true,
-          endorsements: true,
+          id: true,
+          name: true,
+          slug: true,
+          bannerUrl: true,
+          logoUrl: true,
+          modCount: true,
+          totalDownloads: true,
+          totalEndorsements: true,
         },
-        orderBy: { downloads: 'desc' },
       }),
     ])
 
@@ -141,29 +144,14 @@ export async function GET() {
       }
     }
 
-    // جمّع السلاسل: لكل اسم سلسلة، احسب العدد وآخر تحميلات + التأييدات +
-    // الصورة المصغرة (من أحدث تعريب).
-    const seriesMap = new Map<string, { count: number; downloads: number; endorsements: number; thumbnailUrl: string }>()
-    for (const m of seriesRows) {
-      const s = m.series
-      const existing = seriesMap.get(s)
-      if (existing) {
-        existing.count += 1
-        existing.downloads += m.downloads
-        existing.endorsements += m.endorsements
-      } else {
-        seriesMap.set(s, {
-          count: 1,
-          downloads: m.downloads,
-          endorsements: m.endorsements,
-          thumbnailUrl: m.thumbnailUrl,
-        })
-      }
-    }
-    const topSeries: SeriesSummary[] = Array.from(seriesMap.entries())
-      .map(([name, info]) => ({ name, ...info }))
-      .sort((a, b) => b.count - a.count || b.downloads - a.downloads)
-      .slice(0, 6)
+    // السلاسل جاهزة من Series model — نحولها للشكل المتوقع
+    const topSeries: SeriesSummary[] = topSeriesRaw.map((s) => ({
+      name: s.name,
+      count: s.modCount,
+      downloads: s.totalDownloads,
+      endorsements: s.totalEndorsements,
+      thumbnailUrl: s.bannerUrl || s.logoUrl || '',
+    }))
 
     const modsByPlatform: Record<string, ModSummary[]> = {
       PC: pcMods as unknown as ModSummary[],

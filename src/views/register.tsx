@@ -103,6 +103,17 @@ export function RegisterPage() {
 
     setLoading(true)
     try {
+      // 0. فحص مسبق: هل البريد مسجّل في Neon DB؟
+      const checkRes = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email.trim().toLowerCase())}`)
+      if (checkRes.ok) {
+        const checkData = await checkRes.json()
+        if (checkData.available === false) {
+          toast({ title: 'بريد مسجّل', description: 'هذا البريد الإلكتروني مسجّل بالفعل.', variant: 'destructive' })
+          setLoading(false)
+          return
+        }
+      }
+
       // 1. إنشاء حساب في Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
@@ -115,7 +126,7 @@ export function RegisterPage() {
 
       // 2. مزامنة بيانات المستخدم مع Neon DB
       if (data.user) {
-        await fetch('/api/auth/sync-user', {
+        const syncRes = await fetch('/api/auth/sync-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -124,6 +135,22 @@ export function RegisterPage() {
             email: email.trim().toLowerCase(),
           }),
         })
+
+        // لو فشلت المزامنة بسبب تعارض → المستخدم اليتيم في Supabase يجب التعامل معه
+        if (!syncRes.ok) {
+          const syncErr = await syncRes.json().catch(() => ({}))
+          if (syncErr.code === 'CONFLICT' || syncErr.code === 'USERNAME_TAKEN') {
+            toast({
+              title: 'البريد أو اسم المستخدم مسجّل',
+              description: 'هذا الحساب مسجّل بالفعل. حاول تسجيل الدخول.',
+              variant: 'destructive',
+            })
+            setLoading(false)
+            return
+          }
+          // أخطاء أخرى — لا نوقف التسجيل، المستخدم موجود في Supabase
+          console.warn('[register] sync-user failed:', syncErr)
+        }
       }
 
       toast({

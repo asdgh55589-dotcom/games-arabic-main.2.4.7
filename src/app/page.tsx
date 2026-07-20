@@ -15,6 +15,7 @@ import { RegisterPage } from '@/views/register'
 import { SeriesPage } from '@/views/series'
 import { SeriesDetailPage } from '@/views/series-detail'
 import { TranslationTeamsPage } from '@/views/translation-teams'
+import { TeamDetailPage } from '@/views/team-detail'
 import { PlatformPage } from '@/views/platform'
 import { SupportPage } from '@/views/support'
 import { ExplorePage } from '@/views/explore'
@@ -24,6 +25,7 @@ import { ProblemsPage } from '@/views/problems'
 import { TermsPage } from '@/views/terms'
 import { PrivacyPage } from '@/views/privacy'
 import { ComingSoonPage } from '@/views/coming-soon'
+import { NotificationsPage } from '@/views/notifications'
 import type { GameSummary } from '@/lib/types'
 
 type View =
@@ -37,6 +39,7 @@ type View =
   | 'series'
   | 'series-detail'
   | 'teams'
+  | 'team-detail'
   | 'platform'
   | 'support'
   | 'explore'
@@ -45,11 +48,12 @@ type View =
   | 'problems'
   | 'terms'
   | 'privacy'
+  | 'notifications'
 
 const KNOWN_VIEWS: ReadonlySet<string> = new Set<string>([
   'home', 'mod', 'search', 'upload', 'profile', 'login', 'register',
-  'series', 'series-detail', 'teams', 'platform', 'support', 'explore', 'community',
-  'about', 'problems', 'terms', 'privacy',
+  'series', 'series-detail', 'teams', 'team-detail', 'platform', 'support', 'explore', 'community',
+  'about', 'problems', 'terms', 'privacy', 'notifications',
 ])
 
 /** Games list shown in the navbar — only the fields the navbar needs. */
@@ -95,6 +99,7 @@ function PageContent() {
           {view === 'series' && <SeriesPage />}
           {view === 'series-detail' && <SeriesDetailPage />}
           {view === 'teams' && <TranslationTeamsPage />}
+          {view === 'team-detail' && <TeamDetailPage />}
           {view === 'platform' && <PlatformPage />}
           {view === 'support' && <SupportPage />}
           {view === 'explore' && <ExplorePage />}
@@ -103,6 +108,7 @@ function PageContent() {
           {view === 'problems' && <ProblemsPage />}
           {view === 'terms' && <TermsPage />}
           {view === 'privacy' && <PrivacyPage />}
+          {view === 'notifications' && <NotificationsPage />}
           {view && !isKnownView && <ComingSoonPage title={view} />}
         </ErrorBoundary>
       </main>

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
+import { notifyCommentReply } from '@/lib/notification-helpers'
+import { z } from 'zod'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
 }
+
+const commentSchema = z.object({
+  text: z.string().min(1, 'نص التعليق مطلوب').max(2000, 'التعليق طويل جداً'),
+  parentId: z.string().optional(),
+})
 
 // GET /api/mods/[slug]/comments — قائمة التعليقات
 //
@@ -74,12 +81,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const { slug } = await params
     const body = await req.json().catch(() => ({}))
-
-    if (!body.text || typeof body.text !== 'string' || body.text.trim().length === 0) {
-      return NextResponse.json({ error: 'نص التعليق مطلوب' }, { status: 400 })
+    const parsed = commentSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'بيانات غير صحيحة' }, { status: 400 })
     }
-    if (body.text.length > 2000) {
-      return NextResponse.json({ error: 'التعليق طويل جداً (الحد الأقصى 2000 حرف)' }, { status: 400 })
+
+    const { text, parentId } = parsed.data
+
+    if (!text || text.trim().length === 0) {
+      return NextResponse.json({ error: 'نص التعليق مطلوب' }, { status: 400 })
     }
 
     const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
@@ -103,9 +113,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     // لو فيه parentId → تأكد إن الـ parent موجود وينتمي لنفس الـ mod
-    if (body.parentId) {
+    if (parentId) {
       const parent = await db.modComment.findUnique({
-        where: { id: body.parentId },
+        where: { id: parentId },
         select: { id: true, modId: true },
       })
       if (!parent || parent.modId !== mod.id) {
@@ -116,9 +126,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const comment = await db.modComment.create({
       data: {
         modId: mod.id,
-        parentId: body.parentId || null,
+        parentId: parentId || null,
         userId: user.id,
-        text: body.text.trim(),
+        text: text.trim(),
       },
     })
 
@@ -127,6 +137,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       where: { id: mod.id },
       data: { comments: { increment: 1 } },
     })
+
+    // إشعار عند الرد على تعليق
+    if (parentId) {
+      const parentComment = await db.modComment.findUnique({
+        where: { id: parentId },
+        select: { userId: true },
+      })
+      if (parentComment?.userId) {
+        await notifyCommentReply({
+          parentAuthorId: parentComment.userId,
+          replyAuthorId: user.id,
+          modSlug: slug,
+          modName: mod.name || slug,
+        })
+      }
+    }
 
     return NextResponse.json({ comment }, { status: 201 })
   } catch (err) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { parsePagination, pickSort } from '@/lib/api-utils'
+import { syncSeriesCounts } from '@/lib/series-helpers'
+import { syncTeamCounts } from '@/lib/team-helpers'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
 type Sort = (typeof SORTS)[number]
@@ -140,7 +142,9 @@ export async function POST(req: NextRequest) {
           fileFormat: body.fileFormat || 'zip',
           tags: Array.isArray(body.tags) ? body.tags.join(',') : (body.tags || ''),
           series: body.series || '',
+          seriesId: body.seriesId || null,
           translationTeam: body.translationTeam || '',
+          teamId: body.teamId || null,
           translationType: body.translationType || 'unofficial',
           isFeatured: Boolean(body.isFeatured),
           isTrending: Boolean(body.isTrending),
@@ -272,11 +276,14 @@ export async function POST(req: NextRequest) {
       return created
     })
 
+    // تحديث عدّادات السلسلة/الفريق/اللعبة بعد الإنشاء
+    if (mod.seriesId) await syncSeriesCounts(mod.seriesId).catch(() => {})
+    if (mod.teamId) await syncTeamCounts(mod.teamId).catch(() => {})
+
     return NextResponse.json({ mod }, { status: 201 })
   } catch (err) {
     console.error('[admin/mods POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    const message = err instanceof Error ? err.message : 'Failed to create mod'
-    return NextResponse.json({ error: message }, { status })
+    return NextResponse.json({ error: 'Failed to create mod' }, { status })
   }
 }

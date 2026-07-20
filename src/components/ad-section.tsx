@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Play, X, ExternalLink, Image as ImageIcon, Youtube } from 'lucide-react'
 import { cached } from '@/lib/cache'
+import { sanitizeHTML } from '@/lib/sanitize'
 
 interface HomepageAd {
   id: string
@@ -179,7 +180,7 @@ function AdItem({ ad }: { ad: HomepageAd }) {
     return (
       <div
         className={`w-full overflow-hidden rounded-xl border border-border bg-card p-4 ${sizeInfo.className}`}
-        dangerouslySetInnerHTML={{ __html: ad.url }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHTML(ad.url) }}
       />
     )
   }

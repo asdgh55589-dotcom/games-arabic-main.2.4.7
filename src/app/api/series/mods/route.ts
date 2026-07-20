@@ -13,17 +13,10 @@ const ORDER_BY: Record<string, Record<string, 'desc' | 'asc'>> = {
   views: { views: 'desc' },
 }
 
-// GET /api/series/mods?series=God of War — تعديلات سلسلة معينة
-//
-// Supported query params:
-//   - series (required): the series name to filter by
-//   - search: free-text search across name/summary
-//   - sort: downloads | endorsements | newest | updated | views
-//   - page, limit: pagination
-//   - translationType: official | unofficial
+// GET /api/series/mods?series=<id|slug> — تعديلات سلسلة معينة
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const seriesName = searchParams.get('series') || ''
+  const seriesParam = searchParams.get('series') || ''
   const search = searchParams.get('search')?.trim() || null
   const sort = pickSort(searchParams.get('sort'), SORTS, 'downloads')
   const { page, limit } = parsePagination(
@@ -33,11 +26,21 @@ export async function GET(req: NextRequest) {
   )
   const translationType = searchParams.get('translationType')
 
-  if (!seriesName) {
+  if (!seriesParam) {
     return NextResponse.json({ error: 'series is required' }, { status: 400 })
   }
 
-  const where: Record<string, unknown> = { series: seriesName }
+  // Find series by id or slug
+  const series = await db.series.findFirst({
+    where: { OR: [{ id: seriesParam }, { slug: seriesParam }] },
+    select: { id: true },
+  })
+
+  if (!series) {
+    return NextResponse.json({ error: 'Series not found' }, { status: 404 })
+  }
+
+  const where: Record<string, unknown> = { seriesId: series.id }
   if (search) {
     where.OR = [
       { name: { contains: search } },
@@ -71,7 +74,6 @@ export async function GET(req: NextRequest) {
     totalPages: Math.ceil(total / limit) || 1,
   }, {
     headers: {
-      // Series pages change infrequently — cache aggressively.
       'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
     },
   })

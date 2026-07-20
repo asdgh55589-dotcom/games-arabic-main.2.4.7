@@ -24,6 +24,11 @@ const ACTION_LABELS: Record<string, string> = {
   login: 'تسجيل دخول',
   logout: 'تسجيل خروج',
   moderate: 'إدارة',
+  ban: 'حظر',
+  unban: 'إلغاء حظر',
+  warn: 'تحذير',
+  promote: 'ترقية',
+  demote: 'تنزيل',
 }
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -34,6 +39,9 @@ const ENTITY_LABELS: Record<string, string> = {
   ad: 'إعلان',
   series: 'سلسلة',
   setting: 'إعداد',
+  ip: 'عنوان IP',
+  team: 'فريق',
+  news: 'خبر',
 }
 
 export default function AdminAuditPage() {
@@ -138,9 +146,10 @@ export default function AdminAuditPage() {
                   <td className="px-4 py-3 font-medium">{log.username}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${
-                      log.action === 'delete' ? 'bg-red-500/10 text-red-500' :
-                      log.action === 'create' ? 'bg-green-500/10 text-green-500' :
-                      log.action === 'login' ? 'bg-blue-500/10 text-blue-500' :
+                      ['delete', 'ban'].includes(log.action) ? 'bg-red-500/10 text-red-500' :
+                      ['create', 'unban', 'promote'].includes(log.action) ? 'bg-green-500/10 text-green-500' :
+                      ['login', 'logout'].includes(log.action) ? 'bg-blue-500/10 text-blue-500' :
+                      ['warn', 'demote'].includes(log.action) ? 'bg-yellow-500/10 text-yellow-500' :
                       'bg-primary/10 text-primary'
                     }`}>
                       {ACTION_LABELS[log.action] || log.action}

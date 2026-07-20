@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
 import { formatNumber } from '@/lib/format'
 import { useDebounced } from '@/hooks/use-debounced'
@@ -197,7 +198,8 @@ export function Navbar({ games }: NavbarProps) {
 
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex items-center justify-end px-3">
-                  <ThemeSwitcher />
+          <ThemeSwitcher />
+          <NotificationBell currentUser={currentUser} />
                 </div>
                 {currentUser ? (
                   <>

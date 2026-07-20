@@ -1,41 +1,75 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, createSupabaseAuthUser } from '@/lib/auth'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { logAction } from '@/lib/audit'
 
-const OWNER_USERNAME = 'GADMIx'
-const OWNER_EMAIL = 'owner@games-arabic.com'
-const OWNER_PASSWORD = 'GA@dm!n2026#S3cure'
-
-export async function POST() {
+// POST /api/admin/setup — إنشاء أول حساب owner
+// محمي: لا يعمل لو يوجد owner بالفعل (flag في DB)
+export async function POST(req: NextRequest) {
   try {
-    const existingUser = await db.user.findFirst({
-      where: { role: 'owner' },
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ message: 'Owner account already exists' })
+    const rl = await rateLimit(req, { limit: 3, window: 300, keyPrefix: 'admin:setup' })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد 5 دقائق.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      )
     }
 
-    const passwordHash = await hashPassword(OWNER_PASSWORD)
+    // فحص: هل تم الـ setup بالفعل؟
+    const existingUser = await db.user.findFirst({ where: { role: 'owner' } })
+    if (existingUser) {
+      return NextResponse.json({ message: 'Owner account already exists', setup: false })
+    }
 
-    await db.user.create({
+    // تحقق من وجود OWNER_PASSWORD في env (لا fallback لـ JWT_SECRET)
+    const username = process.env.OWNER_USERNAME
+    const email = process.env.OWNER_EMAIL
+    const password = process.env.OWNER_PASSWORD
+
+    if (!username || !email || !password) {
+      return NextResponse.json(
+        { error: 'يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.' },
+        { status: 500 }
+      )
+    }
+
+    const passwordHash = await hashPassword(password)
+
+    // إنشاء المستخدم في Supabase Auth أولاً
+    const supabaseId = await createSupabaseAuthUser(email, password, username)
+
+    const owner = await db.user.create({
       data: {
-        username: OWNER_USERNAME,
-        email: OWNER_EMAIL,
+        username,
+        email,
         password: passwordHash,
+        supabaseId: supabaseId || undefined,
         role: 'owner',
         bio: 'مالك و مؤسس منصة ألعاب بالعربي',
         joinedAt: new Date(),
       },
     })
 
-    return NextResponse.json({
-      message: 'Owner account created',
-      credentials: {
-        username: OWNER_USERNAME,
-        password: OWNER_PASSWORD,
-      },
+    // تسجيل النشاط
+    await logAction({
+      userId: owner.id,
+      username,
+      action: 'login',
+      entity: 'user',
+      entityId: owner.id,
+      details: JSON.stringify({ event: 'owner_setup' }),
+      request: req,
     })
+
+    // وضع flag أن الـ setup تم
+    await db.siteSetting.upsert({
+      where: { key: 'setup_completed' },
+      create: { key: 'setup_completed', value: 'true', group: 'general' },
+      update: { value: 'true' },
+    })
+
+    return NextResponse.json({ message: 'Owner account created successfully', setup: true })
   } catch (err) {
     console.error('[setup] failed:', err)
     return NextResponse.json({ error: 'Setup failed' }, { status: 500 })

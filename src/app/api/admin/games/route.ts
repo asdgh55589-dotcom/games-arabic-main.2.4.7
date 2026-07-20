@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[admin/games POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    const message = err instanceof Error ? err.message : 'Failed to create game'
-    return NextResponse.json({ error: message }, { status })
+    return NextResponse.json({ error: 'Failed to create game' }, { status })
   }
 }

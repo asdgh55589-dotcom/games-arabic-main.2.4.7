@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
+import { getBanStatus } from '@/lib/auth'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { checkEndorseMilestone } from '@/lib/notification-helpers'
 import type { EndorseResponse, ApiError } from '@/lib/types'
 
 // POST /api/mods/[slug]/endorse - toggle endorsement
@@ -12,34 +16,42 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const body = await req.json().catch(() => ({}))
-  const userId: string | undefined = body?.userId
 
-  if (!userId || typeof userId !== 'string') {
+  const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'endorse' })
+  if (!rl.success) {
     return NextResponse.json<ApiError>(
-      { error: 'userId is required' },
-      { status: 400 }
+      { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقيقة.' },
+      { status: 429, headers: rateLimitHeaders(rl) }
     )
   }
 
   try {
+    const supabase = await createClient()
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    if (!supabaseUser) {
+      return NextResponse.json<ApiError>(
+        { error: 'سجّل الدخول للتأكيد' },
+        { status: 401 }
+      )
+    }
+
+    const neonUser = await db.user.findFirst({
+      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
+      select: { id: true },
+    })
+    if (!neonUser) {
+      return NextResponse.json<ApiError>(
+        { error: 'المستخدم غير موجود' },
+        { status: 404 }
+      )
+    }
+
+    const userId = neonUser.id
+
     const result = await db.$transaction(async (tx) => {
-      // Ensure user exists (auto-create demo user)
-      let user = await tx.user.findUnique({ where: { id: userId } })
+      const user = await tx.user.findUnique({ where: { id: userId } })
       if (!user) {
-        try {
-          user = await tx.user.create({
-            data: {
-              id: userId,
-              username: `guest_${userId.slice(-6)}`,
-              email: `${userId}@guest.local`,
-            },
-          })
-        } catch (e: unknown) {
-          // Another concurrent request created this user — refetch
-          user = await tx.user.findUnique({ where: { id: userId } })
-          if (!user) throw e
-        }
+        return { notFound: true as const }
       }
 
       const mod = await tx.mod.findUnique({ where: { slug } })
@@ -48,7 +60,7 @@ export async function POST(
       }
 
       const existing = await tx.endorsement.findUnique({
-        where: { userId_modId: { userId: user.id, modId: mod.id } },
+        where: { userId_modId: { userId, modId: mod.id } },
       })
 
       if (existing) {
@@ -68,7 +80,7 @@ export async function POST(
         // Toggle on — create may fail with P2002 if a concurrent request
         // already created it. Let the transaction roll back in that case.
         await tx.endorsement.create({
-          data: { userId: user.id, modId: mod.id, value: 'up' },
+          data: { userId, modId: mod.id, value: 'up' },
         })
         const updated = await tx.mod.update({
           where: { id: mod.id },
@@ -88,6 +100,18 @@ export async function POST(
         { error: 'Mod not found' },
         { status: 404 }
       )
+    }
+
+    // فحص الوصول لـ milestone للإعجابات
+    if (result.endorsed && result.endorsements) {
+      const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+      if (mod) {
+        await checkEndorseMilestone({
+          modId: mod.id,
+          endorsements: result.endorsements,
+          actorId: neonUser.id,
+        })
+      }
     }
 
     return NextResponse.json<EndorseResponse>({
