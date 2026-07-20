@@ -8,6 +8,9 @@ export interface Author {
   bannerUrl: string | null
   bio: string | null
   role: string  // member | moderator | admin | owner
+  tier: number
+  specialRoles: string
+  qualityScore: number
   joinedAt: string
 }
 
