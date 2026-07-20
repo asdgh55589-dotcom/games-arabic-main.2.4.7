@@ -31,6 +31,11 @@ model User {
   bannedBy               String? // id الأدمن الذي أصدر الحظر
   bannedAt               DateTime? // متى تم الحظر
   tokenVersion           Int                     @default(0) // لإبطال الجلسات القديمة عند الحظر/تغيير الدور
+  tier                   Int                     @default(0) // 0=مبتدئ, 1=مترجم, 2=محترف, 3=خبير, 4=مشرف, 5=مدير
+  specialRoles           String                  @default("") // CSV: "official_translator,reviewer,team"
+  qualityScore           Float                   @default(0) // محسوب تلقائي
+  lastTierUpgradeAt      DateTime?
+  tierUpgradeCount       Int                     @default(0)
   lastLoginAt            DateTime?
   loginCount             Int                     @default(0)
   emailVerified          Boolean                 @default(false)
@@ -45,6 +50,7 @@ model User {
   teamMemberships        TeamMembership[]
   notifications          Notification[]
   notificationPreference NotificationPreference?
+  tierHistory            TierHistory[]
 }
 
 model Game {
@@ -328,6 +334,50 @@ model UserAction {
   @@index([userId])
   @@index([byUserId])
   @@index([createdAt])
+}
+
+model TierRule {
+  id                   String   @id @default(cuid())
+  tier                 Int      @unique
+  name                 String
+  nameEn               String
+  requiredMods         Int      @default(0)
+  requiredDownloads    Int      @default(0)
+  requiredRating       Float    @default(0)
+  requiredQualityScore Float    @default(0)
+  badge                String   @default("")
+  badgeColor           String   @default("#6b7280")
+  features             String   @default("[]")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model TierHistory {
+  id          String    @id @default(cuid())
+  userId      String
+  fromTier    Int
+  toTier      Int
+  reason      String    @default("auto") // auto | manual | admin
+  triggeredBy String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SpecialRole {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  nameEn      String
+  icon        String   @default("Star")
+  color       String   @default("#6b7280")
+  description String   @default("")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ===== الأخبار =====
