@@ -1,15 +1,25 @@
 import { createClient, RealtimeChannel } from '@supabase/supabase-js'
+import { createClient as createBrowserClient } from '@supabase/ssr'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getBrowserClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+function getServerClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export function subscribeToNotifications(
   userId: string,
   callback: (notification: any) => void
 ): RealtimeChannel {
-  return supabase
+  return getBrowserClient()
     .channel(`notifications:${userId}`)
     .on(
       'postgres_changes',
@@ -25,7 +35,7 @@ export function subscribeToNotifications(
 }
 
 export async function sendRealtimeNotification(userId: string) {
-  await supabase.channel(`notifications:${userId}`).send({
+  await getServerClient().channel(`notifications:${userId}`).send({
     type: 'broadcast',
     event: 'new_notification',
     payload: { userId }
