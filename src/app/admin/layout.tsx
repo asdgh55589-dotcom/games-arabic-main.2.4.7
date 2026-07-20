@@ -15,6 +15,8 @@ import {
   Crown,
   Shield,
   Star,
+  Award,
+  History,
   User as UserIcon,
   Megaphone,
   MessageSquare,
@@ -63,6 +65,14 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/endorsements', label: 'التأييدات', icon: ThumbsUp, adminOnly: true },
       { href: '/admin/users', label: 'المستخدمون', icon: Users, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
+    ],
+  },
+  {
+    label: 'نظام المستويات',
+    items: [
+      { href: '/admin/tiers', label: 'المستويات', icon: Award, adminOnly: true },
+      { href: '/admin/special-roles', label: 'الأدوار الخاصة', icon: Star, adminOnly: true },
+      { href: '/admin/tier-history', label: 'سجل الترقيات', icon: History, adminOnly: true },
     ],
   },
   {
