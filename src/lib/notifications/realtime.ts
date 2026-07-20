@@ -1,14 +1,33 @@
-import { Redis } from '@upstash/redis'
+import { createClient, RealtimeChannel } from '@supabase/supabase-js'
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-export async function sendRealtimeNotification(userId: string): Promise<void> {
-  await redis.publish(`notifications:${userId}`, {
+export function subscribeToNotifications(
+  userId: string,
+  callback: (notification: any) => void
+): RealtimeChannel {
+  return supabase
+    .channel(`notifications:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      },
+      (payload) => callback(payload.new)
+    )
+    .subscribe()
+}
+
+export async function sendRealtimeNotification(userId: string) {
+  await supabase.channel(`notifications:${userId}`).send({
+    type: 'broadcast',
     event: 'new_notification',
-    userId,
-    timestamp: Date.now(),
+    payload: { userId }
   })
 }
