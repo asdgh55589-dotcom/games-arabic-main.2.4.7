@@ -8,7 +8,7 @@ interface CreateNotificationParams {
   userId: string
   type: string
   title: string
-  message?: string
+  message: string
   data?: Record<string, unknown>
 }
 
@@ -20,8 +20,8 @@ export async function createNotification(params: CreateNotificationParams): Prom
         userId: params.userId,
         type: params.type,
         title: params.title,
-        message: params.message || null,
-        data: params.data || undefined,
+        message: params.message,
+        ...(params.data !== undefined && { data: params.data as never }),
       },
     })
   } catch (err) {
@@ -47,6 +47,7 @@ export async function notifyCommentReply(opts: {
     userId: opts.parentAuthorId,
     type: 'comment_reply',
     title: `ردّ ${replyUser?.username || 'مستخدم'} على تعليقك في ${opts.modName}`,
+    message: '',
     data: {
       actorId: opts.replyAuthorId,
       entityType: 'mod',
@@ -95,6 +96,7 @@ export async function notifyModFeatured(opts: {
     userId: opts.authorId,
     type: 'mod_featured',
     title: `تمت إضافة تعريبك "${opts.modName}" إلى التعريبات المميزة!`,
+    message: '',
     data: {
       entityType: 'mod',
       entityId: opts.modSlug,
@@ -114,7 +116,7 @@ export async function notifyAdminAction(opts: {
     userId: opts.userId,
     type: 'admin_action',
     title: opts.action,
-    message: opts.details,
+    message: opts.details || '',
     data: opts.actorId ? { actorId: opts.actorId, entityType: 'user', entityId: opts.userId } : undefined,
   })
 }
