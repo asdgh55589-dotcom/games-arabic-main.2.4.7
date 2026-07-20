@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 function extractYouTubeId(url: string): string | null {
   const patterns = [
@@ -16,6 +17,14 @@ function extractYouTubeId(url: string): string | null {
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'youtube:metadata' })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقيقة.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      )
+    }
+
     const { url } = await req.json()
 
     if (!url || typeof url !== 'string') {

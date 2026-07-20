@@ -55,19 +55,21 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    await db.game.update({ where: { id }, data: updateData })
+    await db.$transaction(async (tx) => {
+      await tx.game.update({ where: { id }, data: updateData })
 
-    // تحديث الأقسام: امسح القديمة وأنشئ الجديدة
-    if (Array.isArray(body.categories)) {
-      await db.category.deleteMany({ where: { gameId: id } })
-      const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-      for (const catName of body.categories) {
-        if (!catName) continue
-        await db.category.create({
-          data: { name: catName, slug: slugify(catName), gameId: id },
-        })
+      // تحديث الأقسام: امسح القديمة وأنشئ الجديدة
+      if (Array.isArray(body.categories)) {
+        await tx.category.deleteMany({ where: { gameId: id } })
+        const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        for (const catName of body.categories) {
+          if (!catName) continue
+          await tx.category.create({
+            data: { name: catName, slug: slugify(catName), gameId: id },
+          })
+        }
       }
-    }
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

@@ -101,135 +101,137 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       updateData.slug = slugify(body.slug)
     }
 
-    await db.mod.update({ where: { id }, data: updateData })
+    await db.$transaction(async (tx) => {
+      await tx.mod.update({ where: { id }, data: updateData })
 
-    // ===== تحديث الـ relations =====
-    const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      // ===== تحديث الـ relations =====
+      const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
-    // ملفات التحميل — امسح القديمة وأنشئ الجديدة
-    if (Array.isArray(body.files)) {
-      await db.modFile.deleteMany({ where: { modId: id } })
-      for (let i = 0; i < body.files.length; i++) {
-        const f = body.files[i]
-        if (!f.title) continue
-        await db.modFile.create({
-          data: {
-            modId: id,
-            title: f.title,
-            description: f.description || null,
-            alert: f.alert || null,
-            version: f.version || body.version || '1.0.0',
-            releaseDate: f.releaseDate ? new Date(f.releaseDate) : new Date(),
-            fileSize: f.fileSize || body.fileSize || 'MB 0',
-            fileFormat: f.fileFormat || body.fileFormat || 'zip',
-            order: f.order ?? i,
-            links: {
-              create: Array.isArray(f.links)
-                ? f.links.map((l: { url: string; label?: string }, j: number) => ({
-                    url: l.url,
-                    label: l.label || null,
-                    order: j,
-                  }))
-                : [],
-            },
-          },
-        })
-      }
-    }
-
-    // أعضاء الفريق
-    if (Array.isArray(body.teamMembers)) {
-      await db.modTeamMember.deleteMany({ where: { modId: id } })
-      for (let i = 0; i < body.teamMembers.length; i++) {
-        const m = body.teamMembers[i]
-        if (!m.name) continue
-        await db.modTeamMember.create({
-          data: {
-            modId: id,
-            name: m.name,
-            avatarUrl: m.avatarUrl || null,
-            role: m.role || 'مترجم',
-            contribution: m.contribution || null,
-            order: m.order ?? i,
-          },
-        })
-      }
-    }
-
-    // روابط التواصل
-    if (Array.isArray(body.contactLinks)) {
-      await db.modContactLink.deleteMany({ where: { modId: id } })
-      for (let i = 0; i < body.contactLinks.length; i++) {
-        const c = body.contactLinks[i]
-        if (!c.url) continue
-        await db.modContactLink.create({
-          data: {
-            modId: id,
-            type: c.type || 'website',
-            label: c.label || '',
-            url: c.url,
-            order: c.order ?? i,
-          },
-        })
-      }
-    }
-
-    // أقسام الفيديوهات
-    if (Array.isArray(body.videoGroups)) {
-      await db.modVideoGroup.deleteMany({ where: { modId: id } })
-      for (let i = 0; i < body.videoGroups.length; i++) {
-        const g = body.videoGroups[i]
-        if (!g.name) continue
-        const group = await db.modVideoGroup.create({
-          data: {
-            modId: id,
-            name: g.name,
-            order: g.order ?? i,
-          },
-        })
-        if (Array.isArray(g.videos)) {
-          for (let j = 0; j < g.videos.length; j++) {
-            const v = g.videos[j]
-            if (!v.title || !v.url) continue
-            await db.modVideo.create({
-              data: {
-                groupId: group.id,
-                title: v.title,
-                url: v.url,
-                thumbnail: v.thumbnail || null,
-                duration: v.duration || null,
-                description: v.description || null,
-                views: v.views || 0,
-                likes: v.likes || 0,
-                commentsCount: v.commentsCount || 0,
-                channel: v.channel || null,
-                order: v.order ?? j,
+      // ملفات التحميل — امسح القديمة وأنشئ الجديدة
+      if (Array.isArray(body.files)) {
+        await tx.modFile.deleteMany({ where: { modId: id } })
+        for (let i = 0; i < body.files.length; i++) {
+          const f = body.files[i]
+          if (!f.title) continue
+          await tx.modFile.create({
+            data: {
+              modId: id,
+              title: f.title,
+              description: f.description || null,
+              alert: f.alert || null,
+              version: f.version || body.version || '1.0.0',
+              releaseDate: f.releaseDate ? new Date(f.releaseDate) : new Date(),
+              fileSize: f.fileSize || body.fileSize || 'MB 0',
+              fileFormat: f.fileFormat || body.fileFormat || 'zip',
+              order: f.order ?? i,
+              links: {
+                create: Array.isArray(f.links)
+                  ? f.links.map((l: { url: string; label?: string }, j: number) => ({
+                      url: l.url,
+                      label: l.label || null,
+                      order: j,
+                    }))
+                  : [],
               },
-            })
+            },
+          })
+        }
+      }
+
+      // أعضاء الفريق
+      if (Array.isArray(body.teamMembers)) {
+        await tx.modTeamMember.deleteMany({ where: { modId: id } })
+        for (let i = 0; i < body.teamMembers.length; i++) {
+          const m = body.teamMembers[i]
+          if (!m.name) continue
+          await tx.modTeamMember.create({
+            data: {
+              modId: id,
+              name: m.name,
+              avatarUrl: m.avatarUrl || null,
+              role: m.role || 'مترجم',
+              contribution: m.contribution || null,
+              order: m.order ?? i,
+            },
+          })
+        }
+      }
+
+      // روابط التواصل
+      if (Array.isArray(body.contactLinks)) {
+        await tx.modContactLink.deleteMany({ where: { modId: id } })
+        for (let i = 0; i < body.contactLinks.length; i++) {
+          const c = body.contactLinks[i]
+          if (!c.url) continue
+          await tx.modContactLink.create({
+            data: {
+              modId: id,
+              type: c.type || 'website',
+              label: c.label || '',
+              url: c.url,
+              order: c.order ?? i,
+            },
+          })
+        }
+      }
+
+      // أقسام الفيديوهات
+      if (Array.isArray(body.videoGroups)) {
+        await tx.modVideoGroup.deleteMany({ where: { modId: id } })
+        for (let i = 0; i < body.videoGroups.length; i++) {
+          const g = body.videoGroups[i]
+          if (!g.name) continue
+          const group = await tx.modVideoGroup.create({
+            data: {
+              modId: id,
+              name: g.name,
+              order: g.order ?? i,
+            },
+          })
+          if (Array.isArray(g.videos)) {
+            for (let j = 0; j < g.videos.length; j++) {
+              const v = g.videos[j]
+              if (!v.title || !v.url) continue
+              await tx.modVideo.create({
+                data: {
+                  groupId: group.id,
+                  title: v.title,
+                  url: v.url,
+                  thumbnail: v.thumbnail || null,
+                  duration: v.duration || null,
+                  description: v.description || null,
+                  views: v.views || 0,
+                  likes: v.likes || 0,
+                  commentsCount: v.commentsCount || 0,
+                  channel: v.channel || null,
+                  order: v.order ?? j,
+                },
+              })
+            }
           }
         }
       }
-    }
 
-    // التبويبات المخصصة
-    if (Array.isArray(body.customTabs)) {
-      await db.modCustomTab.deleteMany({ where: { modId: id } })
-      for (let i = 0; i < body.customTabs.length; i++) {
-        const t = body.customTabs[i]
-        if (!t.name) continue
-        const tabSlug = t.slug || slugify(t.name)
-        await db.modCustomTab.create({
-          data: {
-            modId: id,
-            name: t.name,
-            slug: tabSlug,
-            content: t.content || '',
-            order: t.order ?? i,
-            visible: t.visible !== undefined ? Boolean(t.visible) : true,
-          },
-        })
+      // التبويبات المخصصة
+      if (Array.isArray(body.customTabs)) {
+        await tx.modCustomTab.deleteMany({ where: { modId: id } })
+        for (let i = 0; i < body.customTabs.length; i++) {
+          const t = body.customTabs[i]
+          if (!t.name) continue
+          const tabSlug = t.slug || slugify(t.name)
+          await tx.modCustomTab.create({
+            data: {
+              modId: id,
+              name: t.name,
+              slug: tabSlug,
+              content: t.content || '',
+              order: t.order ?? i,
+              visible: t.visible !== undefined ? Boolean(t.visible) : true,
+            },
+          })
+        }
       }
-    }
+    })
 
     // مزامنة عدّادات السلسلة/الفريق لو تغيّرت
     const newSeriesId = body.seriesId !== undefined ? (body.seriesId || null) : oldSeriesId

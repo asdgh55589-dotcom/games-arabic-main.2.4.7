@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 interface RouteParams {
@@ -15,6 +16,21 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقيقة.' },
         { status: 429, headers: rateLimitHeaders(rl) }
       )
+    }
+
+    // المصادقة مطلوبة
+    const supabase = await createClient()
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    if (!supabaseUser) {
+      return NextResponse.json({ error: 'يجب تسجيل الدخول' }, { status: 401 })
+    }
+
+    const neonUser = await db.user.findFirst({
+      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
+      select: { id: true },
+    })
+    if (!neonUser) {
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 401 })
     }
 
     const { id } = await params

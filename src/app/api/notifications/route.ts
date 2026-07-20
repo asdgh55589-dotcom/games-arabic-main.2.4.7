@@ -64,6 +64,21 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/notifications — إنشاء إشعار جديد
+// ملاحظة: الإشعارات يجب أن تُنشأ فقط من النظام (notification-helpers.ts)
+// هذا المسار محمي بمصادقة + whitelist للأنواع
+const ALLOWED_NOTIFICATION_TYPES = [
+  'comment_reply',
+  'mod_endorse',
+  'mod_endorse_milestone',
+  'mod_featured',
+  'tier_upgrade',
+  'special_role_assigned',
+  'special_role_removed',
+  'admin_action',
+  'mod_approved',
+  'mod_rejected',
+]
+
 export async function POST(req: NextRequest) {
   try {
     const neonUser = await requireUser()
@@ -77,6 +92,14 @@ export async function POST(req: NextRequest) {
     if (!type || !title || !message) {
       return NextResponse.json(
         { error: 'Missing required fields: type, title, message' },
+        { status: 400 },
+      )
+    }
+
+    // التحقق من أن النوع مسموح به
+    if (!ALLOWED_NOTIFICATION_TYPES.includes(type)) {
+      return NextResponse.json(
+        { error: 'نوع الإشعار غير صالح' },
         { status: 400 },
       )
     }

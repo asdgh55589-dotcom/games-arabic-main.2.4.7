@@ -64,6 +64,7 @@ export async function GET() {
       // كل المودات عندها نفس تاريخ التحديث.
       db.mod.findMany({
         orderBy: { updatedAt: 'desc' },
+        take: 50,
         include: modInclude,
       }),
       db.mod.findMany({
