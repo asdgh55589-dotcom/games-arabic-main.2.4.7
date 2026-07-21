@@ -270,9 +270,11 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* ===== Stats ===== */}
-        <div className="mt-8 -mx-8 px-8 lg:-mx-12 lg:px-12">
+      {/* ===== Stats (full width) ===== */}
+      <div className="px-4 lg:px-6">
+        <div className="mx-auto max-w-[1400px]">
           <ProfileStats
             stats={profile.stats}
             xp={profile.xp}
@@ -285,8 +287,10 @@ export function ProfilePage() {
             accent={accent}
           />
         </div>
+      </div>
 
-        {/* ===== Tabs ===== */}
+      {/* ===== Tabs ===== */}
+      <div className="mx-auto max-w-[1200px] px-4 lg:px-6">
         <Tabs defaultValue="about" className="mt-8">
           <TabsList className="w-full flex-row justify-start border-b border-[#333] bg-transparent p-0" style={{ direction: 'rtl' }}>
             <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">نبذة عني</TabsTrigger>
