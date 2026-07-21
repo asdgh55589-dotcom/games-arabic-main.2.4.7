@@ -49,7 +49,34 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    return NextResponse.json({ comments, mods })
+    // آخر تعديلات التعريبات
+    const modEdits = await db.mod.findMany({
+      where: { authorId: user.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        thumbnailUrl: true,
+        updatedAt: true,
+      },
+    })
+
+    // آخر التوصيات التي قدمها المستخدم
+    const endorsements = await db.endorsement.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        value: true,
+        createdAt: true,
+        mod: { select: { name: true, slug: true, thumbnailUrl: true } },
+      },
+    })
+
+    return NextResponse.json({ comments, mods, modEdits, endorsements })
   } catch (err) {
     console.error('[activity GET] failed:', err)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
