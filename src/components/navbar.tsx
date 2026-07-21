@@ -385,32 +385,32 @@ export function Navbar({ games }: NavbarProps) {
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem asChild>
                     <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      الملف الشخصي
+                      عرض الملف الشخصي
                     </Link>
                   </DropdownMenuItem>
                   {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
                     <DropdownMenuItem asChild>
                       <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        تعريباتي
+                        التعريبات المنشورة
                       </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
                     <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
                       <Activity className="h-4 w-4" />
-                      نشطاتي
+                      آخر النشاطات والتعليقات
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/?view=profile" className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
-                      إعدادات الحساب
+                      إدارة الحساب والإعدادات
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -423,7 +423,7 @@ export function Navbar({ games }: NavbarProps) {
                     }}
                   >
                     <LogOut className="h-4 w-4" />
-                    تسجيل الخروج
+                    تسجيل الخروج من الحساب
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
