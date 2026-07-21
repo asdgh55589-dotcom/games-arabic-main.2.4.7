@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 interface ProfileSettingsProps {
   profile: {
     username: string
+    role: string
     bio: string | null
     websiteUrl: string | null
     twitterUrl: string | null
@@ -188,6 +189,26 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
           </div>
         </div>
       </SettingsSection>
+
+      {/* Upgrade to Translator */}
+      {!['owner', 'admin', 'moderator'].includes(profile.role) && (
+        <SettingsSection title="ترقية إلى معرب" accent={accent}>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400">
+              قم بالترقية إلى معرب للحصول على ميزات إضافية مثل نسبة الإنجاز والشارات والتقييم.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full border-[#333] text-gray-300 hover:bg-[#222]"
+              onClick={() => {
+                toast({ title: 'قريباً', description: 'سيتم تفعيل هذه الميزة قريباً' })
+              }}
+            >
+              ترقية إلى معرب
+            </Button>
+          </div>
+        </SettingsSection>
+      )}
 
       {/* Save button */}
       <div className="flex justify-end">
