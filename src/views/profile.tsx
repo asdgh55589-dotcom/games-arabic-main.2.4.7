@@ -53,6 +53,9 @@ interface ProfileData {
     points: number
     progress: number
   }
+  isTranslator?: boolean
+  firstModDate?: string | null
+  rating?: number
 }
 
 interface ActivityData {
@@ -270,7 +273,17 @@ export function ProfilePage() {
 
         {/* ===== Stats ===== */}
         <div className="mt-8">
-          <ProfileStats stats={profile.stats} xp={profile.xp} accent={accent} />
+          <ProfileStats
+            stats={profile.stats}
+            xp={profile.xp}
+            isTranslator={profile.isTranslator}
+            translatorStats={{
+              badgesCount: badges.filter(b => b.earned).length,
+              firstModDate: profile.firstModDate || null,
+              rating: profile.rating || 0,
+            }}
+            accent={accent}
+          />
         </div>
 
         {/* ===== Tabs ===== */}
