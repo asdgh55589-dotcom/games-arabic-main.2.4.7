@@ -387,28 +387,28 @@ export function Navbar({ games }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
+                    <Link href={`/?view=profile&user=${currentUser.username}&tab=about`} className="flex items-center gap-2 flex-row-reverse">
                       <User className="h-4 w-4" />
                       الملف الشخصي
                     </Link>
                   </DropdownMenuItem>
                   {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
                     <DropdownMenuItem asChild>
-                      <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
+                      <Link href={`/?view=profile&user=${currentUser.username}&tab=mods`} className="flex items-center gap-2 flex-row-reverse">
                         <FileText className="h-4 w-4" />
                         تعريباتي
                       </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
+                    <Link href={`/?view=profile&user=${currentUser.username}&tab=activity`} className="flex items-center gap-2 flex-row-reverse">
                       <Activity className="h-4 w-4" />
                       النشاطات
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/?view=profile" className="flex items-center gap-2 flex-row-reverse">
+                    <Link href={`/?view=profile&user=${currentUser.username}&tab=settings`} className="flex items-center gap-2 flex-row-reverse">
                       <Settings className="h-4 w-4" />
                       إدارة الحساب والإعدادات
                     </Link>

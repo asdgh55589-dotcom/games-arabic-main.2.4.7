@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Shield, Bell, Eye, Link as LinkIcon, Palette, Lock, User as UserIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface ProfileSettingsProps {
   profile: {
@@ -33,6 +34,7 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
 
   // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true)
+  const [pushNotifications, setPushNotifications] = useState(true)
   const [commentNotifications, setCommentNotifications] = useState(true)
   const [likeNotifications, setLikeNotifications] = useState(false)
 
@@ -63,11 +65,26 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
 
   return (
     <div className="space-y-4">
-      {/* Personal Info */}
-      <SettingsSection title="المعلومات الشخصية" accent={accent}>
-        <div className="space-y-3">
+      {/* Basic Info */}
+      <SettingsSection title="المعلومات الأساسية" icon={<UserIcon className="h-4 w-4" />} accent={accent}>
+        <div className="space-y-4">
+          {/* Avatar */}
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="text-2xl font-bold" style={{ backgroundColor: accent + '33', color: accent }}>
+                {profile.username[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium text-white">{profile.username}</p>
+              <p className="text-xs text-gray-500">تاريخ الانضمام: 2021</p>
+            </div>
+          </div>
+
+          {/* Bio */}
           <div>
-            <label className="mb-1 block text-xs text-gray-400">نبذة عني</label>
+            <label className="mb-1 block text-xs text-gray-400">اللقب أو الشعار الشخصي (Tagline/Bio)</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -80,7 +97,7 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
       </SettingsSection>
 
       {/* Social Links */}
-      <SettingsSection title="الروابط الاجتماعية" accent={accent}>
+      <SettingsSection title="الروابط الاجتماعية" icon={<LinkIcon className="h-4 w-4" />} accent={accent}>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs text-gray-400">الموقع الإلكتروني</label>
@@ -121,14 +138,42 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
         </div>
       </SettingsSection>
 
+      {/* Password */}
+      <SettingsSection title="تغيير كلمة المرور" icon={<Lock className="h-4 w-4" />} accent={accent}>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">كلمة المرور الحالية</label>
+            <Input type="password" className="border-[#333] bg-[#222] text-white placeholder-gray-500" placeholder="••••••••" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">كلمة المرور الجديدة</label>
+            <Input type="password" className="border-[#333] bg-[#222] text-white placeholder-gray-500" placeholder="••••••••" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-400">تأكيد كلمة المرور</label>
+            <Input type="password" className="border-[#333] bg-[#222] text-white placeholder-gray-500" placeholder="••••••••" />
+          </div>
+          <Button variant="outline" size="sm" className="border-[#333] text-gray-300 hover:bg-[#222]">
+            تحديث كلمة المرور
+          </Button>
+        </div>
+      </SettingsSection>
+
       {/* Notification Settings */}
-      <SettingsSection title="إعدادات الإشعارات" accent={accent}>
+      <SettingsSection title="إعدادات الإشعارات" icon={<Bell className="h-4 w-4" />} accent={accent}>
         <div className="space-y-3">
           <ToggleSetting
-            label="إشعارات البريد"
-            description="استلام إشعارات عبر البريد الإلكتروني"
+            label="إشعارات البريد الإلكتروني"
+            description="استلام إشعارات عبر البريد"
             checked={emailNotifications}
             onChange={setEmailNotifications}
+            accent={accent}
+          />
+          <ToggleSetting
+            label="إشعارات الدفع (Push)"
+            description="استلام إشعارات فورية على الجهاز"
+            checked={pushNotifications}
+            onChange={setPushNotifications}
             accent={accent}
           />
           <ToggleSetting
@@ -149,7 +194,7 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
       </SettingsSection>
 
       {/* Privacy Settings */}
-      <SettingsSection title="الخصوصية" accent={accent}>
+      <SettingsSection title="الخصوصية" icon={<Eye className="h-4 w-4" />} accent={accent}>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs text-gray-400">من يرى ملفك الشخصي</label>
@@ -173,7 +218,7 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
       </SettingsSection>
 
       {/* Appearance */}
-      <SettingsSection title="تخصيص المظهر" accent={accent}>
+      <SettingsSection title="تخصيص المظهر" icon={<Palette className="h-4 w-4" />} accent={accent}>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs text-gray-400">لون الملف الشخصي</label>
@@ -186,6 +231,30 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
               />
               <span className="text-sm text-gray-400">{accentColor}</span>
             </div>
+          </div>
+        </div>
+      </SettingsSection>
+
+      {/* External Accounts */}
+      <SettingsSection title="ربط/فصل الحسابات الخارجية" icon={<Shield className="h-4 w-4" />} accent={accent}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-[#333] bg-[#222] p-3">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded bg-[#1877f2] flex items-center justify-center text-xs font-bold text-white">f</div>
+              <span className="text-sm text-white">Facebook</span>
+            </div>
+            <Button variant="outline" size="sm" className="border-[#333] text-gray-300 hover:bg-[#222]">
+              ربط
+            </Button>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-[#333] bg-[#222] p-3">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded bg-[#ea4335] flex items-center justify-center text-xs font-bold text-white">G</div>
+              <span className="text-sm text-white">Google</span>
+            </div>
+            <Button variant="outline" size="sm" className="border-[#333] text-gray-300 hover:bg-[#222]">
+              ربط
+            </Button>
           </div>
         </div>
       </SettingsSection>
@@ -225,7 +294,7 @@ export function ProfileSettings({ profile, accent, onSave }: ProfileSettingsProp
   )
 }
 
-function SettingsSection({ title, accent, children }: { title: string; accent: string; children: React.ReactNode }) {
+function SettingsSection({ title, icon, accent, children }: { title: string; icon?: React.ReactNode; accent: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true)
 
   return (
@@ -234,7 +303,10 @@ function SettingsSection({ title, accent, children }: { title: string; accent: s
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between p-4 text-right"
       >
-        <span className="text-sm font-bold text-white">{title}</span>
+        <div className="flex items-center gap-2">
+          {icon && <span style={{ color: accent }}>{icon}</span>}
+          <span className="text-sm font-bold text-white">{title}</span>
+        </div>
         {open ? (
           <ChevronUp className="h-4 w-4 text-gray-400" />
         ) : (

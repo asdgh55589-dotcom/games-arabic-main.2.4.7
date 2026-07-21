@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Download, ThumbsUp, MessageCircle, Eye } from 'lucide-react'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 const FILTERS = [
@@ -39,8 +40,43 @@ export function ProfileModsFilter({ mods, accent, loading }: ProfileModsFilterPr
     }
   })()
 
+  const totalDownloads = mods.reduce((s, m) => s + m.downloads, 0)
+  const totalEndorsements = mods.reduce((s, m) => s + m.endorsements, 0)
+  const totalViews = mods.reduce((s, m) => s + (m as any).views || 0, 0)
+
   return (
     <div className="space-y-4">
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg bg-[#1a1a1a] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-green-500" />
+              <span className="text-xs text-gray-400">إجمالي التحميلات</span>
+            </div>
+            <span className="text-sm font-bold text-white">{formatNumber(totalDownloads)}</span>
+          </div>
+        </div>
+        <div className="rounded-lg bg-[#1a1a1a] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ThumbsUp className="h-4 w-4 text-yellow-500" />
+              <span className="text-xs text-gray-400">إجمالي التأييدات</span>
+            </div>
+            <span className="text-sm font-bold text-white">{formatNumber(totalEndorsements)}</span>
+          </div>
+        </div>
+        <div className="rounded-lg bg-[#1a1a1a] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-blue-500" />
+              <span className="text-xs text-gray-400">إجمالي المشاهدات</span>
+            </div>
+            <span className="text-sm font-bold text-white">{formatNumber(totalViews)}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (

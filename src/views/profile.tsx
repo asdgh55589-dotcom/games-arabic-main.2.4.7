@@ -83,6 +83,7 @@ const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; classNa
 export function ProfilePage() {
   const searchParams = useSearchParams()
   const username = searchParams.get('user') || 'Momen Hani'
+  const defaultTab = searchParams.get('tab') || 'about'
   const { toast } = useToast()
 
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -296,7 +297,7 @@ export function ProfilePage() {
 
       {/* ===== Tabs ===== */}
       <div className="mx-auto max-w-[1200px] px-4 lg:px-6">
-        <Tabs defaultValue="about" className="mt-8">
+        <Tabs defaultValue={defaultTab} className="mt-8">
           <TabsList className="w-full flex-row justify-start border-b border-[#333] bg-transparent p-0" style={{ direction: 'rtl' }}>
             <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">نبذة عني</TabsTrigger>
             <TabsTrigger value="badges" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الشارات</TabsTrigger>
