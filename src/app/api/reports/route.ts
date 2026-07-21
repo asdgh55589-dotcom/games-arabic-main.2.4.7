@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { validateReport } from '@/lib/reports/validation'
+import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
+import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { REPORT_REASONS } from '@/lib/reports/constants'
 import { handleAdminNotification } from '@/lib/notifications'
 
@@ -62,6 +64,16 @@ export async function POST(req: NextRequest) {
 
     await handleAdminNotification('report', {
       reason: REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.label || reason,
+    })
+
+    // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
+    analyzeReportFraud(report.id).catch(err => {
+      console.error('[reports POST] fraud analysis failed:', err)
+    })
+
+    // Phase 2: Update reporter trust score
+    recalculateTrustScore(neonUser.id).catch(err => {
+      console.error('[reports POST] trust score update failed:', err)
     })
 
     return NextResponse.json({ report }, { status: 201 })
