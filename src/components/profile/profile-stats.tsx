@@ -1,7 +1,7 @@
 'use client'
 
-import { Package, Download, ThumbsUp, Eye, Users, UserPlus, Star } from 'lucide-react'
-import { formatNumber } from '@/lib/format'
+import { Package, Download, ThumbsUp, Eye, Users, UserPlus, Star, Award, Calendar, BarChart3 } from 'lucide-react'
+import { formatNumber, formatDate } from '@/lib/format'
 
 interface ProfileStatsProps {
   stats: {
@@ -18,58 +18,78 @@ interface ProfileStatsProps {
     points: number
     progress: number
   }
+  isTranslator?: boolean
+  translatorStats?: {
+    badgesCount: number
+    firstModDate: string | null
+    rating: number
+  }
   accent: string
 }
 
-export function ProfileStats({ stats, xp, accent }: ProfileStatsProps) {
+export function ProfileStats({ stats, xp, isTranslator, translatorStats, accent }: ProfileStatsProps) {
   return (
-    <div className="space-y-3">
-      {/* Row 1: Core stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon={<Package className="h-5 w-5" />} label="التعريبات" value={formatNumber(stats.mods)} accent={accent} />
-        <StatCard icon={<Download className="h-5 w-5" />} label="التحميلات" value={formatNumber(stats.totalDownloads)} accent={accent} />
-        <StatCard icon={<ThumbsUp className="h-5 w-5" />} label="التأييدات" value={formatNumber(stats.totalEndorsements)} accent={accent} />
-        <StatCard icon={<Eye className="h-5 w-5" />} label="المشاهدات" value={formatNumber(stats.totalViews)} accent={accent} />
-      </div>
-      {/* Row 2: Social + XP */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon={<Users className="h-5 w-5" />} label="المتابعين" value={formatNumber(stats.followersCount)} accent={accent} />
-        <StatCard icon={<UserPlus className="h-5 w-5" />} label="المتابَعين" value={formatNumber(stats.followingCount)} accent={accent} />
-        {xp && (
-          <div className="rounded-lg bg-[#1a1a1a] p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Star className="h-5 w-5" style={{ color: accent }} />
-              <span className="text-xs text-gray-400">نسبة الإنجاز</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{xp.progress}%</div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#222]">
-              <div className="h-full rounded-full" style={{ width: `${xp.progress}%`, backgroundColor: accent }} />
-            </div>
+    <div className="rounded-lg bg-[#1a1a1a]">
+      <HorizontalStatCard icon={<Package className="h-4 w-4" />} label="التعريبات" value={formatNumber(stats.mods)} accent={accent} border />
+      <HorizontalStatCard icon={<Download className="h-4 w-4" />} label="إجمالي التحميلات" value={formatNumber(stats.totalDownloads)} accent={accent} border />
+      <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="التأييدات" value={formatNumber(stats.totalEndorsements)} accent={accent} border />
+      <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="المشاهدات" value={formatNumber(stats.totalViews)} accent={accent} border />
+      <HorizontalStatCard icon={<Users className="h-4 w-4" />} label="المتابعين" value={formatNumber(stats.followersCount)} accent={accent} border />
+      <HorizontalStatCard icon={<UserPlus className="h-4 w-4" />} label="المتابَعين" value={formatNumber(stats.followingCount)} accent={accent} />
+
+      {isTranslator && xp && (
+        <>
+          <div className="mx-4 border-t border-[#333]" />
+          <div className="px-4 pt-3 pb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">إحصائيات المعرب</span>
           </div>
-        )}
-        {xp && (
-          <div className="rounded-lg bg-[#1a1a1a] p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Star className="h-5 w-5" style={{ color: accent }} />
-              <span className="text-xs text-gray-400">المستوى</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{xp.level}</div>
-            <div className="text-xs text-gray-500">{xp.name}</div>
-          </div>
-        )}
-      </div>
+          <HorizontalStatCard
+            icon={<Star className="h-4 w-4" />}
+            label="نسبة الإنجاز"
+            value={`${xp.progress}%`}
+            accent={accent}
+            border
+            extra={
+              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#333]">
+                <div className="h-full rounded-full" style={{ width: `${xp.progress}%`, backgroundColor: accent }} />
+              </div>
+            }
+          />
+          <HorizontalStatCard icon={<BarChart3 className="h-4 w-4" />} label="المستوى" value={`${xp.name} (${xp.level})`} accent={accent} border />
+          <HorizontalStatCard icon={<Award className="h-4 w-4" />} label="الشارات المكتسبة" value={formatNumber(translatorStats?.badgesCount || 0)} accent={accent} border />
+          <HorizontalStatCard icon={<Calendar className="h-4 w-4" />} label="تاريخ أول تعريب" value={translatorStats?.firstModDate ? formatDate(translatorStats.firstModDate) : '—'} accent={accent} border />
+          <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="التقييم" value={`${translatorStats?.rating || 0}%`} accent={accent} />
+        </>
+      )}
     </div>
   )
 }
 
-function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent: string }) {
+function HorizontalStatCard({
+  icon,
+  label,
+  value,
+  accent,
+  border,
+  extra,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  accent: string
+  border?: boolean
+  extra?: React.ReactNode
+}) {
   return (
-    <div className="rounded-lg bg-[#1a1a1a] p-4 text-center">
-      <div className="mb-2 flex items-center justify-center gap-2">
-        <span style={{ color: accent }}>{icon}</span>
-        <span className="text-xs text-gray-400">{label}</span>
+    <div className={`px-4 py-3 ${border ? 'border-b border-[#333]' : ''}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span style={{ color: accent }}>{icon}</span>
+          <span className="text-sm text-gray-300">{label}</span>
+        </div>
+        <span className="text-sm font-bold text-white">{value}</span>
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      {extra}
     </div>
   )
 }
