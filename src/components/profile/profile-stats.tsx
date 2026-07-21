@@ -29,14 +29,14 @@ interface ProfileStatsProps {
 
 export function ProfileStats({ stats, xp, isTranslator, translatorStats, accent }: ProfileStatsProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Regular stats — 3 per row */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         <HorizontalStatCard icon={<Package className="h-4 w-4" />} label="التعريبات" value={formatNumber(stats.mods)} accent={accent} />
         <HorizontalStatCard icon={<Download className="h-4 w-4" />} label="التحميلات" value={formatNumber(stats.totalDownloads)} accent={accent} />
         <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="التأييدات" value={formatNumber(stats.totalEndorsements)} accent={accent} />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="المشاهدات" value={formatNumber(stats.totalViews)} accent={accent} />
         <HorizontalStatCard icon={<Users className="h-4 w-4" />} label="المتابعين" value={formatNumber(stats.followersCount)} accent={accent} />
         <HorizontalStatCard icon={<UserPlus className="h-4 w-4" />} label="المتابَعين" value={formatNumber(stats.followingCount)} accent={accent} />
@@ -48,7 +48,7 @@ export function ProfileStats({ stats, xp, isTranslator, translatorStats, accent 
           <div className="pt-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">إحصائيات المعرب</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             <HorizontalStatCard
               icon={<Star className="h-4 w-4" />}
               label="نسبة الإنجاز"
@@ -63,7 +63,7 @@ export function ProfileStats({ stats, xp, isTranslator, translatorStats, accent 
             <HorizontalStatCard icon={<BarChart3 className="h-4 w-4" />} label="المستوى" value={`${xp.name} (${xp.level})`} accent={accent} />
             <HorizontalStatCard icon={<Award className="h-4 w-4" />} label="الشارات" value={formatNumber(translatorStats?.badgesCount || 0)} accent={accent} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             <HorizontalStatCard icon={<Calendar className="h-4 w-4" />} label="أول تعريب" value={translatorStats?.firstModDate ? formatDate(translatorStats.firstModDate) : '—'} accent={accent} />
             <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="التقييم" value={`${translatorStats?.rating || 0}%`} accent={accent} />
           </div>
