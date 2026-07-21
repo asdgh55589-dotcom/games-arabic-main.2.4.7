@@ -24,6 +24,7 @@ import {
   ScrollText,
   Newspaper,
   BarChart3,
+  Flag,
 } from 'lucide-react'
 import type { SessionUser } from '@/lib/auth'
 
@@ -63,6 +64,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/comments', label: 'التعليقات', icon: MessageSquare },
       { href: '/admin/endorsements', label: 'التأييدات', icon: ThumbsUp, adminOnly: true },
+      { href: '/admin/reports', label: 'البلاغات', icon: Flag, adminOnly: true },
       { href: '/admin/users', label: 'المستخدمون', icon: Users, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
