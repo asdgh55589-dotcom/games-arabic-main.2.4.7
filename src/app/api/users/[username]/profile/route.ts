@@ -55,6 +55,42 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const totalEndorsements = mods.reduce((s, m) => s + m.endorsements, 0)
     const totalViews = mods.reduce((s, m) => s + m.views, 0)
 
+    // عدد المتابعين والمتابَعين
+    const [followersCount, followingCount] = await Promise.all([
+      db.follow.count({ where: { followingId: user.id } }),
+      db.follow.count({ where: { followerId: user.id } }),
+    ])
+
+    // حالة الاتصال
+    const now = new Date()
+    const onlineStatus =
+      user.lastLoginAt && now.getTime() - user.lastLoginAt.getTime() < 5 * 60 * 1000
+        ? 'online'
+        : 'offline'
+
+    // نظام XP
+    const xpPoints = totalDownloads + totalEndorsements
+    const xpLevels = [
+      { name: 'مبتدئ', nameEn: 'Beginner', max: 100 },
+      { name: 'متعلم', nameEn: 'Learner', max: 300 },
+      { name: 'ماهر', nameEn: 'Skilled', max: 600 },
+      { name: 'محترف', nameEn: 'Professional', max: 1000 },
+      { name: 'خبير', nameEn: 'Expert', max: Infinity },
+    ]
+    const levelIndex = xpLevels.findIndex((l) => xpPoints <= l.max)
+    const xpLevel = {
+      level: levelIndex + 1,
+      name: xpLevels[levelIndex].name,
+      nameEn: xpLevels[levelIndex].nameEn,
+      points: xpPoints,
+    }
+    const prevMax = levelIndex > 0 ? xpLevels[levelIndex - 1].max : 0
+    const currMax = xpLevels[levelIndex].max
+    const xpProgress =
+      currMax === Infinity
+        ? 100
+        : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
+
     return NextResponse.json({
       profile: {
         ...user,
@@ -63,7 +99,11 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
           totalDownloads,
           totalEndorsements,
           totalViews,
+          followersCount,
+          followingCount,
         },
+        onlineStatus,
+        xp: { ...xpLevel, progress: xpProgress },
       },
     })
   } catch (err) {
