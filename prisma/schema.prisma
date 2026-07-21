@@ -54,6 +54,7 @@ model User {
   reportsFiled           Report[]        @relation("ReportsFiled")
   reportsTarget          Report[]        @relation("ReportsTarget")
   reportsAssigned        Report[]        @relation("ReportsAssigned")
+  trustScore              UserTrustScore?
 }
 
 model Game {
@@ -564,6 +565,25 @@ model IpBan {
   @@index([expiresAt])
 }
 
+// ===== نقاط الثقة =====
+model UserTrustScore {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score                    Int      @default(50)  // 0-100
+  reportAccuracy           Float    @default(0)   // confirmed / totalReports
+  totalReports             Int      @default(0)   // reports filed
+  confirmedReports         Int      @default(0)   // reports confirmed
+  rejectedReports          Int      @default(0)   // reports rejected
+  reportsReceived          Int      @default(0)   // reports received against user
+  reportsReceivedConfirmed Int      @default(0)   // reports received that were confirmed
+  updatedAt                DateTime @updatedAt
+  createdAt                DateTime @default(now())
+
+  @@index([userId])
+  @@index([score])
+}
+
 // ===== البلاغات =====
 model Report {
   id              String         @id @default(cuid())
@@ -592,7 +612,12 @@ model Report {
   actionTaken     String?
   actionAt        DateTime?
 
+  fraudScore          Float    @default(0)   // 0.0 - 1.0
+  repeatOffenseLevel  Int      @default(0)   // 0-3
+
   ipAddress       String?
+
+  fraudSignals      ReportFraudSignal[]
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -606,4 +631,18 @@ model Report {
   @@index([reason])
   @@index([createdAt])
   @@index([status, priority])
+}
+
+// ===== إشارات البلاغات المزيفة =====
+model ReportFraudSignal {
+  id          String   @id @default(cuid())
+  reportId    String
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  signalType  String   // duplicate_pattern | timing_anomaly | target_harassment | low_trust_reporter | same_target_swarm
+  score       Float    // 0.0 - 1.0
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([reportId])
+  @@index([signalType])
 }
