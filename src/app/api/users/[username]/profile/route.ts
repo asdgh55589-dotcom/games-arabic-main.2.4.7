@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeUrl } from '@/lib/sanitize'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -99,9 +100,15 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const updateData: Record<string, string | null> = {}
 
     const allowedFields = ['bio', 'websiteUrl', 'twitterUrl', 'githubUrl', 'discordUrl', 'accentColor']
+    const urlFields = ['websiteUrl', 'twitterUrl', 'githubUrl', 'discordUrl']
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        updateData[field] = body[field] || null
+        const value = body[field] || null
+        if (urlFields.includes(field) && value) {
+          updateData[field] = sanitizeUrl(value) || null
+        } else {
+          updateData[field] = value
+        }
       }
     }
 

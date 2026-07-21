@@ -24,25 +24,19 @@ export function sanitizeUrl(url: string): string | null {
 /**
  * Sanitize HTML content for safe rendering via dangerouslySetInnerHTML.
  *
- * Strips script tags, event handlers (on*), and dangerous attributes.
- * Allows safe HTML elements and attributes (headings, links, images, etc).
+ * Uses DOMPurify for robust XSS protection — regex-based sanitization
+ * is inherently bypassable.
  */
+import DOMPurify from 'isomorphic-dompurify'
+
 export function sanitizeHTML(html: string): string {
   if (!html) return ''
-  let result = html
-
-  // Remove script tags (with content)
-  result = result.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-
-  // Remove iframe, object, embed, form, input, textarea, select, button tags
-  result = result.replace(/<\/?(?:iframe|object|embed|form|input|textarea|select|button)\b[^>]*>/gi, '')
-
-  // Remove on* event handlers from all tags
-  result = result.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-
-  // Remove javascript: and data: in href/src attributes
-  result = result.replace(/((?:href|src|action)\s*=\s*)["']?\s*javascript\s*:/gi, '$1"')
-  result = result.replace(/((?:href|src|action)\s*=\s*)["']?\s*data\s*:/gi, '$1"')
-
-  return result
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'ul', 'ol', 'li',
+      'a', 'img', 'strong', 'em', 'b', 'i', 'u', 's', 'code', 'pre', 'blockquote',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span', 'sup', 'sub'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height', 'class', 'style',
+      'target', 'rel', 'colspan', 'rowspan', 'align', 'valign'],
+    ALLOW_DATA_ATTR: false,
+  })
 }
