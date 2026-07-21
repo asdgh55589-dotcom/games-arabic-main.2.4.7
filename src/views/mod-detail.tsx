@@ -47,6 +47,7 @@ import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModVideos } from '@/components/mod-videos'
 import { ModComments } from '@/components/mod-comments'
+import { ReportButton } from '@/components/report-button'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { formatNumber, formatDate, formatArabicDate, timeAgo, parseGalleryUrls, parseTags } from '@/lib/format'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
@@ -391,6 +392,9 @@ export function ModDetailPage() {
                       {endorsed ? 'تم التأييد' : 'أعجبني'}
                       <span className="text-xs opacity-70">({formatNumber(shownEndorsements)})</span>
                     </Button>
+                  </div>
+                  <div className="mt-2">
+                    <ReportButton targetType="mod" targetId={mod.id} />
                   </div>
                 </div>
 

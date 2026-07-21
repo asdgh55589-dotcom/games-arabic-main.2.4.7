@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { formatNumber, timeAgo } from '@/lib/format'
+import { ReportButton } from '@/components/report-button'
 import { useToast } from '@/hooks/use-toast'
 import type { ModCommentType } from '@/lib/types'
 
@@ -454,6 +455,7 @@ function CommentItem({
                 رد
               </button>
             )}
+            <ReportButton targetType="comment" targetId={comment.id} />
           </div>
 
           {/* صندوق الرد */}
