@@ -51,6 +51,9 @@ model User {
   notifications          Notification[]
   notificationPreference NotificationPreference?
   tierHistory            TierHistory[]
+  reportsFiled           Report[]        @relation("ReportsFiled")
+  reportsTarget          Report[]        @relation("ReportsTarget")
+  reportsAssigned        Report[]        @relation("ReportsAssigned")
 }
 
 model Game {
@@ -136,6 +139,19 @@ model Mod {
   contactLinks       ModContactLink[]
   customTabs         ModCustomTab[]
   commentsRecords    ModComment[]
+  reports            Report[]
+
+  @@index([authorId])
+  @@index([gameId])
+  @@index([categoryId])
+  @@index([seriesId])
+  @@index([teamId])
+  @@index([isFeatured])
+  @@index([isTrending])
+  @@index([isLatest])
+  @@index([releaseDate])
+  @@index([updatedAt])
+  @@index([translationType])
 }
 
 model Endorsement {
@@ -166,6 +182,8 @@ model ModFile {
   order       Int           @default(0)
   links       ModFileLink[]
   createdAt   DateTime      @default(now())
+
+  @@index([modId])
 }
 
 // ===== روابط كل ملف تحميل =====
@@ -188,6 +206,8 @@ model ModVideoGroup {
   order     Int        @default(0)
   videos    ModVideo[]
   createdAt DateTime   @default(now())
+
+  @@index([modId])
 }
 
 // ===== الفيديوهات =====
@@ -206,6 +226,8 @@ model ModVideo {
   channel       String?
   order         Int           @default(0)
   createdAt     DateTime      @default(now())
+
+  @@index([groupId])
 }
 
 // ===== أعضاء فريق التعريب =====
@@ -417,6 +439,7 @@ model ModComment {
   parentId    String?
   parent      ModComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies     ModComment[] @relation("CommentReplies")
+  reports     Report[]
   text        String
   likes       Int          @default(0)
   dislikes    Int          @default(0)
@@ -539,4 +562,48 @@ model IpBan {
 
   @@index([ipAddress])
   @@index([expiresAt])
+}
+
+// ===== البلاغات =====
+model Report {
+  id              String         @id @default(cuid())
+  reporterId      String?
+  reporter        User?          @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  targetType      String         // mod | comment | user
+  targetModId     String?
+  targetMod       Mod?           @relation(fields: [targetModId], references: [id], onDelete: Cascade)
+  targetCommentId String?
+  targetComment   ModComment?    @relation(fields: [targetCommentId], references: [id], onDelete: Cascade)
+  targetUserId    String?
+  targetUser      User?          @relation("ReportsTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  reason          String
+  priority        String         @default("medium")
+  description     String?
+  evidenceUrls    String?
+
+  status          String         @default("new")
+  assignedToId    String?
+  assignedTo      User?          @relation("ReportsAssigned", fields: [assignedToId], references: [id], onDelete: SetNull)
+  resolution      String?
+  resolvedAt      DateTime?
+
+  actionTaken     String?
+  actionAt        DateTime?
+
+  ipAddress       String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([reporterId])
+  @@index([targetModId])
+  @@index([targetCommentId])
+  @@index([targetUserId])
+  @@index([status])
+  @@index([priority])
+  @@index([reason])
+  @@index([createdAt])
+  @@index([status, priority])
 }
