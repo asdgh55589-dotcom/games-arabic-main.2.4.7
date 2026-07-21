@@ -80,6 +80,7 @@ interface CustomTab {
 interface Game {
   id: string
   name: string
+  slug: string
   platform: string
   categories: { id: string; name: string; slug: string }[]
 }

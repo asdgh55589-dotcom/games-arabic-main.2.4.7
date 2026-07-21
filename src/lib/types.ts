@@ -3,7 +3,7 @@
 export interface Author {
   id: string
   username: string
-  email: string
+  email?: string
   avatarUrl: string | null
   bannerUrl: string | null
   bio: string | null
@@ -11,7 +11,7 @@ export interface Author {
   tier: number
   specialRoles: string
   qualityScore: number
-  joinedAt: string
+  joinedAt: string | Date
 }
 
 export interface GameSummary {
@@ -29,8 +29,8 @@ export interface GameSummary {
   totalDownloads: number
   totalEndorsements: number
   featured: boolean
-  createdAt: string
-  updatedAt: string
+  createdAt: string | Date
+  updatedAt: string | Date
 }
 
 export interface GameDetail extends GameSummary {
@@ -68,9 +68,9 @@ export interface ModSummary {
   isFeatured: boolean
   isTrending: boolean
   isLatest: boolean
-  releaseDate: string
-  updatedAt: string
-  createdAt: string
+  releaseDate: string | Date
+  updatedAt: string | Date
+  createdAt: string | Date
   author: Author
   game: { name: string; slug: string; platform: string }
   category: { name: string; slug: string } | null
@@ -91,8 +91,8 @@ export interface ModFile {
   description: string | null
   alert: string | null
   version: string
-  releaseDate: string
-  updatedAt: string
+  releaseDate: string | Date
+  updatedAt: string | Date
   fileSize: string
   fileFormat: string
   order: number
@@ -163,8 +163,8 @@ export interface ModCommentType {
   dislikes: number
   isPinned: boolean
   isEdited: boolean
-  createdAt: string
-  updatedAt: string
+  createdAt: string | Date
+  updatedAt: string | Date
   user?: { id: string; username: string; avatarUrl: string | null } | null
   replies?: ModCommentType[]
 }
@@ -256,7 +256,7 @@ export interface Notification {
   message: string | null
   link: string | null
   readAt: string | null
-  createdAt: string
+  createdAt: string | Date
   actor: NotificationActor | null
 }
 

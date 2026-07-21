@@ -92,7 +92,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'نص التعليق مطلوب' }, { status: 400 })
     }
 
-    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true } })
     if (!mod) {
       return NextResponse.json({ error: 'Mod not found' }, { status: 404 })
     }

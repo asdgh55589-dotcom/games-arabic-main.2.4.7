@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { serialize } from '@/lib/api-utils'
 import type { ModDetail, ApiError } from '@/lib/types'
 
 // GET /api/mods/[slug] - single mod by slug
@@ -64,5 +65,5 @@ export async function GET(
       })
   }
 
-  return NextResponse.json<{ mod: ModDetail }>({ mod })
+  return NextResponse.json<{ mod: ModDetail }>({ mod: serialize(mod) })
 }

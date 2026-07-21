@@ -14,6 +14,7 @@
  *   - member    → مش لوحة تحكم
  */
 
+import { NextRequest } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
@@ -337,7 +338,7 @@ export class AuthError extends Error {
 // ===== Middleware helpers (Edge runtime compatible) =====
 
 /** قراءة الـ role من Request cookies (للـ middleware — Edge runtime) */
-export async function getRoleFromRequestCookies(req: Request): Promise<string | null> {
+export async function getRoleFromRequestCookies(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {

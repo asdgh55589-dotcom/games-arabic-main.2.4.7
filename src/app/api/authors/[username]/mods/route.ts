@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { serialize } from '@/lib/api-utils'
 import type { AuthorModsResponse, ApiError } from '@/lib/types'
 
 // GET /api/authors/[username]/mods - list mods by author username
@@ -14,6 +15,7 @@ export async function GET(
       mods: {
         orderBy: { downloads: 'desc' },
         include: {
+          author: true,
           game: { select: { name: true, slug: true, platform: true } },
           category: { select: { name: true, slug: true } },
         },

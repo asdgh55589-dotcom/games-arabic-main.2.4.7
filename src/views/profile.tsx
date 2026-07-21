@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -181,7 +182,7 @@ export function ProfilePage() {
               <div className="relative">
                 <Avatar
                   className="h-24 w-24 border-4 border-[#121212] shadow-xl"
-                  style={{ ringColor: accent + '80', boxShadow: `0 0 20px ${accent}33` }}
+                  style={{ boxShadow: `0 0 20px ${accent}33` }}
                 >
                   <AvatarImage src={profile.avatarUrl || undefined} />
                   <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accent + '33', color: accent }}>
@@ -333,7 +334,7 @@ export function ProfilePage() {
                   className={`rounded-lg bg-[#1a1a1a] p-4 text-center transition-all ${
                     b.earned ? 'ring-1' : 'opacity-40 grayscale'
                   }`}
-                  style={b.earned ? { borderColor: accent, ringColor: accent + '50' } : {}}
+                  style={b.earned ? { borderColor: accent, '--tw-ring-color': accent + '50' } as CSSProperties : {}}
                 >
                   <div className="text-3xl mb-2">{b.icon}</div>
                   <h4 className="text-sm font-bold text-white">{b.name}</h4>

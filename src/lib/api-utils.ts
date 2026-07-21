@@ -19,6 +19,14 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
+ * Serialize Prisma results to JSON-safe objects (Date → string).
+ * This bridges the gap between Prisma's Date types and our API types that expect strings.
+ */
+export function serialize<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data))
+}
+
+/**
  * Parse and clamp a pagination parameter.
  * Page is clamped to `[1, maxPage]`, limit to `[1, maxLimit]`.
  */

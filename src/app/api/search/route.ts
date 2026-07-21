@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { parseIntParam, clamp } from '@/lib/api-utils'
+import { parseIntParam, clamp, serialize } from '@/lib/api-utils'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import type { SearchResponse } from '@/lib/types'
 
@@ -42,5 +42,5 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  return NextResponse.json<SearchResponse>({ mods, games: [] })
+  return NextResponse.json<SearchResponse>({ mods: serialize(mods), games: [] })
 }

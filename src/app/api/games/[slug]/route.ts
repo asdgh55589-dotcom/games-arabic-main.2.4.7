@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { serialize } from '@/lib/api-utils'
 import type { GameDetail, ApiError } from '@/lib/types'
 
 // GET /api/games/[slug] - get a single game by slug with its categories
@@ -23,5 +24,5 @@ export async function GET(
     )
   }
 
-  return NextResponse.json<{ game: GameDetail }>({ game })
+  return NextResponse.json<{ game: GameDetail }>({ game: serialize(game) })
 }

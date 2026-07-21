@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { serialize } from '@/lib/api-utils'
 import type { HomeData, ApiError, ModSummary, SeriesSummary } from '@/lib/types'
 
 // GET /api/home - aggregated homepage data
@@ -163,7 +164,7 @@ export async function GET() {
       PS1: ps1Mods as unknown as ModSummary[],
     }
 
-    return NextResponse.json<HomeData>({
+    return NextResponse.json<HomeData>(serialize({
       stats: {
         games,
         mods,
@@ -177,7 +178,7 @@ export async function GET() {
       topEndorsed: topEndorsed as unknown as ModSummary[],
       topSeries,
       modsByPlatform,
-    }, {
+    }), {
       headers: {
         // Home page aggregates many parallel DB queries — cache aggressively to
         // cut DB load. The data includes download/endorse counters that move

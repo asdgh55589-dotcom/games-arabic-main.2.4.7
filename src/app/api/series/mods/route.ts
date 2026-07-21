@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { parsePagination, pickSort } from '@/lib/api-utils'
+import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import type { PaginatedMods } from '@/lib/types'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views'] as const
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   ])
 
   return NextResponse.json<PaginatedMods>({
-    mods,
+    mods: serialize(mods),
     total,
     page,
     limit,
