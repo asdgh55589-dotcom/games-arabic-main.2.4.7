@@ -3,13 +3,15 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User } from 'lucide-react'
+import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { NotificationBell } from '@/components/notification-bell'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { formatNumber } from '@/lib/format'
 import { useDebounced } from '@/hooks/use-debounced'
@@ -369,24 +371,62 @@ export function Navbar({ games }: NavbarProps) {
 
           {currentUser ? (
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary">
-                <Link href={`/?view=profile&user=${currentUser.username}`}>
-                  <User className="ml-1.5 h-4 w-4" />
-                  {currentUser.username}
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sm font-medium text-muted-foreground hover:text-destructive"
-                onClick={async () => {
-                  await fetch('/api/auth/logout', { method: 'POST' })
-                  setCurrentUser(null)
-                  window.location.href = '/'
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <NotificationBell currentUser={currentUser} />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={currentUser.avatarUrl || undefined} />
+                      <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+                        {currentUser.username[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline">{currentUser.username}</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      الملف الشخصي
+                    </Link>
+                  </DropdownMenuItem>
+                  {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        تعريباتي
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      نشطاتي
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/?view=profile" className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      إعدادات الحساب
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                    onClick={async () => {
+                      await fetch('/api/auth/logout', { method: 'POST' })
+                      setCurrentUser(null)
+                      window.location.href = '/'
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    تسجيل الخروج
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary">
