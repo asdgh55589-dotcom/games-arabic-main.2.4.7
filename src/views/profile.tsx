@@ -272,8 +272,13 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* ===== Divider ===== */}
+      <div className="px-4 lg:px-6 mt-10">
+        <div className="border-t border-[#333]" />
+      </div>
+
       {/* ===== Stats (full width) ===== */}
-      <div className="px-4 lg:px-6 mt-12">
+      <div className="px-4 lg:px-6 mt-4">
         <div className="mx-auto max-w-[1400px]">
           <ProfileStats
             stats={profile.stats}
