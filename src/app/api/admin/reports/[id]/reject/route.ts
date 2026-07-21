@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { sendRealtimeNotification } from '@/lib/notifications/realtime'
+import { sendReportRejectedEmail } from '@/lib/notifications/email-service'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const report = await db.report.findUnique({
       where: { id },
-      select: { id: true, status: true, reporterId: true },
+      select: { id: true, status: true, reporterId: true, targetType: true, reason: true },
     })
     if (!report) {
       return NextResponse.json({ error: 'البلاغ غير موجود' }, { status: 404 })
@@ -31,6 +33,24 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       },
     })
 
+    // Phase 2: Update trust scores
+    if (report.reporterId) {
+      await recalculateTrustScore(report.reporterId)
+    }
+
+    // Phase 2: Send email notification to reporter
+    if (report.reporterId) {
+      const reporter = await db.user.findUnique({ where: { id: report.reporterId }, select: { email: true } })
+      if (reporter?.email) {
+        await sendReportRejectedEmail(reporter.email, {
+          reason: report.reason,
+          targetType: report.targetType,
+          resolution: resolution || 'البلاغ غير مبرر',
+        })
+      }
+    }
+
+    // Existing: Notify reporter via realtime
     if (report.reporterId) {
       await db.notification.create({
         data: {
