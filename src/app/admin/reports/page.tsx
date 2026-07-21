@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Flag, Filter, Package, MessageSquare, User, Eye } from 'lucide-react'
+import { Loader2, Flag, Filter, Package, MessageSquare, User, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ReportStatusBadge } from '@/components/report-status-badge'
+import { ReportStatsCards } from '@/components/admin/report-stats-cards'
+import { ReportTrendChart } from '@/components/admin/report-trend-chart'
 import { timeAgo } from '@/lib/format'
 import { REPORT_REASONS, REPORT_PRIORITIES, REPORT_TARGET_TYPES, REPORT_STATUSES } from '@/lib/reports/constants'
 import type { ReportReason, ReportPriority, ReportTargetType } from '@/lib/reports/constants'
@@ -37,7 +39,6 @@ export default function AdminReportsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
-  const [stats, setStats] = useState<Record<string, number>>({})
   const [statusFilter, setStatusFilter] = useState('')
   const [reasonFilter, setReasonFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
@@ -63,7 +64,6 @@ export default function AdminReportsPage() {
         setReports(data.reports)
         setTotalPages(data.totalPages)
         setTotal(data.total)
-        setStats(data.stats)
       })
       .catch(() => setError('فشل تحميل البلاغات'))
       .finally(() => setLoading(false))
@@ -88,19 +88,9 @@ export default function AdminReportsPage() {
         <p className="mt-1 text-sm text-muted-foreground">{total} بلاغ مسجل</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { key: 'new', label: 'جديدة', color: 'text-blue-500' },
-          { key: 'under_review', label: 'قيد المراجعة', color: 'text-yellow-500' },
-          { key: 'confirmed', label: 'مؤكدة', color: 'text-red-500' },
-          { key: 'resolved', label: 'منجزة', color: 'text-green-500' },
-        ].map((s) => (
-          <div key={s.key} className="rounded-lg border border-border bg-card/50 p-3 text-center">
-            <div className={`text-2xl font-bold ${s.color}`}>{stats[s.key] || 0}</div>
-            <div className="text-xs text-muted-foreground">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <ReportStatsCards />
+
+      <ReportTrendChart />
 
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2">
@@ -146,6 +136,21 @@ export default function AdminReportsPage() {
             <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
+        <Button variant="outline" size="sm" asChild>
+          <a
+            href={`/api/admin/reports/export${(() => {
+              const p = new URLSearchParams()
+              if (statusFilter) p.set('status', statusFilter)
+              if (reasonFilter) p.set('reason', reasonFilter)
+              if (priorityFilter) p.set('priority', priorityFilter)
+              return p.toString() ? `?${p}` : ''
+            })()}`}
+            download
+          >
+            <Download className="h-4 w-4" />
+            تصدير CSV
+          </a>
+        </Button>
       </div>
 
       {reports.length === 0 ? (
