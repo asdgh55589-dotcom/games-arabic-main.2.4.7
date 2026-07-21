@@ -114,3 +114,124 @@ export async function generateDailySummary(userId: string) {
     }
   })
 }
+
+// ===== Report Email Notifications =====
+
+const REPORT_EMAIL_TEMPLATE = (title: string, body: string) => `
+  <!DOCTYPE html>
+  <html dir="rtl" lang="ar">
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: Arial, sans-serif; direction: rtl; background: #f5f5f5; margin: 0; padding: 20px; }
+      .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+      .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+      .content { padding: 20px; line-height: 1.6; color: #333; }
+      .footer { padding: 15px 20px; background: #f9fafb; text-align: center; font-size: 12px; color: #666; }
+      .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; margin-top: 15px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header"><h1>${title}</h1></div>
+      <div class="content">${body}</div>
+      <div class="footer">منصة تعريب الألعاب — هذا إشعار تلقائي</div>
+    </div>
+  </body>
+  </html>
+`
+
+export async function sendReportConfirmedEmail(
+  reporterEmail: string,
+  report: { reason: string; targetType: string }
+): Promise<void> {
+  const reasonLabels: Record<string, string> = {
+    spam: 'محتوى مزعج', inappropriate: 'محتوى غير لائق', copyright: 'انتهاك حقوق',
+    offensive: 'محتوى مسيء', false_info: 'معلومات كاذبة', technical: 'مشكلة تقنية', other: 'سبب آخر',
+  }
+  const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
+
+  const html = REPORT_EMAIL_TEMPLATE(
+    'تأكيد البلاغ',
+    `<p>مرحباً،</p>
+     <p>تم تأكيد بلاغك على <strong>${targetLabels[report.targetType] || report.targetType}</strong> بسبب: <strong>${reasonLabels[report.reason] || report.reason}</strong>.</p>
+     <p>شكراً لمساهمتك في تحسين المنصة.</p>`
+  )
+
+  try {
+    await resend.emails.send({
+      from: 'notifications@yourdomain.com',
+      to: reporterEmail,
+      subject: 'تأكيد البلاغ — منصة تعريب الألعاب',
+      html,
+    })
+  } catch (err) {
+    console.error('[email] failed to send report confirmed email:', err)
+  }
+}
+
+export async function sendReportRejectedEmail(
+  reporterEmail: string,
+  report: { reason: string; targetType: string; resolution?: string }
+): Promise<void> {
+  const reasonLabels: Record<string, string> = {
+    spam: 'محتوى مزعج', inappropriate: 'محتوى غير لائق', copyright: 'انتهاك حقوق',
+    offensive: 'محتوى مسيء', false_info: 'معلومات كاذبة', technical: 'مشكلة تقنية', other: 'سبب آخر',
+  }
+  const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
+
+  const resolutionText = report.resolution
+    ? `<p>ملاحظات المراجعة: ${report.resolution}</p>`
+    : ''
+
+  const html = REPORT_EMAIL_TEMPLATE(
+    'نتيجة مراجعة البلاغ',
+    `<p>مرحباً،</p>
+     <p>تمت مراجعة بلاغك على <strong>${targetLabels[report.targetType] || report.targetType}</strong> بسبب: <strong>${reasonLabels[report.reason] || report.reason}</strong>.</p>
+     <p>لم نجد مخالفة في المحتوى المُبلَّغ.</p>
+     ${resolutionText}
+     <p>إذا كنت تعتقد أن هذه النتيجة خاطئة، يمكنك تقديم بلاغ جديد مع أدلة إضافية.</p>`
+  )
+
+  try {
+    await resend.emails.send({
+      from: 'notifications@yourdomain.com',
+      to: reporterEmail,
+      subject: 'نتيجة مراجعة البلاغ — منصة تعريب الألعاب',
+      html,
+    })
+  } catch (err) {
+    console.error('[email] failed to send report rejected email:', err)
+  }
+}
+
+export async function sendReportActionEmail(
+  targetEmail: string,
+  report: { reason: string; targetType: string },
+  action: string
+): Promise<void> {
+  const actionLabels: Record<string, string> = {
+    warned: 'تحذير', content_hidden: 'إخفاء محتوى', content_deleted: 'حذف محتوى',
+    temp_ban: 'تعليق مؤقت', perm_ban: 'حظر دائم',
+  }
+  const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'حسابك' }
+
+  const html = REPORT_EMAIL_TEMPLATE(
+    'إشعار إداري — اتُّخذ إجراء',
+    `<p>مرحباً،</p>
+     <p>بناءً على بلاغ مقدم ضد <strong>${targetLabels[report.targetType] || report.targetType}</strong>، تمت مراجعة المحتوى واتُّخذ الإجراء التالي:</p>
+     <p><strong>${actionLabels[action] || action}</strong></p>
+     <p>إذا كان لديك أي استفسار، يُرجى التواصل مع فريق الدعم.</p>`
+  )
+
+  try {
+    await resend.emails.send({
+      from: 'notifications@yourdomain.com',
+      to: targetEmail,
+      subject: 'إشعار إداري — منصة تعريب الألعاب',
+      html,
+    })
+  } catch (err) {
+    console.error('[email] failed to send report action email:', err)
+  }
+}
