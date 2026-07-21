@@ -166,7 +166,7 @@ export function ProfilePage() {
             style={{ background: `linear-gradient(135deg, ${accent}33 0%, ${accent}11 50%, #1a1a1a 100%)` }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent" />
       </div>
 
       {/* ===== User Info ===== */}
@@ -273,7 +273,7 @@ export function ProfilePage() {
       </div>
 
       {/* ===== Stats (full width) ===== */}
-      <div className="px-4 lg:px-6">
+      <div className="px-4 lg:px-6 mt-12">
         <div className="mx-auto max-w-[1400px]">
           <ProfileStats
             stats={profile.stats}
