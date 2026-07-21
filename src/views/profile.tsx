@@ -273,7 +273,7 @@ export function ProfilePage() {
       </div>
 
       {/* ===== Divider ===== */}
-      <div className="px-4 lg:px-6 mt-10">
+      <div className="px-4 lg:px-6 mt-4">
         <div className="border-t border-[#333]" />
       </div>
 
