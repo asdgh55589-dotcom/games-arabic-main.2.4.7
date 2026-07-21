@@ -272,7 +272,7 @@ export function ProfilePage() {
         </div>
 
         {/* ===== Stats ===== */}
-        <div className="mt-8">
+        <div className="mt-8 -mx-4 px-4 lg:-mx-6 lg:px-6">
           <ProfileStats
             stats={profile.stats}
             xp={profile.xp}
