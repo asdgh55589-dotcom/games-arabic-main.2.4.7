@@ -387,35 +387,35 @@ export function Navbar({ games }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
                       <User className="h-4 w-4" />
-                      عرض الملف الشخصي
+                      الملف الشخصي
                     </Link>
                   </DropdownMenuItem>
                   {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
                     <DropdownMenuItem asChild>
-                      <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                      <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
                         <FileText className="h-4 w-4" />
-                        التعريبات المنشورة
+                        تعريباتي
                       </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2">
+                    <Link href={`/?view=profile&user=${currentUser.username}`} className="flex items-center gap-2 flex-row-reverse">
                       <Activity className="h-4 w-4" />
-                      آخر النشاطات والتعليقات
+                      النشاطات
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/?view=profile" className="flex items-center gap-2">
+                    <Link href="/?view=profile" className="flex items-center gap-2 flex-row-reverse">
                       <Settings className="h-4 w-4" />
                       إدارة الحساب والإعدادات
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                    className="flex items-center gap-2 flex-row-reverse text-destructive focus:text-destructive"
                     onClick={async () => {
                       await fetch('/api/auth/logout', { method: 'POST' })
                       setCurrentUser(null)
@@ -423,7 +423,7 @@ export function Navbar({ games }: NavbarProps) {
                     }}
                   >
                     <LogOut className="h-4 w-4" />
-                    تسجيل الخروج من الحساب
+                    تسجيل الخروج
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
