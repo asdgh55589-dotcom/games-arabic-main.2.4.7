@@ -55,6 +55,20 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const totalEndorsements = mods.reduce((s, m) => s + m.endorsements, 0)
     const totalViews = mods.reduce((s, m) => s + m.views, 0)
 
+    // هل المستخدم معرب؟
+    const isTranslator = ['owner', 'admin', 'moderator'].includes(user.role)
+
+    // تاريخ أول تعريب
+    let firstModDate: string | null = null
+    if (isTranslator) {
+      const firstMod = await db.mod.findFirst({
+        where: { authorId: user.id },
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true },
+      })
+      firstModDate = firstMod?.createdAt.toISOString() || null
+    }
+
     // عدد المتابعين والمتابَعين
     const [followersCount, followingCount] = await Promise.all([
       db.follow.count({ where: { followingId: user.id } }),
@@ -104,6 +118,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         },
         onlineStatus,
         xp: { ...xpLevel, progress: xpProgress },
+        isTranslator,
+        firstModDate,
+        rating: user.qualityScore,
       },
     })
   } catch (err) {
