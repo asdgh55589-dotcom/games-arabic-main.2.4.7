@@ -1,6 +1,7 @@
 import { handleTranslatorLike } from '@/lib/notifications/handlers/translator-like-handler'
 import { handleTranslatorComment } from '@/lib/notifications/handlers/translator-comment-handler'
 import { handleCommentReply } from '@/lib/notifications/handlers/comment-reply-handler'
+import { NotificationType } from '@/lib/notifications/types'
 
 jest.mock('@/lib/db', () => ({
   db: {
@@ -47,7 +48,13 @@ describe('Notification Handlers', () => {
 
       await handleTranslatorLike('1', 'liker1')
 
-      expect(db.notification.create).toHaveBeenCalled()
+      expect(db.notification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            type: NotificationType.Like,
+          }),
+        })
+      )
     })
 
     it('should not create notification below threshold', async () => {
@@ -95,7 +102,13 @@ describe('Notification Handlers', () => {
 
       await handleTranslatorComment('1', 'comment1', 'commenter1')
 
-      expect(db.notification.create).toHaveBeenCalled()
+      expect(db.notification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            type: NotificationType.CommentReply,
+          }),
+        })
+      )
     })
 
     it('should not create notification for self-comments', async () => {
@@ -125,7 +138,13 @@ describe('Notification Handlers', () => {
 
       await handleCommentReply('1', 'reply1', 'replier1')
 
-      expect(db.notification.create).toHaveBeenCalled()
+      expect(db.notification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            type: NotificationType.CommentReply,
+          }),
+        })
+      )
     })
 
     it('should not create notification for self-replies', async () => {
