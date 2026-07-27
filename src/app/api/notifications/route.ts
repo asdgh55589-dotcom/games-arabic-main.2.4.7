@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
+import { NotificationType } from '@/lib/notifications/types'
 
 async function requireUser() {
   const supabase = await createClient()
@@ -72,18 +73,16 @@ export async function GET(req: NextRequest) {
 // POST /api/notifications — إنشاء إشعار جديد
 // ملاحظة: الإشعارات يجب أن تُنشأ فقط من النظام (notification-helpers.ts)
 // هذا المسار محمي بمصادقة + whitelist للأنواع
-const ALLOWED_NOTIFICATION_TYPES = [
-  'comment_reply',
-  'mod_endorse',
-  'mod_endorse_milestone',
-  'mod_featured',
-  'tier_upgrade',
-  'special_role_assigned',
-  'special_role_removed',
-  'admin_action',
-  'mod_approved',
-  'mod_rejected',
-]
+const ALLOWED_NOTIFICATION_TYPES = new Set([
+  NotificationType.CommentReply,
+  NotificationType.ModEndorse,
+  NotificationType.ModEndorseMilestone,
+  NotificationType.ModFeatured,
+  NotificationType.TierUpgrade,
+  NotificationType.SpecialRoleAssigned,
+  NotificationType.SpecialRoleRemoved,
+  NotificationType.AdminAction,
+])
 
 export async function POST(req: NextRequest) {
   try {
@@ -103,7 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     // التحقق من أن النوع مسموح به
-    if (!ALLOWED_NOTIFICATION_TYPES.includes(type)) {
+    if (!ALLOWED_NOTIFICATION_TYPES.has(type)) {
       return NextResponse.json(
         { error: 'نوع الإشعار غير صالح' },
         { status: 400 },
