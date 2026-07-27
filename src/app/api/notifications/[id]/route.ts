@@ -50,43 +50,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PATCH /api/notifications/[id] — تحديث إشعار
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  try {
-    const neonUser = await requireUser()
-    if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-
-    const notification = await db.notification.findFirst({
-      where: { id, userId: neonUser.id },
-    })
-    if (!notification) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
-
-    const body = await req.json()
-    const { type, title, message, data } = body
-
-    const updated = await db.notification.update({
-      where: { id },
-      data: {
-        ...(type !== undefined && { type }),
-        ...(title !== undefined && { title }),
-        ...(message !== undefined && { message }),
-        ...(data !== undefined && { data }),
-      },
-    })
-
-    return NextResponse.json(updated)
-  } catch (err) {
-    console.error('[notification PATCH] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
-
 // DELETE /api/notifications/[id] — حذف إشعار
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
