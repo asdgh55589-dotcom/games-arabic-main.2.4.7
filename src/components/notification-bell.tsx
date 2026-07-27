@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationDropdown } from '@/components/notification-dropdown'
+import { subscribeToNotifications } from '@/lib/notifications/realtime'
 import type { Notification } from '@/lib/types'
 
 interface NotificationBellProps {
@@ -45,9 +46,17 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
 
   useEffect(() => {
     fetchUnreadCount()
-    const interval = setInterval(fetchUnreadCount, 30000)
-    return () => clearInterval(interval)
-  }, [fetchUnreadCount])
+    if (!currentUser?.id) return
+
+    const channel = subscribeToNotifications(currentUser.id, (notification) => {
+      setNotifications(prev => [notification, ...prev])
+      setUnreadCount(prev => prev + 1)
+    })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [currentUser?.id, fetchUnreadCount])
 
   useEffect(() => {
     if (open) fetchNotifications()
