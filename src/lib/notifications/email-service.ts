@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 interface GroupedNotifications {
-  likes: any[]
+  endorsements: any[]
   comments: any[]
   admin: any[]
   system: any[]
@@ -28,10 +28,10 @@ function generateSummaryTemplate(grouped: GroupedNotifications): string {
         <h1>ملخص إشعاراتك</h1>
       </div>
 
-      ${grouped.likes.length > 0 ? `
+      ${grouped.endorsements.length > 0 ? `
         <div class="section">
-          <h2>إعجابات (${grouped.likes.length})</h2>
-          ${grouped.likes.map(n => `
+          <h2>إعجابات (${grouped.endorsements.length})</h2>
+          ${grouped.endorsements.map(n => `
             <div class="notification">${n.message}</div>
           `).join('')}
         </div>
@@ -86,10 +86,21 @@ export async function generateDailySummary(userId: string) {
   if (unreadNotifications.length === 0) return
 
   const grouped: GroupedNotifications = {
-    likes: unreadNotifications.filter(n => n.type === 'like'),
-    comments: unreadNotifications.filter(n => n.type === 'comment'),
-    admin: unreadNotifications.filter(n => n.type === 'admin'),
-    system: unreadNotifications.filter(n => n.type === 'system')
+    endorsements: unreadNotifications.filter(n =>
+      n.type === 'mod_endorse' || n.type === 'mod_endorse_milestone'
+    ),
+    comments: unreadNotifications.filter(n =>
+      n.type === 'comment_reply' || n.type === 'like'
+    ),
+    admin: unreadNotifications.filter(n =>
+      n.type === 'admin_action' || n.type === 'admin_user_register' ||
+      n.type === 'admin_request' || n.type === 'admin_report' ||
+      n.type === 'admin_milestone'
+    ),
+    system: unreadNotifications.filter(n =>
+      n.type === 'tier_upgrade' || n.type === 'special_role_assigned' ||
+      n.type === 'special_role_removed' || n.type === 'mod_featured'
+    )
   }
 
   const user = await db.user.findUnique({
