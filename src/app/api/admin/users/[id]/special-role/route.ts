@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { parseSpecialRoles, formatSpecialRoles } from '@/lib/tier-helpers'
 import { createNotification } from '@/lib/notification-helpers'
+import { NotificationType } from '@/lib/notifications/types'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     await createNotification({
       userId: id,
-      type: 'special_role_assigned',
+      type: NotificationType.SpecialRoleAssigned,
       title: 'تم منحك دور خاص',
       message: `تم منحك دور ${role.name}`,
       data: { roleKey }
@@ -73,7 +74,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const role = await db.specialRole.findUnique({ where: { key: roleKey } })
     await createNotification({
       userId: id,
-      type: 'special_role_removed',
+      type: NotificationType.SpecialRoleRemoved,
       title: 'تم سحب دور خاص',
       message: `تم سحب دور ${role?.name || roleKey}`,
       data: { roleKey }

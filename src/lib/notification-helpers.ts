@@ -3,12 +3,15 @@
  */
 
 import { db } from './db'
+import { NotificationType } from '@/lib/notifications/types'
 
 interface CreateNotificationParams {
   userId: string
-  type: string
+  type: NotificationType
   title: string
   message: string
+  link?: string
+  actorId?: string
   data?: Record<string, unknown>
 }
 
@@ -21,7 +24,8 @@ export async function createNotification(params: CreateNotificationParams): Prom
         type: params.type,
         title: params.title,
         message: params.message,
-        ...(params.data !== undefined && { data: params.data as never }),
+        data: params.link ? { link: params.link, ...params.data } as any : params.data as any,
+        actorId: params.actorId,
       },
     })
   } catch (err) {
@@ -31,93 +35,67 @@ export async function createNotification(params: CreateNotificationParams): Prom
 
 /** إشعار رد على تعليق */
 export async function notifyCommentReply(opts: {
-  parentAuthorId: string
-  replyAuthorId: string
-  modSlug: string
+  userId: string
+  actorId: string
   modName: string
+  link?: string
 }): Promise<void> {
-  if (opts.parentAuthorId === opts.replyAuthorId) return
-
-  const replyUser = await db.user.findUnique({
-    where: { id: opts.replyAuthorId },
-    select: { username: true },
-  })
+  if (opts.userId === opts.actorId) return
 
   await createNotification({
-    userId: opts.parentAuthorId,
-    type: 'comment_reply',
-    title: `ردّ ${replyUser?.username || 'مستخدم'} على تعليقك في ${opts.modName}`,
-    message: '',
-    data: {
-      actorId: opts.replyAuthorId,
-      entityType: 'mod',
-      entityId: opts.modSlug,
-      link: `/?view=mod&slug=${opts.modSlug}`,
-    },
+    userId: opts.userId,
+    type: NotificationType.CommentReply,
+    title: 'رد على تعليقك',
+    message: `قام شخص بالرد على تعليقك في تعريب ${opts.modName}`,
+    link: opts.link,
+    actorId: opts.actorId,
   })
 }
 
 /** إشعار إعجابات على تعريب */
 export async function notifyModEndorseMilestone(opts: {
-  authorId: string
-  actorId: string
-  modSlug: string
+  userId: string
   modName: string
-  endorsements: number
+  count: number
+  link?: string
 }): Promise<void> {
-  if (opts.authorId === opts.actorId) return
-
-  const actorUser = await db.user.findUnique({
-    where: { id: opts.actorId },
-    select: { username: true },
-  })
-
-  await createNotification({
-    userId: opts.authorId,
-    type: 'mod_endorse',
-    title: `تعريبك "${opts.modName}" حصل على ${opts.endorsements} إعجاب!`,
-    message: `${actorUser?.username || 'مستخدم'} أضاف إعجابه على تعريبك`,
-    data: {
-      actorId: opts.actorId,
-      entityType: 'mod',
-      entityId: opts.modSlug,
-      link: `/?view=mod&slug=${opts.modSlug}`,
-    },
+  return createNotification({
+    userId: opts.userId,
+    type: NotificationType.ModEndorseMilestone,
+    title: 'إنجاز تصويت',
+    message: `حصل تعريب ${opts.modName} على ${opts.count} تصويت`,
+    link: opts.link,
   })
 }
 
 /** إشعار تعريب مميّز */
 export async function notifyModFeatured(opts: {
-  authorId: string
-  modSlug: string
+  userId: string
   modName: string
+  link?: string
 }): Promise<void> {
-  await createNotification({
-    userId: opts.authorId,
-    type: 'mod_featured',
-    title: `تمت إضافة تعريبك "${opts.modName}" إلى التعريبات المميزة!`,
-    message: '',
-    data: {
-      entityType: 'mod',
-      entityId: opts.modSlug,
-      link: `/?view=mod&slug=${opts.modSlug}`,
-    },
+  return createNotification({
+    userId: opts.userId,
+    type: NotificationType.ModFeatured,
+    title: 'تعريب مميز',
+    message: `تم اختيار تعريب ${opts.modName} كتعريب مميز`,
+    link: opts.link,
   })
 }
 
 /** إشعار إجراء إداري */
 export async function notifyAdminAction(opts: {
   userId: string
-  actorId?: string
-  action: string
-  details?: string
+  title: string
+  message: string
+  link?: string
 }): Promise<void> {
-  await createNotification({
+  return createNotification({
     userId: opts.userId,
-    type: 'admin_action',
-    title: opts.action,
-    message: opts.details || '',
-    data: opts.actorId ? { actorId: opts.actorId, entityType: 'user', entityId: opts.userId } : undefined,
+    type: NotificationType.AdminAction,
+    title: opts.title,
+    message: opts.message,
+    link: opts.link,
   })
 }
 
@@ -139,10 +117,9 @@ export async function checkEndorseMilestone(opts: {
   if (!mod) return
 
   await notifyModEndorseMilestone({
-    authorId: mod.authorId,
-    actorId: opts.actorId,
-    modSlug: mod.slug,
+    userId: mod.authorId,
     modName: mod.name,
-    endorsements: opts.endorsements,
+    count: opts.endorsements,
+    link: `/?view=mod&slug=${mod.slug}`,
   })
 }

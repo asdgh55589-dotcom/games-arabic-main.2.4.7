@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { Mod } from '@prisma/client'
 import { createNotification } from '@/lib/notification-helpers'
+import { NotificationType } from '@/lib/notifications/types'
 
 function calculateQualityScore(mods: Mod[]): number {
   if (mods.length === 0) return 0
@@ -81,7 +82,7 @@ export async function upgradeUser(userId: string, newTier: number, reason: 'auto
 
   await createNotification({
     userId,
-    type: 'tier_upgrade',
+    type: NotificationType.TierUpgrade,
     title: 'تهنئة! ترقية لمستوى جديد',
     message: `تم ترقيتك من ${tierNames[fromTier]} إلى ${tierNames[newTier]}`,
     data: { fromTier, toTier: newTier, reason }

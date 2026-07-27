@@ -109,9 +109,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // إشعار المستخدم بالحظر
     await notifyAdminAction({
       userId: id,
-      actorId: currentUser.id,
-      action: type === 'perm' ? 'تم حظر حسابك بشكل دائم' : 'تم حظر حسابك مؤقتاً',
-      details: reason || undefined,
+      title: type === 'perm' ? 'تم حظر حسابك بشكل دائم' : 'تم حظر حسابك مؤقتاً',
+      message: reason || '',
     })
 
     return NextResponse.json({

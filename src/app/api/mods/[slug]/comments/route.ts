@@ -146,10 +146,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       })
       if (parentComment?.userId) {
         await notifyCommentReply({
-          parentAuthorId: parentComment.userId,
-          replyAuthorId: user.id,
-          modSlug: slug,
+          userId: parentComment.userId,
+          actorId: user.id,
           modName: mod.name || slug,
+          link: `/?view=mod&slug=${slug}`,
         })
       }
     }

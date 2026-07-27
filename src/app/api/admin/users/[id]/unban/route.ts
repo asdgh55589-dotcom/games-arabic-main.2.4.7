@@ -69,9 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // إشعار المستخدم بإلغاء الحظر
     await notifyAdminAction({
       userId: id,
-      actorId: currentUser.id,
-      action: 'تم إلغاء الحظر عن حسابك',
-      details: 'يمكنك الآن استخدام الموقع بشكل طبيعي.',
+      title: 'تم إلغاء الحظر عن حسابك',
+      message: 'يمكنك الآن استخدام الموقع بشكل طبيعي.',
     })
 
     return NextResponse.json({ success: true, ipCleared })
