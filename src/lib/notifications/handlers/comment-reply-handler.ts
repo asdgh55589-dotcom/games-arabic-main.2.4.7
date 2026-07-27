@@ -1,5 +1,4 @@
 import { db } from '@/lib/db'
-import { sendRealtimeNotification } from '../realtime'
 import { NotificationType } from '@/lib/notifications/types'
 
 export async function handleCommentReply(
@@ -27,6 +26,4 @@ export async function handleCommentReply(
       }
     }
   })
-
-  await sendRealtimeNotification(comment.userId)
 }

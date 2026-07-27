@@ -1,5 +1,4 @@
 import { db } from '@/lib/db'
-import { sendRealtimeNotification } from '@/lib/notifications/realtime'
 import { NotificationType } from '@/lib/notifications/types'
 import type { ReportAction } from './constants'
 
@@ -40,8 +39,6 @@ export async function executeAutoAction(input: AutoActionInput) {
         message: `تم تحذيرك بناءً على بلاغ مقدم ضد محتواك. السبب: ${resolution}`,
       },
     })
-
-    if (userId) await sendRealtimeNotification(userId)
   }
 
   if (action === 'content_hidden' && report.targetModId) {
@@ -94,8 +91,6 @@ export async function executeAutoAction(input: AutoActionInput) {
           : 'تم حظر حسابك بشكل دائم.',
       },
     })
-
-    if (userId) await sendRealtimeNotification(userId)
   }
 
   await db.report.update({

@@ -5,7 +5,6 @@ import { executeAutoAction } from '@/lib/reports/auto-actions'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
 import { REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
-import { sendRealtimeNotification } from '@/lib/notifications/realtime'
 import { sendReportConfirmedEmail, sendReportActionEmail } from '@/lib/notifications/email-service'
 
 interface RouteParams {
@@ -82,7 +81,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           message: `تمت مراجعة بلاغ مقترض ضد محتواك. النتيجة: ${REPORT_ACTIONS[action as ReportAction]?.label || action}`,
         },
       })
-      await sendRealtimeNotification(report.targetUserId)
     }
 
     return NextResponse.json({ success: true })

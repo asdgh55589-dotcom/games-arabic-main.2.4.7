@@ -1,6 +1,5 @@
 // src/lib/notifications/handlers/translator-like-handler.ts
 import { db } from '@/lib/db'
-import { sendRealtimeNotification } from '../realtime'
 import { NotificationType } from '@/lib/notifications/types'
 
 export async function handleTranslatorLike(
@@ -38,7 +37,5 @@ export async function handleTranslatorLike(
         }
       }
     })
-
-    await sendRealtimeNotification(translation.authorId)
   }
 }

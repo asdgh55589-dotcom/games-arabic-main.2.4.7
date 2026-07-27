@@ -1,17 +1,10 @@
-import { createClient, RealtimeChannel } from '@supabase/supabase-js'
+import { RealtimeChannel } from '@supabase/supabase-js'
 import { createBrowserClient } from '@supabase/ssr'
 
 function getBrowserClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
-function getServerClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
 
@@ -34,10 +27,4 @@ export function subscribeToNotifications(
     .subscribe()
 }
 
-export async function sendRealtimeNotification(userId: string) {
-  await getServerClient().channel(`notifications:${userId}`).send({
-    type: 'broadcast',
-    event: 'new_notification',
-    payload: { userId }
-  })
-}
+

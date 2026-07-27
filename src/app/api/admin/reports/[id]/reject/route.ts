@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
-import { sendRealtimeNotification } from '@/lib/notifications/realtime'
 import { sendReportRejectedEmail } from '@/lib/notifications/email-service'
 
 interface RouteParams {
@@ -60,7 +59,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           message: 'تمت مراجعة بلاغك. لم نجد مخالفة في المحتوى المُبلَّغ.',
         },
       })
-      await sendRealtimeNotification(report.reporterId)
     }
 
     return NextResponse.json({ success: true })

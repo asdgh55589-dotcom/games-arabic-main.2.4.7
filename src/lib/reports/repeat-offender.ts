@@ -1,5 +1,4 @@
 import { db } from '@/lib/db'
-import { sendRealtimeNotification } from '@/lib/notifications/realtime'
 import { NotificationType } from '@/lib/notifications/types'
 
 const ESCALATION_THRESHOLDS = [
@@ -57,7 +56,6 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         message: 'تلقّت حسابك عدة بلاغات مؤكدة. يُرجى مراجعة محتواك.',
       },
     })
-    await sendRealtimeNotification(targetUserId)
   }
 
   if (newLevel === 2) {
@@ -91,7 +89,6 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         message: 'تم تعليق حسابك مؤقتاً لمدة 7 أيام بسبب تكرار بلاغات مؤكدة ضد محتواك.',
       },
     })
-    await sendRealtimeNotification(targetUserId)
   }
 
   if (newLevel === 3) {
@@ -121,7 +118,6 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         message: 'تم حظر حسابك بشكل دائم بسبب تكرار بلاغات مؤكدة ضد محتواك.',
       },
     })
-    await sendRealtimeNotification(targetUserId)
   }
 
   // Audit log

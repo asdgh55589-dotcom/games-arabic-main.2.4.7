@@ -1,5 +1,4 @@
 import { db } from '@/lib/db'
-import { sendRealtimeNotification } from '../realtime'
 import { NotificationType } from '@/lib/notifications/types'
 
 const typeMap: Record<string, NotificationType> = {
@@ -57,7 +56,5 @@ export async function handleAdminNotification(
         data
       }
     })
-
-    await sendRealtimeNotification(admin.id)
   }
 }
