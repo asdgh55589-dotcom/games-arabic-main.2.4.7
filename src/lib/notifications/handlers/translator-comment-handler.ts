@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { sendRealtimeNotification } from '../realtime'
+import { NotificationType } from '@/lib/notifications/types'
 
 export async function handleTranslatorComment(
   translationId: string,
@@ -16,7 +17,7 @@ export async function handleTranslatorComment(
   await db.notification.create({
     data: {
       userId: translation.authorId,
-      type: 'comment',
+      type: NotificationType.CommentReply,
       title: 'تعليق جديد على تعريبك',
       message: `أضاف تعليقاً على تعريب "${translation.name}"`,
       data: {

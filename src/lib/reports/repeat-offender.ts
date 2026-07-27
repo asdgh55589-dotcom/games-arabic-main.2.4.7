@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { sendRealtimeNotification } from '@/lib/notifications/realtime'
+import { NotificationType } from '@/lib/notifications/types'
 
 const ESCALATION_THRESHOLDS = [
   { level: 0, min: 0, max: 2, label: 'لا إجراء' },
@@ -51,7 +52,7 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
     await db.notification.create({
       data: {
         userId: targetUserId,
-        type: 'admin_action',
+        type: NotificationType.AdminAction,
         title: 'تنبيه — تكرار بلاغات',
         message: 'تلقّت حسابك عدة بلاغات مؤكدة. يُرجى مراجعة محتواك.',
       },
@@ -85,7 +86,7 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
     await db.notification.create({
       data: {
         userId: targetUserId,
-        type: 'admin_action',
+        type: NotificationType.AdminAction,
         title: 'تعليق مؤقت — حظر تلقائي',
         message: 'تم تعليق حسابك مؤقتاً لمدة 7 أيام بسبب تكرار بلاغات مؤكدة ضد محتواك.',
       },
@@ -115,7 +116,7 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
     await db.notification.create({
       data: {
         userId: targetUserId,
-        type: 'admin_action',
+        type: NotificationType.AdminAction,
         title: 'حظر دائم — حظر تلقائي',
         message: 'تم حظر حسابك بشكل دائم بسبب تكرار بلاغات مؤكدة ضد محتواك.',
       },

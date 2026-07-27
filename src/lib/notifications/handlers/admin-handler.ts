@@ -1,7 +1,13 @@
 import { db } from '@/lib/db'
 import { sendRealtimeNotification } from '../realtime'
+import { NotificationType } from '@/lib/notifications/types'
 
-type AdminNotificationType = 'user_register' | 'request' | 'report' | 'milestone'
+const typeMap: Record<string, NotificationType> = {
+  user_register: NotificationType.AdminUserRegister,
+  request: NotificationType.AdminRequest,
+  report: NotificationType.AdminReport,
+  milestone: NotificationType.AdminMilestone,
+}
 
 interface AdminNotificationData {
   username?: string
@@ -12,14 +18,14 @@ interface AdminNotificationData {
 }
 
 export async function handleAdminNotification(
-  type: AdminNotificationType,
+  type: string,
   data: AdminNotificationData
 ) {
   const admins = await db.user.findMany({
     where: { role: 'admin' }
   })
 
-  const templates: Record<AdminNotificationType, { title: string; message: string }> = {
+  const templates: Record<string, { title: string; message: string }> = {
     user_register: {
       title: 'مستخدم جديد',
       message: `تم تسجيل مستخدم جديد: ${data.username}`
@@ -39,12 +45,13 @@ export async function handleAdminNotification(
   }
 
   const template = templates[type]
+  const notificationType = typeMap[type] ?? NotificationType.AdminAction
 
   for (const admin of admins) {
     await db.notification.create({
       data: {
         userId: admin.id,
-        type: 'admin',
+        type: notificationType,
         title: template.title,
         message: template.message,
         data

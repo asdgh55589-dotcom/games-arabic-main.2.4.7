@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { sendRealtimeNotification } from '@/lib/notifications/realtime'
+import { NotificationType } from '@/lib/notifications/types'
 import type { ReportAction } from './constants'
 
 interface AutoActionInput {
@@ -34,7 +35,7 @@ export async function executeAutoAction(input: AutoActionInput) {
     await db.notification.create({
       data: {
         userId,
-        type: 'admin_action',
+        type: NotificationType.AdminAction,
         title: 'تحذير رسمي',
         message: `تم تحذيرك بناءً على بلاغ مقدم ضد محتواك. السبب: ${resolution}`,
       },
@@ -86,7 +87,7 @@ export async function executeAutoAction(input: AutoActionInput) {
     await db.notification.create({
       data: {
         userId,
-        type: 'admin_action',
+        type: NotificationType.AdminAction,
         title: action === 'temp_ban' ? 'تعليق مؤقت' : 'حظر دائم',
         message: action === 'temp_ban'
           ? `تم تعليق حسابك مؤقتاً لمدة ${banDuration || 7} أيام.`

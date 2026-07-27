@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { sendRealtimeNotification } from '../realtime'
+import { NotificationType } from '@/lib/notifications/types'
 
 export async function handleCommentReply(
   commentId: string,
@@ -16,7 +17,7 @@ export async function handleCommentReply(
   await db.notification.create({
     data: {
       userId: comment.userId,
-      type: 'comment',
+      type: NotificationType.CommentReply,
       title: 'رد على تعليقك',
       message: `رد على تعليقك "${comment.text.substring(0, 50)}..."`,
       data: {
