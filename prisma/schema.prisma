@@ -15,12 +15,17 @@ model User {
   supabaseId             String?                 @unique // Supabase Auth user ID
   username               String                  @unique
   email                  String                  @unique
-  password               String? // hashed — null للمستخدمين العاديين (OAuth لاحقاً)
+  password               String? // deprecated — للتوافق مع البيانات القديمة فقط
+  provider               String                  @default("email") // مزود OAuth: email | google | discord | telegram
+  providerAccountId      String?                 // معرّف الحساب عند المزود
   avatarUrl              String?
   bannerUrl              String? // صورة الخلفية بمقاس اليوتيوب (2560×1440)
   bio                    String?
   websiteUrl             String? // الموقع الشخصي
   twitterUrl             String? // رابط Twitter/X
+  instagramUrl           String? // رابط Instagram
+  tiktokUrl              String? // رابط TikTok
+  youtubeUrl             String? // رابط YouTube
   githubUrl              String? // رابط GitHub
   discordUrl             String? // رابط Discord
   accentColor            String?                 @default("#ff8c00") // اللون المميز للملف الشخصي
@@ -48,7 +53,8 @@ model User {
   actionsAsTarget        UserAction[]            @relation("UserActionsTarget")
   actionsAsActor         UserAction[]            @relation("UserActionsActor")
   teamMemberships        TeamMembership[]
-  notifications          Notification[]
+  notifications          Notification[]        @relation("UserNotifications")
+  actingNotifications    Notification[]        @relation("ActorNotifications")
   notificationPreference NotificationPreference?
   tierHistory            TierHistory[]
   reportsFiled           Report[]        @relation("ReportsFiled")
@@ -57,6 +63,8 @@ model User {
   trustScore              UserTrustScore?
   following               Follow[]       @relation("Following")
   followers               Follow[]       @relation("Followers")
+  bookmarks               Bookmark[]
+  commentLikes            CommentLike[]
 }
 
 model Follow {
@@ -82,7 +90,7 @@ model Game {
   logoUrl           String?
   thumbnailUrl      String
   category          String // RPG | FPS | Strategy | Sandbox | Adventure | Simulation
-  platform          String // PC | NS | PS1 | PS2 | PS3 | PS4
+  platform          String // PC | NS | PS1 | PS2 | PS3 | PS4 | X360
   releaseYear       Int
   modCount          Int        @default(0)
   totalDownloads    Int        @default(0)
@@ -156,6 +164,7 @@ model Mod {
   customTabs         ModCustomTab[]
   commentsRecords    ModComment[]
   reports            Report[]
+  bookmarks          Bookmark[]
 
   @@index([authorId])
   @@index([gameId])
@@ -456,6 +465,7 @@ model ModComment {
   parent      ModComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies     ModComment[] @relation("CommentReplies")
   reports     Report[]
+  commentLikes CommentLike[]
   text        String
   likes       Int          @default(0)
   dislikes    Int          @default(0)
@@ -514,6 +524,7 @@ model HomepageAd {
 model Notification {
   id        String    @id @default(cuid())
   userId    String    @map("user_id")
+  actorId   String?   @map("actor_id")
   type      String
   title     String
   message   String
@@ -523,10 +534,12 @@ model Notification {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs NotificationLog[]
+  user  User              @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User?             @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+  logs  NotificationLog[]
 
   @@index([userId])
+  @@index([actorId])
   @@index([isRead])
   @@index([createdAt])
   @@index([type])
@@ -660,4 +673,33 @@ model ReportFraudSignal {
 
   @@index([reportId])
   @@index([signalType])
+}
+
+// ===== المفضلة / الحفظ =====
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, modId])
+  @@index([userId])
+  @@index([modId])
+}
+
+// ===== إعجابات التعليقات =====
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   ModComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  value     String   @default("like") // like | dislike
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([commentId])
 }
