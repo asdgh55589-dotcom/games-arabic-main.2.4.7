@@ -1,28 +1,29 @@
 'use client'
 
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { Bell, MessageCircle, Heart, Star, Shield, Settings, CheckCheck, Trash2 } from 'lucide-react'
+import { Bell, MessageCircle, Heart, Star, Shield, Users, FileText, AlertTriangle, Award, CheckCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatArabicDate } from '@/lib/format'
+import { NotificationType, NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 import type { Notification } from '@/lib/types'
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  comment_reply: <MessageCircle className="h-5 w-5 text-blue-400" />,
-  mod_endorse: <Heart className="h-5 w-5 text-red-400" />,
-  mod_featured: <Star className="h-5 w-5 text-amber-400" />,
-  admin_action: <Shield className="h-5 w-5 text-purple-400" />,
-  system: <Settings className="h-5 w-5 text-gray-400" />,
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  comment_reply: 'ردود التعليقات',
-  mod_endorse: 'إعجابات التعريبات',
-  mod_featured: 'تعريبات مميزة',
-  admin_action: 'إجراءات إدارية',
-  system: 'إشعارات النظام',
+const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
+  [NotificationType.CommentReply]: <MessageCircle className="h-5 w-5 text-blue-400" />,
+  [NotificationType.Like]: <Heart className="h-5 w-5 text-red-400" />,
+  [NotificationType.ModEndorse]: <Heart className="h-5 w-5 text-red-400" />,
+  [NotificationType.ModEndorseMilestone]: <Star className="h-5 w-5 text-amber-400" />,
+  [NotificationType.ModFeatured]: <Star className="h-5 w-5 text-amber-400" />,
+  [NotificationType.AdminAction]: <Shield className="h-5 w-5 text-purple-400" />,
+  [NotificationType.AdminUserRegister]: <Users className="h-5 w-5 text-green-400" />,
+  [NotificationType.AdminRequest]: <FileText className="h-5 w-5 text-cyan-400" />,
+  [NotificationType.AdminReport]: <AlertTriangle className="h-5 w-5 text-yellow-400" />,
+  [NotificationType.TierUpgrade]: <Award className="h-5 w-5 text-orange-400" />,
+  [NotificationType.SpecialRoleAssigned]: <Shield className="h-5 w-5 text-purple-400" />,
+  [NotificationType.SpecialRoleRemoved]: <Shield className="h-5 w-5 text-gray-400" />,
+  [NotificationType.AdminMilestone]: <Star className="h-5 w-5 text-amber-400" />,
 }
 
 export function NotificationsPage() {
@@ -144,7 +145,7 @@ export function NotificationsPage() {
                         </Avatar>
                       ) : (
                         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#333]">
-                          {TYPE_ICONS[notification.type] || <Bell className="h-5 w-5 text-gray-400" />}
+                          {TYPE_ICONS[notification.type as NotificationType] || <Bell className="h-5 w-5 text-gray-400" />}
                         </div>
                       )}
                     </div>
@@ -172,8 +173,8 @@ export function NotificationsPage() {
                       )}
                       <div className="mt-2 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-[#222] px-2 py-0.5 text-[10px] text-gray-400">
-                          {TYPE_ICONS[notification.type]}
-                          {TYPE_LABELS[notification.type] || notification.type}
+                          {TYPE_ICONS[notification.type as NotificationType]}
+                          {NOTIFICATION_TYPE_LABELS[notification.type as NotificationType] || notification.type}
                         </span>
                         <span className="text-[11px] text-gray-600">{formatArabicDate(notification.createdAt)}</span>
                       </div>
