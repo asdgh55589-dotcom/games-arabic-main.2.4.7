@@ -1,18 +1,27 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Bell, MessageCircle, Heart, Star, Shield, Settings, CheckCheck } from 'lucide-react'
+import { Bell, MessageCircle, Heart, Star, Shield, CheckCheck, Users, FileText, AlertTriangle, Award } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatArabicDate } from '@/lib/format'
+import { NotificationType, NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 import type { Notification } from '@/lib/types'
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  comment_reply: <MessageCircle className="h-4 w-4 text-blue-400" />,
-  mod_endorse: <Heart className="h-4 w-4 text-red-400" />,
-  mod_featured: <Star className="h-4 w-4 text-amber-400" />,
-  admin_action: <Shield className="h-4 w-4 text-purple-400" />,
-  system: <Settings className="h-4 w-4 text-gray-400" />,
+const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
+  [NotificationType.CommentReply]: <MessageCircle className="h-4 w-4 text-blue-400" />,
+  [NotificationType.Like]: <Heart className="h-4 w-4 text-red-400" />,
+  [NotificationType.ModEndorse]: <Heart className="h-4 w-4 text-red-400" />,
+  [NotificationType.ModEndorseMilestone]: <Star className="h-4 w-4 text-amber-400" />,
+  [NotificationType.ModFeatured]: <Star className="h-4 w-4 text-amber-400" />,
+  [NotificationType.TierUpgrade]: <Award className="h-4 w-4 text-orange-400" />,
+  [NotificationType.SpecialRoleAssigned]: <Shield className="h-4 w-4 text-purple-400" />,
+  [NotificationType.SpecialRoleRemoved]: <Shield className="h-4 w-4 text-gray-400" />,
+  [NotificationType.AdminAction]: <Shield className="h-4 w-4 text-purple-400" />,
+  [NotificationType.AdminUserRegister]: <Users className="h-4 w-4 text-green-400" />,
+  [NotificationType.AdminRequest]: <FileText className="h-4 w-4 text-cyan-400" />,
+  [NotificationType.AdminReport]: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
+  [NotificationType.AdminMilestone]: <Star className="h-4 w-4 text-amber-400" />,
 }
 
 interface NotificationDropdownProps {
@@ -35,7 +44,7 @@ export function NotificationDropdown({ notifications, loading, onMarkAsRead, onM
   }
 
   return (
-    <div className="absolute left-0 top-full z-50 mt-2 w-[380px] rounded-xl border border-[#333] bg-[#1a1a1a] shadow-2xl" dir="rtl">
+    <div className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-xl border border-[#333] bg-[#1a1a1a] shadow-2xl" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#333] px-4 py-3">
         <div className="flex items-center gap-2">
