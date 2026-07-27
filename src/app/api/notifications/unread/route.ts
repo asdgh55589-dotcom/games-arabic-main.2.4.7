@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ notifications: [] })
     }
 
-    const notifications = await db.notification.findMany({
+    const rawNotifications = await db.notification.findMany({
       where: {
         userId: neonUser.id,
         readAt: null,
@@ -35,6 +35,12 @@ export async function GET(_req: NextRequest) {
         createdAt: true,
       },
     })
+
+    const notifications = rawNotifications.map((n) => ({
+      ...n,
+      actor: (n.data as any)?.actor || null,
+      link: (n.data as any)?.link || null,
+    }))
 
     return NextResponse.json({ notifications })
   } catch (err) {

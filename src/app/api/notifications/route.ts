@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     if (read === 'true') where.readAt = { not: null }
     if (read === 'false') where.readAt = null
 
-    const [total, unreadCount, notifications] = await Promise.all([
+    const [total, unreadCount, rawNotifications] = await Promise.all([
       db.notification.count({ where }),
       db.notification.count({ where: { userId: neonUser.id, readAt: null } }),
       db.notification.findMany({
@@ -51,6 +51,12 @@ export async function GET(req: NextRequest) {
         },
       }),
     ])
+
+    const notifications = rawNotifications.map((n) => ({
+      ...n,
+      actor: (n.data as any)?.actor || null,
+      link: (n.data as any)?.link || null,
+    }))
 
     return NextResponse.json({
       notifications,
