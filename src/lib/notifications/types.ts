@@ -1,0 +1,31 @@
+export enum NotificationType {
+  CommentReply = 'comment_reply',
+  Like = 'like',
+  ModEndorse = 'mod_endorse',
+  ModEndorseMilestone = 'mod_endorse_milestone',
+  ModFeatured = 'mod_featured',
+  TierUpgrade = 'tier_upgrade',
+  SpecialRoleAssigned = 'special_role_assigned',
+  SpecialRoleRemoved = 'special_role_removed',
+  AdminAction = 'admin_action',
+  AdminUserRegister = 'admin_user_register',
+  AdminRequest = 'admin_request',
+  AdminReport = 'admin_report',
+  AdminMilestone = 'admin_milestone',
+}
+
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  [NotificationType.CommentReply]: 'رد على تعليق',
+  [NotificationType.Like]: 'إعجاب',
+  [NotificationType.ModEndorse]: 'تصويت على تعريب',
+  [NotificationType.ModEndorseMilestone]: 'إنجاز تصويت',
+  [NotificationType.ModFeatured]: 'تعريب مميز',
+  [NotificationType.TierUpgrade]: 'ترقية مستوى',
+  [NotificationType.SpecialRoleAssigned]: 'دور مخصص',
+  [NotificationType.SpecialRoleRemoved]: 'إزالة دور',
+  [NotificationType.AdminAction]: 'إجراء إداري',
+  [NotificationType.AdminUserRegister]: 'تسجيل مستخدم',
+  [NotificationType.AdminRequest]: 'طلب مستخدم',
+  [NotificationType.AdminReport]: 'بلاغ',
+  [NotificationType.AdminMilestone]: 'إنجاز إداري',
+}
