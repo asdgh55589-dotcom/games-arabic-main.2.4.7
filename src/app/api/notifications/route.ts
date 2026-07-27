@@ -49,13 +49,16 @@ export async function GET(req: NextRequest) {
           data: true,
           readAt: true,
           createdAt: true,
+          actor: {
+            select: { id: true, username: true, avatarUrl: true },
+          },
         },
       }),
     ])
 
     const notifications = rawNotifications.map((n) => ({
       ...n,
-      actor: (n.data as any)?.actor || null,
+      actor: n.actor || null,
       link: (n.data as any)?.link || null,
     }))
 
