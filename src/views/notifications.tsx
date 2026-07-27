@@ -39,7 +39,7 @@ export function NotificationsPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' })
-      if (filter !== 'all') params.set('unread', 'true')
+      if (filter !== 'all') params.set('read', 'false')
       const res = await fetch(`/api/notifications?${params}`)
       if (res.ok) {
         const data = await res.json()
