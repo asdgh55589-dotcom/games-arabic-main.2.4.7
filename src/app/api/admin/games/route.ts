@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { slugify } from '@/lib/utils'
 
 // GET /api/admin/games — قائمة الألعاب
 export async function GET() {
@@ -33,7 +34,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     let slug = body.slug || `${slugify(body.name)}-${(body.platform || '').toLowerCase()}`
 
     const existing = await db.game.findUnique({ where: { slug } })

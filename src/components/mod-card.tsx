@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { ThumbsUp, Download, Eye, Clock, Upload, FileArchive, MoreVertical, Users, Bookmark, Flag } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatNumber, timeAgo, formatDate } from '@/lib/format'
+import { ReportDialog } from '@/components/report-dialog'
+import { useBookmarks } from '@/contexts/bookmarks-context'
 import type { ModSummary } from '@/lib/types'
 
 export type ModCardData = ModSummary
@@ -104,6 +107,13 @@ function translateCategoryName(name: string): string {
 
 export function ModCard({ mod, compact = false, variant = 'default' }: { mod: ModCardData; compact?: boolean; variant?: ModCardVariant }) {
   const href = `/?view=mod&slug=${mod.slug}`
+  const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
+
+  useEffect(() => {
+    registerModIds([mod.id])
+  }, [mod.id, registerModIds])
+
+  const bookmarked = isBookmarked(mod.id)
 
   // تحديد نوع الشارة
   const now = Date.now()
@@ -123,61 +133,71 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
   const platform = mod.game?.platform || ''
 
   return (
-    <Card className="mod-card group relative flex min-h-[380px] flex-col gap-0 overflow-hidden border-border bg-card p-0 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5" dir="rtl">
+    <Card className="mod-card group relative flex min-h-[380px] flex-col gap-0 overflow-hidden rounded-none border-[3px] border-border bg-card p-0 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_var(--border)]" dir="rtl">
       {/* صورة landscape */}
       <div className="relative">
         <Link href={href} className="block">
-          <div className="relative z-0 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t bg-secondary">
+          <div className="relative z-0 flex aspect-[16/9] items-center justify-center overflow-hidden bg-secondary border-b-[3px] border-border">
             <img
               src={mod.thumbnailUrl}
               alt={mod.name}
               loading="lazy"
-              className="mod-card-image absolute z-2 max-h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="mod-card-image absolute z-2 max-h-full w-full object-cover transition-transform duration-150 group-hover:scale-105"
             />
           </div>
         </Link>
         {/* الشارات — يمين الصورة: شارة المنصة + شارة جديد/محدّث بجوارها */}
         <div className="absolute right-2 top-2 z-10 flex gap-1.5">
           {platform && (
-            <Badge variant="outline" className="border-border bg-background/80 backdrop-blur shadow-md">
+            <Badge variant="outline" className="border-[2px] border-border bg-background/90 font-black uppercase tracking-wider">
               {platform}
             </Badge>
           )}
           {statusBadge && (
-            <Badge className={`${statusBadge.color} shadow-md`}>
+            <Badge className={`${statusBadge.color} border-[2px] border-black font-black uppercase`}>
               {statusBadge.text}
             </Badge>
           )}
         </div>
-        {/* زر الخيارات — يسار الصورة (dropdown فيه حفظ في المفضلة + إبلاغ عن مشكلة) */}
+        {/* زر الخيارات — يسار الصورة */}
         <div className="absolute left-1.5 top-1.5 z-20 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="grid h-7 w-7 place-items-center rounded-full bg-background/60 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+                className="grid h-7 w-7 place-items-center border-[2px] border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="خيارات التعريب"
                 onClick={(e) => e.preventDefault()}
               >
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuContent align="start" className="w-48 border-[3px] border-border shadow-[4px_4px_0_0_var(--border)]">
               <DropdownMenuItem
-                onClick={() => {
-                  console.log('حفظ في المفضلة:', mod.slug)
+                onClick={async () => {
+                  try {
+                    const method = bookmarked ? 'DELETE' : 'POST'
+                    const body = bookmarked ? undefined : JSON.stringify({ modId: mod.id })
+                    const url = bookmarked ? `/api/bookmarks?modId=${mod.id}` : '/api/bookmarks'
+                    const res = await fetch(url, {
+                      method,
+                      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                      body,
+                    })
+                    if (res.ok) {
+                      toggleBookmark(mod.id)
+                    }
+                  } catch {}
                 }}
               >
-                <Bookmark className="ml-2 h-4 w-4" />
-                حفظ في المفضلة
+                <Bookmark className={`ml-2 h-4 w-4 ${bookmarked ? 'fill-current' : ''}`} />
+                {bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  console.log('إبلاغ عن مشكلة:', mod.slug)
-                }}
-              >
-                <Flag className="ml-2 h-4 w-4" />
-                إبلاغ عن مشكلة
-              </DropdownMenuItem>
+              <ReportDialog targetType="mod" targetId={mod.id}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Flag className="ml-2 h-4 w-4" />
+                  إبلاغ عن مشكلة
+                </DropdownMenuItem>
+              </ReportDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -188,7 +208,7 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         {/* العنوان — فوق المؤلف */}
         <Link
           href={href}
-          className="line-clamp-2 text-sm font-semibold leading-tight transition-colors hover:text-primary"
+          className="line-clamp-2 text-sm font-bold leading-tight transition-colors hover:text-primary"
         >
           {mod.name}
         </Link>
@@ -197,13 +217,13 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         {mod.author && (
           <Link
             href={`/?view=profile&user=${mod.author.username}`}
-            className="mt-2 flex items-center gap-1.5 border-b border-border pb-2.5 text-xs text-muted-foreground transition-colors hover:text-primary"
+            className="mt-2 flex items-center gap-1.5 border-b-[2px] border-border pb-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
           >
             {mod.author.avatarUrl && (
               <img
                 src={mod.author.avatarUrl}
                 alt=""
-                className="h-4 w-4 shrink-0 rounded-full object-cover"
+                className="h-4 w-4 shrink-0 object-cover border border-border"
                 loading="lazy"
               />
             )}
@@ -211,28 +231,24 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
           </Link>
         )}
 
-        {/* البيانات تحت المؤلف — بمساحة أوسع بين العناصر */}
-        <div className="flex flex-col gap-y-2 border-b border-border py-2.5 text-xs text-muted-foreground">
-          {/* تاريخ النشر */}
+        {/* البيانات تحت المؤلف */}
+        <div className="flex flex-col gap-y-2 border-b-[2px] border-border py-2.5 text-xs font-medium text-muted-foreground">
           <div className="flex items-center gap-x-1">
             <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span>تاريخ النشر: {formatDate(mod.releaseDate)}</span>
           </div>
-          {/* آخر تحديث — يتعرض بس لو التعريب اتحدث فعلاً (updatedAt ≠ createdAt) */}
           {new Date(mod.updatedAt).getTime() !== new Date(mod.createdAt).getTime() && (
             <div className="flex items-center gap-x-1">
               <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span>آخر تحديث: {timeAgo(mod.updatedAt)}</span>
             </div>
           )}
-          {/* الفريق التعريب */}
           {mod.translationTeam && (
             <div className="flex items-center gap-x-1">
               <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span>الفريق التعريب: {mod.translationTeam}</span>
             </div>
           )}
-          {/* الحجم */}
           <div className="flex items-center gap-x-1">
             <FileArchive className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span>الحجم: {mod.fileSize} .{mod.fileFormat}</span>
@@ -247,23 +263,21 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         )}
       </div>
 
-      {/* الشريط السفلي — الإحصائيات (تختلف حسب variant).
-          كل الأيقونات برتقالي (text-primary) للتوحيد في كل الموقع. */}
-      <div className="mt-auto flex min-h-9 items-center justify-center gap-x-4 rounded-b bg-secondary/50 px-3">
+      {/* الشريط السفلي — الإحصائيات */}
+      <div className="mt-auto flex min-h-9 items-center justify-center gap-x-4 border-t-[3px] border-border bg-secondary/50 px-3">
         {variant === 'latest' && (
           <>
-            {/* شارة جديد/محدّث + التأييدات (لايك) + التحميلات */}
             {statusBadge && (
-              <span className={`flex items-center gap-x-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${statusBadge.color}`} title="الحالة">
+              <span className={`flex items-center gap-x-1 px-1.5 py-0.5 text-[10px] font-black uppercase ${statusBadge.color}`} title="الحالة">
                 {statusBadge.text}
               </span>
             )}
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التأييدات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
               <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التأييدات </span>
               <span>{formatNumber(mod.endorsements)}</span>
             </span>
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التحميلات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
               <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التحميلات </span>
               <span>{formatNumber(mod.downloads)}</span>
@@ -272,13 +286,12 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         )}
         {variant === 'trending' && (
           <>
-            {/* التحميلات + المشاهدات */}
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التحميلات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
               <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التحميلات </span>
               <span>{formatNumber(mod.downloads)}</span>
             </span>
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="المشاهدات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="المشاهدات">
               <Eye className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">المشاهدات </span>
               <span>{formatNumber(mod.views)}</span>
@@ -287,8 +300,7 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         )}
         {variant === 'topEndorsed' && (
           <>
-            {/* التأييدات بس */}
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التأييدات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
               <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التأييدات </span>
               <span>{formatNumber(mod.endorsements)}</span>
@@ -297,18 +309,17 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
         )}
         {variant === 'default' && (
           <>
-            {/* التأييدات + التحميلات + المشاهدات */}
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التأييدات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
               <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التأييدات </span>
               <span>{formatNumber(mod.endorsements)}</span>
             </span>
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="التحميلات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
               <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">التحميلات </span>
               <span>{formatNumber(mod.downloads)}</span>
             </span>
-            <span className="flex items-center gap-x-1 text-xs text-muted-foreground" title="المشاهدات">
+            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="المشاهدات">
               <Eye className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="sr-only">المشاهدات </span>
               <span>{formatNumber(mod.views)}</span>
@@ -322,20 +333,20 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
 
 export function ModCardSkeleton() {
   return (
-    <Card className="overflow-hidden border-border bg-card p-0">
-      <div className="aspect-video animate-pulse bg-secondary" />
+    <Card className="overflow-hidden rounded-none border-[3px] border-border bg-card p-0 shadow-[4px_4px_0_0_var(--border)]">
+      <div className="aspect-video animate-pulse bg-secondary border-b-[3px] border-border" />
       <div className="space-y-2 px-3 pb-3 pt-3">
-        <div className="h-4 w-3/4 animate-pulse rounded bg-secondary" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-secondary" />
-        <div className="h-3 w-2/3 animate-pulse rounded bg-secondary pt-1" />
+        <div className="h-4 w-3/4 animate-pulse bg-secondary" />
+        <div className="h-3 w-1/2 animate-pulse bg-secondary" />
+        <div className="h-3 w-2/3 animate-pulse bg-secondary pt-1" />
         <div className="space-y-1 pt-1">
-          <div className="h-3 w-1/3 animate-pulse rounded bg-secondary" />
-          <div className="h-3 w-1/3 animate-pulse rounded bg-secondary" />
-          <div className="h-3 w-1/4 animate-pulse rounded bg-secondary" />
+          <div className="h-3 w-1/3 animate-pulse bg-secondary" />
+          <div className="h-3 w-1/3 animate-pulse bg-secondary" />
+          <div className="h-3 w-1/4 animate-pulse bg-secondary" />
         </div>
-        <div className="h-8 w-full animate-pulse rounded bg-secondary pt-1" />
+        <div className="h-8 w-full animate-pulse bg-secondary pt-1" />
       </div>
-      <div className="h-9 animate-pulse rounded-b bg-secondary" />
+      <div className="h-9 animate-pulse bg-secondary border-t-[3px] border-border" />
     </Card>
   )
 }

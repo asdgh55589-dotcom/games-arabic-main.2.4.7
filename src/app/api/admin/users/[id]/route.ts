@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, hashPassword, updateSupabaseAuthPassword, deleteSupabaseAuthUser, invalidateUserSessions } from '@/lib/auth'
+import { requireAdmin, invalidateUserSessions } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
 
 interface RouteParams {
@@ -22,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         avatarUrl: true,
         bio: true,
         role: true,
+        provider: true,
         tier: true,
         specialRoles: true,
         bannedUntil: true,
@@ -65,7 +66,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PUT /api/admin/users/[id] — تعديل مستخدم (دور، بيانات، كلمة مرور)
+// PUT /api/admin/users/[id] — تعديل مستخدم (دور، بيانات)
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const currentUser = await requireAdmin()
@@ -96,17 +97,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (body[field] !== undefined) updateData[field] = body[field]
     }
 
-    if (body.password) {
-      updateData.password = await hashPassword(body.password)
-      // تحديث كلمة المرور في Supabase Auth كمان
-      if (target.supabaseId) {
-        const ok = await updateSupabaseAuthPassword(target.supabaseId, body.password)
-        if (!ok) {
-          console.warn('[admin/users PUT] failed to update Supabase Auth password for', target.id)
-        }
-      }
-    }
-
     await db.user.update({ where: { id }, data: updateData })
 
     // لو تم تغيير الدور → إبطال الجلسات القديمة (tokenVersion)
@@ -132,21 +122,13 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'لا يمكنك حذف حسابك الخاص' }, { status: 403 })
     }
 
-    const target = await db.user.findUnique({ where: { id }, select: { role: true, supabaseId: true } })
+    const target = await db.user.findUnique({ where: { id }, select: { role: true } })
     if (!target) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     if (target.role === 'owner' && currentUser.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden — only owners can delete owners' }, { status: 403 })
-    }
-
-    // حذف المستخدم من Supabase Auth كمان
-    if (target.supabaseId) {
-      const ok = await deleteSupabaseAuthUser(target.supabaseId)
-      if (!ok) {
-        console.warn('[admin/users DELETE] failed to delete Supabase Auth user for', id)
-      }
     }
 
     await db.user.delete({ where: { id } })

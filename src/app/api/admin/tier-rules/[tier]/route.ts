@@ -34,3 +34,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
   }
 }
+
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  try {
+    await requireAdmin()
+    const { tier: tierStr } = await params
+    const tier = parseInt(tierStr, 10)
+
+    await db.tierRule.delete({ where: { tier } })
+
+    return NextResponse.json({ message: 'تم الحذف' })
+  } catch (err) {
+    const status = (err as { status?: number })?.status || 500
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+  }
+}

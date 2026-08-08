@@ -7,6 +7,7 @@ import { ArrowLeft, Gamepad2, Monitor, Smartphone, Layers } from 'lucide-react'
 
 const PLATFORMS = [
   { key: 'PC', label: 'ARABIC PC', desc: 'تعريبات ألعاب الحاسوب الشخصي', icon: Monitor, color: 'from-orange-500 to-amber-600' },
+  { key: 'X360', label: 'ARABIC XBOX 360', desc: 'تعريبات ألعاب Xbox 360', icon: Gamepad2, color: 'from-green-500 to-green-700' },
   { key: 'NS', label: 'ARABIC NS', desc: 'تعريبات ألعاب Nintendo Switch', icon: Smartphone, color: 'from-red-500 to-rose-600' },
   { key: 'PS4', label: 'ARABIC PS4', desc: 'تعريبات ألعاب PlayStation 4', icon: Gamepad2, color: 'from-blue-500 to-indigo-600' },
   { key: 'PS3', label: 'ARABIC PS3', desc: 'تعريبات ألعاب PlayStation 3', icon: Gamepad2, color: 'from-blue-700 to-blue-900' },

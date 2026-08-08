@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { requireModerator, canEditMod, canDelete } from '@/lib/auth'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
+import { slugify } from '@/lib/utils'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -96,8 +97,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     // slug لو اتعدّل
-    if (body.slug && body.slug !== existing) {
-      const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (body.slug && body.slug !== existing.slug) {
       updateData.slug = slugify(body.slug)
     }
 
@@ -105,7 +105,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       await tx.mod.update({ where: { id }, data: updateData })
 
       // ===== تحديث الـ relations =====
-      const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
       // ملفات التحميل — امسح القديمة وأنشئ الجديدة
       if (Array.isArray(body.files)) {

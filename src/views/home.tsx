@@ -12,16 +12,8 @@ import { AdSection } from '@/components/ad-section'
 import { NewsTicker } from '@/components/news-ticker'
 import { NewsFeatured } from '@/components/news-featured'
 import { formatNumber } from '@/lib/format'
+import { PLATFORMS } from '@/lib/constants'
 import type { HomeData } from '@/lib/types'
-
-const PLATFORMS = [
-  { key: 'PC', label: 'ARABIC PC' },
-  { key: 'NS', label: 'ARABIC NS' },
-  { key: 'PS4', label: 'ARABIC PS4' },
-  { key: 'PS3', label: 'ARABIC PS3' },
-  { key: 'PS2', label: 'ARABIC PS2' },
-  { key: 'PS1', label: 'ARABIC PS1' },
-] as const
 
 export function HomePage() {
   useDocumentTitle(null)
@@ -76,25 +68,17 @@ export function HomePage() {
           const showDivider = firstSectionRendered
           firstSectionRendered = true
           return (
-            <section key={platform.key} className={showDivider ? "pt-6" : "pt-4"}>
-              {/* فاصل بارز بين الأقسام */}
-              {showDivider && (
-                <div className="mb-6 h-1 bg-zinc-700" />
-              )}
-              {/* عنوان القسم */}
-              <div className="mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                    {platform.label}
-                  </h2>
-                </div>
-                <Button asChild variant="ghost" size="sm" className="shrink-0 text-primary hover:text-primary">
+            <section key={platform.key} className={showDivider ? "pt-4" : "pt-2"}>
+              <div className="mb-3 flex items-center justify-between border-b-[3px] border-border pb-3">
+                <h2 className="text-xl font-black uppercase tracking-wider text-foreground">
+                  {platform.label}
+                </h2>
+                <Button asChild variant="outline" size="sm" className="shrink-0 border-[2px] border-border font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_var(--border)]">
                   <Link href={`/?view=platform&platform=${platform.key}`}>
                     عرض الكل <ArrowLeft className="mr-1.5 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
-              {/* 10 بطاقات ModCard لكل قسم */}
               <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-5">
                 {loading
                   ? Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)
@@ -106,8 +90,8 @@ export function HomePage() {
       })()}
 
       {/* سلاسل التعريبات */}
-      <section className="pt-6">
-        <div className="mb-6 h-1 bg-zinc-700" />
+      <section className="pt-4">
+        <div className="mb-6 h-[3px] bg-border" />
         <SectionHeader
           title="سلاسل التعريبات"
           subtitle="استكشف التعريبات حسب السلسلة"
@@ -116,13 +100,13 @@ export function HomePage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-28 animate-pulse rounded-lg bg-secondary" />
+                <div key={i} className="h-28 animate-pulse bg-secondary border-[3px] border-border" />
               ))
             : data?.topSeries?.slice(0, 6).map((s) => (
                 <Link
                   key={s.name}
                   href={`/?view=series-detail&series=${encodeURIComponent(s.name)}`}
-                  className="group relative flex h-28 flex-col justify-end overflow-hidden rounded-lg border border-border bg-card p-3 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                  className="group relative flex h-28 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[3px_3px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_0_var(--border)]"
                 >
                   <img
                     src={s.thumbnailUrl}
@@ -132,10 +116,10 @@ export function HomePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
                   <div className="relative">
-                    <h3 className="line-clamp-1 text-sm font-bold text-foreground group-hover:text-primary">
+                    <h3 className="line-clamp-1 text-sm font-black uppercase tracking-wider text-foreground group-hover:text-primary">
                       {s.name}
                     </h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
                       {formatNumber(s.count)} تعريب
                     </p>
                   </div>
@@ -153,12 +137,12 @@ export function HomePage() {
 
 function SectionHeader({ title, subtitle, href }: { title: string; subtitle: string; href: string }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4">
+    <div className="mb-3 flex items-end justify-between gap-4 border-b-[3px] border-border pb-3">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        <h2 className="text-xl font-black uppercase tracking-wider">{title}</h2>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">{subtitle}</p>
       </div>
-      <Button asChild variant="ghost" size="sm" className="shrink-0 text-primary hover:text-primary">
+      <Button asChild variant="outline" size="sm" className="shrink-0 border-[2px] border-border font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_var(--border)]">
         <Link href={href}>
           عرض الكل
           <ArrowLeft className="mr-1.5 h-4 w-4" />

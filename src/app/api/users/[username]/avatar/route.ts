@@ -26,6 +26,8 @@ interface RouteParams {
 // POST /api/users/[username]/avatar — رفع صورة شخصية
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    const startedAt = Date.now()
+
     const supabase = await createClient()
     const { data: { user: supabaseUser } } = await supabase.auth.getUser()
     if (!supabaseUser) {
@@ -72,7 +74,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     // قراءة الملف لفحص magic bytes
+    const arrayBufferStartedAt = Date.now()
     const arrayBuffer = await file.arrayBuffer()
+
+    console.log('[avatar upload] arrayBuffer ms:', Date.now() - arrayBufferStartedAt)
 
     // فحص نوع الملف عبر magic bytes (أكثر موثوقية من file.type)
     const detectedMime = checkMagicBytes(arrayBuffer)
@@ -82,12 +87,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // رفع إلى Supabase Storage
     const path = `avatars/${neonUser.id}.${ext || 'jpg'}`
+    const uploadStartedAt = Date.now()
+
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, arrayBuffer, {
         contentType: detectedMime,
         upsert: true,
       })
+
+    console.log('[avatar upload] storage upload ms:', Date.now() - uploadStartedAt)
 
     if (uploadError) {
       // لو Bucket مش موجود، ننشئه
@@ -101,10 +110,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
     const avatarUrl = urlData.publicUrl
 
+    const dbStartedAt = Date.now()
+
     await db.user.update({
       where: { id: neonUser.id },
       data: { avatarUrl },
     })
+
+    console.log('[avatar upload] db update ms:', Date.now() - dbStartedAt)
+    console.log('[avatar upload] total ms:', Date.now() - startedAt)
 
     return NextResponse.json({ avatarUrl })
   } catch (err) {

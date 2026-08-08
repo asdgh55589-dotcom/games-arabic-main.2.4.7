@@ -6,6 +6,7 @@ import { logAction } from '@/lib/audit'
 
 // POST /api/admin/setup — إنشاء أول حساب owner
 // محمي: لا يعمل لو يوجد owner بالفعل (flag في DB)
+// ملاحظة: هذا الـ route للإعداد الأولي فقط — يستخدم كلمة مرور من env
 export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 3, window: 300, keyPrefix: 'admin:setup' })
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Owner account already exists', setup: false })
     }
 
-    // تحقق من وجود OWNER_PASSWORD في env (لا fallback لـ JWT_SECRET)
+    // تحقق من وجود OWNER_PASSWORD في env
     const username = process.env.OWNER_USERNAME
     const email = process.env.OWNER_EMAIL
     const password = process.env.OWNER_PASSWORD
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
         supabaseId: supabaseId || undefined,
         role: 'owner',
         bio: 'مالك و مؤسس منصة ألعاب بالعربي',
+        provider: 'admin',
         joinedAt: new Date(),
       },
     })

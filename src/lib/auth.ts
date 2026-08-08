@@ -2,26 +2,31 @@
  * lib/auth.ts — نظام المصادقة (Supabase Auth + Neon DB).
  *
  * يستخدم:
- *   - Supabase Auth للمصادقة (تسجيل الدخول/الخروج، الجلسات)
+ *   - Supabase Auth للمصادقة عبر OAuth (Google, Discord, Telegram)
  *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
- *   - bcryptjs لتشفير كلمات المرور في Neon DB
  *
  * الصلاحيات:
  *   - owner     → كل شيء + إدارة الأدوار + إعدادات الموقع
  *   - admin     → كل التعريبات/الألعاب + إدارة المستخدمين
  *   - moderator → نشر/تعديل التعريبات (تعريبه بس) — مش حذف
  *   - member    → مش لوحة تحكم
+ *
+ * ملاحظة: المستخدمون العاديون يسجّلون عبر OAuth فقط.
+ *          كلمة المرور تُستخدم فقط لإدارة حساب Owner في وضع التطوير.
  */
 
 import { NextRequest } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
+
+// Re-export for use in other modules
+export { jwtVerify }
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { db } from './db'
 import { createClient } from './supabase/server'
 
-const getJWTSecret = (): Uint8Array => {
+export const getJWTSecret = (): Uint8Array => {
   const secret = process.env.JWT_SECRET
   if (!secret) {
     throw new Error('JWT_SECRET environment variable is required')
@@ -34,12 +39,15 @@ const JWT_SECRET = getJWTSecret()
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 const ROLE_COOKIE_DURATION = 60 * 60 * 24 * 7 // 7 أيام بالثواني
 
+// ===== Role types =====
+export type UserRole = 'member' | 'moderator' | 'admin' | 'owner'
+
 // ===== User type returned by getSession =====
 export interface SessionUser {
   id: string
   username: string
   email: string
-  role: string
+  role: UserRole
   avatarUrl: string | null
 }
 
@@ -48,11 +56,6 @@ export interface SessionUser {
 /** تشفير كلمة المرور باستخدام bcrypt */
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, 10)
-}
-
-/** التحقق من كلمة المرور مقابل الـ hash */
-export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(plain, hash)
 }
 
 // ===== Session helpers (server-side) =====
@@ -86,6 +89,7 @@ export async function getSession(): Promise<SessionUser | null> {
 
     // التحقق من tokenVersion ضد الـ role cookie
     // لو الـ cookie يحمل tv قديم → الجلسة منتهية
+    // لو ما فيش cookie والمستخدم عنده tokenVersion > 0 → الجلسة منتهية (تم حذف الكوكي)
     try {
       const cookieStore = await cookies()
       const token = cookieStore.get(ROLE_COOKIE_NAME)?.value
@@ -96,12 +100,22 @@ export async function getSession(): Promise<SessionUser | null> {
           cookieStore.delete(ROLE_COOKIE_NAME)
           return null
         }
+      } else if (user.tokenVersion > 0) {
+        // ما فيش cookie والمستخدم عنده tokenVersion — يعني تم حذف الكوكي يدوياً أو الحظر
+        return null
       }
     } catch {
-      // cookie غير صالح أو منتهي — نتجاهل (getSession يُستخدم للأعضاء العاديين أيضاً)
+      // cookie غير صالح — نعتبر الجلسة منتهية
+      return null
     }
 
-    return user
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role as UserRole,
+      avatarUrl: user.avatarUrl,
+    }
   } catch {
     return null
   }
@@ -158,9 +172,9 @@ export async function syncNeonUser(supabaseUser: {
 
 // ===== Role cookie helpers =====
 
-/** إنشاء role cookie — بيحط الـ role + tokenVersion في httpOnly cookie موقّع */
-export async function setRoleCookie(role: string, tokenVersion?: number): Promise<void> {
-  const payload: Record<string, unknown> = { role }
+/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion في httpOnly cookie موقّع */
+export async function setRoleCookie(userId: string, role: UserRole, tokenVersion?: number): Promise<void> {
+  const payload: Record<string, unknown> = { userId, role }
   if (tokenVersion !== undefined) payload.tv = tokenVersion
 
   const token = await new SignJWT(payload)
@@ -176,6 +190,7 @@ export async function setRoleCookie(role: string, tokenVersion?: number): Promis
     sameSite: 'lax',
     path: '/',
     maxAge: ROLE_COOKIE_DURATION,
+    domain: process.env.COOKIE_DOMAIN || undefined,
   })
 }
 
@@ -238,12 +253,6 @@ export function canEditMod(user: SessionUser, mod: { authorId: string }): boolea
  */
 export function canDelete(user: SessionUser): boolean {
   return user.role === 'admin' || user.role === 'owner'
-}
-
-/** فحص: هل المستخدم محظور حالياً؟ ( legacy — يعتمد على bannedUntil فقط ) */
-export function isUserBanned(user: { bannedUntil: Date | null }): boolean {
-  if (!user.bannedUntil) return false
-  return user.bannedUntil > new Date()
 }
 
 // ===== Ban system helpers =====
@@ -319,9 +328,11 @@ export async function checkIpBan(ip: string): Promise<{
 
 /** استخراج IP من طلب Next.js */
 export function getClientIp(req: { headers: Headers }): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || req.headers.get('x-real-ip')
-    || 'unknown'
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  if (forwarded) return forwarded
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp
+  return 'unknown'
 }
 
 // ===== Error class =====
@@ -338,12 +349,12 @@ export class AuthError extends Error {
 // ===== Middleware helpers (Edge runtime compatible) =====
 
 /** قراءة الـ role من Request cookies (للـ middleware — Edge runtime) */
-export async function getRoleFromRequestCookies(req: NextRequest): Promise<string | null> {
+export async function getRoleFromRequestCookies(req: NextRequest): Promise<UserRole | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload.role as string
+    return payload.role as UserRole
   } catch {
     return null
   }
@@ -358,7 +369,8 @@ export const ROLE_COOKIE = ROLE_COOKIE_NAME
 export async function createSupabaseAuthUser(
   email: string,
   password: string,
-  username: string
+  username: string,
+  options?: { emailConfirm?: boolean }
 ): Promise<string | null> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceRoleKey || serviceRoleKey === 'REPLACE_WITH_SERVICE_ROLE_KEY') return null
@@ -375,7 +387,7 @@ export async function createSupabaseAuthUser(
       body: JSON.stringify({
         email,
         password,
-        email_confirm: true,
+        email_confirm: options?.emailConfirm ?? true,
         user_metadata: { username },
       }),
     })

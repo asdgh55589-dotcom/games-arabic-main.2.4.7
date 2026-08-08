@@ -7,8 +7,6 @@ const globalForPrisma = globalThis as unknown as {
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    // Only log errors and warnings by default — query logging is extremely noisy
-    // and slows down request handling. Enable explicitly when debugging.
     log: ['error', 'warn'],
   })
 

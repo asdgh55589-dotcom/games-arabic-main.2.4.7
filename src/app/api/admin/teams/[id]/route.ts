@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-
-function slugify(name: string): string {
-  return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')
-}
+import { requireModerator, canDelete } from '@/lib/auth'
+import { slugify } from '@/lib/utils'
 
 // GET /api/admin/teams/[id] — تفاصيل الفريق
 export async function GET(
@@ -80,7 +77,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireModerator()
+    const user = await requireModerator()
+    if (!canDelete(user)) {
+      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+    }
     const { id } = await params
 
     const existing = await db.team.findUnique({ where: { id } })
@@ -91,7 +91,7 @@ export async function DELETE(
     // إلغاء الربط من التعريبات
     await db.mod.updateMany({ where: { teamId: id }, data: { teamId: null } })
     await db.team.delete({ where: { id } })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/teams/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

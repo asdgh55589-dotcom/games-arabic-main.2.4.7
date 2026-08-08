@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
-
-function slugify(name: string): string {
-  return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')
-}
+import { slugify } from '@/lib/utils'
 
 // GET /api/admin/news — قائمة الأخبار
 export async function GET(req: NextRequest) {

@@ -1,4 +1,8 @@
 import { db } from './db'
+import { slugify } from './utils'
+
+// re-export for backward compatibility
+export { slugify }
 
 /** حدّث العدد المخزّن لسلسلة معينة */
 export async function syncSeriesCounts(seriesId: string) {
@@ -16,15 +20,4 @@ export async function syncSeriesCounts(seriesId: string) {
       totalEndorsements: agg._sum.endorsements || 0,
     },
   })
-}
-
-/** جلب slug من الاسم (عربي/إنجليزي) */
-export function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u0600-\u06FF-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
 }

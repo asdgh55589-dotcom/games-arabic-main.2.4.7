@@ -82,23 +82,60 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">إدارة البلاغات</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{total} بلاغ مسجل</p>
+    <div className="space-y-8">
+      <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#111214]/90 p-7">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,80,80,0.12),transparent_30%),radial-gradient(circle_at_left,rgba(255,180,70,0.08),transparent_25%)]" />
+
+        <div className="relative flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-500/15 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-red-300/80">
+              Trust & Safety
+            </div>
+
+            <h1 className="mt-5 text-4xl font-black text-white">
+              مركز البلاغات والإشراف
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-base leading-8 text-white/60">
+              مراجعة البلاغات وإدارة المحتوى المخالف ومتابعة نشاط المجتمع من مركز إشراف موحد.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:min-w-[420px]">
+            <div className="rounded-2xl border border-red-500/15 bg-red-500/10 p-5">
+              <div className="text-xs font-black uppercase tracking-[0.25em] text-red-300/80">
+                Total Reports
+              </div>
+
+              <div className="mt-3 text-4xl font-black text-red-300">
+                {total}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-yellow-500/15 bg-yellow-500/10 p-5">
+              <div className="text-xs font-black uppercase tracking-[0.25em] text-yellow-300/80">
+                Moderation Queue
+              </div>
+
+              <div className="mt-3 text-4xl font-black text-yellow-300">
+                {reports.filter((r) => r.status === 'pending').length}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <ReportStatsCards />
 
       <ReportTrendChart />
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 rounded-[28px] border border-white/10 bg-[#111214]/90 p-5">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            className="h-11 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
           >
             <option value="">كل الحالات</option>
             {Object.entries(REPORT_STATUSES).map(([k, v]) => (
@@ -109,7 +146,7 @@ export default function AdminReportsPage() {
         <select
           value={reasonFilter}
           onChange={(e) => { setReasonFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+          className="h-11 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
         >
           <option value="">كل الأسباب</option>
           {Object.entries(REPORT_REASONS).map(([k, v]) => (
@@ -119,7 +156,7 @@ export default function AdminReportsPage() {
         <select
           value={priorityFilter}
           onChange={(e) => { setPriorityFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+          className="h-11 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
         >
           <option value="">كل الأولويات</option>
           {Object.entries(REPORT_PRIORITIES).map(([k, v]) => (
@@ -129,7 +166,7 @@ export default function AdminReportsPage() {
         <select
           value={targetTypeFilter}
           onChange={(e) => { setTargetTypeFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+          className="h-11 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
         >
           <option value="">كل الأنواع</option>
           {Object.entries(REPORT_TARGET_TYPES).map(([k, v]) => (
@@ -159,9 +196,9 @@ export default function AdminReportsPage() {
           <h3 className="text-lg font-semibold">لا توجد بلاغات</h3>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#111214]/90">
           <table className="w-full text-right">
-            <thead className="border-b border-border bg-card/50 text-xs uppercase text-muted-foreground">
+            <thead className="border-b border-white/10 bg-white/[0.03] text-xs uppercase tracking-wide text-white/45">
               <tr>
                 <th className="px-4 py-3 font-semibold">النوع</th>
                 <th className="px-4 py-3 font-semibold">السبب</th>
@@ -173,10 +210,10 @@ export default function AdminReportsPage() {
                 <th className="px-4 py-3 font-semibold">إجراء</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-white/6">
               {reports.map((report) => (
-                <tr key={report.id} className="text-sm transition-colors hover:bg-accent/30">
-                  <td className="px-4 py-3">
+                <tr key={report.id} className="text-sm transition-colors hover:bg-white/[0.03]">
+                  <td className="px-5 py-4">
                     <span className="flex items-center gap-1.5">
                       {TARGET_ICONS[report.targetType]}
                       {REPORT_TARGET_TYPES[report.targetType as ReportTargetType]?.label || report.targetType}
@@ -186,27 +223,27 @@ export default function AdminReportsPage() {
                     <span className="text-xs">{REPORT_REASONS[report.reason as ReportReason]?.label || report.reason}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${REPORT_PRIORITIES[report.priority as ReportPriority]?.color || ''}`}>
+                    <span className={`inline-block rounded-full px-3 py-1 text-xs font-black shadow-lg ${REPORT_PRIORITIES[report.priority as ReportPriority]?.color || ''}`}>
                       {REPORT_PRIORITIES[report.priority as ReportPriority]?.label || report.priority}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <ReportStatusBadge status={report.status as any} />
                   </td>
-                  <td className="hidden px-4 py-3 text-xs md:table-cell">
-                    {report.reporter?.username || 'مجهول'}
-                  </td>
-                  <td className="hidden px-4 py-3 text-xs md:table-cell">
+                   <td className="hidden px-4 py-3 text-xs text-white/60 md:table-cell">
+                     {report.reporter?.username || 'مجهول'}
+                   </td>
+                   <td className="hidden px-4 py-3 text-xs text-white/60 md:table-cell">
                     {report.assignedTo?.username || (
                       <span className="text-muted-foreground">غير مُعيَّن</span>
                     )}
                   </td>
-                  <td className="hidden px-4 py-3 text-xs text-muted-foreground sm:table-cell">
-                    {timeAgo(report.createdAt)}
-                  </td>
+                   <td className="hidden px-4 py-3 text-xs text-white/40 sm:table-cell">
+                     {timeAgo(report.createdAt)}
+                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/reports/${report.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="rounded-xl border border-white/10 bg-white/[0.03] text-white/60 hover:text-primary">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </Link>

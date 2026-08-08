@@ -29,6 +29,8 @@ model User {
   githubUrl              String? // رابط GitHub
   discordUrl             String? // رابط Discord
   accentColor            String?                 @default("#ff8c00") // اللون المميز للملف الشخصي
+  profileVisibility      String                  @default("everyone") // everyone | followers | nobody
+  hideJoinDate           Boolean                 @default(false) // إخفاء تاريخ الانضمام
   role                   String                  @default("member") // member | moderator | admin | owner
   bannedUntil            DateTime? // null = غير محظور
   banStatus              String                  @default("active") // active | banned_temp | banned_perm | restricted

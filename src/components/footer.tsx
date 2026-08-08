@@ -71,6 +71,7 @@ export function Footer() {
             <h3 className="text-xs font-semibold text-muted-foreground mb-2">الأقسام</h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
               <FooterLink href="/?view=platform&platform=PC">ARABIC PC</FooterLink>
+              <FooterLink href="/?view=platform&platform=X360">ARABIC XBOX 360</FooterLink>
               <FooterLink href="/?view=platform&platform=NS">ARABIC NS</FooterLink>
               <FooterLink href="/?view=platform&platform=PS4">ARABIC PS4</FooterLink>
               <FooterLink href="/?view=platform&platform=PS3">ARABIC PS3</FooterLink>

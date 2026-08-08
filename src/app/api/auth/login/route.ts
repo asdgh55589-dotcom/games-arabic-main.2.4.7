@@ -5,6 +5,7 @@ import {
   hashPassword,
   getBanStatus,
   createSupabaseAuthUser,
+  type UserRole,
 } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
@@ -24,15 +25,25 @@ function requireOwnerEnv() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('OWNER_USERNAME, OWNER_EMAIL, OWNER_PASSWORD must be set in production')
     }
+    // في وضع التطوير، نستخدم قيم افتراضية مع تحذير
+    console.warn('[auth/login] OWNER_USERNAME/OWNER_EMAIL/OWNER_PASSWORD not set — using dev defaults')
     return { username: username || 'owner', email: email || 'owner@localhost', password: password || 'owner123' }
   }
   return { username, email, password }
 }
 
+// كاش لمنع ensureOwnerExists من الاستدعاء المتكرر في نفس البروسيس
+let ownerEnsured = false
+
 /** ضمان وجود حساب الـ owner في Neon DB و Supabase Auth */
 async function ensureOwnerExists() {
+  if (ownerEnsured) return
+
   const existing = await db.user.findFirst({ where: { role: 'owner' } })
-  if (existing) return
+  if (existing) {
+    ownerEnsured = true
+    return
+  }
 
   const { username, email, password } = requireOwnerEnv()
 
@@ -56,6 +67,8 @@ async function ensureOwnerExists() {
       data: { supabaseId },
     })
   }
+
+  ownerEnsured = true
 }
 
 // POST /api/auth/login — تسجيل الدخول باستخدام Supabase Auth
@@ -132,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     // لو فشل → نحاول إنشاء المستخدم في Supabase Auth ثم نعيد المحاولة
     if (authError || !authData.user) {
-      console.error('[auth/login] Supabase Auth failed:', authError?.message)
+      console.error('[auth/login] Supabase Auth login failed for user:', neonUser.id)
 
       const supabaseId = await createSupabaseAuthUser(neonUser.email, password, neonUser.username)
       if (!supabaseId) {
@@ -173,7 +186,7 @@ export async function POST(req: NextRequest) {
     }
 
     // إنشاء role cookie مع tokenVersion
-    await setRoleCookie(neonUser.role, neonUser.tokenVersion)
+    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
 
     // تتبع تسجيل الدخول
     await db.user.update({

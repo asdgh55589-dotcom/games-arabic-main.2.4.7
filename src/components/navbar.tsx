@@ -1,15 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity } from 'lucide-react'
+import { PcIcon, NintendoSwitchIcon, PlayStationIcon, Xbox360Icon } from '@/components/platform-icons'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ThemeSwitcher } from '@/components/theme-switcher'
 import { NotificationBell } from '@/components/notification-bell'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -20,19 +20,22 @@ import type { SearchResponse } from '@/lib/types'
 
 interface NavbarProps {
   games: { slug: string; name: string; thumbnailUrl: string; modCount: number; platform: string }[]
+  currentView?: string
 }
 
 const PLATFORMS = [
-  { key: 'PC', label: 'ARABIC PC' },
-  { key: 'NS', label: 'ARABIC NS' },
-  { key: 'PS4', label: 'ARABIC PS4' },
-  { key: 'PS3', label: 'ARABIC PS3' },
-  { key: 'PS2', label: 'ARABIC PS2' },
-  { key: 'PS1', label: 'ARABIC PS1' },
+  { key: 'PC', label: 'ARABIC PC', icon: PcIcon, color: '#0078D4' },
+  { key: 'X360', label: 'ARABIC XBOX 360', icon: Xbox360Icon, color: '#107C10' },
+  { key: 'NS', label: 'ARABIC NS', icon: NintendoSwitchIcon, color: '#E60012' },
+  { key: 'PS4', label: 'ARABIC PS4', icon: PlayStationIcon, color: '#0070D1' },
+  { key: 'PS3', label: 'ARABIC PS3', icon: PlayStationIcon, color: '#003087' },
+  { key: 'PS2', label: 'ARABIC PS2', icon: PlayStationIcon, color: '#4A4A4A' },
+  { key: 'PS1', label: 'ARABIC PS1', icon: PlayStationIcon, color: '#8C8C8C' },
 ] as const
 
-export function Navbar({ games }: NavbarProps) {
+export function Navbar({ games, currentView = 'home' }: NavbarProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [q, setQ] = useState('')
   const [suggestions, setSuggestions] = useState<SearchResponse>({ mods: [], games: [] })
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -49,7 +52,10 @@ export function Navbar({ games }: NavbarProps) {
 
   // التحقق من تسجيل الدخول
   useEffect(() => {
-    fetch('/api/auth/me')
+    fetch('/api/auth/me', {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+    })
       .then((r) => r.json())
       .then((data) => setCurrentUser(data?.user || null))
       .catch(() => setCurrentUser(null))
@@ -162,7 +168,7 @@ export function Navbar({ games }: NavbarProps) {
   // الشريط العلوي — موسّع، اللوجو على اليسار
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm" dir="ltr">
-      <div className="mx-auto flex h-16 max-w-[1700px] items-center gap-6 px-6">
+      <div className="flex h-12 max-w-[1700px] items-center gap-4 px-4">
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -183,24 +189,27 @@ export function Navbar({ games }: NavbarProps) {
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-1">
-              {PLATFORMS.map((p) => (
-                <MobileLink key={p.key} href={`/?view=platform&platform=${p.key}`} onClick={() => setMobileOpen(false)}>
-                  {p.label}
-                </MobileLink>
-              ))}
+              {PLATFORMS.map((p) => {
+                const Icon = p.icon
+                return (
+                  <MobileLink key={p.key} href={`/?view=platform&platform=${p.key}`} onClick={() => setMobileOpen(false)} isActive={currentView === 'platform' && searchParams.get('platform') === p.key}>
+                    {p.label} <Icon width={14} height={14} color={p.color} className="inline-block align-middle ms-1" />
+                  </MobileLink>
+                )
+              })}
 
-              <MobileLink href="/?view=series" onClick={() => setMobileOpen(false)}>
+              <MobileLink href="/?view=series" onClick={() => setMobileOpen(false)} isActive={currentView === 'series' || currentView === 'series-detail'}>
+                <Package width={16} height={16} style={{ color: '#8B5CF6' }} className="inline-block align-middle me-1" />
                 السلاسل
               </MobileLink>
 
-              <MobileLink href="/?view=teams" onClick={() => setMobileOpen(false)}>
-                <Users className="h-4 w-4" />
-                الفرق التعريب
+              <MobileLink href="/?view=teams" onClick={() => setMobileOpen(false)} isActive={currentView === 'teams' || currentView === 'team-detail'}>
+                <Users width={16} height={16} style={{ color: '#F59E0B' }} className="inline-block align-middle me-1" />
+                الفرق
               </MobileLink>
 
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex items-center justify-end px-3">
-          <ThemeSwitcher />
           <NotificationBell currentUser={currentUser} />
                 </div>
                 {currentUser ? (
@@ -235,42 +244,62 @@ export function Navbar({ games }: NavbarProps) {
           </SheetContent>
         </Sheet>
 
-        {/* Logo — English, على اليسار */}
-        <Link href="/" className="flex shrink-0 items-center gap-1" aria-label="Games Arabic home">
-          <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-gradient">{siteName.split(' ')[0] || 'GAMES'}</span>
-            <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
-          </span>
-        </Link>
+        {/* Left group: Logo + Desktop nav — يبقى على اليسار مع بعض */}
+        <div className="flex items-center gap-4 shrink-0">
+          {/* Logo — English, على اليسار */}
+          <Link href="/" className="flex shrink-0 items-center gap-1" aria-label="Games Arabic home">
+            <span className="text-2xl font-extrabold tracking-tight">
+              <span className="text-gradient">{siteName.split(' ')[0] || 'GAMES'}</span>
+              <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
+            </span>
+          </Link>
 
-        {/* Desktop nav — المنصات فقط (الفئات الإضافية في الـ footer) */}
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {PLATFORMS.map((p) => (
-            <Link
-              key={p.key}
-              href={`/?view=platform&platform=${p.key}`}
-              className="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-primary"
-            >
-              {p.label}
-            </Link>
-          ))}
+          {/* Desktop nav — المنصات فقط (الفئات الإضافية في الـ footer) */}
+          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Main">
+          {PLATFORMS.map((p) => {
+            const isActive = currentView === 'platform' && searchParams.get('platform') === p.key
+            const Icon = p.icon
+            return (
+              <Link
+                key={p.key}
+                href={`/?view=platform&platform=${p.key}`}
+                className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary/15 text-primary border border-primary/30'
+                    : 'text-foreground/80 hover:bg-accent hover:text-primary'
+                }`}
+              >
+                {p.label} <Icon width={14} height={14} color={p.color} className="inline-block align-middle ms-1" />
+              </Link>
+            )
+          })}
           <Link
             href="/?view=series"
-            className="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-primary"
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              currentView === 'series' || currentView === 'series-detail'
+                ? 'bg-primary/15 text-primary border border-primary/30'
+                : 'text-foreground/80 hover:bg-accent hover:text-primary'
+            }`}
           >
+            <Package width={14} height={14} style={{ color: '#8B5CF6' }} className="inline-block align-middle" />
             السلاسل
           </Link>
           <Link
             href="/?view=teams"
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-primary"
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors -ms-2 ${
+              currentView === 'teams' || currentView === 'team-detail'
+                ? 'bg-primary/15 text-primary border border-primary/30'
+                : 'text-foreground/80 hover:bg-accent hover:text-primary'
+            }`}
           >
-            <Users className="h-3.5 w-3.5" />
-            الفرق التعريب
+            <Users width={14} height={14} style={{ color: '#F59E0B' }} className="inline-block align-middle" />
+            الفرق
           </Link>
         </nav>
+        </div>
 
-        {/* Smart Search — متوسّع وذكي */}
-        <div ref={searchRef} className="relative flex-1 max-w-2xl mx-auto">
+        {/* Smart Search — عرض ثابت، لا يتمدّد */}
+        <div ref={searchRef} className="relative w-[380px] max-w-[calc(100%-340px)] min-w-[220px] shrink-0">
           <form onSubmit={onSearch} role="search">
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -366,26 +395,24 @@ export function Navbar({ games }: NavbarProps) {
         </div>
 
         {/* Right actions — موسّع */}
-        <div className="hidden items-center gap-4 sm:flex">
-          <ThemeSwitcher />
+        <div className="hidden items-center gap-3 sm:flex shrink-0 ml-auto">
+          <NotificationBell currentUser={currentUser} />
 
           {currentUser ? (
-            <div className="flex items-center gap-2">
-              <NotificationBell currentUser={currentUser} />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={currentUser.avatarUrl || undefined} />
-                      <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-                        {currentUser.username[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden md:inline">{currentUser.username}</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={currentUser.avatarUrl || undefined} />
+                    <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+                      {currentUser.username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline">{currentUser.username}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem asChild>
                     <Link href={`/?view=profile&user=${currentUser.username}&tab=about`} className="flex items-center gap-2 flex-row-reverse">
                       <User className="h-4 w-4" />
@@ -408,7 +435,7 @@ export function Navbar({ games }: NavbarProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}&tab=settings`} className="flex items-center gap-2 flex-row-reverse">
+                    <Link href="/?view=settings" className="flex items-center gap-2 flex-row-reverse">
                       <Settings className="h-4 w-4" />
                       إدارة الحساب والإعدادات
                     </Link>
@@ -427,7 +454,6 @@ export function Navbar({ games }: NavbarProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
           ) : (
             <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary">
               <Link href="/?view=login">
@@ -435,11 +461,6 @@ export function Navbar({ games }: NavbarProps) {
               </Link>
             </Button>
           )}
-          <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground hover:opacity-90">
-            <Link href="/?view=upload">
-              <Upload className="mr-1.5 h-4 w-4" /> نشر تعريب
-            </Link>
-          </Button>
         </div>
       </div>
     </header>
@@ -449,17 +470,23 @@ export function Navbar({ games }: NavbarProps) {
 function MobileLink({
   href,
   onClick,
+  isActive,
   children,
 }: {
   href: string
   onClick: () => void
+  isActive?: boolean
   children: React.ReactNode
 }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-primary"
+      className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
+        isActive
+          ? 'bg-primary/15 text-primary border border-primary/30'
+          : 'text-foreground/80 hover:bg-accent hover:text-primary'
+      }`}
     >
       {children}
     </Link>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
+import { requireModerator, canDelete } from '@/lib/auth'
 import { slugify } from '@/lib/series-helpers'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 
@@ -78,7 +78,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireModerator()
+    const user = await requireModerator()
+    if (!canDelete(user)) {
+      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+    }
     const { id } = await params
 
     const existing = await db.series.findUnique({ where: { id } })
@@ -93,7 +96,7 @@ export async function DELETE(
     })
 
     await db.series.delete({ where: { id } })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/series/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

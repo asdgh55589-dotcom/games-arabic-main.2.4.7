@@ -576,16 +576,6 @@ export function ModDetailPage() {
   )
 }
 
-/** صف بيانات: تسمة على اليمين + قيمة على اليسار (RTL) */
-function DataRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground">{value}</span>
-    </div>
-  )
-}
-
 /** خط فاصل بسيط بين صفوف المعلومات */
 function Divider() {
   return <div className="h-px bg-border/50" />
@@ -604,19 +594,6 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   )
 }
 
-/** عنصر إحصائية في صف الإحصائيات تحت العنوان: أيقونة + قيمة كبيرة + تسمية صغيرة */
-function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-muted-foreground">{icon}</span>
-      <div className="flex flex-col">
-        <span className="text-base font-bold text-foreground">{value}</span>
-        <span className="text-xs text-muted-foreground">{label}</span>
-      </div>
-    </div>
-  )
-}
-
 /** بطاقة إحصائية احترافية فوق البنر — خلفية شفافة بـ backdrop blur،
  *  حدود رفيعة، أيقونة ملونة + قيمة كبيرة + تسمية صغيرة.
  *  تصميم مدمج (compact) عشان البطاقات تبان قريبة من بعض و ما تأخذش مساحة كبيرة. */
@@ -627,19 +604,6 @@ function StatBadge({ icon, value, label }: { icon: React.ReactNode; value: strin
       <div className="flex flex-col leading-tight">
         <span className="text-xs font-bold text-foreground">{value}</span>
         <span className="text-[10px] text-muted-foreground">{label}</span>
-      </div>
-    </div>
-  )
-}
-
-/** صندوق إحصائية: أيقونة + قيمة + تسمية */
-function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/30 px-3 py-2">
-      <span className="text-primary">{icon}</span>
-      <div>
-        <div className="text-sm font-bold text-foreground">{value}</div>
-        <div className="text-[10px] text-muted-foreground">{label}</div>
       </div>
     </div>
   )

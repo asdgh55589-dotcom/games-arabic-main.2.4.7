@@ -18,11 +18,12 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import type { GameSummary } from '@/lib/types'
 
-const PLATFORMS = ['الكل', 'PC', 'PS4', 'PS3', 'PS2', 'PS1'] as const
+const PLATFORMS = ['الكل', 'PC', 'NS', 'PS4', 'PS3', 'PS2', 'PS1'] as const
 
 const PLATFORM_LABELS: Record<string, string> = {
   'الكل': 'الكل',
   'PC': 'ARABIC PC',
+  'NS': 'ARABIC NS',
   'PS4': 'ARABIC PS4',
   'PS3': 'ARABIC PS3',
   'PS2': 'ARABIC PS2',

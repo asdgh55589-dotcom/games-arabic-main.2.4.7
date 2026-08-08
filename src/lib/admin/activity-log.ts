@@ -60,11 +60,9 @@ export async function getActivityLog(filters: ActivityLogFilters) {
       ipAddress: log.ipAddress,
       createdAt: log.createdAt
     })),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit)
-    }
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit) || 1,
   }
 }

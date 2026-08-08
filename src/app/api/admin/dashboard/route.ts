@@ -5,7 +5,11 @@ import { requireModerator } from '@/lib/auth'
 // GET /api/admin/dashboard — إحصائيات + آخر النشاطات
 export async function GET() {
   try {
+    console.time('[admin-dashboard total]')
+
     await requireModerator()
+
+    console.time('[admin-dashboard queries]')
 
     const [
       gamesCount,
@@ -29,10 +33,7 @@ export async function GET() {
       db.modComment.count(),
       db.mod.count({ where: { isFeatured: true } }),
       db.mod.count({ where: { isTrending: true } }),
-      db.mod.findMany({
-        where: { series: { not: '' } },
-        select: { series: true },
-      }).then((mods) => new Set(mods.map((m) => m.series)).size),
+      db.series.count(),
       db.mod.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -50,7 +51,9 @@ export async function GET() {
       }),
     ])
 
-    return NextResponse.json({
+    console.timeEnd('[admin-dashboard queries]')
+
+    const response = NextResponse.json({
       stats: {
         games: gamesCount,
         mods: modsCount,
@@ -67,7 +70,15 @@ export async function GET() {
         users: recentUsers,
         comments: recentComments,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=15',
+      },
     })
+
+    console.timeEnd('[admin-dashboard total]')
+
+    return response
   } catch (err) {
     console.error('[admin/dashboard] failed:', err)
     const status = (err as { status?: number })?.status || 500

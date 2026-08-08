@@ -49,7 +49,7 @@ export async function DELETE(
       await tx.mod.update({ where: { id: comment.modId }, data: { comments: count } })
     })
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/comments/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

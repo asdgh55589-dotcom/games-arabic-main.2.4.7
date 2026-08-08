@@ -291,6 +291,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 onSubmitReply={onSubmitReply}
                 onCancelReply={() => { setReplyingTo(null); setReplyText('') }}
                 onReport={onReport}
+                onRefresh={fetchComments}
               />
             ))}
           </div>
@@ -342,6 +343,7 @@ function CommentItem({
   onSubmitReply,
   onCancelReply,
   onReport,
+  onRefresh,
 }: {
   comment: ModCommentType
   depth: number
@@ -356,6 +358,7 @@ function CommentItem({
   onSubmitReply: (parentId: string) => void
   onCancelReply: () => void
   onReport: (name: string) => void
+  onRefresh: () => void
 }) {
   const liked = likedIds.has(comment.id)
   const isNested = depth > 0
@@ -364,6 +367,54 @@ function CommentItem({
   const nestMargin = Math.min(depth * 16, 96)
   const displayName = comment.user?.username || comment.guestName || 'مستخدم'
   const displayAvatar = comment.user?.avatarUrl || comment.guestAvatar
+  const isOwner = currentUser?.id === comment.user?.id
+  const isAdmin = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(comment.text)
+  const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
+
+  const handleEdit = async () => {
+    if (!editText.trim() || editText === comment.text) {
+      setIsEditing(false)
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/comments/${comment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: editText.trim() }),
+      })
+      if (res.ok) {
+        toast({ title: 'تم التعديل' })
+        setIsEditing(false)
+        onRefresh()
+      } else {
+        const data = await res.json()
+        toast({ title: 'خطأ', description: data.error || 'فشل التعديل', variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
+    }
+    setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('هل أنت متأكد من حذف هذا التعليق؟')) return
+    try {
+      const res = await fetch(`/api/comments/${comment.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast({ title: 'تم الحذف' })
+        onRefresh()
+      } else {
+        const data = await res.json()
+        toast({ title: 'خطأ', description: data.error || 'فشل الحذف', variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
+    }
+  }
 
   return (
     <div style={isNested ? { marginRight: nestMargin, borderRight: '2px solid', paddingRight: 16, borderColor: 'hsl(var(--border) / 0.5)' } : undefined}>
@@ -411,27 +462,55 @@ function CommentItem({
                       رد
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem>
-                    <Edit2 className="ml-2 h-4 w-4" />
-                    تعديل
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onReport(displayName)}
-                    className="text-red-500 focus:text-red-500"
-                  >
-                    <Flag className="ml-2 h-4 w-4" />
-                    إبلاغ
-                  </DropdownMenuItem>
+                  {isOwner && (
+                    <DropdownMenuItem onClick={() => { setIsEditing(true); setEditText(comment.text) }}>
+                      <Edit2 className="ml-2 h-4 w-4" />
+                      تعديل
+                    </DropdownMenuItem>
+                  )}
+                  {(isOwner || isAdmin) && (
+                    <DropdownMenuItem onClick={handleDelete} className="text-red-500 focus:text-red-500">
+                      <Flag className="ml-2 h-4 w-4" />
+                      حذف
+                    </DropdownMenuItem>
+                  )}
+                  {!isOwner && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                        <Flag className="ml-2 h-4 w-4" />
+                        إبلاغ
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
 
           {/* نص التعليق */}
-          <p className={`whitespace-pre-wrap leading-relaxed text-foreground/90 ${isNested ? 'text-xs' : 'mb-2 text-sm'}`}>
-            {comment.text}
-          </p>
+          {isEditing ? (
+            <div className="mb-2 space-y-2">
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="w-full rounded-md border border-border bg-background p-2 text-sm resize-none"
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleEdit} disabled={saving || !editText.trim()}>
+                  {saving ? 'جاري الحفظ...' : 'حفظ'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setIsEditing(false); setEditText(comment.text) }}>
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className={`whitespace-pre-wrap leading-relaxed text-foreground/90 ${isNested ? 'text-xs' : 'mb-2 text-sm'}`}>
+              {comment.text}
+            </p>
+          )}
 
           {/* أزرار التفاعل */}
           <div className="mt-1 flex items-center gap-1">
@@ -443,7 +522,7 @@ function CommentItem({
               aria-pressed={liked}
             >
               <ThumbsUp className={`h-3.5 w-3.5 ${liked ? 'fill-current' : ''}`} />
-              {formatNumber(comment.likes + (liked ? 1 : 0))}
+              {formatNumber(comment.likes)}
             </button>
             <span className="mx-1 h-4 w-px bg-border" />
             {canReply && (
@@ -507,6 +586,7 @@ function CommentItem({
               onSubmitReply={onSubmitReply}
               onCancelReply={onCancelReply}
               onReport={onReport}
+              onRefresh={onRefresh}
             />
           ))}
         </div>

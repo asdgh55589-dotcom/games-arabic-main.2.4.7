@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطاقة نظام الألوان - Color Scheme Card</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111111;
+            color: #D1D1D1;
+            line-height: 1.6;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px;
+            background: linear-gradient(135deg, #202020 0%, #32373C 100%);
+            border-radius: 16px;
+            border: 1px solid #4C4C4C;
+        }
+
+        .header h1 {
+            color: #FFFFFF;
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .header p {
+            color: #99CC00;
+            font-size: 1.2rem;
+        }
+
+        /* Section Title */
+        .section-title {
+            color: #FFFFFF;
+            font-size: 1.8rem;
+            margin: 40px 0 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #99CC00;
+        }
+
+        /* Color Palette Section */
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .color-swatch {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #4C4C4C;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(153, 204, 0, 0.2);
+        }
+
+        .swatch-color {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .swatch-info {
+            padding: 16px;
+            background-color: #202020;
+        }
+
+        .swatch-name {
+            color: #FFFFFF;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .swatch-hex {
+            color: #99CC00;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .swatch-usage {
+            color: #D1D1D1;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        /* Typography Section */
+        .typography-sample {
+            background-color: #202020;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #32373C;
+        }
+
+        .typography-sample h3 {
+            color: #FFFFFF;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .typography-sample p {
+            color: #D1D1D1;
+        }
+
+        .heading-sample {
+            color: #FFFFFF;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .body-sample {
+            color: #D1D1D1;
+            font-size: 1rem;
+        }
+
+        .mono-sample {
+            color: #99CC00;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        /* Gradient Section */
+        .gradient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .gradient-box {
+            height: 120px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-weight: bold;
+            border: 1px solid #4C4C4C;
+        }
+
+        .gradient-primary {
+            background: linear-gradient(135deg, #99CC00 0%, #00FFFF 100%);
+        }
+
+        .gradient-secondary {
+            background: linear-gradient(135deg, #32373C 0%, #4C4C4C 100%);
+        }
+
+        .gradient-warm {
+            background: linear-gradient(135deg, #FF9900 0%, #DD3333 100%);
+        }
+
+        .gradient-cool {
+            background: linear-gradient(135deg, #00FFFF 0%, #99CC00 100%);
+        }
+
+        /* Component Examples */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .component-card {
+            background-color: #202020;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #32373C;
+        }
+
+        .component-card h3 {
+            color: #FFFFFF;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+
+        /* Buttons */
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #99CC00;
+            color: #111111;
+        }
+
+        .btn-primary:hover {
+            background-color: #B3D900;
+            box-shadow: 0 4px 12px rgba(153, 204, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #32373C;
+            color: #D1D1D1;
+            border: 1px solid #4C4C4C;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4C4C4C;
+        }
+
+        .btn-accent {
+            background-color: #00FFFF;
+            color: #111111;
+        }
+
+        .btn-accent:hover {
+            background-color: #33FFFF;
+        }
+
+        .btn-warning {
+            background-color: #FF9900;
+            color: #111111;
+        }
+
+        .btn-warning:hover {
+            background-color: #FFAA33;
+        }
+
+        .btn-danger {
+            background-color: #DD3333;
+            color: #FFFFFF;
+        }
+
+        .btn-danger:hover {
+            background-color: #EE4444;
+        }
+
+        /* Inputs */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            color: #FFFFFF;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #111111;
+            border: 1px solid #32373C;
+            border-radius: 8px;
+            color: #D1D1D1;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #99CC00;
+            box-shadow: 0 0 0 3px rgba(153, 204, 0, 0.2);
+        }
+
+        .input::placeholder {
+            color: #4C4C4C;
+        }
+
+        /* Badges */
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: rgba(153, 204, 0, 0.2);
+            color: #99CC00;
+            border: 1px solid #99CC00;
+        }
+
+        .badge-info {
+            background-color: rgba(0, 255, 255, 0.2);
+            color: #00FFFF;
+            border: 1px solid #00FFFF;
+        }
+
+        .badge-warning {
+            background-color: rgba(255, 153, 0, 0.2);
+            color: #FF9900;
+            border: 1px solid #FF9900;
+        }
+
+        .badge-danger {
+            background-color: rgba(221, 51, 51, 0.2);
+            color: #DD3333;
+            border: 1px solid #DD3333;
+        }
+
+        .badge-neutral {
+            background-color: rgba(76, 76, 76, 0.4);
+            color: #D1D1D1;
+            border: 1px solid #4C4C4C;
+        }
+
+        /* Cards */
+        .demo-card {
+            background-color: #32373C;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #4C4C4C;
+            margin-bottom: 12px;
+        }
+
+        .demo-card h4 {
+            color: #FFFFFF;
+            margin-bottom: 8px;
+        }
+
+        .demo-card p {
+            color: #D1D1D1;
+            font-size: 0.9rem;
+        }
+
+        .demo-card .card-meta {
+            color: #FF9900;
+            font-size: 0.8rem;
+            margin-top: 12px;
+        }
+
+        .demo-card .card-link {
+            color: #99CC00;
+            text-decoration: none;
+        }
+
+        .demo-card .card-link:hover {
+            color: #00FFFF;
+        }
+
+        /* Status Messages */
+        .status-box {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-right: 4px solid;
+        }
+
+        .status-success {
+            background-color: rgba(153, 204, 0, 0.1);
+            border-color: #99CC00;
+            color: #99CC00;
+        }
+
+        .status-warning {
+            background-color: rgba(255, 153, 0, 0.1);
+            border-color: #FF9900;
+            color: #FF9900;
+        }
+
+        .status-error {
+            background-color: rgba(221, 51, 51, 0.1);
+            border-color: #DD3333;
+            color: #DD3333;
+        }
+
+        .status-info {
+            background-color: rgba(0, 255, 255, 0.1);
+            border-color: #00FFFF;
+            color: #00FFFF;
+        }
+
+        /* Spacing Scale */
+        .spacing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .spacing-item {
+            background-color: #202020;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #32373C;
+        }
+
+        .spacing-visual {
+            background-color: #99CC00;
+            height: 8px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .spacing-label {
+            color: #FFFFFF;
+            font-size: 0.9rem;
+        }
+
+        .spacing-value {
+            color: #99CC00;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Quick Rule Box */
+        .quick-rule {
+            background: linear-gradient(135deg, #202020 0%, #32373C 100%);
+            border: 2px solid #99CC00;
+            border-radius: 16px;
+            padding: 32px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .quick-rule h2 {
+            color: #FFFFFF;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .quick-rule-colors {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .quick-rule-color {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-rule-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #4C4C4C;
+        }
+
+        .quick-rule-label {
+            color: #D1D1D1;
+            font-size: 0.9rem;
+        }
+
+        .quick-rule-hex {
+            color: #99CC00;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            margin-top: 60px;
+            border-top: 1px solid #32373C;
+            color: #4C4C4C;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #99CC00;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: #00FFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>بطاقة نظام الألوان</h1>
+            <p>Color Scheme Card — High-contrast Dark Theme</p>
+        </div>
+
+        <!-- Quick Design Rule -->
+        <div class="quick-rule">
+            <h2>💡 Quick Design Rule</h2>
+            <div class="quick-rule-colors">
+                <div class="quick-rule-color">
+                    <div class="quick-rule-swatch" style="background-color: #111111;"></div>
+                    <span class="quick-rule-label">Background</span>
+                    <span class="quick-rule-hex">#111111</span>
+                </div>
+                <div class="quick-rule-color">
+                    <div class="quick-rule-swatch" style="background-color: #D1D1D1;"></div>
+                    <span class="quick-rule-label">Text</span>
+                    <span class="quick-rule-hex">#D1D1D1</span>
+                </div>
+                <div class="quick-rule-color">
+                    <div class="quick-rule-swatch" style="background-color: #99CC00;"></div>
+                    <span class="quick-rule-label">Accent</span>
+                    <span class="quick-rule-hex">#99CC00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <h2 class="section-title">🎨 Color Palette</h2>
+
+        <h3 style="color: #D1D1D1; margin-bottom: 16px;">Backgrounds</h3>
+        <div class="palette-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #111111; color: #FFFFFF;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Basic Background</div>
+                    <div class="swatch-hex">#111111</div>
+                    <div class="swatch-usage">الخلفية الأساسية - الصفحة الرئيسية</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #202020; color: #FFFFFF;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Secondary Background</div>
+                    <div class="swatch-hex">#202020</div>
+                    <div class="swatch-usage">الخلفية الثانوية - البطاقات</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #32373C; color: #FFFFFF;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Container</div>
+                    <div class="swatch-hex">#32373C</div>
+                    <div class="swatch-usage">الحاويات والأدوات</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #4C4C4C; color: #FFFFFF;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Muted Gray</div>
+                    <div class="swatch-hex">#4C4C4C</div>
+                    <div class="swatch-usage">الحدود والعناصر المنخفضة</div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="color: #D1D1D1; margin-bottom: 16px;">Typography</h3>
+        <div class="palette-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #202020; color: #FFFFFF; font-size: 1.5rem; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Headings</div>
+                    <div class="swatch-hex">#FFFFFF</div>
+                    <div class="swatch-usage">العناوين والنصوص المميزة</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #202020; color: #D1D1D1;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Body Text</div>
+                    <div class="swatch-hex">#D1D1D1</div>
+                    <div class="swatch-usage">النص الأساسي - لراحة العين</div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="color: #D1D1D1; margin-bottom: 16px;">Accent & Interaction Colors</h3>
+        <div class="palette-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #99CC00; color: #111111; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Lime Green (Primary)</div>
+                    <div class="swatch-hex">#99CC00</div>
+                    <div class="swatch-usage">الرابط الرئيسي - أزرار التحميل - الحالة الإيجابية</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #00FFFF; color: #111111; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Cyan (Interactive)</div>
+                    <div class="swatch-hex">#00FFFF</div>
+                    <div class="swatch-usage">تأثيرات التمرير - البيانات الوصفية</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #FF9900; color: #111111; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Orange (Notifications)</div>
+                    <div class="swatch-hex">#FF9900</div>
+                    <div class="swatch-usage">الإشعارات - العلامات - العناوين الفرعية</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #882211; color: #FFFFFF; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Dark Red (Warning)</div>
+                    <div class="swatch-hex">#882211</div>
+                    <div class="swatch-usage">تحذيرات - رسائل الخطأ</div>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background-color: #DD3333; color: #FFFFFF; font-weight: bold;">Aa</div>
+                <div class="swatch-info">
+                    <div class="swatch-name">Bright Red (Error)</div>
+                    <div class="swatch-hex">#DD3333</div>
+                    <div class="swatch-usage">المحتوى الخاص - الأخطاء الحرجة</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typography -->
+        <h2 class="section-title">📝 Typography</h2>
+        <div class="typography-sample">
+            <h3>Headings</h3>
+            <p class="heading-sample">عنوان رئيسي — Main Heading</p>
+            <p style="color: #4C4C4C; margin-top: 8px; font-size: 0.85rem;">color: #FFFFFF | font-weight: bold</p>
+        </div>
+        <div class="typography-sample">
+            <h3>Body Text</h3>
+            <p class="body-sample">هذا نص أساسي يمثل المحتوى العادي في الموقع. اللون #D1D1D1 مريح للعين على الخلفية الداكنة.</p>
+            <p style="color: #4C4C4C; margin-top: 8px; font-size: 0.85rem;">color: #D1D1D1 | font-size: 1rem</p>
+        </div>
+        <div class="typography-sample">
+            <h3>Code / Monospace</h3>
+            <p class="mono-sample">const theme = { primary: '#99CC00', background: '#111111' };</p>
+            <p style="color: #4C4C4C; margin-top: 8px; font-size: 0.85rem;">color: #99CC00 | font-family: monospace</p>
+        </div>
+
+        <!-- Gradients -->
+        <h2 class="section-title">🌈 Gradients</h2>
+        <div class="gradient-grid">
+            <div class="gradient-box gradient-primary">Primary Gradient</div>
+            <div class="gradient-box gradient-secondary">Secondary Gradient</div>
+            <div class="gradient-box gradient-warm">Warm Gradient</div>
+            <div class="gradient-box gradient-cool">Cool Gradient</div>
+        </div>
+
+        <!-- Component Examples -->
+        <h2 class="section-title">🧩 Component Examples</h2>
+        <div class="component-grid">
+            <!-- Buttons -->
+            <div class="component-card">
+                <h3>Buttons</h3>
+                <div class="button-row">
+                    <button class="btn btn-primary">تحميل</button>
+                    <button class="btn btn-secondary">إلغاء</button>
+                    <button class="btn btn-accent">تفاعل</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-warning">تحذير</button>
+                    <button class="btn btn-danger">حذف</button>
+                </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="component-card">
+                <h3>Inputs</h3>
+                <div class="input-group">
+                    <label class="input-label">البحث</label>
+                    <input type="text" class="input" placeholder="ابحث عن تعديلات...">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">البريد الإلكتروني</label>
+                    <input type="email" class="input" placeholder="example@email.com">
+                </div>
+            </div>
+
+            <!-- Badges -->
+            <div class="component-card">
+                <h3>Badges</h3>
+                <div class="badge-row">
+                    <span class="badge badge-success">متوفر</span>
+                    <span class="badge badge-info">جديد</span>
+                    <span class="badge badge-warning">قريبًا</span>
+                    <span class="badge badge-danger">محظور</span>
+                    <span class="badge badge-neutral">عادي</span>
+                </div>
+            </div>
+
+            <!-- Cards -->
+            <div class="component-card">
+                <h3>Card</h3>
+                <div class="demo-card">
+                    <h4>عنوان البطاقة</h4>
+                    <p>وصف مختصر للمحتوى الموجود داخل البطاقة.</p>
+                    <div class="card-meta">تم التحديث: 2024-01-15</div>
+                    <a href="#" class="card-link">رابط المزيد ←</a>
+                </div>
+            </div>
+
+            <!-- Status Messages -->
+            <div class="component-card">
+                <h3>Status Messages</h3>
+                <div class="status-box status-success">✓ تم التحميل بنجاح</div>
+                <div class="status-box status-warning">⚠ يرجى المحاولة مرة أخرى</div>
+                <div class="status-box status-error">✕ خطأ في التحميل</div>
+                <div class="status-box status-info">ℹ معلومات إضافية</div>
+            </div>
+        </div>
+
+        <!-- Spacing Scale -->
+        <h2 class="section-title">📐 Spacing Scale</h2>
+        <div class="spacing-grid">
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 4px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">xs</div>
+                <div class="spacing-value">4px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 8px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">sm</div>
+                <div class="spacing-value">8px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 16px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">md</div>
+                <div class="spacing-value">16px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 24px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">lg</div>
+                <div class="spacing-value">24px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 32px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">xl</div>
+                <div class="spacing-value">32px</div>
+            </div>
+            <div class="spacing-item">
+                <div class="spacing-visual" style="width: 48px; margin: 0 auto 12px;"></div>
+                <div class="spacing-label">2xl</div>
+                <div class="spacing-value">48px</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>بطاقة نظام الألوان — Color Scheme Card</p>
+            <p>High-contrast Dark Theme with Digital & Technical Feel</p>
+            <p style="margin-top: 12px;">
+                <a href="#backgrounds">Backgrounds</a> • 
+                <a href="#typography">Typography</a> • 
+                <a href="#accents">Accents</a> • 
+                <a href="#components">Components</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

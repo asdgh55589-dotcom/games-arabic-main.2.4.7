@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, hashPassword, createSupabaseAuthUser } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
 
 // GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
           avatarUrl: true,
           bio: true,
           role: true,
+          provider: true,
           bannedUntil: true,
           banStatus: true,
           banReason: true,
@@ -70,13 +71,14 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/admin/users — إنشاء مستخدم جديد (admin/owner)
+// ملاحظة: المستخدمون يسجلون عبر OAuth فقط. هذا الـ route للإنشاء اليدوي من الإدارة.
 export async function POST(req: NextRequest) {
   try {
     const currentUser = await requireAdmin()
     const body = await req.json()
 
-    if (!body.username || !body.email || !body.password) {
-      return NextResponse.json({ error: 'username, email, password مطلوبة' }, { status: 400 })
+    if (!body.username || !body.email) {
+      return NextResponse.json({ error: 'username, email مطلوبة' }, { status: 400 })
     }
 
     const existing = await db.user.findFirst({
@@ -94,22 +96,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const passwordHash = await hashPassword(body.password)
-
-    // إنشاء المستخدم في Supabase Auth بنفس كلمة المرور
-    const supabaseId = await createSupabaseAuthUser(body.email, body.password, body.username)
-
     const user = await db.user.create({
       data: {
         username: body.username,
         email: body.email,
-        password: passwordHash,
-        supabaseId: supabaseId || undefined,
         avatarUrl: body.avatarUrl || null,
         bio: body.bio || null,
         role,
+        provider: 'admin',
       },
-      select: { id: true, username: true, email: true, role: true, avatarUrl: true },
+      select: { id: true, username: true, email: true, role: true, avatarUrl: true, provider: true },
     })
 
     return NextResponse.json({ user }, { status: 201 })

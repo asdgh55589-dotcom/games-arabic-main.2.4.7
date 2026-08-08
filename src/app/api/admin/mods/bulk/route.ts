@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest) {
 
     // Count actually affected records
     const affected = await db.mod.count({ where: { id: { in: ids } } })
-    return NextResponse.json({ ok: true, updated: affected })
+    return NextResponse.json({ success: true, updated: affected })
   } catch (err) {
     console.error('[admin/mods/bulk PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
@@ -46,7 +46,7 @@ export async function DELETE(req: NextRequest) {
     const toDelete = await db.mod.count({ where: { id: { in: ids } } })
     await db.mod.deleteMany({ where: { id: { in: ids } } })
 
-    return NextResponse.json({ ok: true, deleted: toDelete })
+    return NextResponse.json({ success: true, deleted: toDelete })
   } catch (err) {
     console.error('[admin/mods/bulk DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

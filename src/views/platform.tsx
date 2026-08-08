@@ -14,8 +14,6 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import type { PaginatedMods } from '@/lib/types'
 
-const PLATFORM_ARABIC: Record<string, string> = {}
-
 export function PlatformPage() {
   const searchParams = useSearchParams()
   const platform = searchParams.get('platform') || 'PC'

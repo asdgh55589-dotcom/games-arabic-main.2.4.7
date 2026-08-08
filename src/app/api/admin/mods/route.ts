@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { syncSeriesCounts } from '@/lib/series-helpers'
+import { slugify } from '@/lib/utils'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
 
@@ -112,7 +113,6 @@ export async function POST(req: NextRequest) {
     }
 
     // توليد slug فريد
-    const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     let slug = body.slug || slugify(body.name)
     // لو الـ slug موجود، نضيف رقم
     const existingSlug = await db.mod.findUnique({ where: { slug } })

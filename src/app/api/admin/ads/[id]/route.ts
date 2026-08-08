@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
+import { requireModerator, canDelete } from '@/lib/auth'
 import { revalidateTag } from '@/lib/cache'
 
 interface RouteParams {
@@ -47,7 +47,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 // DELETE /api/admin/ads/[id] — حذف إعلان
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
-    await requireModerator()
+    const user = await requireModerator()
+    if (!canDelete(user)) {
+      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+    }
     const { id } = await params
 
     const existing = await db.homepageAd.findUnique({ where: { id } })

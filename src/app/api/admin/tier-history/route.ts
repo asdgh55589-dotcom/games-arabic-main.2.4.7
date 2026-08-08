@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       history,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
     const status = (err as { status?: number })?.status || 500

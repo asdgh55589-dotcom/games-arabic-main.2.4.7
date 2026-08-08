@@ -31,9 +31,16 @@ export async function GET() {
       users,
       featuredGames,
       trendingMods,
-      latestModsRaw,
+      latestPC,
+      latestX360,
+      latestNS,
+      latestPS4,
+      latestPS3,
+      latestPS2,
+      latestPS1,
       topEndorsed,
       pcMods,
+      x360Mods,
       nsMods,
       ps4Mods,
       ps3Mods,
@@ -57,15 +64,47 @@ export async function GET() {
         take: 10,
         include: modInclude,
       }),
-      // أحدث تعريب من كل منصة — 2 من كل واحدة.
-      // بنجيب أكتر من 2 لكل منصة عشان نضمن وجود تنوع، و بعدين نختار 2 من كل واحدة
-      // و نخلطهم عشان كل المنصات تظهر بالتساوي في الـ Hero Slider.
-      // الترتيب updatedAt desc يضمن إننا ناخد الأحدث فعلاً.
-      // نجيب أكتر عدد (كل المودات) عشان نضمن إن كل المنصات ممثلة حتى لو
-      // كل المودات عندها نفس تاريخ التحديث.
+      // أحدث تعريب من كل منصة — 2 من كل واحدة (لـ Hero Slider)
       db.mod.findMany({
+        where: { game: { platform: 'PC' } },
         orderBy: { updatedAt: 'desc' },
-        take: 50,
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'X360' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'NS' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'PS4' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'PS3' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'PS2' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'PS1' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 2,
         include: modInclude,
       }),
       db.mod.findMany({
@@ -76,6 +115,12 @@ export async function GET() {
       // تعديلات لكل منصة — 10 بطاقات لكل قسم
       db.mod.findMany({
         where: { game: { platform: 'PC' } },
+        orderBy: { downloads: 'desc' },
+        take: 10,
+        include: modInclude,
+      }),
+      db.mod.findMany({
+        where: { game: { platform: 'X360' } },
         orderBy: { downloads: 'desc' },
         take: 10,
         include: modInclude,
@@ -128,17 +173,17 @@ export async function GET() {
     ])
 
     // ==== بناء latestMods — أحدث 2 من كل منصة، مختلطين بالتساوي ====
-    // الترتيب النهائي: PC, PS4, PS3, PS2, PS1, PC, PS4, PS3, PS2, PS1
-    // عشان يضمن إن كل المنصات تظهر للمستخدم في الـ Hero Slider.
-    const PLATFORMS_ORDER = ['PC', 'NS', 'PS4', 'PS3', 'PS2', 'PS1'] as const
-    const latestByPlatform: Record<string, typeof latestModsRaw> = {}
-    for (const p of PLATFORMS_ORDER) {
-      latestByPlatform[p] = latestModsRaw.filter(
-        (m) => m.game?.platform === p
-      ).slice(0, 2)
+    const latestByPlatform: Record<string, typeof latestPC> = {
+      PC: latestPC,
+      X360: latestX360,
+      NS: latestNS,
+      PS4: latestPS4,
+      PS3: latestPS3,
+      PS2: latestPS2,
+      PS1: latestPS1,
     }
-    // اخلطهم: خد الأول من كل منصة، بعدين التاني من كل منصة
-    const latestMods: typeof latestModsRaw = []
+    const PLATFORMS_ORDER = ['PC', 'X360', 'NS', 'PS4', 'PS3', 'PS2', 'PS1'] as const
+    const latestMods: typeof latestPC = []
     for (let round = 0; round < 2; round++) {
       for (const p of PLATFORMS_ORDER) {
         const mod = latestByPlatform[p]?.[round]
@@ -157,6 +202,7 @@ export async function GET() {
 
     const modsByPlatform: Record<string, ModSummary[]> = {
       PC: pcMods as unknown as ModSummary[],
+      X360: x360Mods as unknown as ModSummary[],
       NS: nsMods as unknown as ModSummary[],
       PS4: ps4Mods as unknown as ModSummary[],
       PS3: ps3Mods as unknown as ModSummary[],

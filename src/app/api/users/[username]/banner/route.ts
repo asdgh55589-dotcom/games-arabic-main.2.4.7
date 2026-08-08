@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -26,6 +26,8 @@ interface RouteParams {
 // POST /api/users/[username]/banner — رفع صورة بانر
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    const startedAt = Date.now()
+
     const supabase = await createClient()
     const { data: { user: supabaseUser } } = await supabase.auth.getUser()
     if (!supabaseUser) {
@@ -70,7 +72,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 })
     }
 
+    const arrayBufferStartedAt = Date.now()
     const arrayBuffer = await file.arrayBuffer()
+
+    console.log('[banner upload] arrayBuffer ms:', Date.now() - arrayBufferStartedAt)
 
     // فحص magic bytes
     const detectedMime = checkMagicBytes(arrayBuffer)
@@ -80,11 +85,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const path = `banners/${neonUser.id}.${ext || 'jpg'}`
 
-    // إنشاء الـ bucket لو مش موجود
-    const { error: checkError } = await supabase.storage.getBucket('banners')
-    if (checkError) {
-      await supabase.storage.createBucket('banners', { public: true })
-    }
+    const uploadStartedAt = Date.now()
 
     const { error: uploadError } = await supabase.storage
       .from('banners')
@@ -93,18 +94,62 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         upsert: true,
       })
 
+    console.log('[banner upload] storage upload ms:', Date.now() - uploadStartedAt)
+
     if (uploadError) {
-      console.error('[banner upload] failed:', uploadError)
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+      const shouldCreateBucket =
+        uploadError.message?.includes('Bucket not found') ||
+        uploadError.name === 'StorageApiError'
+
+      if (!shouldCreateBucket) {
+        console.error('[banner upload] failed:', uploadError)
+        return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+      }
+
+      const adminClient = createAdminClient()
+
+      if (!adminClient) {
+        console.error('[banner upload] missing SUPABASE_SERVICE_ROLE_KEY')
+        return NextResponse.json(
+          { error: 'Storage is not configured correctly' },
+          { status: 500 }
+        )
+      }
+
+      const { error: createBucketError } = await adminClient.storage.createBucket('banners', {
+        public: true,
+      })
+
+      if (createBucketError && !createBucketError.message?.includes('already exists')) {
+        console.error('[banner bucket create] failed:', createBucketError)
+        return NextResponse.json({ error: 'Failed to create storage bucket' }, { status: 500 })
+      }
+
+      const { error: retryUploadError } = await adminClient.storage
+        .from('banners')
+        .upload(path, arrayBuffer, {
+          contentType: detectedMime,
+          upsert: true,
+        })
+
+      if (retryUploadError) {
+        console.error('[banner retry upload] failed:', retryUploadError)
+        return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+      }
     }
 
     const { data: urlData } = supabase.storage.from('banners').getPublicUrl(path)
+
+    const dbStartedAt = Date.now()
 
     const updatedUser = await db.user.update({
       where: { id: neonUser.id },
       data: { bannerUrl: urlData.publicUrl },
       select: { bannerUrl: true },
     })
+
+    console.log('[banner upload] db update ms:', Date.now() - dbStartedAt)
+    console.log('[banner upload] total ms:', Date.now() - startedAt)
 
     return NextResponse.json({ bannerUrl: updatedUser.bannerUrl })
   } catch (err) {

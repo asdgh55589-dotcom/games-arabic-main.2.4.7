@@ -11,6 +11,8 @@ interface RouteParams {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
+    const supabase = await createClient()
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
 
     const user = await db.user.findUnique({
       where: { username },
@@ -22,9 +24,14 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         bio: true,
         websiteUrl: true,
         twitterUrl: true,
+        instagramUrl: true,
+        tiktokUrl: true,
+        youtubeUrl: true,
         githubUrl: true,
         discordUrl: true,
         accentColor: true,
+        profileVisibility: true,
+        hideJoinDate: true,
         role: true,
         joinedAt: true,
         lastLoginAt: true,
@@ -43,6 +50,66 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const viewer = supabaseUser
+      ? await db.user.findFirst({
+          where: {
+            OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
+          },
+          select: { id: true, username: true },
+        })
+      : null
+
+    const isOwner = viewer?.id === user.id
+
+    if (!isOwner && user.profileVisibility === 'nobody') {
+      return NextResponse.json(
+        {
+          error: 'Profile is private',
+          visibility: {
+            canView: false,
+            reason: 'private',
+          },
+        },
+        { status: 403 }
+      )
+    }
+
+    if (!isOwner && user.profileVisibility === 'followers') {
+      if (!viewer) {
+        return NextResponse.json(
+          {
+            error: 'Followers only',
+            visibility: {
+              canView: false,
+              reason: 'followers_only',
+            },
+          },
+          { status: 403 }
+        )
+      }
+
+      const follow = await db.follow.findFirst({
+        where: {
+          followerId: viewer.id,
+          followingId: user.id,
+        },
+        select: { id: true },
+      })
+
+      if (!follow) {
+        return NextResponse.json(
+          {
+            error: 'Followers only',
+            visibility: {
+              canView: false,
+              reason: 'followers_only',
+            },
+          },
+          { status: 403 }
+        )
+      }
     }
 
     // حساب الإحصائيات
@@ -123,8 +190,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         rating: user.qualityScore,
       },
     })
-  } catch (err) {
-    console.error('[profile GET] failed:', err)
+  } catch (err: any) {
+    console.error('[profile GET] failed:', err?.message, err?.stack)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
@@ -132,6 +199,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 // PUT /api/users/[username]/profile — تعديل الملف الشخصي
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
+    const body = await req.json()
+    const { username } = await params
+    console.log('[API] Profile PUT - username:', username, 'body:', body)
     const supabase = await createClient()
     const { data: { user: supabaseUser } } = await supabase.auth.getUser()
     if (!supabaseUser) {
@@ -146,25 +216,61 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const { username } = await params
-
     // فقط صاحب الملف يمكنه التعديل
     if (neonUser.username !== username) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = await req.json()
-    const updateData: Record<string, string | null> = {}
+    const updateData: Record<string, string | null | boolean> = {}
 
-    const allowedFields = ['bio', 'websiteUrl', 'twitterUrl', 'githubUrl', 'discordUrl', 'accentColor']
-    const urlFields = ['websiteUrl', 'twitterUrl', 'githubUrl', 'discordUrl']
+    // Handle username change separately
+    if (body.username && body.username !== neonUser.username) {
+      const existingUser = await db.user.findUnique({ where: { username: body.username } })
+      if (existingUser) {
+        return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+      }
+      updateData.username = body.username
+    }
+
+    const allowedFields = ['bio', 'websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl', 'accentColor', 'avatarUrl', 'bannerUrl', 'profileVisibility', 'hideJoinDate']
+    const urlFields = ['websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl']
+    const booleanFields = ['hideJoinDate']
+    const nullableFields = ['avatarUrl', 'bannerUrl']
+    const allowedVisibility = ['everyone', 'followers', 'nobody']
+
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        const value = body[field] || null
-        if (urlFields.includes(field) && value) {
-          updateData[field] = sanitizeUrl(value) || null
+        if (field === 'profileVisibility') {
+          if (!allowedVisibility.includes(body[field])) {
+            return NextResponse.json({ error: 'Invalid profile visibility' }, { status: 400 })
+          }
+
+          updateData[field] = body[field]
+          continue
+        }
+
+        if (field === 'accentColor') {
+          const value = String(body[field] || '').trim()
+
+          if (value && !/^#([0-9A-F]{3}){1,2}$/i.test(value)) {
+            return NextResponse.json({ error: 'Invalid accent color' }, { status: 400 })
+          }
+
+          updateData[field] = value || null
+          continue
+        }
+
+        if (booleanFields.includes(field)) {
+          updateData[field] = Boolean(body[field])
+        } else if (nullableFields.includes(field)) {
+          updateData[field] = body[field]
         } else {
-          updateData[field] = value
+          const value = body[field] || null
+          if (urlFields.includes(field) && value) {
+            updateData[field] = sanitizeUrl(value) || null
+          } else {
+            updateData[field] = value
+          }
         }
       }
     }
@@ -178,15 +284,22 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         bio: true,
         websiteUrl: true,
         twitterUrl: true,
+        instagramUrl: true,
+        tiktokUrl: true,
+        youtubeUrl: true,
         githubUrl: true,
         discordUrl: true,
         accentColor: true,
+        avatarUrl: true,
+        bannerUrl: true,
+        profileVisibility: true,
+        hideJoinDate: true,
       },
     })
 
     return NextResponse.json({ profile: updatedUser })
-  } catch (err) {
-    console.error('[profile PUT] failed:', err)
+  } catch (err: any) {
+    console.error('[profile PUT] failed:', err?.message, err?.stack)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }

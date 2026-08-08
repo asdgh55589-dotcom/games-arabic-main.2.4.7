@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
+import { slugify } from '@/lib/utils'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -61,7 +62,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       // تحديث الأقسام: امسح القديمة وأنشئ الجديدة
       if (Array.isArray(body.categories)) {
         await tx.category.deleteMany({ where: { gameId: id } })
-        const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
         for (const catName of body.categories) {
           if (!catName) continue
           await tx.category.create({

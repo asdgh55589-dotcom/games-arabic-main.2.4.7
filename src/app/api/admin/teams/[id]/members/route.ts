@@ -59,7 +59,7 @@ export async function DELETE(
       where: { id: memberId, teamId: id },
     })
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/teams/[id]/members DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

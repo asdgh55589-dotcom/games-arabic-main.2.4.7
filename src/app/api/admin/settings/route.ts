@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/settings PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500

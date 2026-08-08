@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
+import { requireModerator, canDelete } from '@/lib/auth'
 
 // GET /api/admin/news/[id]
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -54,10 +54,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/admin/news/[id] — soft delete
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireModerator()
+    const user = await requireModerator()
+    if (!canDelete(user)) {
+      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+    }
     const { id } = await params
     await db.news.update({ where: { id }, data: { visible: false } })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/news/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500

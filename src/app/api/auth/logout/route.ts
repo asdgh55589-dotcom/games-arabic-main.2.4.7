@@ -19,14 +19,18 @@ export async function POST() {
 
     // تسجيل الخروج من Supabase Auth
     const supabase = await createClient()
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
 
-    // مسح role cookie
+    if (error) {
+      console.error('[auth/logout] Supabase signOut failed:', error.message)
+    }
+
+    // مسح role cookie (حتى لو فشل Supabase signOut)
     await clearRoleCookie()
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[auth/logout] failed:', err)
+    console.error('[auth/logout] failed:', err instanceof Error ? err.message : 'unknown error')
     return NextResponse.json({ error: 'Failed to logout' }, { status: 500 })
   }
 }

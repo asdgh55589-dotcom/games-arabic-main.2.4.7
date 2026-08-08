@@ -29,17 +29,22 @@ const JWT_SECRET = (() => {
 const PUBLIC_ADMIN_PATHS = ['/admin/login']
 
 interface RoleCookiePayload {
+  userId?: string
   role?: string
   tv?: number // tokenVersion
 }
 
-/** قراءة الـ role + tokenVersion من الـ role cookie (Edge-compatible) */
+/** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
 async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return { role: payload.role as string, tv: typeof payload.tv === 'number' ? payload.tv : undefined }
+    return {
+      userId: payload.userId as string,
+      role: payload.role as string,
+      tv: typeof payload.tv === 'number' ? payload.tv : undefined,
+    }
   } catch {
     return null
   }

@@ -52,7 +52,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ===== السمة الافتراضية: برتقالي ناري + أزرق سماوي + أرجواني ===== */
+/* ===== السمة الافتراضية: Amber + Slate + Soft Violet ===== */
 :root {
   --radius: 0.5rem;
 
@@ -66,25 +66,25 @@
   --popover: oklch(0.18 0.008 270);
   --popover-foreground: oklch(0.97 0.005 270);
 
-  /* اللون الرئيسي: برتقالي ناري واضح */
-  --primary: oklch(0.70 0.22 45);
+  /* لون أساسي أهدأ وأكثر توازنًا */
+  --primary: oklch(0.68 0.16 52);
   --primary-foreground: oklch(0.99 0 0);
 
-  /* ثانوي: أزرق سماوي واضح */
-  --secondary: oklch(0.25 0.01 270);
+  /* خلفيات ثانوية أقل تشبعًا */
+  --secondary: oklch(0.24 0.008 265);
   --secondary-foreground: oklch(0.97 0.005 270);
 
-  --muted: oklch(0.22 0.005 270);
-  --muted-foreground: oklch(0.70 0.01 270);
+  --muted: oklch(0.21 0.004 265);
+  --muted-foreground: oklch(0.78 0.008 265);
 
-  /* accent: أرجواني للتباين */
-  --accent: oklch(0.35 0.08 290);
+  /* Accent أكثر هدوءًا */
+  --accent: oklch(0.42 0.05 295);
   --accent-foreground: oklch(0.97 0.005 270);
 
   --destructive: oklch(0.60 0.25 25);
-  --border: oklch(0.28 0.01 270);
-  --input: oklch(0.20 0.005 270);
-  --ring: oklch(0.70 0.22 45 / 50%);
+  --border: oklch(0.30 0.008 265);
+  --input: oklch(0.19 0.004 265);
+  --ring: oklch(0.68 0.16 52 / 45%);
 
   /* ألوان الرسوم البيانية: تدرجات من البرتقالي */
   --chart-1: oklch(0.70 0.22 45);
@@ -103,77 +103,15 @@
   --sidebar-ring: oklch(0.70 0.22 45 / 50%);
 
   /* متغيرات إضافية للتدرجات */
-  --gradient-start: oklch(0.70 0.22 45);
-  --gradient-mid: oklch(0.62 0.20 350);
-  --gradient-end: oklch(0.55 0.18 290);
+  --gradient-start: oklch(0.68 0.16 52);
+  --gradient-mid: oklch(0.58 0.12 18);
+  --gradient-end: oklch(0.48 0.08 290);
 
   /* ألوان إضافية للتدرجات */
-  --glow-blue: oklch(0.65 0.20 230);
-  --glow-purple: oklch(0.55 0.20 290);
-  --glow-pink: oklch(0.70 0.22 350);
-  --glow-amber: oklch(0.75 0.18 75);
-}
-
-/* ===== السمة الثانية: ETR Dream (كحلي + أزرق + سماوي + بنفسجي) ===== */
-:root[data-theme="etrdream"] {
-  --radius: 0.5rem;
-
-  /* خلفية كحلي غامق مع لمسة زرقاء */
-  --background: #080b18;
-  --foreground: #f0f4ff;
-
-  /* بطاقات أغمق قليلاً مع لمسة بنفسجية */
-  --card: #111528;
-  --card-foreground: #f0f4ff;
-  --popover: #111528;
-  --popover-foreground: #f0f4ff;
-
-  /* اللون الرئيسي: أزرق سماوي واضح */
-  --primary: #0d76ff;
-  --primary-foreground: #ffffff;
-
-  /* ثانوي: كحلي غامق مع لمسة */
-  --secondary: #1a2040;
-  --secondary-foreground: #f0f4ff;
-
-  --muted: #161b34;
-  --muted-foreground: #8b95b8;
-
-  /* accent: بنفسجي للتباين */
-  --accent: #2d1b5e;
-  --accent-foreground: #f0f4ff;
-
-  --destructive: #ff3b5f;
-  --border: #1e2444;
-  --input: #161b34;
-  --ring: #0d76ff;
-
-  /* ألوان الرسوم البيانية: تدرجات الأزرق والبنفسجي */
-  --chart-1: #0d76ff;
-  --chart-2: #00d4ff;
-  --chart-3: #6366f1;
-  --chart-4: #8b5cf6;
-  --chart-5: #ec4899;
-
-  --sidebar: #0c0f1e;
-  --sidebar-foreground: #f0f4ff;
-  --sidebar-primary: #0d76ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a2040;
-  --sidebar-accent-foreground: #f0f4ff;
-  --sidebar-border: #1e2444;
-  --sidebar-ring: #0d76ff;
-
-  /* تدرجات لونية متعددة */
-  --gradient-start: #0d76ff;
-  --gradient-mid: #6366f1;
-  --gradient-end: #8b5cf6;
-
-  /* ألوان إضافية للتدرجات */
-  --glow-blue: #0d76ff;
-  --glow-purple: #8b5cf6;
-  --glow-cyan: #00d4ff;
-  --glow-pink: #ec4899;
+  --glow-blue: oklch(0.62 0.14 230);
+  --glow-purple: oklch(0.52 0.12 290);
+  --glow-pink: oklch(0.66 0.15 350);
+  --glow-amber: oklch(0.72 0.14 75);
 }
 
 @layer base {
@@ -191,7 +129,7 @@
   }
   /* جعل كل النصوص العربية واضحة وبيضاء */
   .text-muted-foreground {
-    color: oklch(0.88 0.005 270) !important;
+    color: oklch(0.82 0.006 265) !important;
   }
   /* النصوص داخل البطاقات — أبيض واضح */
   .text-xs {
@@ -294,15 +232,15 @@
 
 /* Stat box */
 .stat-box {
-  background-color: oklch(1 0 0 / 8%);
+  background-color: oklch(1 0 0 / 6%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid oklch(1 0 0 / 14%);
+  border: 1px solid oklch(1 0 0 / 10%);
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 .stat-box:hover {
-  background-color: oklch(1 0 0 / 12%);
-  border-color: oklch(1 0 0 / 24%);
+  background-color: oklch(1 0 0 / 10%);
+  border-color: oklch(1 0 0 / 18%);
 }
 
 /* Primary button */
@@ -407,4 +345,22 @@
 .badge-gradient {
   background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
   color: white;
+}
+
+/* ===== تحسينات التنقل ===== */
+
+/* انتقال سلس بين الصفحات */
+.page-transition {
+  will-change: opacity, transform;
+}
+
+/* شريط تحميل علوي */
+.top-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  z-index: 9999;
+  transition: width 0.3s ease;
 }

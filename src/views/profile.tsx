@@ -18,8 +18,6 @@ import { ProfileStats } from '@/components/profile/profile-stats'
 import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
 import { ProfileXpBar } from '@/components/profile/profile-xp-bar'
 import { ProfileModsFilter } from '@/components/profile/profile-mods-filter'
-import { ProfileActivityFeed } from '@/components/profile/profile-activity-feed'
-import { ProfileSettings } from '@/components/profile/profile-settings'
 import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
 import { TierBadge } from '@/components/tier-badge'
 import type { ModSummary } from '@/lib/types'
@@ -35,6 +33,8 @@ interface ProfileData {
   githubUrl: string | null
   discordUrl: string | null
   accentColor: string | null
+  hideJoinDate?: boolean
+  profileVisibility?: string
   role: string
   joinedAt: string
   lastLoginAt: string
@@ -63,6 +63,7 @@ interface ActivityData {
   mods: ModSummary[]
   modEdits?: { id: string; name: string; slug: string; updatedAt: string }[]
   endorsements?: { id: string; createdAt: string; mod: { name: string; slug: string } }[]
+  monthlyStats?: { month: string; comments: number; mods: number; endorsements: number }[]
 }
 
 interface BadgeData {
@@ -82,7 +83,7 @@ const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; classNa
 
 export function ProfilePage() {
   const searchParams = useSearchParams()
-  const username = searchParams.get('user') || 'Momen Hani'
+  const username = searchParams.get('user') || ''
   const defaultTab = searchParams.get('tab') || 'about'
   const { toast } = useToast()
 
@@ -90,42 +91,70 @@ export function ProfilePage() {
   const [activity, setActivity] = useState<ActivityData>({ comments: [], mods: [] })
   const [badges, setBadges] = useState<BadgeData[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
 
   useDocumentTitle(profile?.username || 'الملف الشخصي')
 
   const fetchProfile = useCallback(async () => {
+    if (!username) { setError('لم يُحدد مستخدم'); setLoading(false); return }
     setLoading(true)
+    setError(null)
     try {
-      const res = await fetch(`/api/users/${encodeURIComponent(username)}/profile`)
+      const res = await fetch(`/api/users/${encodeURIComponent(username)}/full-profile?limit=10`, {
+        next: { revalidate: 60 },
+      })
       if (res.ok) {
         const data = await res.json()
         setProfile(data.profile)
+        setActivity(data.activity || { comments: [], mods: [] })
+        setBadges(data.badges || [])
+        setIsFollowing(Boolean(data.follow?.isFollowing))
+        setError(null)
+        setLoading(false)
+        return true
+      } else {
+        const data = await res.json().catch(() => null)
+
+        if (data?.visibility?.reason === 'private') {
+          setError('هذا الملف الشخصي خاص')
+        } else if (data?.visibility?.reason === 'followers_only') {
+          setError('هذا الملف الشخصي متاح للمتابعين فقط')
+        } else {
+          setError('المستخدم غير موجود')
+        }
+
+        setProfile(null)
+        setLoading(false)
+        return false
       }
-    } catch {}
-    setLoading(false)
+    } catch {
+      setError('حدث خطأ أثناء تحميل البيانات')
+      setProfile(null)
+      setLoading(false)
+      return false
+    }
   }, [username])
 
-  const fetchActivity = useCallback(async () => {
+  const handleFollowToggle = async () => {
+    if (!currentUser || followLoading) return
+    setFollowLoading(true)
     try {
-      const res = await fetch(`/api/users/${encodeURIComponent(username)}/activity?limit=10`)
+      const method = isFollowing ? 'DELETE' : 'POST'
+      const res = await fetch(`/api/users/${encodeURIComponent(username)}/follow`, { method })
       if (res.ok) {
         const data = await res.json()
-        setActivity(data)
+        setIsFollowing(data.isFollowing)
+        setProfile(prev => prev ? {
+          ...prev,
+          stats: { ...prev.stats, followersCount: data.followersCount, followingCount: data.followingCount },
+        } : prev)
       }
     } catch {}
-  }, [username])
-
-  const fetchBadges = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/users/${encodeURIComponent(username)}/badges`)
-      if (res.ok) {
-        const data = await res.json()
-        setBadges(data.badges)
-      }
-    } catch {}
-  }, [username])
+    setFollowLoading(false)
+  }
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
@@ -138,19 +167,42 @@ export function ProfilePage() {
   }, [])
 
   useEffect(() => {
-    fetchProfile()
-    fetchActivity()
-    fetchBadges()
-  }, [fetchProfile, fetchActivity, fetchBadges])
+    const load = async () => {
+      await fetchProfile()
+    }
+
+    load()
+  }, [fetchProfile])
 
   const isOwner = currentUser?.username === profile?.username
   const accent = profile?.accentColor || '#ff8c00'
+  const accentSoft = `${accent}22`
+  const accentMuted = `${accent}14`
   const roleBadge = ROLE_BADGE[profile?.role || 'member'] || ROLE_BADGE.member
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: accent, borderTopColor: 'transparent' }} />
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2"
+          style={{
+            borderLeftColor: accent,
+            borderRightColor: accent,
+            borderBottomColor: accent,
+            borderTopColor: 'transparent',
+          }}
+        />
+      </div>
+    )
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-400">{error || 'المستخدم غير موجود'}</p>
+          <Link href="/?view=home" className="mt-4 inline-block text-sm text-primary hover:underline">العودة للرئيسية</Link>
+        </div>
       </div>
     )
   }
@@ -162,10 +214,10 @@ export function ProfilePage() {
         {profile.bannerUrl ? (
           <img src={profile.bannerUrl} alt="banner" className="h-full w-full object-cover" />
         ) : (
-          <div
-            className="h-full w-full"
-            style={{ background: `linear-gradient(135deg, ${accent}33 0%, ${accent}11 50%, #1a1a1a 100%)` }}
-          />
+            <div
+              className="h-full w-full"
+              style={{ background: `linear-gradient(135deg, ${accentSoft} 0%, ${accentMuted} 50%, #1a1a1a 100%)` }}
+            />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent" />
       </div>
@@ -179,10 +231,10 @@ export function ProfilePage() {
               <div className="relative">
                 <Avatar
                   className="h-24 w-24 border-4 border-[#121212] shadow-xl"
-                  style={{ boxShadow: `0 0 20px ${accent}33` }}
+                  style={{ boxShadow: `0 0 18px ${accentSoft}` }}
                 >
                   <AvatarImage src={profile.avatarUrl || undefined} />
-                  <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accent + '33', color: accent }}>
+                  <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accentSoft, color: accent }}>
                     {profile.username[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -215,11 +267,15 @@ export function ProfilePage() {
                 )}
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  انضم في {formatArabicDate(profile.joinedAt)}
-                </span>
-                <span>•</span>
+                {!profile.hideJoinDate && (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      انضم في {formatArabicDate(profile.joinedAt)}
+                    </span>
+                    <span>•</span>
+                  </>
+                )}
                 <span>{profile.onlineStatus === 'online' ? 'متصل الآن' : 'غير متصل'}</span>
               </div>
 
@@ -237,9 +293,9 @@ export function ProfilePage() {
               {/* Action buttons */}
               <div className="mt-4 flex flex-wrap gap-2">
                 {isOwner ? (
-                  <Link href="/settings">
+                  <Link href="/?view=settings">
                     <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222]">
-                      <Settings className="h-3.5 w-3.5" /> تعديل الملف
+                      <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
                     </Button>
                   </Link>
                 ) : (
@@ -257,7 +313,8 @@ export function ProfilePage() {
                       variant={isFollowing ? 'outline' : 'default'}
                       className="h-8 gap-1.5 text-xs"
                       style={isFollowing ? { borderColor: '#333' } : { backgroundColor: accent }}
-                      onClick={() => setIsFollowing(!isFollowing)}
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
                     >
                       {isFollowing ? (
                         <><UserCheck className="h-3.5 w-3.5" /> متابَع</>
@@ -296,17 +353,13 @@ export function ProfilePage() {
       </div>
 
       {/* ===== Tabs ===== */}
-      <div className="mx-auto max-w-[1200px] px-4 lg:px-6">
-        <Tabs defaultValue={defaultTab} className="mt-8">
+      <div className="mx-auto max-w-[1200px] px-4 lg:px-6 mt-8">
+        <Tabs defaultValue={defaultTab} className="mt-0">
           <TabsList className="w-full flex-row justify-start border-b border-[#333] bg-transparent p-0" style={{ direction: 'rtl' }}>
             <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">نبذة عني</TabsTrigger>
             <TabsTrigger value="badges" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الشارات</TabsTrigger>
             <TabsTrigger value="xp" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الخبرة</TabsTrigger>
             <TabsTrigger value="mods" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">التعريبات ({profile.stats.mods})</TabsTrigger>
-            <TabsTrigger value="activity" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">النشاط</TabsTrigger>
-            {isOwner && (
-              <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الإعدادات</TabsTrigger>
-            )}
           </TabsList>
 
           {/* About tab */}
@@ -336,22 +389,6 @@ export function ProfilePage() {
           <TabsContent value="mods" className="mt-6">
             <ProfileModsFilter mods={activity.mods} accent={accent} loading={loading} />
           </TabsContent>
-
-          {/* Activity tab */}
-          <TabsContent value="activity" className="mt-6">
-            <ProfileActivityFeed activity={activity} accent={accent} />
-          </TabsContent>
-
-          {/* Settings tab */}
-          {isOwner && (
-            <TabsContent value="settings" className="mt-6">
-              <ProfileSettings
-                profile={profile}
-                accent={accent}
-                onSave={(updated) => setProfile(prev => prev ? { ...prev, ...updated } : prev)}
-              />
-            </TabsContent>
-          )}
         </Tabs>
       </div>
     </div>

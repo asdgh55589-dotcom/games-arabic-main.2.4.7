@@ -88,10 +88,10 @@ function HorizontalStatCard({
   extra?: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg bg-[#1a1a1a] px-4 py-3">
+    <div className="rounded-lg bg-[#1a1a1a] px-4 py-3 border border-[#333] hover:border-[color:var(--accent)] transition-colors" style={{ '--accent': accent } as React.CSSProperties}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span style={{ color: accent }}>{icon}</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: accent + '22', color: accent }}>{icon}</span>
           <span className="text-sm text-gray-400">{label}</span>
         </div>
         <span className="text-base font-bold text-white">{value}</span>

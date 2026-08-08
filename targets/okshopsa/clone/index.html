@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- CHECK LIVE'S DOCTYPE FIRST: if the live page ships no doctype it renders in QUIRKS
+     mode (document.compatMode === "BackCompat") and this standards-mode doctype will
+     shift table-cell line boxes with every computed style identical — delete it to
+     match (LEARNINGS #18). The capture records `mode` and the gate fails a mismatch. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>okshopsa — header clone</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- DEFAULT BUILD STRATEGY: capture, don't reconstruct (LEARNINGS #19). Capture the
+       live page's post-hydration DOM (pxSendDom → dom.html) and run
+       `pingfusi capture-build <name>` — it REPLACES this whole scaffold with the captured
+       markup + self-hosted CSS/fonts, inheriting live's doctype and drawing techniques
+       by construction. Hand-rebuild here (to MEASUREMENTS, never guesses) only when the
+       deliverable is a component in your own stack. See ../../docs/PLAYBOOK.md Phase 4. -->
+  <header class="site-header">
+    <!-- TODO: build to spec -->
+  </header>
+
+  <!-- Capture (with `node tools/sink.js` running on :7799):
+       const s = await fetch('/tools/browser-capture.js').then(r => r.text()); (0, eval)(s);
+       window.pxRegion = { maxY: 135 };
+       window.pxTargets = [ ["logo", () => document.querySelector('.logo'), false], ... ];
+       await pxSend('http://localhost:7799/clone.json'); -->
+</body>
+</html>
