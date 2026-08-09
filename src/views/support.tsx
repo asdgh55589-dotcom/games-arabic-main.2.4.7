@@ -44,12 +44,12 @@ export function SupportPage() {
           ينقسم موقع GAMES ARABIC إلى ستة أقسام رئيسية، يمثل كل قسم منصة ألعاب محددة. تتيح هذه الأقسام للمستخدم تصفّح التعريبات الخاصة بكل منصة على حدة، مما يسهّل عملية البحث عن التعريب المناسب للعبة المطلوبة دون الحاجة إلى التنقّل بين تعريبات منصات أخرى غير ذات صلة. والأقسام الستة هي:
         </p>
         <ul className="mr-6 list-disc space-y-1.5">
-          <li><strong>ARABIC PC:</strong> يضم تعريبات ألعاب الحاسوب الشخصي، بما في ذلك الألعاب المتوفرة على منصات مثل Steam و Epic Games Store و GOG.</li>
-          <li><strong>ARABIC NS:</strong> يضم تعريبات ألعاب جهاز Nintendo Switch المحمول.</li>
-          <li><strong>ARABIC PS4:</strong> يضم تعريبات ألعاب جهاز PlayStation 4.</li>
-          <li><strong>ARABIC PS3:</strong> يضم تعريبات ألعاب جهاز PlayStation 3.</li>
-          <li><strong>ARABIC PS2:</strong> يضم تعريبات ألعاب جهاز PlayStation 2.</li>
-          <li><strong>ARABIC PS1:</strong> يضم تعريبات ألعاب جهاز PlayStation الأصلي (الجيل الأول).</li>
+          <li><strong>PC ARABIC:</strong> يضم تعريبات ألعاب الحاسوب الشخصي، بما في ذلك الألعاب المتوفرة على منصات مثل Steam و Epic Games Store و GOG.</li>
+          <li><strong>NS ARABIC:</strong> يضم تعريبات ألعاب جهاز Nintendo Switch المحمول.</li>
+          <li><strong>PS4 ARABIC:</strong> يضم تعريبات ألعاب جهاز PlayStation 4.</li>
+          <li><strong>PS3 ARABIC:</strong> يضم تعريبات ألعاب جهاز PlayStation 3.</li>
+          <li><strong>PS2 ARABIC:</strong> يضم تعريبات ألعاب جهاز PlayStation 2.</li>
+          <li><strong>PS1 ARABIC:</strong> يضم تعريبات ألعاب جهاز PlayStation الأصلي (الجيل الأول).</li>
         </ul>
         <p>
           يمكن الوصول إلى أي قسم من خلال شريط التنقل في أعلى الموقع، أو من خلال روابط الفوتر في أسفله. تعرض صفحة كل قسم شبكة من بطاقات التعريبات، مرتّبة افتراضياً حسب عدد التحميلات التنازلي، مع إمكانية تغيير الترتيب والبحث والتصفية كما هو موضّح في القسم التالي.

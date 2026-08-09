@@ -73,3 +73,7 @@ The main page uses `?view=<name>` query param to switch between views. Views are
 - Schema changes: `npx prisma db push` (dev) or `npx prisma migrate dev` (create migration)
 - After schema changes: `npx prisma generate`
 - Seed: `npx tsx scripts/seed.ts`
+
+## Critical Rule — Do NOT Touch What You Weren't Asked To
+
+**NEVER change anything the user didn't explicitly ask you to change.** If the user says "change X", you change ONLY X — nothing more, nothing less. Don't assume, don't "improve" adjacent things, don't "fix" related things. Only do exactly what was requested. If you're unsure, ask before acting.

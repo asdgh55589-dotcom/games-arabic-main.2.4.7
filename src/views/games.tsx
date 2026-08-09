@@ -22,12 +22,12 @@ const PLATFORMS = ['الكل', 'PC', 'NS', 'PS4', 'PS3', 'PS2', 'PS1'] as const
 
 const PLATFORM_LABELS: Record<string, string> = {
   'الكل': 'الكل',
-  'PC': 'ARABIC PC',
-  'NS': 'ARABIC NS',
-  'PS4': 'ARABIC PS4',
-  'PS3': 'ARABIC PS3',
-  'PS2': 'ARABIC PS2',
-  'PS1': 'ARABIC PS1',
+  'PC': 'PC ARABIC',
+  'NS': 'NS ARABIC',
+  'PS4': 'PS4 ARABIC',
+  'PS3': 'PS3 ARABIC',
+  'PS2': 'PS2 ARABIC',
+  'PS1': 'PS1 ARABIC',
 }
 
 export function GamesPage() {

@@ -268,3 +268,59 @@ export interface NotificationsResponse {
   limit: number
   totalPages: number
 }
+
+// ===== Team types =====
+
+export interface TeamMember {
+  id: string
+  name: string
+  avatarUrl: string | null
+  role: string
+  bio: string | null
+  joinedAt?: string
+}
+
+export interface TeamMod {
+  id: string
+  name: string
+  slug: string
+  thumbnailUrl: string
+  downloads: number
+  endorsements: number
+  views: number
+  game: { platform: string; name: string } | null
+}
+
+export interface TeamContactLink {
+  type: string
+  label: string
+  url: string
+}
+
+export interface TeamStats {
+  modCount: number
+  totalDownloads: number
+  totalEndorsements: number
+  totalViews: number
+  memberCount: number
+  platforms: Record<string, number>
+  roleBreakdown: Record<string, number>
+}
+
+export interface TeamDetail {
+  id: string
+  slug: string
+  name: string
+  description: string
+  logoUrl: string
+  bannerUrl: string
+  websiteUrl: string
+  discordUrl: string
+  isFeatured: boolean
+  isOfficial: boolean
+  createdAt: string
+  memberships: TeamMember[]
+  mods: TeamMod[]
+  contactLinks: TeamContactLink[]
+  stats: TeamStats
+}

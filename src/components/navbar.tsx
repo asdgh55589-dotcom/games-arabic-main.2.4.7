@@ -24,13 +24,13 @@ interface NavbarProps {
 }
 
 const PLATFORMS = [
-  { key: 'PC', label: 'ARABIC PC', icon: PcIcon, color: '#0078D4' },
-  { key: 'X360', label: 'ARABIC XBOX 360', icon: Xbox360Icon, color: '#107C10' },
-  { key: 'NS', label: 'ARABIC NS', icon: NintendoSwitchIcon, color: '#E60012' },
-  { key: 'PS4', label: 'ARABIC PS4', icon: PlayStationIcon, color: '#0070D1' },
-  { key: 'PS3', label: 'ARABIC PS3', icon: PlayStationIcon, color: '#003087' },
-  { key: 'PS2', label: 'ARABIC PS2', icon: PlayStationIcon, color: '#4A4A4A' },
-  { key: 'PS1', label: 'ARABIC PS1', icon: PlayStationIcon, color: '#8C8C8C' },
+  { key: 'PC', label: 'PC ARABIC', icon: PcIcon, color: '#0078D4' },
+  { key: 'X360', label: 'XBOX 360 ARABIC', icon: Xbox360Icon, color: '#107C10' },
+  { key: 'NS', label: 'NS ARABIC', icon: NintendoSwitchIcon, color: '#E60012' },
+  { key: 'PS4', label: 'PS4 ARABIC', icon: PlayStationIcon, color: '#0070D1' },
+  { key: 'PS3', label: 'PS3 ARABIC', icon: PlayStationIcon, color: '#003087' },
+  { key: 'PS2', label: 'PS2 ARABIC', icon: PlayStationIcon, color: '#4A4A4A' },
+  { key: 'PS1', label: 'PS1 ARABIC', icon: PlayStationIcon, color: '#8C8C8C' },
 ] as const
 
 export function Navbar({ games, currentView = 'home' }: NavbarProps) {

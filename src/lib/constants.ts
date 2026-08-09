@@ -8,13 +8,13 @@
 
 /** All supported platforms, in the order they should appear in navigation. */
 export const PLATFORMS = [
-  { key: 'PC', label: 'ARABIC PC', arabicLabel: 'ألعاب الكمبيوتر' },
-  { key: 'X360', label: 'ARABIC XBOX 360', arabicLabel: 'ألعاب اكس بوكس 360' },
-  { key: 'NS', label: 'ARABIC NS', arabicLabel: 'ألعاب نينتندو سويتش' },
-  { key: 'PS4', label: 'ARABIC PS4', arabicLabel: 'ألعاب البلايستيشن 4' },
-  { key: 'PS3', label: 'ARABIC PS3', arabicLabel: 'ألعاب البلايستيشن 3' },
-  { key: 'PS2', label: 'ARABIC PS2', arabicLabel: 'ألعاب البلايستيشن 2' },
-  { key: 'PS1', label: 'ARABIC PS1', arabicLabel: 'ألعاب البلايستيشن 1' },
+  { key: 'PC', label: 'PC ARABIC', arabicLabel: 'ألعاب الكمبيوتر' },
+  { key: 'X360', label: 'XBOX 360 ARABIC', arabicLabel: 'ألعاب اكس بوكس 360' },
+  { key: 'NS', label: 'NS ARABIC', arabicLabel: 'ألعاب نينتندو سويتش' },
+  { key: 'PS4', label: 'PS4 ARABIC', arabicLabel: 'ألعاب البلايستيشن 4' },
+  { key: 'PS3', label: 'PS3 ARABIC', arabicLabel: 'ألعاب البلايستيشن 3' },
+  { key: 'PS2', label: 'PS2 ARABIC', arabicLabel: 'ألعاب البلايستيشن 2' },
+  { key: 'PS1', label: 'PS1 ARABIC', arabicLabel: 'ألعاب البلايستيشن 1' },
 ] as const
 
 /** Platform keys only — useful for `includes` checks on filter values. */

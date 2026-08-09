@@ -6,13 +6,13 @@ import { Card } from '@/components/ui/card'
 import { ArrowLeft, Gamepad2, Monitor, Smartphone, Layers } from 'lucide-react'
 
 const PLATFORMS = [
-  { key: 'PC', label: 'ARABIC PC', desc: 'تعريبات ألعاب الحاسوب الشخصي', icon: Monitor, color: 'from-orange-500 to-amber-600' },
-  { key: 'X360', label: 'ARABIC XBOX 360', desc: 'تعريبات ألعاب Xbox 360', icon: Gamepad2, color: 'from-green-500 to-green-700' },
-  { key: 'NS', label: 'ARABIC NS', desc: 'تعريبات ألعاب Nintendo Switch', icon: Smartphone, color: 'from-red-500 to-rose-600' },
-  { key: 'PS4', label: 'ARABIC PS4', desc: 'تعريبات ألعاب PlayStation 4', icon: Gamepad2, color: 'from-blue-500 to-indigo-600' },
-  { key: 'PS3', label: 'ARABIC PS3', desc: 'تعريبات ألعاب PlayStation 3', icon: Gamepad2, color: 'from-blue-700 to-blue-900' },
-  { key: 'PS2', label: 'ARABIC PS2', desc: 'تعريبات ألعاب PlayStation 2', icon: Gamepad2, color: 'from-cyan-500 to-teal-600' },
-  { key: 'PS1', label: 'ARABIC PS1', desc: 'تعريبات ألعاب PlayStation الأصلي', icon: Gamepad2, color: 'from-slate-400 to-slate-600' },
+  { key: 'PC', label: 'PC ARABIC', desc: 'تعريبات ألعاب الحاسوب الشخصي', icon: Monitor, color: 'from-orange-500 to-amber-600' },
+  { key: 'X360', label: 'XBOX 360 ARABIC', desc: 'تعريبات ألعاب Xbox 360', icon: Gamepad2, color: 'from-green-500 to-green-700' },
+  { key: 'NS', label: 'NS ARABIC', desc: 'تعريبات ألعاب Nintendo Switch', icon: Smartphone, color: 'from-red-500 to-rose-600' },
+  { key: 'PS4', label: 'PS4 ARABIC', desc: 'تعريبات ألعاب PlayStation 4', icon: Gamepad2, color: 'from-blue-500 to-indigo-600' },
+  { key: 'PS3', label: 'PS3 ARABIC', desc: 'تعريبات ألعاب PlayStation 3', icon: Gamepad2, color: 'from-blue-700 to-blue-900' },
+  { key: 'PS2', label: 'PS2 ARABIC', desc: 'تعريبات ألعاب PlayStation 2', icon: Gamepad2, color: 'from-cyan-500 to-teal-600' },
+  { key: 'PS1', label: 'PS1 ARABIC', desc: 'تعريبات ألعاب PlayStation الأصلي', icon: Gamepad2, color: 'from-slate-400 to-slate-600' },
 ]
 
 export function ExplorePage() {

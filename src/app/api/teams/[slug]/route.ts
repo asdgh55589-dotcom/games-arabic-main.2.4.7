@@ -14,11 +14,15 @@ export async function GET(
         memberships: { orderBy: { joinedAt: 'desc' } },
         contactLinks: { orderBy: { order: 'asc' } },
         mods: {
-          select: { id: true, name: true, slug: true, thumbnailUrl: true, downloads: true, endorsements: true },
+          select: {
+            id: true, name: true, slug: true, thumbnailUrl: true,
+            downloads: true, endorsements: true, views: true,
+            game: { select: { platform: true, name: true } },
+          },
           orderBy: { downloads: 'desc' },
-          take: 20,
+          take: 50,
         },
-        _count: { select: { mods: true } },
+        _count: { select: { mods: true, memberships: true } },
       },
     })
 
@@ -26,8 +30,36 @@ export async function GET(
       return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
     }
 
+    const totalDownloads = team.mods.reduce((sum, m) => sum + m.downloads, 0)
+    const totalEndorsements = team.mods.reduce((sum, m) => sum + m.endorsements, 0)
+    const totalViews = team.mods.reduce((sum, m) => sum + m.views, 0)
+
+    const platforms: Record<string, number> = {}
+    for (const mod of team.mods) {
+      const p = mod.game?.platform
+      if (p) platforms[p] = (platforms[p] || 0) + 1
+    }
+
+    const roleBreakdown: Record<string, number> = {}
+    for (const m of team.memberships) {
+      roleBreakdown[m.role] = (roleBreakdown[m.role] || 0) + 1
+    }
+
     return NextResponse.json(
-      { team },
+      {
+        team: {
+          ...team,
+          stats: {
+            totalDownloads,
+            totalEndorsements,
+            totalViews,
+            memberCount: team._count.memberships,
+            modCount: team._count.mods,
+            platforms,
+            roleBreakdown,
+          },
+        },
+      },
       {
         headers: {
           'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
