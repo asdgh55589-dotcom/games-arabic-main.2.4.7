@@ -31,7 +31,7 @@
 إضافة واجهات `TeamMember`, `TeamMod`, `TeamContactLink`, `TeamStats`, `TeamDetail`
 إلى ملف الأنواع المركزي (الموجود) في نهايته.
 
-### 2. `src/lib/team-constants.ts` — ملف جديد
+### 2. `src/lib/team-constants.tsx` — ملف جديد
 
 نقل الثوابت كما هي من ملف العرض دون أي تغيير في القيم:
 - `ROLE_LABELS` — خريطة الرتب → { label، icon، color }
@@ -63,5 +63,5 @@
 ## معايير النجاح
 
 1. `npx tsc --noEmit` لا يظهر أخطاء في `team-detail.tsx` أو الملفات الجديدة
-2. لا تغيير في أي ملف خارج: `src/lib/types.ts`, `src/lib/team-constants.ts`, `src/hooks/use-team-detail.ts`, `src/views/team-detail.tsx`
+2. لا تغيير في أي ملف خارج: `src/lib/types.ts`, `src/lib/team-constants.tsx`, `src/hooks/use-team-detail.ts`, `src/views/team-detail.tsx`
 3. السلوك البصري مطابق تماماً للوضع الحالي
