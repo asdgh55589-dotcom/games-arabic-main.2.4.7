@@ -4,13 +4,13 @@
 
 **Goal:** إعادة هيكلة `src/views/team-detail.tsx` لفصل كامل للمنطق (أنواع، ثوابت، جلب بيانات، حالة) عن الواجهة، دون أي تغيير بصري أو وظيفي.
 
-**Architecture:** نقل الأنواع إلى `src/lib/types.ts`، ونقل الثوابت (`ROLE_LABELS`, `CONTACT_ICONS`, `CONTACT_COLORS`, `TabKey`, `TEAM_TABS`) إلى ملف `src/lib/team-constants.ts` الجديد، وتجميع كل منطق جلب البيانات وحالة التبويب وعنوان الصفحة في هوك `src/hooks/use-team-detail.ts` الجديد. يصبح ملف الواجهة عرضياً بحتاً ويستدعي الهوك.
+**Architecture:** نقل الأنواع إلى `src/lib/types.ts`، ونقل الثوابت (`ROLE_LABELS`, `CONTACT_ICONS`, `CONTACT_COLORS`, `TabKey`, `TEAM_TABS`) إلى ملف `src/lib/team-constants.tsx` الجديد، وتجميع كل منطق جلب البيانات وحالة التبويب وعنوان الصفحة في هوك `src/hooks/use-team-detail.ts` الجديد. يصبح ملف الواجهة عرضياً بحتاً ويستدعي الهوك.
 
 **Tech Stack:** Next.js 16 (App Router), React 19, TypeScript 5, lucide-react، الهوك الموجود `useFetch`.
 
 ## Global Constraints
 
-- التغيير محصور في 4 ملفات فقط: `src/lib/types.ts`, `src/lib/team-constants.ts`, `src/hooks/use-team-detail.ts`, `src/views/team-detail.tsx`
+- التغيير محصور في 4 ملفات فقط: `src/lib/types.ts`, `src/lib/team-constants.tsx`, `src/hooks/use-team-detail.ts`, `src/views/team-detail.tsx`
 - صفر تغيير بصري أو وظيفي — إعادة هيكلة فقط
 - المكونات الواجهية الفرعية (`StatCell`, `TabButton`, `OverviewTab`, `MembersTab`, `ModsTab`, `StatsTab`) تبقى داخل `team-detail.tsx` (نمط المشروع)
 - التحقق النهائي: `npx tsc --noEmit` بدون أخطاء في الملفات الأربعة
@@ -103,10 +103,10 @@ git commit -m "refactor: add TeamDetail types to central types file"
 
 ---
 
-### Task 2: إنشاء `src/lib/team-constants.ts` (الثوابت والتبويبات)
+### Task 2: إنشاء `src/lib/team-constants.tsx` (الثوابت والتبويبات)
 
 **Files:**
-- Create: `src/lib/team-constants.ts`
+- Create: `src/lib/team-constants.tsx`
 
 **Interfaces:**
 - Consumes: لا شيء
@@ -119,7 +119,7 @@ git commit -m "refactor: add TeamDetail types to central types file"
 
 - [ ] **Step 1: إنشاء الملف**
 
-أنشئ `src/lib/team-constants.ts` بالمحتوى التالي (القيم منقولة حرفياً من `team-detail.tsx`):
+أنشئ `src/lib/team-constants.tsx` بالمحتوى التالي (القيم منقولة حرفياً من `team-detail.tsx`):
 
 ```ts
 import {
@@ -212,7 +212,7 @@ Expected: لا أخطاء (الملف يُصرَّح لكن لا أحد يستو
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/lib/team-constants.ts
+git add src/lib/team-constants.tsx
 git commit -m "refactor: extract team constants to dedicated module"
 ```
 
@@ -766,7 +766,7 @@ function StatsTab({ team }: { team: TeamDetail }) {
 - [ ] **Step 2: التحقق من نوعية الملفات الأربعة**
 
 Run: `npx tsc --noEmit`
-Expected: لا أخطاء في `team-detail.tsx` ولا في الملفات الجديدة (`team-constants.ts`, `use-team-detail.ts`, `types.ts`)
+Expected: لا أخطاء في `team-detail.tsx` ولا في الملفات الجديدة (`team-constants.tsx`, `use-team-detail.ts`, `types.ts`)
 
 - [ ] **Step 3: Commit**
 
@@ -781,7 +781,7 @@ git commit -m "refactor: make team-detail view purely presentational"
 
 **1. Spec coverage:**
 - الأنواع في `types.ts` ← Task 1 ✓
-- الثوابت في `team-constants.ts` ✓ (Task 2)
+- الثوابت في `team-constants.tsx` ✓ (Task 2)
 - الهوك `useTeamDetail` يجمع URL + useFetch + activeTab + useDocumentTitle ✓ (Task 3)
 - الواجهة عرضية بحتة، مكوناتها الفرعية باقية في نفس الملف ✓ (Task 4)
 - حد 4 ملفات ✓
