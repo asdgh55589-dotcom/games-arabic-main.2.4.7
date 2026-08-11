@@ -25,6 +25,7 @@ import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { db } from './db'
 import { createClient } from './supabase/server'
+import { setTokenVersionCache } from './token-version-cache'
 
 export const getJWTSecret = (): Uint8Array => {
   const secret = process.env.JWT_SECRET
@@ -295,10 +296,13 @@ export function getBanStatus(user: {
 /** زيادة tokenVersion → يُبطل كل الكوكيز القديمة */
 export async function invalidateUserSessions(userId: string): Promise<void> {
   try {
-    await db.user.update({
+    const user = await db.user.update({
       where: { id: userId },
       data: { tokenVersion: { increment: 1 } },
+      select: { tokenVersion: true },
     })
+    // Write new tokenVersion to Redis cache for Edge middleware
+    await setTokenVersionCache(userId, user.tokenVersion)
   } catch (err) {
     console.error('[invalidateUserSessions] failed:', err)
   }
@@ -441,5 +445,16 @@ export async function deleteSupabaseAuthUser(supabaseId: string): Promise<boolea
     return res.ok
   } catch {
     return false
+  }
+}
+
+// ===== Optional Session Helper =====
+
+/** Read session without throwing — returns null if not logged in */
+export async function getOptionalSession(): Promise<SessionUser | null> {
+  try {
+    return await getSession()
+  } catch {
+    return null
   }
 }
