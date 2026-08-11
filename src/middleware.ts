@@ -16,6 +16,7 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { updateSession } from '@/lib/supabase/middleware'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
+import { getTokenVersionCache } from '@/lib/token-version-cache'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 const JWT_SECRET = (() => {
@@ -40,11 +41,20 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return {
-      userId: payload.userId as string,
-      role: payload.role as string,
-      tv: typeof payload.tv === 'number' ? payload.tv : undefined,
+    const userId = payload.userId as string
+    const role = payload.role as string
+    const tv = typeof payload.tv === 'number' ? payload.tv : undefined
+
+    // Validate tokenVersion against Redis cache (Edge-safe)
+    // If cache has a value and it doesn't match → session revoked
+    if (tv !== undefined && userId) {
+      const cachedTv = await getTokenVersionCache(userId)
+      if (cachedTv !== null && cachedTv !== tv) {
+        return null  // Session revoked — tv mismatch
+      }
     }
+
+    return { userId, role, tv }
   } catch {
     return null
   }
@@ -52,6 +62,42 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // ===== SPA → File-based route redirects (301) =====
+  const view = req.nextUrl.searchParams.get('view')
+  if (view) {
+    let destination: string | null = null
+    switch (view) {
+      case 'platform': {
+        const platform = req.nextUrl.searchParams.get('platform')
+        if (platform) destination = `/platform/${encodeURIComponent(platform)}`
+        break
+      }
+      case 'profile': {
+        const user = req.nextUrl.searchParams.get('user')
+        if (user) destination = `/profile/${encodeURIComponent(user)}`
+        break
+      }
+      case 'series-detail': {
+        const series = req.nextUrl.searchParams.get('series')
+        if (series) destination = `/series/${encodeURIComponent(series)}`
+        break
+      }
+      case 'team-detail': {
+        const team = req.nextUrl.searchParams.get('team')
+        if (team) destination = `/teams/${encodeURIComponent(team)}`
+        break
+      }
+      case 'search': {
+        const q = req.nextUrl.searchParams.get('q')
+        if (q) destination = `/search?q=${encodeURIComponent(q)}`
+        break
+      }
+    }
+    if (destination) {
+      return NextResponse.redirect(new URL(destination, req.url), 301)
+    }
+  }
 
   // تحديث + التحقق من صلاحية Supabase session (لجميع الـ routes)
   const { supabase, response } = await updateSession(req)
