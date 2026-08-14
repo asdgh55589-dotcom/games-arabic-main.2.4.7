@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAMES ARABIC - Retro Homepage</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --retro-bg: #2d1b4e;
+      --retro-bg-dark: #1a0f2e;
+      --retro-card: #3d2860;
+      --retro-card-light: #4a3275;
+      --retro-primary: #ff6b35;
+      --retro-primary-light: #ff8c5a;
+      --retro-secondary: #00d9ff;
+      --retro-accent: #f9ed69;
+      --retro-border: #6b4c9a;
+      --retro-text: #ffffff;
+      --retro-text-muted: #b8a8d0;
+      --retro-success: #00ff88;
+      --scanline-color: rgba(0, 0, 0, 0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(180deg, var(--retro-bg) 0%, var(--retro-bg-dark) 100%);
+      color: var(--retro-text);
+      min-height: 100vh;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scanline-color) 2px, var(--scanline-color) 4px);
+      pointer-events: none; z-index: 9999; opacity: 0.3;
+    }
+    a { text-decoration: none; color: inherit; }
+    .pixel-border { border: 4px solid var(--retro-border); box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5); }
+    .pixel-font { font-family: 'Press Start 2P', cursive; letter-spacing: -1px; }
+    .navbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: linear-gradient(180deg, var(--retro-card-light) 0%, var(--retro-card) 100%);
+      border-bottom: 4px solid var(--retro-border);
+      box-shadow: 0 4px 0px 0px rgba(0, 0, 0, 0.3);
+    }
+    .navbar-top {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1700px; margin: 0 auto; padding: 12px 20px; gap: 20px;
+    }
+    .logo-text { font-size: 28px; font-weight: 900; letter-spacing: 3px; }
+    .logo-part1 {
+      background: linear-gradient(135deg, var(--retro-primary) 0%, var(--retro-primary-light) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .nav-menu { display: flex; gap: 4px; flex-wrap: wrap; }
+    .nav-link {
+      padding: 10px 16px; font-size: 13px; font-weight: 700; text-transform: uppercase;
+      color: var(--retro-text-muted); transition: all 0.15s ease; border: 3px solid transparent;
+    }
+    .nav-link:hover {
+      color: var(--retro-secondary); background: rgba(0, 217, 255, 0.1);
+      border-color: var(--retro-secondary); transform: translate(-2px, -2px);
+      box-shadow: 3px 3px 0px 0px rgba(0, 217, 255, 0.3);
+    }
+    .search-container { position: relative; width: 380px; }
+    .search-input {
+      width: 100%; height: 42px; padding: 0 45px 0 16px;
+      background: var(--retro-bg-dark); border: 3px solid var(--retro-border);
+      color: var(--retro-text); font-family: 'Cairo', sans-serif; font-size: 14px; outline: none;
+    }
+    .search-input:focus { border-color: var(--retro-secondary); box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--retro-text-muted); }
+    .btn {
+      padding: 10px 20px; font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700;
+      text-transform: uppercase; border: 3px solid var(--retro-border); cursor: pointer;
+      transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, var(--retro-primary) 0%, #e55a2b 100%);
+      color: white; border-color: var(--retro-primary);
+      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.4);
+    }
+    .btn-primary:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 0.4); }
+    .btn-secondary {
+      background: var(--retro-card-light); color: var(--retro-text);
+      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.4);
+    }
+    .btn-secondary:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 0.4); }
+    .main-content { max-width: 1600px; margin: 0 auto; padding: 20px; display: flex; gap: 20px; }
+    .sidebar { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+    .sidebar-section {
+      background: var(--retro-card); border: 4px solid var(--retro-border);
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.4); padding: 16px;
+    }
+    .sidebar-title {
+      font-size: 16px; color: var(--retro-accent); margin-bottom: 12px;
+      padding-bottom: 8px; border-bottom: 3px solid var(--retro-border);
+    }
+    .sidebar-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 2px solid rgba(107, 76, 154, 0.3); }
+    .sidebar-item:last-child { border-bottom: none; }
+    .sidebar-item-img { width: 60px; height: 60px; object-fit: cover; border: 2px solid var(--retro-border); }
+    .sidebar-item-info { flex: 1; min-width: 0; }
+    .sidebar-item-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-item-meta { font-size: 11px; color: var(--retro-text-muted); display: flex; gap: 8px; }
+    .content-area { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 32px; }
+    .hero-slider {
+      width: 100%; height: clamp(360px, 52vh, 580px);
+      background: linear-gradient(135deg, var(--retro-card-light) 0%, var(--retro-card) 100%);
+      border: 6px solid var(--retro-border); box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.5);
+      position: relative; overflow: hidden;
+    }
+    .hero-slider img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0; padding: 40px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    }
+    .hero-title { font-size: 32px; margin-bottom: 12px; color: var(--retro-accent); }
+    .news-ticker {
+      background: var(--retro-card-light); border: 4px solid var(--retro-border);
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.4); padding: 12px 16px; overflow: hidden; white-space: nowrap;
+    }
+    .ticker-content { display: inline-block; animation: ticker 30s linear infinite; }
+    @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    .ticker-item { display: inline-block; padding: 0 30px; font-size: 14px; font-weight: 700; color: var(--retro-secondary); }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; padding-bottom: 12px; border-bottom: 4px solid var(--retro-border); margin-bottom: 20px;
+    }
+    .section-title { font-size: 22px; color: var(--retro-text); margin-bottom: 4px; }
+    .section-subtitle { font-size: 13px; color: var(--retro-text-muted); }
+    .mod-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    @media (min-width: 640px) { .mod-grid { grid-template-columns: repeat(3, 1fr); gap: 22px; } }
+    @media (min-width: 1024px) { .mod-grid { grid-template-columns: repeat(5, 1fr); gap: 20px; } }
+    .mod-card {
+      background: var(--retro-card); border: 4px solid var(--retro-border);
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5); transition: all 0.15s ease;
+      display: flex; flex-direction: column; overflow: hidden; min-height: 380px;
+    }
+    .mod-card:hover { transform: translate(-3px, -3px); box-shadow: 7px 7px 0px 0px rgba(0, 0, 0, 0.5); }
+    .mod-card-image-container { position: relative; width: 100%; aspect-ratio: 16/9; border-bottom: 4px solid var(--retro-border); overflow: hidden; }
+    .mod-card-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s ease; }
+    .mod-card:hover .mod-card-image { transform: scale(1.08); }
+    .mod-card-badges { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+    .badge { padding: 4px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; border: 2px solid var(--retro-border); }
+    .badge-platform { background: rgba(255, 255, 255, 0.9); color: var(--retro-bg-dark); }
+    .badge-new { background: var(--retro-success); color: var(--retro-bg-dark); }
+    .mod-card-content { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+    .mod-card-title { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .mod-card-author { display: flex; align-items: center; gap: 6px; padding-bottom: 10px; border-bottom: 2px solid var(--retro-border); margin-bottom: 10px; }
+    .author-avatar { width: 20px; height: 20px; border: 2px solid var(--retro-border); }
+    .author-name { font-size: 12px; font-weight: 700; color: var(--retro-text-muted); }
+    .mod-card-meta { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 2px solid var(--retro-border); margin-bottom: 10px; font-size: 11px; color: var(--retro-text-muted); }
+    .meta-row { display: flex; align-items: center; gap: 6px; }
+    .mod-card-summary { font-size: 11px; line-height: 1.5; color: var(--retro-text-muted); margin-bottom: auto; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .mod-card-stats { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 10px; background: var(--retro-card-light); border-top: 4px solid var(--retro-border); font-size: 12px; font-weight: 700; color: var(--retro-text-muted); }
+    .stat-row { display: flex; align-items: center; gap: 4px; }
+    .series-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    @media (min-width: 640px) { .series-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .series-grid { grid-template-columns: repeat(4, 1fr); } }
+    .series-card { position: relative; height: 112px; background: var(--retro-card); border: 4px solid var(--retro-border); box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; }
+    .series-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.5); }
+    .series-card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+    .series-card:hover .series-card-bg { opacity: 0.75; }
+    .series-card-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, var(--retro-card), transparent); }
+    .series-card-content { position: relative; z-index: 2; }
+    .series-card-title { font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
+    .series-card-count { font-size: 11px; color: var(--retro-text-muted); }
+    .footer { margin-top: auto; border-top: 4px solid var(--retro-border); background: rgba(45, 27, 78, 0.5); padding: 20px; }
+    .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 24px; }
+    .footer-brand { grid-column: span 2; }
+    .footer-logo { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+    .footer-description { font-size: 12px; color: var(--retro-text-muted); line-height: 1.6; }
+    .footer-social { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .social-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 3px solid var(--retro-border); background: var(--retro-card); color: var(--retro-text-muted); }
+    .footer-col h3 { font-size: 14px; margin-bottom: 12px; }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .footer-link { font-size: 12px; color: var(--retro-text-muted); }
+    .footer-bottom { margin-top: 20px; padding-top: 16px; border-top: 3px solid var(--retro-border); text-align: center; }
+    .footer-copyright { font-size: 11px; color: var(--retro-text-muted); }
+    @media (max-width: 1024px) { .main-content { flex-direction: column; } .sidebar { width: 100%; order: 2; } .content-area { order: 1; } .nav-menu { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="navbar-top">
+      <a href="/" class="logo-text"><span class="logo-part1">GAMES</span><span> ARABIC</span></a>
+      <nav class="nav-menu">
+        <a href="/?view=platform&platform=PC" class="nav-link">ARABIC PC</a>
+        <a href="/?view=platform&platform=X360" class="nav-link">ARABIC XBOX 360</a>
+        <a href="/?view=platform&platform=NS" class="nav-link">ARABIC NS</a>
+        <a href="/?view=platform&platform=PS4" class="nav-link">ARABIC PS4</a>
+        <a href="/?view=platform&platform=PS3" class="nav-link">ARABIC PS3</a>
+        <a href="/?view=platform&platform=PS2" class="nav-link">ARABIC PS2</a>
+        <a href="/?view=platform&platform=PS1" class="nav-link">ARABIC PS1</a>
+        <a href="/?view=series" class="nav-link">السلاسل</a>
+        <a href="/?view=teams" class="nav-link">الفرق</a>
+      </nav>
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="ابحث عن تعريب…">
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" style="padding: 10px;">🔔</button>
+        <button class="btn btn-primary">تسجيل الدخول</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <aside class="sidebar">
+      <div class="sidebar-section pixel-border" style="height: 250px; display: grid; place-items: center;">
+        <div style="text-align: center; color: var(--retro-text-muted);">
+          <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.5;">📺</div>
+          <p class="pixel-font" style="font-size: 10px;">مساحة إعلانية</p>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3 class="sidebar-title pixel-font">أحدث التعريبات</h3>
+        <div class="sidebar-item">
+          <img src="https://image.nexusmods.com/1151/thumbnails/1280x720/133885805.jpg" alt="" class="sidebar-item-img">
+          <div class="sidebar-item-info">
+            <div class="sidebar-item-title">تعريب واجهة المستخدم</div>
+            <div class="sidebar-item-meta"><span>👁️ 1.2K</span><span>⬇️ 450</span></div>
+          </div>
+        </div>
+        <div class="sidebar-item">
+          <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124567890.jpg" alt="" class="sidebar-item-img">
+          <div class="sidebar-item-info">
+            <div class="sidebar-item-title">حزمة الأسلحة العربية</div>
+            <div class="sidebar-item-meta"><span>👁️ 892</span><span>⬇️ 320</span></div>
+          </div>
+        </div>
+        <div class="sidebar-item">
+          <img src="https://image.nexusmods.com/1604/thumbnails/1280x720/135678901.jpg" alt="" class="sidebar-item-img">
+          <div class="sidebar-item-info">
+            <div class="sidebar-item-title">شخصيات عربية كاملة</div>
+            <div class="sidebar-item-meta"><span>👁️ 2.1K</span><span>⬇️ 780</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3 class="sidebar-title pixel-font">الأكثر رواجاً</h3>
+        <div class="sidebar-item">
+          <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124890123.jpg" alt="" class="sidebar-item-img">
+          <div class="sidebar-item-info">
+            <div class="sidebar-item-title">تعريب كامل للعبة</div>
+            <div class="sidebar-item-meta"><span>⬇️ 15K</span></div>
+          </div>
+        </div>
+        <div class="sidebar-item">
+          <img src="https://image.nexusmods.com/1604/thumbnails/1280x720/135234567.jpg" alt="" class="sidebar-item-img">
+          <div class="sidebar-item-info">
+            <div class="sidebar-item-title">حزمة الدروع القديمة</div>
+            <div class="sidebar-item-meta"><span>⬇️ 12K</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="content-area">
+      <div class="hero-slider pixel-border">
+        <img src="https://image.nexusmods.com/1151/thumbnails/1920x1080/133885805.jpg" alt="Hero">
+        <div class="hero-overlay">
+          <h2 class="hero-title pixel-font">أحدث تعريب لسكايرم</h2>
+          <p>تعريب كامل وشامل بلمسة عربية أصيلة</p>
+        </div>
+      </div>
+
+      <div class="news-ticker pixel-border">
+        <div class="ticker-content">
+          <span class="ticker-item">★ تم إضافة تعريب جديد للعبة Cyberpunk 2077</span>
+          <span class="ticker-item">★ تحديث شامل لتعريب The Witcher 3</span>
+          <span class="ticker-item">★ إطلاق قسم جديد لألعاب Nintendo Switch</span>
+          <span class="ticker-item">★ مسابقة أفضل تعريب لهذا الشهر</span>
+        </div>
+      </div>
+
+      <section>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title pixel-font" style="color: var(--retro-primary);">ARABIC PC</h2>
+            <p class="section-subtitle">جميع تعريبات منصة PC</p>
+          </div>
+          <a href="/?view=platform&platform=PC" class="btn btn-secondary">عرض الكل ←</a>
+        </div>
+        <div class="mod-grid">
+          <a href="/?view=mod&slug=skyrim-arabic-ui" class="mod-card pixel-border">
+            <div class="mod-card-image-container">
+              <img src="https://image.nexusmods.com/1151/thumbnails/1280x720/133885805.jpg" alt="" class="mod-card-image">
+              <div class="mod-card-badges"><span class="badge badge-platform">PC</span><span class="badge badge-new">جديد</span></div>
+            </div>
+            <div class="mod-card-content">
+              <h3 class="mod-card-title">تعريب واجهة المستخدم الكاملة لسكايرم</h3>
+              <div class="mod-card-author"><img src="https://avatars.githubusercontent.com/u/123456?v=4" alt="" class="author-avatar"><span class="author-name">AhmedGamer</span></div>
+              <div class="mod-card-meta">
+                <div class="meta-row">📅 تاريخ النشر: 15 يناير 2025</div>
+                <div class="meta-row">⏰ آخر تحديث: منذ 3 أيام</div>
+                <div class="meta-row">💾 الحجم: 245 MB</div>
+              </div>
+              <p class="mod-card-summary">تعريب شامل لواجهة مستخدم لعبة Skyrim Special Edition يشمل القوائم، الحوارات، العناصر، والمهارات بدقة عالية.</p>
+            </div>
+            <div class="mod-card-stats"><span class="stat-row">👍 1,234</span><span class="stat-row">⬇️ 5,678</span><span class="stat-row">👁️ 12,345</span></div>
+          </a>
+          <a href="/?view=mod&slug=cyberpunk-weapons" class="mod-card pixel-border">
+            <div class="mod-card-image-container">
+              <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124567890.jpg" alt="" class="mod-card-image">
+              <div class="mod-card-badges"><span class="badge badge-platform">PC</span></div>
+            </div>
+            <div class="mod-card-content">
+              <h3 class="mod-card-title">حزمة الأسلحة العربية - سايبربانك</h3>
+              <div class="mod-card-author"><img src="https://avatars.githubusercontent.com/u/234567?v=4" alt="" class="author-avatar"><span class="author-name">NinjaTranslator</span></div>
+              <div class="mod-card-meta">
+                <div class="meta-row">📅 تاريخ النشر: 10 يناير 2025</div>
+                <div class="meta-row">⏰ آخر تحديث: منذ أسبوع</div>
+                <div class="meta-row">💾 الحجم: 180 MB</div>
+              </div>
+              <p class="mod-card-summary">حزمة أسلحة مخصصة للعبة Cyberpunk 2077 مع أسماء ووصف عربي لكل سلاح.</p>
+            </div>
+            <div class="mod-card-stats"><span class="stat-row">👍 892</span><span class="stat-row">⬇️ 3,456</span><span class="stat-row">👁️ 8,901</span></div>
+          </a>
+          <a href="/?view=mod&slug=witcher-characters" class="mod-card pixel-border">
+            <div class="mod-card-image-container">
+              <img src="https://image.nexusmods.com/1604/thumbnails/1280x720/135678901.jpg" alt="" class="mod-card-image">
+              <div class="mod-card-badges"><span class="badge badge-platform">PC</span><span class="badge badge-new">محدّث</span></div>
+            </div>
+            <div class="mod-card-content">
+              <h3 class="mod-card-title">شخصيات عربية كاملة - ويتشر 3</h3>
+              <div class="mod-card-author"><img src="https://avatars.githubusercontent.com/u/345678?v=4" alt="" class="author-avatar"><span class="author-name">ArabModder</span></div>
+              <div class="mod-card-meta">
+                <div class="meta-row">📅 تاريخ النشر: 5 يناير 2025</div>
+                <div class="meta-row">⏰ آخر تحديث: منذ يومين</div>
+                <div class="meta-row">💾 الحجم: 520 MB</div>
+              </div>
+              <p class="mod-card-summary">استبدال شخصيات اللعبة بشخصيات عربية تاريخية وأسطورية مع أزياء وتفاصيل دقيقة.</p>
+            </div>
+            <div class="mod-card-stats"><span class="stat-row">👍 2,145</span><span class="stat-row">⬇️ 8,234</span><span class="stat-row">👁️ 18,567</span></div>
+          </a>
+          <a href="/?view=mod&slug=elden-ring-quest" class="mod-card pixel-border">
+            <div class="mod-card-image-container">
+              <img src="https://image.nexusmods.com/1151/thumbnails/1280x720/133456789.jpg" alt="" class="mod-card-image">
+              <div class="mod-card-badges"><span class="badge badge-platform">PC</span></div>
+            </div>
+            <div class="mod-card-content">
+              <h3 class="mod-card-title">مهمة جديدة: أسطورة الصحراء</h3>
+              <div class="mod-card-author"><img src="https://avatars.githubusercontent.com/u/456789?v=4" alt="" class="author-avatar"><span class="author-name">QuestMaster</span></div>
+              <div class="mod-card-meta">
+                <div class="meta-row">📅 تاريخ النشر: 20 ديسمبر 2024</div>
+                <div class="meta-row">⏰ آخر تحديث: منذ شهر</div>
+                <div class="meta-row">💾 الحجم: 1.2 GB</div>
+              </div>
+              <p class="mod-card-summary">مهمة إضافية طويلة للعبة Elden Ring تدور أحداثها في صحراء عربية غامضة.</p>
+            </div>
+            <div class="mod-card-stats"><span class="stat-row">👍 567</span><span class="stat-row">⬇️ 2,345</span><span class="stat-row">👁️ 6,789</span></div>
+          </a>
+          <a href="/?view=mod&slug=minecraft-textures" class="mod-card pixel-border">
+            <div class="mod-card-image-container">
+              <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124123456.jpg" alt="" class="mod-card-image">
+              <div class="mod-card-badges"><span class="badge badge-platform">PC</span><span class="badge badge-new">جديد</span></div>
+            </div>
+            <div class="mod-card-content">
+              <h3 class="mod-card-title">حزمة أكساء عربية لماينكرافت</h3>
+              <div class="mod-card-author"><img src="https://avatars.githubusercontent.com/u/567890?v=4" alt="" class="author-avatar"><span class="author-name">PixelArtist</span></div>
+              <div class="mod-card-meta">
+                <div class="meta-row">📅 تاريخ النشر: 18 يناير 2025</div>
+                <div class="meta-row">⏰ آخر تحديث: منذ 5 ساعات</div>
+                <div class="meta-row">💾 الحجم: 85 MB</div>
+              </div>
+              <p class="mod-card-summary">حزمة أكساء شاملة تحول عالم ماينكرافت إلى بيئة عربية إسلامية.</p>
+            </div>
+            <div class="mod-card-stats"><span class="stat-row">👍 3,421</span><span class="stat-row">⬇️ 12,567</span><span class="stat-row">👁️ 25,890</span></div>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title pixel-font" style="color: var(--retro-accent);">📦 سلاسل التعريبات</h2>
+            <p class="section-subtitle">استكشف التعريبات حسب السلسلة</p>
+          </div>
+          <a href="/?view=series" class="btn btn-secondary">عرض الكل ←</a>
+        </div>
+        <div class="series-grid">
+          <a href="/?view=series-detail&series=Skyrim" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/1151/thumbnails/1280x720/133885805.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">سكايرم</h3><p class="series-card-count">45 تعريب</p></div>
+          </a>
+          <a href="/?view=series-detail&series=Witcher" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/1604/thumbnails/1280x720/135678901.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">ذا ويتشر</h3><p class="series-card-count">32 تعريب</p></div>
+          </a>
+          <a href="/?view=series-detail&series=Cyberpunk" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124567890.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">سايبربانك</h3><p class="series-card-count">28 تعريب</p></div>
+          </a>
+          <a href="/?view=series-detail&series=EldenRing" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/1151/thumbnails/1280x720/133456789.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">إلدن رينغ</h3><p class="series-card-count">19 تعريب</p></div>
+          </a>
+          <a href="/?view=series-detail&series=GodOfWar" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/1604/thumbnails/1280x720/135234567.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">إله الحرب</h3><p class="series-card-count">24 تعريب</p></div>
+          </a>
+          <a href="/?view=series-detail&series=Minecraft" class="series-card pixel-border">
+            <img src="https://image.nexusmods.com/418/thumbnails/1280x720/124123456.jpg" alt="" class="series-card-bg">
+            <div class="series-card-overlay"></div>
+            <div class="series-card-content"><h3 class="series-card-title">ماينكرافت</h3><p class="series-card-count">67 تعريب</p></div>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="footer-logo pixel-font"><span style="color: var(--retro-primary);">GAMES</span><span> ARABIC</span></div>
+        <p class="footer-description">تعريب وأرشفة الألعاب العربية لكل المنصات - مجتمع عربي موحد لحب الألعاب وتعريبها</p>
+        <div class="footer-social">
+          <a href="#" class="social-btn">✈️</a>
+          <a href="#" class="social-btn">🎮</a>
+          <a href="#" class="social-btn">🖥️</a>
+          <a href="#" class="social-btn">📱</a>
+          <a href="#" class="social-btn">🤖</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h3>الأقسام</h3>
+        <ul class="footer-links">
+          <li><a href="/?view=platform&platform=PC" class="footer-link">ARABIC PC</a></li>
+          <li><a href="/?view=platform&platform=X360" class="footer-link">ARABIC XBOX 360</a></li>
+          <li><a href="/?view=platform&platform=NS" class="footer-link">ARABIC NS</a></li>
+          <li><a href="/?view=platform&platform=PS4" class="footer-link">ARABIC PS4</a></li>
+          <li><a href="/?view=platform&platform=PS3" class="footer-link">ARABIC PS3</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>استكشاف</h3>
+        <ul class="footer-links">
+          <li><a href="/?view=series" class="footer-link">سلاسل التعريبات</a></li>
+          <li><a href="/?view=support" class="footer-link">دعم الأقسام</a></li>
+          <li><a href="/?view=problems" class="footer-link">مشاكل وحلول</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>المجتمع</h3>
+        <ul class="footer-links">
+          <li><a href="#" class="footer-link">جروب تليجرام</a></li>
+          <li><a href="#" class="footer-link">سيرفر Discord</a></li>
+          <li><a href="/?view=about" class="footer-link">من نحن</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>حول</h3>
+        <ul class="footer-links">
+          <li><a href="/?view=about" class="footer-link">من نحن</a></li>
+          <li><a href="/?view=terms" class="footer-link">شروط الخدمة</a></li>
+          <li><a href="/?view=privacy" class="footer-link">سياسة الخصوصية</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom"><p class="footer-copyright">© 2025 GAMES ARABIC — صُنع في مصر ❤️</p></div>
+  </footer>
+</body>
+</html>

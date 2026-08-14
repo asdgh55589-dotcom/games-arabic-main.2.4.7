@@ -1,38 +1,29 @@
-node_modules/
-.next/
-out/
-db/*.db
-db/*.db-journal
+```
+# Dependencies
+superpowers/
+ui-ux-pro-max-skill/
 
-# Environment files — never commit secrets
-.env
-.env.local
-.env.production
-.env.*.local
-
-# Build artifacts
-*.tar.gz
+# Compressed files
 *.zip
-tsconfig.tsbuildinfo
-
-# Logs
-*.log
-
-# PID files — runtime values, never commit
-*.pid
-
-# Tooling
-tool-results/
-upload/
-download/
-skills/
-mini-services/
-examples/
-.zcode/
-.zscripts/*.pid
-
-# OS files
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```
