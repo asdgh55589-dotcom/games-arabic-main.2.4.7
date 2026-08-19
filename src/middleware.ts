@@ -99,28 +99,47 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // تحديث + التحقق من صلاحية Supabase session (لجميع الـ routes)
-  const { supabase, response } = await updateSession(req)
-  const { data: { user } } = await supabase.auth.getUser()
+  // ===== Supabase session refresh (CRITICAL: wrapped in try-catch) =====
+  // If Supabase is unreachable, public routes MUST still work.
+  let user: { id: string } | null = null
+  let supabaseResponse = NextResponse.next({ request: req })
 
-  // ===== فحص حظر IP للـ APIs الحساسة (auth + comments + endorse) =====
-  // نتجنب فحص كل طلب (أصول ثابتة) — فقط مسارات الكتابة
-  if (
-    pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/api/comments') ||
-    pathname.startsWith('/api/mods') ||
+  try {
+    const { supabase, response } = await updateSession(req)
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+    supabaseResponse = response
+  } catch (err) {
+    // Supabase unreachable — continue without session.
+    // Public routes work normally; admin routes will fail auth check below.
+    console.error('[Middleware] Supabase session error:', err)
+  }
+
+  // ===== IP ban check (ONLY for write/sensitive paths) =====
+  // Read-only operations (GET /api/mods, /api/games, etc.) are NOT checked.
+  // This prevents Redis/cache failures from blocking all data loading.
+  const isWritePath =
+    (pathname.startsWith('/api/auth') && req.method !== 'GET') ||
+    (pathname.startsWith('/api/comments') && req.method !== 'GET') ||
+    (pathname.startsWith('/api/mods') && req.method !== 'GET') ||
     pathname.startsWith('/api/admin/users')
-  ) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || req.headers.get('x-real-ip')
-    if (ip) {
-      const ipBan = await getIpBanCache(ip)
-      if (ipBan?.banned) {
-        return NextResponse.json(
-          { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-          { status: 403 }
-        )
+
+  if (isWritePath) {
+    try {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || req.headers.get('x-real-ip')
+      if (ip) {
+        const ipBan = await getIpBanCache(ip)
+        if (ipBan?.banned) {
+          return NextResponse.json(
+            { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
+            { status: 403 }
+          )
+        }
       }
+    } catch (err) {
+      // If Redis/cache fails, allow the request (don't block all users)
+      console.error('[Middleware] IP ban check failed:', err)
     }
   }
 
@@ -133,7 +152,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
     // مش moderator أو أعلى → redirect لـ /admin/login مع رسالة خطأ
-    if (rolePayload.role !== 'moderator' && rolePayload.role !== 'admin' && rolePayload.role !== 'owner') {
+    if (rolePayload.role !== 'moderator' && rolePayload.role !== 'admin' && rolePayload.role !== 'manager' && rolePayload.role !== 'owner') {
       const loginUrl = new URL('/admin/login', req.url)
       loginUrl.searchParams.set('error', 'insufficient_role')
       return NextResponse.redirect(loginUrl)
@@ -146,12 +165,12 @@ export async function middleware(req: NextRequest) {
     if (!rolePayload?.role || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    if (rolePayload.role !== 'moderator' && rolePayload.role !== 'admin' && rolePayload.role !== 'owner') {
+    if (rolePayload.role !== 'moderator' && rolePayload.role !== 'admin' && rolePayload.role !== 'manager' && rolePayload.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden — insufficient role' }, { status: 403 })
     }
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {

@@ -6,13 +6,11 @@
  *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *
- * الصلاحيات (تصاعدي):
- *   - member     → مش لوحة تحكم
- *   - publisher  → رفع/تعديل تعريباته فقط (بدون حذف)
- *   - moderator  → تعريباته + حذف + تعليقات + بلاغات
- *   - admin      → إدارة المستخدمين + الحظر + الألعاب/السلاسل +Audit
- *   - manager    → كل صلاحيات Admin + إعدادات الموقع + الأدوار + الصيانة
- *   - owner      → كل شيء + إنشاء حسابات owner
+ * الصلاحيات:
+ *   - owner     → كل شيء + إدارة الأدوار + إعدادات الموقع
+ *   - admin     → كل التعريبات/الألعاب + إدارة المستخدمين
+ *   - moderator → نشر/تعديل التعريبات (تعريبه بس) — مش حذف
+ *   - member    → مش لوحة تحكم
  *
  * ملاحظة: المستخدمون العاديون يسجّلون عبر OAuth فقط.
  *          كلمة المرور تُستخدم فقط لإدارة حساب Owner في وضع التطوير.
@@ -43,8 +41,7 @@ const ROLE_COOKIE_NAME = 'ga_admin_role'
 const ROLE_COOKIE_DURATION = 60 * 60 * 24 * 7 // 7 أيام بالثواني
 
 // ===== Role types =====
-// member → publisher → moderator → admin → manager → owner
-export type UserRole = 'member' | 'publisher' | 'moderator' | 'admin' | 'manager' | 'owner'
+export type UserRole = 'member' | 'moderator' | 'admin' | 'manager' | 'owner'
 
 // ===== User type returned by getSession =====
 export interface SessionUser {
@@ -137,8 +134,13 @@ export async function syncNeonUser(supabaseUser: {
     const email = supabaseUser.email || ''
     const username = (supabaseUser.user_metadata?.username as string) || email.split('@')[0] || 'مستخدم'
 
-    const existing = await db.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
+    const existing = await db.user.findFirst({
+      where: {
+        OR: [
+          { supabaseId: supabaseUser.id },
+          { email: email.toLowerCase() },
+        ],
+      },
       select: { id: true, username: true, email: true, role: true, avatarUrl: true, supabaseId: true },
     })
 
@@ -163,19 +165,6 @@ export async function syncNeonUser(supabaseUser: {
         role: 'member',
       },
     })
-
-    await db.notificationPreference.create({
-      data: {
-        userId: newUser.id,
-        emailEnabled: true,
-        pushEnabled: true,
-        dailySummary: true,
-        summaryIntervalDays: 3,
-        likeThreshold: 25,
-        quietHoursEnabled: false,
-        typePreferences: {},
-      },
-    }).catch(() => {})
 
     return { id: newUser.id, username: newUser.username, email: newUser.email, role: newUser.role, avatarUrl: newUser.avatarUrl }
   } catch {
@@ -242,10 +231,10 @@ export async function requireOwner(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم مشرف أو أعلى (moderator | admin | manager | owner) */
+/** يتأكد إن المستخدم مشرف أو أعلى (moderator | admin | owner) */
 export async function requireModerator(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+  if (user.role !== 'moderator' && user.role !== 'admin' && user.role !== 'owner') {
     throw new AuthError('Forbidden — moderator access required', 403)
   }
   return user
@@ -270,21 +259,20 @@ export async function requireManager(): Promise<SessionUser> {
 }
 
 /** فحص صلاحية: هل المستخدم يقدر يعدّل تعريب معيّن؟
- *  - owner/admin/moderator: أي تعريب
- *  - publisher: تعريبه فقط (authorId === user.id)
- *  - member: لا يقدر
+ *  - admin/owner: أي تعريب
+ *  - moderator: تعريبه فقط (authorId === user.id)
  */
 export function canEditMod(user: SessionUser, mod: { authorId: string }): boolean {
-  if (['owner', 'admin', 'moderator'].includes(user.role)) return true
-  if (user.role === 'publisher' && mod.authorId === user.id) return true
+  if (user.role === 'admin' || user.role === 'owner') return true
+  if (user.role === 'moderator' && mod.authorId === user.id) return true
   return false
 }
 
 /** فحص صلاحية: هل المستخدم يقدر يحذف؟
- *  - moderator | admin | manager | owner فقط
+ *  - admin/owner فقط
  */
 export function canDelete(user: SessionUser): boolean {
-  return ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
+  return user.role === 'admin' || user.role === 'owner'
 }
 
 // ===== Ban system helpers =====
