@@ -170,7 +170,53 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return supabaseResponse
+  return addSecurityHeaders(supabaseResponse)
+}
+
+// ===== Security Headers =====
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  // HSTS — forces HTTPS for 1 year
+  response.headers.set(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains; preload'
+  )
+
+  // CSP — Content Security Policy
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  )
+
+  // Prevent MIME sniffing
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+
+  // Prevent clickjacking
+  response.headers.set('X-Frame-Options', 'DENY')
+
+  // XSS protection (legacy but still useful)
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+
+  // Control referrer information
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+
+  // Restrict browser features
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+  )
+
+  return response
 }
 
 export const config = {
