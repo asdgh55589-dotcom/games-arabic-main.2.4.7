@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { exportUsersToCSV, exportUsersToExcel } from '@/lib/admin/export-users'
+import { internalError } from '@/lib/api-response'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  // Rate limiting: 5 requests per hour
+  const rl = await rateLimit(request, { limit: 5, window: 3600, keyPrefix: 'admin:export' })
+  if (!rl.success) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
+      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
+    )
+  }
+
   try {
     await requireAdmin()
 
@@ -34,7 +45,6 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

@@ -3,6 +3,7 @@
  */
 
 import { redisIncr } from './redis'
+import { NextResponse } from 'next/server'
 
 interface RateLimitEntry { count: number; resetAt: number }
 const memoryStore = new Map<string, RateLimitEntry>()
@@ -50,6 +51,20 @@ export async function rateLimit(req: Request, options: RateLimitOptions): Promis
   }
 
   return { success: true, remaining: options.limit - entry.count, resetAt: entry.resetAt, limit: options.limit }
+}
+
+export async function rateLimitMiddleware(
+  req: Request,
+  options: RateLimitOptions
+): Promise<NextResponse | null> {
+  const result = await rateLimit(req, options)
+  if (!result.success) {
+    return NextResponse.json(
+      { error: 'Too many requests', code: 'RATE_LIMITED' },
+      { status: 429, headers: rateLimitHeaders(result) }
+    )
+  }
+  return null
 }
 
 function getClientIP(req: Request): string {

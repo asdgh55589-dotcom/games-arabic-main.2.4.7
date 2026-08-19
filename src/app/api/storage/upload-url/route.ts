@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
+import { ok, notFound, unauthorized, validationFail, internalError } from '@/lib/api-response'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const ALLOWED_BUCKETS = ['avatars', 'banners'] as const
 
@@ -9,6 +11,15 @@ async function wait(ms: number) {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: 10 requests per 60 seconds
+  const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'storage:upload' })
+  if (!rl.success) {
+    return new Response(
+      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
+      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
+    )
+  }
+
   try {
     console.time('[upload-url]')
 
@@ -18,7 +29,7 @@ export async function POST(req: NextRequest) {
     const extension = String(body.extension || 'jpg').replace(/[^a-zA-Z0-9]/g, '')
 
     if (!ALLOWED_BUCKETS.includes(bucket as (typeof ALLOWED_BUCKETS)[number])) {
-      return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
+      return validationFail({ bucket: 'Invalid bucket' })
     }
 
     const supabase = await createClient()
@@ -27,7 +38,7 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized()
     }
 
     const neonUser = await db.user.findFirst({
@@ -38,13 +49,13 @@ export async function POST(req: NextRequest) {
     })
 
     if (!neonUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
 
     const adminClient = createAdminClient()
 
     if (!adminClient) {
-      return NextResponse.json({ error: 'Storage unavailable' }, { status: 500 })
+      return internalError('Storage unavailable')
     }
 
     const path = `${bucket}/${neonUser.id}.${extension}`
@@ -79,19 +90,19 @@ export async function POST(req: NextRequest) {
     if (signedResult.error) {
       console.error('[upload-url retry failed]', signedResult.error)
       console.timeEnd('[upload-url]')
-      return NextResponse.json({ error: signedResult.error.message }, { status: 500 })
+      return internalError(signedResult.error.message)
     }
 
     const { data: publicUrlData } = adminClient.storage.from(bucket).getPublicUrl(path)
 
-    return NextResponse.json({
+    return ok({
       token: signedResult.data.token,
       path,
       publicUrl: publicUrlData.publicUrl,
     })
   } catch (error) {
     console.error('[storage upload-url] failed:', error)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   } finally {
     console.timeEnd('[upload-url]')
   }

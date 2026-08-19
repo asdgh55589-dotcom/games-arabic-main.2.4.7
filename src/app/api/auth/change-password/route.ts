@@ -1,30 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ok, unauthorized, validationFail, internalError } from '@/lib/api-response'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
-// POST /api/auth/change-password — تغيير كلمة المرور
 export async function POST(req: NextRequest) {
+  // Rate limiting: 5 attempts per 60 seconds
+  const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:change-password' })
+  if (!rl.success) {
+    return new Response(
+      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
+      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
+    )
+  }
+
   try {
     const supabase = await createClient()
     const { data: { user: supabaseUser } } = await supabase.auth.getUser()
     if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized()
     }
 
     const body = await req.json()
     const { password } = body
 
     if (!password || password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+      return validationFail({ password: 'Password must be at least 6 characters' })
     }
 
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return validationFail({ password: error.message })
     }
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[change-password POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }
