@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok } from '@/lib/api-response'
+import { ok, validationFail, forbidden } from '@/lib/api-response'
+import { CreateModSchema } from '@/lib/schemas'
+import { canCreateMod } from '@/lib/permissions'
+import { slugify } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
@@ -66,4 +69,79 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     },
   })
+}
+
+export async function POST(req: NextRequest) {
+  const { user, error } = await requireCreatorStudio(req)
+  if (error) return error
+  if (!user) return error!
+
+  const body = await req.json()
+  const { action, ...modData } = body as { action?: string; [key: string]: unknown }
+
+  const parsed = CreateModSchema.safeParse(modData)
+  if (!parsed.success) {
+    return validationFail(parsed.error.issues[0]?.message || 'بيانات غير صالحة')
+  }
+
+  const data = parsed.data as unknown as { isOriginalWork?: boolean; originalSource?: string; name: string; [key: string]: unknown }
+
+  const isOriginalWork = (data.isOriginalWork as unknown as boolean) ?? true
+
+  if (!canCreateMod(user.role, isOriginalWork)) {
+    if (isOriginalWork) {
+      return forbidden('المُعَرِّب يمكنه فقط إنشاء تعريبات من ترجمته الخاصة')
+    }
+    return forbidden('الناشر يمكنه فقط نشر تعريبات من مصادر خارجية')
+  }
+
+  if (!isOriginalWork && !(data.originalSource as unknown as string)?.trim()) {
+    return validationFail('يجب على الناشر ذكر المصدر الأصلي للتعريب')
+  }
+
+  const workflowStatus = action === 'submit' ? 'IN_REVIEW' : 'DRAFT'
+
+  const baseSlug = slugify(data.name as string)
+  let slug = baseSlug
+  const existing = await db.mod.findUnique({ where: { slug } })
+  if (existing) slug = `${baseSlug}-${Date.now().toString(36)}`
+
+  const mod = await db.mod.create({
+    data: {
+      ...(data as unknown as Record<string, unknown>),
+      authorId: user.id,
+      workflowStatus,
+      slug,
+      galleryUrls: Array.isArray((data as unknown as { galleryUrls?: unknown }).galleryUrls)
+        ? ((data as unknown as { galleryUrls: string[] }).galleryUrls.join(','))
+        : ((data as unknown as { galleryUrls?: string }).galleryUrls || ''),
+      tags: Array.isArray((data as unknown as { tags?: unknown }).tags)
+        ? ((data as unknown as { tags: string[] }).tags.join(','))
+        : ((data as unknown as { tags?: string }).tags || ''),
+    } as unknown as Parameters<typeof db.mod.create>[0]['data'],
+  })
+
+  // Notify admins if submitted for review
+  if (action === 'submit') {
+    try {
+      const admins = await db.user.findMany({
+        where: { role: { in: ['admin', 'manager', 'owner'] } },
+        select: { id: true },
+      })
+      for (const admin of admins) {
+        await db.notification.create({
+          data: {
+            userId: admin.id,
+            actorId: user.id,
+            type: 'admin_report',
+            title: '📦 تعريب جديد بانتظار المراجعة',
+            message: `${user.username} أرسل تعريب "${data.name}" للمراجعة`,
+            data: { modId: mod.id, modName: data.name },
+          },
+        })
+      }
+    } catch {}
+  }
+
+  return ok({ mod, message: action === 'submit' ? 'تم إرسال التعريب للمراجعة' : 'تم حفظ التعريب كمسودة' }, { status: 201 })
 }
