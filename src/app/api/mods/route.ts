@@ -3,10 +3,10 @@ import { db } from '@/lib/db'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { okPaginated } from '@/lib/api-response'
 
-const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating'] as const
+const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating', 'tier'] as const
 type Sort = (typeof SORTS)[number]
 
-const ORDER_BY: Record<Sort, Record<string, 'desc' | 'asc'>> = {
+const ORDER_BY: Record<Exclude<Sort, 'tier'>, Record<string, 'desc' | 'asc'>> = {
   downloads: { downloads: 'desc' },
   endorsements: { endorsements: 'desc' },
   newest: { releaseDate: 'desc' },
@@ -66,11 +66,19 @@ export async function GET(req: NextRequest) {
     where.translationTeam = translationTeam
   }
 
+  const minTierParam = searchParams.get('minTier')
+  const minTier = minTierParam ? parseInt(minTierParam, 10) : 0
+  if (minTier && minTier >= 1 && minTier <= 5) {
+    (where as Record<string, unknown>).author = { tier: { gte: minTier } }
+  }
+
+  const orderBy = sort === 'tier' ? { author: { tier: 'desc' } } : ORDER_BY[sort as Exclude<Sort, 'tier'>]
+
   const [total, mods] = await Promise.all([
     db.mod.count({ where }),
     db.mod.findMany({
       where,
-      orderBy: ORDER_BY[sort],
+      orderBy: orderBy as unknown as Record<string, 'desc' | 'asc'>,
       skip: (page - 1) * limit,
       take: limit,
       include: {

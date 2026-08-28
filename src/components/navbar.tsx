@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark } from 'lucide-react'
+import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark, Trophy } from 'lucide-react'
 import { PcIcon, NintendoSwitchIcon, PlayStationIcon, Xbox360Icon } from '@/components/platform-icons'
 import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
 import { getSectionIcon } from '@/lib/section-icons'
@@ -246,6 +246,11 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 الفرق
               </MobileLink>
 
+              <MobileLink href="/leaderboard" onClick={() => setMobileOpen(false)} isActive={pathname.startsWith('/leaderboard')}>
+                <Trophy width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
+                الصدارة
+              </MobileLink>
+
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex items-center justify-end px-3">
           <NotificationBell currentUser={currentUser} />
@@ -336,6 +341,17 @@ export function Navbar({ games, currentView }: NavbarProps) {
           >
             <Users width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
             الفرق
+          </Link>
+          <Link
+            href="/leaderboard"
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+              pathname.startsWith('/leaderboard')
+                ? 'bg-white/15 text-white border border-white/30'
+                : 'text-white hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <Trophy width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
+            الصدارة
           </Link>
         </nav>
         </div>

@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
     .split(',')
     .map((p) => p.trim())
     .filter((p) => PLATFORM_KEYS.includes(p))
+  const minTier = clamp(parseIntParam(searchParams.get('minTier'), 0), 0, 5)
   const limit = clamp(parseIntParam(searchParams.get('limit'), 8), 1, 50)
 
-  if (!q && platforms.length === 0) {
+  if (!q && platforms.length === 0 && !minTier) {
     return ok<SearchResponse>({ mods: [], games: [] })
   }
 
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
           }
         : {}),
       ...(platforms.length > 0 ? { game: { platform: { in: platforms } } } : {}),
+      ...(minTier ? { author: { tier: { gte: minTier } } } : {}),
     },
     take: limit,
     orderBy: { downloads: 'desc' },

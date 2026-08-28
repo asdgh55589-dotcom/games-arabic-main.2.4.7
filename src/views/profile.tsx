@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import {
   Crown, Shield, User, Settings, Mail, UserPlus, UserCheck,
-  Calendar, CheckCircle, Download, ThumbsUp, MessageSquare, Package, Eye, Users, Loader2
+  Calendar, CheckCircle, Download, ThumbsUp, MessageSquare, Package, Eye, Users, Loader2, Trophy
 } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -371,6 +371,11 @@ export function ProfilePage() {
 
               {/* Action buttons */}
               <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/profile/${encodeURIComponent(profile.username)}/level`}>
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
+                    <Trophy className="h-3.5 w-3.5" /> المستوى
+                  </Button>
+                </Link>
                 {isOwner ? (
                   <Link href="/settings">
                     <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">

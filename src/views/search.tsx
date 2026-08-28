@@ -28,6 +28,13 @@ const PLATFORM_ICON: Record<string, string> = {
   ANDROID: 'Smartphone',
 }
 
+const TIER_FILTERS = [
+  { value: 'all', label: 'كل المستويات', minTier: 0 },
+  { value: '3', label: 'مُعَرِّب محترف+', minTier: 3 },
+  { value: '4', label: 'مُعَرِّب معتمد+', minTier: 4 },
+  { value: '5', label: 'مُعَرِّب أسطوري', minTier: 5 },
+] as const
+
 export function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -38,6 +45,11 @@ export function SearchPage() {
     () => (searchParams.get('platform') || '').split(',').map((p) => p.trim()).filter(Boolean),
     [searchParams]
   )
+  const minTier = useMemo(() => {
+    const v = searchParams.get('minTier')
+    const n = v ? parseInt(v, 10) : 0
+    return Number.isNaN(n) ? 0 : n
+  }, [searchParams])
 
   useDocumentTitle(q ? `بحث: ${q}` : 'بحث')
 
@@ -52,10 +64,11 @@ export function SearchPage() {
     }
   }, [q])
 
-  const updateUrl = (newPlatforms: string[]) => {
+  const updateUrl = (newPlatforms: string[], newMinTier: number = minTier) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
     if (newPlatforms.length) params.set('platform', newPlatforms.join(','))
+    if (newMinTier) params.set('minTier', String(newMinTier))
     const qs = params.toString()
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }
@@ -64,7 +77,11 @@ export function SearchPage() {
     const next = selectedPlatforms.includes(key)
       ? selectedPlatforms.filter((p) => p !== key)
       : [...selectedPlatforms, key]
-    updateUrl(next)
+    updateUrl(next, minTier)
+  }
+
+  const setTierFilter = (value: number) => {
+    updateUrl(selectedPlatforms, value)
   }
 
   const platformKey = selectedPlatforms.join(',')
@@ -72,10 +89,11 @@ export function SearchPage() {
     const params = new URLSearchParams()
     params.set('q', q)
     if (platformKey) params.set('platform', platformKey)
+    if (minTier) params.set('minTier', String(minTier))
     params.set('limit', '24')
     return `/api/search?${params.toString()}`
-  }, [q, platformKey])
-  const { data, loading } = useFetch<{ data: SearchResponse }>(url, [q, platformKey])
+  }, [q, platformKey, minTier])
+  const { data, loading } = useFetch<{ data: SearchResponse }>(url, [q, platformKey, minTier])
 
   const totalResults = data?.data?.mods?.length ?? 0
 
@@ -123,9 +141,35 @@ export function SearchPage() {
             )
           })}
           {selectedPlatforms.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => updateUrl([])}>
+            <Button variant="ghost" size="sm" onClick={() => updateUrl([], minTier)}>
               <X className="h-3.5 w-3.5" aria-hidden="true" />
-              مسح الفلاتر ({selectedPlatforms.length})
+              مسح المنصة ({selectedPlatforms.length})
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-2 text-sm font-semibold">🏆 المستوى:</span>
+          {TIER_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setTierFilter(f.minTier)}
+              aria-pressed={minTier === f.minTier}
+              className={cn(
+                'rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
+                minTier === f.minTier
+                  ? 'border-transparent bg-primary text-primary-foreground'
+                  : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+          {minTier > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => setTierFilter(0)}>
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+              مسح المستوى
             </Button>
           )}
         </div>
