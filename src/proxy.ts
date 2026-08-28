@@ -239,6 +239,35 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // حماية /creator/* — creator+ فقط (creator, publisher, moderator, admin, manager, owner)
+  if (pathname.startsWith('/creator')) {
+    const rolePayload = await getRoleFromCookie(req)
+    if (!rolePayload?.role) {
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('next', pathname)
+      const redirectRes = NextResponse.redirect(loginUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      return redirectRes
+    }
+    if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
+      const becomeUrl = new URL('/become-creator', req.url)
+      const redirectRes = NextResponse.redirect(becomeUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      return redirectRes
+    }
+  }
+
+  // حماية /api/creator/* — creator+ فقط
+  if (pathname.startsWith('/api/creator')) {
+    const rolePayload = await getRoleFromCookie(req)
+    if (!rolePayload?.role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
+      return NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 })
+    }
+  }
+
   return addSecurityHeaders(supabaseResponse)
 }
 

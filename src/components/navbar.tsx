@@ -251,6 +251,12 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 الصدارة
               </MobileLink>
 
+              {currentUser && ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                <MobileLink href="/creator" onClick={() => setMobileOpen(false)} isActive={pathname.startsWith('/creator')}>
+                  <span className="text-base">🎨</span> الاستوديو
+                </MobileLink>
+              )}
+
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex items-center justify-end px-3">
           <NotificationBell currentUser={currentUser} />
@@ -454,6 +460,14 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
         {/* Right actions — موسّع */}
         <div className="hidden items-center gap-1.5 sm:flex shrink-0 ml-auto">
+          {currentUser && ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+            <Link
+              href="/creator"
+              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
+            >
+              🎨 الاستوديو
+            </Link>
+          )}
           <NotificationBell currentUser={currentUser} />
 
           {currentUser ? (

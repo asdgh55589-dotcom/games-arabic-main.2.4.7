@@ -19,7 +19,7 @@
  *          كلمة المرور تُستخدم فقط لإدارة حساب Owner في وضع التطوير.
  */
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
 
 // Re-export for use in other modules
@@ -307,6 +307,24 @@ export async function requireCreator(): Promise<SessionUser> {
     throw new AuthError('Forbidden — creator access required', 403)
   }
   return user
+}
+
+/** حارس خاص لاستوديو المُعَرِّب — يعيد { user } أو { error: Response } ليتناسب مع نمط API المحدد */
+export async function requireCreatorStudio(req: NextRequest): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
+  try {
+    const user = await requireAuth()
+    const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+    if (!creatorRoles.includes(user.role)) {
+      const { forbidden } = await import('@/lib/api-response')
+      return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+    }
+    return { user, error: null }
+  } catch (err) {
+    const status = (err as { status?: number })?.status || 401
+    const { unauthorized, forbidden: forbiddenResp } = await import('@/lib/api-response')
+    if (status === 401) return { user: null, error: unauthorized('يجب تسجيل الدخول') }
+    return { user: null, error: forbiddenResp('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+  }
 }
 
 /** يتأكد إن المستخدم ناشر أو أعلى (publisher | moderator | admin | manager | owner) — يطابق mod.republishExternal — لا يتضمن creator (creator لا يستطيع إعادة نشر خارجي) */
