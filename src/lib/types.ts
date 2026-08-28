@@ -78,6 +78,9 @@ export interface ModSummary {
   series: string  // اسم السلسلة (مثل God of War)
   translationTeam: string  // فريق التعريب أو المترجم المستقل
   translationType: string  // official | unofficial
+  isOriginalWork?: boolean
+  originalSource?: string | null
+  originalAuthor?: string | null
   isFeatured: boolean
   isTrending: boolean
   isLatest: boolean

@@ -264,7 +264,7 @@ export async function clearRoleCookie(): Promise<void> {
 
 // ===== Authorization helpers =====
 
-/** يتأكد إن المستخدم مسجّل دخول — يرجّع user أو يرمي error */
+/** يتأكد إن المستخدم مسجّل دخول — يرجّع user أو يرمي error — أي دور */
 export async function requireAuth(): Promise<SessionUser> {
   const user = await getSession()
   if (!user) {
@@ -273,7 +273,7 @@ export async function requireAuth(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم أدمن أو أعلى (admin | manager | owner) */
+/** يتأكد إن المستخدم أدمن أو أعلى (admin | manager | owner) — يطابق PERMISSION_MIN_ROLE site.settings/admin */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!['admin', 'manager', 'owner'].includes(user.role)) {
@@ -282,7 +282,7 @@ export async function requireAdmin(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم مالك فقط (owner) */
+/** يتأكد إن المستخدم مالك فقط (owner) — يطابق system.subscriptions / users.promoteAdmins */
 export async function requireOwner(): Promise<SessionUser> {
   const user = await requireAuth()
   if (user.role !== 'owner') {
@@ -291,7 +291,7 @@ export async function requireOwner(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم مشرف أو أعلى (moderator | manager | admin | owner) */
+/** يتأكد إن المستخدم مشرف أو أعلى (moderator | admin | manager | owner) — يطابق mod.review/reports.manage */
 export async function requireModerator(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!['moderator', 'manager', 'admin', 'owner'].includes(user.role)) {
@@ -300,7 +300,7 @@ export async function requireModerator(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم مُعَرِّب أو أعلى (creator | publisher | moderator | admin | manager | owner) */
+/** يتأكد إن المستخدم مُعَرِّب أو أعلى (creator | publisher | moderator | admin | manager | owner) — يطابق mod.createOwn */
 export async function requireCreator(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
@@ -309,16 +309,16 @@ export async function requireCreator(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم ناشر أو أعلى (creator | publisher | moderator | admin | manager | owner) — creator مُضمّن للسماح للمُعَرِّبين بإنشاء تعريبات عبر نفس مسار الناشر */
+/** يتأكد إن المستخدم ناشر أو أعلى (publisher | moderator | admin | manager | owner) — يطابق mod.republishExternal — لا يتضمن creator (creator لا يستطيع إعادة نشر خارجي) */
 export async function requirePublisher(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+  if (!['publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
     throw new AuthError('Forbidden — publisher access required', 403)
   }
   return user
 }
 
-/** يتأكد إن المستخدم مدير أو أعلى (manager | owner) */
+/** يتأكد إن المستخدم مدير أو أعلى (manager | owner) — يطابق site.settings/system.apiKeys */
 export async function requireManager(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!['manager', 'owner'].includes(user.role)) {

@@ -381,6 +381,15 @@ export function ModDetailPage() {
                 <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
                   {mod.name}
                 </h1>
+                {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false ? (
+                  <div className="mt-2 inline-flex items-center gap-2 rounded bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
+                    منشور من مصدر خارجي{(mod as unknown as { originalAuthor?: string | null }).originalAuthor ? ` • ${(mod as unknown as { originalAuthor: string }).originalAuthor}` : ''}{(mod as unknown as { originalSource?: string | null }).originalSource ? ` — ${(mod as unknown as { originalSource: string }).originalSource}` : ''}
+                  </div>
+                ) : (
+                  <div className="mt-2 inline-flex items-center gap-1 rounded bg-green-500/15 px-2 py-1 text-xs font-bold text-green-700 dark:text-green-400">
+                    عمل أصلي
+                  </div>
+                )}
 
                 {/* Data grid */}
                 <div className="mt-6 sm:mt-8 md:mt-10 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">

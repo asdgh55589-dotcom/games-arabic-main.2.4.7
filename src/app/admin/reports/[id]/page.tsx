@@ -13,6 +13,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ReportStatusBadge } from '@/components/report-status-badge'
+import { getRoleLabel } from '@/lib/roles'
 import { ReportFraudCard } from '@/components/admin/report-fraud-card'
 import { UserTrustBadge } from '@/components/admin/user-trust-badge'
 import { ReportHistoryTimeline } from '@/components/admin/report-history-timeline'
@@ -481,7 +482,7 @@ export default function AdminReportDetailPage() {
                   </Link>
                   {report.reporter?.role && report.reporter.role !== 'member' && (
                     <Badge variant="outline" className="mr-2 text-xs">
-                      {report.reporter.role}
+                      {getRoleLabel(report.reporter.role)}
                     </Badge>
                   )}
                 </div>
@@ -509,7 +510,7 @@ export default function AdminReportDetailPage() {
                     </Link>
                     {report.targetUser.role && report.targetUser.role !== 'member' && (
                       <Badge variant="outline" className="mr-2 text-xs">
-                        {report.targetUser.role}
+                        {getRoleLabel(report.targetUser.role)}
                       </Badge>
                     )}
                   </div>
@@ -539,7 +540,7 @@ export default function AdminReportDetailPage() {
                   <SelectItem value="none">غير مُعيَّن</SelectItem>
                   {assignable.map((m: { id: string; username: string; role: string; workload: number }) => (
                     <SelectItem key={m.id} value={m.id}>
-                      {m.username} ({m.role}) — {m.workload} بلاغ
+                      {m.username} ({getRoleLabel(m.role)}) — {m.workload} بلاغ
                     </SelectItem>
                   ))}
                 </SelectContent>

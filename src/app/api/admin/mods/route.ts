@@ -1,14 +1,15 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requirePublisher, requireModerator } from '@/lib/auth'
+import { requireCreator, requireModerator } from '@/lib/auth'
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { slugify } from '@/lib/utils'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
-import { okPaginated, ok, validationFail, internalError } from '@/lib/api-response'
+import { okPaginated, ok, validationFail, internalError, forbidden } from '@/lib/api-response'
 import { CreateModSchema } from '@/lib/schemas'
 import { calculateModQualityScore } from '@/lib/mod-quality'
+import { canCreateMod } from '@/lib/permissions'
 import { revalidatePath } from 'next/cache'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
@@ -106,7 +107,7 @@ export async function GET(req: NextRequest) {
 // وبتنشئهم في transaction واحدة.
 export async function POST(req: NextRequest) {
   try {
-    const user = await requirePublisher()
+    const user = await requireCreator()
     const body = await req.json()
 
     // ===== التحقق من الحقول باستخدام Zod =====
@@ -116,6 +117,22 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data
+
+    // التمييز بين عمل أصلي وإعادة نشر — creator مقابل publisher
+    const isOriginalWork = (data as unknown as { isOriginalWork?: boolean }).isOriginalWork ?? true
+    const originalSource = (data as unknown as { originalSource?: string }).originalSource
+    const originalAuthor = (data as unknown as { originalAuthor?: string }).originalAuthor
+
+    if (!canCreateMod(user.role, isOriginalWork)) {
+      if (isOriginalWork) {
+        return forbidden('يجب أن تكون مُعَرِّباً لإنشاء تعريبات من ترجمتك الخاصة')
+      }
+      return forbidden('يجب أن تكون ناشراً أو أعلى لنشر تعريبات من مصادر خارجية')
+    }
+
+    if (!isOriginalWork && !originalSource?.trim()) {
+      return validationFail('يجب على الناشر ذكر المصدر الأصلي للتعريب')
+    }
 
     // حساب درجة الجودة
     const qualityScore = calculateModQualityScore({
@@ -174,6 +191,9 @@ export async function POST(req: NextRequest) {
           teamId: data.teamId || null,
           sectionId: data.sectionId || null,
           translationType: data.translationType || 'unofficial',
+          isOriginalWork: isOriginalWork,
+          originalSource: originalSource?.trim() || null,
+          originalAuthor: originalAuthor?.trim() || null,
           isFeatured: Boolean(data.isFeatured),
           isTrending: Boolean(data.isTrending),
           isLatest: data.isLatest !== undefined ? Boolean(data.isLatest) : true,

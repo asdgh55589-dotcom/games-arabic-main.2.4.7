@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { History, Clock, User, ChevronRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'
+import { getRoleLabel } from '@/lib/roles'
 
 interface Actor {
   id: string
@@ -133,7 +134,7 @@ export function ReportHistoryTimeline({ history }: Props) {
                       <User className="h-3 w-3" />
                       {entry.actor.username}
                       <Badge variant="outline" className="text-[10px] py-0 px-1">
-                        {entry.actor.role}
+                        {getRoleLabel(entry.actor.role)}
                       </Badge>
                     </span>
                   )}

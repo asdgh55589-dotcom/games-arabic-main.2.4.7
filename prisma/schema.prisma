@@ -278,6 +278,9 @@ model Mod {
   isTrending          Boolean          @default(false)
   isLatest            Boolean          @default(true)
   translationType     String           @default("unofficial") // official | unofficial
+  isOriginalWork      Boolean          @default(true)
+  originalSource      String?          @db.Text
+  originalAuthor      String?
   releaseDate         DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   createdAt           DateTime         @default(now())
