@@ -73,3 +73,9 @@ export function getTierLabel(role?: string | null, tier?: number | null): string
 export function getTierDescription(role?: string | null, tier?: number | null): string {
   return getTierConfig(role, tier).description
 }
+
+export function getMaxTierForRole(role?: string | null): number {
+  const safeRole = (role || 'member') as UserRole
+  const configs = ROLE_TIERS[safeRole] || ROLE_TIERS.member
+  return Math.max(...configs.map((c) => c.level))
+}

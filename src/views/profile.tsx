@@ -24,6 +24,7 @@ import { TierBadge } from '@/components/tier-badge'
 import { ReportButton } from '@/components/report-button'
 import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
+import { TierProgress } from '@/components/tier-progress'
 import type { ModSummary } from '@/lib/types'
 
 interface ProfileData {
@@ -436,6 +437,9 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* ===== Tier Progress (for creator/publisher/moderator) ===== */}
+      <TierProgressSection username={profile.username} role={profile.role} tier={(profile as unknown as { tier?: number }).tier || 0} />
+
       {/* ===== Tabs ===== */}
       <div className="mx-auto max-w-[1200px] px-4 lg:px-6 mt-8">
         <Tabs defaultValue={defaultTab} className="mt-0">
@@ -560,6 +564,47 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
         <div>
           <p className="text-2xl font-bold text-white">{value}</p>
           <p className="text-xs text-gray-400">{label}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TierProgressSection({ username, role, tier }: { username: string; role: string; tier: number }) {
+  const [data, setData] = useState<null | {
+    currentTier: number
+    suggestedTier: number
+    shouldUpgrade: boolean
+    requiresAdminApproval: boolean
+    progress: { publishedCount: number; averageRating: number; reviewsCount: number; monthsActive: number }
+    nextTierRequirements: { minPublishedCount?: number; minAverageRating?: number; minReviewsCount?: number; minMonthsActive?: number; requiresAdminApproval?: boolean } | null
+  }>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!['creator', 'publisher', 'moderator'].includes(role)) {
+      setLoading(false)
+      return
+    }
+    fetch(`/api/users/${encodeURIComponent(username)}/tier-progress`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) setData(json.data)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [username, role])
+
+  if (!['creator', 'publisher', 'moderator'].includes(role)) return null
+  if (loading) return <div className="mx-auto max-w-[1400px] px-4 lg:px-6 mt-4"><div className="h-20 rounded-lg bg-[#1a1a1a] border border-[#333] animate-pulse" /></div>
+  if (!data) return null
+
+  return (
+    <div className="px-4 lg:px-6 mt-4">
+      <div className="mx-auto max-w-[1400px]">
+        <div className="rounded-lg bg-[#1a1a1a] p-6 border border-[#333]">
+          <h3 className="font-bold mb-4 flex items-center gap-2">📈 تقدم المستوى</h3>
+          <TierProgress role={role as unknown as import('@/lib/roles').UserRole} currentTier={tier} progress={data.progress} nextRequirements={data.nextTierRequirements} />
         </div>
       </div>
     </div>
