@@ -37,7 +37,11 @@ export default function TiersPage() {
   useEffect(() => {
     fetch('/api/admin/tier-rules')
       .then(r => r.json())
-      .then(data => setRules(data.rules || []))
+      .then(data => {
+        const payload = data?.data ?? data
+        const list = payload?.rules ?? payload
+        setRules(Array.isArray(list) ? list : [])
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -59,7 +63,10 @@ export default function TiersPage() {
         body: JSON.stringify({ ...createData, features: [] })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'فشل الإنشاء')
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الإنشاء'
+        throw new Error(msg)
+      }
       setRules([...rules, { ...createData, features: [] }].sort((a, b) => a.tier - b.tier))
       setShowCreate(false)
       setCreateData({
@@ -191,7 +198,7 @@ export default function TiersPage() {
 
       {/* حالة فارغة */}
       {rules.length === 0 && !showCreate && (
-        <div className="grid place-items-center rounded-lg border border-dashed border-white/10 py-20 text-center">
+        <div className="grid place-items-center rounded-lg border border-dashed border-border-light py-20 text-center">
           <div className="space-y-3">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Award className="h-8 w-8 text-primary" />

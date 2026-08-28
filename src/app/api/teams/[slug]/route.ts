@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, internalError } from '@/lib/api-response'
+import { recordTeamView } from '@/lib/counters'
 
 // GET /api/teams/[slug] — تفاصيل فريق
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
@@ -11,8 +13,12 @@ export async function GET(
     const team = await db.team.findFirst({
       where: { slug },
       include: {
-        memberships: { orderBy: { joinedAt: 'desc' } },
+        memberships: {
+          orderBy: { joinedAt: 'desc' },
+          include: { user: { select: { username: true } } },
+        },
         contactLinks: { orderBy: { order: 'asc' } },
+        customTabs: { where: { visible: true }, orderBy: { order: 'asc' } },
         mods: {
           select: {
             id: true, name: true, slug: true, thumbnailUrl: true,
@@ -22,14 +28,20 @@ export async function GET(
           orderBy: { downloads: 'desc' },
           take: 50,
         },
-        _count: { select: { mods: true, memberships: true } },
+        _count: { select: { mods: true, memberships: true, follows: true } },
       },
     })
 
     if (!team) {
-      return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
+      return notFound()
     }
 
+    // Fire-and-forget: مشاهدات صفحة الفريق مع dedup (user 24h / IP+UA 1h، bots مرفوضة)
+    recordTeamView(team.id, req, db).catch((err) => {
+      console.error('[api/teams/[slug]] failed to record team view:', err)
+    })
+
+    // إعادة القراءة بعد التسجيل قد تكون قديمة بثانية — مقبول لعداد عرض فقط
     const totalDownloads = team.mods.reduce((sum, m) => sum + m.downloads, 0)
     const totalEndorsements = team.mods.reduce((sum, m) => sum + m.endorsements, 0)
     const totalViews = team.mods.reduce((sum, m) => sum + m.views, 0)
@@ -45,7 +57,7 @@ export async function GET(
       roleBreakdown[m.role] = (roleBreakdown[m.role] || 0) + 1
     }
 
-    return NextResponse.json(
+    return ok(
       {
         team: {
           ...team,
@@ -53,8 +65,10 @@ export async function GET(
             totalDownloads,
             totalEndorsements,
             totalViews,
+            profileViews: team.views, // مشاهدات صفحة الفريق نفسها
             memberCount: team._count.memberships,
             modCount: team._count.mods,
+            followersCount: team._count.follows,
             platforms,
             roleBreakdown,
           },
@@ -68,6 +82,6 @@ export async function GET(
     )
   } catch (err) {
     console.error('[api/teams/[slug]] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

@@ -1,37 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, unauthorized, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-  if (!supabaseUser) return null
-  const neonUser = await db.user.findFirst({
-    where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-    select: { id: true },
-  })
-  return neonUser
-}
-
-// PATCH /api/notifications/[id]/read — تعليم إشعار كمقروء
-export async function PATCH(_req: NextRequest, { params }: RouteParams) {
+// POST /api/notifications/[id]/read — تعيين إشعار كمقروء
+export async function POST(_req: NextRequest, { params }: RouteParams) {
   try {
-    const neonUser = await requireUser()
-    if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const user = await getOptionalSession()
+    if (!user) return unauthorized()
 
     const { id } = await params
 
     const notification = await db.notification.findFirst({
-      where: { id, userId: neonUser.id },
+      where: { id, userId: user.id },
+      select: { id: true, readAt: true },
     })
-    if (!notification) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!notification) return notFound()
+
+    if (notification.readAt) {
+      return ok({ success: true })
     }
 
     await db.notification.update({
@@ -39,14 +30,9 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
       data: { isRead: true, readAt: new Date() },
     })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
-    console.error('[notification read] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    console.error('[notification read POST] failed:', err)
+    return internalError('Failed')
   }
-}
-
-// PUT /api/notifications/[id]/read — تعليم إشعار كمقروء (backwards compat)
-export async function PUT(req: NextRequest, { params }: RouteParams) {
-  return PATCH(req, { params })
 }

@@ -173,7 +173,6 @@ async function main() {
           role: userData.role,
           bio: userData.bio,
           tier: userData.tier,
-          provider: 'email',
         },
       })
       userRecords.push(user)

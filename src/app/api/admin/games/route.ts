@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { ok, validationFail, internalError } from '@/lib/api-response'
+import { revalidatePath } from 'next/cache'
 
 // GET /api/admin/games — قائمة الألعاب
 export async function GET() {
@@ -9,15 +11,15 @@ export async function GET() {
     await requireModerator()
     const games = await db.game.findMany({
       orderBy: { createdAt: 'desc' },
+      take: 100,
       include: {
         _count: { select: { mods: true } },
       },
     })
-    return NextResponse.json({ games })
+    return ok(games)
   } catch (err) {
     console.error('[admin/games GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     const required = ['name', 'tagline', 'description', 'platform', 'category', 'bannerUrl', 'thumbnailUrl']
     for (const field of required) {
       if (!body[field]) {
-        return NextResponse.json({ error: `الحقل "${field}" مطلوب` }, { status: 400 })
+        return validationFail({ field, message: `الحقل "${field}" مطلوب` })
       }
     }
 
@@ -71,10 +73,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ game }, { status: 201 })
+    // ISR: revalidate public pages after game creation
+    try {
+      revalidatePath('/')
+      revalidatePath('/games/' + game.slug)
+      revalidatePath('/platform/' + game.platform)
+    } catch {}
+
+    return ok(game)
   } catch (err) {
     console.error('[admin/games POST] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to create game' }, { status })
+    return internalError('Failed to create game')
   }
 }

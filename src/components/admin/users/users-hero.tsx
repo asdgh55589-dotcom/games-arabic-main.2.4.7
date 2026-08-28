@@ -18,22 +18,22 @@ export function UsersHero({ totalUsers, bannedUsers }: UsersHeroProps) {
             إدارة المستخدمين
           </h1>
 
-          <p className="mt-4 max-w-2xl text-base leading-8 text-white/60">
+          <p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
             مراقبة الحسابات وإدارة الأدوار والحظر والتحذيرات من مركز تحكم موحد.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:min-w-[420px]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <div className="text-xs font-bold text-white/45">إجمالي المستخدمين</div>
-            <div className="mt-3 text-4xl font-black text-primary">
+          <div className="rounded-lg border border-border bg-background-secondary p-4">
+            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">إجمالي المستخدمين</div>
+            <div className="mt-2 text-[22px] font-semibold text-foreground">
               {totalUsers}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <div className="text-xs font-bold text-white/45">الحسابات المحظورة</div>
-            <div className="mt-3 text-4xl font-black text-red-400">
+          <div className="rounded-lg border border-border bg-background-secondary p-4">
+            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">الحسابات المحظورة</div>
+            <div className="mt-2 text-[22px] font-semibold text-red">
               {bannedUsers}
             </div>
           </div>

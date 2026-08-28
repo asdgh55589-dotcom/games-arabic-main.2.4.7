@@ -1,7 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, type UserRole } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
+import { ok, okPaginated, forbidden, internalError, validationFail } from '@/lib/api-response'
+
+// Role assignment restrictions (hierarchy: member < creator < publisher < moderator < admin < manager < owner):
+// - Admin can assign: member, creator, publisher, moderator
+// - Manager can assign: member, creator, publisher, moderator, admin
+// - Owner can assign: all roles including owner
+function canAssignRole(actorRole: UserRole, targetRole: string): boolean {
+  if (actorRole === 'owner') return true
+  if (actorRole === 'manager') return ['member', 'creator', 'publisher', 'moderator', 'admin'].includes(targetRole)
+  if (actorRole === 'admin') return ['member', 'creator', 'publisher', 'moderator'].includes(targetRole)
+  return false
+}
 
 // GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
 export async function GET(req: NextRequest) {
@@ -42,7 +54,8 @@ export async function GET(req: NextRequest) {
           avatarUrl: true,
           bio: true,
           role: true,
-          provider: true,
+          tier: true,
+          specialRoles: true,
           bannedUntil: true,
           banStatus: true,
           banReason: true,
@@ -56,17 +69,15 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({
-      users,
-      total,
+    return okPaginated(users, {
       page,
       limit,
+      total,
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
     console.error('[admin/users GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -78,22 +89,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     if (!body.username || !body.email) {
-      return NextResponse.json({ error: 'username, email مطلوبة' }, { status: 400 })
+      return validationFail({ message: 'username, email مطلوبة' })
     }
 
     const existing = await db.user.findFirst({
       where: { OR: [{ username: body.username }, { email: body.email }] },
     })
     if (existing) {
-      return NextResponse.json({ error: 'اسم المستخدم أو البريد مستخدم بالفعل' }, { status: 400 })
+      return validationFail({ message: 'اسم المستخدم أو البريد مستخدم بالفعل' })
     }
 
     const role = body.role || 'member'
-    if ((role === 'admin' || role === 'owner') && currentUser.role !== 'owner') {
-      return NextResponse.json(
-        { error: 'Forbidden — only owners can create admin/owner accounts' },
-        { status: 403 }
-      )
+    if (!canAssignRole(currentUser.role, role)) {
+      return forbidden(`Forbidden — your role (${currentUser.role}) cannot assign role: ${role}`)
     }
 
     const user = await db.user.create({
@@ -103,15 +111,13 @@ export async function POST(req: NextRequest) {
         avatarUrl: body.avatarUrl || null,
         bio: body.bio || null,
         role,
-        provider: 'admin',
       },
-      select: { id: true, username: true, email: true, role: true, avatarUrl: true, provider: true },
+      select: { id: true, username: true, email: true, role: true, avatarUrl: true },
     })
 
-    return NextResponse.json({ user }, { status: 201 })
+    return ok(user)
   } catch (err) {
     console.error('[admin/users POST] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to create user' }, { status })
+    return internalError('Failed to create user')
   }
 }

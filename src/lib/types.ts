@@ -1,4 +1,17 @@
+// Updated for new API response format
 // Shared API response types — single source of truth for backend → frontend contract.
+
+/**
+ * API Response Shapes:
+ * - Single resource:  { data: T }
+ * - Paginated list:   { data: T[], pagination: { page, limit, total, totalPages } }
+ * - Paginated object: { data: { ...fields }, pagination: { page, limit, total, totalPages } }
+ * - Error:            { error: { code: string, message: string, details?: unknown } }
+ * 
+ * Note: ok(value) wraps ANY value in { data: value }.
+ * okPaginated(data, pagination) wraps data + adds pagination.
+ * The shape of 'data' depends on what the route returns (array vs object).
+ */
 
 export interface Author {
   id: string
@@ -7,7 +20,7 @@ export interface Author {
   avatarUrl: string | null
   bannerUrl: string | null
   bio: string | null
-  role: string  // member | moderator | admin | owner
+  role: string  // member | creator | publisher | moderator | admin | manager | owner
   tier: number
   specialRoles: string
   qualityScore: number
@@ -130,6 +143,7 @@ export interface ModVideo {
   likes: number
   commentsCount: number
   channel: string | null
+  publishedAt: string | null
   order: number
 }
 
@@ -165,14 +179,16 @@ export interface ModCommentType {
   isEdited: boolean
   createdAt: string | Date
   updatedAt: string | Date
-  user?: { id: string; username: string; avatarUrl: string | null } | null
+  user?: { id: string; username: string; avatarUrl: string | null; role?: string | null; tier?: number | null; specialRoles?: string | null } | null
   replies?: ModCommentType[]
 }
 
 export interface ModDetail extends ModSummary {
   description: string
   changelog: string
+  installGuide: string
   arabicTitle: string
+  translationScope: string
   compatibility: string
   author: Author
   game: GameSummary
@@ -184,13 +200,16 @@ export interface ModDetail extends ModSummary {
   customTabs: ModCustomTab[]
 }
 
-export interface PaginatedMods {
-  mods: ModSummary[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
+export interface PaginatedResponse<T> {
+  data: T
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
 }
+export type PaginatedMods = PaginatedResponse<ModSummary[]>
 
 export interface SearchResponse {
   mods: ModSummary[]
@@ -224,12 +243,16 @@ export interface HomeData {
 }
 
 export interface EndorseResponse {
-  endorsed: boolean
-  endorsements: number
+  data: {
+    endorsed: boolean
+    endorsements: number
+  }
 }
 
 export interface DownloadResponse {
-  downloads: number
+  data: {
+    downloads: number
+  }
 }
 
 export interface AuthorModsResponse {
@@ -238,7 +261,11 @@ export interface AuthorModsResponse {
 }
 
 export interface ApiError {
-  error: string
+  error: {
+    code: string
+    message: string
+    details?: unknown
+  }
 }
 
 // ===== Notification types =====
@@ -261,12 +288,16 @@ export interface Notification {
 }
 
 export interface NotificationsResponse {
-  notifications: Notification[]
-  total: number
-  unreadCount: number
-  page: number
-  limit: number
-  totalPages: number
+  data: Notification[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  meta: {
+    unreadCount: number
+  }
 }
 
 // ===== Team types =====
@@ -278,6 +309,7 @@ export interface TeamMember {
   role: string
   bio: string | null
   joinedAt?: string
+  username?: string | null
 }
 
 export interface TeamMod {
@@ -297,12 +329,22 @@ export interface TeamContactLink {
   url: string
 }
 
+export interface TeamCustomTab {
+  id: string
+  title: string
+  content: string
+  order: number
+  visible: boolean
+}
+
 export interface TeamStats {
   modCount: number
   totalDownloads: number
   totalEndorsements: number
   totalViews: number
+  profileViews: number
   memberCount: number
+  followersCount: number
   platforms: Record<string, number>
   roleBreakdown: Record<string, number>
 }
@@ -316,11 +358,15 @@ export interface TeamDetail {
   bannerUrl: string
   websiteUrl: string
   discordUrl: string
+  telegramUrl: string
   isFeatured: boolean
   isOfficial: boolean
+  ownerId?: string | null
+  hiddenTabs: string
   createdAt: string
   memberships: TeamMember[]
   mods: TeamMod[]
   contactLinks: TeamContactLink[]
+  customTabs: TeamCustomTab[]
   stats: TeamStats
 }

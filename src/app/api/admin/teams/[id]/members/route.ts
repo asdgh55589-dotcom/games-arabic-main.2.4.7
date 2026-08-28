@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { ok, validationFail, notFound, internalError } from '@/lib/api-response'
 
 // POST /api/admin/teams/[id]/members — إضافة عضو
 export async function POST(
@@ -13,12 +14,12 @@ export async function POST(
     const body = await req.json()
 
     if (!body.name?.trim()) {
-      return NextResponse.json({ error: 'اسم العضو مطلوب' }, { status: 400 })
+      return validationFail({ field: 'name', message: 'اسم العضو مطلوب' })
     }
 
     const team = await db.team.findUnique({ where: { id } })
     if (!team) {
-      return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
+      return notFound('الفريق غير موجود')
     }
 
     const member = await db.teamMembership.create({
@@ -32,11 +33,49 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({ member }, { status: 201 })
+    return ok(member)
   } catch (err) {
     console.error('[admin/teams/[id]/members POST] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
+  }
+}
+
+// PUT /api/admin/teams/[id]/members — تعديل عضو
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await requireModerator()
+    const { id } = await params
+    const body = await req.json()
+
+    if (!body.memberId) {
+      return validationFail({ field: 'memberId', message: 'memberId مطلوب' })
+    }
+
+    const existing = await db.teamMembership.findFirst({ where: { id: body.memberId, teamId: id } })
+    if (!existing) {
+      return notFound('العضو غير موجود')
+    }
+
+    const data: Record<string, unknown> = {}
+    if (body.name !== undefined) {
+      if (!body.name?.trim()) {
+        return validationFail({ field: 'name', message: 'اسم العضو مطلوب' })
+      }
+      data.name = body.name.trim()
+    }
+    if (body.role !== undefined) data.role = body.role
+    if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null
+    if (body.bio !== undefined) data.bio = body.bio || null
+    if (body.userId !== undefined) data.userId = body.userId || null
+
+    const member = await db.teamMembership.update({ where: { id: body.memberId }, data })
+    return ok(member)
+  } catch (err) {
+    console.error('[admin/teams/[id]/members PUT] failed:', err)
+    return internalError('Failed')
   }
 }
 
@@ -52,17 +91,16 @@ export async function DELETE(
     const memberId = searchParams.get('memberId')
 
     if (!memberId) {
-      return NextResponse.json({ error: 'memberId مطلوب' }, { status: 400 })
+      return validationFail({ field: 'memberId', message: 'memberId مطلوب' })
     }
 
     await db.teamMembership.deleteMany({
       where: { id: memberId, teamId: id },
     })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/teams/[id]/members DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

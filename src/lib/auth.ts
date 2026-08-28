@@ -6,10 +6,13 @@
  *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *
- * الصلاحيات:
+ * الصلاحيات (التسلسل: member < creator < publisher < moderator < admin < manager < owner):
  *   - owner     → كل شيء + إدارة الأدوار + إعدادات الموقع
+ *   - manager   → كل شيء تقريباً ما عدا تعيين owner
  *   - admin     → كل التعريبات/الألعاب + إدارة المستخدمين
  *   - moderator → نشر/تعديل التعريبات (تعريبه بس) — مش حذف
+ *   - publisher → ناشر
+ *   - creator   → مُعَرِّب معتمد (ينشئ تعريبات ويرسلها للمراجعة)
  *   - member    → مش لوحة تحكم
  *
  * ملاحظة: المستخدمون العاديون يسجّلون عبر OAuth فقط.
@@ -22,10 +25,12 @@ import { SignJWT, jwtVerify } from 'jose'
 // Re-export for use in other modules
 export { jwtVerify }
 import bcrypt from 'bcryptjs'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { db } from './db'
 import { createClient } from './supabase/server'
 import { setTokenVersionCache } from './token-version-cache'
+import { logger } from './logger'
+import { authenticateApiKey } from './api-key-auth'
 
 export const getJWTSecret = (): Uint8Array => {
   const secret = process.env.JWT_SECRET
@@ -41,7 +46,7 @@ const ROLE_COOKIE_NAME = 'ga_admin_role'
 const ROLE_COOKIE_DURATION = 60 * 60 * 24 * 7 // 7 أيام بالثواني
 
 // ===== Role types =====
-export type UserRole = 'member' | 'moderator' | 'admin' | 'manager' | 'owner'
+export type UserRole = 'member' | 'creator' | 'publisher' | 'moderator' | 'admin' | 'manager' | 'owner'
 
 // ===== User type returned by getSession =====
 export interface SessionUser {
@@ -62,53 +67,108 @@ export async function hashPassword(plain: string): Promise<string> {
 // ===== Session helpers (server-side) =====
 
 /**
- * قراءة الـ session الحالي — يتحقق من Supabase Auth ثم يجلب بيانات المستخدم من Neon DB
+ * قراءة الـ session الحالي — يتحقق من API Key أولاً، ثم Supabase Auth، ثم role cookie
  */
 export async function getSession(): Promise<SessionUser | null> {
   try {
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    // 0. فحص API Key أولاً (Authorization: Bearer sk_live_...)
+    try {
+      const hdrs = await headers()
+      const authHeader = hdrs.get('authorization')
+      if (authHeader) {
+        const apiKeyResult = await authenticateApiKey(authHeader)
+        if (apiKeyResult) {
+          return apiKeyResult.user
+        }
+      }
+    } catch {
+      // headers() قد تفشل في بعض السياقات — نكمل مع الأ_other methods
+    }
 
-    if (!supabaseUser) return null
+    // 1. محاولة Supabase Auth أولاً
+    let supabaseUser: { id: string; email?: string } | null = null
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      supabaseUser = user
+    } catch {
+      // Supabase غير متاح — نكمل مع role cookie
+    }
+
+    if (supabaseUser) {
+      // يوجد Supabase session — البحث في Neon DB
+      const user = await db.user.findFirst({
+        where: {
+          OR: [
+            { supabaseId: supabaseUser.id },
+            { email: supabaseUser.email || '' },
+          ],
+        },
+        select: { id: true, username: true, email: true, role: true, avatarUrl: true, banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true },
+      })
+
+      if (!user) return null
+
+      // فحص الحظر
+      const ban = getBanStatus(user)
+      if (ban.banned) return null
+
+      // التحقق من tokenVersion ضد الـ role cookie
+      try {
+        const cookieStore = await cookies()
+        const token = cookieStore.get(ROLE_COOKIE_NAME)?.value
+        if (token) {
+          const { payload } = await jwtVerify(token, JWT_SECRET)
+          if (typeof payload.tv === 'number' && payload.tv !== user.tokenVersion) {
+            cookieStore.delete(ROLE_COOKIE_NAME)
+            return null
+          }
+        } else if (user.tokenVersion > 0) {
+          return null
+        }
+      } catch {
+        return null
+      }
+
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role as UserRole,
+        avatarUrl: user.avatarUrl,
+      }
+    }
+
+    // 2. لا يوجد Supabase session — فحص role cookie (للمستخدمين عبر Telegram)
+    const cookieStore = await cookies()
+    const roleToken = cookieStore.get(ROLE_COOKIE_NAME)?.value
+
+    if (!roleToken) return null
+
+    // التحقق من الـ JWT token
+    const { payload } = await jwtVerify(roleToken, JWT_SECRET)
+    const userId = payload.userId as string
+    const role = payload.role as string
+    const tokenVersion = payload.tv as number | undefined
+
+    if (!userId || !role) return null
 
     // البحث عن المستخدم في Neon DB
-    const user = await db.user.findFirst({
-      where: {
-        OR: [
-          { supabaseId: supabaseUser.id },
-          { email: supabaseUser.email || '' },
-        ],
-      },
+    const user = await db.user.findUnique({
+      where: { id: userId },
       select: { id: true, username: true, email: true, role: true, avatarUrl: true, banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true },
     })
 
     if (!user) return null
 
+    // فحص tokenVersion
+    if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) {
+      return null
+    }
+
     // فحص الحظر
     const ban = getBanStatus(user)
     if (ban.banned) return null
-
-    // التحقق من tokenVersion ضد الـ role cookie
-    // لو الـ cookie يحمل tv قديم → الجلسة منتهية
-    // لو ما فيش cookie والمستخدم عنده tokenVersion > 0 → الجلسة منتهية (تم حذف الكوكي)
-    try {
-      const cookieStore = await cookies()
-      const token = cookieStore.get(ROLE_COOKIE_NAME)?.value
-      if (token) {
-        const { payload } = await jwtVerify(token, JWT_SECRET)
-        if (typeof payload.tv === 'number' && payload.tv !== user.tokenVersion) {
-          // الـ cookie قديم — نمسحه ونعتبر الجلسة منتهية
-          cookieStore.delete(ROLE_COOKIE_NAME)
-          return null
-        }
-      } else if (user.tokenVersion > 0) {
-        // ما فيش cookie والمستخدم عنده tokenVersion — يعني تم حذف الكوكي يدوياً أو الحظر
-        return null
-      }
-    } catch {
-      // cookie غير صالح — نعتبر الجلسة منتهية
-      return null
-    }
 
     return {
       id: user.id,
@@ -231,19 +291,28 @@ export async function requireOwner(): Promise<SessionUser> {
   return user
 }
 
-/** يتأكد إن المستخدم مشرف أو أعلى (moderator | admin | owner) */
+/** يتأكد إن المستخدم مشرف أو أعلى (moderator | manager | admin | owner) */
 export async function requireModerator(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (user.role !== 'moderator' && user.role !== 'admin' && user.role !== 'owner') {
+  if (!['moderator', 'manager', 'admin', 'owner'].includes(user.role)) {
     throw new AuthError('Forbidden — moderator access required', 403)
   }
   return user
 }
 
-/** يتأكد إن المستخدم ناشر أو أعلى (publisher | moderator | admin | manager | owner) */
+/** يتأكد إن المستخدم مُعَرِّب أو أعلى (creator | publisher | moderator | admin | manager | owner) */
+export async function requireCreator(): Promise<SessionUser> {
+  const user = await requireAuth()
+  if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+    throw new AuthError('Forbidden — creator access required', 403)
+  }
+  return user
+}
+
+/** يتأكد إن المستخدم ناشر أو أعلى (creator | publisher | moderator | admin | manager | owner) — creator مُضمّن للسماح للمُعَرِّبين بإنشاء تعريبات عبر نفس مسار الناشر */
 export async function requirePublisher(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+  if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
     throw new AuthError('Forbidden — publisher access required', 403)
   }
   return user
@@ -260,11 +329,11 @@ export async function requireManager(): Promise<SessionUser> {
 
 /** فحص صلاحية: هل المستخدم يقدر يعدّل تعريب معيّن؟
  *  - admin/owner: أي تعريب
- *  - moderator: تعريبه فقط (authorId === user.id)
+ *  - moderator/creator/publisher: تعريبه فقط (authorId === user.id)
  */
 export function canEditMod(user: SessionUser, mod: { authorId: string }): boolean {
   if (user.role === 'admin' || user.role === 'owner') return true
-  if (user.role === 'moderator' && mod.authorId === user.id) return true
+  if ((user.role === 'moderator' || user.role === 'creator' || user.role === 'publisher') && mod.authorId === user.id) return true
   return false
 }
 
@@ -323,7 +392,7 @@ export async function invalidateUserSessions(userId: string): Promise<void> {
     // Write new tokenVersion to Redis cache for Edge middleware
     await setTokenVersionCache(userId, user.tokenVersion)
   } catch (err) {
-    console.error('[invalidateUserSessions] failed:', err)
+    logger.error('[invalidateUserSessions] failed', err)
   }
 }
 
@@ -344,7 +413,7 @@ export async function checkIpBan(ip: string): Promise<{
     }
     return { banned: true, reason: ban.reason, expiresAt: ban.expiresAt }
   } catch (err) {
-    console.error('[checkIpBan] failed:', err)
+    logger.error('[checkIpBan] failed', err)
     return { banned: false }
   }
 }
@@ -371,13 +440,51 @@ export class AuthError extends Error {
 
 // ===== Middleware helpers (Edge runtime compatible) =====
 
-/** قراءة الـ role من Request cookies (للـ middleware — Edge runtime) */
+/** قراءة الـ role من Request cookies أو API Key (للـ middleware — Edge runtime) */
 export async function getRoleFromRequestCookies(req: NextRequest): Promise<UserRole | null> {
+  // أولاً: فحص API Key في Authorization header
+  const authHeader = req.headers.get('authorization')
+  if (authHeader) {
+    const key = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim()
+    if (key && key.startsWith('sk_live_')) {
+      // في Edge runtime، نتحقق من المفتاح بشكل مبسط
+      // التحقق الكامل يحدث في getSession() عبر Server-side
+      try {
+        const apiKey = await db.apiKey.findUnique({
+          where: { key },
+          select: { role: true, isActive: true, expiresAt: true },
+        })
+        if (apiKey && apiKey.isActive) {
+          if (!apiKey.expiresAt || apiKey.expiresAt > new Date()) {
+            return apiKey.role as UserRole
+          }
+        }
+      } catch {
+        // نكمل مع cookie
+      }
+    }
+  }
+
+  // ثانياً: فحص role cookie
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
     return payload.role as UserRole
+  } catch {
+    return null
+  }
+}
+
+/** قراءة userId من الـ role cookie — رخيصة (JWT محلي، بدون شبكة أو DB) — للعدادات */
+export async function getUserIdFromRequestCookies(req: Request): Promise<string | null> {
+  try {
+    const cookieHeader = req.headers.get('cookie')
+    if (!cookieHeader) return null
+    const match = cookieHeader.match(/(?:^|;\s*)ga_admin_role=([^;]+)/)
+    if (!match?.[1]) return null
+    const { payload } = await jwtVerify(match[1], JWT_SECRET)
+    return typeof payload.userId === 'string' ? payload.userId : null
   } catch {
     return null
   }

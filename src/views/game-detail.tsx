@@ -1,8 +1,9 @@
+// Updated for new API response format
 'use client'
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { ChevronLeft, Download, ThumbsUp, Package, ArrowRight, Filter, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,15 +21,23 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
-import type { GameDetail, PaginatedMods } from '@/lib/types'
+import type { GameDetail, ModSummary } from '@/lib/types'
+
+interface PaginatedModsResponse {
+  data: ModSummary[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
 
 export function GameDetailPage() {
+  const params = useParams()
   const searchParams = useSearchParams()
-  const slug = searchParams.get('slug') || ''
+  const slug = (params.slug as string) || ''
   // Read optional category filter from URL (used by mod-detail breadcrumb links).
-  // We re-read this on every render so a URL change (e.g. user clicks another
-  // category link back to this page) updates the local state via the
-  // derived-state pattern below.
   const urlCat = searchParams.get('cat') || 'all'
 
   const [page, setPage] = useState(1)
@@ -46,10 +55,10 @@ export function GameDetailPage() {
   }
 
   const gameUrl = slug ? `/api/games/${slug}` : null
-  const { data: gameData, loading: gameLoading } = useFetch<{ game: GameDetail }>(gameUrl, [slug])
+  const { data: gameData, loading: gameLoading } = useFetch<{ data: GameDetail }>(gameUrl, [slug])
 
   // Set the document title once the game name loads.
-  useDocumentTitle(gameData?.game?.name ?? null)
+  useDocumentTitle(gameData?.data?.name ?? null)
 
   // Debounce search so we don't fire a request per keystroke.
   const debouncedSearch = useDebounced(search, 250)
@@ -65,7 +74,7 @@ export function GameDetailPage() {
     return `/api/games/${slug}/mods?${params.toString()}`
   }, [slug, category, debouncedSearch, sort, page])
 
-  const { data: modsData, loading: modsLoading } = useFetch<PaginatedMods>(modsUrl, [modsUrl])
+  const { data: modsData, loading: modsLoading } = useFetch<PaginatedModsResponse>(modsUrl, [modsUrl])
 
   // Reset page when filters change — derived-state pattern.
   const filterKey = `${slug}:${category}:${debouncedSearch}:${sort}`
@@ -75,14 +84,14 @@ export function GameDetailPage() {
     setPage(1)
   }
 
-  const game = gameData?.game
+  const game = gameData?.data
 
   if (!gameLoading && !game) {
     return (
       <div className="mx-auto max-w-[1200px] px-4 py-20 text-center">
         <h1 className="text-2xl font-bold">Game not found</h1>
         <Button asChild className="mt-4">
-          <Link href="/?view=games">Back to Games</Link>
+          <Link href="/games">Back to Games</Link>
         </Button>
       </div>
     )
@@ -122,8 +131,8 @@ export function GameDetailPage() {
             )}
           </div>
           <div className="flex gap-2 pb-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/?view=games"><ChevronLeft className="mr-1 h-4 w-4" /> All Games</Link>
+            <Button asChild variant="outline" size="sm" className="min-h-[44px]">
+              <Link href="/games"><ChevronLeft className="mr-1 h-4 w-4" /> All Games</Link>
             </Button>
           </div>
         </div>
@@ -164,7 +173,7 @@ export function GameDetailPage() {
                     variant={category === 'all' ? 'default' : 'outline'}
                     onClick={() => setCategory('all')}
                     aria-pressed={category === 'all'}
-                    className="h-9"
+                    className="h-9 min-h-[44px]"
                   >
                     All
                   </Button>
@@ -175,7 +184,7 @@ export function GameDetailPage() {
                       variant={category === c.slug ? 'default' : 'outline'}
                       onClick={() => setCategory(c.slug)}
                       aria-pressed={category === c.slug}
-                      className="h-9"
+                      className="h-9 min-h-[44px]"
                     >
                       {c.name}
                     </Button>
@@ -203,7 +212,7 @@ export function GameDetailPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {Array.from({ length: 8 }).map((_, i) => <ModCardSkeleton key={i} />)}
                 </div>
-              ) : (modsData?.mods?.length ?? 0) === 0 ? (
+              ) : (modsData?.data?.length ?? 0) === 0 ? (
                 <div className="grid place-items-center py-16 text-center">
                   <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
                   <h3 className="text-lg font-semibold">No mods found</h3>
@@ -212,27 +221,27 @@ export function GameDetailPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {modsData?.mods?.map((m) => <ModCard key={m.id} mod={m} />)}
+                    {modsData?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
                   </div>
 
                   {/* Pagination */}
-                  {modsData && modsData.totalPages > 1 && (
+                  {modsData && modsData.pagination.totalPages > 1 && (
                     <div className="mt-8 flex items-center justify-center gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="sm" className="min-h-[44px]"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                       >
                         Previous
                       </Button>
                       <span className="text-sm text-muted-foreground" aria-live="polite">
-                        Page {page} of {modsData.totalPages}
+                        Page {page} of {modsData.pagination.totalPages}
                       </span>
                       <Button
                         variant="outline"
-                        size="sm"
-                        disabled={page >= modsData.totalPages}
+                        size="sm" className="min-h-[44px]"
+                        disabled={page >= modsData.pagination.totalPages}
                         onClick={() => setPage((p) => p + 1)}
                       >
                         Next

@@ -86,7 +86,7 @@ export function ModerationSummary({
               مركز الإشراف السريع
             </h3>
 
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-white/55">
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-white/65">
               إدارة الحسابات والتنبيهات والحظر وإجراءات المجتمع من مكان واحد بسرعة أكبر.
             </p>
           </div>

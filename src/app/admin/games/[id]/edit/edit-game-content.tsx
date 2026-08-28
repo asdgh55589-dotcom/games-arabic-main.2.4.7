@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 
-const PLATFORMS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4'] as const
+const PLATFORMS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4', 'PS5', 'X360', 'ANDROID'] as const
 const CATEGORIES = ['RPG', 'FPS', 'Strategy', 'Sandbox', 'Adventure', 'Simulation', 'Action', 'Fighting', 'Racing']
 
 export default function EditGameContent({ id }: { id: string }) {
@@ -31,12 +32,14 @@ export default function EditGameContent({ id }: { id: string }) {
   const [featured, setFeatured] = useState(false)
   const [categories, setCategories] = useState<string[]>([])
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   useEffect(() => {
     fetch(`/api/admin/games/${id}`)
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => { if (!r.ok) throw new Error('فشل تحميل اللعبة'); return r.json() })
       .then((data) => {
-        if (!data?.game) return
-        const g = data.game
+        const g = data?.data ?? data?.game
+        if (!g) throw new Error('اللعبة غير موجودة')
         setName(g.name || '')
         setTagline(g.tagline || '')
         setDescription(g.description || '')
@@ -49,7 +52,7 @@ export default function EditGameContent({ id }: { id: string }) {
         setFeatured(g.featured || false)
         setCategories(g.categories?.map((c: any) => c.name) || [])
       })
-      .catch(() => {})
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'فشل تحميل اللعبة'))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -70,7 +73,10 @@ export default function EditGameContent({ id }: { id: string }) {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحفظ')
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ'
+        throw new Error(msg)
+      }
       toast({ title: 'تم الحفظ', description: 'تم تحديث اللعبة' })
       router.push('/admin/games')
     } catch (err) {
@@ -86,6 +92,9 @@ export default function EditGameContent({ id }: { id: string }) {
 
   if (loading) {
     return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  }
+  if (loadError) {
+    return <div className="grid place-items-center py-20 text-center"><p className="text-sm text-destructive">{loadError}</p></div>
   }
 
   return (
@@ -132,18 +141,9 @@ export default function EditGameContent({ id }: { id: string }) {
             <Input type="number" value={releaseYear} onChange={(e) => setReleaseYear(Number(e.target.value))} />
           </div>
         </div>
-        <div>
-          <Label>رابط البانر</Label>
-          <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} />
-        </div>
-        <div>
-          <Label>رابط الصورة المصغّرة</Label>
-          <Input value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} />
-        </div>
-        <div>
-          <Label>رابط الشعار</Label>
-          <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
-        </div>
+        <ImageUpload bucket="mods" value={bannerUrl} onChange={setBannerUrl} label="البانر" hint="سحب وإفلات — أعلى جودة" folder="games/banners" />
+        <ImageUpload bucket="mods" value={thumbnailUrl} onChange={setThumbnailUrl} label="الصورة المصغّرة" hint="سحب وإفلات — أعلى جودة" folder="games/thumbnails" />
+        <ImageUpload bucket="mods" value={logoUrl} onChange={setLogoUrl} label="الشعار" hint="سحب وإفلات — أعلى جودة" folder="games/logos" />
         <div>
           <Label>الأقسام</Label>
           <Input

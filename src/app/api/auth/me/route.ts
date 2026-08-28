@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { getBanStatus, jwtVerify, getJWTSecret } from '@/lib/auth'
+import { ok } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 
@@ -40,9 +42,9 @@ export async function GET() {
         if (user) {
           const ban = getBanStatus(user)
           if (ban.banned) {
-            return NextResponse.json({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
+            return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
           }
-          return NextResponse.json({ user })
+          return ok({ user })
         }
 
         // المستخدم جديد — أنشئ ملف شخصي
@@ -54,7 +56,7 @@ export async function GET() {
             role: 'member',
           },
         })
-        return NextResponse.json({
+        return ok({
           user: {
             id: newUser.id,
             username: newUser.username,
@@ -74,18 +76,28 @@ export async function GET() {
     const roleToken = cookieStore.get(ROLE_COOKIE_NAME)?.value
 
     if (!roleToken) {
-      return NextResponse.json({ user: null })
+      return ok({ user: null })
     }
 
     // التحقق من الـ JWT token
     const JWT_SECRET = getJWTSecret()
-    const { payload } = await jwtVerify(roleToken, JWT_SECRET)
+    let payload: Record<string, unknown>
+    try {
+      const verified = await jwtVerify(roleToken, JWT_SECRET)
+      payload = verified.payload as Record<string, unknown>
+    } catch {
+      // JWT غير صالح (قديم أو مزور) — امسح الـ cookie الفاسد
+      logger.warn('[auth/me] invalid role cookie — clearing')
+      cookieStore.delete(ROLE_COOKIE_NAME)
+      return ok({ user: null })
+    }
     const userId = payload.userId as string
     const role = payload.role as string
     const tokenVersion = payload.tv as number | undefined
 
     if (!userId || !role) {
-      return NextResponse.json({ user: null })
+      cookieStore.delete(ROLE_COOKIE_NAME)
+      return ok({ user: null })
     }
 
     // البحث عن المستخدم في Neon DB باستخدام userId
@@ -108,21 +120,24 @@ export async function GET() {
     })
 
     if (!user) {
-      return NextResponse.json({ user: null })
+      cookieStore.delete(ROLE_COOKIE_NAME)
+      return ok({ user: null })
     }
 
-    // فحص tokenVersion
+    // فحص tokenVersion — لو غير متطابق → الجلسة ملغاة
     if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) {
-      return NextResponse.json({ user: null })
+      logger.warn('[auth/me] tokenVersion mismatch — clearing cookie', { userId, tokenVersion, dbVersion: user.tokenVersion })
+      cookieStore.delete(ROLE_COOKIE_NAME)
+      return ok({ user: null })
     }
 
     // فحص حالة الحظر
     const ban = getBanStatus(user)
     if (ban.banned) {
-      return NextResponse.json({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
+      return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
     }
 
-    return NextResponse.json({
+    return ok({
       user: {
         id: user.id,
         username: user.username,
@@ -132,7 +147,15 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[auth/me] failed:', err)
-    return NextResponse.json({ user: null })
+    logger.error('[auth/me] failed', err)
+    // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع
+    try {
+      const { cookies } = await import('next/headers')
+      const cs = await cookies()
+      if (cs.get(ROLE_COOKIE_NAME)?.value) {
+        cs.delete(ROLE_COOKIE_NAME)
+      }
+    } catch {}
+    return ok({ user: null })
   }
 }

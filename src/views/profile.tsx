@@ -2,24 +2,28 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import {
   Crown, Shield, User, Settings, Mail, UserPlus, UserCheck,
-  Calendar, CheckCircle
+  Calendar, CheckCircle, Download, ThumbsUp, MessageSquare, Package, Eye, Users, Loader2
 } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { createClient } from '@/lib/supabase/client'
-import { formatArabicDate } from '@/lib/format'
+import { useAuth } from '@/contexts/auth-context'
+import { formatArabicDate, formatNumber } from '@/lib/format'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
 import { ProfileXpBar } from '@/components/profile/profile-xp-bar'
 import { ProfileModsFilter } from '@/components/profile/profile-mods-filter'
 import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
 import { TierBadge } from '@/components/tier-badge'
+import { ReportButton } from '@/components/report-button'
+import { CreatorBadge } from '@/components/creator-badge'
+import { RoleBadge } from '@/components/role-badge'
 import type { ModSummary } from '@/lib/types'
 
 interface ProfileData {
@@ -30,6 +34,9 @@ interface ProfileData {
   bio: string | null
   websiteUrl: string | null
   twitterUrl: string | null
+  instagramUrl: string | null
+  tiktokUrl: string | null
+  youtubeUrl: string | null
   githubUrl: string | null
   discordUrl: string | null
   accentColor: string | null
@@ -82,89 +89,156 @@ const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; classNa
 }
 
 export function ProfilePage() {
+  const params = useParams()
   const searchParams = useSearchParams()
-  const username = searchParams.get('user') || ''
+  const username = (params.user as string) || ''
   const defaultTab = searchParams.get('tab') || 'about'
   const { toast } = useToast()
+
+  const { user: currentUser } = useAuth()
 
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [activity, setActivity] = useState<ActivityData>({ comments: [], mods: [] })
   const [badges, setBadges] = useState<BadgeData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
 
   useDocumentTitle(profile?.username || 'الملف الشخصي')
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (retry = true) => {
     if (!username) { setError('لم يُحدد مستخدم'); setLoading(false); return }
     setLoading(true)
     setError(null)
-    try {
+    const doFetch = async () => {
       const res = await fetch(`/api/users/${encodeURIComponent(username)}/full-profile?limit=10`, {
         next: { revalidate: 60 },
       })
       if (res.ok) {
         const data = await res.json()
-        setProfile(data.profile)
-        setActivity(data.activity || { comments: [], mods: [] })
-        setBadges(data.badges || [])
-        setIsFollowing(Boolean(data.follow?.isFollowing))
+        const payload = data.data
+        setProfile(payload.profile)
+        setActivity(payload.activity || { comments: [], mods: [] })
+        setBadges(payload.badges || [])
+        setIsFollowing(Boolean(payload.follow?.isFollowing))
         setError(null)
         setLoading(false)
         return true
       } else {
         const data = await res.json().catch(() => null)
-
-        if (data?.visibility?.reason === 'private') {
+        const errCode = data?.error?.code
+        if (errCode === 'FORBIDDEN') {
           setError('هذا الملف الشخصي خاص')
-        } else if (data?.visibility?.reason === 'followers_only') {
-          setError('هذا الملف الشخصي متاح للمتابعين فقط')
+        } else if (res.status === 404) {
+          setError('المستخدم غير موجود — تأكد من كتابة الاسم بشكل صحيح')
+        } else if (res.status >= 500) {
+          throw new Error('server_error')
         } else {
-          setError('المستخدم غير موجود')
+          setError('المستخدم غير موجود — تأكد من كتابة الاسم بشكل صحيح')
         }
-
         setProfile(null)
         setLoading(false)
         return false
       }
-    } catch {
-      setError('حدث خطأ أثناء تحميل البيانات')
+    }
+
+    try {
+      return await doFetch()
+    } catch (err) {
+      // Retry once for transient network/server errors
+      if (retry && (err instanceof TypeError || (err as Error).message === 'server_error')) {
+        await new Promise((r) => setTimeout(r, 1000))
+        try {
+          return await doFetch()
+        } catch (retryErr) {
+          console.error('[profile] fetch retry failed:', retryErr)
+        }
+      }
+      console.error('[profile] fetch failed:', err)
+      const isNetwork = err instanceof TypeError && String((err as Error).message).includes('fetch')
+      const msg = isNetwork ? 'تحقق من اتصال الإنترنت وحاول مرة أخرى' : 'حدث خطأ أثناء تحميل البيانات'
+      setError(msg)
+      toast({ title: 'خطأ في التحميل', description: msg, variant: 'destructive' })
       setProfile(null)
       setLoading(false)
       return false
     }
-  }, [username])
+  }, [username, toast])
 
   const handleFollowToggle = async () => {
-    if (!currentUser || followLoading) return
+    if (!currentUser) {
+      toast({ title: 'يجب تسجيل الدخول أولاً', description: 'سجل دخولك لمتابعة المستخدمين', variant: 'destructive' })
+      return
+    }
+    if (followLoading) return
+
+    // تأكيد عند إلغاء المتابعة
+    if (isFollowing) {
+      if (!confirm(`هل أنت متأكد من إلغاء متابعة ${username}؟`)) return
+    }
+
+    const prevFollowing = isFollowing
+    const prevFollowers = profile?.stats.followersCount ?? 0
+
+    // Optimistic UI
+    setIsFollowing(!prevFollowing)
+    setProfile(prev => prev ? {
+      ...prev,
+      stats: { ...prev.stats, followersCount: prevFollowing ? Math.max(0, prevFollowers - 1) : prevFollowers + 1 },
+    } : prev)
     setFollowLoading(true)
+
     try {
-      const method = isFollowing ? 'DELETE' : 'POST'
+      const method = prevFollowing ? 'DELETE' : 'POST'
       const res = await fetch(`/api/users/${encodeURIComponent(username)}/follow`, { method })
+      const data = await res.json().catch(() => null)
+
       if (res.ok) {
-        const data = await res.json()
-        setIsFollowing(data.isFollowing)
+        const payload = data.data
+        setIsFollowing(payload.isFollowing)
         setProfile(prev => prev ? {
           ...prev,
-          stats: { ...prev.stats, followersCount: data.followersCount, followingCount: data.followingCount },
+          stats: { ...prev.stats, followersCount: payload.followersCount, followingCount: payload.followingCount },
         } : prev)
-      }
-    } catch {}
-    setFollowLoading(false)
-  }
+        toast({
+          title: payload.isFollowing ? 'تمت المتابعة بنجاح' : 'تم إلغاء المتابعة',
+          description: payload.isFollowing ? `أنت الآن تتابع ${username}` : `لم تعد تتابع ${username}`,
+        })
+      } else {
+        // Revert optimistic
+        setIsFollowing(prevFollowing)
+        setProfile(prev => prev ? { ...prev, stats: { ...prev.stats, followersCount: prevFollowers } } : prev)
 
-  useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => {
-      if (data.user) {
-        fetch('/api/auth/me').then(r => r.json()).then(d => {
-          if (d.user) setCurrentUser(d.user)
-        }).catch(() => {})
+        const code = data?.error?.code
+        const msg = data?.error?.message
+        if (res.status === 401) {
+          toast({ title: 'يجب تسجيل الدخول', description: 'سجل دخولك أولاً', variant: 'destructive' })
+        } else if (code === 'FORBIDDEN' || msg?.includes('yourself')) {
+          toast({ title: 'لا يمكنك متابعة نفسك', variant: 'destructive' })
+        } else if (code === 'CONFLICT' || res.status === 409) {
+          toast({ title: 'أنت تتابع هذا المستخدم بالفعل', variant: 'destructive' })
+          // مزامنة الحالة
+          setIsFollowing(true)
+        } else {
+          toast({ title: 'حدث خطأ', description: msg || 'فشل العملية، حاول مرة أخرى', variant: 'destructive' })
+        }
       }
-    }).catch(() => {})
-  }, [])
+    } catch (error) {
+      // Revert optimistic
+      setIsFollowing(prevFollowing)
+      setProfile(prev => prev ? { ...prev, stats: { ...prev.stats, followersCount: prevFollowers } } : prev)
+      console.error('[profile] follow toggle failed:', error)
+      const isNetwork = error instanceof TypeError && String(error.message).includes('fetch')
+      toast({
+        title: 'حدث خطأ في الاتصال',
+        description: isNetwork ? 'تحقق من اتصال الإنترنت وحاول مرة أخرى' : 'فشل العملية، حاول مرة أخرى',
+        variant: 'destructive',
+      })
+    } finally {
+      setFollowLoading(false)
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -184,13 +258,7 @@ export function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div
-          className="h-8 w-8 animate-spin rounded-full border-2"
-          style={{
-            borderLeftColor: accent,
-            borderRightColor: accent,
-            borderBottomColor: accent,
-            borderTopColor: 'transparent',
-          }}
+          className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"
         />
       </div>
     )
@@ -199,9 +267,14 @@ export function ProfilePage() {
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <p className="text-lg text-gray-400">{error || 'المستخدم غير موجود'}</p>
-          <Link href="/?view=home" className="mt-4 inline-block text-sm text-primary hover:underline">العودة للرئيسية</Link>
+          <div className="flex items-center justify-center gap-3">
+            <Button onClick={() => fetchProfile()} variant="outline" className="border-[#333] text-gray-300">
+              إعادة المحاولة
+            </Button>
+            <Link href="/" className="inline-block text-sm text-primary hover:underline">العودة للرئيسية</Link>
+          </div>
         </div>
       </div>
     )
@@ -212,7 +285,7 @@ export function ProfilePage() {
       {/* ===== Banner ===== */}
       <div className="relative h-[280px] overflow-hidden">
         {profile.bannerUrl ? (
-          <img src={profile.bannerUrl} alt="banner" className="h-full w-full object-cover" />
+          <Image src={profile.bannerUrl} alt="banner" fill quality={100} sizes="100vw" className="object-cover" priority />
         ) : (
             <div
               className="h-full w-full"
@@ -253,15 +326,18 @@ export function ProfilePage() {
                 </div>
                 {/* Tier badge */}
                 <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
-                  <TierBadge tier={(profile as any).tier || 0} size="md" />
+                  <TierBadge tier={(profile as any).tier || 0} role={profile.role} size="md" />
                 </div>
               </div>
             </div>
 
             {/* Name + actions */}
             <div className="flex-1 pt-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold text-white">{profile.username}</h1>
+                <RoleBadge role={profile.role} size="sm" />
+                <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
+                <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles} />
                 {profile.role === 'owner' && (
                   <CheckCircle className="h-5 w-5" style={{ color: accent }} />
                 )}
@@ -284,17 +360,19 @@ export function ProfilePage() {
                 <ProfileSocialLinks
                   websiteUrl={profile.websiteUrl}
                   twitterUrl={profile.twitterUrl}
+                  instagramUrl={profile.instagramUrl}
+                  tiktokUrl={profile.tiktokUrl}
+                  youtubeUrl={profile.youtubeUrl}
                   githubUrl={profile.githubUrl}
                   discordUrl={profile.discordUrl}
-                  accent={accent}
                 />
               </div>
 
               {/* Action buttons */}
               <div className="mt-4 flex flex-wrap gap-2">
                 {isOwner ? (
-                  <Link href="/?view=settings">
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222]">
+                  <Link href="/settings">
+                    <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
                       <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
                     </Button>
                   </Link>
@@ -303,7 +381,7 @@ export function ProfilePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222]"
+                      className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]"
                       onClick={() => toast({ title: 'رسالة', description: 'قريباً' })}
                     >
                       <Mail className="h-3.5 w-3.5" /> رسالة
@@ -311,17 +389,23 @@ export function ProfilePage() {
                     <Button
                       size="sm"
                       variant={isFollowing ? 'outline' : 'default'}
-                      className="h-8 gap-1.5 text-xs"
-                      style={isFollowing ? { borderColor: '#333' } : { backgroundColor: accent }}
+                      className="h-8 gap-1.5 text-xs min-h-[44px]"
+                      style={isFollowing ? { borderColor: '#333' } : {}}
                       onClick={handleFollowToggle}
                       disabled={followLoading}
+                      aria-busy={followLoading}
                     >
-                      {isFollowing ? (
+                      {followLoading ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> جارٍ...</>
+                      ) : isFollowing ? (
                         <><UserCheck className="h-3.5 w-3.5" /> متابَع</>
                       ) : (
                         <><UserPlus className="h-3.5 w-3.5" /> متابعة</>
                       )}
                     </Button>
+                    {profile?.id && (
+                      <ReportButton targetType="user" targetId={profile.id} variant="outline" size="sm" />
+                    )}
                   </>
                 )}
               </div>
@@ -347,7 +431,7 @@ export function ProfilePage() {
               firstModDate: profile.firstModDate || null,
               rating: profile.rating || 0,
             }}
-            accent={accent}
+            role={profile.role}
           />
         </div>
       </div>
@@ -355,7 +439,7 @@ export function ProfilePage() {
       {/* ===== Tabs ===== */}
       <div className="mx-auto max-w-[1200px] px-4 lg:px-6 mt-8">
         <Tabs defaultValue={defaultTab} className="mt-0">
-          <TabsList className="w-full flex-row justify-start border-b border-[#333] bg-transparent p-0" style={{ direction: 'rtl' }}>
+          <TabsList className="w-full flex-row justify-start overflow-x-auto whitespace-nowrap border-b border-[#333] bg-transparent p-0 scrollbar-thin" style={{ direction: 'rtl' }}>
             <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">نبذة عني</TabsTrigger>
             <TabsTrigger value="badges" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الشارات</TabsTrigger>
             <TabsTrigger value="xp" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الخبرة</TabsTrigger>
@@ -369,15 +453,86 @@ export function ProfilePage() {
             </div>
           </TabsContent>
 
+          {/* Stats tab */}
+          <TabsContent value="stats" className="mt-6">
+            <div className="space-y-4">
+              {/* Main stats grid */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <StatCard
+                  icon={<Download className="h-5 w-5" />}
+                  label="التحميلات"
+                  value={formatNumber(profile.stats.totalDownloads)}
+                />
+                <StatCard
+                  icon={<ThumbsUp className="h-5 w-5" />}
+                  label="الإعجابات"
+                  value={formatNumber(profile.stats.totalEndorsements)}
+                />
+                <StatCard
+                  icon={<MessageSquare className="h-5 w-5" />}
+                  label="التعليقات"
+                  value={formatNumber(activity.comments?.length || 0)}
+                />
+                <StatCard
+                  icon={<Package className="h-5 w-5" />}
+                  label="التعريبات"
+                  value={formatNumber(profile.stats.mods)}
+                />
+                <StatCard
+                  icon={<Eye className="h-5 w-5" />}
+                  label="المشاهدات"
+                  value={formatNumber(profile.stats.totalViews)}
+                />
+                <StatCard
+                  icon={<Users className="h-5 w-5" />}
+                  label="المتابعين"
+                  value={formatNumber(profile.stats.followersCount)}
+                />
+              </div>
+
+              {/* Recent activity */}
+              {activity.comments && activity.comments.length > 0 ? (
+                <div className="rounded-lg bg-[#1a1a1a] p-4 border border-[#333]">
+                  <h3 className="text-sm font-bold text-white mb-3">آخر التعليقات</h3>
+                  <div className="space-y-2">
+                    {activity.comments.slice(0, 5).map((comment) => (
+                      <div key={comment.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#222] transition-colors">
+                        <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-300 line-clamp-2">{comment.text}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500">على تعريب</span>
+                            <Link
+                              href={`/mod/${comment.mod.slug}`}
+                              className="text-xs text-primary hover:underline truncate"
+                            >
+                              {comment.mod.name}
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg bg-[#1a1a1a] p-8 text-center border border-[#333]">
+                  <MessageSquare className="mx-auto h-8 w-8 text-gray-600 mb-2" />
+                  <p className="text-sm text-gray-500">لا توجد تعليقات بعد</p>
+                  <p className="mt-1 text-xs text-gray-600">ستظهر تعليقاتك هنا عند المشاركة</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           {/* Badges tab */}
           <TabsContent value="badges" className="mt-6">
-            <ProfileBadgesGrid badges={badges} accent={accent} />
+            <ProfileBadgesGrid badges={badges} />
           </TabsContent>
 
           {/* XP tab */}
           <TabsContent value="xp" className="mt-6">
             {profile.xp ? (
-              <ProfileXpBar xp={profile.xp} accent={accent} />
+              <ProfileXpBar xp={profile.xp} />
             ) : (
               <div className="rounded-lg bg-[#1a1a1a] p-6 text-center">
                 <p className="text-sm text-gray-500">لم يبدأ بعد</p>
@@ -387,9 +542,25 @@ export function ProfilePage() {
 
           {/* Mods tab */}
           <TabsContent value="mods" className="mt-6">
-            <ProfileModsFilter mods={activity.mods} accent={accent} loading={loading} />
+            <ProfileModsFilter mods={activity.mods} loading={loading} />
           </TabsContent>
         </Tabs>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-[#1a1a1a] p-4 border border-[#333]">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-gray-400">
+          {icon}
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          <p className="text-xs text-gray-400">{label}</p>
+        </div>
       </div>
     </div>
   )

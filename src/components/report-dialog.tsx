@@ -19,9 +19,10 @@ interface ReportDialogProps {
   targetType: ReportTargetType
   targetId: string
   children?: React.ReactNode
+  onSuccess?: () => void
 }
 
-export function ReportDialog({ targetType, targetId, children }: ReportDialogProps) {
+export function ReportDialog({ targetType, targetId, children, onSuccess }: ReportDialogProps) {
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState<ReportReason | ''>('')
   const [description, setDescription] = useState('')
@@ -45,11 +46,12 @@ export function ReportDialog({ targetType, targetId, children }: ReportDialogPro
       const data = await res.json()
 
       if (!res.ok) {
-        toast({ title: data.error || 'فشل إرسال البلاغ', variant: 'destructive' })
+        toast({ title: data.error?.message || 'فشل إرسال البلاغ', variant: 'destructive' })
         return
       }
 
-      toast({ title: 'تم استلام بلاغك. شكراً لمساهمتك.' })
+      toast({ title: 'لقد تم استلام بلاغك', description: 'شكراً لمساهمتك، ستتم مراجعته قريباً' })
+      onSuccess?.()
       setOpen(false)
       setReason('')
       setDescription('')
@@ -64,7 +66,7 @@ export function ReportDialog({ targetType, targetId, children }: ReportDialogPro
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-destructive min-h-[44px]">
             <Flag className="h-4 w-4" />
             إبلاغ
           </Button>

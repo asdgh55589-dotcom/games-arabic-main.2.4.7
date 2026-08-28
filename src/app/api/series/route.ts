@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/series — قائمة بكل السلاسل (من Series model الجديد)
 export async function GET() {
@@ -22,16 +22,13 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json(
-      { series },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-        },
-      }
-    )
+    return ok(series, {
+      headers: {
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+      },
+    })
   } catch (err) {
     console.error('[api/series] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed to fetch series')
   }
 }

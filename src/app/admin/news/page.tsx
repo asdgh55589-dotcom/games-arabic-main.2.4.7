@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Newspaper, Trash2, Edit2, Plus, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Newspaper, Trash2, Edit2, Plus, Eye, EyeOff, MousePointer, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
 
@@ -20,7 +21,19 @@ interface NewsItem {
   visible: boolean
   order: number
   views: number
+  clicksCount: number
   publishAt: string
+}
+
+interface NewsStats {
+  totalViews: number
+  totalClicks: number
+  viewsCount: number
+  clicksCount: number
+  recentViews: Array<{ id: string; viewedAt: string }>
+  recentClicks: Array<{ id: string; clickedAt: string }>
+  viewsByDate: Array<{ date: string; count: number }>
+  clicksByDate: Array<{ date: string; count: number }>
 }
 
 export default function AdminNewsPage() {
@@ -38,15 +51,30 @@ export default function AdminNewsPage() {
   const [newCategory, setNewCategory] = useState('general')
   const [newImageUrl, setNewImageUrl] = useState('')
   const [newIsSticky, setNewIsSticky] = useState(false)
+  const [statsNews, setStatsNews] = useState<NewsItem | null>(null)
+  const [stats, setStats] = useState<NewsStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
     const params = new URLSearchParams()
     if (typeFilter !== 'all') params.set('type', typeFilter)
-    fetch(`/api/admin/news?${params.toString()}`)
+    setLoading(true)
+    setError(null)
+    fetch(`/api/admin/news?${params.toString()}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
-      .then((data) => setNews(data.news || []))
-      .catch(() => setError('فشل تحميل الأخبار'))
-      .finally(() => setLoading(false))
+      .then((data) => {
+        const list = data?.data ?? data?.news ?? []
+        setNews(Array.isArray(list) ? list : [])
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError('فشل تحميل الأخبار')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
   }, [typeFilter])
 
   const onCreate = async () => {
@@ -58,9 +86,14 @@ export default function AdminNewsPage() {
         body: JSON.stringify({ title: newTitle, summary: newSummary, type: newType, category: newCategory, imageUrl: newImageUrl, isSticky: newIsSticky }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الإنشاء')
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الإنشاء'
+        throw new Error(msg)
+      }
+      const created = data?.data ?? data?.news
+      if (!created) throw new Error('فشل الإنشاء - استجابة غير متوقعة')
       toast({ title: 'تم الإنشاء' })
-      setNews((p) => [data.news, ...p])
+      setNews((p) => [created, ...p])
       setNewTitle(''); setNewSummary(''); setNewImageUrl(''); setNewIsSticky(false)
       setShowCreateForm(false)
     } catch (err) {
@@ -95,6 +128,17 @@ export default function AdminNewsPage() {
     }
   }
 
+  const onShowStats = async (n: NewsItem) => {
+    setStatsNews(n)
+    setLoadingStats(true)
+    try {
+      const res = await fetch(`/api/admin/news/${n.id}/stats`)
+      const data = await res.json()
+      if (res.ok) setStats(data?.data ?? data)
+    } catch {}
+    setLoadingStats(false)
+  }
+
   if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
   if (error) return <div className="grid place-items-center py-20 text-center"><p className="text-sm text-destructive">{error}</p></div>
 
@@ -113,7 +157,7 @@ export default function AdminNewsPage() {
       {/* الفلاتر */}
       <div className="flex gap-2">
         {['all', 'ticker', 'featured'].map((t) => (
-          <Button key={t} size="sm" variant={typeFilter === t ? 'default' : 'outline'} onClick={() => setTypeFilter(t)}>
+          <Button key={t} size="sm" className="min-h-[44px]" variant={typeFilter === t ? 'default' : 'outline'} onClick={() => setTypeFilter(t)}>
             {t === 'all' ? 'الكل' : t === 'ticker' ? 'شريط متحرك' : 'خبر مميّز'}
           </Button>
         ))}
@@ -142,7 +186,7 @@ export default function AdminNewsPage() {
                 <option value="event">حدث</option>
               </select>
             </div>
-            <div><Label>صورة الخبر</Label><Input value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="https://..." /></div>
+            <div className="sm:col-span-2"><ImageUpload bucket="news" value={newImageUrl} onChange={setNewImageUrl} label="صورة الخبر" hint="سحب وإفلات — أعلى جودة (اختياري لـ ticker)" folder="news" /></div>
             <div className="flex items-end">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={newIsSticky} onChange={(e) => setNewIsSticky(e.target.checked)} className="rounded" /> تثبيت</label>
             </div>
@@ -155,7 +199,7 @@ export default function AdminNewsPage() {
       )}
 
       {/* القائمة */}
-      {news.length === 0 ? (
+      {(news || []).length === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Newspaper className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد أخبار</h3>
@@ -170,6 +214,7 @@ export default function AdminNewsPage() {
                 <th className="hidden px-4 py-3 font-semibold sm:table-cell">التصنيف</th>
                 <th className="hidden px-4 py-3 font-semibold md:table-cell">الحالة</th>
                 <th className="hidden px-4 py-3 font-semibold lg:table-cell">النشر</th>
+                <th className="hidden px-4 py-3 font-semibold lg:table-cell">الإحصائيات</th>
                 <th className="px-4 py-3 font-semibold">إجراءات</th>
               </tr>
             </thead>
@@ -184,17 +229,32 @@ export default function AdminNewsPage() {
                   </td>
                   <td className="hidden px-4 py-3 text-xs sm:table-cell">{n.category}</td>
                   <td className="hidden px-4 py-3 md:table-cell">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onToggleVisible(n)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px]" onClick={() => onToggleVisible(n)} aria-label="إجراء">
                       {n.visible ? <Eye className="h-4 w-4 text-green-400" /> : <EyeOff className="h-4 w-4 text-red-400" />}
                     </Button>
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-muted-foreground lg:table-cell">{timeAgo(n.publishAt)}</td>
+                  <td className="hidden px-4 py-3 lg:table-cell">
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        <span className="font-medium tabular-nums">{(n.views ?? 0).toLocaleString('en-US')}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MousePointer className="h-3 w-3 text-blue-500" />
+                        <span className="font-medium tabular-nums">{(n.clicksCount ?? 0).toLocaleString('en-US')}</span>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onShowStats(n)} title="الإحصائيات" aria-label="الإحصائيات">
+                        <BarChart3 className="h-4 w-4" />
+                      </Button>
                       <Link href={`/admin/news/${n.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" title="تعديل">
                         <Edit2 className="h-4 w-4" />
                       </Link>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10" onClick={() => onDelete(n)} title="حذف">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(n)} title="حذف" aria-label="حذف">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -203,6 +263,61 @@ export default function AdminNewsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {statsNews && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setStatsNews(null)}>
+          <div className="max-h-[80vh] w-full max-w-lg overflow-auto rounded-xl border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold">{statsNews.title}</h3>
+              <Button size="sm" className="min-h-[44px]" variant="ghost" onClick={() => setStatsNews(null)}>
+                إغلاق
+              </Button>
+            </div>
+            {loadingStats ? (
+              <div className="grid place-items-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : stats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border bg-card p-4 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{(stats.totalViews ?? 0).toLocaleString('en-US')}</div>
+                    <div className="text-xs text-muted-foreground">إجمالي المشاهدات</div>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{(stats.totalClicks ?? 0).toLocaleString('en-US')}</div>
+                    <div className="text-xs text-muted-foreground">إجمالي النقرات</div>
+                  </div>
+                </div>
+                {stats.viewsByDate.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">المشاهدات حسب التاريخ</h4>
+                    {stats.viewsByDate.map((d) => (
+                      <div key={d.date} className="flex items-center justify-between rounded border px-3 py-1.5 text-sm">
+                        <span>{d.date}</span>
+                        <span className="font-bold">{d.count.toLocaleString('en-US')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {stats.clicksByDate.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">النقرات حسب التاريخ</h4>
+                    {stats.clicksByDate.map((d) => (
+                      <div key={d.date} className="flex items-center justify-between rounded border px-3 py-1.5 text-sm">
+                        <span>{d.date}</span>
+                        <span className="font-bold">{d.count.toLocaleString('en-US')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">لا توجد بيانات</p>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   try {
@@ -18,10 +19,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         isActive: body.isActive
       }
     })
-    return NextResponse.json({ role })
+    return ok({ role })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
 
@@ -30,9 +30,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await requireAdmin()
     const { key } = await params
     await db.specialRole.delete({ where: { key } })
-    return NextResponse.json({ message: 'تم حذف الدور' })
+    return ok({ message: 'تم حذف الدور' })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

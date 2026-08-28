@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server'
 import { clearRoleCookie, getSession } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { logAction } from '@/lib/audit'
+import { ok, internalError } from '@/lib/api-response'
 
-// POST /api/auth/logout — تسجيل الخروج
 export async function POST() {
   try {
     const user = await getSession()
@@ -17,7 +16,6 @@ export async function POST() {
       })
     }
 
-    // تسجيل الخروج من Supabase Auth
     const supabase = await createClient()
     const { error } = await supabase.auth.signOut()
 
@@ -25,12 +23,11 @@ export async function POST() {
       console.error('[auth/logout] Supabase signOut failed:', error.message)
     }
 
-    // مسح role cookie (حتى لو فشل Supabase signOut)
     await clearRoleCookie()
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[auth/logout] failed:', err instanceof Error ? err.message : 'unknown error')
-    return NextResponse.json({ error: 'Failed to logout' }, { status: 500 })
+    return internalError('Failed to logout')
   }
 }

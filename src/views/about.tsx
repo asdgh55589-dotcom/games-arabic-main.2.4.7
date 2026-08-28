@@ -72,7 +72,7 @@ export function AboutPage() {
           </div>
 
           {/* خاتمة */}
-          <div className="mt-6 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
+          <div className="mt-6 rounded-none border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
             <p className="text-lg font-medium leading-relaxed">
               صُمّم هذا الموقع من اللاعب، للاعب.
             </p>

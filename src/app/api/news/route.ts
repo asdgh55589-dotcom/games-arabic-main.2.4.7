@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getActiveNews } from '@/lib/news-helpers'
+import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/news?type=ticker|featured — الأخبار النشطة
 export async function GET(req: NextRequest) {
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const news = await getActiveNews({ type, limit })
 
-    return NextResponse.json(
+    return ok(
       { news },
       {
         headers: {
@@ -20,6 +21,6 @@ export async function GET(req: NextRequest) {
     )
   } catch (err) {
     console.error('[api/news] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

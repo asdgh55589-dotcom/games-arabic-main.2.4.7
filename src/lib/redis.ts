@@ -65,14 +65,68 @@ export async function redisDel(key: string): Promise<void> {
   memoryStore.delete(key)
 }
 
+/**
+ * SET NX — ينجح مرة واحدة فقط لكل مفتاح (للـ dedup).
+ * يرجع true إذا كان المفتاح جديداً (أول مرة)، false إذا كان موجوداً.
+ * مع fallback سلس إلى الذاكرة عند عدم توفر Redis — يعمل مع أو بدون Upstash
+ * مع retry 3 مرات عند استخدام Upstash.
+ */
+export async function redisSetNX(key: string, ttlSeconds: number): Promise<boolean> {
+  if (hasRedis && redisClient) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await redisClient.set(key, '1', { ex: ttlSeconds, nx: true })
+        return result === 'OK'
+      } catch (err) {
+        console.error(`[redis] setnx attempt ${attempt + 1}/3 failed:`, err)
+        if (attempt === 2) {
+          console.warn('[Redis] فشل Redis لـ deduplication — التحويل للذاكرة المؤقتة')
+          break
+        }
+        await new Promise((r) => setTimeout(r, 100 * (attempt + 1)))
+      }
+    }
+  } else {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ deduplication (قد لا تكون مشتركة بين النسخ)')
+    } else {
+      console.warn('[redis] Using in-memory fallback for setNX (dev/test only) - dedup not shared across instances')
+    }
+  }
+  // Fallback للذاكرة — مسموح فقط في dev/test
+  const now = Date.now()
+  if (memoryStore.size > 5000) {
+    for (const [k, v] of memoryStore) {
+      if (v.expires < now) memoryStore.delete(k)
+      if (memoryStore.size <= 4000) break
+    }
+    if (memoryStore.size > 8000) memoryStore.clear()
+  }
+  const entry = memoryStore.get(key)
+  if (entry && entry.expires >= now) return false
+  memoryStore.set(key, { value: '1', expires: now + ttlSeconds * 1000 })
+  return true
+}
+
 export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<number> {
-  if (redisClient) {
-    try {
-      const result = await redisClient.incr(key)
-      if (result === 1) await redisClient.expire(key, ttlSeconds)
-      return result
-    } catch (err) {
-      console.error('[redis] incr failed:', err)
+  if (hasRedis && redisClient) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await redisClient.incr(key)
+        if (result === 1) await redisClient.expire(key, ttlSeconds)
+        return result
+      } catch (err) {
+        console.error(`[redis] incr attempt ${attempt + 1}/3 failed:`, err)
+        if (attempt === 2) {
+          console.warn('[Redis] فشل Redis لـ rate-limit — التحويل للذاكرة المؤقتة')
+          break
+        }
+        await new Promise((r) => setTimeout(r, 100 * (attempt + 1)))
+      }
+    }
+  } else {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ rate-limit (قد لا تكون مشتركة بين النسخ)')
     }
   }
   const entry = memoryStore.get(key)

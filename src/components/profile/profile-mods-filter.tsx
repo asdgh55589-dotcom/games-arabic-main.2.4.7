@@ -18,11 +18,10 @@ type FilterKey = (typeof FILTERS)[number]['key']
 
 interface ProfileModsFilterProps {
   mods: ModSummary[]
-  accent: string
   loading?: boolean
 }
 
-export function ProfileModsFilter({ mods, accent, loading }: ProfileModsFilterProps) {
+export function ProfileModsFilter({ mods, loading }: ProfileModsFilterProps) {
   const [filter, setFilter] = useState<FilterKey>('all')
 
   const filteredMods = (() => {
@@ -32,9 +31,9 @@ export function ProfileModsFilter({ mods, accent, loading }: ProfileModsFilterPr
       case 'downloads':
         return [...mods].sort((a, b) => b.downloads - a.downloads)
       case 'review':
-        return mods.filter(m => (m as any).status === 'under_review')
+        return mods.filter(m => (m as any).workflowStatus === 'IN_REVIEW' || (m as any).status === 'under_review')
       case 'draft':
-        return mods.filter(m => (m as any).status === 'draft')
+        return mods.filter(m => (m as any).workflowStatus === 'DRAFT' || (m as any).status === 'draft')
       default:
         return mods
     }
@@ -85,10 +84,9 @@ export function ProfileModsFilter({ mods, accent, loading }: ProfileModsFilterPr
             onClick={() => setFilter(f.key)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               filter === f.key
-                ? 'text-white'
+                ? 'bg-primary text-white'
                 : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#222] hover:text-white'
             }`}
-            style={filter === f.key ? { backgroundColor: accent } : {}}
           >
             {f.label}
           </button>

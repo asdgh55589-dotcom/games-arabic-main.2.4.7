@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
-const PLATFORMS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4'] as const
+const PLATFORMS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4', 'PS5', 'X360', 'ANDROID'] as const
 const CATEGORIES = ['RPG', 'FPS', 'Strategy', 'Sandbox', 'Adventure', 'Simulation', 'Action', 'Fighting', 'Racing']
 
 export default function NewGamePage() {
@@ -49,7 +50,7 @@ export default function NewGamePage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحفظ')
+      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ')
       toast({ title: 'تم الحفظ', description: 'تم إنشاء اللعبة بنجاح' })
       router.push('/admin/games')
     } catch (err) {
@@ -107,18 +108,9 @@ export default function NewGamePage() {
             <Input type="number" value={releaseYear} onChange={(e) => setReleaseYear(Number(e.target.value))} />
           </div>
         </div>
-        <div>
-          <Label>رابط البانر *</Label>
-          <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." />
-        </div>
-        <div>
-          <Label>رابط الصورة المصغّرة *</Label>
-          <Input value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="https://..." />
-        </div>
-        <div>
-          <Label>رابط الشعار (اختياري)</Label>
-          <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
-        </div>
+        <ImageUpload bucket="mods" value={bannerUrl} onChange={setBannerUrl} label="البانر *" required hint="سحب وإفلات — أعلى جودة" folder="games/banners" />
+        <ImageUpload bucket="mods" value={thumbnailUrl} onChange={setThumbnailUrl} label="الصورة المصغّرة *" required hint="سحب وإفلات — أعلى جودة" folder="games/thumbnails" />
+        <ImageUpload bucket="mods" value={logoUrl} onChange={setLogoUrl} label="الشعار (اختياري)" hint="سحب وإفلات — أعلى جودة" folder="games/logos" />
         <div>
           <Label>الأقسام (افصل بينها بفاصلة)</Label>
           <Input

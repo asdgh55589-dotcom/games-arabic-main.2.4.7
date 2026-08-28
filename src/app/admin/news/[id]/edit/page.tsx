@@ -7,6 +7,7 @@ import { ArrowRight, Loader2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 
 interface NewsData {
@@ -55,13 +56,14 @@ export default function NewsEditPage() {
     fetch(`/api/admin/news/${id}`)
       .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
       .then((data) => {
-        const n = data.news
+        const n = data?.data ?? data?.news
+        if (!n) throw new Error('الخبر غير موجود')
         setNews(n)
-        setTitle(n.title); setSummary(n.summary); setContent(n.content)
-        setImageUrl(n.imageUrl); setLinkUrl(n.linkUrl || '')
-        setCategory(n.category); setType(n.type)
-        setIsSticky(n.isSticky); setIsAnimated(n.isAnimated); setVisible(n.visible)
-        setOrder(n.order)
+        setTitle(n.title ?? ''); setSummary(n.summary ?? ''); setContent(n.content ?? '')
+        setImageUrl(n.imageUrl ?? ''); setLinkUrl(n.linkUrl || '')
+        setCategory(n.category ?? 'general'); setType(n.type ?? 'ticker')
+        setIsSticky(Boolean(n.isSticky)); setIsAnimated(n.isAnimated !== false); setVisible(n.visible !== false)
+        setOrder(n.order ?? 0)
         setPublishAt(n.publishAt ? new Date(n.publishAt).toISOString().slice(0, 16) : '')
         setExpiresAt(n.expiresAt ? new Date(n.expiresAt).toISOString().slice(0, 16) : '')
       })
@@ -133,7 +135,7 @@ export default function NewsEditPage() {
           </div>
           <div><Label>الترتيب</Label><Input type="number" value={order} onChange={(e) => setOrder(Number(e.target.value))} /></div>
           <div className="sm:col-span-2"><Label>المحتوى (Markdown)</Label><textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono" rows={8} /></div>
-          <div><Label>صورة الخبر</Label><Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." /></div>
+          <div className="sm:col-span-2"><ImageUpload bucket="news" value={imageUrl} onChange={setImageUrl} label="صورة الخبر" hint="سحب وإفلات — أعلى جودة" folder="news" /></div>
           <div><Label>رابط خارجي</Label><Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." /></div>
           <div><Label>تاريخ النشر</Label><Input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} /></div>
           <div><Label>تاريخ الانتهاء</Label><Input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} /></div>

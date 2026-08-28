@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { serialize } from '@/lib/api-utils'
-import type { GameDetail, ApiError } from '@/lib/types'
+import { ok, notFound } from '@/lib/api-response'
 
 // GET /api/games/[slug] - get a single game by slug with its categories
 export async function GET(
@@ -18,11 +18,8 @@ export async function GET(
   })
 
   if (!game) {
-    return NextResponse.json<ApiError>(
-      { error: 'Game not found' },
-      { status: 404 }
-    )
+    return notFound('Game not found')
   }
 
-  return NextResponse.json<{ game: GameDetail }>({ game: serialize(game) })
+  return ok(serialize(game))
 }

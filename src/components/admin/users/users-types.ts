@@ -5,6 +5,8 @@ export interface UserItem {
   avatarUrl: string | null
   bio: string | null
   role: string
+  tier?: number | null
+  specialRoles?: string | null
   bannedUntil: string | null
   banStatus: string | null
   banReason: string | null

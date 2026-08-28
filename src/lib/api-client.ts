@@ -1,3 +1,4 @@
+// Updated for new API response format
 /**
  * Wrapper around `fetch` that:
  *  - Throws on non-2xx responses (so callers can use try/catch)
@@ -16,8 +17,8 @@ export async function apiFetch<T>(
   if (!res.ok) {
     let message = `HTTP ${res.status}`
     try {
-      const body = (await res.json()) as { error?: string }
-      if (body?.error) message = body.error
+      const body = (await res.json()) as { error?: { code?: string; message?: string; details?: unknown } }
+      if (body?.error?.message) message = body.error.message
     } catch {
       // Response body wasn't JSON — keep the default HTTP message
     }

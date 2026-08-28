@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ tier: string }>
@@ -28,10 +29,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     })
 
-    return NextResponse.json({ rule })
+    return ok({ rule })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
 
@@ -43,9 +43,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
     await db.tierRule.delete({ where: { tier } })
 
-    return NextResponse.json({ message: 'تم الحذف' })
+    return ok({ message: 'تم الحذف' })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

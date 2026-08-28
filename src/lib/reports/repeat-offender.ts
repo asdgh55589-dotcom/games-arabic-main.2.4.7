@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { NotificationType } from '@/lib/notifications/types'
+import { getUseCases } from '@/application/use-cases/factory'
+import { setTokenVersionCache } from '@/lib/token-version-cache'
 
 const ESCALATION_THRESHOLDS = [
   { level: 0, min: 0, max: 2, label: 'لا إجراء' },
@@ -45,32 +46,95 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
   // Only escalate — never de-escalate automatically
   if (newLevel <= currentLevel) return
 
+  // 🛡️ حماية المدراء والمالكين من الحظر التلقائي — تحقق مبكر يمنع أي escalate لمستخدم مميز
+  if (newLevel >= 2) {
+    try {
+      const privileged = await db.user.findUnique({
+        where: { id: targetUserId },
+        select: { role: true, username: true },
+      })
+      if (privileged && ['owner', 'manager', 'admin'].includes(privileged.role)) {
+        console.log(`[repeat-offender] تم تجاوز الحظر التلقائي للمستخدم المميز ${targetUserId} (الدور: ${privileged.role})`)
+        // سجل تجاوز للمراجعة اليدوية بدلاً من الحظر
+        await db.auditLog.create({
+          data: {
+            action: 'moderate',
+            entity: 'repeat_offender_skipped',
+            entityId: targetUserId,
+            details: JSON.stringify({
+              reason: 'محاولة حظر تلقائي لمستخدم مميز — يتطلب مراجعة يدوية',
+              role: privileged.role,
+              username: privileged.username,
+              previousLevel: currentLevel,
+              newLevel,
+              confirmedCount,
+            }),
+          },
+        })
+        // إشعار كبار الإدارة إن أمكن — نحاول إرسال تنبيه للمسؤولين
+        try {
+          const admins = await db.user.findMany({
+            where: { role: { in: ['owner', 'manager'] } },
+            select: { id: true },
+            take: 10,
+          })
+          if (admins.length > 0) {
+            const { getNotificationService } = await import('@/infrastructure/di/notification-container')
+            const { NotificationType, NotificationChannel } = await import('@/domain')
+            const service = getNotificationService()
+            for (const admin of admins) {
+              try {
+                await service.send({
+                  userId: admin.id,
+                  type: NotificationType.AdminReport,
+                  channels: [NotificationChannel.InApp],
+                  skipDeduplication: true,
+                  data: { targetUserId, reportCount: confirmedCount, attemptedLevel: newLevel },
+                  templateVariables: {
+                    targetTitle: privileged.username,
+                    reason: 'محاولة حظر تلقائي لمستخدم مميز — يتطلب مراجعة يدوية',
+                  },
+                })
+              } catch {}
+            }
+          }
+        } catch {}
+        return
+      }
+    } catch {}
+  }
+
   // Execute escalation action
   if (newLevel === 1) {
     // Level 1: Send warning notification
-    await db.notification.create({
-      data: {
-        userId: targetUserId,
-        type: NotificationType.AdminAction,
-        title: 'تنبيه — تكرار بلاغات',
-        message: 'تلقّت حسابك عدة بلاغات مؤكدة. يُرجى مراجعة محتواك.',
-      },
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoWarning.execute({
+        targetUserId,
+        reportId: 'repeat_offender',
+        reason: 'تكرار بلاغات مؤكدة',
+      })
+    } catch {}
   }
 
   if (newLevel === 2) {
-    // Level 2: Auto temp ban (7 days)
+    // Level 2: Auto temp ban (7 days) — مع إبطال الجلسات فوراً
     const bannedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-    await db.user.update({
+    const updatedUserLevel2 = await db.user.update({
       where: { id: targetUserId },
       data: {
         banStatus: 'banned_temp',
         bannedUntil,
         banReason: 'تكرار بلاغات مؤكدة — حظر تلقائي',
         bannedAt: new Date(),
+        tokenVersion: { increment: 1 },
       },
+      select: { tokenVersion: true },
     })
+    try {
+      await setTokenVersionCache(targetUserId, updatedUserLevel2.tokenVersion)
+    } catch {}
 
     await db.userAction.create({
       data: {
@@ -81,26 +145,32 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
       },
     })
 
-    await db.notification.create({
-      data: {
-        userId: targetUserId,
-        type: NotificationType.AdminAction,
-        title: 'تعليق مؤقت — حظر تلقائي',
-        message: 'تم تعليق حسابك مؤقتاً لمدة 7 أيام بسبب تكرار بلاغات مؤكدة ضد محتواك.',
-      },
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoBan.execute({
+        targetUserId,
+        reportId: 'repeat_offender',
+        banType: 'temp_ban',
+        durationDays: 7,
+      })
+    } catch {}
   }
 
   if (newLevel === 3) {
-    // Level 3: Auto permanent ban
-    await db.user.update({
+    // Level 3: Auto permanent ban — مع إبطال الجلسات فوراً
+    const updatedUserLevel3 = await db.user.update({
       where: { id: targetUserId },
       data: {
         banStatus: 'banned_perm',
         banReason: 'تكرار بلاغات مؤكدة — حظر دائم تلقائي',
         bannedAt: new Date(),
+        tokenVersion: { increment: 1 },
       },
+      select: { tokenVersion: true },
     })
+    try {
+      await setTokenVersionCache(targetUserId, updatedUserLevel3.tokenVersion)
+    } catch {}
 
     await db.userAction.create({
       data: {
@@ -110,14 +180,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
       },
     })
 
-    await db.notification.create({
-      data: {
-        userId: targetUserId,
-        type: NotificationType.AdminAction,
-        title: 'حظر دائم — حظر تلقائي',
-        message: 'تم حظر حسابك بشكل دائم بسبب تكرار بلاغات مؤكدة ضد محتواك.',
-      },
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoBan.execute({
+        targetUserId,
+        reportId: 'repeat_offender',
+        banType: 'perm_ban',
+      })
+    } catch {}
   }
 
   // Audit log

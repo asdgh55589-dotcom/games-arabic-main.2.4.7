@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { serialize } from '@/lib/api-utils'
-import type { AuthorModsResponse, ApiError } from '@/lib/types'
+import { ok, notFound } from '@/lib/api-response'
+import type { AuthorModsResponse } from '@/lib/types'
 
 // GET /api/authors/[username]/mods - list mods by author username
 export async function GET(
@@ -9,8 +10,8 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params
-  const user = await db.user.findUnique({
-    where: { username },
+  const user = await db.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
     include: {
       mods: {
         orderBy: { downloads: 'desc' },
@@ -24,16 +25,13 @@ export async function GET(
   })
 
   if (!user) {
-    return NextResponse.json<ApiError>(
-      { error: 'Author not found' },
-      { status: 404 }
-    )
+    return notFound('Author not found')
   }
 
   // Strip the email field from the response — it's PII we don't want exposed.
   const { email: _email, ...authorWithoutEmail } = user
 
-  return NextResponse.json<AuthorModsResponse>({
+  return ok<AuthorModsResponse>({
     author: authorWithoutEmail,
     mods: user.mods,
   })

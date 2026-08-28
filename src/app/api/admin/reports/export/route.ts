@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { internalError } from '@/lib/api-response'
 
 function escapeCSV(value: string | null | undefined): string {
   if (!value) return ''
@@ -84,6 +85,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[admin/reports/export GET] failed:', err)
-    return new Response('Failed', { status: 500 })
+    return internalError('Failed')
   }
 }

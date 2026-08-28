@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface AddUserModalProps {
   onClose: () => void
@@ -38,15 +39,16 @@ export function AddUserModal({ onClose, onSubmit }: AddUserModalProps) {
         </div>
         <div>
           <Label>الدور</Label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-          >
-            <option value="member">عضو</option>
-            <option value="moderator">مشرف</option>
-            <option value="admin">مدير</option>
-          </select>
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="h-10 w-full">
+              <SelectValue placeholder="اختر الدور" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="member">عضو</SelectItem>
+              <SelectItem value="moderator">مشرف</SelectItem>
+              <SelectItem value="admin">مدير</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex justify-end gap-2">

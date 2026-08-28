@@ -1,0 +1,305 @@
+/**
+ * lib/notifications/service.ts — خدمة الإشعارات متعددة القنوات
+ *
+ * تدعم الإشعارات عبر: داخل التطبيق، البريد الإلكتروني، Telegram
+ */
+
+import { db } from '../db'
+import { sendToChannel } from '../telegram-bot'
+import { NotificationType, type NotificationChannel, type NotificationEvent } from './types'
+
+/**
+ * إرسال إشعار عبر القنوات المتاحة
+ */
+export async function sendNotification(event: NotificationEvent): Promise<void> {
+  console.log(`[notification-service] Sending ${event.type} to ${event.recipients.length} recipients`)
+
+  for (const recipient of event.recipients) {
+    // Check user preferences
+    const preferences = await db.notificationPreference.findUnique({
+      where: { userId: recipient.userId },
+    })
+
+    // Determine which channels to use
+    const channels = determineChannels(recipient.channels, preferences, event.type)
+
+    // Create in-app notification
+    if (channels.includes('in_app')) {
+      await createInAppNotification(event, recipient.userId)
+    }
+
+    // Queue email
+    if (channels.includes('email')) {
+      await queueEmailNotification(event, recipient.userId)
+    }
+
+    // Queue Telegram
+    if (channels.includes('telegram')) {
+      await queueTelegramNotification(event, recipient.userId)
+    }
+  }
+}
+
+/**
+ * إنشاء إشعار داخل التطبيق
+ */
+async function createInAppNotification(
+  event: NotificationEvent,
+  userId: string
+): Promise<void> {
+  try {
+    const notification = await db.notification.create({
+      data: {
+        userId,
+        actorId: event.actorId,
+        type: event.type,
+        title: event.title,
+        message: event.message,
+        data: event.data || {},
+      },
+    })
+
+    // Create job for tracking
+    await db.notificationJob.create({
+      data: {
+        notificationId: notification.id,
+        channel: 'in_app',
+        status: 'sent',
+        processedAt: new Date(),
+      },
+    })
+  } catch (err) {
+    console.error('[notification-service] Failed to create in-app notification:', err)
+  }
+}
+
+/**
+ * إضافة إشعار بريد إلى قائمة الانتظار
+ */
+async function queueEmailNotification(
+  event: NotificationEvent,
+  userId: string
+): Promise<void> {
+  try {
+    const notification = await db.notification.create({
+      data: {
+        userId,
+        actorId: event.actorId,
+        type: event.type,
+        title: event.title,
+        message: event.message,
+        data: event.data || {},
+      },
+    })
+
+    await db.notificationJob.create({
+      data: {
+        notificationId: notification.id,
+        channel: 'email',
+        status: 'pending',
+      },
+    })
+  } catch (err) {
+    console.error('[notification-service] Failed to queue email:', err)
+  }
+}
+
+/**
+ * إضافة إشعار Telegram إلى قائمة الانتظار
+ */
+async function queueTelegramNotification(
+  event: NotificationEvent,
+  userId: string
+): Promise<void> {
+  try {
+    // Get user's Telegram info
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { telegramUrl: true, username: true },
+    })
+
+    if (!user?.telegramUrl) return
+
+    const notification = await db.notification.create({
+      data: {
+        userId,
+        actorId: event.actorId,
+        type: event.type,
+        title: event.title,
+        message: event.message,
+        data: event.data || {},
+      },
+    })
+
+    await db.notificationJob.create({
+      data: {
+        notificationId: notification.id,
+        channel: 'telegram',
+        status: 'pending',
+      },
+    })
+  } catch (err) {
+    console.error('[notification-service] Failed to queue Telegram:', err)
+  }
+}
+
+/**
+ * معالجة قائمة انتظار الإشعارات
+ */
+export async function processNotificationQueue(): Promise<void> {
+  const pendingJobs = await db.notificationJob.findMany({
+    where: {
+      status: 'pending',
+      channel: { in: ['email', 'telegram'] },
+    },
+    include: {
+      notification: {
+        include: { user: { select: { id: true, username: true, telegramUrl: true } } },
+      },
+    },
+    take: 20,
+  })
+
+  for (const job of pendingJobs) {
+    try {
+      await db.notificationJob.update({
+        where: { id: job.id },
+        data: { status: 'processing' },
+      })
+
+      if (job.channel === 'telegram') {
+        await processTelegramJob(job)
+      } else if (job.channel === 'email') {
+        await processEmailJob(job)
+      }
+
+      await db.notificationJob.update({
+        where: { id: job.id },
+        data: { status: 'sent', processedAt: new Date() },
+      })
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      const newAttempts = job.attempts + 1
+      await db.notificationJob.update({
+        where: { id: job.id },
+        data: {
+          status: newAttempts >= job.maxAttempts ? 'dead_letter' : 'pending',
+          attempts: newAttempts,
+          lastError: errorMsg,
+        },
+      })
+    }
+  }
+}
+
+/**
+ * معالجة إشعار Telegram
+ */
+async function processTelegramJob(job: any): Promise<void> {
+  const user = job.notification.user
+  if (!user?.telegramUrl) return
+
+  // Extract Telegram username from URL
+  const match = user.telegramUrl.match(/t\.me\/(\w+)/)
+  if (!match) return
+
+  const message = `🔔 ${job.notification.title}\n\n${job.notification.message}`
+  await sendToChannel(message)
+}
+
+/**
+ * معالجة إشعار بريد
+ */
+async function processEmailJob(job: any): Promise<void> {
+  // Email processing is handled by the existing email-service.ts
+  console.log(`[notification-service] Email job ${job.id} queued for email service`)
+}
+
+/**
+ * تحديد القنوات بناءً على تفضيلات المستخدم
+ */
+function determineChannels(
+  requestedChannels: NotificationChannel[],
+  preferences: any,
+  eventType: NotificationType
+): NotificationChannel[] {
+  if (!preferences) return requestedChannels
+
+  // Check quiet hours
+  if (preferences.quietHoursEnabled) {
+    const now = new Date()
+    const hour = now.getHours()
+    const start = parseInt(preferences.quietHoursStart || '22', 10)
+    const end = parseInt(preferences.quietHoursEnd || '8', 10)
+
+    if (start > end) {
+      // Overnight quiet hours
+      if (hour >= start || hour < end) {
+        return requestedChannels.filter((c) => c === 'in_app')
+      }
+    } else {
+      if (hour >= start && hour < end) {
+        return requestedChannels.filter((c) => c === 'in_app')
+      }
+    }
+  }
+
+  // Check type-specific preferences
+  const typePrefs = (preferences.typePreferences as Record<string, any>) || {}
+  const eventPrefs = typePrefs[eventType]
+
+  if (eventPrefs) {
+    return requestedChannels.filter((c) => eventPrefs[c] !== false)
+  }
+
+  return requestedChannels
+}
+
+/**
+ * إرسال إشعار workflow değişikliği
+ */
+export async function notifyWorkflowChange(params: {
+  modId: string
+  modName: string
+  fromStatus: string
+  toStatus: string
+  actorId: string
+  reason?: string
+}): Promise<void> {
+  const { modId, modName, fromStatus, toStatus, actorId, reason } = params
+
+  // Get mod author
+  const mod = await db.mod.findUnique({
+    where: { id: modId },
+    select: { authorId: true, teamRelation: { select: { name: true } } },
+  })
+
+  if (!mod) return
+
+  const STATUS_LABELS: Record<string, string> = {
+    DRAFT: 'مسودة',
+    IN_REVIEW: 'قيد المراجعة',
+    APPROVED: 'معتمد',
+    PUBLISHED: 'منشور',
+    ARCHIVED: 'مؤرشف',
+    REJECTED: 'مرفوض',
+  }
+
+  const typeMap: Record<string, NotificationType> = {
+    IN_REVIEW: NotificationType.ModSubmitted,
+    APPROVED: NotificationType.ModApproved,
+    REJECTED: NotificationType.ModRejected,
+    PUBLISHED: NotificationType.ModPublished,
+  }
+
+  await sendNotification({
+    type: typeMap[toStatus] || NotificationType.AdminAction,
+    title: `تحديث حالة: ${modName}`,
+    message: `تم تغيير حالة التعريب من "${STATUS_LABELS[fromStatus]}" إلى "${STATUS_LABELS[toStatus]}"${reason ? `\nالسبب: ${reason}` : ''}`,
+    data: { modId, modName, fromStatus, toStatus },
+    recipients: [
+      { userId: mod.authorId, channels: ['in_app', 'email'] },
+    ],
+    actorId,
+  })
+}

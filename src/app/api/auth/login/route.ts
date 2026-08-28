@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import {
   setRoleCookie,
@@ -10,24 +10,15 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { logAction } from '@/lib/audit'
-import { z } from 'zod'
-
-const loginSchema = z.object({
-  username: z.string().min(1, 'اسم المستخدم مطلوب').max(100).trim(),
-  password: z.string().min(1, 'كلمة المرور مطلوبة').max(200),
-})
+import { LoginSchema } from '@/lib/schemas'
+import { ok, validationFail, rateLimited, unauthorized, forbidden, internalError } from '@/lib/api-response'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME
   const email = process.env.OWNER_EMAIL
   const password = process.env.OWNER_PASSWORD
   if (!username || !email || !password) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('OWNER_USERNAME, OWNER_EMAIL, OWNER_PASSWORD must be set in production')
-    }
-    // في وضع التطوير، نستخدم قيم افتراضية مع تحذير
-    console.warn('[auth/login] OWNER_USERNAME/OWNER_EMAIL/OWNER_PASSWORD not set — using dev defaults')
-    return { username: username || 'owner', email: email || 'owner@localhost', password: password || 'owner123' }
+    throw new Error('OWNER_USERNAME, OWNER_EMAIL, OWNER_PASSWORD must be set — configure env vars')
   }
   return { username, email, password }
 }
@@ -77,29 +68,16 @@ export async function POST(req: NextRequest) {
     await ensureOwnerExists()
 
     const body = await req.json().catch(() => ({}))
-    const parsed = loginSchema.safeParse(body)
+    const parsed = LoginSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'بيانات غير صحيحة' },
-        { status: 400 }
-      )
+      return validationFail(parsed.error.flatten())
     }
 
     const { username, password } = parsed.data
 
-    if (!username || !password) {
-      return NextResponse.json(
-        { error: 'اسم المستخدم وكلمة المرور مطلوبان' },
-        { status: 400 }
-      )
-    }
-
     const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:login' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح من محاولات الدخول. حاول مرة أخرى بعد دقيقة.' },
-        { status: 429, headers: rateLimitHeaders(rl) }
-      )
+      return rateLimited()
     }
 
     // البحث عن المستخدم في Neon DB للحصول على البريد الإلكتروني والدور
@@ -113,27 +91,21 @@ export async function POST(req: NextRequest) {
     })
 
     if (!neonUser || !neonUser.password) {
-      return NextResponse.json(
-        { error: 'بيانات الدخول غير صحيحة' },
-        { status: 401 }
-      )
+      return unauthorized('Invalid credentials')
     }
 
     // فحص الحظر قبل أي محاولة دخول
     const ban = getBanStatus(neonUser)
     if (ban.banned) {
       const msg = ban.type === 'perm'
-        ? 'تم حظر حسابك بشكل دائم.'
-        : `تم حظر حسابك مؤقتاً. ينتهي الحظر في ${neonUser.bannedUntil!.toLocaleDateString('ar')}`
-      return NextResponse.json({ error: msg }, { status: 403 })
+        ? 'Your account has been permanently banned.'
+        : `Your account has been temporarily banned. Ban expires on ${neonUser.bannedUntil!.toLocaleDateString('en')}`
+      return forbidden(msg)
     }
 
     // فحص الصلاحية BEFORE تسجيل الدخول — مش مسموح لـ member الدخول
     if (neonUser.role === 'member') {
-      return NextResponse.json(
-        { error: 'لا تملك صلاحية الوصول إلى لوحة التحكم' },
-        { status: 403 }
-      )
+      return forbidden('Insufficient permissions')
     }
 
     // تسجيل الدخول عبر Supabase Auth
@@ -149,10 +121,7 @@ export async function POST(req: NextRequest) {
 
       const supabaseId = await createSupabaseAuthUser(neonUser.email, password, neonUser.username)
       if (!supabaseId) {
-        return NextResponse.json(
-          { error: 'حسابك غير موجود في نظام المصادقة. يرجى إعداد مفتاح SUPABASE_SERVICE_ROLE_KEY أو إنشاء الحساب من لوحة تحكم Supabase.' },
-          { status: 401 }
-        )
+        return unauthorized('Account not found in auth system')
       }
 
       // ربط الحساب في Neon DB
@@ -170,10 +139,7 @@ export async function POST(req: NextRequest) {
       authError = retry.error
 
       if (authError || !authData.user) {
-        return NextResponse.json(
-          { error: 'فشل تسجيل الدخول بعد إنشاء الحساب. حاول مرة أخرى.' },
-          { status: 401 }
-        )
+        return unauthorized('Login failed after account creation')
       }
     }
 
@@ -203,7 +169,7 @@ export async function POST(req: NextRequest) {
       request: req,
     })
 
-    return NextResponse.json({
+    return ok({
       user: {
         id: neonUser.id,
         username: neonUser.username,
@@ -214,9 +180,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[auth/login] failed:', err)
-    return NextResponse.json(
-      { error: 'حدث خطأ أثناء تسجيل الدخول' },
-      { status: 500 }
-    )
+    return internalError('Login failed')
   }
 }

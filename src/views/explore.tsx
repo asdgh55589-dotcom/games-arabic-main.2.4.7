@@ -4,15 +4,18 @@ import Link from 'next/link'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Gamepad2, Monitor, Smartphone, Layers } from 'lucide-react'
+import { PLATFORM_COLORS } from '@/lib/constants/platforms'
 
-const PLATFORMS = [
-  { key: 'PC', label: 'PC ARABIC', desc: 'تعريبات ألعاب الحاسوب الشخصي', icon: Monitor, color: 'from-orange-500 to-amber-600' },
-  { key: 'X360', label: 'XBOX 360 ARABIC', desc: 'تعريبات ألعاب Xbox 360', icon: Gamepad2, color: 'from-green-500 to-green-700' },
-  { key: 'NS', label: 'NS ARABIC', desc: 'تعريبات ألعاب Nintendo Switch', icon: Smartphone, color: 'from-red-500 to-rose-600' },
-  { key: 'PS4', label: 'PS4 ARABIC', desc: 'تعريبات ألعاب PlayStation 4', icon: Gamepad2, color: 'from-blue-500 to-indigo-600' },
-  { key: 'PS3', label: 'PS3 ARABIC', desc: 'تعريبات ألعاب PlayStation 3', icon: Gamepad2, color: 'from-blue-700 to-blue-900' },
-  { key: 'PS2', label: 'PS2 ARABIC', desc: 'تعريبات ألعاب PlayStation 2', icon: Gamepad2, color: 'from-cyan-500 to-teal-600' },
-  { key: 'PS1', label: 'PS1 ARABIC', desc: 'تعريبات ألعاب PlayStation الأصلي', icon: Gamepad2, color: 'from-slate-400 to-slate-600' },
+const EXPLORE_PLATFORMS = [
+  { key: 'PC', label: 'PC ARABIC', desc: 'تعريبات ألعاب الحاسوب الشخصي', icon: Monitor, color: PLATFORM_COLORS.pc },
+  { key: 'X360', label: 'XBOX 360 ARABIC', desc: 'تعريبات ألعاب Xbox 360', icon: Gamepad2, color: PLATFORM_COLORS.xbox360 },
+  { key: 'NS', label: 'NS ARABIC', desc: 'تعريبات ألعاب Nintendo Switch', icon: Smartphone, color: PLATFORM_COLORS.switch },
+  { key: 'PS5', label: 'PS5 ARABIC', desc: 'تعريبات ألعاب PlayStation 5', icon: Gamepad2, color: PLATFORM_COLORS.ps5 },
+  { key: 'PS4', label: 'PS4 ARABIC', desc: 'تعريبات ألعاب PlayStation 4', icon: Gamepad2, color: PLATFORM_COLORS.ps4 },
+  { key: 'PS3', label: 'PS3 ARABIC', desc: 'تعريبات ألعاب PlayStation 3', icon: Gamepad2, color: PLATFORM_COLORS.ps3 },
+  { key: 'PS2', label: 'PS2 ARABIC', desc: 'تعريبات ألعاب PlayStation 2', icon: Gamepad2, color: PLATFORM_COLORS.ps2 },
+  { key: 'PS1', label: 'PS1 ARABIC', desc: 'تعريبات ألعاب PlayStation الأصلي', icon: Gamepad2, color: PLATFORM_COLORS.ps1 },
+  { key: 'ANDROID', label: 'ANDROID ARABIC', desc: 'تعريبات ألعاب الأندرويد', icon: Smartphone, color: PLATFORM_COLORS.android },
 ]
 
 export function ExplorePage() {
@@ -29,14 +32,14 @@ export function ExplorePage() {
       <section className="mb-10">
         <h2 className="mb-4 text-xl font-bold">أقسام المنصات</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PLATFORMS.map((p) => {
+          {EXPLORE_PLATFORMS.map((p) => {
             const Icon = p.icon
             return (
-              <Link key={p.key} href={`/?view=platform&platform=${p.key}`}>
+              <Link key={p.key} href={`/platform/${p.key}`}>
                 <Card className="group relative overflow-hidden p-5 transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${p.color} opacity-0 transition-opacity group-hover:opacity-10`} />
+                  <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-10" style={{ background: p.color }} />
                   <div className="relative flex items-center gap-4">
-                    <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${p.color} text-white shadow-lg`}>
+                    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-none text-white shadow-lg" style={{ backgroundColor: p.color }}>
                       <Icon className="h-7 w-7" />
                     </div>
                     <div>
@@ -54,9 +57,9 @@ export function ExplorePage() {
       {/* سلاسل التعريبات */}
       <section>
         <h2 className="mb-4 text-xl font-bold">سلاسل التعريبات</h2>
-        <Link href="/?view=series">
+        <Link href="/series">
           <Card className="group flex items-center gap-4 p-5 transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-none bg-gradient-to-br from-primary to-accent text-white shadow-lg">
               <Layers className="h-7 w-7" />
             </div>
             <div className="flex-1">

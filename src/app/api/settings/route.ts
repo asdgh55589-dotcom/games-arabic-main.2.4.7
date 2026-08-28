@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok } from '@/lib/api-response'
 
 const DEFAULTS: Record<string, string> = {
   site_name: 'GAMES ARABIC',
   site_description: 'منصة تعريب وأرشفة الألعاب في العالم العربي',
-  site_logo: '/logo.svg',
-  site_favicon: '/logo.svg',
+  site_logo: '/logo.png',
+  site_favicon: '/favicon.png',
   primary_color: '#eab308',
   dark_mode_default: 'true',
   meta_title: 'GAMES ARABIC — تعريب الألعاب',
@@ -31,8 +31,8 @@ export async function GET() {
     for (const row of rows) {
       settings[row.key] = row.value
     }
-    return NextResponse.json({ settings })
+    return ok({ settings })
   } catch {
-    return NextResponse.json({ settings: DEFAULTS })
+    return ok({ settings: DEFAULTS })
   }
 }

@@ -25,14 +25,22 @@ export function ReportStatsCards() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     fetch('/api/admin/reports/stats')
       .then((r) => {
         if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then(setStats)
-      .catch(() => {})
+      .then((data) => {
+        const payload = data?.data ?? data
+        setStats(payload)
+      })
+      .catch((err) => {
+        console.error('Failed to load report stats:', err)
+        setError('فشل تحميل الإحصائيات')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -48,6 +56,14 @@ export function ReportStatsCards() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="grid place-items-center rounded-lg border border-border bg-card/50 p-8 text-center">
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </div>
+    )
+  }
+
   if (!stats) return null
 
   return (
@@ -55,7 +71,7 @@ export function ReportStatsCards() {
       {CARDS.map((c) => (
         <div key={c.key} className={`rounded-lg border border-border p-4 ${c.bg}`}>
           <div className={`text-2xl font-bold ${c.color}`}>
-            {stats[c.key]}
+            {stats[c.key] ?? 0}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">{c.label}</div>
         </div>
@@ -64,7 +80,7 @@ export function ReportStatsCards() {
         <div className="flex items-center gap-1.5">
           <TrendingUp className="h-4 w-4 text-green-500" />
           <span className="text-2xl font-bold text-green-500">
-            {Math.round(stats.confirmationRate * 100)}%
+            {Math.round((stats.confirmationRate ?? 0) * 100)}%
           </span>
         </div>
         <div className="mt-1 text-xs text-muted-foreground">نسبة التأكيد</div>
@@ -73,7 +89,7 @@ export function ReportStatsCards() {
         <div className="flex items-center gap-1.5">
           <Clock className="h-4 w-4 text-purple-500" />
           <span className="text-2xl font-bold text-purple-500">
-            {stats.avgResolutionHours.toFixed(1)}h
+            {(stats.avgResolutionHours ?? 0).toFixed(1)}h
           </span>
         </div>
         <div className="mt-1 text-xs text-muted-foreground">متوسط وقت المعالجة</div>
@@ -81,7 +97,7 @@ export function ReportStatsCards() {
       <div className="rounded-lg border border-border bg-orange-500/10 p-4">
         <div className="flex items-center gap-1.5">
           <Hash className="h-4 w-4 text-orange-500" />
-          <span className="text-2xl font-bold text-orange-500">{stats.total}</span>
+          <span className="text-2xl font-bold text-orange-500">{stats.total ?? 0}</span>
         </div>
         <div className="mt-1 text-xs text-muted-foreground">الإجمالي</div>
       </div>

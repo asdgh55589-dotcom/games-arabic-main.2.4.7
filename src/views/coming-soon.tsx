@@ -20,10 +20,10 @@ export function ComingSoonPage({ title }: { title: string }) {
       </p>
       <div className="mt-8 flex justify-center gap-3">
         <Button asChild>
-          <Link href="/?view=games">Browse Games</Link>
+          <Link href="/games">Browse Games</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/?view=mods&sort=downloads">Trending Mods</Link>
+          <Link href="/">Trending Mods</Link>
         </Button>
       </div>
     </div>

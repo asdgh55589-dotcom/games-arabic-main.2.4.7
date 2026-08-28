@@ -2,6 +2,7 @@ import { Search } from 'lucide-react'
 
 import { AdminSurface } from '@/components/admin/admin-surface'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface UsersFiltersProps {
   search: string
@@ -30,31 +31,33 @@ export function UsersFilters({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ابحث بالاسم أو البريد..."
-            className="h-12 rounded-2xl border-white/10 bg-white/[0.03] pr-10"
+            className="h-10 rounded-md border border-border bg-background-secondary pr-10"
           />
         </div>
 
-        <select
-          value={roleFilter}
-          onChange={(e) => onRoleChange(e.target.value)}
-          className="h-12 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
-        >
-          <option value="all">كل الأدوار</option>
-          <option value="owner">مالك</option>
-          <option value="admin">مدير</option>
-          <option value="moderator">مشرف</option>
-          <option value="member">عضو</option>
-        </select>
+        <Select value={roleFilter} onValueChange={onRoleChange}>
+          <SelectTrigger className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+            <SelectValue placeholder="كل الأدوار" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الأدوار</SelectItem>
+            <SelectItem value="owner">مالك</SelectItem>
+            <SelectItem value="admin">مدير</SelectItem>
+            <SelectItem value="moderator">مشرف</SelectItem>
+            <SelectItem value="member">عضو</SelectItem>
+          </SelectContent>
+        </Select>
 
-        <select
-          value={bannedFilter}
-          onChange={(e) => onBannedChange(e.target.value)}
-          className="h-12 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white"
-        >
-          <option value="all">الكل</option>
-          <option value="active">نشط</option>
-          <option value="banned">محظور</option>
-        </select>
+        <Select value={bannedFilter} onValueChange={onBannedChange}>
+          <SelectTrigger className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+            <SelectValue placeholder="الكل" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="active">نشط</SelectItem>
+            <SelectItem value="banned">محظور</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </AdminSurface>
   )

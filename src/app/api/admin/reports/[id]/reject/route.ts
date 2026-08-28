@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
-import { sendReportRejectedEmail } from '@/lib/notifications/email-service'
+import { checkReporterStrikes } from '@/lib/reports/reporter-strike'
+import { getUseCases } from '@/application/use-cases/factory'
+import { logAction } from '@/lib/audit'
+import { ok, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -10,7 +13,7 @@ interface RouteParams {
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    await requireModerator()
+    const moderator = await requireModerator()
     const { id } = await params
     const body = await req.json()
     const { resolution } = body
@@ -20,8 +23,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       select: { id: true, status: true, reporterId: true, targetType: true, reason: true },
     })
     if (!report) {
-      return NextResponse.json({ error: 'البلاغ غير موجود' }, { status: 404 })
+      return notFound('البلاغ غير موجود')
     }
+
+    const previousStatus = report.status
 
     await db.report.update({
       where: { id },
@@ -32,38 +37,56 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    // Phase 2: Update trust scores
+    // Record status transition
+    await db.reportStatusHistory.create({
+      data: {
+        reportId: id,
+        fromStatus: previousStatus,
+        toStatus: 'rejected',
+        action: null,
+        resolution: resolution || 'البلاغ غير مبرر',
+        actorId: moderator.id,
+      },
+    })
+
+    // Audit log
+    await logAction({
+      userId: moderator.id,
+      username: moderator.username,
+      action: 'report_rejected',
+      entity: 'report',
+      entityId: id,
+      details: JSON.stringify({ resolution: resolution || 'البلاغ غير مبرر', fromStatus: previousStatus }),
+      request: req,
+    })
+
+    // Phase 2: Update trust scores + فحص عقوبات المُبلّغ الكيدي
     if (report.reporterId) {
       await recalculateTrustScore(report.reporterId)
+      await checkReporterStrikes(report.reporterId).catch((err) =>
+        console.error('[reject] checkReporterStrikes failed:', err)
+      )
     }
 
-    // Phase 2: Send email notification to reporter
+    // Send notification via use case (replaces email + direct db.notification.create)
     if (report.reporterId) {
-      const reporter = await db.user.findUnique({ where: { id: report.reporterId }, select: { email: true } })
-      if (reporter?.email) {
-        await sendReportRejectedEmail(reporter.email, {
-          reason: report.reason,
+      try {
+        const useCases = getUseCases()
+        await useCases.sendReportRejected.execute({
+          reporterId: report.reporterId,
+          reportId: id,
           targetType: report.targetType,
+          targetTitle: id,
+          reason: report.reason,
           resolution: resolution || 'البلاغ غير مبرر',
+          moderatorId: moderator.id,
         })
-      }
+      } catch {}
     }
 
-    // Existing: Notify reporter via realtime
-    if (report.reporterId) {
-      await db.notification.create({
-        data: {
-          userId: report.reporterId,
-          type: 'admin_action',
-          title: 'نتيجة مراجعة البلاغ',
-          message: 'تمت مراجعة بلاغك. لم نجد مخالفة في المحتوى المُبلَّغ.',
-        },
-      })
-    }
-
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/reports/[id]/reject POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

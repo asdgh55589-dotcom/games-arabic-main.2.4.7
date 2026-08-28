@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -18,14 +19,28 @@ import {
   AlertCircle,
   ExternalLink,
   CheckCircle2,
+  Eye,
+  ThumbsUp,
+  MessageSquare,
+  Clock,
+  Calendar,
+  Youtube,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
+import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
+import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
+import { VersionHistory } from '@/components/admin/mods/version-history'
+import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { formatNumber, formatArabicDate } from '@/lib/format'
+import { ImageCropper } from '@/components/admin/image-cropper'
+import { ImageUpload } from '@/components/admin/image-upload'
 
 // ===== Types =====
 interface FileLink { url: string; label?: string }
@@ -64,6 +79,7 @@ interface VideoItem {
   likes?: number
   commentsCount?: number
   channel?: string
+  publishedAt?: string | null
 }
 interface VideoGroup {
   id?: string
@@ -102,7 +118,7 @@ const EMPTY_FILE: DownloadFile = {
 }
 const EMPTY_MEMBER: TeamMember = { name: '', avatarUrl: '', role: 'مترجم', contribution: '' }
 const EMPTY_CONTACT: ContactLink = { type: 'website', label: '', url: '' }
-const EMPTY_VIDEO: VideoItem = { title: '', url: '', thumbnail: '', duration: '', description: '', views: 0, likes: 0, commentsCount: 0, channel: '' }
+const EMPTY_VIDEO: VideoItem = { title: '', url: '', thumbnail: '', duration: '', description: '', views: 0, likes: 0, commentsCount: 0, channel: '', publishedAt: null }
 const EMPTY_GROUP: VideoGroup = { name: '', videos: [] }
 const EMPTY_TAB: CustomTab = { name: '', slug: '', content: '', visible: true }
 
@@ -115,6 +131,11 @@ export default function ModForm({ modId }: ModFormProps) {
   const [loadingMod, setLoadingMod] = useState(isEdit)
   const [games, setGames] = useState<Game[]>([])
   const [loadingGames, setLoadingGames] = useState(true)
+  const [workflowStatus, setWorkflowStatus] = useState('DRAFT')
+  const [workflowHistory, setWorkflowHistory] = useState<any[]>([])
+  const [versionHistory, setVersionHistory] = useState<any[]>([])
+  const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
+  const [userRole, setUserRole] = useState('member')
 
   // ===== Form state =====
   const [name, setName] = useState('')
@@ -123,6 +144,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [changelog, setChangelog] = useState('')
   const [installGuide, setInstallGuide] = useState('')
   const [arabicTitle, setArabicTitle] = useState('')
+  const [translationScope, setTranslationScope] = useState('')
   const [compatibility, setCompatibility] = useState('')
   const [tags, setTags] = useState('')
   const [series, setSeries] = useState('')
@@ -147,6 +169,10 @@ export default function ModForm({ modId }: ModFormProps) {
   const [videoGroups, setVideoGroups] = useState<VideoGroup[]>([])
   const [customTabs, setCustomTabs] = useState<CustomTab[]>([])
   const [fetchingVideoKey, setFetchingVideoKey] = useState<string | null>(null)
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [cropperImage, setCropperImage] = useState<string | null>(null)
+  const [cropperAspect, setCropperAspect] = useState(16 / 9)
+  const [cropperTarget, setCropperTarget] = useState<'imageUrl' | 'thumbnailUrl' | 'gallery' | null>(null)
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
 
@@ -155,8 +181,8 @@ export default function ModForm({ modId }: ModFormProps) {
     fetch('/api/games?sort=name&limit=100')
       .then((r) => r.json())
       .then((data) => {
-        if (data?.games) {
-          setGames(data.games.map((g: Game & { categories?: any }) => ({
+        if (data?.data) {
+          setGames(data.data.map((g: Game & { categories?: any }) => ({
             ...g,
             categories: g.categories || [],
           })))
@@ -173,8 +199,18 @@ export default function ModForm({ modId }: ModFormProps) {
       fetch('/api/teams').then((r) => r.json()),
     ])
       .then(([seriesData, teamsData]) => {
-        if (seriesData?.series) setExistingSeries(seriesData.series.map((s: any) => s.name))
-        if (teamsData?.teams) setExistingTeams(teamsData.teams.map((t: any) => t.name))
+        if (seriesData?.data) setExistingSeries(seriesData.data.map((s: any) => s.name))
+        if (teamsData?.data) setExistingTeams(teamsData.data.map((t: any) => t.name))
+      })
+      .catch(() => {})
+  }, [])
+
+  // جلب دور المستخدم
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.data?.role) setUserRole(data.data.role)
       })
       .catch(() => {})
   }, [])
@@ -185,14 +221,15 @@ export default function ModForm({ modId }: ModFormProps) {
     fetch(`/api/admin/mods/${modId}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (!data?.mod) return
-        const m = data.mod
+        if (!data?.data) return
+        const m = data.data
         setName(m.name || '')
         setSummary(m.summary || '')
         setDescription(m.description || '')
         setChangelog(m.changelog || '')
         setInstallGuide((m as any).installGuide || '')
         setArabicTitle(m.arabicTitle || '')
+        setTranslationScope((m as any).translationScope || '')
         setCompatibility(m.compatibility || '')
         setTags(m.tags || '')
         setSeries(m.series || '')
@@ -210,6 +247,9 @@ export default function ModForm({ modId }: ModFormProps) {
         setIsFeatured(m.isFeatured || false)
         setIsTrending(m.isTrending || false)
         setIsLatest(m.isLatest !== false)
+        setWorkflowStatus(m.workflowStatus || 'DRAFT')
+        setWorkflowHistory(m.workflowHistory || [])
+        setVersionHistory(m.versionHistory || [])
 
         setFiles(m.files?.length ? m.files.map((f: any) => ({
           id: f.id,
@@ -231,8 +271,8 @@ export default function ModForm({ modId }: ModFormProps) {
         setVideoGroups(m.videoGroups?.map((g: any) => ({
           id: g.id, name: g.name, videos: g.videos?.map((v: any) => ({
             id: v.id, title: v.title, url: v.url, thumbnail: v.thumbnail || '',
-            duration: v.duration || '', views: v.views || 0, likes: v.likes || 0,
-            commentsCount: v.commentsCount || 0, channel: v.channel || '',
+            duration: v.duration || '', description: v.description || '', views: v.views || 0, likes: v.likes || 0,
+            commentsCount: v.commentsCount || 0, channel: v.channel || '', publishedAt: v.publishedAt || null,
           })) || [],
         })) || [])
         setCustomTabs(m.customTabs?.map((t: any) => ({
@@ -279,7 +319,7 @@ export default function ModForm({ modId }: ModFormProps) {
         body: JSON.stringify({ url: videoUrl }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الجلب')
+      if (!res.ok) throw new Error(data?.error?.message || 'فشل الجلب')
 
       setVideoGroups((prev) => prev.map((g, gi) => {
         if (gi !== groupIdx) return g
@@ -297,6 +337,7 @@ export default function ModForm({ modId }: ModFormProps) {
               views: data.views || v.views,
               likes: data.likes || v.likes,
               commentsCount: data.commentsCount || v.commentsCount,
+              publishedAt: data.publishedAt || v.publishedAt,
             }
           }),
         }
@@ -312,6 +353,38 @@ export default function ModForm({ modId }: ModFormProps) {
     } finally {
       setFetchingVideoKey(null)
     }
+  }
+
+  // ===== Image Cropping =====
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>, target: 'imageUrl' | 'thumbnailUrl' | 'gallery', aspect: number) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropperImage(reader.result as string)
+      setCropperAspect(aspect)
+      setCropperTarget(target)
+      setCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const handleCropComplete = (croppedImage: string) => {
+    if (cropperTarget === 'imageUrl') setImageUrl(croppedImage)
+    else if (cropperTarget === 'thumbnailUrl') setThumbnailUrl(croppedImage)
+    else if (cropperTarget === 'gallery') setGalleryUrls((prev) => [...prev, croppedImage])
+  }
+
+  const handleUrlCrop = (url: string, target: 'imageUrl' | 'thumbnailUrl', aspect: number) => {
+    if (!url) {
+      toast({ title: 'لا يوجد رابط صورة', variant: 'destructive' })
+      return
+    }
+    setCropperImage(url)
+    setCropperAspect(aspect)
+    setCropperTarget(target)
+    setCropperOpen(true)
   }
 
   // ===== Save =====
@@ -336,7 +409,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
     setSaving(true)
     const payload = {
-      name: _name, summary: _summary, description: _description, changelog, installGuide, arabicTitle, compatibility,
+      name: _name, summary: _summary, description: _description, changelog, installGuide, arabicTitle, translationScope, compatibility,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       series, translationTeam, translationType,
       gameId: _gameId, categoryId: categoryId || null,
@@ -366,7 +439,7 @@ export default function ModForm({ modId }: ModFormProps) {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحفظ')
+      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ')
 
       toast({ title: 'تم الحفظ', description: isEdit ? 'تم تحديث التعريب' : 'تم نشر التعريب بنجاح' })
       router.push('/admin/mods')
@@ -398,6 +471,7 @@ export default function ModForm({ modId }: ModFormProps) {
           <Link href="/admin/mods" className="hover:text-foreground">التعريبات</Link>
           <ChevronRight className="h-4 w-4 rotate-180" />
           <span className="text-foreground">{isEdit ? 'تعديل تعريب' : 'تعريب جديد'}</span>
+          {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ml-2" />}
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -410,6 +484,25 @@ export default function ModForm({ modId }: ModFormProps) {
         </div>
       </div>
 
+      {/* أزرار تغيير الحالة */}
+      {isEdit && (
+        <WorkflowActions
+          modId={modId!}
+          currentStatus={workflowStatus}
+          userRole={userRole}
+          onStatusChange={(newStatus) => {
+            setWorkflowStatus(newStatus)
+            // إعادة تحميل سجل التاريخ
+            fetch(`/api/admin/mods/${modId}/workflow`)
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => {
+                if (data?.data) setWorkflowHistory(data.data)
+              })
+              .catch(() => {})
+          }}
+        />
+      )}
+
       {/* ===== 1. المعلومات الأساسية ===== */}
       <Section title="المعلومات الأساسية">
         <Field label="اسم التعريب *" required>
@@ -417,6 +510,9 @@ export default function ModForm({ modId }: ModFormProps) {
         </Field>
         <Field label="الاسم بالعربي">
           <Input value={arabicTitle} onChange={(e) => setArabicTitle(e.target.value)} placeholder="مثال: باتش سكايرم غير الرسمي" />
+        </Field>
+        <Field label="نطاق التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
+          <Input value={translationScope} onChange={(e) => setTranslationScope(e.target.value)} placeholder="مثال: العالم العربي" />
         </Field>
         <Field label="الوصف المختصر *" required>
           <Input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="جملة واحدة تصف التعريب" maxLength={200} />
@@ -451,32 +547,58 @@ export default function ModForm({ modId }: ModFormProps) {
         </div>
       </Section>
 
-      {/* ===== 2. الصور ===== */}
+      {/* ===== 2. الصور — Supabase Storage (mods bucket) + قص اختياري ===== */}
       <Section title="الصور">
-        <Field label="الصورة الرئيسية (Banner) *" required>
-          <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+        <ImageUpload bucket="mods" value={imageUrl} onChange={setImageUrl} label="الصورة الرئيسية (Banner) *" required hint="سحب وإفلات أو رفع — 16:9 — أعلى جودة" folder="banners" />
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageFileSelect(e, 'imageUrl', 16 / 9)} />
+            قص متقدم (16:9)
+          </label>
           {imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="mt-2 h-32 w-full rounded-md object-cover" />
+            <Button size="sm" variant="outline" className="h-7 text-xs min-h-[44px]" onClick={() => handleUrlCrop(imageUrl, 'imageUrl', 16 / 9)}>
+              قص الرابط الحالي
+            </Button>
           )}
-        </Field>
-        <Field label="الصورة المصغّرة (Thumbnail) *" required>
-          <Input value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="https://..." />
+        </div>
+        <ImageUpload bucket="mods" value={thumbnailUrl} onChange={setThumbnailUrl} label="الصورة المصغّرة (Thumbnail) *" required hint="سحب وإفلات أو رفع — 1:1 — أعلى جودة" folder="thumbnails" />
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageFileSelect(e, 'thumbnailUrl', 1)} />
+            قص متقدم (1:1)
+          </label>
           {thumbnailUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumbnailUrl} alt="" className="mt-2 h-24 w-32 rounded-md object-cover" />
+            <Button size="sm" variant="outline" className="h-7 text-xs min-h-[44px]" onClick={() => handleUrlCrop(thumbnailUrl, 'thumbnailUrl', 1)}>
+              قص الرابط الحالي
+            </Button>
           )}
-        </Field>
-        <Field label="معرض الصور" hint="رابط واحد لكل سطر">
-          <Textarea
-            value={galleryUrls.join('\n')}
-            onChange={(e) => setGalleryUrls(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
-            rows={4}
-            placeholder="https://..."
-          />
+        </div>
+        <ImageUpload bucket="mods" values={galleryUrls} onValuesChange={setGalleryUrls} multiple label="معرض الصور" hint="سحب متعدد — يرفع كل صورة لأعلى جودة — 4:3" folder="gallery" />
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageFileSelect(e, 'gallery', 4 / 3)} />
+            قص متقدم للمعرض (4:3)
+          </label>
           <p className="text-xs text-muted-foreground">{galleryUrls.length} صورة</p>
-        </Field>
+        </div>
       </Section>
+
+      {cropperImage && (
+        <ImageCropper
+          image={cropperImage}
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          onCropComplete={handleCropComplete}
+          aspectRatio={cropperAspect}
+          title={
+            cropperTarget === 'imageUrl'
+              ? 'قص الصورة الرئيسية (16:9)'
+              : cropperTarget === 'thumbnailUrl'
+                ? 'قص الصورة المصغّرة (1:1)'
+                : 'قص صورة المعرض (4:3)'
+          }
+        />
+      )}
 
       {/* ===== 3. معلومات الملف الأساسية ===== */}
       <Section title="معلومات الملف الأساسية">
@@ -553,7 +675,7 @@ export default function ModForm({ modId }: ModFormProps) {
         title="ملفات التحميل"
         icon={<FileArchive className="h-4 w-4" />}
         action={
-          <Button size="sm" variant="outline" onClick={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}>
+          <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}>
             <Plus className="ml-1 h-4 w-4" /> إضافة ملف
           </Button>
         }
@@ -566,7 +688,7 @@ export default function ModForm({ modId }: ModFormProps) {
               <div key={i} className="rounded-lg border border-border bg-card/40 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-bold">ملف #{i + 1}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400" onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]" onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))} aria-label="إجراء">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -604,7 +726,7 @@ export default function ModForm({ modId }: ModFormProps) {
                 <div className="mt-3">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground">روابط التحميل</span>
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => setFiles((p) => p.map((f, idx) => idx === i ? { ...f, links: [...f.links, { url: '', label: '' }] } : f))}>
+                    <Button size="sm" variant="ghost" className="h-7 min-h-[44px]" onClick={() => setFiles((p) => p.map((f, idx) => idx === i ? { ...f, links: [...f.links, { url: '', label: '' }] } : f))}>
                       <Plus className="ml-1 h-3 w-3" /> إضافة رابط
                     </Button>
                   </div>
@@ -625,7 +747,7 @@ export default function ModForm({ modId }: ModFormProps) {
                             placeholder="https://..."
                             className="flex-1"
                           />
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 shrink-0" onClick={() => setFiles((p) => p.map((f, idx) => idx === i ? { ...f, links: f.links.filter((_, lidx) => lidx !== j) } : f))}>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 shrink-0 min-h-[44px] min-w-[44px]" onClick={() => setFiles((p) => p.map((f, idx) => idx === i ? { ...f, links: f.links.filter((_, lidx) => lidx !== j) } : f))} aria-label="إجراء">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -644,7 +766,7 @@ export default function ModForm({ modId }: ModFormProps) {
         title="فريق التعريب"
         icon={<Users className="h-4 w-4" />}
         action={
-          <Button size="sm" variant="outline" onClick={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}>
+          <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}>
             <Plus className="ml-1 h-4 w-4" /> إضافة عضو
           </Button>
         }
@@ -668,7 +790,7 @@ export default function ModForm({ modId }: ModFormProps) {
                   <Input value={m.contribution} onChange={(e) => setTeamMembers((p) => p.map((mm, idx) => idx === i ? { ...mm, contribution: e.target.value } : mm))} />
                 </Field>
                 <div className="sm:col-span-4 flex justify-end">
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400" onClick={() => setTeamMembers((p) => p.filter((_, idx) => idx !== i))}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]" onClick={() => setTeamMembers((p) => p.filter((_, idx) => idx !== i))} aria-label="إجراء">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -683,7 +805,7 @@ export default function ModForm({ modId }: ModFormProps) {
             <h3 className="flex items-center gap-2 text-sm font-bold">
               <Mail className="h-4 w-4" /> روابط التواصل
             </h3>
-            <Button size="sm" variant="outline" onClick={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}>
+            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}>
               <Plus className="ml-1 h-4 w-4" /> إضافة رابط
             </Button>
           </div>
@@ -707,7 +829,7 @@ export default function ModForm({ modId }: ModFormProps) {
                   </select>
                   <Input value={c.label} onChange={(e) => setContactLinks((p) => p.map((cc, idx) => idx === i ? { ...cc, label: e.target.value } : cc))} placeholder="التسمية" />
                   <Input value={c.url} onChange={(e) => setContactLinks((p) => p.map((cc, idx) => idx === i ? { ...cc, url: e.target.value } : cc))} placeholder="https://..." />
-                  <Button size="icon" variant="ghost" className="h-10 w-10 text-red-400" onClick={() => setContactLinks((p) => p.filter((_, idx) => idx !== i))}>
+                  <Button size="icon" variant="ghost" className="h-10 w-10 text-red-400 min-h-[44px] min-w-[44px]" onClick={() => setContactLinks((p) => p.filter((_, idx) => idx !== i))} aria-label="إجراء">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -722,12 +844,12 @@ export default function ModForm({ modId }: ModFormProps) {
         title="الفيديوهات"
         icon={<Video className="h-4 w-4" />}
         action={
-          <Button size="sm" variant="outline" onClick={() => setVideoGroups((p) => [...p, { ...EMPTY_GROUP }])}>
+          <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setVideoGroups((p) => [...p, { ...EMPTY_GROUP }])}>
             <Plus className="ml-1 h-4 w-4" /> إضافة قسم
           </Button>
         }
       >
-        <p className="text-xs text-muted-foreground mb-3">الصق رابط يوتيوب وسيتم جلب العنوان والقناة والمشاهدة والتعليقات تلقائياً.</p>
+        <p className="text-xs text-muted-foreground mb-3">الصق رابط يوتيوب فقط — وسيتم جلب كل البيانات تلقائياً (العنوان، الوصف، القناة، المشاهدات، الإعجابات، التعليقات، المدة، تاريخ النشر، والصورة المصغّرة).</p>
         {videoGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground">لا توجد أقسام فيديوهات.</p>
         ) : (
@@ -741,7 +863,7 @@ export default function ModForm({ modId }: ModFormProps) {
                     placeholder="اسم القسم (مثال: فيديوهات شرح التركيب)"
                     className="flex-1 font-medium"
                   />
-                  <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400" onClick={() => setVideoGroups((p) => p.filter((_, idx) => idx !== i))}>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 min-h-[44px] min-w-[44px]" onClick={() => setVideoGroups((p) => p.filter((_, idx) => idx !== i))} aria-label="إجراء">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -776,49 +898,67 @@ export default function ModForm({ modId }: ModFormProps) {
                             variant="outline"
                             onClick={() => onFetchVideoMetadata(i, j, v.url)}
                             disabled={isFetching || !v.url.trim()}
-                            className="shrink-0"
+                            className="shrink-0 min-h-[44px]"
                           >
                             {isFetching ? <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="ml-1 h-3.5 w-3.5" />}
-                            جلب البيانات
+                            {hasFetched ? 'تحديث البيانات' : 'جلب البيانات'}
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 shrink-0" onClick={() => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.filter((_, vidx) => vidx !== j) } : g))}>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 shrink-0 min-h-[44px] min-w-[44px]" onClick={() => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.filter((_, vidx) => vidx !== j) } : g))} aria-label="إجراء">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        {/* البيانات المجلوبة — editable */}
+
+                        {/* معاينة البيانات المجلوبة — للقراءة فقط (تلقائية 100%) */}
                         {hasFetched && (
-                          <div className="space-y-2 rounded-md bg-secondary/30 p-2">
-                            <div className="flex items-center gap-1.5 text-xs text-green-500">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              <span>تم جلب البيانات من يوتيوب</span>
-                            </div>
-                            <Input
-                              value={v.title}
-                              onChange={(e) => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.map((vv, vidx) => vidx === j ? { ...vv, title: e.target.value } : vv) } : g))}
-                              placeholder="عنوان الفيديو"
-                              className="text-sm"
-                            />
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                              <Input value={v.channel || ''} readOnly className="text-xs opacity-70" placeholder="القناة" />
-                              <Input type="number" value={v.views || 0} onChange={(e) => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.map((vv, vidx) => vidx === j ? { ...vv, views: parseInt(e.target.value) || 0 } : vv) } : g))} placeholder="المشاهدات" className="text-xs" />
-                              <Input type="number" value={v.likes || 0} onChange={(e) => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.map((vv, vidx) => vidx === j ? { ...vv, likes: parseInt(e.target.value) || 0 } : vv) } : g))} placeholder="الإعجابات" className="text-xs" />
-                              <Input type="number" value={v.commentsCount || 0} onChange={(e) => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.map((vv, vidx) => vidx === j ? { ...vv, commentsCount: parseInt(e.target.value) || 0 } : vv) } : g))} placeholder="التعليقات" className="text-xs" />
+                          <div className="overflow-hidden rounded-lg border border-border/60 bg-secondary/20">
+                            <div className="flex gap-3 p-3">
+                              {/* الصورة المصغّرة */}
+                              <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-secondary sm:w-40">
+                                {v.thumbnail ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="grid h-full place-items-center">
+                                    <Youtube className="h-6 w-6 text-muted-foreground" />
+                                  </div>
+                                )}
+                                {v.duration && (
+                                  <span className="absolute bottom-1 left-1 rounded bg-black/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                    {v.duration}
+                                  </span>
+                                )}
+                              </div>
+                              {/* البيانات */}
+                              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                <div className="flex items-center gap-1.5 text-[11px] text-green-500">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  <span>تم الجلب تلقائياً من يوتيوب</span>
+                                </div>
+                                <h5 className="line-clamp-2 text-sm font-bold text-foreground">{v.title}</h5>
+                                {v.channel && (
+                                  <div className="text-xs text-muted-foreground">{v.channel}</div>
+                                )}
+                                <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                                  <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{formatNumber(v.views || 0)}</span>
+                                  <span className="flex items-center gap-1"><ThumbsUp className="h-3 w-3" />{formatNumber(v.likes || 0)}</span>
+                                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{formatNumber(v.commentsCount || 0)}</span>
+                                  {v.publishedAt && (
+                                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatArabicDate(v.publishedAt)}</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                             {v.description && (
-                              <Textarea
-                                value={v.description}
-                                onChange={(e) => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: g.videos.map((vv, vidx) => vidx === j ? { ...vv, description: e.target.value } : vv) } : g))}
-                                rows={2}
-                                placeholder="وصف الفيديو..."
-                                className="text-xs"
-                              />
+                              <div className="border-t border-border/50 px-3 py-2">
+                                <p className="line-clamp-2 whitespace-pre-line text-[11px] text-muted-foreground">{v.description}</p>
+                              </div>
                             )}
                           </div>
                         )}
                       </div>
                     )
                   })}
-                  <Button size="sm" variant="ghost" onClick={() => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: [...g.videos, { ...EMPTY_VIDEO }] } : g))}>
+                  <Button size="sm" className="min-h-[44px]" variant="ghost" onClick={() => setVideoGroups((p) => p.map((g, idx) => idx === i ? { ...g, videos: [...g.videos, { ...EMPTY_VIDEO }] } : g))}>
                     <Plus className="ml-1 h-3 w-3" /> إضافة فيديو
                   </Button>
                 </div>
@@ -833,7 +973,7 @@ export default function ModForm({ modId }: ModFormProps) {
         title="التبويبات المخصصة"
         icon={<LayoutPanelTop className="h-4 w-4" />}
         action={
-          <Button size="sm" variant="outline" onClick={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}>
+          <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}>
             <Plus className="ml-1 h-4 w-4" /> إضافة تبويب
           </Button>
         }
@@ -855,7 +995,7 @@ export default function ModForm({ modId }: ModFormProps) {
                     <input type="checkbox" checked={t.visible} onChange={(e) => setCustomTabs((p) => p.map((tt, idx) => idx === i ? { ...tt, visible: e.target.checked } : tt))} />
                     مرئي
                   </label>
-                  <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400" onClick={() => setCustomTabs((p) => p.filter((_, idx) => idx !== i))}>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 min-h-[44px] min-w-[44px]" onClick={() => setCustomTabs((p) => p.filter((_, idx) => idx !== i))} aria-label="إجراء">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -886,6 +1026,48 @@ export default function ModForm({ modId }: ModFormProps) {
       </Section>
 
       {/* أزرار سفلية */}
+      {/* سجل الإصدارات */}
+      {isEdit && (
+        <Section
+          title="الإصدارات"
+          icon={<FileArchive className="h-4 w-4" />}
+          action={
+            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setNewVersionDialogOpen(true)}>
+              <Plus className="ml-1 h-3.5 w-3.5" />
+              إصدار جديد
+            </Button>
+          }
+        >
+          <VersionHistory versions={versionHistory} />
+        </Section>
+      )}
+
+      {/* نافذة إصدار جديد */}
+      {isEdit && (
+        <NewVersionDialog
+          modId={modId!}
+          currentVersion={version}
+          open={newVersionDialogOpen}
+          onOpenChange={setNewVersionDialogOpen}
+          onCreated={() => {
+            // إعادة تحميل سجل الإصدارات
+            fetch(`/api/admin/mods/${modId}/versions`)
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => {
+                if (data?.data) setVersionHistory(data.data)
+              })
+              .catch(() => {})
+          }}
+        />
+      )}
+
+      {/* سجل تغييرات الحالة */}
+      {isEdit && workflowHistory.length > 0 && (
+        <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
+          <WorkflowHistory history={workflowHistory} />
+        </Section>
+      )}
+
       <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background/80 p-4 backdrop-blur">
         <Button asChild variant="outline">
           <Link href="/admin/mods">إلغاء</Link>

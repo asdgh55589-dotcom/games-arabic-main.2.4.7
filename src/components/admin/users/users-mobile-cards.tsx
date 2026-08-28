@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { AlertTriangle, Ban, CheckCircle, Eye, Key, Trash2 } from 'lucide-react'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
 import type { UserItem } from '@/components/admin/users/users-types'
 
@@ -25,7 +27,7 @@ export function UsersMobileCards({
   onDelete,
 }: UsersMobileCardsProps) {
   return (
-    <div className="space-y-4 p-4 xl:hidden">
+    <div className="space-y-3">
       {users.map((u) => {
         const role = ROLE_BADGE[u.role] || ROLE_BADGE.member
 
@@ -37,10 +39,11 @@ export function UsersMobileCards({
         const isBanned = Boolean(isPermBanned || isTempBanned)
 
         return (
-          <div
+          <Card
             key={u.id}
-            className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5"
+            className="overflow-hidden"
           >
+            <CardContent className="p-4">
             <div className="flex items-start gap-4">
               {u.avatarUrl && (
                 <img
@@ -80,9 +83,9 @@ export function UsersMobileCards({
                   )}
                 </div>
 
-                <p className="mt-2 text-sm text-white/45">{u.email}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{u.email}</p>
 
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/40">
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span>{u._count.mods} تعريب</span>
                   <span>•</span>
                   <span>{u._count.comments} تعليق</span>
@@ -93,7 +96,7 @@ export function UsersMobileCards({
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
                 href={`/admin/users/${u.id}`}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/65"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border bg-background-secondary px-3 py-2 text-sm font-medium text-muted-foreground"
               >
                 <Eye className="h-4 w-4" />
                 التفاصيل
@@ -102,7 +105,7 @@ export function UsersMobileCards({
               <Button
                 size="sm"
                 variant="outline"
-                className="rounded-xl border-white/10 bg-white/[0.03]"
+                className="min-h-[44px] rounded-md border border-border bg-background-secondary"
                 onClick={() => onPassword(u.id)}
               >
                 <Key className="ml-2 h-4 w-4" />
@@ -115,7 +118,7 @@ export function UsersMobileCards({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-xl border-green-500/20 bg-green-500/10 text-green-300 hover:bg-green-500/20"
+                      className="min-h-[44px] rounded-xl border-green-500/20 bg-green-500/10 text-green-300 hover:bg-green-500/20"
                       onClick={() => onUnban(u.id)}
                     >
                       <CheckCircle className="ml-2 h-4 w-4" />
@@ -125,7 +128,7 @@ export function UsersMobileCards({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-xl border-orange-500/20 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
+                      className="min-h-[44px] rounded-xl border-orange-500/20 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
                       onClick={() => onBan(u.id)}
                     >
                       <Ban className="ml-2 h-4 w-4" />
@@ -136,7 +139,7 @@ export function UsersMobileCards({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="rounded-xl border-yellow-500/20 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20"
+                    className="min-h-[44px] rounded-xl border-yellow-500/20 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20"
                     onClick={() => onWarn(u.id)}
                   >
                     <AlertTriangle className="ml-2 h-4 w-4" />
@@ -146,7 +149,7 @@ export function UsersMobileCards({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="rounded-xl border-red-500/20 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                    className="min-h-[44px] rounded-xl border-red-500/20 bg-red-500/10 text-red-300 hover:bg-red-500/20"
                     onClick={() => onDelete(u)}
                   >
                     <Trash2 className="ml-2 h-4 w-4" />
@@ -155,7 +158,8 @@ export function UsersMobileCards({
                 </>
               )}
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )
       })}
     </div>

@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
 import { slugify } from '@/lib/utils'
+import { ok, okPaginated, validationFail, internalError } from '@/lib/api-response'
+import { revalidatePath } from 'next/cache'
 
 // GET /api/admin/news — قائمة الأخبار
 export async function GET(req: NextRequest) {
@@ -23,11 +25,11 @@ export async function GET(req: NextRequest) {
       db.news.findMany({ where, orderBy: [{ order: 'asc' }, { publishAt: 'desc' }], skip: (page - 1) * limit, take: limit }),
     ])
 
-    return NextResponse.json({ news, total, page, totalPages: Math.ceil(total / limit) || 1 })
+    return okPaginated(news, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 })
   } catch (err) {
     console.error('[admin/news GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -37,11 +39,11 @@ export async function POST(req: NextRequest) {
     await requireModerator()
     const body = await req.json()
 
-    if (!body.title?.trim()) return NextResponse.json({ error: 'العنوان مطلوب' }, { status: 400 })
+    if (!body.title?.trim()) return validationFail({ title: 'العنوان مطلوب' })
 
     const slug = slugify(body.title)
     const existing = await db.news.findUnique({ where: { slug } })
-    if (existing) return NextResponse.json({ error: 'خبر بنفس العنوان موجود بالفعل' }, { status: 400 })
+    if (existing) return validationFail({ title: 'خبر بنفس العنوان موجود بالفعل' })
 
     const news = await db.news.create({
       data: {
@@ -62,10 +64,15 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ news }, { status: 201 })
+    // ISR: revalidate public pages after news creation
+    try {
+      revalidatePath('/')
+    } catch {}
+
+    return ok(news)
   } catch (err) {
     console.error('[admin/news POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

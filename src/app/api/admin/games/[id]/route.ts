@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
+import { revalidatePath } from 'next/cache'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -20,13 +22,12 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     })
     if (!game) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
+      return notFound('Game not found')
     }
-    return NextResponse.json({ game })
+    return ok(game)
   } catch (err) {
     console.error('[admin/games/[id] GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     const existing = await db.game.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
+      return notFound('Game not found')
     }
 
     const updateData: Record<string, unknown> = {}
@@ -71,11 +72,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     })
 
-    return NextResponse.json({ success: true })
+    // ISR: revalidate public pages after game update
+    try {
+      const gameSlug = updateData.slug || existing.slug
+      const gamePlatform = updateData.platform || existing.platform
+      revalidatePath('/')
+      revalidatePath('/games/' + gameSlug)
+      revalidatePath('/platform/' + gamePlatform)
+    } catch {}
+
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/games/[id] PUT] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to update game' }, { status })
+    return internalError('Failed to update game')
   }
 }
 
@@ -86,19 +95,18 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     const { id } = await params
 
     if (!canDelete(user)) {
-      return NextResponse.json({ error: 'Forbidden — only admins can delete games' }, { status: 403 })
+      return forbidden('Forbidden — only admins can delete games')
     }
 
     const existing = await db.game.findUnique({ where: { id }, select: { id: true } })
     if (!existing) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
+      return notFound('Game not found')
     }
 
     await db.game.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/games/[id] DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to delete game' }, { status })
+    return internalError('Failed to delete game')
   }
 }

@@ -1,18 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { PLATFORM_COLORS, type PlatformKey, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import type { ModSummary } from '@/lib/types'
 
-const PLATFORM_PALETTE: Record<string, string[]> = {
-  PC:   ['#0078D4', '#00A4EF', '#005A9E'],
-  X360: ['#107C10', '#2DC653', '#0E6B0E'],
-  NS:   ['#e60012', '#ef4444', '#dc2626'],
-  PS4:  ['#3b82f6', '#60a5fa', '#2563eb'],
-  PS3:  ['#1e40af', '#3b82f6', '#1d4ed8'],
-  PS2:  ['#06b6d4', '#0891b2', '#0e7490'],
-  PS1:  ['#94a3b8', '#cbd5e1', '#64748b'],
+/** Derive a 3-stop palette from a single brand color for hero gradients. */
+function derivePalette(hex: string): string[] {
+  return [hex, hex + 'cc', hex + '88']
 }
 
 const SLIDER_INTERVAL = 6000
@@ -75,7 +72,9 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   const slide = slides[active]
   const platform = slide.game?.platform || 'PC'
-  const palette = PLATFORM_PALETTE[platform] || PLATFORM_PALETTE.PC
+  const canonicalKey = PLATFORM_KEY_MAP[platform.toUpperCase()] || 'pc'
+  const brandColor = PLATFORM_COLORS[canonicalKey]
+  const palette = derivePalette(brandColor)
   const color = palette[active % palette.length]
   const meta = {
     label: `ARABIC ${platform}`,
@@ -98,17 +97,32 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute inset-0"
         >
-          <img src={slide.imageUrl} alt={slide.name} className="h-full w-full object-cover" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.55) 45%, rgba(10,10,10,0.05) 100%)',
+          <Image
+            src={slide.imageUrl}
+            alt={slide.name}
+            fill
+            priority
+            sizes="100vw"
+            quality={100}
+            className="object-cover"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = '1'
+                img.src = '/hero-bg.jpg'
+              }
             }}
           />
           <div
             className="absolute inset-0"
-            style={{ background: 'linear-gradient(to left, rgba(10,10,10,0.65) 0%, transparent 55%)' }}
+            style={{
+              background:
+                'linear-gradient(to top, var(--background) 0%, color-mix(in srgb, var(--background) 55%, transparent) 45%, color-mix(in srgb, var(--background) 5%, transparent) 100%)',
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(to left, color-mix(in srgb, var(--background) 65%, transparent) 0%, transparent 55%)' }}
           />
           <div
             className="absolute inset-0 pointer-events-none"
@@ -149,15 +163,15 @@ export function HeroSlider({ slides }: HeroSliderProps) {
                 {slide.name}
               </h2>
 
-              <p className="mb-5 text-sm font-semibold text-gray-300">
+              <p className="mb-5 text-sm font-semibold text-muted-foreground">
                 {slide.category?.name || slide.game?.name}
                 {slide.fileSize && <span className="mx-2 opacity-30">•</span>}
-                {slide.fileSize && <span className="text-gray-400">{slide.fileSize}</span>}
+                {slide.fileSize && <span className="text-muted-foreground/70">{slide.fileSize}</span>}
               </p>
 
               <a
-                href={`/?view=mod&slug=${slide.slug}`}
-                className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                href={`/mod/${slide.slug}`}
+                className="inline-flex items-center gap-2 rounded-none border-[2px] border-white/20 px-5 py-2.5 text-sm font-black shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
                   backgroundColor: meta.color,
                   color: '#fff',

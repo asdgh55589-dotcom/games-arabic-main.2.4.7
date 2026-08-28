@@ -1,7 +1,6 @@
 import { db } from '@/lib/db'
 import { Mod } from '@prisma/client'
-import { createNotification } from '@/lib/notification-helpers'
-import { NotificationType } from '@/lib/notifications/types'
+import { getUseCases } from '@/application/use-cases/factory'
 
 function calculateQualityScore(mods: Mod[]): number {
   if (mods.length === 0) return 0
@@ -80,13 +79,17 @@ export async function upgradeUser(userId: string, newTier: number, reason: 'auto
     0: 'مبتدئ', 1: 'مترجم', 2: 'محترف', 3: 'خبير', 4: 'مشرف', 5: 'مدير'
   }
 
-  await createNotification({
-    userId,
-    type: NotificationType.TierUpgrade,
-    title: 'تهنئة! ترقية لمستوى جديد',
-    message: `تم ترقيتك من ${tierNames[fromTier]} إلى ${tierNames[newTier]}`,
-    data: { fromTier, toTier: newTier, reason }
-  })
+  try {
+    const useCases = getUseCases()
+    await useCases.sendTierUpgrade.execute({
+      userId,
+      fromTier,
+      fromTierName: tierNames[fromTier] || `المستوى ${fromTier}`,
+      toTier: newTier,
+      toTierName: tierNames[newTier] || `المستوى ${newTier}`,
+      reason,
+    })
+  } catch {}
 }
 
 export async function revokeTier(userId: string, revokedBy: string, reason?: string) {

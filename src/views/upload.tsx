@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import { useState, useRef } from 'react'
@@ -38,8 +39,8 @@ export function UploadPage() {
   const modFileRef = useRef<HTMLInputElement>(null)
   const imageFileRef = useRef<HTMLInputElement>(null)
 
-  const { data: gamesData } = useFetch<{ games: GameSummary[] }>('/api/games?sort=name&limit=50')
-  const { data: gameData } = useFetch<{ game: GameDetail }>(gameSlug ? `/api/games/${gameSlug}` : null, [gameSlug])
+  const { data: gamesData } = useFetch<{ data: GameSummary[] }>('/api/games?sort=name&limit=50')
+  const { data: gameData } = useFetch<{ data: GameDetail }>(gameSlug ? `/api/games/${gameSlug}` : null, [gameSlug])
 
   const resetForm = () => {
     setName('')
@@ -65,7 +66,7 @@ export function UploadPage() {
       toast({ title: 'Missing mod file', description: 'Please select a mod archive to upload', variant: 'destructive' })
       return
     }
-    const game = gameData?.game
+    const game = gameData?.data
     if (!game) {
       toast({ title: 'Game not found', description: 'Please select a valid game', variant: 'destructive' })
       return
@@ -142,7 +143,7 @@ export function UploadPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-6">
-      <Button asChild variant="ghost" size="sm" className="mb-4">
+      <Button asChild variant="ghost" size="sm" className="mb-4 min-h-[44px]">
         <Link href="/"><ChevronLeft className="mr-1 h-4 w-4" /> Back</Link>
       </Button>
 
@@ -204,7 +205,7 @@ export function UploadPage() {
               <Select value={gameSlug} onValueChange={(v) => { setGameSlug(v); setCategory('') }}>
                 <SelectTrigger id="game-select"><SelectValue placeholder="Select a game" /></SelectTrigger>
                 <SelectContent>
-                  {gamesData?.games?.map((g) => (
+                  {gamesData?.data?.map((g) => (
                     <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -212,10 +213,10 @@ export function UploadPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="category-select">Category</Label>
-              <Select value={category} onValueChange={setCategory} disabled={!gameData?.game}>
+              <Select value={category} onValueChange={setCategory} disabled={!gameData?.data}>
                 <SelectTrigger id="category-select"><SelectValue placeholder="Select a category" /></SelectTrigger>
                 <SelectContent>
-                  {gameData?.game?.categories?.map((c) => (
+                  {gameData?.data?.categories?.map((c) => (
                     <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>

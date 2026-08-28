@@ -1,25 +1,18 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, notFound, unauthorized, internalError } from '@/lib/api-response'
 
 export async function GET() {
   try {
     console.time('[settings-bootstrap]')
 
-    const supabase = await createClient()
-
-    const {
-      data: { user: supabaseUser },
-    } = await supabase.auth.getUser()
-
-    if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const neonUser = await getOptionalSession()
+    if (!neonUser) {
+      return unauthorized()
     }
 
-    const neonUser = await db.user.findFirst({
-      where: {
-        OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
-      },
+    const user = await db.user.findFirst({
+      where: { id: neonUser.id },
       select: {
         id: true,
         username: true,
@@ -39,13 +32,29 @@ export async function GET() {
       },
     })
 
-    if (!neonUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user) {
+      return notFound()
     }
 
     const [notificationPreferences, settingsRows] = await Promise.all([
       db.notificationPreference.findUnique({
-        where: { userId: neonUser.id },
+        where: { userId: user.id },
+      }).then(async (pref) => {
+        if (!pref) {
+          return db.notificationPreference.create({
+            data: {
+              userId: user.id,
+              emailEnabled: true,
+              pushEnabled: true,
+              dailySummary: true,
+              summaryIntervalDays: 3,
+              likeThreshold: 25,
+              quietHoursEnabled: false,
+              typePreferences: {},
+            },
+          })
+        }
+        return pref
       }),
       db.siteSetting.findMany(),
     ])
@@ -58,9 +67,9 @@ export async function GET() {
 
     console.timeEnd('[settings-bootstrap]')
 
-    return NextResponse.json(
+    return ok(
       {
-        profile: neonUser,
+        profile: user,
         notifications: notificationPreferences,
         settings,
       },
@@ -72,6 +81,6 @@ export async function GET() {
     )
   } catch (error) {
     console.error('[settings-bootstrap] failed:', error)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

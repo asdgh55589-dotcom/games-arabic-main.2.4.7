@@ -1,7 +1,12 @@
 import { db } from '@/lib/db'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resend: Resend | null = null
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY)
+} else {
+  console.warn('[Resend] RESEND_API_KEY not configured — email sending disabled')
+}
 
 interface InactiveAlertData {
   inactiveUsers: Array<{
@@ -52,6 +57,11 @@ function generateAlertTemplate(data: InactiveAlertData): string {
 }
 
 export async function sendInactiveUserAlert(data: InactiveAlertData) {
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (sendInactiveUserAlert)')
+    return
+  }
+
   const admins = await db.user.findMany({
     where: { role: 'admin' }
   })

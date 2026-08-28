@@ -24,19 +24,46 @@ export function sanitizeUrl(url: string): string | null {
 /**
  * Sanitize HTML content for safe rendering via dangerouslySetInnerHTML.
  *
- * Uses DOMPurify for robust XSS protection — regex-based sanitization
- * is inherently bypassable.
+ * يستخدم sanitize-html (بديل آمن للإنتاج بدلاً من jsdom/DOMPurify)
+ * يوفر حماية XSS قوية بدون الاعتماد على jsdom الخارجي.
  */
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtml from 'sanitize-html'
 
 export function sanitizeHTML(html: string): string {
   if (!html) return ''
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'ul', 'ol', 'li',
+  return sanitizeHtml(html, {
+    allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'ul', 'ol', 'li',
       'a', 'img', 'strong', 'em', 'b', 'i', 'u', 's', 'code', 'pre', 'blockquote',
       'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span', 'sup', 'sub'],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height', 'class', 'style',
-      'target', 'rel', 'colspan', 'rowspan', 'align', 'valign'],
-    ALLOW_DATA_ATTR: false,
+    allowedAttributes: {
+      'a': ['href', 'target', 'rel', 'title'],
+      'img': ['src', 'alt', 'title', 'width', 'height'],
+      'table': ['colspan', 'rowspan', 'align', 'valign'],
+      'th': ['colspan', 'rowspan', 'align', 'valign'],
+      'td': ['colspan', 'rowspan', 'align', 'valign'],
+      'div': ['class', 'style'],
+      'span': ['class', 'style'],
+      '*': ['class'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'tel', 'data'],
+    allowedSchemesByTag: {
+      'img': ['http', 'https', 'data'],
+    },
+    transformTags: {
+      'a': (tagName, attribs) => {
+        // تأمين الروابط الخارجية — فتح في تبويب جديد مع حماية
+        if (attribs.href && !attribs.href.startsWith('/') && !attribs.href.startsWith('#') && !attribs.href.startsWith('mailto:') && !attribs.href.startsWith('tel:')) {
+          return {
+            tagName: 'a',
+            attribs: {
+              ...attribs,
+              target: '_blank',
+              rel: 'noopener noreferrer nofollow',
+            },
+          }
+        }
+        return { tagName, attribs }
+      },
+    },
   })
 }

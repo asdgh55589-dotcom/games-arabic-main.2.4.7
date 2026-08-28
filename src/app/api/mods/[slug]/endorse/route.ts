@@ -1,10 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
-import { getBanStatus } from '@/lib/auth'
+import { getOptionalSession } from '@/lib/auth'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
-import { checkEndorseMilestone } from '@/lib/notification-helpers'
-import type { EndorseResponse, ApiError } from '@/lib/types'
+import { getUseCases } from '@/application/use-cases/factory'
+import { ok, notFound, unauthorized, rateLimited, internalError } from '@/lib/api-response'
+import { clearHomeCache } from '@/lib/home-cache'
+
+// GET /api/mods/[slug]/endorse — check if current user has endorsed
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params
+  const user = await getOptionalSession()
+  if (!user) {
+    return ok({ endorsed: false })
+  }
+  const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+  if (!mod) {
+    return notFound('Mod not found')
+  }
+  const existing = await db.endorsement.findUnique({
+    where: { userId_modId: { userId: user.id, modId: mod.id } },
+  })
+  return ok({ endorsed: !!existing })
+}
 
 // POST /api/mods/[slug]/endorse - toggle endorsement
 //
@@ -19,31 +39,13 @@ export async function POST(
 
   const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'endorse' })
   if (!rl.success) {
-    return NextResponse.json<ApiError>(
-      { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقيقة.' },
-      { status: 429, headers: rateLimitHeaders(rl) }
-    )
+    return rateLimited()
   }
 
   try {
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json<ApiError>(
-        { error: 'سجّل الدخول للتأكيد' },
-        { status: 401 }
-      )
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json<ApiError>(
-        { error: 'المستخدم غير موجود' },
-        { status: 404 }
-      )
+      return unauthorized('Login required to endorse')
     }
 
     const userId = neonUser.id
@@ -71,6 +73,13 @@ export async function POST(
           data: { endorsements: { decrement: 1 } },
           select: { endorsements: true },
         })
+        // Cascade to Game/Series
+        if (mod.gameId) {
+          await tx.game.update({ where: { id: mod.gameId }, data: { totalEndorsements: { decrement: 1 } } }).catch(() => {})
+        }
+        if (mod.seriesId) {
+          await tx.series.update({ where: { id: mod.seriesId }, data: { totalEndorsements: { decrement: 1 } } }).catch(() => {})
+        }
         return {
           notFound: false as const,
           endorsed: false,
@@ -87,6 +96,13 @@ export async function POST(
           data: { endorsements: { increment: 1 } },
           select: { endorsements: true },
         })
+        // Cascade to Game/Series
+        if (mod.gameId) {
+          await tx.game.update({ where: { id: mod.gameId }, data: { totalEndorsements: { increment: 1 } } }).catch(() => {})
+        }
+        if (mod.seriesId) {
+          await tx.series.update({ where: { id: mod.seriesId }, data: { totalEndorsements: { increment: 1 } } }).catch(() => {})
+        }
         return {
           notFound: false as const,
           endorsed: true,
@@ -96,25 +112,33 @@ export async function POST(
     })
 
     if ('notFound' in result && result.notFound) {
-      return NextResponse.json<ApiError>(
-        { error: 'Mod not found' },
-        { status: 404 }
-      )
+      return notFound('Mod not found')
     }
 
     // فحص الوصول لـ milestone للإعجابات
     if (result.endorsed && result.endorsements) {
-      const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
-      if (mod) {
-        await checkEndorseMilestone({
-          modId: mod.id,
-          endorsements: result.endorsements,
-          actorId: neonUser.id,
-        })
+      const ENDORSE_MILESTONES = [10, 50, 100, 500, 1000]
+      if (ENDORSE_MILESTONES.includes(result.endorsements)) {
+        const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true, authorId: true } })
+        if (mod) {
+          try {
+            const useCases = getUseCases()
+            await useCases.sendEndorseMilestone.execute({
+              modAuthorId: mod.authorId,
+              modId: mod.id,
+              modTitle: mod.name,
+              modSlug: slug,
+              milestone: result.endorsements,
+            })
+          } catch {}
+        }
       }
     }
 
-    return NextResponse.json<EndorseResponse>({
+    // Invalidate home cache for real-time stats
+    try { clearHomeCache() } catch {}
+
+    return ok({
       endorsed: result.endorsed,
       endorsements: result.endorsements,
     })
@@ -133,15 +157,12 @@ export async function POST(
         where: { slug },
         select: { endorsements: true },
       })
-      return NextResponse.json<EndorseResponse>(
-        { endorsed: true, endorsements: freshMod?.endorsements ?? 0 },
-        { status: 200 }
-      )
+      return ok({
+        endorsed: true,
+        endorsements: freshMod?.endorsements ?? 0,
+      })
     }
     console.error('[endorse] failed:', err)
-    return NextResponse.json<ApiError>(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return internalError('Failed to endorse mod')
   }
 }

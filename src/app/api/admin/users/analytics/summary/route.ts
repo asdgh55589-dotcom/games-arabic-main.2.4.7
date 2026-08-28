@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET() {
   try {
@@ -53,7 +53,7 @@ export async function GET() {
       ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
       : newUsersThisMonth > 0 ? 100 : 0
 
-    return NextResponse.json({
+    return ok({
       totalUsers,
       activeUsers,
       inactiveUsers,
@@ -63,7 +63,6 @@ export async function GET() {
       growthRate: Math.round(growthRate * 10) / 10
     })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

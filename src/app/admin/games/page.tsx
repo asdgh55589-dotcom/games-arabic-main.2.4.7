@@ -1,13 +1,15 @@
+// Updated for new API response format
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Gamepad2, Loader2, Edit2, Trash2, ExternalLink } from 'lucide-react'
+import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
+import { Plus, Search, Gamepad2, Edit2, Trash2, ExternalLink } from 'lucide-react'
 
 interface GameItem {
   id: string
@@ -30,7 +32,7 @@ export default function AdminGamesPage() {
   useEffect(() => {
     fetch('/api/admin/games')
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => data?.games ? setGames(data.games) : null)
+      .then((data) => data?.data ? setGames(data.data) : null)
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -45,7 +47,7 @@ export default function AdminGamesPage() {
       const res = await fetch(`/api/admin/games/${game.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data?.error || 'فشل الحذف')
+        throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحذف')
       }
       toast({ title: 'تم الحذف', description: `تم حذف "${game.name}"` })
       setGames((p) => p.filter((g) => g.id !== game.id))
@@ -81,9 +83,7 @@ export default function AdminGamesPage() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <DataTableSkeleton rows={5} cols={4} />
       ) : filtered.length === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Gamepad2 className="mb-3 h-12 w-12 text-muted-foreground/50" />
@@ -117,17 +117,17 @@ export default function AdminGamesPage() {
                   <td className="px-4 py-3 text-xs">{g._count.mods}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Button asChild size="icon" variant="ghost" className="h-8 w-8">
+                      <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
                         <Link href={`/admin/games/${g.id}/edit`} title="تعديل">
                           <Edit2 className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button asChild size="icon" variant="ghost" className="h-8 w-8">
-                        <a href={`/?view=platform&platform=${g.platform}`} target="_blank" rel="noopener noreferrer" title="عرض">
+                      <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
+                        <a href={`/platform/${g.platform}`} target="_blank" rel="noopener noreferrer" title="عرض">
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-500" onClick={() => onDelete(g)} title="حذف">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-500 min-h-[44px] min-w-[44px]" onClick={() => onDelete(g)} title="حذف" aria-label="حذف">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

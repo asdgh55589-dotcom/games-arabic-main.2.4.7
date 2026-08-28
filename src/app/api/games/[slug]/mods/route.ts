@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
-import type { PaginatedMods, ApiError } from '@/lib/types'
+import { okPaginated, notFound } from '@/lib/api-response'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating'] as const
 type Sort = (typeof SORTS)[number]
@@ -34,10 +34,7 @@ export async function GET(
 
   const game = await db.game.findUnique({ where: { slug } })
   if (!game) {
-    return NextResponse.json<ApiError>(
-      { error: 'Game not found' },
-      { status: 404 }
-    )
+    return notFound('Game not found')
   }
 
   const where: Record<string, unknown> = { gameId: game.id }
@@ -68,11 +65,10 @@ export async function GET(
     }),
   ])
 
-  return NextResponse.json<PaginatedMods>({
-    mods: serialize(mods),
-    total,
+  return okPaginated(serialize(mods), {
     page,
     limit,
+    total,
     totalPages: Math.ceil(total / limit) || 1,
   })
 }

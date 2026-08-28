@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireOwner } from '@/lib/auth'
+import { okPaginated, internalError } from '@/lib/api-response'
 
 // GET /api/admin/audit — سجل النشاطات
 export async function GET(req: NextRequest) {
@@ -28,10 +29,12 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({ logs, total, page, totalPages: Math.ceil(total / limit) || 1 })
+    return okPaginated(
+      { logs },
+      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+    )
   } catch (err) {
     console.error('[admin/audit GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

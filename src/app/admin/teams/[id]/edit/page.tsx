@@ -3,34 +3,20 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Loader2, Save, Plus, Trash2 } from 'lucide-react'
+import { ArrowRight, Loader2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
+import { TeamGeneralTab, type TeamGeneralFormData } from '@/components/admin/teams/team-general-tab'
+import { TeamContactTab } from '@/components/admin/teams/team-contact-tab'
+import { TeamMembersTab } from '@/components/admin/teams/team-members-tab'
+import { TeamModsTab } from '@/components/admin/teams/team-mods-tab'
+import { TeamTabsTab } from '@/components/admin/teams/team-tabs-tab'
+import type { TeamAdminData, TeamContactLinkInput, TeamCustomTabData } from '@/components/admin/teams/types'
 
-interface TeamMember {
-  id: string
-  name: string
-  avatarUrl: string | null
-  role: string
-  bio: string | null
-}
-
-interface TeamData {
-  id: string
-  slug: string
-  name: string
-  description: string
-  logoUrl: string
-  bannerUrl: string
-  websiteUrl: string
-  discordUrl: string
-  isFeatured: boolean
-  isOfficial: boolean
-  order: number
-  memberships: TeamMember[]
-  mods: Array<{ id: string; name: string; slug: string; downloads: number; thumbnailUrl: string }>
+const emptyForm: TeamGeneralFormData = {
+  name: '', description: '', logoUrl: '', bannerUrl: '',
+  order: 0, isFeatured: false, isOfficial: false, ownerId: '',
 }
 
 export default function TeamEditPage() {
@@ -39,37 +25,36 @@ export default function TeamEditPage() {
   const { toast } = useToast()
   const id = params.id as string
 
-  const [team, setTeam] = useState<TeamData | null>(null)
+  const [team, setTeam] = useState<TeamAdminData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Editable fields
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
-  const [bannerUrl, setBannerUrl] = useState('')
-  const [websiteUrl, setWebsiteUrl] = useState('')
-  const [discordUrl, setDiscordUrl] = useState('')
-  const [isFeatured, setIsFeatured] = useState(false)
-  const [isOfficial, setIsOfficial] = useState(false)
-  const [order, setOrder] = useState(0)
-
-  // New member form
-  const [showAddMember, setShowAddMember] = useState(false)
-  const [memberName, setMemberName] = useState('')
-  const [memberRole, setMemberRole] = useState('member')
-  const [memberAvatarUrl, setMemberAvatarUrl] = useState('')
+  const [form, setForm] = useState<TeamGeneralFormData>(emptyForm)
+  const [contactLinks, setContactLinks] = useState<TeamContactLinkInput[]>([])
+  const [hiddenTabs, setHiddenTabs] = useState('')
+  const [customTabs, setCustomTabs] = useState<TeamCustomTabData[]>([])
 
   useEffect(() => {
     fetch(`/api/admin/teams/${id}`)
       .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
       .then((data) => {
-        const t = data.team
+        const t = data?.data ?? data?.team
+        if (!t) throw new Error('الفريق غير موجود')
         setTeam(t)
-        setName(t.name); setDescription(t.description); setLogoUrl(t.logoUrl)
-        setBannerUrl(t.bannerUrl); setWebsiteUrl(t.websiteUrl); setDiscordUrl(t.discordUrl)
-        setIsFeatured(t.isFeatured); setIsOfficial(t.isOfficial); setOrder(t.order)
+        setForm({
+          name: t.name ?? '',
+          description: t.description ?? '',
+          logoUrl: t.logoUrl ?? '',
+          bannerUrl: t.bannerUrl ?? '',
+          order: t.order ?? 0,
+          isFeatured: Boolean(t.isFeatured),
+          isOfficial: Boolean(t.isOfficial),
+          ownerId: t.ownerId || '',
+        })
+        setContactLinks((t.contactLinks || []).map((c: { type: string; label: string; url: string }) => ({ type: c.type, label: c.label, url: c.url })))
+        setHiddenTabs(t.hiddenTabs || '')
+        setCustomTabs((t.customTabs || []).map((ct: TeamCustomTabData) => ({ title: ct.title, content: ct.content, order: ct.order, visible: ct.visible })))
       })
       .catch(() => setError('فشل تحميل بيانات الفريق'))
       .finally(() => setLoading(false))
@@ -81,46 +66,19 @@ export default function TeamEditPage() {
       const res = await fetch(`/api/admin/teams/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, logoUrl, bannerUrl, websiteUrl, discordUrl, isFeatured, isOfficial, order }),
+        body: JSON.stringify({ ...form, ownerId: form.ownerId || null, contactLinks, hiddenTabs, customTabs }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحفظ')
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ'
+        throw new Error(msg)
+      }
       toast({ title: 'تم الحفظ' })
-      setTeam(data.team)
+      const updated = data?.data ?? data?.team
+      if (updated) setTeam(updated)
     } catch (err) {
       toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
     } finally { setSaving(false) }
-  }
-
-  const onAddMember = async () => {
-    if (!memberName.trim()) { toast({ title: 'الاسم مطلوب', variant: 'destructive' }); return }
-    try {
-      const res = await fetch(`/api/admin/teams/${id}/members`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: memberName.trim(), role: memberRole, avatarUrl: memberAvatarUrl || null }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الإضافة')
-      toast({ title: 'تمت الإضافة' })
-      setTeam((t) => t ? { ...t, memberships: [...t.memberships, data.member] } : t)
-      setMemberName(''); setMemberRole('member'); setMemberAvatarUrl('')
-      setShowAddMember(false)
-    } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
-    }
-  }
-
-  const onRemoveMember = async (memberId: string) => {
-    if (!confirm('هل أنت متأكد من حذف العضو؟')) return
-    try {
-      const res = await fetch(`/api/admin/teams/${id}/members?memberId=${memberId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('فشل الحذف')
-      toast({ title: 'تم الحذف' })
-      setTeam((t) => t ? { ...t, memberships: t.memberships.filter((m) => m.id !== memberId) } : t)
-    } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
-    }
   }
 
   if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -137,7 +95,9 @@ export default function TeamEditPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">تعديل الفريق</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{team.mods.length} تعريب · {team.memberships.length} عضو</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {team.mods.length} تعريب · {team.memberships.length} عضو · {team._count.follows} متابع
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.back()}>رجوع</Button>
@@ -148,69 +108,49 @@ export default function TeamEditPage() {
         </div>
       </div>
 
-      {/* نموذج التعديل */}
-      <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div><Label>الاسم</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div><Label>الترتيب</Label><Input type="number" value={order} onChange={(e) => setOrder(Number(e.target.value))} /></div>
-          <div className="sm:col-span-2">
-            <Label>الوصف</Label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" rows={3} />
-          </div>
-          <div><Label>الشعار</Label><Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." /></div>
-          <div><Label>البانر</Label><Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." /></div>
-          <div><Label>الموقع</Label><Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://..." /></div>
-          <div><Label>ديسكورد</Label><Input value={discordUrl} onChange={(e) => setDiscordUrl(e.target.value)} placeholder="https://discord.gg/..." /></div>
-          <div className="flex items-end gap-4">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="rounded" /> مميّز</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isOfficial} onChange={(e) => setIsOfficial(e.target.checked)} className="rounded" /> رسمي</label>
-          </div>
-        </div>
-      </div>
-
-      {/* الأعضاء */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold">الأعضاء ({team.memberships.length})</h2>
-          <Button size="sm" onClick={() => setShowAddMember((s) => !s)}>
-            <Plus className="ml-1 h-3 w-3" /> إضافة عضو
-          </Button>
-        </div>
-
-        {showAddMember && (
-          <div className="mb-4 flex gap-2">
-            <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="اسم العضو" className="flex-1" />
-            <select value={memberRole} onChange={(e) => setMemberRole(e.target.value)} className="rounded-md border border-border bg-background px-2 text-sm">
-              <option value="member">عضو</option>
-              <option value="leader">قائد</option>
-              <option value="guest">ضيف</option>
-              <option value="tester">مختبر</option>
-            </select>
-            <Button size="sm" onClick={onAddMember}>إضافة</Button>
-          </div>
-        )}
-
-        {team.memberships.length === 0 ? (
-          <p className="text-sm text-muted-foreground">لا يوجد أعضاء بعد</p>
-        ) : (
-          <div className="space-y-2">
-            {team.memberships.map((m) => (
-              <div key={m.id} className="flex items-center justify-between rounded-md p-2 hover:bg-accent/50">
-                <div className="flex items-center gap-2">
-                  {m.avatarUrl ? <img src={m.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold">{m.name.charAt(0)}</div>}
-                  <div>
-                    <div className="text-sm font-medium">{m.name}</div>
-                    <div className="text-xs text-muted-foreground">{m.role}</div>
-                  </div>
-                </div>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => onRemoveMember(m.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <Tabs defaultValue="general">
+        <TabsList>
+          <TabsTrigger value="general">عام</TabsTrigger>
+          <TabsTrigger value="contact">روابط التواصل</TabsTrigger>
+          <TabsTrigger value="members">الأعضاء</TabsTrigger>
+          <TabsTrigger value="mods">التعريبات</TabsTrigger>
+          <TabsTrigger value="tabs">التبويبات</TabsTrigger>
+        </TabsList>
+        <TabsContent value="general" className="rounded-xl border border-border bg-card p-6">
+          <TeamGeneralTab
+            form={form}
+            onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+            memberships={team.memberships}
+          />
+        </TabsContent>
+        <TabsContent value="contact" className="rounded-xl border border-border bg-card p-6">
+          <TeamContactTab links={contactLinks} onChange={setContactLinks} />
+        </TabsContent>
+        <TabsContent value="members" className="rounded-xl border border-border bg-card p-6">
+          <TeamMembersTab
+            teamId={id}
+            memberships={team.memberships}
+            onMembersChange={(members) => setTeam((t) => t ? { ...t, memberships: members, _count: { ...t._count, memberships: members.length } } : t)}
+          />
+        </TabsContent>
+        <TabsContent value="mods" className="rounded-xl border border-border bg-card p-6">
+          <TeamModsTab
+            teamId={id}
+            mods={team.mods}
+            onModsChange={(mods) => setTeam((t) => t ? { ...t, mods, _count: { ...t._count, mods: mods.length } } : t)}
+          />
+        </TabsContent>
+        <TabsContent value="tabs" className="rounded-xl border border-border bg-card p-6">
+          <TeamTabsTab
+            hiddenTabs={hiddenTabs}
+            customTabs={customTabs}
+            onChange={(patch) => {
+              if (patch.hiddenTabs !== undefined) setHiddenTabs(patch.hiddenTabs)
+              if (patch.customTabs !== undefined) setCustomTabs(patch.customTabs)
+            }}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

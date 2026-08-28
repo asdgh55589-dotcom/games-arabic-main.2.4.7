@@ -1,17 +1,7 @@
-/**
- * src/app/api/admin/maintenance/route.ts
- * 
- * API endpoint للتحكم في وضع الصيانة (Maintenance Mode).
- * 
- * GET  → يقرأ حالة الصيانة من SiteSetting
- * PUT  → يُحدّث وضع الصيانة والرسالة المخصصة
- * 
- * الوصول: owner فقط (بسبب حساسية الإعداد)
- */
-
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireOwner } from '@/lib/auth'
+import { ok, internalError } from '@/lib/api-response'
 
 const MAINTENANCE_GROUP = 'maintenance'
 const MAINTENANCE_ENABLED_KEY = 'enabled'
@@ -45,11 +35,10 @@ export async function GET() {
   try {
     await requireOwner()
     const settings = await getMaintenanceSettings()
-    return NextResponse.json({ settings })
+    return ok({ settings })
   } catch (err) {
     console.error('[maintenance GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -87,10 +76,9 @@ export async function PUT(req: NextRequest) {
 
     // إعادة القراءة بعد التحديث
     const settings = await getMaintenanceSettings()
-    return NextResponse.json({ settings, success: true })
+    return ok({ settings, success: true })
   } catch (err) {
     console.error('[maintenance PUT] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

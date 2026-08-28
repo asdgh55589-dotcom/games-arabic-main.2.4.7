@@ -7,6 +7,9 @@ interface LogActionParams {
   entity: string
   entityId?: string
   details?: string
+  before?: Record<string, any>
+  after?: Record<string, any>
+  metadata?: Record<string, any>
   request?: Request
 }
 
@@ -28,6 +31,12 @@ export async function logAction(params: LogActionParams) {
       || params.request?.headers.get('x-real-ip')
       || null
 
+    const detailsParts: string[] = []
+    if (params.details) detailsParts.push(params.details)
+    if (params.before) detailsParts.push(`قبل: ${JSON.stringify(params.before)}`)
+    if (params.after) detailsParts.push(`بعد: ${JSON.stringify(params.after)}`)
+    if (params.metadata) detailsParts.push(JSON.stringify(params.metadata))
+
     await db.auditLog.create({
       data: {
         userId: params.userId,
@@ -35,7 +44,7 @@ export async function logAction(params: LogActionParams) {
         action: params.action,
         entity: params.entity,
         entityId: params.entityId,
-        details: params.details,
+        details: detailsParts.length > 0 ? detailsParts.join(' | ') : undefined,
         ipAddress,
       },
     })
@@ -79,4 +88,45 @@ export async function logUserAction(params: LogUserActionParams) {
   } catch (err) {
     console.error('[audit] failed to log user action:', err)
   }
+}
+
+/** استخراج سجل التدقيق كـ CSV */
+export async function exportAuditToCSV(filters: {
+  userId?: string
+  action?: string
+  entity?: string
+  dateFrom?: string
+  dateTo?: string
+}): Promise<string> {
+  const where: any = {}
+  if (filters.userId) where.userId = filters.userId
+  if (filters.action) where.action = filters.action
+  if (filters.entity) where.entity = filters.entity
+  if (filters.dateFrom || filters.dateTo) {
+    where.createdAt = {}
+    if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom)
+    if (filters.dateTo) where.createdAt.lte = new Date(filters.dateTo)
+  }
+
+  const logs = await db.auditLog.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 10000,
+  })
+
+  const header = 'ID,User,Action,Entity,EntityID,Details,IP,CreatedAt'
+  const rows = logs.map((log) =>
+    [
+      log.id,
+      log.username,
+      log.action,
+      log.entity,
+      log.entityId || '',
+      `"${(log.details || '').replace(/"/g, '""')}"`,
+      log.ipAddress || '',
+      log.createdAt.toISOString(),
+    ].join(',')
+  )
+
+  return '\uFEFF' + header + '\n' + rows.join('\n')
 }

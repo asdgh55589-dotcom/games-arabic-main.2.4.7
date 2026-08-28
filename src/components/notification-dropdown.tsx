@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Bell, MessageCircle, Heart, Star, Shield, CheckCheck, Users, FileText, AlertTriangle, Award } from 'lucide-react'
+import { Bell, BellOff, MessageCircle, Heart, Star, Shield, CheckCheck, Users, FileText, AlertTriangle, Award, Package, Send, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatArabicDate } from '@/lib/format'
-import { NotificationType, NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
+import { NotificationType } from '@/lib/notifications/types'
 import type { Notification } from '@/lib/types'
 
 const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
@@ -22,6 +22,16 @@ const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
   [NotificationType.AdminRequest]: <FileText className="h-4 w-4 text-cyan-400" />,
   [NotificationType.AdminReport]: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
   [NotificationType.AdminMilestone]: <Star className="h-4 w-4 text-amber-400" />,
+  [NotificationType.ModSubmitted]: <Send className="h-4 w-4 text-blue-400" />,
+  [NotificationType.ModApproved]: <CheckCheck className="h-4 w-4 text-green-400" />,
+  [NotificationType.ModRejected]: <AlertCircle className="h-4 w-4 text-red-400" />,
+  [NotificationType.ModPublished]: <Package className="h-4 w-4 text-green-400" />,
+  [NotificationType.ModScheduled]: <Clock className="h-4 w-4 text-blue-400" />,
+  [NotificationType.NewComment]: <MessageCircle className="h-4 w-4 text-blue-400" />,
+  [NotificationType.NewReport]: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
+  [NotificationType.NewVersion]: <Package className="h-4 w-4 text-cyan-400" />,
+  [NotificationType.BackupCompleted]: <CheckCheck className="h-4 w-4 text-green-400" />,
+  [NotificationType.SystemAlert]: <AlertTriangle className="h-4 w-4 text-red-400" />,
 }
 
 interface NotificationDropdownProps {
@@ -35,23 +45,27 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ notifications, loading, onMarkAsRead, onMarkAllAsRead, onClose }: NotificationDropdownProps) {
   const router = useRouter()
 
-  const handleClick = (notification: Notification) => {
-    if (!notification.readAt) onMarkAsRead(notification.id)
+  const unreadNotifications = notifications.filter(n => !n.readAt)
+
+  const handleClick = async (notification: Notification) => {
+    if (!notification.readAt) {
+      await onMarkAsRead(notification.id)
+    }
     if (notification.link) {
       router.push(notification.link)
-      onClose()
     }
+    onClose()
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-xl border border-[#333] bg-[#1a1a1a] shadow-2xl" dir="rtl">
+    <div className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-none border-2 border-border bg-card shadow-2xl" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#333] px-4 py-3">
+      <div className="flex items-center justify-between border-b-2 border-border px-4 py-3">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-[#ff8c00]" />
-          <span className="text-sm font-bold text-white">الإشعارات</span>
+          <Bell className="h-4 w-4 text-gold" />
+          <span className="text-sm font-bold text-foreground">الإشعارات</span>
         </div>
-        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-gray-400 hover:text-[#ff8c00]" onClick={onMarkAllAsRead}>
+        <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs text-muted-foreground hover:text-gold ${unreadNotifications.length === 0 ? 'hidden' : ''}`} onClick={onMarkAllAsRead}>
           <CheckCheck className="h-3.5 w-3.5" />
           تعيين الكل كمقروء
         </Button>
@@ -61,71 +75,71 @@ export function NotificationDropdown({ notifications, loading, onMarkAsRead, onM
       <div className="max-h-[400px] overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#ff8c00] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Bell className="mb-3 h-10 w-10 text-gray-600" />
-            <p className="text-sm text-gray-500">لا توجد إشعارات</p>
+            <Bell className="mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">لا توجد إشعارات</p>
+          </div>
+        ) : unreadNotifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <BellOff className="mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">لا توجد إشعارات جديدة</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">جميع الإشعارات مقروءة</p>
           </div>
         ) : (
-          notifications.map((notification) => (
+          unreadNotifications.map((notification) => (
             <div
               key={notification.id}
               onClick={() => handleClick(notification)}
-              className={`flex cursor-pointer gap-3 border-b border-[#222] px-4 py-3 transition-colors hover:bg-[#222] ${
-                !notification.readAt ? 'bg-[#ff8c00]/5' : ''
-              }`}
+              className="flex cursor-pointer gap-3 border-b border-border bg-gold/5 px-4 py-3 transition-colors hover:bg-accent"
             >
               {/* Icon or Avatar */}
               <div className="shrink-0 pt-0.5">
                 {notification.actor ? (
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={notification.actor.avatarUrl || undefined} />
-                    <AvatarFallback className="bg-[#333] text-xs font-bold text-[#ff8c00]">
+                    <AvatarFallback className="bg-secondary text-xs font-bold text-gold">
                       {notification.actor.username[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#333]">
-                    {TYPE_ICONS[notification.type] || <Bell className="h-4 w-4 text-gray-400" />}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary">
+                    {TYPE_ICONS[notification.type] || <Bell className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 )}
               </div>
 
               {/* Content */}
               <div className="min-w-0 flex-1">
-                <p className={`text-sm leading-snug ${!notification.readAt ? 'font-semibold text-white' : 'text-gray-300'}`}>
+                <p className="text-sm font-semibold leading-snug text-foreground">
                   {notification.title}
                 </p>
                 {notification.message && (
-                  <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">{notification.message}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{notification.message}</p>
                 )}
-                <p className="mt-1 text-[11px] text-gray-600">{formatArabicDate(notification.createdAt)}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground/60">{formatArabicDate(notification.createdAt)}</p>
               </div>
 
               {/* Unread dot */}
-              {!notification.readAt && (
-                <div className="shrink-0 pt-2">
-                  <div className="h-2 w-2 rounded-full bg-[#ff8c00]" />
-                </div>
-              )}
+              <div className="shrink-0 pt-2">
+                <div className="h-2 w-2 rounded-full bg-gold" />
+              </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Footer */}
-      {notifications.length > 0 && (
-        <div className="border-t border-[#333] px-4 py-2.5 text-center">
-          <button
-            onClick={() => { router.push('/?view=notifications'); onClose() }}
-            className="text-xs font-medium text-[#ff8c00] hover:underline"
-          >
-            عرض الكل
-          </button>
-        </div>
-      )}
+      {/* Footer — always show "View All" */}
+      <div className="border-t-2 border-border px-4 py-2.5 text-center">
+        <button
+          onClick={() => { router.push('/notifications'); onClose() }}
+          className="text-xs font-medium text-gold hover:underline"
+        >
+          عرض كل الإشعارات
+        </button>
+      </div>
     </div>
   )
 }

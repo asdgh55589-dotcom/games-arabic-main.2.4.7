@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { slugify } from '@/lib/series-helpers'
+import { ok, conflict, validationFail, internalError } from '@/lib/api-response'
 
 // GET /api/admin/series — قائمة السلاسل
 export async function GET() {
@@ -12,11 +13,10 @@ export async function GET() {
       include: { _count: { select: { mods: true } } },
     })
 
-    return NextResponse.json({ series })
+    return ok(series)
   } catch (err) {
     console.error('[admin/series GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -27,13 +27,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     if (!body.name?.trim()) {
-      return NextResponse.json({ error: 'الاسم مطلوب' }, { status: 400 })
+      return validationFail({ field: 'name', message: 'الاسم مطلوب' })
     }
 
     const slug = slugify(body.name)
     const existing = await db.series.findUnique({ where: { slug } })
     if (existing) {
-      return NextResponse.json({ error: 'سلسلة بنفس الاسم موجودة بالفعل' }, { status: 400 })
+      return conflict('سلسلة بنفس الاسم موجودة بالفعل')
     }
 
     const series = await db.series.create({
@@ -50,10 +50,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ series }, { status: 201 })
+    return ok(series)
   } catch (err) {
     console.error('[admin/series POST] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

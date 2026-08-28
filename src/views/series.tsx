@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import Link from 'next/link'
@@ -22,7 +23,7 @@ interface SeriesItem {
 }
 
 interface SeriesData {
-  series: SeriesItem[]
+  data: SeriesItem[]
 }
 
 export function SeriesPage() {
@@ -44,17 +45,17 @@ export function SeriesPage() {
             <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
-      ) : !data?.series || data.series.length === 0 ? (
+      ) : !data?.data || data.data.length === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد سلاسل</h3>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.series.map((s) => (
+          {data.data.map((s) => (
             <Link
               key={s.id}
-              href={`/?view=series-detail&series=${encodeURIComponent(s.id)}`}
+              href={`/series/${s.slug}`}
               className="group relative flex h-24 items-center justify-between overflow-hidden rounded-lg border border-border bg-card p-4 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
             >
               {(s.bannerUrl || s.logoUrl) && (

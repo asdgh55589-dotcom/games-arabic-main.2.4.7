@@ -270,13 +270,13 @@ export function SupportPage() {
 
       {/* روابط سفلية */}
       <div className="mt-10 flex flex-wrap gap-3 border-t border-border pt-6">
-        <Link href="/?view=explore" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
+        <Link href="/explore" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
           استكشاف الأقسام <ArrowLeft className="h-4 w-4" />
         </Link>
-        <Link href="/?view=problems" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
+        <Link href="/problems" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
           مشاكل وحلول <ArrowLeft className="h-4 w-4" />
         </Link>
-        <Link href="/?view=about" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
+        <Link href="/about" className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary">
           من نحن <ArrowLeft className="h-4 w-4" />
         </Link>
       </div>

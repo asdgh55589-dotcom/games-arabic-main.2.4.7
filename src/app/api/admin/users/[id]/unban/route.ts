@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
-import { notifyAdminAction } from '@/lib/notification-helpers'
+import { getUseCases } from '@/application/use-cases/factory'
 import { deleteIpBanCache } from '@/lib/ip-ban-cache'
+import { ok, internalError, notFound } from '@/lib/api-response'
 
 // POST /api/admin/users/[id]/unban — إلغاء الحظر
 //
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       select: { id: true, username: true, banStatus: true, banReason: true },
     })
-    if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!target) return notFound('User not found')
 
     // تصفير كل حقول الحظر
     await db.user.update({
@@ -67,16 +68,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     // إشعار المستخدم بإلغاء الحظر
-    await notifyAdminAction({
-      userId: id,
-      title: 'تم إلغاء الحظر عن حسابك',
-      message: 'يمكنك الآن استخدام الموقع بشكل طبيعي.',
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAdminAlert.execute({
+        adminUserIds: [id],
+        title: 'تم إلغاء الحظر عن حسابك',
+        message: 'يمكنك الآن استخدام الموقع بشكل طبيعي.',
+      })
+    } catch {}
 
-    return NextResponse.json({ success: true, ipCleared })
+    return ok({ success: true, ipCleared })
   } catch (err) {
     console.error('[admin/users/[id]/unban] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { revalidateTag } from '@/lib/cache'
+import { ok, validationFail, internalError } from '@/lib/api-response'
 
 // GET /api/admin/ads — قائمة كل الإعلانات
 export async function GET() {
@@ -10,11 +11,11 @@ export async function GET() {
     const ads = await db.homepageAd.findMany({
       orderBy: { order: 'asc' },
     })
-    return NextResponse.json({ ads })
+    return ok(ads)
   } catch (err) {
     console.error('[admin/ads GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     if (!body.url) {
-      return NextResponse.json({ error: 'url مطلوب' }, { status: 400 })
+      return validationFail({ url: 'url مطلوب' })
     }
 
     const ad = await db.homepageAd.create({
@@ -43,10 +44,10 @@ export async function POST(req: NextRequest) {
 
     await revalidateTag('ads')
 
-    return NextResponse.json({ ad }, { status: 201 })
+    return ok(ad)
   } catch (err) {
     console.error('[admin/ads POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

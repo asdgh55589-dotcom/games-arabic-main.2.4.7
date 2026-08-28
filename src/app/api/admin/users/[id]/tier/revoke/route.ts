@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { revokeTier } from '@/lib/tier-engine'
+import { ok, internalError, notFound } from '@/lib/api-response'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -12,14 +13,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const user = await db.user.findUnique({ where: { id } })
     if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 })
+      return notFound('المستخدم غير موجود')
     }
 
     await revokeTier(id, admin.id, reason)
 
-    return NextResponse.json({ message: `تم سحب ترقية ${user.username}` })
+    return ok({ message: `تم سحب ترقية ${user.username}` })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

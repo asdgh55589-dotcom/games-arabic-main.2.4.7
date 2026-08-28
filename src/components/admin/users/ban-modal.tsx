@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface BanModalProps {
   userId: string
@@ -31,87 +35,71 @@ export function BanModal({ userId, onClose, onSubmit }: BanModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-      onClick={resetAndClose}
-    >
-      <div
-        className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-3 text-sm font-bold">حظر المستخدم</h3>
-        <textarea
+    <Dialog open onOpenChange={(open) => !open && resetAndClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>حظر المستخدم</DialogTitle>
+          <DialogDescription>اختر سبب ومدة الحظر</DialogDescription>
+        </DialogHeader>
+
+        <Textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="سبب الحظر (اختياري)"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
           rows={2}
         />
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={duration === 'permanent'}
-              onChange={() => setDuration('permanent')}
-            />
+
+        <RadioGroup
+          value={duration}
+          onValueChange={(v) => setDuration(v as 'permanent' | 'temp')}
+          className="flex gap-4"
+        >
+          <Label className="flex items-center gap-2 text-sm font-normal">
+            <RadioGroupItem value="permanent" />
             دائم
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={duration === 'temp'}
-              onChange={() => setDuration('temp')}
-            />
+          </Label>
+          <Label className="flex items-center gap-2 text-sm font-normal">
+            <RadioGroupItem value="temp" />
             مؤقت
-          </label>
-          {duration === 'temp' && (
-            <label className="flex items-center gap-1 text-sm">
-              <Input
-                type="number"
-                value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-                className="h-8 w-20"
-                min={1}
-              />
-              يوم
-            </label>
-          )}
-        </div>
-        <label className="mt-3 flex items-center gap-2 text-sm">
-          <input
+          </Label>
+        </RadioGroup>
+
+        {duration === 'temp' && (
+          <Label className="flex items-center gap-1 text-sm">
+            <Input
+              type="number"
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="h-8 w-20"
+              min={1}
+            />
+            يوم
+          </Label>
+        )}
+
+        <Label className="flex items-center gap-2 text-sm font-normal">
+          <Input
             type="checkbox"
             checked={banIp}
             onChange={(e) => setBanIp(e.target.checked)}
-            className="rounded"
+            className="h-4 w-4 rounded"
           />
-          حظر عنوان IP أيضاً (منع إنشاء حسابات جديدة من نفس الجهاز)
-        </label>
-        <div className="mt-3 flex justify-end gap-2">
+          حظر عنوان IP أيضاً
+        </Label>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={resetAndClose}>إلغاء</Button>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={resetAndClose}
-          >
-            إلغاء
-          </Button>
-          <Button
-            size="sm"
             variant="destructive"
             onClick={() => {
-              onSubmit({
-                userId,
-                reason,
-                duration,
-                days,
-                banIp,
-              })
+              onSubmit({ userId, reason, duration, days, banIp })
               resetAndClose()
             }}
           >
             حظر
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

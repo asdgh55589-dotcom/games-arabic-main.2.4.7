@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,10 +27,14 @@ export async function GET(request: NextRequest) {
       db.user.findMany({
         where: { joinedAt: { gte: startDate } },
         select: { joinedAt: true },
+        take: 5000,
+        orderBy: { joinedAt: 'desc' },
       }),
       db.user.findMany({
         where: { lastLoginAt: { gte: startDate } },
         select: { lastLoginAt: true },
+        take: 5000,
+        orderBy: { lastLoginAt: 'desc' },
       }),
     ])
 
@@ -63,9 +68,8 @@ export async function GET(request: NextRequest) {
       activeUsers.push(activeUsersByDate.get(dateKey) || 0)
     }
 
-    return NextResponse.json({ labels, newUsers, activeUsers })
+    return ok({ labels, newUsers, activeUsers })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getInactiveUsers } from '@/lib/admin/inactive-users'
 import { sendInactiveUserAlert } from '@/lib/admin/send-inactive-alert'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (inactiveUsers.length === 0) {
-      return NextResponse.json({ message: 'لا يوجد مستخدمون خاملون' })
+      return ok({ message: 'لا يوجد مستخدمون خاملون' })
     }
 
     await sendInactiveUserAlert({
@@ -24,11 +25,10 @@ export async function POST(request: NextRequest) {
       daysThreshold
     })
 
-    return NextResponse.json({
+    return ok({
       message: `تم إرسال تنبيه لـ ${inactiveUsers.length} مستخدم خامل`
     })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

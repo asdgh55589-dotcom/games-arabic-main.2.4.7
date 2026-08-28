@@ -1,35 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
-import { validateReport } from '@/lib/reports/validation'
+import { getOptionalSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
+import { validateReport, validateEvidenceUrls } from '@/lib/reports/validation'
 import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
+import { checkFraudSpike } from '@/lib/reports/fraud-spike'
 import { REPORT_REASONS } from '@/lib/reports/constants'
-import { handleAdminNotification } from '@/lib/notifications'
+import { getUseCases } from '@/application/use-cases/factory'
+import { ok, unauthorized, internalError, validationFail, rateLimited } from '@/lib/api-response'
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ error: 'يجب تسجيل الدخول' }, { status: 401 })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 401 })
+      return unauthorized('يجب تسجيل الدخول')
     }
 
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'reports:create' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقيقة.' },
-        { status: 429, headers: rateLimitHeaders(rl) }
-      )
+      return rateLimited()
     }
 
     const body = await req.json()
@@ -42,7 +32,14 @@ export async function POST(req: NextRequest) {
       reason,
     })
     if (validationError) {
-      return NextResponse.json({ error: validationError.error }, { status: 400 })
+      return validationFail(validationError.error)
+    }
+
+    // تحقق XSS لروابط الأدلة — يُسمح فقط بـ http/https
+    const evUrlsArray = Array.isArray(evidenceUrls) ? evidenceUrls : evidenceUrls ? [evidenceUrls] : []
+    const evValidation = validateEvidenceUrls(evUrlsArray)
+    if (!evValidation.valid) {
+      return validationFail(evValidation.error || 'روابط الأدلة غير صالحة')
     }
 
     const priority = REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.priority || 'medium'
@@ -50,21 +47,34 @@ export async function POST(req: NextRequest) {
     const report = await db.report.create({
       data: {
         reporterId: neonUser.id,
-        targetType,
+        targetType: targetType as any,
         targetModId: targetType === 'mod' ? targetId : null,
         targetCommentId: targetType === 'comment' ? targetId : null,
         targetUserId: targetType === 'user' ? targetId : null,
-        reason,
-        priority,
+        reason: reason as any,
+        priority: priority as any,
         description: description || null,
-        evidenceUrls: Array.isArray(evidenceUrls) ? evidenceUrls.join(',') : null,
+        evidenceUrls: (evValidation.urls.length > 0 ? evValidation.urls : null) as any,
         ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
       },
     })
 
-    await handleAdminNotification('report', {
-      reason: REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.label || reason,
-    })
+    // إشعار المشرفين بالبلاغ الجديد
+    try {
+      const admins = await db.user.findMany({
+        where: { role: { in: ['admin', 'manager', 'owner'] } },
+        select: { id: true },
+      })
+      const useCases = getUseCases()
+      await useCases.sendReportSubmitted.execute({
+        adminUserIds: admins.map(a => a.id),
+        reporterId: neonUser.id,
+        reportId: report.id,
+        targetType,
+        targetTitle: targetId,
+        reason: REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.label || reason,
+      })
+    } catch {}
 
     // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
     analyzeReportFraud(report.id).catch(err => {
@@ -76,9 +86,9 @@ export async function POST(req: NextRequest) {
       console.error('[reports POST] trust score update failed:', err)
     })
 
-    return NextResponse.json({ report }, { status: 201 })
+    return ok({ report }, { status: 201 })
   } catch (err) {
     console.error('[reports POST] failed:', err)
-    return NextResponse.json({ error: 'فشل إرسال البلاغ' }, { status: 500 })
+    return internalError('فشل إرسال البلاغ')
   }
 }

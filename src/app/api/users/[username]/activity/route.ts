@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, notFound, forbidden, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -10,37 +11,27 @@ interface RouteParams {
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    const viewer = await getOptionalSession()
     const { searchParams } = new URL(req.url)
     const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'))
 
-    const user = await db.user.findUnique({
-      where: { username },
+    const user = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true, profileVisibility: true },
     })
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
-
-    const viewer = supabaseUser
-      ? await db.user.findFirst({
-          where: {
-            OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
-          },
-          select: { id: true },
-        })
-      : null
 
     const isOwner = viewer?.id === user.id
 
     if (!isOwner && user.profileVisibility !== 'everyone') {
       if (user.profileVisibility === 'nobody') {
-        return NextResponse.json({ error: 'Private activity' }, { status: 403 })
+        return forbidden('Private activity')
       }
 
       if (!viewer) {
-        return NextResponse.json({ error: 'Followers only' }, { status: 403 })
+        return forbidden('Followers only')
       }
 
       const follow = await db.follow.findFirst({
@@ -52,7 +43,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       })
 
       if (!follow) {
-        return NextResponse.json({ error: 'Followers only' }, { status: 403 })
+        return forbidden('Followers only')
       }
     }
 
@@ -165,9 +156,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const monthlyStats = Object.values(monthlyStatsMap).sort((a, b) => a.month.localeCompare(b.month))
 
-    return NextResponse.json({ comments, mods, modEdits, endorsements, monthlyStats })
+    return ok({ comments, mods, modEdits, endorsements, monthlyStats }, { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } })
   } catch (err) {
     console.error('[activity GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

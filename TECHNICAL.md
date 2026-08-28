@@ -32,71 +32,68 @@ Games Arabic (ألعاب بالعربي) is a full-stack web application for arc
 ┌─────────────────────────────────────────────────────────────┐
 │                      Client (Browser)                        │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  Next.js App Router (SPA with ?view= routing)       │   │
-│  │  ├── 24 View Components (lazy-loaded)               │   │
-│  │  ├── 35 UI Components (shadcn/ui)                   │   │
-│  │  └── React Query + Zustand State                    │   │
+│  │  Next.js App Router (File-Based Routing)            │   │
+│  │  ├── 26 View Components (in src/views/)             │   │
+│  │  ├── 17 Route Pages (src/app/**/page.tsx)           │   │
+│  │  ├── 40+ UI Components (shadcn/ui)                  │   │
+│  │  ├── AppShell (Navbar + Footer + BookmarksProvider) │   │
+│  │  └── Zustand + useFetch + React Query               │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              API Layer (Next.js Route Handlers)              │
-│  ├── 20+ API Route Groups                                  │
+│  ├── 147 API Handlers (src/app/api/**)                     │
 │  ├── Edge Middleware (Auth, IP Bans, Session Refresh)       │
+│  │   ├── JWT role cookie (ga_admin_role) + tokenVersion    │
+│  │   └── 301 redirects: ?view= → /route                    │
 │  └── Rate Limiting (Upstash Redis)                         │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Database Layer                          │
 │  ├── PostgreSQL (Neon Serverless)                           │
-│  ├── Prisma ORM (30+ Models)                               │
+│  ├── Prisma ORM (40+ Models)                               │
 │  └── Connection Pool (5 connections, 30s timeout)           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Data Flow
 
-1. **Client Request** → Browser sends request to Next.js
-2. **Middleware** → Edge runtime handles auth, IP bans, session refresh
-3. **Route Handler** → API endpoints process business logic
+1. **Client Request** → Browser sends request to Next.js (file route e.g. `/mod/my-slug`)
+2. **Middleware** → Edge runtime handles: `?view=` 301 redirects → Supabase session refresh (8s timeout, fail-open) → IP ban check (write-only) → admin protection via `ga_admin_role` JWT
+3. **Route Handler** → API endpoints process business logic (or Server Component renders view)
 4. **Prisma Client** → Type-safe database queries
 5. **PostgreSQL** → Data persistence on Neon
 
-### View-Based Routing
+### File-Based Routing (migrated from SPA `?view=`)
 
-The app uses a Single Page Application (SPA) pattern with query parameter routing:
+The app uses **Next.js App Router file-based routing**. Each route has a `src/app/<route>/page.tsx` that imports a view from `src/views/`. Legacy `?view=` URLs are 301-redirected via `next.config.ts` (static) and `middleware.ts` (parametric).
 
-```typescript
-// src/app/page.tsx
-const view = searchParams.get('view') || 'home';
-// Dynamically renders view component based on query param
-```
+**Public Routes (17 static + 5 dynamic):**
 
-**URL Pattern:** `https://example.com/?view=<view-name>&<params>`
-
-**Available Views:**
-- `home` - Homepage with hero, platforms, sidebar
-- `mod` - Mod detail page
-- `search` - Search across mods and games
-- `upload` - Mod upload form
-- `profile` - User profile
-- `login` - Login page (OAuth + Telegram)
-- `series` - Game series listing
-- `series-detail` - Individual series page
-- `teams` - Translation teams listing
-- `team-detail` - Individual team page
-- `platform` - Platform-specific mod listing
-- `support` - Support page
-- `explore` - Explore page
-- `community` - Community page
-- `about` - About page
-- `problems` - Known problems page
-- `terms` - Terms of service
-- `privacy` - Privacy policy
-- `notifications` - User notifications
-- `settings` - User settings
+| Route | View Component | Params |
+|-------|---------------|--------|
+| `/` | `HomePage` | — |
+| `/mod/[slug]` | `ModDetailPage` | `slug` via `useParams()` |
+| `/games` | `GamesPage` | — |
+| `/games/[slug]` | `GameDetailPage` | `slug` |
+| `/series` | `SeriesPage` | — |
+| `/series/[slug]` | `SeriesDetailPage` | `slug` |
+| `/teams` | `TranslationTeamsPage` | — |
+| `/teams/[slug]` | `TeamDetailPage` | `slug` |
+| `/profile/[user]` | `ProfilePage` | `user` |
+| `/platform/[key]` | `PlatformPage` | `key` |
+| `/search` | `SearchPage` | `?q=` query |
+| `/favorites` | `FavoritesPage` | — |
+| `/mods` | `ModsPage` | — |
+| `/upload` | `UploadPage` | — |
+| `/login` | `LoginPage` | — |
+| `/notifications` | `NotificationsPage` | — |
+| `/settings` | `SettingsPage` | — |
+| `/about`, `/support`, `/explore`, `/community`, `/problems`, `/terms`, `/privacy` | static views | — |
 
 ---
 
@@ -147,8 +144,8 @@ const view = searchParams.get('view') || 'home';
 ```
 games-arabic-main/
 ├── src/                    # Source code
-│   ├── app/                # Next.js App Router
-│   ├── views/              # SPA view components
+│   ├── app/                # Next.js App Router (file-based)
+│   ├── views/              # View components (1 per route)
 │   ├── components/         # Reusable UI components
 │   ├── lib/                # Utilities and helpers
 │   ├── hooks/              # Custom React hooks
@@ -166,64 +163,84 @@ games-arabic-main/
 ```
 src/
 ├── app/
-│   ├── layout.tsx          # Root layout (RTL, dark mode, Cairo font)
-│   ├── page.tsx            # Main SPA: view switching via ?view=<name>
+│   ├── layout.tsx          # Root layout (RTL, AppShell, Suspense)
+│   ├── page.tsx            # Home page (HomePage + generateMetadata)
 │   ├── globals.css         # Full theme, gradients, animations
 │   ├── error.tsx           # Error boundary
 │   ├── not-found.tsx       # 404 page
 │   ├── loading.tsx         # Loading state
-│   ├── admin/              # Admin panel (19 sections)
+│   ├── mod/[slug]/         # Mod detail (dynamic, useParams)
+│   ├── games/              # Games list + [slug]/ detail
+│   ├── series/             # Series list + [slug]/ detail
+│   ├── teams/              # Teams list + [slug]/ detail
+│   ├── profile/[user]/     # User profile (dynamic)
+│   ├── platform/[key]/     # Platform page (dynamic)
+│   ├── search/             # Search (?q= query)
+│   ├── favorites/          # Favorites (bookmarked mods)
+│   ├── upload/             # Upload mod
+│   ├── login/              # Login
+│   ├── notifications/      # Notifications
+│   ├── settings/           # Settings
+│   ├── about/support/explore/community/problems/terms/privacy # Static pages
+│   ├── admin/              # Admin panel (22+ sections)
 │   │   ├── layout.tsx      # Sidebar navigation, role-based visibility
 │   │   ├── page.tsx        # Dashboard with stats
-│   │   ├── mods/           # Mod management
+│   │   ├── mods/           # Mod management + bulk, workflow
 │   │   ├── games/          # Game management
 │   │   ├── series/         # Series management
-│   │   ├── teams/          # Team management
-│   │   ├── users/          # User management
+│   │   ├── teams/          # Team management + rewards, achievements
+│   │   ├── users/          # User management + analytics
 │   │   ├── comments/       # Comment moderation
 │   │   ├── endorsements/   # Endorsement management
 │   │   ├── reports/        # Report handling
 │   │   ├── settings/       # Site settings
 │   │   ├── tiers/          # Tier rules
 │   │   ├── special-roles/  # Special role assignment
-│   │   ├── audit/          # Audit logs
+│   │   ├── audit/          # Audit logs + export
 │   │   ├── tier-history/   # Tier change history
 │   │   ├── news/           # News management
 │   │   ├── ads/            # Advertisement management
-│   │   ├── analytics/      # Analytics dashboard
+│   │   ├── analytics/      # Analytics dashboard (downloads, engagement, heatmap…)
+│   │   ├── templates/      # Notification templates
+│   │   ├── notifications/  # Notification admin
+│   │   ├── tickets/        # Support tickets
+│   │   ├── scheduler/      # Scheduled jobs
+│   │   ├── sections/       # Platform sections
 │   │   └── login/          # Admin login
-│   └── api/                # REST API routes (20+ groups)
-│       ├── auth/           # Authentication endpoints
-│       ├── mods/           # Mod CRUD
-│       ├── games/          # Game CRUD
-│       ├── series/         # Series CRUD
-│       ├── teams/          # Team CRUD
-│       ├── users/          # User management
-│       ├── comments/       # Comment system
-│       ├── bookmarks/      # Bookmark system
-│       ├── notifications/  # Notification system
-│       ├── reports/        # Report system
-│       ├── search/         # Search functionality
-│       ├── settings/       # Site settings
-│       ├── stats/          # Statistics
-│       ├── news/           # News management
-│       ├── ads/            # Advertisement management
-│       ├── home/           # Homepage data
-│       ├── authors/        # Author data
-│       ├── youtube/        # YouTube integration
-│       └── admin/          # Admin API (20 sub-routes)
-├── views/                  # 24 view components (SPA pages)
+│   └── api/                # REST API routes (147 handlers)
+│       ├── mods/           # /api/mods (+ [slug]/comments, endorse, download)
+│       ├── games/          # /api/games (+ [slug]/mods, categories)
+│       ├── series/         # /api/series
+│       ├── teams/          # /api/teams (+ [slug]/follow)
+│       ├── users/          # /api/users/[username]/* (profile, follow, badges)
+│       ├── comments/       # /api/comments + [id]/like|dislike
+│       ├── bookmarks/      # /api/bookmarks + check, check-batch
+│       ├── notifications/  # /api/notifications + preferences, unread-count
+│       ├── reports/        # /api/reports
+│       ├── search/         # /api/search
+│       ├── sections/       # /api/sections (dynamic platforms)
+│       ├── settings/       # /api/settings + bootstrap, robots, sitemap
+│       ├── stats/          # /api/stats
+│       ├── news/           # /api/news
+│       ├── ads/            # /api/ads
+│       ├── home/           # /api/home
+│       └── admin/          # /api/admin/* (100+ handlers, moderator+ only)
+├── views/                  # 26 view components (1 per route)
 │   ├── home.tsx            # Homepage with hero, platforms, sidebar
-│   ├── mod-detail.tsx      # Individual mod page
+│   ├── mod-detail.tsx      # Individual mod page (useParams slug)
+│   ├── game-detail.tsx     # Game detail (useParams slug)
+│   ├── games.tsx           # Games listing
 │   ├── search.tsx          # Search page
+│   ├── mods.tsx            # Mods listing + filters
+│   ├── favorites.tsx       # Favorites (bookmarks)
 │   ├── upload.tsx          # Mod upload form
-│   ├── profile.tsx         # User profile
+│   ├── profile.tsx         # User profile (useParams user)
 │   ├── login.tsx           # Login page (OAuth + Telegram)
 │   ├── series.tsx          # Series listing
 │   ├── series-detail.tsx   # Individual series page
 │   ├── translation-teams.tsx # Teams listing
 │   ├── team-detail.tsx     # Individual team page
-│   ├── platform.tsx        # Platform-specific mod listing
+│   ├── platform.tsx        # Platform-specific mod listing (useParams key)
 │   ├── support.tsx         # Support page
 │   ├── explore.tsx         # Explore page
 │   ├── community.tsx       # Community page
@@ -232,13 +249,15 @@ src/
 │   ├── terms.tsx           # Terms of service
 │   ├── privacy.tsx         # Privacy policy
 │   ├── notifications.tsx   # User notifications
+│   ├── notification-settings.tsx # Notification preferences
 │   ├── settings.tsx        # User settings
 │   └── coming-soon.tsx     # Placeholder for unknown views
-├── components/             # 35 components
+├── components/             # 40+ components
 │   ├── ui/                 # 40+ shadcn/ui primitives
+│   ├── layout/             # AppShell, Navbar, Footer, ErrorBoundary
 │   ├── admin/              # Admin-specific components
 │   ├── profile/            # Profile-related components
-│   ├── navbar.tsx          # Main navigation
+│   ├── navbar.tsx          # Main navigation (usePathname for active)
 │   ├── footer.tsx          # Site footer
 │   ├── hero-slider.tsx     # Homepage hero carousel
 │   ├── mod-card.tsx        # Mod listing card
@@ -248,28 +267,26 @@ src/
 │   ├── notification-dropdown.tsx # Notification dropdown
 │   ├── report-dialog.tsx   # Report dialog
 │   ├── report-button.tsx   # Report button
-│   ├── telegram-login.tsx  # Telegram Deep Link UI
-│   ├── tier-badge.tsx      # User tier display
 │   └── ...
-├── lib/                    # 26 library/utility files
-│   ├── auth.ts             # Core auth functions
-│   ├── db.ts               # Prisma client
+├── lib/                    # 35+ library/utility files
+│   ├── auth.ts             # Core auth (requireAuth, getSession, JWT)
+│   ├── db.ts               # Prisma client singleton (5 conn, 30s timeout)
 │   ├── types.ts            # Shared TypeScript interfaces
-│   ├── format.ts           # Number formatting, timeAgo
-│   ├── constants.ts        # Platform constants
-│   ├── supabase/           # Supabase client setup
-│   ├── admin/              # Admin utilities
-│   ├── reports/            # Report system utilities
-│   ├── notifications/      # Notification helpers
-│   ├── ip-ban-cache.ts     # Upstash Redis IP ban
-│   ├── rate-limit.ts       # Rate limiting
-│   ├── tier-engine.ts      # Auto-tier upgrade logic
+│   ├── schemas.ts          # Zod validation schemas (centralized)
+│   ├── api-response.ts     # ok(), okPaginated(), fail() helpers
+│   ├── api-client.ts       # Client fetch wrapper (ApiError)
+│   ├── api-utils.ts        # parsePagination, serialize, pickSort
+│   ├── ip-ban-cache.ts     # Upstash Redis IP ban (Edge-safe)
+│   ├── token-version-cache.ts # Redis tokenVersion for instant invalidation
+│   ├── rate-limit.ts       # Upstash Redis rate limiting
+│   ├── supabase/           # Supabase client (client/server/middleware)
 │   └── ...
-├── hooks/                  # 7 custom hooks
-├── contexts/               # BookmarksContext
-└── __tests__/              # Jest tests
-    └── notifications/
-        └── handlers.test.ts
+├── hooks/                  # 8+ custom hooks
+│   ├── use-fetch.ts        # Data fetching with AbortController + stale guard
+│   ├── use-team-detail.ts  # Team detail (useParams based)
+│   └── ...
+├── contexts/               # AuthContext, SettingsContext, BookmarksContext
+└── __tests__/              # Jest tests (ts-jest, @/ alias)
 ```
 
 ### Configuration Files
@@ -344,10 +361,12 @@ model User {
 }
 ```
 
-**Roles:**
+**Roles (hierarchy):** `owner` > `manager` > `admin` > `moderator` > `publisher` > `member`
 - `member` - Regular user (default)
-- `moderator` - Can publish/edit own mods
+- `publisher` - Can create content
+- `moderator` - Can publish/edit own mods (+ admin panel access)
 - `admin` - Full access to most features
+- `manager` - Same as admin (accepted by `requireAdmin()`)
 - `owner` - Complete system access
 
 **Tiers:**
@@ -1060,10 +1079,10 @@ Rate limiting is implemented via Upstash Redis:
 
 | Method | Status | Route | Description |
 |--------|--------|-------|-------------|
-| Google OAuth | Enabled | `/?view=login` | Standard OAuth 2.0 flow |
-| Discord OAuth | Enabled | `/?view=login` | Standard OAuth 2.0 flow |
-| Telegram Deep Link | Enabled | `/?view=login` | Custom flow via bot |
-| Admin Login | Enabled | `/admin/login` | Username/password for admin panel |
+| Google OAuth | Enabled | `/login` | Standard OAuth 2.0 flow via Supabase |
+| Discord OAuth | Enabled | `/login` | Standard OAuth 2.0 flow via Supabase |
+| Telegram Deep Link | Enabled | `/login` | Custom flow via bot (`/api/auth/telegram`) |
+| Admin Login | Enabled | `/admin/login` | Username/password (`ga_admin_role` JWT) |
 
 ### OAuth Flow
 
@@ -1095,8 +1114,8 @@ The role cookie is a signed JWT containing:
 ```typescript
 interface RoleCookiePayload {
   userId: string;
-  role: 'member' | 'moderator' | 'admin' | 'owner';
-  tv: number;  // tokenVersion - for session invalidation
+  role: 'member' | 'publisher' | 'moderator' | 'manager' | 'admin' | 'owner';
+  tv: number;  // tokenVersion - validated against Redis cache in Edge middleware (1s timeout, fail-open)
 }
 ```
 
@@ -1106,38 +1125,34 @@ interface RoleCookiePayload {
 - HttpOnly: true
 - Secure: true (production)
 - SameSite: lax
+- Verification: `jose.jwtVerify()` in middleware + `getTokenVersionCache(userId)` check
 
 ### Edge Middleware
 
-The middleware runs in Edge runtime and handles:
+The middleware runs in Edge runtime and handles (see `src/middleware.ts`):
 
-1. **Session Refresh** - Updates Supabase session for all routes
-2. **IP Ban Checking** - For sensitive API paths (auth, comments, mods)
-3. **Admin Route Protection** - Verifies role cookie for `/admin/*` and `/api/admin/*`
+1. **`?view=` → file-route 301 redirects** — Parametric cases (`platform`, `profile`, `series-detail`, `team-detail`, `search`) are redirected before any auth logic. Static cases are handled in `next.config.ts`.
+2. **Supabase Session Refresh** — Updates Supabase session for all routes with 8s timeout (fail-open). Public routes work even if Supabase is unreachable. Protected admin routes fall back to JWT cookie alone.
+3. **IP Ban Checking (write-only)** — Only for `POST /api/auth`, `POST /api/comments`, `POST /api/mods`, `POST /api/admin/users` (GET is excluded to avoid blocking reads on Redis failure).
+4. **Admin Route Protection** — Verifies `ga_admin_role` JWT + `tokenVersion` via `getTokenVersionCache()` (1s timeout, fail-open). No Supabase DB call in Edge.
 
 ```typescript
-// src/middleware.ts
+// src/middleware.ts (simplified)
 export async function middleware(req: NextRequest) {
-  // 1. Update Supabase session
-  const { supabase, response } = await updateSession(req);
-  
-  // 2. Check IP bans for sensitive paths
-  if (pathname.startsWith('/api/auth') || ...) {
-    const ipBan = await getIpBanCache(ip);
-    if (ipBan?.banned) {
-      return NextResponse.json({ error: 'IP_BANNED' }, { status: 403 });
-    }
-  }
-  
-  // 3. Protect admin routes
-  if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
-    const rolePayload = await getRoleFromCookie(req);
-    if (!rolePayload?.role || !user) {
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-  
-  return response;
+  // 0. ?view= redirects (301)
+  if (view) { /* switch-case → destination */ }
+
+  // 1. Update Supabase session (8s timeout, fail-open)
+  try { ({ user, response } = await Promise.race([updateSession(req), timeout8s])) } catch {}
+
+  // 2. Check IP bans for write/sensitive paths only
+  const isWritePath = (pathname.startsWith('/api/auth') && method !== 'GET') || ...
+  if (isWritePath) { const ban = await getIpBanCache(ip); if (ban?.banned) return 403; }
+
+  // 3. Protect /admin/* and /api/admin/* via role cookie + tv cache
+  if (pathname.startsWith('/admin')) { const payload = await getRoleFromCookie(req); /* check role ∈ {moderator,manager,admin,owner} */ }
+
+  return addSecurityHeaders(supabaseResponse);
 }
 ```
 
@@ -1211,24 +1226,35 @@ export async function invalidateUserSessions(userId: string): Promise<void> {
 
 ## 7. UI Components
 
-### View Switching System
+### File-Based Routing + View Components
 
-The app uses a SPA pattern with query parameter routing:
+The app uses **Next.js App Router file-based routing**. Each route has a thin server wrapper that imports a client view component:
 
 ```typescript
-// src/app/page.tsx
-const view = searchParams.get('view') || 'home';
+// src/app/mod/[slug]/page.tsx (server)
+import type { Metadata } from 'next'
+import { ModDetailPage } from '@/views/mod-detail'
 
-// Lazy-loaded view components
-const HomePage = dynamic(() => import('@/views/home').then(m => ({ default: m.HomePage })));
-const ModDetailPage = dynamic(() => import('@/views/mod-detail').then(m => ({ default: m.ModDetailPage })));
-// ... etc
-
-// Render based on view
-{view === 'home' && <HomePage />}
-{view === 'mod' && <ModDetailPage />}
-// ... etc
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  // fetch /api/mods/[slug] → title/description/Open Graph
+}
+export default function ModRoutePage() { return <ModDetailPage /> }
 ```
+
+Views use `useParams()` for dynamic segments:
+
+```typescript
+// src/views/mod-detail.tsx (client)
+'use client'
+import { useParams } from 'next/navigation'
+export function ModDetailPage() {
+  const { slug } = useParams() as { slug: string }
+  const { data } = useFetch(`/api/mods/${slug}`)
+}
+```
+
+Shared layout (`src/app/layout.tsx` → `<AppShell>`) wraps all pages with Navbar (uses `usePathname()` for active state), Footer, BookmarksProvider, ErrorBoundary, ScrollToTop. Legacy `?view=` URLs are 301-redirected.
 
 ### Main Components
 
@@ -1548,25 +1574,18 @@ bun run db:reset     # Reset database
 4. **Utilities** - Place in `src/lib/`, use camelCase
 5. **Hooks** - Place in `src/hooks/`, prefix with `use`
 
-### Adding a New View
+### Adding a New View (File-Based)
 
-1. Create view component in `src/views/`
-2. Add to `KNOWN_VIEWS` set in `src/app/page.tsx`
-3. Add dynamic import
-4. Add conditional render
-
+1. Create view component in `src/views/new-view.tsx` (`'use client'` + `useFetch`/`useParams` as needed).
+2. Create route wrapper `src/app/new-view/page.tsx` (or `src/app/new-view/[slug]/page.tsx` for dynamic):
 ```typescript
-// src/app/page.tsx
-const NewView = dynamic(() => import('@/views/new-view').then(m => ({ default: m.NewView })), { loading: () => <ViewSkeleton /> });
-
-const KNOWN_VIEWS: ReadonlySet<string> = new Set<string>([
-  // ... existing views
-  'new-view',
-]);
-
-// In render
-{view === 'new-view' && <NewView />}
+import type { Metadata } from 'next'
+import { NewViewPage } from '@/views/new-view'
+export const metadata: Metadata = { title: 'New View — GAMES ARABIC', description: '...' }
+export default function NewViewRoutePage() { return <NewViewPage /> }
 ```
+3. For dynamic routes, add `generateMetadata()` that fetches data for SEO.
+4. If replacing a legacy `?view=` URL, add a redirect in `next.config.ts` (static) or `src/middleware.ts` (parametric).
 
 ### Adding a New API Route
 
@@ -1648,5 +1667,5 @@ bun run build 2>&1 | tee build.log
 
 ---
 
-**Last Updated:** 2026-08-01
-**Version:** 0.2.0
+**Last Updated:** 2026-08-20
+**Version:** 0.4.0 — File-based routing, 26 views, 147 API handlers, 40+ Prisma models

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok } from '@/lib/api-response'
 import type { SiteStats } from '@/lib/types'
 
 // GET /api/stats - aggregate site-wide stats
@@ -12,11 +12,18 @@ export async function GET() {
     db.user.count(),
   ])
 
-  return NextResponse.json<SiteStats>({
-    games,
-    mods,
-    downloads: downloadsAgg._sum.downloads || 0,
-    endorsements: endorsementsAgg._sum.endorsements || 0,
-    users,
-  })
+  return ok<SiteStats>(
+    {
+      games,
+      mods,
+      downloads: downloadsAgg._sum.downloads || 0,
+      endorsements: endorsementsAgg._sum.endorsements || 0,
+      users,
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
+    }
+  )
 }

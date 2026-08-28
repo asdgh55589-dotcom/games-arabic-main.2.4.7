@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getInactiveUsers } from '@/lib/admin/inactive-users'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,9 +15,8 @@ export async function GET(request: NextRequest) {
       includeWithNoActivity: false
     })
 
-    return NextResponse.json({ inactiveUsers })
+    return ok({ inactiveUsers })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

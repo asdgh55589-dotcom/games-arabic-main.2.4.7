@@ -74,9 +74,11 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
 
   if (!images || images.length === 0) {
     return (
-      <Card className="p-12 text-center">
-        <ImageOff className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-        <p className="text-muted-foreground">لا توجد صور في هذا المعرض</p>
+      <Card className="border-border/50 p-16 text-center">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-secondary/60">
+          <ImageOff className="h-7 w-7 text-muted-foreground/60" />
+        </div>
+        <p className="text-sm text-muted-foreground">لا توجد صور في هذا المعرض</p>
       </Card>
     )
   }
@@ -89,7 +91,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
           <button
             key={i}
             onClick={() => setLightboxIndex(i)}
-            className="group relative aspect-video overflow-hidden rounded-lg border border-border bg-card transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+            className="group relative aspect-video overflow-hidden rounded-xl border border-border/50 bg-card/40 transition-all duration-200 hover:border-border cursor-pointer"
           >
             <img
               src={img}

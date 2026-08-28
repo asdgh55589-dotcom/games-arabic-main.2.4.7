@@ -2,112 +2,35 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { ThumbsUp, Download, Eye, Clock, Upload, FileArchive, MoreVertical, Users, Bookmark, Flag } from 'lucide-react'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { formatNumber, timeAgo, formatDate } from '@/lib/format'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { Download, ThumbsUp, Eye, CalendarDays, History, Users, FileArchive, Package, MoreVertical, Bookmark, Flag } from 'lucide-react'
+import { formatNumber } from '@/lib/format'
+import { StatusBadge, getModBadgeStatus } from '@/components/status-badge'
+import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ReportDialog } from '@/components/report-dialog'
 import { useBookmarks } from '@/contexts/bookmarks-context'
+import { useToast } from '@/hooks/use-toast'
+import { CreatorBadge } from '@/components/creator-badge'
+import { RoleBadge } from '@/components/role-badge'
+import { TierBadge } from '@/components/tier-badge'
 import type { ModSummary } from '@/lib/types'
 
-export type ModCardData = ModSummary
-
-/**
- * variant — يحدد البيانات الإضافية المعروضة في الشريط السفلي للبطاقة.
- * - `default`: التأييدات + التحميلات + المشاهدات (السلوك الافتراضي)
- * - `latest`: شارة جديد/محدّث + التقييمات + التحميلات
- * - `trending`: التحميلات + المشاهدات
- * - `topEndorsed`: التأييدات بس
- */
-export type ModCardVariant = 'default' | 'latest' | 'trending' | 'topEndorsed'
-
-// 30 ساعة بالميلي ثانية — الشارة تختفي بعد هذا الوقت
-const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000
-
-// ترجمة أسماء الألعاب للعربية
-const GAME_ARABIC_NAMES: Record<string, string> = {
-  'Skyrim Special Edition': 'سكايرم النسخة الخاصة',
-  'Cyberpunk 2077': 'سايبربانك 2077',
-  'The Witcher 3: Wild Hunt': 'ويتشر 3: الصيد البري',
-  "Baldur's Gate 3": 'بوابة بالدور 3',
-  'Elden Ring': 'إلدن رينغ',
-  'Minecraft': 'ماينكرافت',
-  'God of War': 'إله الحرب',
-  'Horizon Zero Dawn': 'هورايزن زيرو داون',
-  "Marvel's Spider-Man": 'الرجل العنكبوت',
-  'Bloodborne': 'بلودبورن',
-  'The Last of Us': 'ذا لاست أوف أس',
-  'Red Dead Redemption': 'ريد ديد ريديمبشن',
-  'God of War III': 'إله الحرب 3',
-  'Shadow of the Colossus': 'ظل العملاق',
-  'God of War II': 'إله الحرب 2',
-  'Final Fantasy X': 'فاينل فانتسي 10',
-  'Final Fantasy VII': 'فاينل فانتسي 7',
-  'Metal Gear Solid': 'ميتال جير سوليد',
-  'Castlevania: Symphony of the Night': 'كاسلفانيا: سيمفونية الليل',
-  // ===== NS =====
-  'The Legend of Zelda: Breath of the Wild': 'أسطورة زيلدا: نفحة البرية',
-  'The Legend of Zelda: Tears of the Kingdom': 'أسطورة زيلدا: دموع المملكة',
-  'Super Mario Odyssey': 'سوبر ماريو أوديسي',
-  'Mario Kart 8 Deluxe': 'ماريو كارت 8 ديلوكس',
-  'Animal Crossing: New Horizons': 'أنيمال كروسينغ: آفاق جديدة',
-  'Super Smash Bros. Ultimate': 'سوبر سماش بروس ألتيميت',
-  'Pokémon Scarlet': 'بوكيمون سكارليت',
-  'Xenoblade Chronicles 3': 'زينوبليد كرونيكلز 3',
-  'Fire Emblem: Three Houses': 'فاير إمبلم: ثلاث بيوت',
+interface ModCardProps {
+  mod: ModSummary
+  priority?: boolean
+  variant?: 'full' | 'compact'
 }
 
-// ترجمة أسماء الأقسام للعربية
-const CATEGORY_ARABIC_NAMES: Record<string, string> = {
-  'Armor': 'دروع',
-  'Weapons': 'أسلحة',
-  'Quests': 'مهام',
-  'Characters': 'شخصيات',
-  'Gameplay': 'أسلوب اللعب',
-  'Graphics': 'رسومات',
-  'Magic': 'سحر',
-  'Locations': 'أماكن',
-  'Vehicles': 'مركبات',
-  'UI': 'واجهة المستخدم',
-  'Environment': 'البيئة',
-  'Cyberware': 'سايبروير',
-  'Clothing': 'ملابس',
-  'Classes': 'فئات',
-  'Items': 'عناصر',
-  'Cosmetics': 'تجميليات',
-  'Bosses': 'زعماء',
-  'Mods': 'تعديلات',
-  'Texture Packs': 'حزم أكساء',
-  'Maps': 'خرائط',
-  'Skins': 'أشكال',
-  'Shaders': 'شيدر',
-  'Modpacks': 'حزم تعديلات',
-  'Saves': 'حفظ',
-  'Costumes': 'أزياء',
-  // ===== فئات إضافية للألعاب الجديدة =====
-  'Simulation': 'محاكاة',
-  'Adventure': 'مغامرات',
-  'Fighting': 'قتال',
-  'Racing': 'سباقات',
-}
+export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProps) {
+  const badgeStatus = getModBadgeStatus(mod.createdAt, mod.updatedAt)
+  const platformKey = mod.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
+  const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
+  const router = useRouter()
 
-function translateGameName(name: string): string {
-  return GAME_ARABIC_NAMES[name] || name
-}
-
-function translateCategoryName(name: string): string {
-  return CATEGORY_ARABIC_NAMES[name] || name
-}
-
-export function ModCard({ mod, compact = false, variant = 'default' }: { mod: ModCardData; compact?: boolean; variant?: ModCardVariant }) {
-  const href = `/?view=mod&slug=${mod.slug}`
   const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
+  const { toast } = useToast()
 
   useEffect(() => {
     registerModIds([mod.id])
@@ -115,238 +38,266 @@ export function ModCard({ mod, compact = false, variant = 'default' }: { mod: Mo
 
   const bookmarked = isBookmarked(mod.id)
 
-  // تحديد نوع الشارة
-  const now = Date.now()
-  const createdAt = new Date(mod.createdAt).getTime()
-  const updatedAt = new Date(mod.updatedAt).getTime()
-  const ageSinceCreated = now - createdAt
-  const ageSinceUpdated = now - updatedAt
-
-  let statusBadge: { text: string; color: string } | null = null
-  if (ageSinceCreated < THIRTY_HOURS_MS) {
-    statusBadge = { text: 'جديد', color: 'bg-green-600 text-white' }
-  } else if (ageSinceUpdated < THIRTY_HOURS_MS && ageSinceUpdated !== ageSinceCreated) {
-    statusBadge = { text: `محدّث ${timeAgo(mod.updatedAt)}`, color: 'bg-blue-600 text-white' }
-  }
-
-  // شارة المنصة من بيانات اللعبة
-  const platform = mod.game?.platform || ''
-
   return (
-    <Card className="mod-card group relative flex min-h-[380px] flex-col gap-0 overflow-hidden rounded-none border-[3px] border-border bg-card p-0 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_var(--border)]" dir="rtl">
-      {/* صورة landscape */}
-      <div className="relative">
-        <Link href={href} className="block">
-          <div className="relative z-0 flex aspect-[16/9] items-center justify-center overflow-hidden bg-secondary border-b-[3px] border-border">
-            <img
-              src={mod.thumbnailUrl}
-              alt={mod.name}
-              loading="lazy"
-              className="mod-card-image absolute z-2 max-h-full w-full object-cover transition-transform duration-150 group-hover:scale-105"
-            />
-          </div>
-        </Link>
-        {/* الشارات — يمين الصورة: شارة المنصة + شارة جديد/محدّث بجوارها */}
-        <div className="absolute right-2 top-2 z-10 flex gap-1.5">
-          {platform && (
-            <Badge variant="outline" className="border-[2px] border-border bg-background/90 font-black uppercase tracking-wider">
-              {platform}
-            </Badge>
-          )}
-          {statusBadge && (
-            <Badge className={`${statusBadge.color} border-[2px] border-black font-black uppercase`}>
-              {statusBadge.text}
-            </Badge>
-          )}
-        </div>
-        {/* زر الخيارات — يسار الصورة */}
-        <div className="absolute left-1.5 top-1.5 z-20 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="grid h-7 w-7 place-items-center border-[2px] border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="خيارات التعريب"
-                onClick={(e) => e.preventDefault()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 border-[3px] border-border shadow-[4px_4px_0_0_var(--border)]">
-              <DropdownMenuItem
-                onClick={async () => {
-                  try {
-                    const method = bookmarked ? 'DELETE' : 'POST'
-                    const body = bookmarked ? undefined : JSON.stringify({ modId: mod.id })
-                    const url = bookmarked ? `/api/bookmarks?modId=${mod.id}` : '/api/bookmarks'
-                    const res = await fetch(url, {
-                      method,
-                      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-                      body,
-                    })
-                    if (res.ok) {
-                      toggleBookmark(mod.id)
-                    }
-                  } catch {}
-                }}
-              >
-                <Bookmark className={`ml-2 h-4 w-4 ${bookmarked ? 'fill-current' : ''}`} />
-                {bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
-              </DropdownMenuItem>
-              <ReportDialog targetType="mod" targetId={mod.id}>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Flag className="ml-2 h-4 w-4" />
-                  إبلاغ عن مشكلة
-                </DropdownMenuItem>
-              </ReportDialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* قسم المحتوى — العنوان فوق المؤلف */}
-      <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
-        {/* العنوان — فوق المؤلف */}
-        <Link
-          href={href}
-          className="line-clamp-2 text-sm font-bold leading-tight transition-colors hover:text-primary"
-        >
-          {mod.name}
-        </Link>
-
-        {/* المؤلف — تحت العنوان */}
-        {mod.author && (
-          <Link
-            href={`/?view=profile&user=${mod.author.username}`}
-            className="mt-2 flex items-center gap-1.5 border-b-[2px] border-border pb-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
+    <Link href={`/mod/${mod.slug}`} className="group block h-full">
+      <article
+        className="relative flex h-full flex-col rounded-none border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[2px] hover:translate-y-[2px]"
+        style={platformColor ? {
+          '--card-platform': platformColor,
+        } as React.CSSProperties : undefined}
+      >
+        {/* IMAGE */}
+        <div className={`relative w-full overflow-hidden border-b-[3px] border-border bg-muted ${variant === 'compact' ? 'aspect-[16/9]' : 'aspect-video'}`}>
+          <Image
+            src={mod.thumbnailUrl}
+            alt={mod.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            quality={75}
+            priority={priority}
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = '1'
+                img.src = '/hero-bg.jpg'
+                img.style.objectFit = 'cover'
+              } else {
+                img.style.display = 'none'
+              }
+            }}
+          />
+          {/* Platform badge — top start */}
+          <span
+            className="absolute top-2 start-2 inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1.5 py-0.5 text-[10px] font-black uppercase leading-none text-white"
+            style={{ background: platformColor || 'var(--primary)' }}
           >
-            {mod.author.avatarUrl && (
-              <img
-                src={mod.author.avatarUrl}
-                alt=""
-                className="h-4 w-4 shrink-0 object-cover border border-border"
-                loading="lazy"
-              />
-            )}
-            <span className="truncate">{mod.author.username}</span>
-          </Link>
-        )}
-
-        {/* البيانات تحت المؤلف */}
-        <div className="flex flex-col gap-y-2 border-b-[2px] border-border py-2.5 text-xs font-medium text-muted-foreground">
-          <div className="flex items-center gap-x-1">
-            <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span>تاريخ النشر: {formatDate(mod.releaseDate)}</span>
-          </div>
-          {new Date(mod.updatedAt).getTime() !== new Date(mod.createdAt).getTime() && (
-            <div className="flex items-center gap-x-1">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span>آخر تحديث: {timeAgo(mod.updatedAt)}</span>
-            </div>
-          )}
-          {mod.translationTeam && (
-            <div className="flex items-center gap-x-1">
-              <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span>الفريق التعريب: {mod.translationTeam}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-x-1">
-            <FileArchive className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span>الحجم: {mod.fileSize} .{mod.fileFormat}</span>
-          </div>
-        </div>
-
-        {/* الوصف */}
-        {!compact && (
-          <p className="line-clamp-4 break-words pt-2 text-xs text-muted-foreground">
-            {mod.summary}
-          </p>
-        )}
-      </div>
-
-      {/* الشريط السفلي — الإحصائيات */}
-      <div className="mt-auto flex min-h-9 items-center justify-center gap-x-4 border-t-[3px] border-border bg-secondary/50 px-3">
-        {variant === 'latest' && (
-          <>
-            {statusBadge && (
-              <span className={`flex items-center gap-x-1 px-1.5 py-0.5 text-[10px] font-black uppercase ${statusBadge.color}`} title="الحالة">
-                {statusBadge.text}
+            {mod.game?.platform || 'N/A'}
+          </span>
+          {/* Status badge + kebab — top end, unified container */}
+          <div className="absolute top-2 end-2 z-20 flex items-center gap-1">
+            {badgeStatus && <StatusBadge status={badgeStatus} />}
+            {variant !== 'compact' && (
+              <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="grid h-7 w-7 place-items-center border-[2px] border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
+                      aria-label="خيارات التعريب"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 border-[3px] border-border shadow-[4px_4px_0_0_var(--border)]">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const method = bookmarked ? 'DELETE' : 'POST'
+                        const body = bookmarked ? undefined : JSON.stringify({ modId: mod.id })
+                        const url = bookmarked ? `/api/bookmarks?modId=${mod.id}` : '/api/bookmarks'
+                        fetch(url, {
+                          method,
+                          headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                          body,
+                        }).then((res) => {
+                          if (res.ok) {
+                            toggleBookmark(mod.id)
+                            toast({
+                              title: bookmarked ? 'تمت الإزالة من المفضلة' : 'تم الحفظ في المفضلة',
+                              description: mod.name,
+                            })
+                          }
+                        }).catch(() => {
+                          toast({
+                            title: 'خطأ',
+                            description: 'حدث خطأ أثناء الحفظ',
+                            variant: 'destructive',
+                          })
+                        })
+                      }}
+                    >
+                      <Bookmark className={`ms-2 h-4 w-4 ${bookmarked ? 'fill-current' : ''}`} />
+                      {bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+                    </DropdownMenuItem>
+                    <ReportDialog targetType="mod" targetId={mod.id}>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Flag className="ms-2 h-4 w-4" />
+                        إبلاغ عن مشكلة
+                      </DropdownMenuItem>
+                    </ReportDialog>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </span>
             )}
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
-              <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التأييدات </span>
-              <span>{formatNumber(mod.endorsements)}</span>
-            </span>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
-              <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التحميلات </span>
-              <span>{formatNumber(mod.downloads)}</span>
-            </span>
-          </>
-        )}
-        {variant === 'trending' && (
-          <>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
-              <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التحميلات </span>
-              <span>{formatNumber(mod.downloads)}</span>
-            </span>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="المشاهدات">
-              <Eye className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">المشاهدات </span>
-              <span>{formatNumber(mod.views)}</span>
-            </span>
-          </>
-        )}
-        {variant === 'topEndorsed' && (
-          <>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
-              <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التأييدات </span>
-              <span>{formatNumber(mod.endorsements)}</span>
-            </span>
-          </>
-        )}
-        {variant === 'default' && (
-          <>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التأييدات">
-              <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التأييدات </span>
-              <span>{formatNumber(mod.endorsements)}</span>
-            </span>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="التحميلات">
-              <Download className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">التحميلات </span>
-              <span>{formatNumber(mod.downloads)}</span>
-            </span>
-            <span className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground" title="المشاهدات">
-              <Eye className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="sr-only">المشاهدات </span>
-              <span>{formatNumber(mod.views)}</span>
-            </span>
-          </>
-        )}
-      </div>
-    </Card>
+          </div>
+        </div>
+
+        {/* BODY */}
+        <div className="flex w-full flex-col gap-2 p-3">
+          {/* ZONE 1: IDENTITY */}
+          <h3 className="w-full text-sm font-bold leading-snug text-foreground line-clamp-2 min-h-[2.5em] transition-colors group-hover:text-primary">
+            {mod.name}
+          </h3>
+
+          {variant === 'compact' ? (
+            /* COMPACT: minimal stats only */
+            <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
+              <div className="flex items-center justify-center gap-1" title="التحميلات">
+                <Download className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.downloads)}</span>
+              </div>
+              <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
+                <Eye className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.views)}</span>
+              </div>
+              <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
+                <ThumbsUp className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.endorsements)}</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Publisher account box — full-width with profile link */}
+              {mod.author && (
+                <span
+                  role="link"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/profile/${encodeURIComponent(mod.author.username)}`)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      router.push(`/profile/${encodeURIComponent(mod.author.username)}`)
+                    }
+                  }}
+                  className="group/publisher flex w-full items-center gap-2 rounded-lg border border-amber-800/40 bg-gradient-to-l from-amber-900/20 to-orange-900/20 px-2.5 py-1.5 transition-all duration-150 hover:border-amber-600/60 hover:from-amber-900/30 hover:to-orange-900/30 cursor-pointer"
+                  style={{ boxShadow: '0 0 0 0 rgba(217,119,6,0)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 0 10px rgba(217,119,6,0.25)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 0 0 0 rgba(217,119,6,0)')}
+                >
+                  {mod.author.avatarUrl && (
+                    <img
+                      src={mod.author.avatarUrl}
+                      alt=""
+                      className="h-4 w-4 shrink-0 rounded-full object-cover border border-amber-700/50"
+                      loading="lazy"
+                    />
+                  )}
+                  <span className="text-[11px] font-bold text-foreground flex flex-wrap items-center gap-1">
+                    {mod.author.username}
+                    <RoleBadge role={mod.author.role} size="sm" />
+                    <TierBadge tier={mod.author.tier} role={mod.author.role} size="sm" />
+                    <CreatorBadge role={mod.author.role} specialRoles={mod.author.specialRoles} size={12} />
+                  </span>
+                  <span className="ms-auto text-[10px] font-bold text-amber-400">عرض ملف المؤلف</span>
+                </span>
+              )}
+
+              {/* ZONE 2: SPEC PANEL */}
+              <div className="flex w-full flex-col gap-1 border-y-2 border-border/60 bg-muted/30 px-2.5 py-2">
+                <div className="flex items-center gap-1">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/70" />
+                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground">النشر</span>
+                  <span className="text-border">|</span>
+                  <span className="text-xs font-bold text-foreground">
+                    {new Date(mod.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <History className="h-3.5 w-3.5 text-muted-foreground/70" />
+                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground">التحديث</span>
+                  <span className="text-border">|</span>
+                  <span className="text-xs font-bold text-foreground">
+                    {new Date(mod.updatedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                {mod.translationTeam && (
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground/70" />
+                    <span className="w-16 shrink-0 text-[11px] text-muted-foreground">الفريق</span>
+                    <span className="text-border">|</span>
+                    <span className="text-xs font-bold text-foreground">{mod.translationTeam}</span>
+                  </div>
+                )}
+                {mod.series && (
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5 text-muted-foreground/70" />
+                    <span className="w-16 shrink-0 text-[11px] text-muted-foreground">السلسلة</span>
+                    <span className="text-border">|</span>
+                    <span className="text-xs font-bold text-foreground">{mod.series}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ZONE 3: STATS BAR */}
+              <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
+                <div className="flex items-center justify-center gap-1" title="التحميلات">
+                  <Download className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.downloads)}</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
+                  <Eye className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.views)}</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
+                  <ThumbsUp className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.endorsements)}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </article>
+    </Link>
   )
 }
 
-export function ModCardSkeleton() {
+export function ModCardSkeleton({ variant = 'full' }: { variant?: 'full' | 'compact' } = {}) {
+  const isCompact = variant === 'compact'
   return (
-    <Card className="overflow-hidden rounded-none border-[3px] border-border bg-card p-0 shadow-[4px_4px_0_0_var(--border)]">
-      <div className="aspect-video animate-pulse bg-secondary border-b-[3px] border-border" />
-      <div className="space-y-2 px-3 pb-3 pt-3">
-        <div className="h-4 w-3/4 animate-pulse bg-secondary" />
-        <div className="h-3 w-1/2 animate-pulse bg-secondary" />
-        <div className="h-3 w-2/3 animate-pulse bg-secondary pt-1" />
-        <div className="space-y-1 pt-1">
-          <div className="h-3 w-1/3 animate-pulse bg-secondary" />
-          <div className="h-3 w-1/3 animate-pulse bg-secondary" />
-          <div className="h-3 w-1/4 animate-pulse bg-secondary" />
-        </div>
-        <div className="h-8 w-full animate-pulse bg-secondary pt-1" />
+    <div className="h-full rounded-none border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)]">
+      <div className={`w-full bg-muted animate-pulse ${isCompact ? 'aspect-[16/9]' : 'aspect-video'}`} />
+      <div className="flex flex-col gap-2 p-3">
+        <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
+        {isCompact ? (
+          <div className="grid grid-cols-3 pt-2 border-t-2 border-border/60">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={`flex items-center justify-center gap-1 ${i > 0 ? 'border-s border-border/60' : ''}`}>
+                <div className="h-3 w-3 bg-muted rounded animate-pulse" />
+                <div className="h-3 bg-muted rounded w-8 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="h-3 bg-muted rounded w-1/3 animate-pulse" />
+            <div className="flex flex-col gap-1.5 border-y-2 border-border/60 bg-muted/30 px-2.5 py-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <div className="h-3.5 w-3.5 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-12 animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-px animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-16 animate-pulse" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 pt-2 border-t-2 border-border/60">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={`flex items-center justify-center gap-1 ${i > 0 ? 'border-s border-border/60' : ''}`}>
+                  <div className="h-3.5 w-3.5 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-8 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      <div className="h-9 animate-pulse bg-secondary border-t-[3px] border-border" />
-    </Card>
+    </div>
   )
 }

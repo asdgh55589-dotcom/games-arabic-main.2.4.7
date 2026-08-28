@@ -85,7 +85,13 @@ export default function UserDetailPage() {
   useEffect(() => {
     fetch(`/api/admin/users/${id}`)
       .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
-      .then((data) => { setUser(data.user); setActions(data.actions || []); setComments(data.comments || []) })
+      .then((data) => {
+        const payload = data?.data ?? data
+        if (!payload?.user) throw new Error('المستخدم غير موجود')
+        setUser(payload.user)
+        setActions(payload.actions || [])
+        setComments(payload.comments || [])
+      })
       .catch(() => setError('فشل تحميل بيانات المستخدم'))
       .finally(() => setLoading(false))
   }, [id])
@@ -94,13 +100,18 @@ export default function UserDetailPage() {
     if (user) {
       fetch(`/api/admin/users/${user.id}/tier-history`)
         .then(r => r.json())
-        .then(data => setTierHistory(data.history || []))
+        .then(data => {
+          const payload = data?.data ?? data
+          setTierHistory(payload?.history ?? payload ?? [])
+        })
 
       fetch('/api/admin/special-roles')
         .then(r => r.json())
         .then(data => {
+          const payload = data?.data ?? data
+          const roles = payload?.roles ?? payload ?? []
           const userRoleKeys = (user.specialRoles || '').split(',').filter(Boolean)
-          setSpecialRoles(data.roles.filter((r: any) => userRoleKeys.includes(r.key)))
+          setSpecialRoles(roles.filter((r: any) => userRoleKeys.includes(r.key)))
         })
     }
   }, [user])
@@ -114,7 +125,10 @@ export default function UserDetailPage() {
         body: JSON.stringify({ type: 'perm', reason }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحظر')
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحظر'
+        throw new Error(msg)
+      }
       toast({ title: 'تم الحظر' })
       setUser((u) => u ? {
         ...u,
@@ -196,9 +210,9 @@ export default function UserDetailPage() {
         </div>
         <div className="flex gap-2">
           {isBanned ? (
-            <Button variant="outline" size="sm" onClick={onUnban}>إلغاء الحظر</Button>
+            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onUnban}>إلغاء الحظر</Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={onBan}>حظر</Button>
+            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onBan}>حظر</Button>
           )}
         </div>
       </div>
@@ -295,7 +309,7 @@ export default function UserDetailPage() {
           ) : (
             <div className="space-y-3">
               {comments.map((c) => (
-                <Link key={c.id} href={`/?view=mod&slug=${c.mod.slug}`} target="_blank" className="block rounded-md p-2 transition-colors hover:bg-accent/50">
+                <Link key={c.id} href={`/mod/${c.mod.slug}`} target="_blank" className="block rounded-md p-2 transition-colors hover:bg-accent/50">
                   <p className="line-clamp-2 text-sm">{c.text}</p>
                   <div className="mt-1 text-xs text-muted-foreground">على {c.mod.name} · {timeAgo(c.createdAt)}</div>
                 </Link>
@@ -310,7 +324,7 @@ export default function UserDetailPage() {
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div className="flex items-center gap-4">
               <h3 className="text-lg font-semibold">المستوى الحالي</h3>
-              <TierBadge tier={user.tier} size="md" />
+              <TierBadge tier={user.tier} role={user.role} size="md" />
             </div>
 
             <div className="flex items-center gap-4">

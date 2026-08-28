@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/games/[slug]/categories — أقسام لعبة معينة
 export async function GET(
@@ -14,12 +15,12 @@ export async function GET(
     })
 
     if (!game) {
-      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
+      return notFound('Game not found')
     }
 
-    return NextResponse.json({ categories: game.categories })
+    return ok(game.categories)
   } catch (err) {
     console.error('[api/games/[slug]/categories] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed to fetch categories')
   }
 }

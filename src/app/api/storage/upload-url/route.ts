@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ok, notFound, unauthorized, validationFail, internalError } from '@/lib/api-response'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
@@ -32,24 +33,9 @@ export async function POST(req: NextRequest) {
       return validationFail({ bucket: 'Invalid bucket' })
     }
 
-    const supabase = await createClient()
-    const {
-      data: { user: supabaseUser },
-    } = await supabase.auth.getUser()
-
-    if (!supabaseUser) {
-      return unauthorized()
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: {
-        OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
-      },
-      select: { id: true },
-    })
-
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return notFound()
+      return unauthorized()
     }
 
     const adminClient = createAdminClient()

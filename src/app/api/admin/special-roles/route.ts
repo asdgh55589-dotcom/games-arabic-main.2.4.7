@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET() {
   try {
     await requireAdmin()
-    const roles = await db.specialRole.findMany({ orderBy: { name: 'asc' } })
-    return NextResponse.json({ roles })
+    const roles = await db.specialRole.findMany({ take: 100, orderBy: { name: 'asc' } })
+    return ok({ roles })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
 
@@ -27,9 +27,8 @@ export async function POST(request: NextRequest) {
         description: body.description || ''
       }
     })
-    return NextResponse.json({ role })
+    return ok({ role })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

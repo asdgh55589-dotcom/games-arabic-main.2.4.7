@@ -35,10 +35,10 @@ export function PasswordModal({ userId, onClose, onSubmit }: PasswordModalProps)
           <p className="mt-1 text-xs text-destructive">6 أحرف على الأقل</p>
         )}
         <div className="mt-3 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onClose}>
             إلغاء
           </Button>
-          <Button size="sm" disabled={!isValid} onClick={() => onSubmit(userId, password)}>
+          <Button size="sm" className="min-h-[44px]" disabled={!isValid} onClick={() => onSubmit(userId, password)}>
             حفظ
           </Button>
         </div>

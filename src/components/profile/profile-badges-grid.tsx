@@ -12,10 +12,9 @@ interface BadgeData {
 
 interface ProfileBadgesGridProps {
   badges: BadgeData[]
-  accent: string
 }
 
-export function ProfileBadgesGrid({ badges, accent }: ProfileBadgesGridProps) {
+export function ProfileBadgesGrid({ badges }: ProfileBadgesGridProps) {
   if (badges.length === 0) {
     return (
       <div className="grid place-items-center py-16 text-center">
@@ -31,15 +30,14 @@ export function ProfileBadgesGrid({ badges, accent }: ProfileBadgesGridProps) {
         <div
           key={b.id}
           className={`rounded-lg bg-[#1a1a1a] p-4 text-center transition-all ${
-            b.earned ? 'ring-1' : 'opacity-40 grayscale'
+            b.earned ? 'ring-1 ring-primary/30' : 'opacity-40 grayscale'
           }`}
-          style={b.earned ? { borderColor: accent, '--tw-ring-color': accent + '50' } as React.CSSProperties : {}}
         >
           <div className="mb-2 text-3xl">{b.icon}</div>
           <h4 className="text-sm font-bold text-white">{b.name}</h4>
           <p className="mt-1 text-xs text-gray-500">{b.description}</p>
           {b.earned && (
-            <Badge className="mt-2 text-[10px]" style={{ backgroundColor: accent + '33', color: accent }}>
+            <Badge className="mt-2 text-[10px] bg-primary/20 text-primary">
               مكتسبة
             </Badge>
           )}

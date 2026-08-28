@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/admin/teams/[id] — تفاصيل الفريق
 export async function GET(
@@ -16,23 +17,23 @@ export async function GET(
       include: {
         memberships: { orderBy: { joinedAt: 'desc' } },
         contactLinks: { orderBy: { order: 'asc' } },
+        customTabs: { orderBy: { order: 'asc' } },
         mods: {
           select: { id: true, name: true, slug: true, downloads: true, endorsements: true, thumbnailUrl: true },
           orderBy: { downloads: 'desc' },
         },
-        _count: { select: { mods: true, memberships: true } },
+        _count: { select: { mods: true, memberships: true, follows: true } },
       },
     })
 
     if (!team) {
-      return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
+      return notFound('الفريق غير موجود')
     }
 
-    return NextResponse.json({ team })
+    return ok(team)
   } catch (err) {
     console.error('[admin/teams/[id] GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -48,7 +49,7 @@ export async function PUT(
 
     const existing = await db.team.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
+      return notFound('الفريق غير موجود')
     }
 
     const data: Record<string, unknown> = {}
@@ -61,13 +62,73 @@ export async function PUT(
     if (body.isOfficial !== undefined) data.isOfficial = body.isOfficial
     if (body.isFeatured !== undefined) data.isFeatured = body.isFeatured
     if (body.order !== undefined) data.order = body.order
+    if (body.ownerId !== undefined) data.ownerId = body.ownerId || null
+    if (body.hiddenTabs !== undefined) data.hiddenTabs = body.hiddenTabs
 
-    const team = await db.team.update({ where: { id }, data })
-    return NextResponse.json({ team })
+    if (Array.isArray(body.contactLinks)) {
+      const website = body.contactLinks.find((c: { type?: string; url?: string }) => c.type === 'website' && c.url)
+      const discord = body.contactLinks.find((c: { type?: string; url?: string }) => c.type === 'discord' && c.url)
+      if (website) data.websiteUrl = website.url
+      if (discord) data.discordUrl = discord.url
+
+      await db.$transaction(async (tx) => {
+        await tx.teamContactLink.deleteMany({ where: { teamId: id } })
+        for (let i = 0; i < body.contactLinks.length; i++) {
+          const c = body.contactLinks[i]
+          if (!c.url) continue
+          await tx.teamContactLink.create({
+            data: {
+              teamId: id,
+              type: c.type || 'website',
+              label: c.label || '',
+              url: c.url,
+              order: c.order ?? i,
+            },
+          })
+        }
+        await tx.team.update({ where: { id }, data })
+      })
+    } else {
+      await db.team.update({ where: { id }, data })
+    }
+
+    // Handle customTabs separately
+    if (Array.isArray(body.customTabs)) {
+      await db.$transaction(async (tx) => {
+        await tx.teamCustomTab.deleteMany({ where: { teamId: id } })
+        for (let i = 0; i < body.customTabs.length; i++) {
+          const t = body.customTabs[i]
+          if (!t.title) continue
+          await tx.teamCustomTab.create({
+            data: {
+              teamId: id,
+              title: t.title,
+              content: t.content || '',
+              order: t.order ?? i,
+              visible: t.visible !== undefined ? Boolean(t.visible) : true,
+            },
+          })
+        }
+      })
+    }
+
+    const team = await db.team.findUnique({
+      where: { id },
+      include: {
+        memberships: { orderBy: { joinedAt: 'desc' } },
+        contactLinks: { orderBy: { order: 'asc' } },
+        customTabs: { orderBy: { order: 'asc' } },
+        mods: {
+          select: { id: true, name: true, slug: true, downloads: true, endorsements: true, thumbnailUrl: true },
+          orderBy: { downloads: 'desc' },
+        },
+        _count: { select: { mods: true, memberships: true, follows: true } },
+      },
+    })
+    return ok(team)
   } catch (err) {
     console.error('[admin/teams/[id] PUT] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -79,22 +140,21 @@ export async function DELETE(
   try {
     const user = await requireModerator()
     if (!canDelete(user)) {
-      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+      return forbidden('لا تملك صلاحية الحذف')
     }
     const { id } = await params
 
     const existing = await db.team.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'الفريق غير موجود' }, { status: 404 })
+      return notFound('الفريق غير موجود')
     }
 
     // إلغاء الربط من التعريبات
     await db.mod.updateMany({ where: { teamId: id }, data: { teamId: null } })
     await db.team.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/teams/[id] DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

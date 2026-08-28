@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
 import { sanitizeUrl } from '@/lib/sanitize'
+import { ok, notFound, unauthorized, forbidden, conflict, internalError, validationFail } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -11,11 +12,10 @@ interface RouteParams {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    const viewer = await getOptionalSession()
 
-    const user = await db.user.findUnique({
-      where: { username },
+    const user = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: {
         id: true,
         username: true,
@@ -49,45 +49,18 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
-
-    const viewer = supabaseUser
-      ? await db.user.findFirst({
-          where: {
-            OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
-          },
-          select: { id: true, username: true },
-        })
-      : null
 
     const isOwner = viewer?.id === user.id
 
     if (!isOwner && user.profileVisibility === 'nobody') {
-      return NextResponse.json(
-        {
-          error: 'Profile is private',
-          visibility: {
-            canView: false,
-            reason: 'private',
-          },
-        },
-        { status: 403 }
-      )
+      return forbidden('Profile is private')
     }
 
     if (!isOwner && user.profileVisibility === 'followers') {
       if (!viewer) {
-        return NextResponse.json(
-          {
-            error: 'Followers only',
-            visibility: {
-              canView: false,
-              reason: 'followers_only',
-            },
-          },
-          { status: 403 }
-        )
+        return forbidden('Followers only')
       }
 
       const follow = await db.follow.findFirst({
@@ -99,16 +72,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       })
 
       if (!follow) {
-        return NextResponse.json(
-          {
-            error: 'Followers only',
-            visibility: {
-              canView: false,
-              reason: 'followers_only',
-            },
-          },
-          { status: 403 }
-        )
+        return forbidden('Followers only')
       }
     }
 
@@ -122,8 +86,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const totalEndorsements = mods.reduce((s, m) => s + m.endorsements, 0)
     const totalViews = mods.reduce((s, m) => s + m.views, 0)
 
-    // هل المستخدم معرب؟
-    const isTranslator = ['owner', 'admin', 'moderator'].includes(user.role)
+    // هل المستخدم معرب؟ أي شخص نشر تعريب أو لديه دور إداري
+    const isTranslator = user._count.mods > 0 || ['owner', 'admin', 'moderator'].includes(user.role)
 
     // تاريخ أول تعريب
     let firstModDate: string | null = null
@@ -172,27 +136,32 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         ? 100
         : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
 
-    return NextResponse.json({
-      profile: {
-        ...user,
-        stats: {
-          mods: user._count.mods,
-          totalDownloads,
-          totalEndorsements,
-          totalViews,
-          followersCount,
-          followingCount,
+    return ok(
+      {
+        profile: {
+          ...user,
+          stats: {
+            mods: user._count.mods,
+            totalDownloads,
+            totalEndorsements,
+            totalViews,
+            followersCount,
+            followingCount,
+          },
+          onlineStatus,
+          xp: { ...xpLevel, progress: xpProgress },
+          isTranslator,
+          firstModDate,
+          rating: user.qualityScore,
         },
-        onlineStatus,
-        xp: { ...xpLevel, progress: xpProgress },
-        isTranslator,
-        firstModDate,
-        rating: user.qualityScore,
       },
-    })
+      {
+        headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' },
+      }
+    )
   } catch (err: any) {
     console.error('[profile GET] failed:', err?.message, err?.stack)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }
 
@@ -201,33 +170,24 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const body = await req.json()
     const { username } = await params
-    console.log('[API] Profile PUT - username:', username, 'body:', body)
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true, username: true },
-    })
+    console.log('[API] Profile PUT - username:', username, 'fields:', Object.keys(body))
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return unauthorized()
     }
 
-    // فقط صاحب الملف يمكنه التعديل
-    if (neonUser.username !== username) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // فقط صاحب الملف يمكنه التعديل — مقارنة غير حساسة لحالة الأحرف
+    if (neonUser.username.toLowerCase() !== username.toLowerCase()) {
+      return forbidden()
     }
 
     const updateData: Record<string, string | null | boolean> = {}
 
-    // Handle username change separately
-    if (body.username && body.username !== neonUser.username) {
-      const existingUser = await db.user.findUnique({ where: { username: body.username } })
+    // Handle username change separately — فحص غير حساس لحالة الأحرف
+    if (body.username && body.username.toLowerCase() !== neonUser.username.toLowerCase()) {
+      const existingUser = await db.user.findFirst({ where: { username: { equals: body.username, mode: 'insensitive' } } })
       if (existingUser) {
-        return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+        return conflict('Username already taken')
       }
       updateData.username = body.username
     }
@@ -242,7 +202,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (body[field] !== undefined) {
         if (field === 'profileVisibility') {
           if (!allowedVisibility.includes(body[field])) {
-            return NextResponse.json({ error: 'Invalid profile visibility' }, { status: 400 })
+            return validationFail('Invalid profile visibility')
           }
 
           updateData[field] = body[field]
@@ -253,7 +213,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           const value = String(body[field] || '').trim()
 
           if (value && !/^#([0-9A-F]{3}){1,2}$/i.test(value)) {
-            return NextResponse.json({ error: 'Invalid accent color' }, { status: 400 })
+            return validationFail('Invalid accent color')
           }
 
           updateData[field] = value || null
@@ -297,9 +257,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    return NextResponse.json({ profile: updatedUser })
+    return ok({ profile: updatedUser })
   } catch (err: any) {
     console.error('[profile PUT] failed:', err?.message, err?.stack)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

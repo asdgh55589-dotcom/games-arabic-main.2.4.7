@@ -1,8 +1,9 @@
+// Updated for new API response format
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Trash2, Eye, EyeOff, Loader2, Youtube, Image as ImageIcon, Code } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Loader2, Youtube, Image as ImageIcon, Code, MousePointer, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,14 @@ interface Ad {
   size: string
   order: number
   visible: boolean
+  clicksCount: number
+}
+
+interface AdStats {
+  totalClicks: number
+  clicksCount: number
+  recentClicks: Array<{ id: string; ipAddress: string | null; clickedAt: string; userId: string | null }>
+  clicksByDate: Array<{ date: string; count: number }>
 }
 
 const AD_TYPES = [
@@ -49,11 +58,14 @@ export default function AdminAdsPage() {
   const [link, setLink] = useState('')
   const [size, setSize] = useState('medium')
   const [saving, setSaving] = useState(false)
+  const [statsAd, setStatsAd] = useState<Ad | null>(null)
+  const [stats, setStats] = useState<AdStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/ads')
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => data?.ads ? setAds(data.ads) : null)
+      .then((data) => data?.data ? setAds(data.data) : null)
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -77,10 +89,14 @@ export default function AdminAdsPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل')
-
+      if (!res.ok) {
+        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل'
+        throw new Error(msg)
+      }
+      const created = data?.data ?? data?.ad
+      if (!created) throw new Error('فشل - استجابة غير متوقعة')
       toast({ title: 'تم إضافة الإعلان' })
-      setAds((prev) => [...prev, data.ad])
+      setAds((prev) => [...prev, created])
       setUrl(''); setTitle(''); setDescription(''); setLink(''); setType('youtube'); setSize('medium')
       setShowForm(false)
     } catch (err) {
@@ -116,6 +132,20 @@ export default function AdminAdsPage() {
     } catch {
       toast({ title: 'خطأ', variant: 'destructive' })
     }
+  }
+
+  const onShowStats = async (ad: Ad) => {
+    setStatsAd(ad)
+    setLoadingStats(true)
+    try {
+      const res = await fetch(`/api/admin/ads/${ad.id}/stats`)
+      const data = await res.json()
+      if (res.ok) {
+        const payload = data?.data ?? data
+        setStats(payload)
+      }
+    } catch {}
+    setLoadingStats(false)
   }
 
   if (loading) {
@@ -231,20 +261,86 @@ export default function AdminAdsPage() {
                     <Badge variant="outline" className="text-[10px]">{ad.size}</Badge>
                     {ad.description && <span className="truncate">· {ad.description}</span>}
                   </div>
+                  <div className="mt-1 flex items-center gap-1 text-xs">
+                    <MousePointer className="h-3 w-3 text-blue-500" />
+                    <span className="font-medium tabular-nums">{(ad.clicksCount ?? 0).toLocaleString('en-US')}</span>
+                    <span className="text-muted-foreground">نقرة</span>
+                  </div>
                 </div>
 
                 {/* أزرار */}
                 <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onToggle(ad)} title={ad.visible ? 'إخفاء' : 'إظهار'}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onShowStats(ad)} title="الإحصائيات" aria-label="الإحصائيات">
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onToggle(ad)} title={ad.visible ? 'إخفاء' : 'إظهار'} aria-label={ad.visible ? 'إخفاء' : 'إظهار'}>
                     {ad.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10" onClick={() => onDelete(ad)} title="حذف">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(ad)} title="حذف" aria-label="حذف">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Stats Dialog */}
+      {statsAd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setStatsAd(null)}>
+          <div className="max-h-[80vh] w-full max-w-lg overflow-auto rounded-xl border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold">إحصائيات: {statsAd.title || statsAd.url.slice(0, 30)}</h3>
+              <Button size="sm" className="min-h-[44px]" variant="ghost" onClick={() => setStatsAd(null)}>
+                إغلاق
+              </Button>
+            </div>
+            {loadingStats ? (
+              <div className="grid place-items-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : stats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border bg-card p-4 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{(stats.totalClicks ?? 0).toLocaleString('en-US')}</div>
+                    <div className="text-xs text-muted-foreground">إجمالي النقرات</div>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{(stats.clicksCount ?? 0).toLocaleString('en-US')}</div>
+                    <div className="text-xs text-muted-foreground">العداد</div>
+                  </div>
+                </div>
+                {stats.clicksByDate.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">النقرات حسب التاريخ</h4>
+                    {stats.clicksByDate.map((d) => (
+                      <div key={d.date} className="flex items-center justify-between rounded border px-3 py-1.5 text-sm">
+                        <span>{d.date}</span>
+                        <span className="font-bold">{d.count.toLocaleString('en-US')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {stats.recentClicks.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">آخر النقرات</h4>
+                    <div className="max-h-48 overflow-auto rounded border">
+                      {stats.recentClicks.slice(0, 10).map((c) => (
+                        <div key={c.id} className="flex items-center justify-between border-b px-3 py-1.5 text-xs last:border-0">
+                          <span className="truncate">{c.ipAddress || '—'}</span>
+                          <span className="text-muted-foreground">{new Date(c.clickedAt).toLocaleDateString('en-US')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">لا توجد بيانات</p>
+            )}
+          </div>
         </div>
       )}
     </div>

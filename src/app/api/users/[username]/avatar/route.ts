@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
+import { ok, notFound, forbidden, unauthorized, rateLimited, validationFail, internalError } from '@/lib/api-response'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAGIC_BYTES: Record<string, number[]> = {
@@ -28,49 +30,42 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const startedAt = Date.now()
 
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true, username: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return unauthorized()
     }
 
     const { username } = await params
-    if (neonUser.username !== username) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (neonUser.username.toLowerCase() !== username.toLowerCase()) {
+      return forbidden()
+    }
+
+    const adminClient = createAdminClient()
+    if (!adminClient) {
+      return internalError('Storage not configured')
     }
 
     // Rate limit على رفع الملفات
     const rl = await rateLimit(req, { limit: 5, window: 300, keyPrefix: 'upload:avatar' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقائق.' },
-        { status: 429, headers: rateLimitHeaders(rl) }
-      )
+      return rateLimited()
     }
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     if (!file) {
-      return NextResponse.json({ error: 'No file' }, { status: 400 })
+      return validationFail({ file: 'No file' })
     }
 
     // حظر SVG (قد يحتوي scripts)
     const ext = file.name.split('.').pop()?.toLowerCase()
     if (ext === 'svg' || file.type === 'image/svg+xml') {
-      return NextResponse.json({ error: 'ملفات SVG غير مسموحة' }, { status: 400 })
+      return validationFail({ file: 'ملفات SVG غير مسموحة' })
     }
 
     // فحص الحجم (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 5MB)' }, { status: 400 })
+      return validationFail({ file: 'File too large (max 5MB)' })
     }
 
     // قراءة الملف لفحص magic bytes
@@ -82,14 +77,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // فحص نوع الملف عبر magic bytes (أكثر موثوقية من file.type)
     const detectedMime = checkMagicBytes(arrayBuffer)
     if (!detectedMime || !ALLOWED_MIME_TYPES.includes(detectedMime)) {
-      return NextResponse.json({ error: 'نوع الملف غير مسموح' }, { status: 400 })
+      return validationFail({ file: 'نوع الملف غير مسموح' })
     }
 
     // رفع إلى Supabase Storage
     const path = `avatars/${neonUser.id}.${ext || 'jpg'}`
     const uploadStartedAt = Date.now()
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from('avatars')
       .upload(path, arrayBuffer, {
         contentType: detectedMime,
@@ -100,14 +95,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     if (uploadError) {
       // لو Bucket مش موجود، ننشئه
-      await supabase.storage.createBucket('avatars', { public: true })
-      await supabase.storage.from('avatars').upload(path, arrayBuffer, {
+      await adminClient.storage.createBucket('avatars', { public: true })
+      await adminClient.storage.from('avatars').upload(path, arrayBuffer, {
         contentType: file.type,
         upsert: true,
       })
     }
 
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+    const { data: urlData } = adminClient.storage.from('avatars').getPublicUrl(path)
     const avatarUrl = urlData.publicUrl
 
     const dbStartedAt = Date.now()
@@ -120,9 +115,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     console.log('[avatar upload] db update ms:', Date.now() - dbStartedAt)
     console.log('[avatar upload] total ms:', Date.now() - startedAt)
 
-    return NextResponse.json({ avatarUrl })
+    return ok({ avatarUrl })
   } catch (err) {
     console.error('[avatar POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

@@ -1,22 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/notifications/unread — الإشعارات غير المقروءة
 export async function GET(_req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ notifications: [] })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ notifications: [] })
+      return ok([])
     }
 
     const rawNotifications = await db.notification.findMany({
@@ -45,9 +37,9 @@ export async function GET(_req: NextRequest) {
       link: (n.data as any)?.link || null,
     }))
 
-    return NextResponse.json({ notifications })
+    return ok(notifications)
   } catch (err) {
     console.error('[notifications unread GET] failed:', err)
-    return NextResponse.json({ notifications: [] }, { status: 500 })
+    return internalError('Failed')
   }
 }

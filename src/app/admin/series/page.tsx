@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -45,7 +46,7 @@ export default function AdminSeriesPage() {
         if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then((data) => data?.series ? setSeries(data.series) : null)
+      .then((data) => data?.data ? setSeries(data.data) : null)
       .catch(() => setError('فشل تحميل السلاسل'))
       .finally(() => setLoading(false))
   }, [])
@@ -70,9 +71,9 @@ export default function AdminSeriesPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الإنشاء')
+      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الإنشاء')
       toast({ title: 'تم الإنشاء', description: `تم إنشاء سلسلة "${newName}" بنجاح` })
-      setSeries((p) => [data.series, ...p])
+      setSeries((p) => [data.data, ...p])
       setNewName(''); setNewDescription(''); setNewBannerUrl(''); setNewLogoUrl('')
       setNewColor(''); setNewIsFeatured(false); setNewIsOfficial(false)
       setShowCreateForm(false)
@@ -212,9 +213,9 @@ export default function AdminSeriesPage() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-red-400 hover:bg-red-500/10"
+                        className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
                         onClick={() => onDelete(s)}
-                        title="حذف"
+                        title="حذف" aria-label="حذف"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

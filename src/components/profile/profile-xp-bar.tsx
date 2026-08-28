@@ -17,10 +17,9 @@ interface ProfileXpBarProps {
     points: number
     progress: number
   }
-  accent: string
 }
 
-export function ProfileXpBar({ xp, accent }: ProfileXpBarProps) {
+export function ProfileXpBar({ xp }: ProfileXpBarProps) {
   const currentLevel = XP_LEVELS[xp.level - 1] || XP_LEVELS[0]
   const nextLevel = XP_LEVELS[xp.level] || null
   const pointsInLevel = xp.points - (currentLevel?.min || 0)
@@ -29,8 +28,8 @@ export function ProfileXpBar({ xp, accent }: ProfileXpBarProps) {
   return (
     <div className="rounded-lg bg-[#1a1a1a] p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: accent + '33' }}>
-          <Star className="h-6 w-6" style={{ color: accent }} />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
+          <Star className="h-6 w-6 text-primary" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-white">المستوى {xp.level} — {xp.name}</h3>
@@ -46,11 +45,8 @@ export function ProfileXpBar({ xp, accent }: ProfileXpBarProps) {
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-[#222]">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${xp.progress}%`,
-              background: `linear-gradient(90deg, ${accent}, ${accent}cc)`,
-            }}
+            className="h-full rounded-full bg-primary transition-all duration-500"
+            style={{ width: `${xp.progress}%` }}
           />
         </div>
       </div>

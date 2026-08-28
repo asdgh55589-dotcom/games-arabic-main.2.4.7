@@ -1,106 +1,48 @@
-# توثيق المشروع
+# Documentation Index
 
-## دليل التوثيق
+> **Last Updated:** 2026-08-20
 
-### 1. المصادقة (Authentication)
-- **[توثيق المصادقة الكامل](./AUTHENTICATION.md)** — نظرة عامة على نظام المصادقة
-- **[مصادقة الإدارة](./ADMIN-AUTH.md)** — توثيق تسجيل دخول الإدارة
-- **[مصادقة Telegram](./TELEGRAM-AUTH.md)** — توثيق نظام Deep Linking
+Welcome to the Games Arabic project documentation. This index links to all documentation files.
 
----
+## Quick Links
 
-## ملخص سريع
+| Document | Description |
+|----------|-------------|
+| [../ARCHITECTURE.md](../ARCHITECTURE.md) | High-level architecture overview (file-based routing) |
+| [../TECHNICAL.md](../TECHNICAL.md) | Comprehensive technical documentation |
+| [API-STANDARDIZATION.md](./API-STANDARDIZATION.md) | API response format — 147 handlers, pagination, auth helpers |
+| [ZOD-SCHEMAS.md](./ZOD-SCHEMAS.md) | Centralized Zod schemas (`src/lib/schemas.ts`) |
+| [AUTH-SYSTEM.md](./AUTH-SYSTEM.md) | Supabase OAuth + JWT `ga_admin_role` + `tokenVersion` + IP ban |
+| [ROUTING-ARCHITECTURE.md](./ROUTING-ARCHITECTURE.md) | File-based routing, `generateMetadata`, 301 redirects |
+| [FRONTEND-ARCHITECTURE.md](./FRONTEND-ARCHITECTURE.md) | AppShell, 26 views, `useFetch`, providers |
+| [DATABASE.md](./DATABASE.md) | Prisma schema — 53 models, singleton, migrations |
+| [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) | Local setup, adding features, testing |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Standalone build, Caddy, env, monitoring |
+| [CHANGELOG.md](./CHANGELOG.md) | Architectural decisions (ADRs) + changelog |
+| [NOTIFICATION_ARCHITECTURE.md](./NOTIFICATION_ARCHITECTURE.md) | Notification Clean Architecture (Domain/Application/Infrastructure) |
+| [NOTIFICATION_TYPES.md](./NOTIFICATION_TYPES.md) | 20 notification types reference |
 
-### نظام المصادقة
-يستخدم المشروع 4 طرق لتسجيل الدخول:
+## Legacy / Detailed
 
-| الطريقة | الحالة | المسار |
-|---------|--------|--------|
-| Google OAuth | ✅ مفعّل | `/?view=login` |
-| Discord OAuth | ✅ مفعّل | `/?view=login` |
-| Telegram Deep Link | ✅ مفعّل | `/?view=login` |
-| Admin Login | ✅ مفعّل | `/admin/login` |
+| Document | Description |
+|----------|-------------|
+| [AUTHENTICATION.md](./AUTHENTICATION.md) | Auth overview (OAuth flows) — legacy, see AUTH-SYSTEM.md |
+| [ADMIN-AUTH.md](./ADMIN-AUTH.md) | Admin login system — legacy |
+| [TELEGRAM-AUTH.md](./TELEGRAM-AUTH.md) | Telegram Deep Link auth — legacy |
 
-### الملفات الرئيسية
+## For New Developers
 
-```
-src/
-├── app/api/auth/
-│   ├── callback/route.ts      # OAuth callback
-│   ├── login/route.ts         # Admin login
-│   ├── logout/route.ts        # Logout
-│   ├── me/route.ts            # Current user
-│   └── telegram/
-│       ├── route.ts           # Session + Status
-│       ├── poll/route.ts      # Polling
-│       └── webhook/route.ts   # Bot webhook
-├── lib/
-│   ├── auth.ts                # Core auth functions
-│   └── supabase/              # Supabase clients
-└── views/
-    └── login.tsx              # Login page
-```
+Start here:
+1. Read [../ARCHITECTURE.md](../ARCHITECTURE.md) for a 5-minute overview
+2. Read [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) to set up locally
+3. Read [API-STANDARDIZATION.md](./API-STANDARDIZATION.md) to understand the API layer
+4. Read [AUTH-SYSTEM.md](./AUTH-SYSTEM.md) for auth patterns
 
-### متغيرات البيئة المطلوبة
+## For AI Agents
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-
-# JWT
-JWT_SECRET=
-
-# OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-DISCORD_CLIENT_ID=
-DISCORD_CLIENT_SECRET=
-
-# Telegram
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_BOT_NAME=
-NEXT_PUBLIC_TELEGRAM_BOT_NAME=
-```
-
----
-
-## خطوات الإعداد
-
-### 1. Supabase Dashboard
-- أضف `https://games-arabic.vercel.app/api/auth/callback` إلى Redirect URLs
-
-### 2. Google Cloud Console
-- أضف `https://games-arabic.vercel.app/api/auth/callback` إلى Authorized redirect URIs
-
-### 3. Discord Developer Portal
-- أضف `https://games-arabic.vercel.app/api/auth/callback` إلى Redirects
-
-### 4. Telegram Bot
-- أنشئ البوت عبر `@BotFather`
-- ثبّت الـ webhook (للإنتاج)
-
----
-
-## الأدوار والصلاحيات
-
-| الدور | الصلاحيات |
-|-------|-----------|
-| `owner` | كل شيء + إدارة الأدوار |
-| `admin` | التعريبات + إدارة المستخدمين |
-| `moderator` | نشر/تعديل التعريبات |
-| `member` | لا يصلح للوحة التحكم |
-
----
-
-## الأمان
-
-- HttpOnly Cookies
-- Secure Cookies (HTTPS)
-- SameSite Lax
-- JWT Signing (HMAC-SHA256)
-- Token Versioning
-- Rate Limiting
-- IP Ban System
-- Audit Logging
+This project uses AGENTS.md at the root for agent instructions. Key conventions:
+- API responses use `{ data }` / `{ error: { code, message } }` format
+- Validation via Zod schemas in `src/lib/schemas.ts`
+- Auth via `requireAuth()` / `getOptionalSession()` from `src/lib/auth.ts`
+- Middleware runs in Edge runtime — no Prisma imports allowed
+- RTL layout (Arabic-first) with `dir="rtl"` on `<html>`

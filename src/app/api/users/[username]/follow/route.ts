@@ -1,33 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { getUseCases } from '@/application/use-cases/factory'
+import { rateLimit } from '@/lib/rate-limit'
+import { ok, notFound, unauthorized, conflict, internalError, validationFail, rateLimited } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
 }
 
 async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-  if (!supabaseUser) return null
-  return db.user.findFirst({
-    where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-    select: { id: true },
-  })
+  return getOptionalSession()
 }
 
 // GET /api/users/[username]/follow — حالة المتابعة
-export async function GET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
+    const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'follow:get' })
+    if (!rl.success) return rateLimited()
     const currentUser = await requireUser()
     const { username } = await params
 
-    const targetUser = await db.user.findUnique({
-      where: { username },
+    const targetUser = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true },
     })
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
 
     const isFollowing = currentUser
@@ -41,72 +40,86 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       db.follow.count({ where: { followerId: targetUser.id } }),
     ])
 
-    return NextResponse.json({ isFollowing, followersCount, followingCount })
+    return ok({ isFollowing, followersCount, followingCount })
   } catch (err) {
     console.error('[follow GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('حدث خطأ في الخادم')
   }
 }
 
 // POST /api/users/[username]/follow — متابعة مستخدم
-export async function POST(_req: NextRequest, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'follow:post' })
+    if (!rl.success) return rateLimited()
     const currentUser = await requireUser()
     if (!currentUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized('يجب تسجيل الدخول أولاً')
     }
 
     const { username } = await params
-    const targetUser = await db.user.findUnique({
-      where: { username },
+    const targetUser = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true },
     })
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
 
     if (currentUser.id === targetUser.id) {
-      return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 })
+      return validationFail({ _error: 'لا يمكنك متابعة نفسك' })
     }
 
     const existing = await db.follow.findUnique({
       where: { followerId_followingId: { followerId: currentUser.id, followingId: targetUser.id } },
     })
     if (existing) {
-      return NextResponse.json({ error: 'Already following' }, { status: 409 })
+      return conflict('أنت تتابع هذا المستخدم بالفعل')
     }
 
     await db.follow.create({
       data: { followerId: currentUser.id, followingId: targetUser.id },
     })
 
+    // إشعار المستخدم المتابع
+    try {
+      const useCases = getUseCases()
+      await useCases.sendFollow.execute({
+        followedUserId: targetUser.id,
+        followerId: currentUser.id,
+        followerName: currentUser.username || 'مستخدم',
+      })
+    } catch {}
+
     const [followersCount, followingCount] = await Promise.all([
       db.follow.count({ where: { followingId: targetUser.id } }),
       db.follow.count({ where: { followerId: targetUser.id } }),
     ])
 
-    return NextResponse.json({ isFollowing: true, followersCount, followingCount })
+    return ok({ isFollowing: true, followersCount, followingCount })
   } catch (err) {
     console.error('[follow POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('حدث خطأ في الخادم')
   }
 }
 
 // DELETE /api/users/[username]/follow — إلغاء المتابعة
-export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
+    const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'follow:delete' })
+    if (!rl.success) return rateLimited()
     const currentUser = await requireUser()
     if (!currentUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized('يجب تسجيل الدخول أولاً')
     }
 
     const { username } = await params
-    const targetUser = await db.user.findUnique({
-      where: { username },
+    const targetUser = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true },
     })
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
 
     await db.follow.deleteMany({
@@ -118,9 +131,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       db.follow.count({ where: { followerId: targetUser.id } }),
     ])
 
-    return NextResponse.json({ isFollowing: false, followersCount, followingCount })
+    return ok({ isFollowing: false, followersCount, followingCount })
   } catch (err) {
     console.error('[follow DELETE] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('حدث خطأ في الخادم')
   }
 }

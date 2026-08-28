@@ -1,66 +1,26 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationDropdown } from '@/components/notification-dropdown'
-import { subscribeToNotifications } from '@/lib/notifications/realtime'
-import type { Notification } from '@/lib/types'
+import { useNotificationPolling } from '@/hooks/use-notification-polling'
 
 interface NotificationBellProps {
   currentUser: { id: string; username: string } | null
 }
 
 export function NotificationBell({ currentUser }: NotificationBellProps) {
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const fetchUnreadCount = useCallback(async () => {
-    if (!currentUser) return
-    try {
-      const res = await fetch('/api/notifications/unread-count')
-      if (res.ok) {
-        const data = await res.json()
-        setUnreadCount(data.count)
-      }
-    } catch {}
-  }, [currentUser])
-
-  const fetchNotifications = useCallback(async () => {
-    if (!currentUser) return
-    setLoading(true)
-    try {
-      const res = await fetch('/api/notifications?limit=20')
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data.notifications)
-        setUnreadCount(data.unreadCount)
-      }
-    } catch {} finally {
-      setLoading(false)
-    }
-  }, [currentUser])
-
-  useEffect(() => {
-    fetchUnreadCount()
-    if (!currentUser?.id) return
-
-    const channel = subscribeToNotifications(currentUser.id, (notification) => {
-      setNotifications(prev => [notification, ...prev])
-      setUnreadCount(prev => prev + 1)
-    })
-
-    return () => {
-      channel.unsubscribe()
-    }
-  }, [currentUser?.id, fetchUnreadCount])
-
-  useEffect(() => {
-    if (open) fetchNotifications()
-  }, [open, fetchNotifications])
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+  } = useNotificationPolling({ userId: currentUser?.id ?? null })
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -72,22 +32,6 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const markAsRead = async (id: string) => {
-    try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'PUT' })
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch {}
-  }
-
-  const markAllAsRead = async () => {
-    try {
-      await fetch('/api/notifications/read-all', { method: 'PUT' })
-      setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })))
-      setUnreadCount(0)
-    } catch {}
-  }
-
   if (!currentUser) return null
 
   return (
@@ -95,7 +39,7 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
       <Button
         variant="ghost"
         size="sm"
-        className="relative h-9 w-9 p-0 text-gray-400 hover:text-white"
+        className="relative h-9 w-9 p-0 text-muted-foreground hover:text-foreground min-h-[44px]"
         onClick={() => setOpen(!open)}
       >
         <Bell className="h-5 w-5" />
@@ -109,7 +53,7 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
       {open && (
         <NotificationDropdown
           notifications={notifications}
-          loading={loading}
+          loading={isLoading}
           onMarkAsRead={markAsRead}
           onMarkAllAsRead={markAllAsRead}
           onClose={() => setOpen(false)}

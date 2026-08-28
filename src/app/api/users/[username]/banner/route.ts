@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
+import { ok, notFound, forbidden, unauthorized, rateLimited, validationFail, internalError } from '@/lib/api-response'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAGIC_BYTES: Record<string, number[]> = {
@@ -28,48 +30,41 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const startedAt = Date.now()
 
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true, username: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return unauthorized()
     }
 
     const { username } = await params
-    if (neonUser.username !== username) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (neonUser.username.toLowerCase() !== username.toLowerCase()) {
+      return forbidden()
+    }
+
+    const adminClient = createAdminClient()
+    if (!adminClient) {
+      return internalError('Storage not configured')
     }
 
     // Rate limit على رفع الملفات
     const rl = await rateLimit(req, { limit: 5, window: 300, keyPrefix: 'upload:banner' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد دقائق.' },
-        { status: 429, headers: rateLimitHeaders(rl) }
-      )
+      return rateLimited()
     }
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     if (!file) {
-      return NextResponse.json({ error: 'No file' }, { status: 400 })
+      return validationFail({ file: 'No file' })
     }
 
     // حظر SVG
     const ext = file.name.split('.').pop()?.toLowerCase()
     if (ext === 'svg' || file.type === 'image/svg+xml') {
-      return NextResponse.json({ error: 'ملفات SVG غير مسموحة' }, { status: 400 })
+      return validationFail({ file: 'ملفات SVG غير مسموحة' })
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 })
+      return validationFail({ file: 'File too large (max 10MB)' })
     }
 
     const arrayBufferStartedAt = Date.now()
@@ -80,14 +75,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // فحص magic bytes
     const detectedMime = checkMagicBytes(arrayBuffer)
     if (!detectedMime || !ALLOWED_MIME_TYPES.includes(detectedMime)) {
-      return NextResponse.json({ error: 'نوع الملف غير مسموح' }, { status: 400 })
+      return validationFail({ file: 'نوع الملف غير مسموح' })
     }
 
     const path = `banners/${neonUser.id}.${ext || 'jpg'}`
 
     const uploadStartedAt = Date.now()
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from('banners')
       .upload(path, arrayBuffer, {
         contentType: detectedMime,
@@ -103,17 +98,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       if (!shouldCreateBucket) {
         console.error('[banner upload] failed:', uploadError)
-        return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+        return internalError('Upload failed')
       }
-
-      const adminClient = createAdminClient()
 
       if (!adminClient) {
         console.error('[banner upload] missing SUPABASE_SERVICE_ROLE_KEY')
-        return NextResponse.json(
-          { error: 'Storage is not configured correctly' },
-          { status: 500 }
-        )
+        return internalError('Storage is not configured correctly')
       }
 
       const { error: createBucketError } = await adminClient.storage.createBucket('banners', {
@@ -122,7 +112,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       if (createBucketError && !createBucketError.message?.includes('already exists')) {
         console.error('[banner bucket create] failed:', createBucketError)
-        return NextResponse.json({ error: 'Failed to create storage bucket' }, { status: 500 })
+        return internalError('Failed to create storage bucket')
       }
 
       const { error: retryUploadError } = await adminClient.storage
@@ -134,11 +124,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       if (retryUploadError) {
         console.error('[banner retry upload] failed:', retryUploadError)
-        return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+        return internalError('Upload failed')
       }
     }
 
-    const { data: urlData } = supabase.storage.from('banners').getPublicUrl(path)
+    const { data: urlData } = adminClient.storage.from('banners').getPublicUrl(path)
 
     const dbStartedAt = Date.now()
 
@@ -151,9 +141,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     console.log('[banner upload] db update ms:', Date.now() - dbStartedAt)
     console.log('[banner upload] total ms:', Date.now() - startedAt)
 
-    return NextResponse.json({ bannerUrl: updatedUser.bannerUrl })
+    return ok({ bannerUrl: updatedUser.bannerUrl })
   } catch (err) {
     console.error('[banner upload] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

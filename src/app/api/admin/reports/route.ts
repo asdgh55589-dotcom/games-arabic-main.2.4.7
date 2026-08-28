@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       statsMap[s.status] = s._count
     }
 
-    return NextResponse.json({
+    return ok({
       reports,
       total,
       totalPages: Math.ceil(total / limit) || 1,
@@ -69,6 +70,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[admin/reports GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

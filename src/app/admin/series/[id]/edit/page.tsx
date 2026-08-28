@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -7,6 +8,7 @@ import { ArrowRight, Loader2, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 
 interface SeriesData {
@@ -52,7 +54,7 @@ export default function SeriesEditPage() {
         return r.json()
       })
       .then((data) => {
-        const s = data.series
+        const s = data.data
         setSeries(s)
         setName(s.name)
         setDescription(s.description)
@@ -79,9 +81,9 @@ export default function SeriesEditPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'فشل الحفظ')
+      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ')
       toast({ title: 'تم الحفظ', description: 'تم تحديث السلسلة بنجاح' })
-      setSeries(data.series)
+      setSeries(data.data)
     } catch (err) {
       toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
     } finally {
@@ -148,14 +150,10 @@ export default function SeriesEditPage() {
             />
           </div>
           <div>
-            <Label>صورة البانر</Label>
-            <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." />
-            {bannerUrl && <img src={bannerUrl} alt="" className="mt-2 h-24 w-full rounded object-cover" />}
+            <ImageUpload bucket="series" value={bannerUrl} onChange={setBannerUrl} label="صورة البانر" hint="سحب وإفلات — أعلى جودة" folder="banners" />
           </div>
           <div>
-            <Label>الشعار</Label>
-            <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
-            {logoUrl && <img src={logoUrl} alt="" className="mt-2 h-16 w-16 rounded object-cover" />}
+            <ImageUpload bucket="series" value={logoUrl} onChange={setLogoUrl} label="الشعار" hint="سحب وإفلات — أعلى جودة" folder="logos" />
           </div>
           <div>
             <Label>الترتيب</Label>

@@ -60,7 +60,7 @@ export async function rateLimitMiddleware(
   const result = await rateLimit(req, options)
   if (!result.success) {
     return NextResponse.json(
-      { error: 'Too many requests', code: 'RATE_LIMITED' },
+      { error: 'عدد كبير من الطلبات، حاول مرة أخرى لاحقاً', code: 'RATE_LIMITED' },
       { status: 429, headers: rateLimitHeaders(result) }
     )
   }

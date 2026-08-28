@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
+import { ok, internalError } from '@/lib/api-response'
 
 // POST /api/admin/users/[id]/warn — تحذير مستخدم
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,10 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       request: req,
     })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/users/[id]/warn] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

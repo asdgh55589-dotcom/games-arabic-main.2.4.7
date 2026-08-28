@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity } from 'lucide-react'
+import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark } from 'lucide-react'
 import { PcIcon, NintendoSwitchIcon, PlayStationIcon, Xbox360Icon } from '@/components/platform-icons'
+import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
+import { getSectionIcon } from '@/lib/section-icons'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -15,51 +17,77 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { formatNumber } from '@/lib/format'
 import { useDebounced } from '@/hooks/use-debounced'
-import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+import { useSettings } from '@/contexts/settings-context'
 import type { SearchResponse } from '@/lib/types'
 
 interface NavbarProps {
-  games: { slug: string; name: string; thumbnailUrl: string; modCount: number; platform: string }[]
+  games?: { slug: string; name: string; thumbnailUrl: string; modCount: number; platform: string }[]
   currentView?: string
 }
 
-const PLATFORMS = [
-  { key: 'PC', label: 'PC ARABIC', icon: PcIcon, color: '#0078D4' },
-  { key: 'X360', label: 'XBOX 360 ARABIC', icon: Xbox360Icon, color: '#107C10' },
-  { key: 'NS', label: 'NS ARABIC', icon: NintendoSwitchIcon, color: '#E60012' },
-  { key: 'PS4', label: 'PS4 ARABIC', icon: PlayStationIcon, color: '#0070D1' },
-  { key: 'PS3', label: 'PS3 ARABIC', icon: PlayStationIcon, color: '#003087' },
-  { key: 'PS2', label: 'PS2 ARABIC', icon: PlayStationIcon, color: '#4A4A4A' },
-  { key: 'PS1', label: 'PS1 ARABIC', icon: PlayStationIcon, color: '#8C8C8C' },
-] as const
+interface SectionItem {
+  id: string
+  slug: string
+  name: string
+  nameEn: string
+  key: string
+  icon: string
+  color: string
+  order: number
+}
 
-export function Navbar({ games, currentView = 'home' }: NavbarProps) {
+// Fallback sections for when API hasn't loaded yet
+const FALLBACK_SECTIONS: SectionItem[] = [
+  { id: '1', slug: 'pc', name: 'PC ARABIC', nameEn: 'PC Arabic', key: 'PC', icon: 'PcIcon', color: PLATFORM_COLORS.pc, order: 1 },
+  { id: '2', slug: 'xbox-360', name: 'XBOX 360 ARABIC', nameEn: 'Xbox 360 Arabic', key: 'X360', icon: 'Xbox360Icon', color: PLATFORM_COLORS.xbox360, order: 2 },
+  { id: '3', slug: 'ns', name: 'NS ARABIC', nameEn: 'NS Arabic', key: 'NS', icon: 'NintendoSwitchIcon', color: PLATFORM_COLORS.switch, order: 3 },
+  { id: '4', slug: 'ps4', name: 'PS4 ARABIC', nameEn: 'PS4 Arabic', key: 'PS4', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps4, order: 4 },
+  { id: '5', slug: 'ps3', name: 'PS3 ARABIC', nameEn: 'PS3 Arabic', key: 'PS3', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps3, order: 5 },
+  { id: '6', slug: 'ps2', name: 'PS2 ARABIC', nameEn: 'PS2 Arabic', key: 'PS2', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps2, order: 6 },
+  { id: '7', slug: 'ps1', name: 'PS1 ARABIC', nameEn: 'PS1 Arabic', key: 'PS1', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps1, order: 7 },
+  { id: '8', slug: 'ps5', name: 'PS5 ARABIC', nameEn: 'PS5 Arabic', key: 'PS5', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps5, order: 8 },
+  { id: '9', slug: 'android', name: 'ANDROID ARABIC', nameEn: 'Android Arabic', key: 'ANDROID', icon: 'Smartphone', color: PLATFORM_COLORS.android, order: 9 },
+]
+
+export function Navbar({ games, currentView }: NavbarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
+
+  // Fetch sections from API on mount
+  useEffect(() => {
+    fetch('/api/sections')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          setSections(json.data)
+        }
+      })
+      .catch(() => {}) // keep fallback
+  }, [])
+
+  // Support both new routes (/platform/PC) and old SPA (?view=platform&platform=PC)
+  const resolvedView = currentView || (() => {
+    if (pathname === '/') return 'home'
+    const segment = pathname.split('/')[1]
+    if (segment) return segment
+    return searchParams.get('view') || 'home'
+  })()
+  const resolvedPlatform = searchParams.get('platform') || (() => {
+    const match = pathname.match(/^\/platform\/([^/]+)/)
+    return match ? decodeURIComponent(match[1]) : null
+  })()
   const [q, setQ] = useState('')
   const [suggestions, setSuggestions] = useState<SearchResponse>({ mods: [], games: [] })
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeSuggestionIdx, setActiveSuggestionIdx] = useState(-1)
-  const [siteName, setSiteName] = useState('GAMES ARABIC')
-  const [currentUser, setCurrentUser] = useState<{ id: string; username: string; email: string; role: string; avatarUrl?: string | null } | null>(null)
 
-  useEffect(() => {
-    fetch('/api/settings').then(r => r.json()).then(({ settings }) => {
-      if (settings.site_name) setSiteName(settings.site_name)
-    }).catch(() => {})
-  }, [])
-
-  // التحقق من تسجيل الدخول
-  useEffect(() => {
-    fetch('/api/auth/me', {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
-    })
-      .then((r) => r.json())
-      .then((data) => setCurrentUser(data?.user || null))
-      .catch(() => setCurrentUser(null))
-  }, [])
+  const { user: currentUser, logout } = useAuth()
+  const { settings } = useSettings()
+  const siteName = settings.site_name || 'GAMES ARABIC'
 
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -80,9 +108,9 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
       signal: controller.signal,
     })
       .then((r) => r.ok ? r.json() : null)
-      .then((data: SearchResponse | null) => {
-        if (!cancelled && data) {
-          setSuggestions(data)
+      .then((json: { data: SearchResponse } | null) => {
+        if (!cancelled && json) {
+          setSuggestions(json.data)
           setShowSuggestions(true)
           setActiveSuggestionIdx(-1)
         }
@@ -133,7 +161,14 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (q.trim()) {
-      router.push(`/?view=search&q=${encodeURIComponent(q.trim())}`)
+      const trimmed = q.trim()
+      // Search tracking — fire-and-forget
+      fetch('/api/search/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmed }),
+      }).catch(() => {})
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`)
       setShowSuggestions(false)
       setMobileOpen(false)
       inputRef.current?.blur()
@@ -152,7 +187,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
       e.preventDefault()
       const selected = suggestions.mods[activeSuggestionIdx]
       if (selected) {
-        router.push(`/?view=mod&slug=${selected.slug}`)
+        router.push(`/mod/${selected.slug}`)
         setShowSuggestions(false)
         setQ('')
         inputRef.current?.blur()
@@ -167,12 +202,12 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
 
   // الشريط العلوي — موسّع، اللوجو على اليسار
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm" dir="ltr">
-      <div className="flex h-12 max-w-[1700px] items-center gap-4 px-4">
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/75 backdrop-blur-md" dir="ltr">
+      <div className="flex h-11 max-w-[1700px] items-center gap-2 px-3">
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden">
+            <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]" aria-label="القائمة">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Open menu</span>
             </Button>
@@ -181,7 +216,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
             <SheetHeader>
               <SheetTitle className="text-left">
                 <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                  <span className="text-2xl font-bold tracking-tight">
+                  <span className="text-xl font-bold tracking-tight">
                     <span className="text-primary">{siteName.split(' ')[0] || 'GAMES'}</span>
                     <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
                   </span>
@@ -189,22 +224,25 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-1">
-              {PLATFORMS.map((p) => {
-                const Icon = p.icon
+              {sections.map((s) => {
+                const Icon = getSectionIcon(s.icon)
                 return (
-                  <MobileLink key={p.key} href={`/?view=platform&platform=${p.key}`} onClick={() => setMobileOpen(false)} isActive={currentView === 'platform' && searchParams.get('platform') === p.key}>
-                    {p.label} <Icon width={14} height={14} color={p.color} className="inline-block align-middle ms-1" />
+                  <MobileLink key={s.id} href={`/platform/${s.key}`} onClick={() => setMobileOpen(false)} isActive={resolvedView === 'platform' && resolvedPlatform === s.key}>
+                    {s.name} <Icon width={14} height={14} color={s.color} className="inline-block align-middle ms-1" />
                   </MobileLink>
                 )
               })}
 
-              <MobileLink href="/?view=series" onClick={() => setMobileOpen(false)} isActive={currentView === 'series' || currentView === 'series-detail'}>
-                <Package width={16} height={16} style={{ color: '#8B5CF6' }} className="inline-block align-middle me-1" />
+              {/* Vertical divider */}
+              <div className="mx-4 my-1 h-px bg-border/60" />
+
+              <MobileLink href="/series" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'series' || resolvedView === 'series-detail'}>
+                <Package width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
                 السلاسل
               </MobileLink>
 
-              <MobileLink href="/?view=teams" onClick={() => setMobileOpen(false)} isActive={currentView === 'teams' || currentView === 'team-detail'}>
-                <Users width={16} height={16} style={{ color: '#F59E0B' }} className="inline-block align-middle me-1" />
+              <MobileLink href="/teams" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'teams' || resolvedView === 'team-detail'}>
+                <Users width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
                 الفرق
               </MobileLink>
 
@@ -215,7 +253,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                 {currentUser ? (
                   <>
                     <Button asChild variant="ghost" className="w-full">
-                      <Link href={`/?view=profile&user=${currentUser.username}`} onClick={() => setMobileOpen(false)}>
+                      <Link href={`/profile/${encodeURIComponent(currentUser.username)}`} onClick={() => setMobileOpen(false)}>
                         <User className="mr-2 h-4 w-4" /> {currentUser.username}
                       </Link>
                     </Button>
@@ -223,8 +261,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                       variant="ghost"
                       className="w-full text-destructive"
                       onClick={async () => {
-                        await fetch('/api/auth/logout', { method: 'POST' })
-                        setCurrentUser(null)
+                        await logout()
                         setMobileOpen(false)
                         window.location.href = '/'
                       }}
@@ -234,7 +271,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                   </>
                 ) : (
                   <Button asChild className="w-full">
-                    <Link href="/?view=login" onClick={() => setMobileOpen(false)}>
+                    <Link href="/login" onClick={() => setMobileOpen(false)}>
                       <LogIn className="mr-2 h-4 w-4" /> تسجيل الدخول
                     </Link>
                   </Button>
@@ -245,64 +282,69 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
         </Sheet>
 
         {/* Left group: Logo + Desktop nav — يبقى على اليسار مع بعض */}
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Logo — English, على اليسار */}
           <Link href="/" className="flex shrink-0 items-center gap-1" aria-label="Games Arabic home">
-            <span className="text-2xl font-extrabold tracking-tight">
+            <span className="text-xl font-extrabold tracking-tight">
               <span className="text-gradient">{siteName.split(' ')[0] || 'GAMES'}</span>
               <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
             </span>
           </Link>
 
-          {/* Desktop nav — المنصات فقط (الفئات الإضافية في الـ footer) */}
-          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Main">
-          {PLATFORMS.map((p) => {
-            const isActive = currentView === 'platform' && searchParams.get('platform') === p.key
-            const Icon = p.icon
+          {/* Desktop nav — الأقسام الديناميكية */}
+          <nav className="hidden items-center gap-0 lg:flex" aria-label="Main">
+          {sections.map((s) => {
+            const isActive = resolvedView === 'platform' && resolvedPlatform === s.key
+            const Icon = getSectionIcon(s.icon)
             return (
               <Link
-                key={p.key}
-                href={`/?view=platform&platform=${p.key}`}
-                className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                key={s.id}
+                href={`/platform/${s.key}`}
+                className={`whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
                   isActive
-                    ? 'bg-primary/15 text-primary border border-primary/30'
-                    : 'text-foreground/80 hover:bg-accent hover:text-primary'
+                    ? 'bg-white/15 text-white border border-white/30 nav-link-active-glow'
+                    : 'text-white hover:bg-white/10 hover:text-white'
                 }`}
+                style={isActive ? { '--link-glow': s.color } as React.CSSProperties : undefined}
               >
-                {p.label} <Icon width={14} height={14} color={p.color} className="inline-block align-middle ms-1" />
+                {s.name} <Icon width={12} height={12} color={s.color} className="inline-block align-middle ms-0.5" />
               </Link>
             )
           })}
+
+          {/* Vertical divider */}
+          <div className="mx-0.5 h-4 w-px bg-border/60" />
+
           <Link
-            href="/?view=series"
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              currentView === 'series' || currentView === 'series-detail'
-                ? 'bg-primary/15 text-primary border border-primary/30'
-                : 'text-foreground/80 hover:bg-accent hover:text-primary'
+            href="/series"
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+              resolvedView === 'series' || resolvedView === 'series-detail'
+                ? 'bg-white/15 text-white border border-white/30'
+                : 'text-white hover:bg-white/10 hover:text-white'
             }`}
           >
-            <Package width={14} height={14} style={{ color: '#8B5CF6' }} className="inline-block align-middle" />
+            <Package width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
             السلاسل
           </Link>
           <Link
-            href="/?view=teams"
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors -ms-2 ${
-              currentView === 'teams' || currentView === 'team-detail'
-                ? 'bg-primary/15 text-primary border border-primary/30'
-                : 'text-foreground/80 hover:bg-accent hover:text-primary'
+            href="/teams"
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+              resolvedView === 'teams' || resolvedView === 'team-detail'
+                ? 'bg-white/15 text-white border border-white/30'
+                : 'text-white hover:bg-white/10 hover:text-white'
             }`}
           >
-            <Users width={14} height={14} style={{ color: '#F59E0B' }} className="inline-block align-middle" />
+            <Users width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
             الفرق
           </Link>
         </nav>
         </div>
 
-        {/* Smart Search — عرض ثابت، لا يتمدّد */}
-        <div ref={searchRef} className="relative w-[380px] max-w-[calc(100%-340px)] min-w-[220px] shrink-0">
+        {/* Smart Search — يبدأ ضيق، يتمدّد عند التركيز */}
+        <div ref={searchRef} className="relative min-w-[160px] max-w-[200px] shrink flex-1 transition-all duration-200 focus-within:max-w-[260px] lg:min-w-[180px]">
           <form onSubmit={onSearch} role="search">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 ref={inputRef}
                 value={q}
@@ -314,7 +356,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                 aria-expanded={showSuggestions && hasSuggestions}
                 aria-autocomplete="list"
                 aria-controls="search-suggestions"
-                className="h-10 border-border bg-secondary/50 pl-11 pr-4 text-sm"
+                className="h-8 border-border bg-secondary/50 pl-10 pr-4 text-xs"
               />
               {q && (
                 <button
@@ -333,7 +375,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
             <div
               id="search-suggestions"
               role="listbox"
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
+              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl"
             >
               {/* قسم: التعريبات */}
               {suggestions.mods.length > 0 && (
@@ -345,7 +387,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                   {suggestions.mods.map((m, modIdx) => (
                     <Link
                       key={m.id}
-                      href={`/?view=mod&slug=${m.slug}`}
+                      href={`/mod/${m.slug}`}
                       onClick={clearSuggestions}
                       onMouseEnter={() => setActiveSuggestionIdx(modIdx)}
                       role="option"
@@ -371,7 +413,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
               {/* قسم: روابط سريعة */}
               <div className="border-t border-border bg-secondary/20 px-4 py-2">
                 <Link
-                  href={`/?view=search&q=${encodeURIComponent(q)}`}
+                  href={`/search?q=${encodeURIComponent(q)}`}
                   onClick={clearSuggestions}
                   className="flex items-center justify-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
@@ -385,7 +427,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
           {/* اقتراحات سريعة لما البحث فاضي */}
           {showSuggestions && !hasSuggestions && q.trim() && (
             <div
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-popover shadow-2xl"
+              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl"
             >
               <div className="px-4 py-3 text-center text-sm text-muted-foreground">
                 لا توجد نتائج لـ &quot;{q}&quot;
@@ -395,13 +437,13 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
         </div>
 
         {/* Right actions — موسّع */}
-        <div className="hidden items-center gap-3 sm:flex shrink-0 ml-auto">
+        <div className="hidden items-center gap-1.5 sm:flex shrink-0 ml-auto">
           <NotificationBell currentUser={currentUser} />
 
           {currentUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px]">
                   <Avatar className="h-6 w-6">
                     <AvatarImage src={currentUser.avatarUrl || undefined} />
                     <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
@@ -414,28 +456,28 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}&tab=about`} className="flex items-center gap-2 flex-row-reverse">
+                    <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`} className="flex items-center gap-2 flex-row-reverse">
                       <User className="h-4 w-4" />
                       الملف الشخصي
                     </Link>
                   </DropdownMenuItem>
                   {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
                     <DropdownMenuItem asChild>
-                      <Link href={`/?view=profile&user=${currentUser.username}&tab=mods`} className="flex items-center gap-2 flex-row-reverse">
+                      <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`} className="flex items-center gap-2 flex-row-reverse">
                         <FileText className="h-4 w-4" />
                         تعريباتي
                       </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href={`/?view=profile&user=${currentUser.username}&tab=activity`} className="flex items-center gap-2 flex-row-reverse">
-                      <Activity className="h-4 w-4" />
-                      النشاطات
+                    <Link href="/favorites" className="flex items-center gap-2 flex-row-reverse">
+                      <Bookmark className="h-4 w-4" />
+                      مفضلاتي
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/?view=settings" className="flex items-center gap-2 flex-row-reverse">
+                    <Link href="/settings" className="flex items-center gap-2 flex-row-reverse">
                       <Settings className="h-4 w-4" />
                       إدارة الحساب والإعدادات
                     </Link>
@@ -444,8 +486,7 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                   <DropdownMenuItem
                     className="flex items-center gap-2 flex-row-reverse text-destructive focus:text-destructive"
                     onClick={async () => {
-                      await fetch('/api/auth/logout', { method: 'POST' })
-                      setCurrentUser(null)
+                      await logout()
                       window.location.href = '/'
                     }}
                   >
@@ -455,8 +496,8 @@ export function Navbar({ games, currentView = 'home' }: NavbarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
           ) : (
-            <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary">
-              <Link href="/?view=login">
+            <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary min-h-[44px]">
+              <Link href="/login">
                 تسجيل الدخول
               </Link>
             </Button>

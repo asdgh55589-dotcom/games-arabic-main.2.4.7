@@ -1,20 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, unauthorized, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
 async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-  if (!supabaseUser) return null
-  const neonUser = await db.user.findFirst({
-    where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-    select: { id: true },
-  })
-  return neonUser
+  return getOptionalSession()
 }
 
 // GET /api/notifications/[id] — جلب إشعار واحد
@@ -22,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const neonUser = await requireUser()
     if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized()
     }
 
     const { id } = await params
@@ -40,13 +34,13 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     })
     if (!notification) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return notFound()
     }
 
-    return NextResponse.json(notification)
+    return ok(notification)
   } catch (err) {
     console.error('[notification GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }
 
@@ -55,7 +49,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
     const neonUser = await requireUser()
     if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return unauthorized()
     }
 
     const { id } = await params
@@ -64,14 +58,14 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       where: { id, userId: neonUser.id },
     })
     if (!notification) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return notFound()
     }
 
     await db.notification.delete({ where: { id } })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[notification DELETE] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

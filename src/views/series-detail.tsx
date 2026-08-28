@@ -1,7 +1,8 @@
+// Updated for new API response format
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Package, Search, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
-import type { PaginatedMods } from '@/lib/types'
+import type { ModSummary } from '@/lib/types'
 
 interface SeriesInfo {
   id: string
@@ -29,8 +30,9 @@ interface SeriesInfo {
 }
 
 export function SeriesDetailPage() {
+  const params = useParams()
   const searchParams = useSearchParams()
-  const seriesParam = searchParams.get('series') || ''
+  const seriesParam = (params.slug as string) || ''
   useDocumentTitle('سلسلة التعريبات')
 
   const [search, setSearch] = useState('')
@@ -45,9 +47,9 @@ export function SeriesDetailPage() {
     return `/api/series`
   }, [seriesParam])
 
-  const { data: allSeries } = useFetch<{ series: SeriesInfo[] }>(seriesUrl, [seriesUrl])
+  const { data: allSeries } = useFetch<{ data: SeriesInfo[] }>(seriesUrl, [seriesUrl])
   const seriesInfo = useMemo(() => {
-    return allSeries?.series?.find((s) => s.id === seriesParam || s.slug === seriesParam) || null
+    return allSeries?.data?.find((s) => s.slug === seriesParam || s.id === seriesParam || s.name === seriesParam) || null
   }, [allSeries, seriesParam])
 
   // Fetch mods in series
@@ -62,7 +64,7 @@ export function SeriesDetailPage() {
     return `/api/series/mods?${params.toString()}`
   }, [seriesParam, sort, page, debouncedSearch])
 
-  const { data, loading } = useFetch<PaginatedMods>(url, [url])
+  const { data, loading } = useFetch<{ data: ModSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(url, [url])
 
   const filterKey = `${seriesParam}:${debouncedSearch}:${sort}`
   const [lastFilterKey, setLastFilterKey] = useState(filterKey)
@@ -72,19 +74,20 @@ export function SeriesDetailPage() {
   }
 
   const displayName = seriesInfo?.name || seriesParam
+  const modsData = data
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
       {/* مسار التنقل */}
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/?view=series" className="hover:text-foreground">سلاسل التعريبات</Link>
+        <Link href="/series" className="hover:text-foreground">سلاسل التعريبات</Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
         <span className="text-foreground">{displayName}</span>
       </div>
 
       {/* Banner */}
       {seriesInfo?.bannerUrl && (
-        <div className="relative mb-6 h-48 overflow-hidden rounded-xl">
+        <div className="relative mb-6 h-48 overflow-hidden rounded-none">
           <img src={seriesInfo.bannerUrl} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
         </div>
@@ -100,7 +103,7 @@ export function SeriesDetailPage() {
           <p className="mt-2 text-muted-foreground">{seriesInfo.description}</p>
         )}
         <p className="mt-1 text-muted-foreground">
-          {data ? `${formatNumber(data.total)} تعريب` : 'جارٍ التحميل…'}
+          {modsData ? `${formatNumber(modsData.pagination?.total ?? 0)} تعريب` : 'جارٍ التحميل…'}
         </p>
       </div>
 
@@ -136,7 +139,7 @@ export function SeriesDetailPage() {
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => <ModCardSkeleton key={i} />)}
         </div>
-      ) : (data?.mods?.length ?? 0) === 0 ? (
+      ) : (modsData?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد تعريبات</h3>
@@ -144,13 +147,13 @@ export function SeriesDetailPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {data?.mods?.map((m) => <ModCard key={m.id} mod={m} />)}
+            {modsData?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
           </div>
-          {data && data.totalPages > 1 && (
+          {modsData && modsData.pagination.totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
-              <span className="text-sm text-muted-foreground" aria-live="polite">صفحة {page} من {data.totalPages}</span>
-              <Button variant="outline" size="sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>التالي</Button>
+              <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
+              <span className="text-sm text-muted-foreground" aria-live="polite">صفحة {page} من {modsData.pagination.totalPages}</span>
+              <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page >= modsData.pagination.totalPages} onClick={() => setPage((p) => p + 1)}>التالي</Button>
             </div>
           )}
         </>

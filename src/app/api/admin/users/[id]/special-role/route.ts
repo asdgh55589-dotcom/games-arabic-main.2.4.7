@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { parseSpecialRoles, formatSpecialRoles } from '@/lib/tier-helpers'
-import { createNotification } from '@/lib/notification-helpers'
-import { NotificationType } from '@/lib/notifications/types'
+import { getUseCases } from '@/application/use-cases/factory'
+import { ok, internalError, notFound, validationFail } from '@/lib/api-response'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,17 +14,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const role = await db.specialRole.findUnique({ where: { key: roleKey } })
     if (!role) {
-      return NextResponse.json({ error: 'الدور غير موجود' }, { status: 404 })
+      return notFound('الدور غير موجود')
     }
 
     const user = await db.user.findUnique({ where: { id } })
     if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 })
+      return notFound('المستخدم غير موجود')
     }
 
     const currentRoles = parseSpecialRoles(user.specialRoles)
     if (currentRoles.includes(roleKey)) {
-      return NextResponse.json({ error: 'المستخدم يملك هذا الدور بالفعل' }, { status: 400 })
+      return validationFail({ message: 'المستخدم يملك هذا الدور بالفعل' })
     }
 
     currentRoles.push(roleKey)
@@ -33,18 +33,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: { specialRoles: formatSpecialRoles(currentRoles) }
     })
 
-    await createNotification({
-      userId: id,
-      type: NotificationType.SpecialRoleAssigned,
-      title: 'تم منحك دور خاص',
-      message: `تم منحك دور ${role.name}`,
-      data: { roleKey }
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendSpecialRoleAssigned.execute({
+        userId: id,
+        roleKey,
+        roleName: role.name,
+        assignedBy: 'admin',
+      })
+    } catch {}
 
-    return NextResponse.json({ message: `تم اضافة دور ${role.name}` })
+    return ok({ message: `تم اضافة دور ${role.name}` })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
 
@@ -56,12 +57,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const roleKey = searchParams.get('roleKey')
 
     if (!roleKey) {
-      return NextResponse.json({ error: 'roleKey مطلوب' }, { status: 400 })
+      return validationFail({ message: 'roleKey مطلوب' })
     }
 
     const user = await db.user.findUnique({ where: { id } })
     if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 })
+      return notFound('المستخدم غير موجود')
     }
 
     const currentRoles = parseSpecialRoles(user.specialRoles)
@@ -72,17 +73,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     })
 
     const role = await db.specialRole.findUnique({ where: { key: roleKey } })
-    await createNotification({
-      userId: id,
-      type: NotificationType.SpecialRoleRemoved,
-      title: 'تم سحب دور خاص',
-      message: `تم سحب دور ${role?.name || roleKey}`,
-      data: { roleKey }
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendSpecialRoleRemoved.execute({
+        userId: id,
+        roleKey,
+        roleName: role?.name || roleKey,
+        removedBy: 'admin',
+      })
+    } catch {}
 
-    return NextResponse.json({ message: 'تم سحب الدور' })
+    return ok({ message: 'تم سحب الدور' })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

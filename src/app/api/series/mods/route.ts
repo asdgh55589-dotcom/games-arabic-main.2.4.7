@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
-import type { PaginatedMods } from '@/lib/types'
+import { okPaginated, notFound, validationFail } from '@/lib/api-response'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views'] as const
 
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   const translationType = searchParams.get('translationType')
 
   if (!seriesParam) {
-    return NextResponse.json({ error: 'series is required' }, { status: 400 })
+    return validationFail('series is required')
   }
 
   // Find series by id or slug
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   })
 
   if (!series) {
-    return NextResponse.json({ error: 'Series not found' }, { status: 404 })
+    return notFound()
   }
 
   const where: Record<string, unknown> = { seriesId: series.id }
@@ -66,15 +66,18 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return NextResponse.json<PaginatedMods>({
-    mods: serialize(mods),
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit) || 1,
-  }, {
-    headers: {
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+  return okPaginated(
+    serialize(mods),
+    {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     },
-  })
+    {
+      headers: {
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
+    }
+  )
 }

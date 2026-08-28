@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin, invalidateUserSessions, getClientIp } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
-import { notifyAdminAction } from '@/lib/notification-helpers'
+import { getUseCases } from '@/application/use-cases/factory'
 import { setIpBanCache, deleteIpBanCache } from '@/lib/ip-ban-cache'
+import { ok, forbidden, internalError, notFound, validationFail } from '@/lib/api-response'
 
 // POST /api/admin/users/[id]/ban — حظر مستخدم (مؤقت/دائم + خيار حظر IP)
 //
@@ -23,9 +24,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       select: { id: true, role: true, username: true },
     })
-    if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    if (target.role === 'owner') return NextResponse.json({ error: 'لا يمكن حظر المالك' }, { status: 403 })
-    if (id === currentUser.id) return NextResponse.json({ error: 'لا يمكنك حظر نفسك' }, { status: 403 })
+    if (!target) return notFound('User not found')
+    if (target.role === 'owner') return forbidden('لا يمكن حظر المالك')
+    if (id === currentUser.id) return forbidden('لا يمكنك حظر نفسك')
 
     const type: 'temp' | 'perm' = body.type === 'temp' ? 'temp' : 'perm'
     let bannedUntil: Date | null = null
@@ -107,13 +108,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     // إشعار المستخدم بالحظر
-    await notifyAdminAction({
-      userId: id,
-      title: type === 'perm' ? 'تم حظر حسابك بشكل دائم' : 'تم حظر حسابك مؤقتاً',
-      message: reason || '',
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoBan.execute({
+        targetUserId: id,
+        reportId: 'manual',
+        banType: type === 'temp' ? 'temp_ban' : 'perm_ban',
+        durationDays: type === 'temp' ? Number(body.days) || 7 : undefined,
+      })
+    } catch {}
 
-    return NextResponse.json({
+    return ok({
       success: true,
       bannedUntil,
       banStatus,
@@ -123,8 +128,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
   } catch (err) {
     console.error('[admin/users/[id]/ban] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -138,11 +142,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const ip = searchParams.get('ip')
 
     if (!ip) {
-      return NextResponse.json({ error: 'ip required' }, { status: 400 })
+      return validationFail({ message: 'ip required' })
     }
 
     const target = await db.user.findUnique({ where: { id }, select: { id: true } })
-    if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!target) return notFound('User not found')
 
     await db.ipBan.delete({ where: { ipAddress: ip } })
     await deleteIpBanCache(ip)
@@ -157,10 +161,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       request: req,
     })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/users/[id]/ban DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

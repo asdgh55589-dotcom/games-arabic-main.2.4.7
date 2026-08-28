@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getActivityLog } from '@/lib/admin/activity-log'
+import { ok, internalError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,9 +20,8 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await getActivityLog(filters)
-    return NextResponse.json(result)
+    return ok(result)
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

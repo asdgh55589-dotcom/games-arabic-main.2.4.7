@@ -18,16 +18,19 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import type { GameSummary } from '@/lib/types'
 
-const PLATFORMS = ['الكل', 'PC', 'NS', 'PS4', 'PS3', 'PS2', 'PS1'] as const
+const PLATFORMS = ['الكل', 'PC', 'NS', 'PS5', 'PS4', 'PS3', 'PS2', 'PS1', 'X360', 'ANDROID'] as const
 
 const PLATFORM_LABELS: Record<string, string> = {
   'الكل': 'الكل',
   'PC': 'PC ARABIC',
   'NS': 'NS ARABIC',
+  'PS5': 'PS5 ARABIC',
   'PS4': 'PS4 ARABIC',
   'PS3': 'PS3 ARABIC',
   'PS2': 'PS2 ARABIC',
   'PS1': 'PS1 ARABIC',
+  'X360': 'XBOX 360 ARABIC',
+  'ANDROID': 'ANDROID ARABIC',
 }
 
 export function GamesPage() {
@@ -57,14 +60,14 @@ export function GamesPage() {
     return `/api/games?${params.toString()}`
   }, [debouncedSearch, platform, sort])
 
-  const { data, loading } = useFetch<{ games: GameSummary[] }>(url, [url])
+  const { data, loading } = useFetch<{ data: GameSummary[] }>(url, [url])
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">تصفح الألعاب</h1>
         <p className="mt-1 text-muted-foreground">
-          اكتشف مجتمعات التعديل لـ {data?.games?.length ?? '...'} لعبة
+          اكتشف مجتمعات التعديل لـ {data?.data?.length ?? '...'} لعبة
         </p>
       </div>
 
@@ -90,7 +93,7 @@ export function GamesPage() {
               variant={platform === p ? 'default' : 'outline'}
               onClick={() => setPlatform(p)}
               aria-pressed={platform === p}
-              className="h-9"
+              className="h-9 min-h-[44px]"
             >
               {PLATFORM_LABELS[p]}
             </Button>
@@ -116,7 +119,7 @@ export function GamesPage() {
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)}
         </div>
-      ) : (data?.games?.length ?? 0) === 0 ? (
+      ) : (data?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Grid3x3 className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد ألعاب</h3>
@@ -124,7 +127,7 @@ export function GamesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {data?.games?.map((g) => <GameCard key={g.id} game={g} />)}
+          {data?.data?.map((g) => <GameCard key={g.id} game={g} />)}
         </div>
       )}
     </div>

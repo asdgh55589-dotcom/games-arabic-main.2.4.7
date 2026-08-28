@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
-import type { PaginatedMods } from '@/lib/types'
+import { okPaginated } from '@/lib/api-response'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating'] as const
 type Sort = (typeof SORTS)[number]
@@ -15,7 +15,7 @@ const ORDER_BY: Record<Sort, Record<string, 'desc' | 'asc'>> = {
   rating: { rating: 'desc' },
 }
 
-const PLATFORM_KEYS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4'] as const
+const PLATFORM_KEYS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4', 'PS5', 'X360', 'ANDROID'] as const
 
 // GET /api/mods - list mods across all games, with filters
 //
@@ -81,11 +81,10 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return NextResponse.json<PaginatedMods>({
-    mods: serialize(mods),
-    total,
+  return okPaginated(serialize(mods), {
     page,
     limit,
+    total,
     totalPages: Math.ceil(total / limit) || 1,
   }, {
     headers: {

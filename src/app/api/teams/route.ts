@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/teams — قائمة بكل فرق التعريب
 export async function GET() {
@@ -19,16 +19,13 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json(
-      { teams },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-        },
-      }
-    )
+    return ok(teams, {
+      headers: {
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+      },
+    })
   } catch (err) {
     console.error('[api/teams] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed to fetch teams')
   }
 }

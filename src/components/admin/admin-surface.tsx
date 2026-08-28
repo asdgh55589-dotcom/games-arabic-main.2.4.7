@@ -15,9 +15,9 @@ export function AdminSurface({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[30px] border border-white/10 bg-[#111214]/90',
+        'relative overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         glow &&
-          'before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(255,180,70,0.12),transparent_30%),radial-gradient(circle_at_left,rgba(120,80,255,0.06),transparent_28%)] before:pointer-events-none',
+          'before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(26,187,156,0.06),transparent_30%),radial-gradient(circle_at_left,rgba(66,153,225,0.04),transparent_28%)] before:pointer-events-none',
         className
       )}
       {...props}

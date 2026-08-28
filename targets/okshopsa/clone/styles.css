@@ -1,9 +1,0 @@
-/* okshopsa clone — build to measured values */
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  /* Learned default (LEARNINGS #13): most design systems ship antialiased smoothing —
-     matching it up front avoids a "looks thicker" miss the gate would otherwise flag. */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}

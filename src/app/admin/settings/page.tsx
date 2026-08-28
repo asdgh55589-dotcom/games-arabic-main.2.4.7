@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, Crown, Shield, Star, User as UserIcon, Loader2, Save, Globe, Palette, Search, Share2 } from 'lucide-react'
+import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { Settings, Crown, Shield, Star, User as UserIcon, Save, Globe, Palette, Search, Share2, Loader2 } from 'lucide-react'
 
 interface SettingsData {
   [group: string]: {
@@ -78,9 +79,10 @@ export default function AdminSettingsPage() {
       fetch('/api/admin/settings').then((r) => r.ok ? r.json() : null),
       fetch('/api/auth/me').then((r) => r.json()),
     ])
-      .then(([settingsData, userData]) => {
-        if (settingsData?.settings) setSettings(settingsData.settings)
-        if (userData?.user) setUserRole(userData.user.role)
+      .then(([settingsJson, userJson]) => {
+        if (settingsJson?.settings) setSettings(settingsJson.settings)
+        const user = userJson?.data?.user
+        if (user) setUserRole(user.role)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -115,7 +117,7 @@ export default function AdminSettingsPage() {
   }
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return <DataTableSkeleton rows={5} cols={6} />
   }
 
   const currentGroup = SETTING_GROUPS.find((g) => g.id === activeGroup)

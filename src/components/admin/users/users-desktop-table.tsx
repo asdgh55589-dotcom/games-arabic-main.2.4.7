@@ -4,6 +4,9 @@ import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
 import { UserModerationActions } from '@/components/admin/users/user-moderation-actions'
 import type { UserItem } from '@/components/admin/users/users-types'
 import { timeAgo } from '@/lib/format'
+import { ROLE_ORDER } from '@/lib/roles'
+import { getRoleLabel } from '@/lib/roles'
+import { TierBadge } from '@/components/tier-badge'
 
 interface UsersDesktopTableProps {
   users: UserItem[]
@@ -25,20 +28,21 @@ export function UsersDesktopTable({
   onDelete,
 }: UsersDesktopTableProps) {
   return (
-    <div className="hidden overflow-x-auto scrollbar-thin xl:block">
+    <div className="overflow-x-auto scrollbar-thin">
       <table className="w-full text-right">
-        <thead className="border-b border-white/10 bg-white/[0.03] text-xs uppercase tracking-wide text-white/45">
+        <thead className="border-b border-border bg-background-secondary text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3 font-semibold">المستخدم</th>
             <th className="hidden px-4 py-3 font-semibold md:table-cell">البريد</th>
             <th className="px-4 py-3 font-semibold">الدور</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">المستوى</th>
             <th className="hidden px-4 py-3 font-semibold sm:table-cell">الحالة</th>
             <th className="hidden px-4 py-3 font-semibold lg:table-cell">آخر دخول</th>
             <th className="px-4 py-3 font-semibold">إجراءات</th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-white/6">
+        <tbody className="divide-y divide-border-light">
           {users.map((u) => {
             const role = ROLE_BADGE[u.role] || ROLE_BADGE.member
 
@@ -51,7 +55,7 @@ export function UsersDesktopTable({
             const isBanned = Boolean(isPermBanned || isTempBanned)
 
             return (
-              <tr key={u.id} className="text-sm transition-colors hover:bg-white/[0.03]">
+              <tr key={u.id} className="text-sm transition-colors hover:bg-background-secondary">
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     {u.avatarUrl && (
@@ -67,14 +71,14 @@ export function UsersDesktopTable({
                         {u.username}
                       </div>
 
-                      <div className="mt-1 text-xs text-white/35">
+                      <div className="mt-1 text-xs text-muted-foreground">
                         {u._count.mods} تعريب · {u._count.comments} تعليق
                       </div>
                     </div>
                   </div>
                 </td>
 
-                <td className="hidden px-4 py-3 text-xs text-white/45 md:table-cell">
+                <td className="hidden px-4 py-3 text-xs text-muted-foreground md:table-cell">
                   {u.email}
                 </td>
 
@@ -84,21 +88,16 @@ export function UsersDesktopTable({
                     onChange={(e) => onRoleChange(u, e.target.value)}
                     className={`rounded-full px-3 py-1.5 text-xs font-black shadow-lg ${role.className}`}
                   >
-                    <option value="member" className="bg-background text-foreground">
-                      عضو
-                    </option>
-                    <option value="moderator" className="bg-background text-foreground">
-                      مشرف
-                    </option>
-                    <option value="admin" className="bg-background text-foreground">
-                      مدير
-                    </option>
-                    {u.role === 'owner' && (
-                      <option value="owner" className="bg-background text-foreground">
-                        مالك
+                    {ROLE_ORDER.map((r) => (
+                      <option key={r} value={r} className="bg-background text-foreground">
+                        {getRoleLabel(r)}
                       </option>
-                    )}
+                    ))}
                   </select>
+                </td>
+
+                <td className="hidden px-4 py-3 sm:table-cell">
+                  <TierBadge tier={u.tier || 0} role={u.role} size="sm" />
                 </td>
 
                 <td className="hidden px-4 py-3 sm:table-cell">
@@ -117,7 +116,7 @@ export function UsersDesktopTable({
                   )}
                 </td>
 
-                <td className="hidden px-4 py-3 text-xs text-white/40 lg:table-cell">
+                <td className="hidden px-4 py-3 text-xs text-muted-foreground lg:table-cell">
                   {u.lastLoginAt ? timeAgo(u.lastLoginAt) : 'لم يدخل بعد'}
                 </td>
 

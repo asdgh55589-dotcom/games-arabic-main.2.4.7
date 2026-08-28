@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
 import { revalidateTag } from '@/lib/cache'
+import { ok, notFound, forbidden, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -16,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     const existing = await db.homepageAd.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return notFound('Ad not found')
     }
 
     const updateData: Record<string, unknown> = {}
@@ -36,11 +37,11 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     await db.homepageAd.update({ where: { id }, data: updateData })
     await revalidateTag('ads')
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/ads/[id] PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -49,22 +50,22 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
     const user = await requireModerator()
     if (!canDelete(user)) {
-      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+      return forbidden('لا تملك صلاحية الحذف')
     }
     const { id } = await params
 
     const existing = await db.homepageAd.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return notFound('Ad not found')
     }
 
     await db.homepageAd.delete({ where: { id } })
     await revalidateTag('ads')
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/ads/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

@@ -1,37 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, internalError, validationFail } from '@/lib/api-response'
 
 // GET /api/bookmarks/check?modId=xxx — التحقق من حالة الحفظ
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-    if (!supabaseUser) {
-      return NextResponse.json({ bookmarked: false })
-    }
-
-    const neonUser = await db.user.findFirst({
-      where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-      select: { id: true },
-    })
+    const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return NextResponse.json({ bookmarked: false })
+      return ok({ bookmarked: false })
     }
 
     const { searchParams } = new URL(req.url)
     const modId = searchParams.get('modId')
     if (!modId) {
-      return NextResponse.json({ error: 'modId is required' }, { status: 400 })
+      return validationFail('modId is required')
     }
 
     const bookmark = await db.bookmark.findUnique({
       where: { userId_modId: { userId: neonUser.id, modId } },
     })
 
-    return NextResponse.json({ bookmarked: !!bookmark })
+    return ok({ bookmarked: !!bookmark })
   } catch (err) {
     console.error('[bookmarks/check GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

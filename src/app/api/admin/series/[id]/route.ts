@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
-import { slugify } from '@/lib/series-helpers'
-import { syncSeriesCounts } from '@/lib/series-helpers'
+import { slugify, syncSeriesCounts } from '@/lib/series-helpers'
+import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/admin/series/[id] — تفاصيل السلسلة
 export async function GET(
@@ -24,14 +24,13 @@ export async function GET(
     })
 
     if (!series) {
-      return NextResponse.json({ error: 'السلسلة غير موجودة' }, { status: 404 })
+      return notFound('السلسلة غير موجودة')
     }
 
-    return NextResponse.json({ series })
+    return ok(series)
   } catch (err) {
     console.error('[admin/series/[id] GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -47,7 +46,7 @@ export async function PUT(
 
     const existing = await db.series.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'السلسلة غير موجودة' }, { status: 404 })
+      return notFound('السلسلة غير موجودة')
     }
 
     const data: Record<string, unknown> = {}
@@ -64,11 +63,10 @@ export async function PUT(
     if (body.order !== undefined) data.order = body.order
 
     const series = await db.series.update({ where: { id }, data })
-    return NextResponse.json({ series })
+    return ok(series)
   } catch (err) {
     console.error('[admin/series/[id] PUT] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }
 
@@ -80,13 +78,13 @@ export async function DELETE(
   try {
     const user = await requireModerator()
     if (!canDelete(user)) {
-      return NextResponse.json({ error: 'لا تملك صلاحية الحذف' }, { status: 403 })
+      return forbidden('لا تملك صلاحية الحذف')
     }
     const { id } = await params
 
     const existing = await db.series.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'السلسلة غير موجودة' }, { status: 404 })
+      return notFound('السلسلة غير موجودة')
     }
 
     // إلغاء الربط من التعريبات
@@ -96,10 +94,9 @@ export async function DELETE(
     })
 
     await db.series.delete({ where: { id } })
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/series/[id] DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

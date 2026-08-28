@@ -1,11 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
+import { requirePublisher, requireModerator } from '@/lib/auth'
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { slugify } from '@/lib/utils'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
+import { okPaginated, ok, validationFail, internalError } from '@/lib/api-response'
+import { CreateModSchema } from '@/lib/schemas'
+import { calculateModQualityScore } from '@/lib/mod-quality'
+import { revalidatePath } from 'next/cache'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
 type Sort = (typeof SORTS)[number]
@@ -30,6 +34,7 @@ export async function GET(req: NextRequest) {
     const platform = searchParams.get('platform')
     const featured = searchParams.get('featured')
     const trending = searchParams.get('trending')
+    const workflowStatus = searchParams.get('workflowStatus')
     const { page, limit } = parsePagination(
       searchParams.get('page'),
       searchParams.get('limit'),
@@ -48,6 +53,7 @@ export async function GET(req: NextRequest) {
     if (platform) where.game = { platform }
     if (featured === 'true') where.isFeatured = true
     if (trending === 'true') where.isTrending = true
+    if (workflowStatus) where.workflowStatus = workflowStatus
 
     const [total, mods] = await Promise.all([
       db.mod.count({ where }),
@@ -57,7 +63,7 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          author: { select: { id: true, username: true, avatarUrl: true } },
+          author: { select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true } },
           game: { select: { id: true, name: true, slug: true, platform: true } },
           category: { select: { id: true, name: true, slug: true } },
           _count: {
@@ -71,17 +77,19 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({
-      mods,
-      total,
+    return okPaginated(mods, {
       page,
       limit,
+      total,
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
     console.error('[admin/mods GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to fetch mods' }, { status })
+    if (status === 401 || status === 403) {
+      return internalError('Unauthorized or forbidden')
+    }
+    return internalError('Failed to fetch mods')
   }
 }
 
@@ -98,22 +106,39 @@ export async function GET(req: NextRequest) {
 // وبتنشئهم في transaction واحدة.
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireModerator()
+    const user = await requirePublisher()
     const body = await req.json()
 
-    // ===== التحقق من الحقول المطلوبة =====
-    const required = ['name', 'summary', 'description', 'gameId', 'thumbnailUrl', 'imageUrl']
-    for (const field of required) {
-      if (!body[field]) {
-        return NextResponse.json(
-          { error: `الحقل "${field}" مطلوب` },
-          { status: 400 }
-        )
-      }
+    // ===== التحقق من الحقول باستخدام Zod =====
+    const parsed = CreateModSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
     }
 
+    const data = parsed.data
+
+    // حساب درجة الجودة
+    const qualityScore = calculateModQualityScore({
+      name: data.name,
+      summary: data.summary || '',
+      description: data.description || '',
+      arabicTitle: data.arabicTitle || '',
+      translationScope: data.translationScope || '',
+      compatibility: data.compatibility || '',
+      tags: Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''),
+      changelog: data.changelog || '',
+      installGuide: data.installGuide || '',
+      thumbnailUrl: data.thumbnailUrl || '',
+      imageUrl: data.imageUrl || '',
+      galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),
+      files: body.files || [],
+      teamMembers: body.teamMembers || [],
+      gameId: data.gameId,
+      teamId: data.teamId || null,
+    })
+
     // توليد slug فريد
-    let slug = body.slug || slugify(body.name)
+    let slug = data.slug || slugify(data.name)
     // لو الـ slug موجود، نضيف رقم
     const existingSlug = await db.mod.findUnique({ where: { slug } })
     if (existingSlug) {
@@ -125,152 +150,147 @@ export async function POST(req: NextRequest) {
       const created = await tx.mod.create({
         data: {
           slug,
-          name: body.name,
-          summary: body.summary,
-          description: body.description,
-          changelog: body.changelog || '',
-          installGuide: body.installGuide || '',
-          arabicTitle: body.arabicTitle || '',
-          compatibility: body.compatibility || '',
+          name: data.name,
+          summary: data.summary,
+          description: data.description,
+          changelog: data.changelog || '',
+          installGuide: data.installGuide || '',
+          arabicTitle: data.arabicTitle || '',
+          translationScope: data.translationScope || '',
+          compatibility: data.compatibility || '',
           authorId: user.id,
-          gameId: body.gameId,
-          categoryId: body.categoryId || null,
-          thumbnailUrl: body.thumbnailUrl,
-          imageUrl: body.imageUrl,
-          galleryUrls: Array.isArray(body.galleryUrls) ? body.galleryUrls.join(',') : (body.galleryUrls || ''),
-          version: body.version || '1.0.0',
-          fileSize: body.fileSize || 'MB 0',
-          fileFormat: body.fileFormat || 'zip',
-          tags: Array.isArray(body.tags) ? body.tags.join(',') : (body.tags || ''),
-          series: body.series || '',
-          seriesId: body.seriesId || null,
-          translationTeam: body.translationTeam || '',
-          teamId: body.teamId || null,
-          translationType: body.translationType || 'unofficial',
-          isFeatured: Boolean(body.isFeatured),
-          isTrending: Boolean(body.isTrending),
-          isLatest: body.isLatest !== undefined ? Boolean(body.isLatest) : true,
-          releaseDate: body.releaseDate ? new Date(body.releaseDate) : new Date(),
+          gameId: data.gameId,
+          categoryId: data.categoryId || null,
+          thumbnailUrl: data.thumbnailUrl,
+          imageUrl: data.imageUrl,
+          galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),
+          version: data.version || '1.0.0',
+          fileSize: data.fileSize || 'MB 0',
+          fileFormat: data.fileFormat || 'zip',
+          tags: Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''),
+          series: data.series || '',
+          seriesId: data.seriesId || null,
+          translationTeam: data.translationTeam || '',
+          teamId: data.teamId || null,
+          sectionId: data.sectionId || null,
+          translationType: data.translationType || 'unofficial',
+          isFeatured: Boolean(data.isFeatured),
+          isTrending: Boolean(data.isTrending),
+          isLatest: data.isLatest !== undefined ? Boolean(data.isLatest) : true,
+          releaseDate: data.releaseDate ? new Date(data.releaseDate) : new Date(),
+          qualityScore,
         },
       })
 
-      // ملفات التحميل
+      // ملفات التحميل — bulk
       if (Array.isArray(body.files)) {
-        for (let i = 0; i < body.files.length; i++) {
-          const f = body.files[i]
-          if (!f.title) continue
-          await tx.modFile.create({
-            data: {
-              modId: created.id,
-              title: f.title,
-              description: f.description || null,
-              alert: f.alert || null,
-              version: f.version || body.version,
-              releaseDate: f.releaseDate ? new Date(f.releaseDate) : new Date(),
-              fileSize: f.fileSize || body.fileSize,
-              fileFormat: f.fileFormat || body.fileFormat,
-              order: f.order ?? i,
-              links: {
-                create: Array.isArray(f.links)
-                  ? f.links.map((l: { url: string; label?: string }, j: number) => ({
-                      url: l.url,
-                      label: l.label || null,
-                      order: j,
-                    }))
-                  : [],
-              },
-            },
+        const validFiles = (body.files as Array<{ title?: string; description?: string; alert?: string; version?: string; releaseDate?: string; fileSize?: string; fileFormat?: string; order?: number; links?: Array<{ url: string; label?: string }> }>).filter((f) => f.title)
+        if (validFiles.length > 0) {
+          const filesData = validFiles.map((f, i) => ({
+            modId: created.id,
+            title: f.title as string,
+            description: f.description || null,
+            alert: f.alert || null,
+            version: f.version || body.version || '1.0.0',
+            releaseDate: f.releaseDate ? new Date(f.releaseDate) : new Date(),
+            fileSize: f.fileSize || body.fileSize || 'MB 0',
+            fileFormat: f.fileFormat || body.fileFormat || 'zip',
+            order: f.order ?? i,
+          }))
+          const createdFiles = await (tx.modFile as unknown as { createManyAndReturn: (args: { data: typeof filesData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: filesData })
+          const allLinks: Array<{ fileId: string; url: string; label: string | null; order: number }> = []
+          validFiles.forEach((f, idx) => {
+            const fileId = createdFiles[idx]?.id
+            if (!fileId || !Array.isArray(f.links)) return
+            f.links.forEach((l, j) => {
+              if (l.url) allLinks.push({ fileId, url: l.url, label: l.label || null, order: j })
+            })
           })
-        }
-      }
-
-      // أعضاء الفريق
-      if (Array.isArray(body.teamMembers)) {
-        for (let i = 0; i < body.teamMembers.length; i++) {
-          const m = body.teamMembers[i]
-          if (!m.name) continue
-          await tx.modTeamMember.create({
-            data: {
-              modId: created.id,
-              name: m.name,
-              avatarUrl: m.avatarUrl || null,
-              role: m.role || 'مترجم',
-              contribution: m.contribution || null,
-              order: m.order ?? i,
-            },
-          })
-        }
-      }
-
-      // روابط التواصل
-      if (Array.isArray(body.contactLinks)) {
-        for (let i = 0; i < body.contactLinks.length; i++) {
-          const c = body.contactLinks[i]
-          if (!c.url) continue
-          await tx.modContactLink.create({
-            data: {
-              modId: created.id,
-              type: c.type || 'website',
-              label: c.label || '',
-              url: c.url,
-              order: c.order ?? i,
-            },
-          })
-        }
-      }
-
-      // أقسام الفيديوهات
-      if (Array.isArray(body.videoGroups)) {
-        for (let i = 0; i < body.videoGroups.length; i++) {
-          const g = body.videoGroups[i]
-          if (!g.name) continue
-          const group = await tx.modVideoGroup.create({
-            data: {
-              modId: created.id,
-              name: g.name,
-              order: g.order ?? i,
-            },
-          })
-          if (Array.isArray(g.videos)) {
-            for (let j = 0; j < g.videos.length; j++) {
-              const v = g.videos[j]
-              if (!v.title || !v.url) continue
-              await tx.modVideo.create({
-                data: {
-                  groupId: group.id,
-                  title: v.title,
-                  url: v.url,
-                  thumbnail: v.thumbnail || null,
-                  duration: v.duration || null,
-                  description: v.description || null,
-                  views: v.views || 0,
-                  likes: v.likes || 0,
-                  commentsCount: v.commentsCount || 0,
-                  channel: v.channel || null,
-                  order: v.order ?? j,
-                },
-              })
-            }
+          if (allLinks.length > 0) {
+            await tx.modFileLink.createMany({ data: allLinks })
           }
         }
       }
 
-      // التبويبات المخصصة
-      if (Array.isArray(body.customTabs)) {
-        for (let i = 0; i < body.customTabs.length; i++) {
-          const t = body.customTabs[i]
-          if (!t.name) continue
-          const tabSlug = t.slug || slugify(t.name)
-          await tx.modCustomTab.create({
-            data: {
-              modId: created.id,
-              name: t.name,
-              slug: tabSlug,
-              content: t.content || '',
-              order: t.order ?? i,
-              visible: t.visible !== undefined ? Boolean(t.visible) : true,
-            },
+      // أعضاء الفريق — bulk
+      if (Array.isArray(body.teamMembers)) {
+        const membersData = (body.teamMembers as Array<{ name?: string; avatarUrl?: string; role?: string; contribution?: string; order?: number }>).filter((m) => m.name).map((m, i) => ({
+          modId: created.id,
+          name: m.name as string,
+          avatarUrl: m.avatarUrl || null,
+          role: m.role || 'مترجم',
+          contribution: m.contribution || null,
+          order: m.order ?? i,
+        }))
+        if (membersData.length > 0) {
+          await tx.modTeamMember.createMany({ data: membersData })
+        }
+      }
+
+      // روابط التواصل — bulk
+      if (Array.isArray(body.contactLinks)) {
+        const linksData = (body.contactLinks as Array<{ url?: string; type?: string; label?: string; order?: number }>).filter((c) => c.url).map((c, i) => ({
+          modId: created.id,
+          type: c.type || 'website',
+          label: c.label || '',
+          url: c.url as string,
+          order: c.order ?? i,
+        }))
+        if (linksData.length > 0) {
+          await tx.modContactLink.createMany({ data: linksData })
+        }
+      }
+
+      // أقسام الفيديوهات — bulk
+      if (Array.isArray(body.videoGroups)) {
+        const validGroups = (body.videoGroups as Array<{ name?: string; order?: number; videos?: Array<{ title?: string; url?: string; thumbnail?: string; duration?: string; description?: string; views?: number; likes?: number; commentsCount?: number; channel?: string; publishedAt?: string; order?: number }> }>).filter((g) => g.name)
+        if (validGroups.length > 0) {
+          const groupsData = validGroups.map((g, i) => ({
+            modId: created.id,
+            name: g.name as string,
+            order: g.order ?? i,
+          }))
+          const createdGroups = await (tx.modVideoGroup as unknown as { createManyAndReturn: (args: { data: typeof groupsData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: groupsData })
+          const allVideos: Array<{ groupId: string; title: string; url: string; thumbnail: string | null; duration: string | null; description: string | null; views: number; likes: number; commentsCount: number; channel: string | null; publishedAt: Date | null; order: number }> = []
+          validGroups.forEach((g, idx) => {
+            const groupId = createdGroups[idx]?.id
+            if (!groupId || !Array.isArray(g.videos)) return
+            g.videos.forEach((v, j) => {
+              if (!v.title || !v.url) return
+              allVideos.push({
+                groupId,
+                title: v.title,
+                url: v.url,
+                thumbnail: v.thumbnail || null,
+                duration: v.duration || null,
+                description: v.description || null,
+                views: v.views || 0,
+                likes: v.likes || 0,
+                commentsCount: v.commentsCount || 0,
+                channel: v.channel || null,
+                publishedAt: v.publishedAt ? new Date(v.publishedAt) : null,
+                order: v.order ?? j,
+              })
+            })
           })
+          if (allVideos.length > 0) {
+            await tx.modVideo.createMany({ data: allVideos })
+          }
+        }
+      }
+
+      // التبويبات المخصصة — bulk
+      if (Array.isArray(body.customTabs)) {
+        const tabsData = (body.customTabs as Array<{ name?: string; slug?: string; content?: string; order?: number; visible?: boolean }>).filter((t) => t.name).map((t, i) => ({
+          modId: created.id,
+          name: t.name as string,
+          slug: t.slug || slugify(t.name as string),
+          content: t.content || '',
+          order: t.order ?? i,
+          visible: t.visible !== undefined ? Boolean(t.visible) : true,
+        }))
+        if (tabsData.length > 0) {
+          await tx.modCustomTab.createMany({ data: tabsData })
         }
       }
 
@@ -280,14 +300,49 @@ export async function POST(req: NextRequest) {
     // Check for tier upgrade
     checkAndUpgradeTier(mod.authorId).catch(console.error)
 
-    // تحديث عدّادات السلسلة/الفريق/اللعبة بعد الإنشاء
+    // إشعار نشر التعريب
+    try {
+      const { getUseCases } = await import('@/application/use-cases/factory')
+      const useCases = getUseCases()
+      await useCases.sendModPublished.execute({
+        modAuthorId: mod.authorId,
+        modId: mod.id,
+        modTitle: mod.name,
+        modSlug: mod.slug,
+      })
+    } catch {}
+
+    // تحديث عدّادات اللعبة والسلسلة — increment ذري (Issue 3.4/3.5)
+    if (mod.gameId) {
+      await db.game.update({ where: { id: mod.gameId }, data: { modCount: { increment: 1 } } }).catch(() => {})
+    }
+    if (mod.seriesId) {
+      await db.series.update({ where: { id: mod.seriesId }, data: { modCount: { increment: 1 } } }).catch(() => {})
+    }
+    // تحديث عدّادات السلسلة/الفريق بعد الإنشاء (re-sync للتأكد)
     if (mod.seriesId) await syncSeriesCounts(mod.seriesId).catch(() => {})
     if (mod.teamId) await syncTeamCounts(mod.teamId).catch(() => {})
 
-    return NextResponse.json({ mod }, { status: 201 })
+    // ISR: revalidate public pages after mod creation
+    try {
+      revalidatePath('/')
+      if (mod.gameId) {
+        const game = await db.game.findUnique({ where: { id: mod.gameId }, select: { slug: true, platform: true } })
+        if (game) {
+          revalidatePath('/platform/' + game.platform)
+          revalidatePath('/games/' + game.slug)
+        }
+      }
+      revalidatePath('/mod/' + mod.slug)
+    } catch {}
+
+    return ok(mod)
   } catch (err) {
     console.error('[admin/mods POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed to create mod' }, { status })
+    if (status === 401 || status === 403) {
+      return internalError('Unauthorized or forbidden')
+    }
+    return internalError('Failed to create mod')
   }
 }

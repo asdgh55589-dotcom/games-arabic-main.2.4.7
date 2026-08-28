@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/admin/dashboard — إحصائيات + آخر النشاطات
 export async function GET() {
@@ -53,7 +53,7 @@ export async function GET() {
 
     console.timeEnd('[admin-dashboard queries]')
 
-    const response = NextResponse.json({
+    const response = ok({
       stats: {
         games: gamesCount,
         mods: modsCount,
@@ -81,10 +81,6 @@ export async function GET() {
     return response
   } catch (err) {
     console.error('[admin/dashboard] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json(
-      { error: 'Failed to load dashboard data' },
-      { status }
-    )
+    return internalError('Failed to load dashboard data')
   }
 }

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ok } from '@/lib/api-response'
 
 // GET /api/ads — جلب إعلانات الصفحة الرئيسية (المرئية فقط)
 export async function GET() {
@@ -9,9 +9,9 @@ export async function GET() {
       orderBy: { order: 'asc' },
     })
 
-    return NextResponse.json({ ads })
+    return ok({ ads })
   } catch (err) {
     console.error('[api/ads] failed:', err)
-    return NextResponse.json({ ads: [] }, { status: 200 })
+    return ok({ ads: [] })
   }
 }

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { ok, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -18,8 +19,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
 
-    const user = await db.user.findUnique({
-      where: { username },
+    const user = await db.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: {
         id: true,
         role: true,
@@ -28,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     })
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return notFound()
     }
 
     const modCount = user.mods.length
@@ -94,9 +95,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     ]
 
-    return NextResponse.json({ badges })
+    return ok({ badges }, { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } })
   } catch (err) {
     console.error('[badges GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

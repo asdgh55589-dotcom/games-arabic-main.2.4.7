@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { ok, okPaginated, internalError, validationFail, conflict } from '@/lib/api-response'
 
 export async function GET() {
   try {
     await requireAdmin()
     const rules = await db.tierRule.findMany({ orderBy: { tier: 'asc' } })
-    return NextResponse.json({ rules })
+    return ok({ rules })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
 
@@ -19,17 +19,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     if (body.tier === undefined || body.tier === null) {
-      return NextResponse.json({ error: 'رقم المستوى مطلوب' }, { status: 400 })
+      return validationFail({ error: 'رقم المستوى مطلوب' })
     }
 
     const tier = parseInt(String(body.tier), 10)
     if (isNaN(tier) || tier < 1 || tier > 99) {
-      return NextResponse.json({ error: 'رقم المستوى غير صالح' }, { status: 400 })
+      return validationFail({ error: 'رقم المستوى غير صالح' })
     }
 
     const exists = await db.tierRule.findUnique({ where: { tier } })
     if (exists) {
-      return NextResponse.json({ error: 'هذا المستوى موجود بالفعل' }, { status: 409 })
+      return conflict('هذا المستوى موجود بالفعل')
     }
 
     const rule = await db.tierRule.create({
@@ -47,9 +47,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ rule }, { status: 201 })
+    return ok({ rule })
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }

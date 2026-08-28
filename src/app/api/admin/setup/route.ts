@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword, createSupabaseAuthUser } from '@/lib/auth'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { logAction } from '@/lib/audit'
+import { ok, internalError, rateLimited, conflict } from '@/lib/api-response'
 
 // POST /api/admin/setup — إنشاء أول حساب owner
 // محمي: لا يعمل لو يوجد owner بالفعل (flag في DB)
@@ -11,16 +12,13 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 3, window: 300, keyPrefix: 'admin:setup' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: 'تم تجاوز الحد المسموح. حاول مرة أخرى بعد 5 دقائق.' },
-        { status: 429, headers: rateLimitHeaders(rl) }
-      )
+      return rateLimited()
     }
 
     // فحص: هل تم الـ setup بالفعل؟
     const existingUser = await db.user.findFirst({ where: { role: 'owner' } })
     if (existingUser) {
-      return NextResponse.json({ message: 'Owner account already exists', setup: false })
+      return conflict('Owner account already exists')
     }
 
     // تحقق من وجود OWNER_PASSWORD في env
@@ -29,10 +27,7 @@ export async function POST(req: NextRequest) {
     const password = process.env.OWNER_PASSWORD
 
     if (!username || !email || !password) {
-      return NextResponse.json(
-        { error: 'يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.' },
-        { status: 500 }
-      )
+      return internalError('يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.')
     }
 
     const passwordHash = await hashPassword(password)
@@ -48,7 +43,6 @@ export async function POST(req: NextRequest) {
         supabaseId: supabaseId || undefined,
         role: 'owner',
         bio: 'مالك و مؤسس منصة ألعاب بالعربي',
-        provider: 'admin',
         joinedAt: new Date(),
       },
     })
@@ -71,9 +65,9 @@ export async function POST(req: NextRequest) {
       update: { value: 'true' },
     })
 
-    return NextResponse.json({ message: 'Owner account created successfully', setup: true })
+    return ok({ message: 'Owner account created successfully', setup: true })
   } catch (err) {
     console.error('[setup] failed:', err)
-    return NextResponse.json({ error: 'Setup failed' }, { status: 500 })
+    return internalError('Setup failed')
   }
 }

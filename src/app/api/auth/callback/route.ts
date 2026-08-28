@@ -19,7 +19,12 @@ export async function GET(req: NextRequest) {
     const code = searchParams.get('code')
     const rawNext = searchParams.get('next') || '/'
     // حماية من Open Redirect — السماح بالمسارات النسبية فقط
-    const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
+    // يرفض: //evil.com, /\evil.com, URL-encoded variants, protocol-relative URLs, path traversal
+    // searchParams.get() تفك الترميز تلقائياً → %2F%2F يصبح // ويُرفض
+    const next = /^\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]*$/.test(rawNext)
+      && !rawNext.startsWith('//')
+      && !rawNext.includes('/../')
+      ? rawNext : '/'
     const baseUrl = getBaseUrl(req)
 
     // إنشاء عميل Supabase واحد فقط
@@ -58,14 +63,9 @@ export async function GET(req: NextRequest) {
       || email.split('@')[0]
       || 'مستخدم'
 
-    // البحث عن المستخدم في Neon DB
+    // الخطوة 1: البحث عن المستخدم في Neon DB عبر supabaseId
     let neonUser = await db.user.findFirst({
-      where: {
-        OR: [
-          { supabaseId: supabaseUser.id },
-          { email: email.toLowerCase() },
-        ],
-      },
+      where: { supabaseId: supabaseUser.id },
       select: {
         id: true,
         username: true,
@@ -80,21 +80,11 @@ export async function GET(req: NextRequest) {
     })
 
     if (neonUser) {
-      // المستخدم موجود — تحديث البيانات إذا لزم الأمر
-      const updateData: Record<string, unknown> = {}
-
+      // المستخدم موجود — تحديث avatarUrl إذا كان فارغاً
       if (!neonUser.avatarUrl && avatarUrl) {
-        updateData.avatarUrl = avatarUrl
-      }
-      if (provider !== 'email') {
-        updateData.provider = provider
-        updateData.providerAccountId = providerAccountId
-      }
-
-      if (Object.keys(updateData).length > 0) {
         neonUser = await db.user.update({
           where: { id: neonUser.id },
-          data: updateData,
+          data: { avatarUrl },
           select: {
             id: true,
             username: true,
@@ -109,43 +99,97 @@ export async function GET(req: NextRequest) {
         })
       }
     } else {
-      // مستخدم جديد — إنشاء ملف شخصي
-      // التحقق من تفرد username
-      let finalUsername = username
-      let counter = 1
-      while (true) {
-        const existing = await db.user.findUnique({
-          where: { username: finalUsername },
+      // الخطوة 2: البحث عبر OAuthAccount
+      const existingOAuth = await db.oAuthAccount.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: provider,
+            providerAccountId: providerAccountId,
+          },
+        },
+        include: { user: true },
+      })
+
+      if (existingOAuth) {
+        neonUser = existingOAuth.user
+      } else {
+        // الخطوة 3: فحص تداخل البريد الإلكتروني — حظر
+        const emailUser = await db.user.findUnique({
+          where: { email: email.toLowerCase() },
           select: { id: true },
         })
-        if (!existing) break
-        finalUsername = `${username}${counter}`
-        counter++
-      }
 
-      neonUser = await db.user.create({
-        data: {
-          supabaseId: supabaseUser.id,
-          username: finalUsername,
-          email: email.toLowerCase(),
-          avatarUrl,
-          role: 'member',
-          provider,
-          providerAccountId,
-          emailVerified: true,
-        },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          avatarUrl: true,
-          banStatus: true,
-          bannedUntil: true,
-          banReason: true,
-          tokenVersion: true,
-        },
-      })
+        if (emailUser) {
+          return NextResponse.redirect(new URL('/?error=email_exists_link_accounts', baseUrl))
+        }
+
+        // الخطوة 4: إنشاء مستخدم جديد + OAuthAccount (داخل transaction)
+        let finalUsername = username
+        let counter = 1
+        while (true) {
+          const existing = await db.user.findUnique({
+            where: { username: finalUsername },
+            select: { id: true },
+          })
+          if (!existing) break
+          finalUsername = `${username}${counter}`
+          counter++
+        }
+
+        neonUser = await db.$transaction(async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              supabaseId: supabaseUser.id,
+              username: finalUsername,
+              email: email.toLowerCase(),
+              avatarUrl,
+              role: 'member',
+              emailVerified: true,
+            },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              avatarUrl: true,
+              banStatus: true,
+              bannedUntil: true,
+              banReason: true,
+              tokenVersion: true,
+            },
+          })
+
+          await tx.oAuthAccount.create({
+            data: {
+              userId: user.id,
+              provider,
+              providerAccountId,
+              providerEmail: email.toLowerCase(),
+              providerUsername: username,
+              avatarUrl,
+            },
+          })
+
+          await tx.notificationPreference.create({
+            data: {
+              userId: user.id,
+              emailEnabled: true,
+              pushEnabled: true,
+              dailySummary: true,
+              summaryIntervalDays: 3,
+              likeThreshold: 25,
+              quietHoursEnabled: false,
+              typePreferences: {},
+            },
+          }).catch(() => {})
+
+          return user
+        })
+      }
+    }
+
+    if (!neonUser) {
+      return NextResponse.redirect(new URL('/?error=auth_failed', baseUrl))
     }
 
     // فحص الحظر

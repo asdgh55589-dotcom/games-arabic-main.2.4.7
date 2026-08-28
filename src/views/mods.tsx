@@ -16,7 +16,17 @@ import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import type { PaginatedMods } from '@/lib/types'
+import type { ModSummary } from '@/lib/types'
+
+interface PaginatedModsResponse {
+  data: ModSummary[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
 
 const TITLE_BY_SORT: Record<string, string> = {
   downloads: 'الأكثر تحميلاً',
@@ -61,14 +71,14 @@ export function ModsPage() {
     return `/api/mods?${params.toString()}`
   }, [debouncedSearch, sort, page])
 
-  const { data, loading } = useFetch<PaginatedMods>(url, [url])
+  const { data, loading } = useFetch<PaginatedModsResponse>(url, [url])
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">{TITLE_BY_SORT[sort] ?? 'تصفح التعديلات'}</h1>
         <p className="mt-1 text-muted-foreground">
-          {data ? `${data.total} تعديل لجميع الألعاب` : 'جارٍ التحميل…'}
+          {data ? `${data.pagination.total} تعديل لجميع الألعاب` : 'جارٍ التحميل…'}
         </p>
       </div>
 
@@ -105,7 +115,7 @@ export function ModsPage() {
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)}
         </div>
-      ) : (data?.mods?.length ?? 0) === 0 ? (
+      ) : (data?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
           <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد تعديلات</h3>
@@ -114,25 +124,25 @@ export function ModsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {data?.mods?.map((m) => <ModCard key={m.id} mod={m} />)}
+            {data?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
           </div>
-          {data && data.totalPages > 1 && (
+          {data && data.pagination.totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                size="sm" className="min-h-[44px]"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
                 السابق
               </Button>
               <span className="text-sm text-muted-foreground" aria-live="polite">
-                صفحة {page} من {data.totalPages}
+                صفحة {page} من {data.pagination.totalPages}
               </span>
               <Button
                 variant="outline"
-                size="sm"
-                disabled={page >= data.totalPages}
+                size="sm" className="min-h-[44px]"
+                disabled={page >= data.pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
                 التالي

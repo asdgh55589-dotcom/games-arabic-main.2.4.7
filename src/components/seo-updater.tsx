@@ -1,25 +1,26 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useSettings } from '@/contexts/settings-context'
 
+/**
+ * Handles global dynamic meta that generateMetadata can't cover:
+ * - Google Analytics injection
+ * - theme-color meta tag
+ * - twitter:site handle
+ *
+ * Route-level title/description/OG are handled by generateMetadata in each page.
+ */
 export function SeoUpdater() {
+  const { settings, loading } = useSettings()
+
   useEffect(() => {
-    fetch('/api/settings')
-      .then((r) => r.json())
-      .then(({ settings }) => {
-        if (settings.meta_title) document.title = settings.meta_title
-        if (settings.meta_description) setMeta('description', settings.meta_description)
-        if (settings.og_image) setMeta('og:image', settings.og_image, true)
-        if (settings.site_name) setMeta('og:site_name', settings.site_name, true)
-        if (settings.og_locale) setMeta('og:locale', settings.og_locale, true)
-        if (settings.og_type) setMeta('og:type', settings.og_type, true)
-        if (settings.site_url) setMeta('og:url', settings.site_url, true)
-        if (settings.theme_color) setMeta('theme-color', settings.theme_color)
-        if (settings.twitter) setMeta('twitter:site', settings.twitter, true)
-        if (settings.google_analytics_id) injectGA(settings.google_analytics_id)
-      })
-      .catch(() => {})
-  }, [])
+    if (loading) return
+
+    if (settings.theme_color) setMeta('theme-color', settings.theme_color)
+    if (settings.twitter) setMeta('twitter:site', settings.twitter, true)
+    if (settings.google_analytics_id) injectGA(settings.google_analytics_id)
+  }, [settings, loading])
 
   return null
 }

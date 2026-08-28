@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
-import { notifyCommentReply } from '@/lib/notification-helpers'
-import { z } from 'zod'
+import { getOptionalSession } from '@/lib/auth'
+import { getUseCases } from '@/application/use-cases/factory'
+import { CreateCommentSchema } from '@/lib/schemas'
+import { ok, notFound, unauthorized, validationFail, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
 }
-
-const commentSchema = z.object({
-  text: z.string().min(1, 'نص التعليق مطلوب').max(2000, 'التعليق طويل جداً'),
-  parentId: z.string().optional(),
-})
 
 // GET /api/mods/[slug]/comments — قائمة التعليقات
 //
@@ -24,43 +20,67 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
   const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
   if (!mod) {
-    return NextResponse.json({ error: 'Mod not found' }, { status: 404 })
+    return notFound('Mod not found')
   }
 
-  // جلب كل التعليقات (مع الردود وبيانات المستخدم)
-  const comments = await db.modComment.findMany({
-    where: {
-      modId: mod.id,
-      parentId: null, // التعليقات الرئيسية فقط — الردود هتجي معاها كـ relation
-    },
+  // جلب كل التعليقات (رئيسية + ردود) بشكل مسطّح ثم بناء الشجرة على السيرفر
+  const allComments = await db.modComment.findMany({
+    where: { modId: mod.id },
     include: {
-      replies: {
-        orderBy: { createdAt: 'asc' },
-      },
       user: {
-        select: { id: true, username: true, avatarUrl: true },
+        select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true },
       },
     },
-    orderBy: sort === 'oldest'
-      ? { createdAt: 'asc' }
-      : sort === 'popular'
-        ? { likes: 'desc' }
-        : { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
   })
 
-  // لو newest → المثبّت دائماً الأول
-  const sorted = sort === 'newest'
-    ? [...comments].sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1
-        if (!a.isPinned && b.isPinned) return 1
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      })
-    : comments
+  // بناء شجرة التعليقات
+  const commentMap = new Map<string, typeof allComments[number] & { replies: typeof allComments }>()
+  const rootComments: (typeof allComments[number] & { replies: typeof allComments })[] = []
+
+  for (const c of allComments) {
+    commentMap.set(c.id, { ...c, replies: [] })
+  }
+  for (const c of allComments) {
+    const node = commentMap.get(c.id)!
+    if (c.parentId) {
+      const parent = commentMap.get(c.parentId)
+      if (parent) {
+        parent.replies.push(node)
+      } else {
+        rootComments.push(node)
+      }
+    } else {
+      rootComments.push(node)
+    }
+  }
+
+  // ترتيب الردود لكل عقدة
+  type CommentNode = typeof rootComments[number]
+  const sortReplies = (nodes: CommentNode[]) => {
+    for (const n of nodes) {
+      n.replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      sortReplies(n.replies as unknown as CommentNode[])
+    }
+  }
+  sortReplies(rootComments)
+
+  // ترتيب التعليقات الرئيسية حسب sort mode — المثبت أولاً دائماً ثم حسب الفلتر
+  const sortWithPinned = (a: typeof rootComments[number], b: typeof rootComments[number], cmp: number) => {
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+    return cmp
+  }
+  const sorted = sort === 'oldest'
+    ? [...rootComments].sort((a, b) => sortWithPinned(a, b, new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()))
+    : sort === 'popular'
+      ? [...rootComments].sort((a, b) => sortWithPinned(a, b, b.likes - a.likes))
+      : [...rootComments].sort((a, b) => sortWithPinned(a, b, new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
 
   // عدّاد إجمالي التعليقات (رئيسية + ردود)
-  const totalCount = await db.modComment.count({ where: { modId: mod.id } })
+  const totalCount = allComments.length
 
-  return NextResponse.json({ comments: sorted, total: totalCount })
+  return ok({ comments: sorted, total: totalCount })
 }
 
 // POST /api/mods/[slug]/comments — إضافة تعليق جديد (يتطلب تسجيل دخول)
@@ -68,58 +88,51 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 // Body: { text: string, parentId?: string }
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    // التحقق من Supabase session
-    const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    // التحقق من الجلسة (Supabase أو role cookie)
+    const user = await getOptionalSession()
 
-    if (!supabaseUser) {
-      return NextResponse.json(
-        { error: 'سجّل الدخول للتعليق', code: 'AUTH_REQUIRED' },
-        { status: 401 }
-      )
+    if (!user) {
+      return unauthorized('Login required to comment')
     }
 
     const { slug } = await params
     const body = await req.json().catch(() => ({}))
-    const parsed = commentSchema.safeParse(body)
+    const parsed = CreateCommentSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: 'بيانات غير صحيحة' }, { status: 400 })
+      return validationFail(parsed.error.flatten())
     }
 
     const { text, parentId } = parsed.data
 
-    if (!text || text.trim().length === 0) {
-      return NextResponse.json({ error: 'نص التعليق مطلوب' }, { status: 400 })
-    }
-
-    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true } })
+    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true, authorId: true } })
     if (!mod) {
-      return NextResponse.json({ error: 'Mod not found' }, { status: 404 })
+      return notFound('Mod not found')
     }
 
-    // البحث عن المستخدم في Neon DB
-    const user = await db.user.findFirst({
-      where: {
-        OR: [
-          { supabaseId: supabaseUser.id },
-          { email: supabaseUser.email || '' },
-        ],
-      },
-      select: { id: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // لو فيه parentId → تأكد إن الـ parent موجود وينتمي لنفس الـ mod
+    // لو فيه parentId → تأكد إن الـ parent موجود وينتمي لنفس الـ mod + تحقق من العمق
     if (parentId) {
       const parent = await db.modComment.findUnique({
         where: { id: parentId },
-        select: { id: true, modId: true },
+        select: { id: true, modId: true, parentId: true },
       })
       if (!parent || parent.modId !== mod.id) {
-        return NextResponse.json({ error: 'التعليق الأصلي غير موجود' }, { status: 400 })
+        return notFound('Parent comment not found')
+      }
+
+      // حساب عمق التعليق الأصلي (حد أقصى 5 مستويات) — single-query بدل N+1
+      const allForDepth = await db.modComment.findMany({
+        where: { modId: mod.id },
+        select: { id: true, parentId: true },
+      })
+      const parentMap = new Map<string, string | null>(allForDepth.map((c) => [c.id, c.parentId]))
+      let depth = 1
+      let currentParentId: string | null = parent.parentId
+      while (currentParentId && depth < 10) {
+        depth++
+        currentParentId = parentMap.get(currentParentId) ?? null
+      }
+      if (depth > 5) {
+        return validationFail({ formErrors: ['تم الوصول للحد الأقصى من الردود (5 مستويات)'] })
       }
     }
 
@@ -142,21 +155,44 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (parentId) {
       const parentComment = await db.modComment.findUnique({
         where: { id: parentId },
-        select: { userId: true },
+        select: { userId: true, id: true },
       })
       if (parentComment?.userId) {
-        await notifyCommentReply({
-          userId: parentComment.userId,
-          actorId: user.id,
-          modName: mod.name || slug,
-          link: `/?view=mod&slug=${slug}`,
-        })
+        try {
+          const useCases = getUseCases()
+          await useCases.sendCommentReply.execute({
+            commentOwnerId: parentComment.userId,
+            replierId: user.id,
+            replierName: user.username || 'مستخدم',
+            modId: mod.id,
+            modTitle: mod.name || slug,
+            modSlug: slug,
+            commentId: parentComment.id,
+            replyPreview: text.substring(0, 100),
+          })
+        } catch {}
       }
     }
 
-    return NextResponse.json({ comment }, { status: 201 })
+    // إشعار تعليق جديد على التعريب (للمؤلف)
+    if (!parentId && mod.authorId) {
+      try {
+        const useCases = getUseCases()
+        await useCases.sendTopLevelComment.execute({
+          modAuthorId: mod.authorId,
+          commenterId: user.id,
+          commenterName: user.username || 'مستخدم',
+          modId: mod.id,
+          modTitle: mod.name || slug,
+          modSlug: slug,
+          commentPreview: text.substring(0, 100),
+        })
+      } catch {}
+    }
+
+    return ok(comment)
   } catch (err) {
     console.error('[comments POST] failed:', err)
-    return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 })
+    return internalError('Failed to create comment')
   }
 }

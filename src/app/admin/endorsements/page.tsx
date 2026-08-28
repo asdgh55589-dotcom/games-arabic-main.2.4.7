@@ -1,3 +1,4 @@
+// Updated for new API response format
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -42,11 +43,11 @@ export default function AdminEndorsementsPage() {
         return r.json()
       })
       .then((data) => {
-        setEndorsements(data.endorsements)
-        setTotalPages(data.totalPages)
-        setTotal(data.total)
-        setStats(data.stats)
-        setTopMods(data.topMods)
+        setEndorsements(data.data.endorsements)
+        setTotalPages(data.pagination.totalPages)
+        setTotal(data.pagination.total)
+        setStats(data.data.stats)
+        setTopMods(data.data.topMods)
       })
       .catch(() => setError('فشل تحميل التأييدات'))
       .finally(() => setLoading(false))
@@ -136,7 +137,7 @@ export default function AdminEndorsementsPage() {
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
-            size="sm"
+            size="sm" className="min-h-[44px]"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -145,7 +146,7 @@ export default function AdminEndorsementsPage() {
           <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
           <Button
             variant="outline"
-            size="sm"
+            size="sm" className="min-h-[44px]"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >

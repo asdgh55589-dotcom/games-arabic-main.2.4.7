@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Newspaper } from 'lucide-react'
 import { timeAgo } from '@/lib/format'
 
@@ -18,13 +19,55 @@ interface NewsItem {
 
 export function NewsFeatured() {
   const [news, setNews] = useState<NewsItem[]>([])
+  const [viewedIds, setViewedIds] = useState<Set<string>>(new Set())
+  const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
 
   useEffect(() => {
     fetch('/api/news?type=featured&limit=6')
       .then((r) => r.json())
-      .then((d) => setNews(d.news || []))
+      .then((d) => {
+        const list = d.data?.news ?? d.data ?? []
+        if (Array.isArray(list)) {
+          setNews(list)
+        }
+      })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (news.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const newsId = entry.target.getAttribute('data-news-id')
+            if (newsId && !viewedIds.has(newsId)) {
+              setViewedIds((prev) => {
+                if (prev.has(newsId)) return prev
+                const next = new Set(prev)
+                next.add(newsId)
+                return next
+              })
+              fetch(`/api/news/${newsId}/view`, { method: 'POST' }).catch(() => {})
+              observer.unobserve(entry.target)
+            }
+          }
+        })
+      },
+      { threshold: 0.5 }
+    )
+    itemRefs.current.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [news, viewedIds])
+
+  const trackClick = (id: string) => {
+    fetch(`/api/news/${id}/click`, { method: 'POST' }).catch(() => {})
+  }
+
+  const setRef = (id: string) => (el: HTMLElement | null) => {
+    if (el) itemRefs.current.set(id, el)
+    else itemRefs.current.delete(id)
+  }
 
   if (news.length === 0) return null
 
@@ -36,17 +79,20 @@ export function NewsFeatured() {
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {news.map((item) => {
-          const href = item.linkUrl || `/?view=news&slug=${item.slug}`
+          const href = item.linkUrl || '/'
           return (
             <Link
               key={item.id}
+              ref={setRef(item.id) as any}
+              data-news-id={item.id}
               href={href}
               target={item.linkUrl ? '_blank' : undefined}
-              className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+              onClick={() => trackClick(item.id)}
+              className="group overflow-hidden rounded-none border-2 border-border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
             >
               {item.imageUrl && (
                 <div className="relative h-40 overflow-hidden">
-                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                  <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" quality={75} className="object-cover transition-transform group-hover:scale-105" onError={(e) => { const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }; if (!img.dataset.fallback) { img.dataset.fallback = '1'; img.src = '/hero-bg.jpg' } }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 </div>
               )}

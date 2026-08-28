@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { ok, okPaginated, validationFail, notFound, internalError } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 
@@ -35,16 +36,19 @@ export async function GET(req: NextRequest) {
       db.modComment.count({ where }),
     ])
 
-    return NextResponse.json({
-      comments,
+    return okPaginated(comments, {
+      page,
+      limit,
       total,
       totalPages: Math.ceil(total / limit),
-      page,
     })
   } catch (err) {
     console.error('[admin/comments GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    if (status === 401 || status === 403) {
+      return internalError('Unauthorized or forbidden')
+    }
+    return internalError('Failed')
   }
 }
 
@@ -54,10 +58,10 @@ export async function DELETE(req: NextRequest) {
     await requireModerator()
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+    if (!id) return validationFail({ id: 'id required' })
 
     const comment = await db.modComment.findUnique({ where: { id }, select: { id: true, modId: true } })
-    if (!comment) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!comment) return notFound()
 
     // Wrap delete + count update in a transaction for atomicity
     await db.$transaction(async (tx) => {
@@ -66,10 +70,13 @@ export async function DELETE(req: NextRequest) {
       await tx.mod.update({ where: { id: comment.modId }, data: { comments: count } })
     })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/comments DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    if (status === 401 || status === 403) {
+      return internalError('Unauthorized or forbidden')
+    }
+    return internalError('Failed')
   }
 }

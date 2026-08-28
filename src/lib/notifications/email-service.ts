@@ -1,7 +1,12 @@
 import { db } from '@/lib/db'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resend: Resend | null = null
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY)
+} else {
+  console.warn('[Resend] RESEND_API_KEY not configured — email sending disabled')
+}
 
 interface GroupedNotifications {
   endorsements: any[]
@@ -109,6 +114,11 @@ export async function generateDailySummary(userId: string) {
 
   if (!user?.email) return
 
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (generateDailySummary)')
+    return
+  }
+
   await resend.emails.send({
     from: 'notifications@yourdomain.com',
     to: user.email,
@@ -169,6 +179,11 @@ export async function sendReportConfirmedEmail(
      <p>شكراً لمساهمتك في تحسين المنصة.</p>`
   )
 
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (sendReportConfirmedEmail)')
+    return
+  }
+
   try {
     await resend.emails.send({
       from: 'notifications@yourdomain.com',
@@ -204,6 +219,11 @@ export async function sendReportRejectedEmail(
      <p>إذا كنت تعتقد أن هذه النتيجة خاطئة، يمكنك تقديم بلاغ جديد مع أدلة إضافية.</p>`
   )
 
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (sendReportRejectedEmail)')
+    return
+  }
+
   try {
     await resend.emails.send({
       from: 'notifications@yourdomain.com',
@@ -234,6 +254,11 @@ export async function sendReportActionEmail(
      <p><strong>${actionLabels[action] || action}</strong></p>
      <p>إذا كان لديك أي استفسار، يُرجى التواصل مع فريق الدعم.</p>`
   )
+
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (sendReportActionEmail)')
+    return
+  }
 
   try {
     await resend.emails.send({

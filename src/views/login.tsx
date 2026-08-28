@@ -6,8 +6,8 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
-import { GAME_IMAGES } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -40,21 +40,14 @@ export function LoginPage() {
   useDocumentTitle('تسجيل الدخول')
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
-  const [checkingSession, setCheckingSession] = useState(true)
+  const { user, loading: authLoading } = useAuth()
 
-  // فحص إذا كان المستخدم مسجّل دخول بالفعل
+  // Redirect if already logged in
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.user) {
-          window.location.href = '/'
-        } else {
-          setCheckingSession(false)
-        }
-      })
-      .catch(() => setCheckingSession(false))
-  }, [])
+    if (!authLoading && user) {
+      window.location.href = '/'
+    }
+  }, [user, authLoading])
 
   const handleOAuthLogin = async (provider: 'google' | 'discord') => {
     setLoading(provider)
@@ -85,47 +78,40 @@ export function LoginPage() {
   const handleTelegramLogin = async () => {
     setLoading('telegram')
     try {
-      // 1. إنشاء session token
       const res = await fetch('/api/auth/telegram', { method: 'POST' })
-      const data = await res.json()
+      const { data } = await res.json()
 
-      if (!res.ok || !data.deepLink) {
-        throw new Error(data.error || 'Failed to create session')
+      if (!res.ok || !data?.deepLink) {
+        throw new Error(data?.error?.message || 'Failed to create session')
       }
 
-      // 2. فتح بوت Telegram مع Deep Link في تبويب جديد
       window.open(data.deepLink, '_blank')
 
-      // 3. مراقبة حالة المصادقة (polling)
       const pollInterval = setInterval(async () => {
         try {
-          // استخدام endpoint الـ polling بدلاً من webhook
           const checkRes = await fetch(`/api/auth/telegram/poll?token=${data.sessionToken}`)
-          const checkData = await checkRes.json()
+          const { data: checkData } = await checkRes.json()
 
-          if (checkData.status === 'success') {
+          if (checkData?.status === 'success') {
             clearInterval(pollInterval)
             toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
-            // تأخير لضمان حفظ الكوكيز + cache busting
             setTimeout(() => {
-              window.location.href = '/?t=' + Date.now()
+              window.location.href = '/'
             }, 200)
-          } else if (checkData.status === 'banned') {
+          } else if (checkData?.status === 'banned') {
             clearInterval(pollInterval)
             toast({ title: 'محظور', description: 'حسابك محظور', variant: 'destructive' })
             setLoading(null)
-          } else if (checkData.status === 'expired') {
+          } else if (checkData?.status === 'expired') {
             clearInterval(pollInterval)
             toast({ title: 'منتهي', description: 'انتهت صلاحية الرابط. حاول مرة أخرى.', variant: 'destructive' })
             setLoading(null)
           }
-          // 'pending' — ننتظر المزيد
         } catch {
           // تجاهل الأخطاء مؤقتاً
         }
-      }, 2000) // كل ثانيتين
+      }, 2000)
 
-      // إيقاف الـ polling بعد 5 دقائق
       setTimeout(() => {
         clearInterval(pollInterval)
         setLoading(null)
@@ -137,7 +123,7 @@ export function LoginPage() {
     }
   }
 
-  if (checkingSession) {
+  if (authLoading) {
     return (
       <div className="grid min-h-screen place-items-center bg-zinc-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -147,20 +133,17 @@ export function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" dir="rtl">
-      {/* خلفية صور الألعاب */}
-      <div className="absolute inset-0 grid grid-cols-5 grid-rows-6 gap-0.5 sm:gap-1">
-        {GAME_IMAGES.map((src, i) => (
-          <div key={i} className="relative overflow-hidden">
-            <img src={src} alt="" loading="lazy" className="h-full w-full object-cover opacity-30 transition-all duration-700 hover:opacity-60 hover:scale-105" />
-          </div>
-        ))}
+      {/* خلفية تسجيل الدخول */}
+      <div className="absolute inset-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/login-bg.jpg" alt="" className="h-full w-full object-cover" />
       </div>
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+      <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/85" />
 
       {/* زر العودة */}
       <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
-        <Button asChild variant="ghost" size="sm" className="bg-background/40 backdrop-blur-sm">
+        <Button asChild variant="ghost" size="sm" className="bg-background/40 backdrop-blur-sm min-h-[44px]">
           <Link href="/"><ArrowLeft className="ml-1.5 h-4 w-4" />العودة للرئيسية</Link>
         </Button>
       </div>
@@ -235,9 +218,9 @@ export function LoginPage() {
           <div className="mt-4 rounded-2xl border border-white/10 bg-card/60 p-5 text-center backdrop-blur-xl">
             <p className="text-xs text-muted-foreground leading-relaxed">
               بالتسجيل، أنت توافق على{' '}
-              <Link href="/?view=terms" className="text-primary hover:underline">الشروط و الأحكام</Link>
+              <Link href="/terms" className="text-primary hover:underline">الشروط و الأحكام</Link>
               {' '}و{' '}
-              <Link href="/?view=privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
+              <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
             </p>
           </div>
         </div>

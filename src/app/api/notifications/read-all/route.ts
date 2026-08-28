@@ -1,20 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
+import { getOptionalSession } from '@/lib/auth'
+import { ok, unauthorized, internalError } from '@/lib/api-response'
 
 async function markAllAsRead() {
-  const supabase = await createClient()
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-  if (!supabaseUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const neonUser = await db.user.findFirst({
-    where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-    select: { id: true },
-  })
+  const neonUser = await getOptionalSession()
   if (!neonUser) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    return unauthorized()
   }
 
   await db.notification.updateMany({
@@ -22,7 +14,7 @@ async function markAllAsRead() {
     data: { isRead: true, readAt: new Date() },
   })
 
-  return NextResponse.json({ success: true })
+  return ok({ success: true })
 }
 
 // POST /api/notifications/read-all — تعليم جميع الإشعارات كمقروءة
@@ -31,7 +23,7 @@ export async function POST(_req: NextRequest) {
     return await markAllAsRead()
   } catch (err) {
     console.error('[notifications read-all POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }
 
@@ -41,6 +33,6 @@ export async function PUT() {
     return await markAllAsRead()
   } catch (err) {
     console.error('[notifications read-all PUT] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

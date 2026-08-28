@@ -17,8 +17,11 @@ import {
   Layers,
   Megaphone,
   ScrollText,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatNumber, timeAgo } from '@/lib/format'
 import { AdminDashboardSkeleton } from '@/components/admin/admin-dashboard-skeleton'
 
@@ -59,11 +62,20 @@ interface DashboardData {
   }
 }
 
-const ROLE_BADGE: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
-  owner:     { label: 'مالك',  className: 'bg-amber-500 text-white',     icon: <Crown className="h-3 w-3" /> },
-  admin:     { label: 'مدير',   className: 'bg-red-500 text-white',       icon: <Star className="h-3 w-3" /> },
-  moderator: { label: 'مشرف',   className: 'bg-purple-500 text-white',    icon: <Star className="h-3 w-3" /> },
-  member:    { label: 'عضو',    className: 'bg-blue-500 text-white',      icon: <Users className="h-3 w-3" /> },
+const ROLE_BADGE: Record<string, { label: string; className: string }> = {
+  owner:     { label: 'مالك',  className: 'text-amber-400' },
+  admin:     { label: 'مدير',   className: 'text-red-400' },
+  moderator: { label: 'مشرف',   className: 'text-purple-400' },
+  member:    { label: 'عضو',    className: 'text-blue-400' },
+}
+
+const STAT_COLORS: Record<string, { bg: string; text: string }> = {
+  primary: { bg: 'bg-primary/10', text: 'text-primary' },
+  blue:    { bg: 'bg-blue-lt', text: 'text-blue' },
+  green:   { bg: 'bg-green-lt', text: 'text-green' },
+  yellow:  { bg: 'bg-yellow-lt', text: 'text-yellow' },
+  purple:  { bg: 'bg-purple-lt', text: 'text-purple' },
+  red:     { bg: 'bg-red-lt', text: 'text-red' },
 }
 
 export default function AdminDashboard() {
@@ -72,14 +84,24 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/dashboard')
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10000)
+    fetch('/api/admin/dashboard', { signal: controller.signal })
       .then((r) => {
+        clearTimeout(timer)
         if (!r.ok) throw new Error('Failed to load')
         return r.json()
       })
-      .then((d) => setData(d))
-      .catch(() => setError('فشل تحميل بيانات الداشبورد'))
+      .then((d) => setData(d.data))
+      .catch(() => {
+        clearTimeout(timer)
+        setError('فشل تحميل بيانات الداشبورد')
+      })
       .finally(() => setLoading(false))
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
   }, [])
 
   if (loading) {
@@ -97,293 +119,177 @@ export default function AdminDashboard() {
   if (!data) return null
 
   const statsCards = [
-    { label: 'التعريبات',     value: data.stats.mods,         icon: Package,       href: '/admin/mods',          color: 'text-primary' },
-    { label: 'المستخدمون',    value: data.stats.users,        icon: Users,         href: '/admin/users',         color: 'text-blue-500' },
-    { label: 'التحميلات',     value: data.stats.downloads,    icon: Download,      href: '/admin/mods',          color: 'text-green-500' },
-    { label: 'التأييدات',     value: data.stats.endorsements, icon: ThumbsUp,      href: '/admin/endorsements',  color: 'text-amber-500' },
-    { label: 'التعليقات',     value: data.stats.comments,     icon: MessageSquare, href: '/admin/comments',      color: 'text-purple-500' },
-    { label: 'مميّزة',        value: data.stats.featured,     icon: Star,          href: '/admin/mods',          color: 'text-amber-400' },
-    { label: 'رائجة',         value: data.stats.trending,     icon: Flame,         href: '/admin/mods',          color: 'text-orange-500' },
-    { label: 'السلاسل',       value: data.stats.series,        icon: Layers,        href: '/admin/series',        color: 'text-cyan-500' },
-  ]
-
-  const quickActions = [
-    { label: 'نشر تعريب', icon: Package, href: '/admin/mods/new', color: 'bg-primary hover:bg-primary/90' },
-    { label: 'إضافة إعلان', icon: Megaphone, href: '/admin/ads', color: 'bg-purple-600 hover:bg-purple-700' },
-    { label: 'إدارة التعليقات', icon: MessageSquare, href: '/admin/comments', color: 'bg-amber-600 hover:bg-amber-700' },
-    { label: 'سجل النشاطات', icon: ScrollText, href: '/admin/audit', color: 'bg-zinc-700 hover:bg-zinc-600' },
+    { label: 'التعريبات', value: data.stats.mods, icon: Package, color: 'primary', href: '/admin/mods' },
+    { label: 'المستخدمون', value: data.stats.users, icon: Users, color: 'blue', href: '/admin/users' },
+    { label: 'التحميلات', value: data.stats.downloads, icon: Download, color: 'green', href: '/admin/mods' },
+    { label: 'التعليقات', value: data.stats.comments, icon: MessageSquare, color: 'purple', href: '/admin/comments' },
   ]
 
   return (
-      <div className="space-y-10">
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#111214]/90 p-8 shadow-2xl shadow-black/30 lg:p-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,180,70,0.14),transparent_30%),radial-gradient(circle_at_left,rgba(120,80,255,0.08),transparent_28%)]" />
-
-        <div className="relative flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-primary/80">
-              Operations Center
-            </div>
-
-            <h1 className="mt-6 text-4xl font-black leading-tight text-white lg:text-5xl">
-              مركز إدارة GAMES ARABIC
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/60">
-              متابعة المحتوى والمجتمع والإشراف والتحليلات من لوحة تحكم موحدة وسريعة.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 lg:min-w-[420px]">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
-              <div className="text-xs font-bold text-white/45">إجمالي التعريبات</div>
-              <div className="mt-3 text-4xl font-black text-primary">
-                {formatNumber(data.stats.mods)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
-              <div className="text-xs font-bold text-white/45">إجمالي المستخدمين</div>
-              <div className="mt-3 text-4xl font-black text-cyan-400">
-                {formatNumber(data.stats.users)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
-              <div className="text-xs font-bold text-white/45">التحميلات</div>
-              <div className="mt-3 text-4xl font-black text-emerald-400">
-                {formatNumber(data.stats.downloads)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
-              <div className="text-xs font-bold text-white/45">التعليقات</div>
-              <div className="mt-3 text-4xl font-black text-violet-400">
-                {formatNumber(data.stats.comments)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* رأس الصفحة */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-5">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-white">نظرة تشغيلية مباشرة</h2>
-          <p className="mt-2 text-sm leading-7 text-white/55">آخر النشاطات والمحتوى وحالة المجتمع داخل المنصة.</p>
+          <h1 className="text-lg font-semibold text-foreground">لوحة التحكم</h1>
+          <p className="text-[13px] text-muted-foreground">نظرة عامة على المنصة والنشاط الأخير</p>
         </div>
-
-        <Button asChild className="h-12 rounded-2xl px-6 text-sm font-black shadow-lg shadow-primary/20">
+        <Button asChild size="sm" className="min-h-[44px]">
           <Link href="/admin/mods/new">
-            <Plus className="ml-2 h-4 w-4" />
-            نشر تعريب جديد
+            <Plus className="h-3.5 w-3.5" />
+            نشر تعريب
           </Link>
         </Button>
       </div>
 
-      {/* أزرار الإجراءات السريعة */}
-      <div className="grid gap-4 lg:grid-cols-4">
-        {quickActions.map((action) => {
+      {/* Stat Cards — Gentelella pattern: icon + label + value */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statsCards.map((stat) => {
+          const Icon = stat.icon
+          const colors = STAT_COLORS[stat.color]
+          return (
+            <Card key={stat.label}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3.5">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${colors.bg}`}>
+                    <Icon className={`h-5 w-5 ${colors.text}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {stat.label}
+                    </div>
+                    <div className="mt-1 text-[22px] font-semibold leading-tight tracking-tight text-foreground">
+                      {formatNumber(stat.value)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Quick Actions Row */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: 'نشر تعريب', icon: Package, href: '/admin/mods/new' },
+          { label: 'الإعلانات', icon: Megaphone, href: '/admin/ads' },
+          { label: 'التعليقات', icon: MessageSquare, href: '/admin/comments' },
+          { label: 'سجل النشاطات', icon: ScrollText, href: '/admin/audit' },
+        ].map((action) => {
           const Icon = action.icon
           return (
             <Link
               key={action.label}
               href={action.href}
-              className={`group relative overflow-hidden rounded-2xl px-5 py-5 text-sm font-bold text-white transition-all duration-300 ${action.color} shadow-xl shadow-black/20`}
+              className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3 text-[13px] font-medium text-foreground transition-colors hover:bg-background-secondary"
             >
-              <div className="absolute inset-0 bg-gradient-to-l from-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-              <div className="relative flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-black/15">
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <div>
-                  <div>{action.label}</div>
-                  <div className="mt-1 text-xs font-medium text-white/70">
-                    تنفيذ سريع
-                  </div>
-                </div>
-              </div>
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              {action.label}
             </Link>
           )
         })}
       </div>
 
-      {/* بطاقات الإحصائيات */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statsCards.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Link
-              key={stat.label}
-              href={stat.href}
-              className="group overflow-hidden rounded-[28px] border border-white/10 bg-[#121317]/90 p-5 transition-all duration-300 hover:border-primary/30 hover:bg-[#16181d]"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-xs font-bold tracking-wide text-white/45">
-                    {stat.label}
-                  </div>
-
-                  <div className="mt-4 text-4xl font-black text-white">
-                    {formatNumber(stat.value)}
-                  </div>
-
-                  <div className="mt-2 text-xs text-white/40">
-                    آخر تحديث مباشر
-                  </div>
-                </div>
-
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04]">
-                  <Icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-
-      {/* Activity Center */}
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[32px] border border-white/10 bg-[#111214]/90 p-6">
-          <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-primary/70">
-                Activity Stream
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-white">
-                آخر النشاطات التشغيلية
-              </h2>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        {/* Latest Mods */}
+        <Card>
+          <CardHeader>
+            <CardTitle>آخر التعريبات</CardTitle>
+            <div className="flex items-center gap-1.5 rounded-full bg-green-lt px-2.5 py-1 text-[11px] font-medium text-green">
+              <span className="h-1.5 w-1.5 rounded-full bg-green" />
+              نشط
             </div>
-
-            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300">
-              النظام مستقر
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {data.recent.mods.map((mod) => (
-              <Link
-                key={mod.id}
-                href={`/admin/mods/${mod.id}/edit`}
-                className="group flex items-start gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all duration-300 hover:border-primary/30 hover:bg-white/[0.05]"
-              >
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <Package className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-sm font-black text-white group-hover:text-primary">
-                      {mod.name}
-                    </h3>
-
-                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-bold text-white/45">
-                      {mod.game.platform}
-                    </span>
-                  </div>
-
-                  <p className="mt-2 text-sm leading-6 text-white/55">
-                    تم نشر تعريب جديد للعبة {mod.game.name}
-                  </p>
-
-                  <div className="mt-3 text-xs text-white/35">
-                    {timeAgo(mod.createdAt)}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="rounded-[30px] border border-white/10 bg-[#111214]/90 p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-black text-white">
-                آخر المستخدمين
-              </h2>
-
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-
-            <div className="space-y-4">
-              {data.recent.users.map((u) => {
-                const role = ROLE_BADGE[u.role] || ROLE_BADGE.member
-
-                return (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3"
-                  >
-                    {u.avatarUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={u.avatarUrl}
-                        alt=""
-                        className="h-11 w-11 rounded-2xl object-cover"
-                      />
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-black text-white">
-                        {u.username}
-                      </div>
-
-                      <div className="mt-1 text-xs text-white/40">
-                        {timeAgo(u.joinedAt)}
-                      </div>
-                    </div>
-
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${role.className}`}>
-                      {role.icon}
-                      {role.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-[30px] border border-white/10 bg-[#111214]/90 p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-black text-white">
-                آخر التعليقات
-              </h2>
-
-              <MessageSquare className="h-5 w-5 text-primary" />
-            </div>
-
-            <div className="space-y-4">
-              {data.recent.comments.map((c) => (
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border-light">
+              {data.recent.mods.map((mod) => (
                 <Link
-                  key={c.id}
-                  href={`/?view=mod&slug=${c.mod.slug}`}
-                  target="_blank"
-                  className="block rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all duration-300 hover:border-primary/30 hover:bg-white/[0.05]"
+                  key={mod.id}
+                  href={`/admin/mods/${mod.id}/edit`}
+                  className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-background-secondary"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="truncate text-sm font-black text-white">
-                      {c.guestName}
-                    </div>
-
-                    <div className="text-[11px] text-white/35">
-                      {timeAgo(c.createdAt)}
-                    </div>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-lt text-primary">
+                    <Package className="h-4.5 w-4.5" />
                   </div>
-
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/55">
-                    {c.text}
-                  </p>
-
-                  <div className="mt-4 text-xs font-semibold text-primary/85">
-                    على {c.mod.name}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-[13px] font-medium text-foreground">{mod.name}</span>
+                      <span className="shrink-0 rounded bg-background-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        {mod.game.platform}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">
+                      {mod.game.name}
+                    </p>
                   </div>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {timeAgo(mod.createdAt)}
+                  </span>
                 </Link>
               ))}
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Right Column */}
+        <div className="space-y-5">
+          {/* Recent Users */}
+          <Card>
+            <CardHeader>
+              <CardTitle>آخر المستخدمين</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border-light">
+                {data.recent.users.map((u) => {
+                  const role = ROLE_BADGE[u.role] || ROLE_BADGE.member
+                  return (
+                    <div key={u.id} className="flex items-center gap-3 px-4 py-3">
+                      {u.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={u.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-white">
+                          {u.username.charAt(0)}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-medium text-foreground">{u.username}</div>
+                        <div className="text-[11px] text-muted-foreground">{timeAgo(u.joinedAt)}</div>
+                      </div>
+                      <span className={`text-[11px] font-medium ${role.className}`}>{role.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Comments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>آخر التعليقات</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border-light">
+                {data.recent.comments.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/mod/${c.mod.slug}`}
+                    target="_blank"
+                    className="block px-4 py-3 transition-colors hover:bg-background-secondary"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-medium text-foreground">{c.guestName}</span>
+                      <span className="text-[11px] text-muted-foreground">{timeAgo(c.createdAt)}</span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[12px] text-muted-foreground">{c.text}</p>
+                    <div className="mt-1.5 text-[11px] font-medium text-primary">على {c.mod.name}</div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { Bell, MessageCircle, Heart, Star, Shield, Users, FileText, AlertTriangle, Award, CheckCheck, Trash2 } from 'lucide-react'
+import { Bell, MessageCircle, Heart, Star, Shield, Users, FileText, AlertTriangle, Award, CheckCheck, Trash2, Package, Send, Clock, AlertCircle } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -24,6 +25,16 @@ const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
   [NotificationType.SpecialRoleAssigned]: <Shield className="h-5 w-5 text-purple-400" />,
   [NotificationType.SpecialRoleRemoved]: <Shield className="h-5 w-5 text-gray-400" />,
   [NotificationType.AdminMilestone]: <Star className="h-5 w-5 text-amber-400" />,
+  [NotificationType.ModSubmitted]: <Send className="h-5 w-5 text-blue-400" />,
+  [NotificationType.ModApproved]: <CheckCheck className="h-5 w-5 text-green-400" />,
+  [NotificationType.ModRejected]: <AlertCircle className="h-5 w-5 text-red-400" />,
+  [NotificationType.ModPublished]: <Package className="h-5 w-5 text-green-400" />,
+  [NotificationType.ModScheduled]: <Clock className="h-5 w-5 text-blue-400" />,
+  [NotificationType.NewComment]: <MessageCircle className="h-5 w-5 text-blue-400" />,
+  [NotificationType.NewReport]: <AlertTriangle className="h-5 w-5 text-yellow-400" />,
+  [NotificationType.NewVersion]: <Package className="h-5 w-5 text-cyan-400" />,
+  [NotificationType.BackupCompleted]: <CheckCheck className="h-5 w-5 text-green-400" />,
+  [NotificationType.SystemAlert]: <AlertTriangle className="h-5 w-5 text-red-400" />,
 }
 
 export function NotificationsPage() {
@@ -43,10 +54,10 @@ export function NotificationsPage() {
       if (filter !== 'all') params.set('read', 'false')
       const res = await fetch(`/api/notifications?${params}`)
       if (res.ok) {
-        const data = await res.json()
-        setNotifications(data.notifications)
-        setTotalPages(data.totalPages)
-        setUnreadCount(data.unreadCount)
+        const responseData = await res.json()
+        setNotifications(responseData.data || [])
+        setTotalPages(responseData.pagination?.totalPages || 1)
+        setUnreadCount(responseData.meta?.unreadCount || 0)
       }
     } catch {} finally {
       setLoading(false)
@@ -79,21 +90,21 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <div className="mx-auto max-w-[800px] px-4 py-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bell className="h-6 w-6 text-[#ff8c00]" />
+            <Bell className="h-6 w-6 text-gold" />
             <h1 className="text-2xl font-bold">الإشعارات</h1>
             {unreadCount > 0 && (
-              <span className="rounded-full bg-[#ff8c00] px-2.5 py-0.5 text-xs font-bold text-white">
+              <span className="rounded-full bg-gold px-2.5 py-0.5 text-xs font-bold text-gold-foreground">
                 {unreadCount}
               </span>
             )}
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" size="sm" className="gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222]" onClick={markAllAsRead}>
+            <Button variant="outline" size="sm" className="gap-1.5 border-border text-xs text-muted-foreground hover:bg-accent min-h-[44px]" onClick={markAllAsRead}>
               <CheckCheck className="h-3.5 w-3.5" />
               تعيين الكل كمقروء
             </Button>
@@ -102,11 +113,11 @@ export function NotificationsPage() {
 
         {/* Tabs */}
         <Tabs value={filter} onValueChange={(v) => { setFilter(v); setPage(1) }}>
-          <TabsList className="mb-6 w-full flex-row justify-start border-b border-[#333] bg-transparent p-0">
-            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:border-[#ff8c00] data-[state=active]:text-white">
+          <TabsList className="mb-6 w-full flex-row justify-start border-b border-border bg-transparent p-0">
+            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent bg-transparent text-muted-foreground data-[state=active]:border-gold data-[state=active]:text-foreground">
               الكل
             </TabsTrigger>
-            <TabsTrigger value="unread" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:border-[#ff8c00] data-[state=active]:text-white">
+            <TabsTrigger value="unread" className="rounded-none border-b-2 border-transparent bg-transparent text-muted-foreground data-[state=active]:border-gold data-[state=active]:text-foreground">
               غير مقروء ({unreadCount})
             </TabsTrigger>
           </TabsList>
@@ -114,24 +125,24 @@ export function NotificationsPage() {
           <TabsContent value={filter}>
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ff8c00] border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Bell className="mb-4 h-16 w-16 text-gray-700" />
-                <p className="text-lg font-medium text-gray-400">لا توجد إشعارات</p>
-                <p className="mt-1 text-sm text-gray-600">ستظهر الإشعارات الجديدة هنا</p>
-              </div>
+              <EmptyState
+                icon="bell"
+                title="لا توجد إشعارات"
+                description="ستظهر إشعاراتك هنا عندما تتلقى تفاعلات جديدة"
+              />
             ) : (
               <div className="space-y-2">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
                     onClick={() => !notification.readAt && markAsRead(notification.id)}
-                    className={`group flex gap-4 rounded-xl border p-4 transition-all hover:bg-[#1a1a1a] ${
+                    className={`group flex gap-4 rounded-none border-2 p-4 transition-all hover:bg-accent ${
                       !notification.readAt
-                        ? 'border-[#ff8c00]/20 bg-[#ff8c00]/5'
-                        : 'border-[#222] bg-[#161616]'
+                        ? 'border-gold/20 bg-gold/5'
+                        : 'border-border bg-card'
                     }`}
                   >
                     {/* Avatar or Icon */}
@@ -139,13 +150,13 @@ export function NotificationsPage() {
                       {notification.actor ? (
                         <Avatar className="h-11 w-11">
                           <AvatarImage src={notification.actor.avatarUrl || undefined} />
-                          <AvatarFallback className="bg-[#333] text-sm font-bold text-[#ff8c00]">
+                          <AvatarFallback className="bg-secondary text-sm font-bold text-gold">
                             {notification.actor.username[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#333]">
-                          {TYPE_ICONS[notification.type as NotificationType] || <Bell className="h-5 w-5 text-gray-400" />}
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary">
+                          {TYPE_ICONS[notification.type as NotificationType] || <Bell className="h-5 w-5 text-muted-foreground" />}
                         </div>
                       )}
                     </div>
@@ -153,15 +164,15 @@ export function NotificationsPage() {
                     {/* Content */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm leading-snug ${!notification.readAt ? 'font-semibold text-white' : 'text-gray-300'}`}>
+                        <p className={`text-sm leading-snug ${!notification.readAt ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                           {notification.title}
                         </p>
                         <div className="flex shrink-0 items-center gap-1">
-                          {!notification.readAt && <div className="h-2 w-2 rounded-full bg-[#ff8c00]" />}
+                          {!notification.readAt && <div className="h-2 w-2 rounded-full bg-gold" />}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive min-h-[44px]"
                             onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id) }}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -169,14 +180,14 @@ export function NotificationsPage() {
                         </div>
                       </div>
                       {notification.message && (
-                        <p className="mt-1 text-xs text-gray-500">{notification.message}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{notification.message}</p>
                       )}
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#222] px-2 py-0.5 text-[10px] text-gray-400">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
                           {TYPE_ICONS[notification.type as NotificationType]}
                           {NOTIFICATION_TYPE_LABELS[notification.type as NotificationType] || notification.type}
                         </span>
-                        <span className="text-[11px] text-gray-600">{formatArabicDate(notification.createdAt)}</span>
+                        <span className="text-[11px] text-muted-foreground/60">{formatArabicDate(notification.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -190,19 +201,19 @@ export function NotificationsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-[#333] text-xs text-gray-300"
+                  className="h-8 border-border text-xs text-muted-foreground min-h-[44px]"
                   disabled={page <= 1}
                   onClick={() => setPage(p => p - 1)}
                 >
                   السابق
                 </Button>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-[#333] text-xs text-gray-300"
+                  className="h-8 border-border text-xs text-muted-foreground min-h-[44px]"
                   disabled={page >= totalPages}
                   onClick={() => setPage(p => p + 1)}
                 >

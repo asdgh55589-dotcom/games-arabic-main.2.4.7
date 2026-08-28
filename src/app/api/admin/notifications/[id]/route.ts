@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { ok, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -14,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     const notification = await db.notification.findUnique({ where: { id }, select: { id: true } })
     if (!notification) {
-      return NextResponse.json({ error: 'الإشعار غير موجود' }, { status: 404 })
+      return notFound('الإشعار غير موجود')
     }
 
     const updateData: Record<string, unknown> = {}
@@ -24,9 +25,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     await db.notification.update({ where: { id }, data: updateData })
 
-    return NextResponse.json({ success: true })
+    return ok({ success: true })
   } catch (err) {
     console.error('[admin/notifications/[id] PATCH] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed')
   }
 }

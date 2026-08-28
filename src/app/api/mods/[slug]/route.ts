@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { serialize } from '@/lib/api-utils'
-import type { ModDetail, ApiError } from '@/lib/types'
+import { ok, notFound } from '@/lib/api-response'
+import { recordModView } from '@/lib/counters'
 
 // GET /api/mods/[slug] - single mod by slug
 //
@@ -46,24 +47,20 @@ export async function GET(
   })
 
   if (!mod) {
-    return NextResponse.json<ApiError>(
-      { error: 'Mod not found' },
-      { status: 404 }
-    )
+    return notFound('Mod not found')
   }
 
-  // Fire-and-forget view count increment — but only for real user visits,
-  // not prefetch requests.
+  // Fire-and-forget view count — deduplicated (user 24h / guest IP+UA 1h, bots skipped).
+  // Only unique views increment the counter and write a ModView row.
   if (!isPrefetch) {
-    db.mod
-      .update({
-        where: { id: mod.id },
-        data: { views: { increment: 1 } },
-      })
-      .catch((err) => {
-        console.error('[mods/:slug] failed to increment views:', err)
-      })
+    recordModView(mod.id, req, db).catch((err) => {
+      console.error('[mods/:slug] failed to record view:', err)
+    })
   }
 
-  return NextResponse.json<{ mod: ModDetail }>({ mod: serialize(mod) })
+  return ok(serialize(mod), {
+    headers: {
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+    },
+  })
 }

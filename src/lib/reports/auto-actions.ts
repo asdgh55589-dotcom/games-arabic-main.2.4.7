@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { NotificationType } from '@/lib/notifications/types'
+import { getUseCases } from '@/application/use-cases/factory'
+import { setTokenVersionCache } from '@/lib/token-version-cache'
 import type { ReportAction } from './constants'
 
 interface AutoActionInput {
@@ -10,8 +11,24 @@ interface AutoActionInput {
   targetUserId?: string
 }
 
-export async function executeAutoAction(input: AutoActionInput) {
-  const { reportId, action, resolution, banDuration, targetUserId } = input
+export async function executeAutoAction(input: AutoActionInput & { actorId?: string; actorRole?: string }) {
+  const { reportId, action, resolution, banDuration, targetUserId, actorId, actorRole } = input
+
+  // 🔒 شبكة أمان إضافية للحظر الدائم — حتى لو تم استدعاء الدالة مباشرة
+  if (action === 'perm_ban' && actorRole && !['manager', 'admin', 'owner'].includes(actorRole)) {
+    throw new Error('يجب أن تكون مديراً أو أعلى لتنفيذ الحظر الدائم')
+  }
+  // إذا تم تمرير actorId بدون role نتحقق من DB
+  if (action === 'perm_ban' && actorId && !actorRole) {
+    const actor = await db.user.findUnique({ where: { id: actorId }, select: { role: true } })
+    if (actor && !['manager', 'admin', 'owner'].includes(actor.role)) {
+      throw new Error('يجب أن تكون مديراً أو أعلى لتنفيذ الحظر الدائم')
+    }
+  }
+  // رفض افتراضي إذا لم يتم تمرير أي هوية منفذ للحظر الدائم — أمان إضافي
+  if (action === 'perm_ban' && !actorId && !actorRole) {
+    throw new Error('يجب أن تكون مديراً أو أعلى لتنفيذ الحظر الدائم — هوية المنفذ مطلوبة')
+  }
 
   const report = await db.report.findUnique({
     where: { id: reportId },
@@ -31,14 +48,14 @@ export async function executeAutoAction(input: AutoActionInput) {
       },
     })
 
-    await db.notification.create({
-      data: {
-        userId,
-        type: NotificationType.AdminAction,
-        title: 'تحذير رسمي',
-        message: `تم تحذيرك بناءً على بلاغ مقدم ضد محتواك. السبب: ${resolution}`,
-      },
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoWarning.execute({
+        targetUserId: userId,
+        reportId,
+        reason: resolution,
+      })
+    } catch {}
   }
 
   if (action === 'content_hidden' && report.targetModId) {
@@ -61,15 +78,21 @@ export async function executeAutoAction(input: AutoActionInput) {
       ? new Date(Date.now() + (banDuration || 7) * 24 * 60 * 60 * 1000)
       : null
 
-    await db.user.update({
+    const updatedUser = await db.user.update({
       where: { id: userId },
       data: {
         banStatus: action === 'temp_ban' ? 'banned_temp' : 'banned_perm',
         bannedUntil,
         banReason: resolution,
         bannedAt: new Date(),
+        tokenVersion: { increment: 1 },
       },
+      select: { tokenVersion: true },
     })
+    // إبطال جميع الجلسات عبر كاش Edge لتسجيل خروج فوري بعد الحظر
+    try {
+      await setTokenVersionCache(userId, updatedUser.tokenVersion)
+    } catch {}
 
     await db.userAction.create({
       data: {
@@ -81,23 +104,22 @@ export async function executeAutoAction(input: AutoActionInput) {
       },
     })
 
-    await db.notification.create({
-      data: {
-        userId,
-        type: NotificationType.AdminAction,
-        title: action === 'temp_ban' ? 'تعليق مؤقت' : 'حظر دائم',
-        message: action === 'temp_ban'
-          ? `تم تعليق حسابك مؤقتاً لمدة ${banDuration || 7} أيام.`
-          : 'تم حظر حسابك بشكل دائم.',
-      },
-    })
+    try {
+      const useCases = getUseCases()
+      await useCases.sendAutoBan.execute({
+        targetUserId: userId,
+        reportId,
+        banType: action === 'temp_ban' ? 'temp_ban' : 'perm_ban',
+        durationDays: action === 'temp_ban' ? banDuration || 7 : undefined,
+      })
+    } catch {}
   }
 
   await db.report.update({
     where: { id: reportId },
     data: {
-      status: 'confirmed',
-      actionTaken: action,
+      status: 'confirmed' as any,
+      actionTaken: action as any,
       actionAt: new Date(),
       resolution,
       resolvedAt: new Date(),

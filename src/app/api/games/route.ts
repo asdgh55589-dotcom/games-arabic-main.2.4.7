@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { pickSort, serialize } from '@/lib/api-utils'
-import type { GameSummary } from '@/lib/types'
+import { ok } from '@/lib/api-response'
 
 const SORTS = ['popular', 'mods', 'name', 'newest'] as const
 type Sort = (typeof SORTS)[number]
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     include: { _count: { select: { mods: true } } },
   })
 
-  return NextResponse.json<{ games: GameSummary[] }>({ games: serialize(games) }, {
+  return ok(serialize(games), {
     headers: {
       // Cache for 60s in the browser, serve stale for up to 300s while revalidating.
       // Only apply to non-filtered lists (search/featured/category queries are

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { okPaginated, internalError } from '@/lib/api-response'
 
 // GET /api/admin/endorsements — قائمة كل التأييدات
 export async function GET(req: NextRequest) {
@@ -40,17 +41,16 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({
-      endorsements,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit) || 1,
-      stats: { up: upCount, down: downCount, total: upCount + downCount },
-      topMods,
-    })
+    return okPaginated(
+      {
+        endorsements,
+        stats: { up: upCount, down: downCount, total: upCount + downCount },
+        topMods,
+      },
+      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+    )
   } catch (err) {
     console.error('[admin/endorsements GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'Failed' }, { status })
+    return internalError('Failed')
   }
 }

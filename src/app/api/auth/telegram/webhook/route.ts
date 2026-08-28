@@ -1,60 +1,63 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { redisGet, redisSet } from '@/lib/redis'
 import { createHmac } from 'crypto'
+import { ok, internalError } from '@/lib/api-response'
 
-// POST /api/auth/telegram/webhook — استقبال بيانات من Telegram Bot
-// البوت يرسل بيانات المستخدم هنا عندما يضغط Start مع Deep Link
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-
-    // التحقق من صحة الطلب (يجب أن يأتي من البوت)
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    if (!botToken) {
-      return NextResponse.json({ error: 'Bot not configured' }, { status: 500 })
+    // Verify Telegram webhook secret token
+    const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+    if (!expectedSecret) {
+      console.error('[telegram webhook] TELEGRAM_WEBHOOK_SECRET not configured')
+      return ok({ ok: true })
+    }
+    if (!secretToken || secretToken !== expectedSecret) {
+      console.warn('[telegram webhook] Invalid secret token')
+      return ok({ ok: true }) // Return 200 to prevent Telegram from retrying
     }
 
-    // استخراج بيانات المستخدم من الـ update
+    const body = await req.json()
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    if (!botToken) {
+      return internalError('Bot not configured')
+    }
+
     const message = body.message || body.callback_query?.message
     if (!message) {
-      return NextResponse.json({ ok: true }) // تجاهل الـ updates غير ذات الصلة
+      return ok({ ok: true })
     }
 
     const user = message.from
     if (!user) {
-      return NextResponse.json({ ok: true })
+      return ok({ ok: true })
     }
 
-    // استخراج session token من الـ /start command
     const text = message.text || ''
     if (!text.startsWith('/start ')) {
-      // ليس deep link — تجاهل
-      return NextResponse.json({ ok: true })
+      return ok({ ok: true })
     }
 
     const sessionToken = text.replace('/start ', '').trim()
 
     if (!sessionToken) {
-      return NextResponse.json({ ok: true })
+      return ok({ ok: true })
     }
 
-    // التحقق من صحة الـ token
     const sessionData = await redisGet<string>(`telegram_auth:${sessionToken}`)
     if (!sessionData) {
-      // token غير صالح — أرسل رسالة للمستخدم
       await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')
-      return NextResponse.json({ ok: true })
+      return ok({ ok: true })
     }
 
     const session = JSON.parse(sessionData)
 
-    // فحص انتهاء الصلاحية
     if (Date.now() > session.expiresAt) {
       await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')
-      return NextResponse.json({ ok: true })
+      return ok({ ok: true })
     }
 
-    // تحديث الـ session ببيانات المستخدم
     await redisSet(`telegram_auth:${sessionToken}`, JSON.stringify({
       used: true,
       expiresAt: session.expiresAt,
@@ -63,11 +66,10 @@ export async function POST(req: NextRequest) {
         firstName: user.first_name,
         lastName: user.last_name || null,
         username: user.username || null,
-        photoUrl: null, // Telegram لا يرسل الصورة في الـ message
+        photoUrl: null,
       },
     }), 300)
 
-    // إرسال رسالة تأكيد للمستخدم
     const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ')
     await sendMessage(
       botToken,
@@ -75,16 +77,15 @@ export async function POST(req: NextRequest) {
       `✅ تم تسجيل الدخول بنجاح!\n\nمرحباً ${displayName}، يمكنك الآن العودة إلى الموقع وستكون مسجّل الدخول تلقائياً.`
     )
 
-    return NextResponse.json({ ok: true })
+    return ok({ ok: true })
   } catch (err) {
     console.error('[telegram webhook] failed:', err instanceof Error ? err.message : 'unknown error')
-    return NextResponse.json({ ok: true }) //Always return 200 to Telegram
+    return ok({ ok: true })
   }
 }
 
-// GET /api/auth/telegram/webhook — للتحقق من أن الـ webhook يعمل
 export async function GET() {
-  return NextResponse.json({ status: 'ok', message: 'Telegram webhook is active' })
+  return ok({ status: 'ok', message: 'Telegram webhook is active' })
 }
 
 // دالة مساعدة لإرسال رسائل Telegram

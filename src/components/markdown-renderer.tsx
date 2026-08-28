@@ -17,7 +17,7 @@ interface MarkdownRendererProps {
 export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const blocks = parseBlocks(content)
   return (
-    <div className="prose prose-invert max-w-none space-y-4 text-sm leading-relaxed text-muted-foreground">
+    <div className="prose prose-invert max-w-none space-y-4 text-sm font-medium leading-relaxed text-foreground">
       {blocks.map((block, i) => {
         if (block.type === 'heading') {
           const level = block.level || 2
@@ -56,7 +56,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: Mark
           )
         }
         // paragraph
-        return <p key={i} className="text-foreground/90">{renderInline(block.text)}</p>
+        return <p key={i} className="font-medium text-foreground">{renderInline(block.text)}</p>
       })}
     </div>
   )
@@ -137,7 +137,7 @@ function parseBlocks(md: string): Block[] {
 }
 
 function renderInline(text: string): React.ReactNode {
-  // Handle **bold**, *italic*, `code`, [link](url)
+  // Handle **bold**, *italic*, `code`, [link](url), ~~strikethrough~~, <span style="color:...">
   const parts: React.ReactNode[] = []
   let rest = text
   let key = 0
@@ -147,12 +147,16 @@ function renderInline(text: string): React.ReactNode {
     const italic = /\*(.+?)\*/.exec(rest)
     const code = /`(.+?)`/.exec(rest)
     const link = /\[(.+?)\]\((.+?)\)/.exec(rest)
+    const strike = /~~(.+?)~~/.exec(rest)
+    const colorSpan = /<span style="color:(.+?)">(.+?)<\/span>/.exec(rest)
 
     const matches = [
       bold ? { type: 'bold', match: bold, index: bold.index } : null,
       italic ? { type: 'italic', match: italic, index: italic.index } : null,
       code ? { type: 'code', match: code, index: code.index } : null,
       link ? { type: 'link', match: link, index: link.index } : null,
+      strike ? { type: 'strike', match: strike, index: strike.index } : null,
+      colorSpan ? { type: 'color', match: colorSpan, index: colorSpan.index } : null,
     ].filter(Boolean) as { type: string; match: RegExpExecArray; index: number }[]
 
     if (matches.length === 0) {
@@ -171,6 +175,14 @@ function renderInline(text: string): React.ReactNode {
       parts.push(<strong key={key++} className="font-semibold text-foreground">{first.match[1]}</strong>)
     } else if (first.type === 'italic') {
       parts.push(<em key={key++}>{first.match[1]}</em>)
+    } else if (first.type === 'strike') {
+      parts.push(<s key={key++} className="text-muted-foreground">{first.match[1]}</s>)
+    } else if (first.type === 'color') {
+      const color = first.match[1]
+      const text = first.match[2]
+      // sanitize color — allow only hex
+      const safeColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : '#3b82f6'
+      parts.push(<span key={key++} style={{ color: safeColor }}>{text}</span>)
     } else if (first.type === 'code') {
       parts.push(
         <code key={key++} className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">

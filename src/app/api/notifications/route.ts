@@ -1,41 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { createClient } from '@/lib/supabase/server'
 import { NotificationType } from '@/lib/notifications/types'
-
-async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser()
-  if (!supabaseUser) return null
-  const neonUser = await db.user.findFirst({
-    where: { OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }] },
-    select: { id: true },
-  })
-  return neonUser
-}
+import { getOptionalSession } from '@/lib/auth'
+import { ok, okPaginatedWithMeta, unauthorized, validationFail, internalError } from '@/lib/api-response'
+import { parsePagination } from '@/lib/api-utils'
 
 // GET /api/notifications — قائمة الإشعارات
 export async function GET(req: NextRequest) {
   try {
-    const neonUser = await requireUser()
-    if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const user = await getOptionalSession()
+    if (!user) {
+      return unauthorized()
     }
 
     const { searchParams } = new URL(req.url)
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')))
+    const { page, limit } = parsePagination(
+      searchParams.get('page'),
+      searchParams.get('limit'),
+      { limit: 20, maxLimit: 50 }
+    )
     const type = searchParams.get('type')
     const read = searchParams.get('read')
 
-    const where: Record<string, unknown> = { userId: neonUser.id }
+    const where: Record<string, unknown> = { userId: user.id }
     if (type && type !== 'all') where.type = type
     if (read === 'true') where.readAt = { not: null }
     if (read === 'false') where.readAt = null
 
     const [total, unreadCount, rawNotifications] = await Promise.all([
       db.notification.count({ where }),
-      db.notification.count({ where: { userId: neonUser.id, readAt: null } }),
+      db.notification.count({ where: { userId: user.id, readAt: null } }),
       db.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -62,19 +56,20 @@ export async function GET(req: NextRequest) {
       link: (n.data as any)?.link || null,
     }))
 
-    return NextResponse.json({
-      notifications,
+    return okPaginatedWithMeta(notifications, {
+      page,
+      limit,
+      total,
       totalPages: Math.ceil(total / limit) || 1,
-      unreadCount,
-    })
+    }, { unreadCount })
   } catch (err) {
     console.error('[notifications GET] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed to fetch notifications')
   }
 }
 
 // POST /api/notifications — إنشاء إشعار جديد
-// ملاحظة: الإشعارات يجب أن تُنشأ فقط من النظام (notification-helpers.ts)
+// ملاحظة: الإشعارات تُنشأ عبر NotificationService في الحالات الآلية
 // هذا المسار محمي بمصادقة + whitelist للأنواع
 const ALLOWED_NOTIFICATION_TYPES = new Set([
   NotificationType.CommentReply,
@@ -89,32 +84,26 @@ const ALLOWED_NOTIFICATION_TYPES = new Set([
 
 export async function POST(req: NextRequest) {
   try {
-    const neonUser = await requireUser()
-    if (!neonUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const user = await getOptionalSession()
+    if (!user) {
+      return unauthorized()
     }
 
     const body = await req.json()
     const { type, title, message, data } = body
 
     if (!type || !title || !message) {
-      return NextResponse.json(
-        { error: 'Missing required fields: type, title, message' },
-        { status: 400 },
-      )
+      return validationFail({ missing: ['type', 'title', 'message'].filter(f => !body[f]) })
     }
 
     // التحقق من أن النوع مسموح به
     if (!ALLOWED_NOTIFICATION_TYPES.has(type)) {
-      return NextResponse.json(
-        { error: 'نوع الإشعار غير صالح' },
-        { status: 400 },
-      )
+      return validationFail({ type: 'Invalid notification type' })
     }
 
     const notification = await db.notification.create({
       data: {
-        userId: neonUser.id,
+        userId: user.id,
         type,
         title,
         message,
@@ -122,9 +111,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json(notification, { status: 201 })
+    return ok(notification)
   } catch (err) {
     console.error('[notifications POST] failed:', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return internalError('Failed to create notification')
   }
 }

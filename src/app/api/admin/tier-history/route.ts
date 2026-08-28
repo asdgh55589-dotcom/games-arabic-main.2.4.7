@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { okPaginated, internalError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,15 +21,11 @@ export async function GET(request: NextRequest) {
       db.tierHistory.count()
     ])
 
-    return NextResponse.json({
-      history,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit) || 1,
-    })
+    return okPaginated(
+      { history },
+      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+    )
   } catch (err) {
-    const status = (err as { status?: number })?.status || 500
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status })
+    return internalError('خطأ في الخادم')
   }
 }
