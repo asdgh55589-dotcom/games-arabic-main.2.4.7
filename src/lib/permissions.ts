@@ -6,6 +6,7 @@
  */
 
 import { ROLE_ORDER, type UserRole, hasRoleAtLeast } from '@/lib/roles'
+import { hasSpecialRole, type SpecialRole } from '@/lib/special-roles'
 
 export type Permission =
   | 'content.view'
@@ -94,4 +95,23 @@ export function can(role: string | null | undefined, permission: Permission): bo
 export function canCreateMod(role: string, isOriginalWork: boolean): boolean {
   if (isOriginalWork) return can(role, 'mod.createOwn')
   return can(role, 'mod.republishExternal')
+}
+
+// صلاحيات الأدوار الخاصة
+export function canReviewMods(role: string, specialRoles?: string | null): boolean {
+  if (can(role, 'mod.review')) return true
+  if (hasSpecialRole(specialRoles, 'reviewer')) return true
+  return false
+}
+
+export function canApproveMods(role: string, specialRoles?: string | null): boolean {
+  if (can(role, 'mod.approve')) return true
+  if (hasSpecialRole(specialRoles, 'reviewer')) return true
+  return false
+}
+
+export function canManageTeam(role: string, specialRoles?: string | null): boolean {
+  if (can(role, 'team.manage')) return true
+  if (hasSpecialRole(specialRoles, 'team_lead')) return true
+  return false
 }

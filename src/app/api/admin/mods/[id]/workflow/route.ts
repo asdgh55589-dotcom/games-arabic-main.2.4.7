@@ -3,6 +3,7 @@ import { ok, validationFail, forbidden, notFound, internalError } from '@/lib/ap
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { isValidTransition, canTransition, type WorkflowStatus } from '@/lib/workflow'
+import { canApproveMods } from '@/lib/permissions'
 import { notifyWorkflowChange } from '@/lib/mod-notifications'
 import { revalidatePath } from 'next/cache'
 
@@ -47,9 +48,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       })
     }
 
-    // التحقق من الصلاحية
+    // التحقق من الصلاحية — مع دعم الدور الخاص reviewer
     if (!canTransition(user.role, fromStatus, targetStatus)) {
-      return forbidden(`Your role (${user.role}) cannot perform this transition`)
+      // reviewer يمكنه الموافقة/الرفض حتى لو ليس admin
+      const freshUser = await db.user.findUnique({ where: { id: user.id }, select: { specialRoles: true } })
+      const specialRoles = freshUser?.specialRoles || null
+      const isReviewerApprove = (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') && canApproveMods(user.role, specialRoles)
+      if (!isReviewerApprove) {
+        return forbidden(`Your role (${user.role}) cannot perform this transition`)
+      }
     }
 
     // تحديث التعريب + إنشاء سجل في transaction

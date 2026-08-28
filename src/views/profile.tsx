@@ -338,7 +338,7 @@ export function ProfilePage() {
                 <h1 className="text-2xl font-bold text-white">{profile.username}</h1>
                 <RoleBadge role={profile.role} size="sm" />
                 <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
-                <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles} />
+                <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles} showLabels size="sm" />
                 {profile.role === 'owner' && (
                   <CheckCircle className="h-5 w-5" style={{ color: accent }} />
                 )}
