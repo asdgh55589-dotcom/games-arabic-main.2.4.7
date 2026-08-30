@@ -82,6 +82,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/reports', label: 'البلاغات', icon: Flag, adminOnly: true },
       { href: '/admin/tickets', label: 'تذاكر الدعم', icon: Ticket },
       { href: '/admin/users', label: 'المستخدمون', icon: Users, adminOnly: true },
+      { href: '/admin/admins', label: 'المسؤولون', icon: Shield, adminOnly: true },
       { href: '/admin/creators/requests', label: 'طلبات المُعَرِّبين', icon: UserPlus, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
