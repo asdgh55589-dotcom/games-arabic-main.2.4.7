@@ -69,7 +69,7 @@ export async function PUT(
     if (body.role !== undefined) data.role = body.role
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null
     if (body.bio !== undefined) data.bio = body.bio || null
-    if (body.userId !== undefined) data.userId = body.userId || null
+    // لا نلمس userId هنا — الربط يتم فقط عبر /link endpoint
 
     const member = await db.teamMembership.update({ where: { id: body.memberId }, data })
     return ok(member)
