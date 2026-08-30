@@ -372,6 +372,11 @@ export function ProfilePage() {
                     <Trophy className="h-3.5 w-3.5" /> المستوى
                   </Button>
                 </Link>
+                <Link href={`/profile/${encodeURIComponent(profile.username)}/teams`}>
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
+                    <Users className="h-3.5 w-3.5" /> فرقي
+                  </Button>
+                </Link>
                 {isOwner ? (
                   <Link href="/settings">
                     <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
@@ -449,6 +454,13 @@ export function ProfilePage() {
             <TabsTrigger value="badges" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الشارات</TabsTrigger>
             <TabsTrigger value="xp" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الخبرة</TabsTrigger>
             <TabsTrigger value="mods" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">التعريبات ({profile.stats.mods})</TabsTrigger>
+            <Link
+              href={`/profile/${encodeURIComponent(profile.username)}/teams`}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-white transition-colors min-h-[44px]"
+            >
+              <Users className="h-3.5 w-3.5 ml-1" />
+              فرقي
+            </Link>
           </TabsList>
 
           {/* About tab */}

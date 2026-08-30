@@ -1,0 +1,99 @@
+import { NextRequest } from 'next/server'
+import { requireAuth, AuthError } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { ok, notFound, fail, unauthorized } from '@/lib/api-response'
+
+interface RouteParams {
+  params: Promise<{ teamId: string }>
+}
+
+// POST /api/teams/[teamId]/leave — مغادرة فريق مرتبط
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  let user: Awaited<ReturnType<typeof requireAuth>>
+  try {
+    user = await requireAuth()
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return unauthorized('يجب تسجيل الدخول أولاً')
+    }
+    return unauthorized('يجب تسجيل الدخول أولاً')
+  }
+
+  const { teamId } = await params
+
+  if (!teamId || typeof teamId !== 'string') {
+    return fail('VALIDATION_ERROR', 'معرّف الفريق غير صالح', 422)
+  }
+
+  // Verify team exists
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: { id: true, name: true, ownerId: true },
+  })
+  if (!team) return notFound('الفريق غير موجود')
+
+  // Find the user's membership in this team
+  const membership = await db.teamMembership.findFirst({
+    where: {
+      teamId,
+      userId: user.id,
+    },
+  })
+
+  if (!membership) {
+    return notFound('أنت لست عضواً في هذا الفريق')
+  }
+
+  // Prevent leaving if user is the team owner
+  if (team.ownerId === user.id) {
+    return fail('VALIDATION_ERROR', 'لا يمكنك مغادرة الفريق لأنك المالك. يجب نقل الملكية أولاً قبل المغادرة.', 422)
+  }
+
+  // Store old data for notification
+  const oldUsername = user.username
+
+  // Revert to phantom (set userId to null, preserve name/avatar/bio)
+  await db.teamMembership.update({
+    where: { id: membership.id },
+    data: { userId: null },
+  })
+
+  // Audit log
+  try {
+    const { logAction } = await import('@/lib/audit')
+    await logAction({
+      userId: user.id,
+      username: oldUsername,
+      action: 'TEAM_LEFT',
+      entity: 'TeamMembership',
+      entityId: membership.id,
+      details: JSON.stringify({
+        teamId,
+        teamName: team.name,
+        username: oldUsername,
+      }),
+    })
+  } catch (err) {
+    console.error('[LeaveTeam] Failed to log action:', err)
+  }
+
+  // Notify team owner
+  if (team.ownerId) {
+    try {
+      await db.notification.create({
+        data: {
+          userId: team.ownerId,
+          actorId: user.id,
+          type: 'system_announcement',
+          title: '👤 عضو غادر الفريق',
+          message: `${oldUsername} غادر فريق "${team.name}"`,
+          data: { teamId, teamName: team.name } as never,
+        },
+      })
+    } catch (e) {
+      console.error('[LeaveTeam] Failed to notify owner:', e)
+    }
+  }
+
+  return ok({ message: 'تم مغادرة الفريق بنجاح' } as never)
+}
