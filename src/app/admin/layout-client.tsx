@@ -39,6 +39,7 @@ import {
   Key,
   Image as ImageIcon,
   PenTool,
+  Inbox,
 } from 'lucide-react'
 import type { SessionUser } from '@/lib/auth'
 
@@ -86,6 +87,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/admins', label: 'المسؤولون', icon: Shield, adminOnly: true },
       { href: '/admin/creators', label: 'المُعَرِّبون والناشرون', icon: PenTool, adminOnly: true },
       { href: '/admin/creators/requests', label: 'طلبات المُعَرِّبين', icon: UserPlus, adminOnly: true },
+      { href: '/admin/publication-requests', label: 'طلبات نشر التعريبات', icon: Inbox, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
   },
@@ -128,6 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingCreatorCount, setPendingCreatorCount] = useState(0)
+  const [pendingPublicationCount, setPendingPublicationCount] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -183,11 +186,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let cancelled = false
     const fetchPending = async () => {
       try {
-        const res = await fetch('/api/admin/creator-requests?status=pending', { cache: 'no-store' })
-        if (!res.ok) return
-        const json = await res.json()
-        const count = json.data?.requests?.length ?? (Array.isArray(json.data) ? json.data.length : 0)
-        if (!cancelled) setPendingCreatorCount(count)
+        const [creatorRes, pubRes] = await Promise.all([
+          fetch('/api/admin/creator-requests?status=pending', { cache: 'no-store' }),
+          fetch('/api/admin/mods?workflowStatus=IN_REVIEW&limit=1', { cache: 'no-store' }),
+        ])
+        if (creatorRes.ok) {
+          const json = await creatorRes.json()
+          const count = json.data?.requests?.length ?? (Array.isArray(json.data) ? json.data.length : 0)
+          if (!cancelled) setPendingCreatorCount(count)
+        }
+        if (pubRes.ok) {
+          const json = await pubRes.json()
+          const count = json.pagination?.total ?? json.data?.length ?? 0
+          if (!cancelled) setPendingPublicationCount(count)
+        }
       } catch {}
     }
     fetchPending()
@@ -264,6 +276,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       {item.href === '/admin/creators/requests' && pendingCreatorCount > 0 && (
                         <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
                           {pendingCreatorCount}
+                        </span>
+                      )}
+                      {item.href === '/admin/publication-requests' && pendingPublicationCount > 0 && (
+                        <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {pendingPublicationCount}
                         </span>
                       )}
                     </Link>
