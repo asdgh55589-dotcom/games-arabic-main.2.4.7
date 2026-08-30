@@ -184,7 +184,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname])
 
   useEffect(() => {
-    if (!user || !['admin', 'manager', 'owner'].includes(user.role)) return
+    // CRITICAL: Don't fetch if on login page
+    if (pathname === '/admin/login') return
+    // CRITICAL: Don't fetch if not authenticated
+    if (!user) return
+    // Don't fetch if user doesn't have admin role (moderator+)
+    const adminRoles = ['moderator', 'admin', 'manager', 'owner']
+    if (!adminRoles.includes(user.role)) return
+
     let cancelled = false
     const fetchPending = async () => {
       try {
@@ -193,6 +200,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           fetch('/api/admin/mods?workflowStatus=IN_REVIEW&limit=1', { cache: 'no-store' }),
           fetch('/api/admin/mod-requests?status=open&limit=1', { cache: 'no-store' }).catch(() => null as never),
         ])
+
+        // CRITICAL: Handle 401 gracefully
+        if (
+          (creatorRes as Response).status === 401 ||
+          (pubRes as Response).status === 401 ||
+          (modReqRes as Response | null)?.status === 401
+        ) {
+          console.warn('[AdminLayout] Unauthorized - user may have logged out')
+          return
+        }
+
         if (creatorRes.ok) {
           const json = await creatorRes.json()
           const count = json.data?.requests?.length ?? (Array.isArray(json.data) ? json.data.length : 0)
@@ -223,7 +241,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetchPending()
     const id = setInterval(fetchPending, 30000)
     return () => { cancelled = true; clearInterval(id) }
-  }, [user])
+  }, [user, pathname])
 
   const onLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
