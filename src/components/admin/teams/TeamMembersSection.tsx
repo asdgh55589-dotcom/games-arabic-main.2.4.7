@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, Crown, UserX, UserPlus, Trash2, Link2, Unlink, ExternalLink } from 'lucide-react'
+import { Users, Crown, UserX, UserPlus, Trash2, Link2, Unlink, ExternalLink, Ghost } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +10,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
-import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember, getMemberRoleLabel } from '@/lib/team-members'
+import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember, isPhantomMember, getMemberRoleLabel } from '@/lib/team-members'
+import { cn } from '@/lib/utils'
 
 interface Membership {
   id: string
@@ -28,6 +29,12 @@ interface Props {
   onRefresh: () => void
 }
 
+const MEMBER_TYPE_FILTERS = [
+  { value: 'all', label: 'الكل', icon: Users },
+  { value: 'phantom', label: 'وهميين', icon: Ghost },
+  { value: 'linked', label: 'مرتبطين', icon: Link2 },
+] as const
+
 export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
   const { toast } = useToast()
   const [newUsername, setNewUsername] = useState('')
@@ -37,6 +44,14 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
   const [searchLoading, setSearchLoading] = useState(false)
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState<Membership | null>(null)
+  const [memberFilter, setMemberFilter] = useState<'all' | 'phantom' | 'linked'>('all')
+
+  const filteredMemberships = memberships.filter((m) => {
+    if (memberFilter === 'all') return true
+    if (memberFilter === 'phantom') return !m.userId
+    if (memberFilter === 'linked') return !!m.userId
+    return true
+  })
 
   const handleSearch = async (value: string) => {
     setNewUsername(value)
@@ -163,18 +178,64 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
         أعضاء الفريق ({memberships.length})
       </h4>
 
+      {/* فلاتر نوع العضو */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {MEMBER_TYPE_FILTERS.map((filter) => {
+          const Icon = filter.icon
+          const isActive = memberFilter === filter.value
+          const count = memberships.filter((mm) => {
+            if (filter.value === 'all') return true
+            if (filter.value === 'phantom') return !mm.userId
+            if (filter.value === 'linked') return !!mm.userId
+            return false
+          }).length
+
+          return (
+            <button
+              key={filter.value}
+              onClick={() => setMemberFilter(filter.value)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {filter.label}
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {count}
+              </Badge>
+            </button>
+          )
+        })}
+      </div>
+
       <div className="space-y-2 mb-4">
         {memberships.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">لا يوجد أعضاء بعد</p>
+        ) : filteredMemberships.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            لا يوجد {memberFilter === 'phantom' ? 'أعضاء وهميين' : memberFilter === 'linked' ? 'أعضاء مرتبطين' : 'أعضاء'} في هذا التصنيف
+          </p>
         ) : (
-          memberships.map((m) => {
+          filteredMemberships.map((m) => {
             const displayName = getMemberDisplayName(m as never)
             const avatar = getMemberAvatar(m as never)
             const bio = getMemberBio(m as never)
             const profileUrl = getMemberProfileUrl(m as never)
             const isLinked = isLinkedMember(m as never)
+            const isPhantom = isPhantomMember(m as never)
             return (
-              <div key={m.id} className="flex items-center gap-3 p-3 bg-card rounded-lg border">
+              <div
+                key={m.id}
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+                  isLinked
+                    ? 'bg-green-500/5 border-green-500/20'
+                    : 'bg-muted/30 border-border'
+                )}
+              >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={avatar || undefined} />
                   <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
@@ -188,10 +249,15 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                     ) : (
                       <span className="text-sm font-medium truncate">{displayName}</span>
                     )}
-                    {isLinked && (
+                    {isLinked ? (
                       <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
                         <Link2 className="h-3 w-3 ml-1" />
-                        مرتبط
+                        مرتبط بحساب
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs">
+                        <Ghost className="h-3 w-3 ml-1" />
+                        عضو وهمي
                       </Badge>
                     )}
                     <Badge variant="secondary" className="text-xs">

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   ArrowRight, Users, Star, Shield, Globe, ExternalLink,
   Download, Heart, Eye, Calendar, Gamepad2, User, MessageCircle,
-  Layers, Share2, UserPlus, UserCheck, Link2,
+  Layers, Share2, UserPlus, UserCheck, Link2, BadgeCheck,
 } from 'lucide-react'
 import { ModCard } from '@/components/mod-card'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
@@ -425,7 +425,7 @@ function MembersTab({ team }: { team: TeamDetail }) {
                         <Link2 className="h-3 w-3" />
                       </Link>
                     ) : null}
-                    {isLinked && <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-green-500/20 text-green-400" title="مرتبط بحساب"><UserCheck className="h-3 w-3" /></span>}
+                    {isLinked && <span title="حساب موثق"><BadgeCheck className="h-4 w-4 text-green-500" /></span>}
                   </div>
                   <div className={`flex items-center gap-1 text-xs ${role.color}`}>
                     <RoleIcon className="h-3 w-3" />
@@ -512,7 +512,7 @@ function StatsTab({ team }: { team: TeamDetail }) {
                           ) : (
                             <span className="font-medium text-slate-200">{displayName}</span>
                           )}
-                          {isLinked && <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-green-500/20 text-green-400" title="مرتبط"><UserCheck className="h-3 w-3" /></span>}
+                    {isLinked && <span title="حساب موثق"><BadgeCheck className="h-4 w-4 text-green-500" /></span>}
                           {m.username && (
                             <Link
                         href={`/profile/${encodeURIComponent(m.username)}`}

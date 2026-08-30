@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pencil, Plus, Trash2, X, Check, User as UserIcon, Link2, Unlink, ExternalLink } from 'lucide-react'
+import { Pencil, Plus, Trash2, X, Check, User as UserIcon, Link2, Unlink, ExternalLink, Ghost, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,7 +9,8 @@ import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 import { ROLE_LABELS } from '@/lib/team-constants'
 import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
-import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember } from '@/lib/team-members'
+import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember, isPhantomMember } from '@/lib/team-members'
+import { cn } from '@/lib/utils'
 import type { TeamMember } from './types'
 
 interface TeamMembersTabProps {
@@ -20,6 +21,12 @@ interface TeamMembersTabProps {
 
 const emptyForm = { name: '', role: 'member', avatarUrl: '', bio: '' }
 
+const MEMBER_TYPE_FILTERS = [
+  { value: 'all', label: 'الكل', icon: Users },
+  { value: 'phantom', label: 'وهميين', icon: Ghost },
+  { value: 'linked', label: 'مرتبطين', icon: Link2 },
+] as const
+
 export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMembersTabProps) {
   const { toast } = useToast()
   const [showAdd, setShowAdd] = useState(false)
@@ -28,6 +35,14 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
   const [editForm, setEditForm] = useState(emptyForm)
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
+  const [memberFilter, setMemberFilter] = useState<'all' | 'phantom' | 'linked'>('all')
+
+  const filteredMemberships = memberships.filter((m) => {
+    if (memberFilter === 'all') return true
+    if (memberFilter === 'phantom') return !m.userId
+    if (memberFilter === 'linked') return !!m.userId
+    return true
+  })
 
   const onAdd = async () => {
     if (!form.name.trim()) { toast({ title: 'الاسم مطلوب', variant: 'destructive' }); return }
@@ -115,6 +130,38 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
         </Button>
       </div>
 
+      {/* فلاتر نوع العضو */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {MEMBER_TYPE_FILTERS.map((filter) => {
+          const Icon = filter.icon
+          const isActive = memberFilter === filter.value
+          const count = memberships.filter((mm) => {
+            if (filter.value === 'all') return true
+            if (filter.value === 'phantom') return !mm.userId
+            if (filter.value === 'linked') return !!mm.userId
+            return false
+          }).length
+          return (
+            <button
+              key={filter.value}
+              onClick={() => setMemberFilter(filter.value)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {filter.label}
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {count}
+              </Badge>
+            </button>
+          )
+        })}
+      </div>
+
       {showAdd && (
         <div className="space-y-3 rounded-lg border border-border bg-background/50 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -136,11 +183,23 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
       )}
 
       <div className="space-y-2">
-        {memberships.map((m) => {
-          const roleInfo = ROLE_LABELS[m.role]
-          const isEditing = editingId === m.id
-          return (
-            <div key={m.id} className="rounded-lg border border-border bg-background/30 p-3">
+        {filteredMemberships.length === 0 && memberships.length > 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            لا يوجد {memberFilter === 'phantom' ? 'أعضاء وهميين' : memberFilter === 'linked' ? 'أعضاء مرتبطين' : 'أعضاء'} في هذا التصنيف
+          </p>
+        ) : (
+          filteredMemberships.map((m) => {
+            const roleInfo = ROLE_LABELS[m.role]
+            const isEditing = editingId === m.id
+            const isLinked = isLinkedMember(m as never)
+            return (
+              <div
+                key={m.id}
+                className={cn(
+                  'rounded-lg border p-3 transition-colors',
+                  isLinked ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-border'
+                )}
+              >
               {isEditing ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -177,13 +236,16 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
                           <span className="text-sm font-medium">{getMemberDisplayName(m as never)}</span>
                         )}
                         {roleInfo && <span className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</span>}
-                        {isLinkedMember(m as never) ? (
-                          <span className="rounded bg-green-500/10 px-1.5 py-0.5 text-[10px] text-green-600 flex items-center gap-1">
-                            <Link2 className="h-3 w-3" />
-                            مرتبط
-                          </span>
+                        {isLinked ? (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
+                            <Link2 className="h-3 w-3 ml-1" />
+                            مرتبط بحساب
+                          </Badge>
                         ) : (
-                          <span className="rounded bg-gray-500/10 px-1.5 py-0.5 text-[10px] text-gray-500">وهمي</span>
+                          <Badge variant="outline" className="bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs">
+                            <Ghost className="h-3 w-3 ml-1" />
+                            عضو وهمي
+                          </Badge>
                         )}
                       </div>
                       {getMemberBio(m as never) && <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{getMemberBio(m as never)}</p>}
@@ -220,7 +282,7 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
               )}
             </div>
           )
-        })}
+        }))}
         {memberships.length === 0 && <p className="text-sm text-muted-foreground">لا يوجد أعضاء بعد.</p>}
        </div>
 

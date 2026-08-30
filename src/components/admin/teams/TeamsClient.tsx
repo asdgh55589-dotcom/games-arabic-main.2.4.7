@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Users, BadgeCheck, Star, Package, UserPlus, Download, Archive, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, BadgeCheck, Star, Package, UserPlus, Download, Archive, Plus, ChevronDown, ChevronUp, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,6 +35,7 @@ interface EnrichedTeam {
   bannerUrl: string
   isFeatured: boolean
   isOfficial: boolean
+  ownerId: string | null
   order: number
   createdAt: string
   memberships: TeamMembership[]
@@ -47,6 +48,21 @@ interface EnrichedTeam {
   archived?: boolean
 }
 
+function TeamTypeBadge({ team }: { team: EnrichedTeam }) {
+  const isAdminTeam = !team.ownerId
+  return isAdminTeam ? (
+    <Badge variant="outline" className="bg-blue-500/10 text-blue-600 text-xs">
+      <Shield className="h-3 w-3 ml-1" />
+      فريق إدارة
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
+      <Users className="h-3 w-3 ml-1" />
+      فريق معربين
+    </Badge>
+  )
+}
+
 export function TeamsClient() {
   const { toast } = useToast()
   const [teams, setTeams] = useState<EnrichedTeam[]>([])
@@ -56,6 +72,7 @@ export function TeamsClient() {
   const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [sizeFilter, setSizeFilter] = useState<string[]>([])
+  const [teamTypeFilter, setTeamTypeFilter] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [sortField, setSortField] = useState('createdAt')
@@ -85,16 +102,17 @@ export function TeamsClient() {
         const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
         const leader = memberships.find((m) => m.role === 'leader')?.user || null
         return {
-          id: team.id,
-          slug: team.slug || '',
-          name: team.name,
-            description: team.description || '',
-            logoUrl: team.logoUrl || '',
-            bannerUrl: team.bannerUrl || '',
-            isFeatured: Boolean(team.isFeatured),
-            isOfficial: Boolean(team.isOfficial),
-            order: (team.order as number) || 0,
-            createdAt: (team.createdAt as string) || new Date().toISOString(),
+            id: team.id,
+            slug: team.slug || '',
+            name: team.name,
+              description: team.description || '',
+              logoUrl: team.logoUrl || '',
+              bannerUrl: team.bannerUrl || '',
+              isFeatured: Boolean(team.isFeatured),
+              isOfficial: Boolean(team.isOfficial),
+              ownerId: (team.ownerId as string | null) || null,
+              order: (team.order as number) || 0,
+              createdAt: (team.createdAt as string) || new Date().toISOString(),
             memberships,
             mods,
             _count: team._count || { mods: mods.length, memberships: memberships.length, follows: 0 },
@@ -167,6 +185,10 @@ export function TeamsClient() {
       else if (v === '6-10') d = d.filter((t) => t.memberCount >= 6 && t.memberCount <= 10)
       else if (v === '10+') d = d.filter((t) => t.memberCount > 10)
     }
+    if (teamTypeFilter.length > 0) {
+      if (teamTypeFilter.includes('admin')) d = d.filter((t) => !t.ownerId)
+      else if (teamTypeFilter.includes('creator')) d = d.filter((t) => !!t.ownerId)
+    }
     // sort
     d.sort((a, b) => {
       let va: string | number = 0
@@ -204,7 +226,7 @@ export function TeamsClient() {
       return 0
     })
     return d
-  }, [teams, search, typeFilter, statusFilter, sizeFilter, sortField, sortDirection])
+  }, [teams, search, typeFilter, statusFilter, sizeFilter, teamTypeFilter, sortField, sortDirection])
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -231,10 +253,21 @@ export function TeamsClient() {
             <AvatarFallback>{team.name[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="font-medium flex items-center gap-1 truncate">
-              {team.name}
-              {team.isOfficial && <BadgeCheck className="h-3 w-3 text-green-500" />}
-              {team.isFeatured && <Star className="h-3 w-3 text-yellow-500" />}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium truncate">{team.name}</span>
+              <TeamTypeBadge team={team} />
+              {team.isOfficial && (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 text-xs">
+                  <BadgeCheck className="h-3 w-3 ml-1" />
+                  رسمي
+                </Badge>
+              )}
+              {team.isFeatured && (
+                <Badge variant="outline" className="bg-purple-500/10 text-purple-600 text-xs">
+                  <Star className="h-3 w-3 ml-1" />
+                  مميز
+                </Badge>
+              )}
             </div>
             <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{team.description || 'بدون وصف'}</div>
           </div>
@@ -368,18 +401,30 @@ export function TeamsClient() {
         { label: 'أكثر من 10', value: '10+' },
       ],
     },
+    {
+      key: 'teamType',
+      label: 'نوع الفريق',
+      type: 'radio',
+      options: [
+        { label: 'الكل', value: 'all' },
+        { label: 'فرق الإدارة', value: 'admin' },
+        { label: 'فرق المعربين', value: 'creator' },
+      ],
+    },
   ]
 
   const activeFilters: Record<string, string[]> = {
     type: typeFilter,
     status: statusFilter,
     size: sizeFilter,
+    teamType: teamTypeFilter,
   }
 
   const handleFilterChange = (key: string, values: string[]) => {
     if (key === 'type') setTypeFilter(values)
     if (key === 'status') setStatusFilter(values)
     if (key === 'size') setSizeFilter(values)
+    if (key === 'teamType') setTeamTypeFilter(values)
     setPage(1)
   }
 
