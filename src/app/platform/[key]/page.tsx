@@ -20,7 +20,8 @@ const platformNames: Record<string, string> = {
 }
 
 export async function generateMetadata({ params }: PlatformPageProps): Promise<Metadata> {
-  const { key } = await params
+  const { key: rawKey } = await params
+  const key = rawKey.toUpperCase()
   const name = platformNames[key] || key
   const title = `تعريبات ${name} - Games Arabic`
   const description = `تحميل أفضل التعريبات العربية لأجهزة ${name} - تعريبات احترافية عالية الجودة`

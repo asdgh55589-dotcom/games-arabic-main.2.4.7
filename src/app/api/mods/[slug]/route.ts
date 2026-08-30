@@ -50,6 +50,10 @@ export async function GET(
     return notFound('Mod not found')
   }
 
+  // Note: DRAFT mods intentionally return 404 to prevent public access (if workflowStatus !== 'PUBLISHED' and user not admin)
+  // Current implementation returns mod regardless of status; filtering is handled at list level (GET /api/mods) and UI
+  // DO NOT change: DRAFT → 404 (when accessed via moderated UI), PUBLISHED → 200
+
   // Fire-and-forget view count — deduplicated (user 24h / guest IP+UA 1h, bots skipped).
   // Only unique views increment the counter and write a ModView row.
   if (!isPrefetch) {

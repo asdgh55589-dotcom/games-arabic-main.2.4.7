@@ -54,9 +54,10 @@ export async function GET(req: NextRequest) {
   if (featured === 'true') where.isFeatured = true
   if (trending === 'true') where.isTrending = true
   if (latest === 'true') where.isLatest = true
-  // Whitelist platform — prevents arbitrary string injection into the query.
-  if (platform && (PLATFORM_KEYS as readonly string[]).includes(platform)) {
-    where.game = { platform }
+  // Whitelist platform — case-insensitive, prevents arbitrary string injection
+  const normalizedPlatform = platform ? platform.toUpperCase() : null
+  if (normalizedPlatform && (PLATFORM_KEYS as readonly string[]).includes(normalizedPlatform as never)) {
+    where.game = { platform: normalizedPlatform }
   }
   // Whitelist translationType — only "official" and "unofficial" are valid.
   if (translationType === 'official' || translationType === 'unofficial') {

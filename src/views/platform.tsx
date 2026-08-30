@@ -17,7 +17,8 @@ import type { ModSummary } from '@/lib/types'
 
 export function PlatformPage() {
   const params = useParams()
-  const platform = (params.key as string) || 'PC'
+  const rawPlatform = (params.key as string) || 'PC'
+  const platform = rawPlatform.toUpperCase()
   useDocumentTitle(`ARABIC ${platform}`)
 
   // Platform view tracking — fire-and-forget

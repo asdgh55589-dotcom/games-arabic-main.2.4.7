@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 
 interface ModGalleryProps {
   images: string[]
@@ -98,6 +99,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
               alt={`${modName} - صورة ${i + 1}`}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
             />
             {/* overlay عند الـ hover */}
             <div className="absolute inset-0 flex items-center justify-center bg-background/0 opacity-0 transition-all group-hover:bg-background/30 group-hover:opacity-100">
@@ -193,6 +195,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
               alt={`${modName} - صورة ${lightboxIndex + 1}`}
               className="max-h-full max-w-full object-contain transition-transform duration-200"
               style={{ transform: `scale(${zoom})` }}
+              onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
             />
 
             {/* سهم شمال (next في RTL) — كبير */}
@@ -225,7 +228,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
                       : 'border-transparent opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+                  <img src={img} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }} />
                 </button>
               ))}
             </div>

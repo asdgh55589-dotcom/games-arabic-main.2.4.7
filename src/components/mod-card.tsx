@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import type { ModSummary } from '@/lib/types'
 
 interface ModCardProps {
@@ -49,7 +50,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
         {/* IMAGE */}
         <div className={`relative w-full overflow-hidden border-b-[3px] border-border bg-muted ${variant === 'compact' ? 'aspect-[16/9]' : 'aspect-video'}`}>
           <Image
-            src={mod.thumbnailUrl}
+            src={mod.thumbnailUrl || FALLBACK_GAME_IMAGE}
             alt={mod.name}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
@@ -60,7 +61,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
               const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
               if (!img.dataset.fallback) {
                 img.dataset.fallback = '1'
-                img.src = '/hero-bg.jpg'
+                img.src = FALLBACK_GAME_IMAGE
                 img.style.objectFit = 'cover'
               } else {
                 img.style.display = 'none'
@@ -193,6 +194,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
                       alt=""
                       className="h-4 w-4 shrink-0 rounded-full object-cover border border-amber-700/50"
                       loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                     />
                   )}
                   <span className="text-[11px] font-bold text-foreground flex flex-wrap items-center gap-1">

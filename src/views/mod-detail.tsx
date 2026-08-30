@@ -57,6 +57,7 @@ import { formatNumber, formatDate, formatArabicDate, timeAgo, parseGalleryUrls, 
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { apiFetch } from '@/lib/api-client'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import type { ModDetail, ModSummary, EndorseResponse } from '@/lib/types'
 
 interface PaginatedModsResponse {
@@ -271,6 +272,7 @@ export function ModDetailPage() {
                     alt=""
                     className="h-full w-full object-cover"
                     fetchPriority="high"
+                    onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
                   />
                   <div
                     className="absolute inset-0"
@@ -333,6 +335,7 @@ export function ModDetailPage() {
                       src={mod.imageUrl}
                       alt={mod.name}
                       className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
                     />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-2">
