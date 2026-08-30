@@ -8,9 +8,9 @@ export default async function CreatorLayout({ children }: { children: React.Reac
 
   if (!session) redirect('/login?next=/creator')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) {
-    redirect('/become-creator')
+  const CREATOR_ONLY = ['creator', 'publisher']
+  if (!CREATOR_ONLY.includes(session.role)) {
+    redirect('/')
   }
 
   const fullUser = await db.user.findUnique({

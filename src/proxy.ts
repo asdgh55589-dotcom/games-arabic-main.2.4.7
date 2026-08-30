@@ -239,7 +239,7 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  // حماية /creator/* — creator+ فقط (creator, publisher, moderator, admin, manager, owner)
+  // حماية /creator/* — creator/publisher فقط (moderator+ يُمنع)
   if (pathname.startsWith('/creator')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
@@ -249,21 +249,23 @@ export async function proxy(req: NextRequest) {
       copyCookies(supabaseResponse, redirectRes)
       return redirectRes
     }
-    if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
-      const becomeUrl = new URL('/become-creator', req.url)
-      const redirectRes = NextResponse.redirect(becomeUrl)
+    const CREATOR_ONLY = ['creator', 'publisher']
+    if (!CREATOR_ONLY.includes(rolePayload.role)) {
+      const homeUrl = new URL('/', req.url)
+      const redirectRes = NextResponse.redirect(homeUrl)
       copyCookies(supabaseResponse, redirectRes)
       return redirectRes
     }
   }
 
-  // حماية /api/creator/* — creator+ فقط
+  // حماية /api/creator/* — creator/publisher فقط
   if (pathname.startsWith('/api/creator')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
+    const CREATOR_ONLY = ['creator', 'publisher']
+    if (!CREATOR_ONLY.includes(rolePayload.role)) {
       return NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 })
     }
   }

@@ -249,7 +249,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                         <User className="mr-2 h-4 w-4" /> {currentUser.username}
                       </Link>
                     </Button>
-                    {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                    {['creator', 'publisher'].includes(currentUser.role) && (
                       <Button asChild variant="ghost" className="w-full justify-start text-muted-foreground text-sm font-normal">
                         <Link href="/creator" onClick={() => setMobileOpen(false)}>
                           لوحة التحكم
@@ -475,7 +475,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                  {['creator', 'publisher'].includes(currentUser.role) && (
                     <DropdownMenuItem asChild>
                       <Link href="/creator" className="flex items-center gap-2 flex-row-reverse text-sm text-muted-foreground">
                         لوحة التحكم
