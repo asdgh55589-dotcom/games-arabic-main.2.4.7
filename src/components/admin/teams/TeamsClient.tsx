@@ -14,6 +14,7 @@ import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type S
 import { TeamActions } from '@/components/admin/teams/TeamActions'
 import { TeamMembersSection } from '@/components/admin/teams/TeamMembersSection'
 import { TeamCard } from '@/components/admin/teams/TeamCard'
+import { getMemberAvatar, getMemberDisplayName } from '@/lib/team-members'
 
 interface TeamMembership {
   id: string
@@ -263,12 +264,16 @@ export function TeamsClient() {
       render: (team) => (
         <div className="flex items-center gap-2">
           <div className="flex -space-x-2">
-            {team.memberships.slice(0, 3).map((m) => (
-              <Avatar key={m.id} className="h-6 w-6 border-2 border-background">
-                <AvatarImage src={m.avatarUrl || m.user?.avatarUrl || undefined} />
-                <AvatarFallback className="text-[10px]">{(m.name || m.user?.username || '?')[0]?.toUpperCase()}</AvatarFallback>
-              </Avatar>
-            ))}
+            {team.memberships.slice(0, 3).map((m) => {
+              const avatar = getMemberAvatar(m as never)
+              const displayName = getMemberDisplayName(m as never)
+              return (
+                <Avatar key={m.id} className="h-6 w-6 border-2 border-background">
+                  <AvatarImage src={avatar || undefined} />
+                  <AvatarFallback className="text-[10px]">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              )
+            })}
             {team.memberships.length > 3 && (
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] border-2 border-background">+{team.memberships.length - 3}</span>
             )}

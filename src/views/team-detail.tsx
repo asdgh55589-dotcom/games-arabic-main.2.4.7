@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { formatNumber } from '@/lib/format'
 import type { TeamDetail } from '@/lib/types'
 import { ROLE_LABELS, CONTACT_ICONS, CONTACT_COLORS, TEAM_TABS, type TabKey } from '@/lib/team-constants'
+import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember } from '@/lib/team-members'
 
 export function TeamDetailPage() {
   const { team, loading, activeTab, setActiveTab } = useTeamDetail()
@@ -389,35 +390,48 @@ function MembersTab({ team }: { team: TeamDetail }) {
           {team.memberships.map((m) => {
             const role = ROLE_LABELS[m.role] || { label: m.role, icon: User, color: 'text-slate-400' }
             const RoleIcon = role.icon
+            const displayName = getMemberDisplayName(m as never)
+            const avatar = getMemberAvatar(m as never)
+            const profileUrl = getMemberProfileUrl(m as never)
+            const bio = getMemberBio(m as never)
+            const isLinked = isLinkedMember(m as never)
             return (
               <div key={m.id} className="flex items-center gap-3 rounded-md border border-slate-700/50 bg-slate-800/30 p-3 transition-colors hover:border-slate-600">
-                {m.avatarUrl ? (
-                  <img src={m.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-700" />
+                {avatar ? (
+                  <img src={avatar} alt="" className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-700" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-sm font-bold text-slate-300">
-                    {m.name.charAt(0)}
+                    {displayName.charAt(0)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="truncate text-sm font-semibold text-slate-200">{m.name}</div>
-                    {m.username && (
+                    {profileUrl ? (
                       <Link
-                        href={`/profile/${encodeURIComponent(m.username)}`}
+                        href={profileUrl}
+                        className="truncate text-sm font-semibold text-slate-200 hover:text-primary hover:underline"
+                      >
+                        {displayName}
+                      </Link>
+                    ) : (
+                      <div className="truncate text-sm font-semibold text-slate-200">{displayName}</div>
+                    )}
+                    {profileUrl ? (
+                      <Link
+                        href={profileUrl}
                         className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700/60 text-slate-400 transition-colors hover:bg-primary/20 hover:text-primary"
                         title="عرض الحساب"
                       >
                         <Link2 className="h-3 w-3" />
                       </Link>
-                    )}
+                    ) : null}
+                    {isLinked && <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-green-500/20 text-green-400" title="مرتبط بحساب"><UserCheck className="h-3 w-3" /></span>}
                   </div>
                   <div className={`flex items-center gap-1 text-xs ${role.color}`}>
                     <RoleIcon className="h-3 w-3" />
                     {role.label}
                   </div>
-                  {m.bio && (
-                    <div className="mt-0.5 truncate text-xs text-slate-500">{m.bio}</div>
-                  )}
+                  {bio && <div className="mt-0.5 truncate text-xs text-slate-500">{bio}</div>}
                 </div>
               </div>
             )
@@ -475,19 +489,30 @@ function StatsTab({ team }: { team: TeamDetail }) {
                 {team.memberships.map((m, i) => {
                   const role = ROLE_LABELS[m.role] || { label: m.role, icon: User, color: 'text-slate-400' }
                   const RoleIcon = role.icon
+                  const displayName = getMemberDisplayName(m as never)
+                  const avatar = getMemberAvatar(m as never)
+                  const profileUrl = getMemberProfileUrl(m as never)
+                  const isLinked = isLinkedMember(m as never)
                   return (
                     <tr key={m.id} className="border-b border-slate-700/50 transition-colors hover:bg-slate-800/30">
                       <td className="px-4 py-2.5 text-slate-500 font-mono text-xs">{i + 1}</td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          {m.avatarUrl ? (
-                            <img src={m.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-700" />
+                          {avatar ? (
+                            <img src={avatar} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-700" />
                           ) : (
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-slate-300">
-                              {m.name.charAt(0)}
+                              {displayName.charAt(0)}
                             </div>
                           )}
-                          <span className="font-medium text-slate-200">{m.name}</span>
+                          {profileUrl ? (
+                            <Link href={profileUrl} className="font-medium text-slate-200 hover:text-primary hover:underline">
+                              {displayName}
+                            </Link>
+                          ) : (
+                            <span className="font-medium text-slate-200">{displayName}</span>
+                          )}
+                          {isLinked && <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-green-500/20 text-green-400" title="مرتبط"><UserCheck className="h-3 w-3" /></span>}
                           {m.username && (
                             <Link
                         href={`/profile/${encodeURIComponent(m.username)}`}

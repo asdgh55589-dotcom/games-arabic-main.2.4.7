@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Pencil, Plus, Trash2, X, Check, User as UserIcon } from 'lucide-react'
+import Link from 'next/link'
+import { Pencil, Plus, Trash2, X, Check, User as UserIcon, Link2, Unlink, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 import { ROLE_LABELS } from '@/lib/team-constants'
+import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
+import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember } from '@/lib/team-members'
 import type { TeamMember } from './types'
 
 interface TeamMembersTabProps {
@@ -22,6 +26,8 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState(emptyForm)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
 
   const onAdd = async () => {
     if (!form.name.trim()) { toast({ title: 'الاسم مطلوب', variant: 'destructive' }); return }
@@ -72,6 +78,27 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
       if (!res.ok) throw new Error('فشل الحذف')
       toast({ title: 'تم الحذف' })
       onMembersChange(memberships.filter((m) => m.id !== memberId))
+    } catch (err) {
+      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+    }
+  }
+
+  const openLinkDialog = (member: TeamMember) => {
+    setSelectedMember(member)
+    setLinkDialogOpen(true)
+  }
+
+  const handleUnlink = async (member: TeamMember) => {
+    if (!confirm('هل تريد إلغاء ربط هذا العضو؟ سيعود عضواً وهمياً.')) return
+    try {
+      const res = await fetch(`/api/admin/teams/${teamId}/members/${member.id}/link`, { method: 'DELETE' })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err?.error?.message || 'فشل إلغاء الربط')
+      }
+      toast({ title: 'تم إلغاء الربط بنجاح' })
+      // Optimistically update local state to phantom
+      onMembersChange(memberships.map((m) => (m.id === member.id ? { ...m, userId: null, user: null } as TeamMember : m)))
     } catch (err) {
       toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
     }
@@ -135,21 +162,53 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {m.avatarUrl ? (
-                      <img src={m.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+                    {getMemberAvatar(m as never) ? (
+                      <img src={getMemberAvatar(m as never)!} alt="" className="h-9 w-9 rounded-full object-cover" />
                     ) : (
                       <span className="grid h-9 w-9 place-items-center rounded-full bg-muted"><UserIcon className="h-4 w-4 text-muted-foreground" /></span>
                     )}
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{m.name}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {getMemberProfileUrl(m as never) ? (
+                          <Link href={getMemberProfileUrl(m as never)!} target="_blank" className="text-sm font-medium hover:text-primary hover:underline">
+                            {getMemberDisplayName(m as never)}
+                          </Link>
+                        ) : (
+                          <span className="text-sm font-medium">{getMemberDisplayName(m as never)}</span>
+                        )}
                         {roleInfo && <span className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</span>}
-                        {m.userId && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">مرتبط بحساب</span>}
+                        {isLinkedMember(m as never) ? (
+                          <span className="rounded bg-green-500/10 px-1.5 py-0.5 text-[10px] text-green-600 flex items-center gap-1">
+                            <Link2 className="h-3 w-3" />
+                            مرتبط
+                          </span>
+                        ) : (
+                          <span className="rounded bg-gray-500/10 px-1.5 py-0.5 text-[10px] text-gray-500">وهمي</span>
+                        )}
                       </div>
-                      {m.bio && <p className="mt-0.5 text-xs text-muted-foreground">{m.bio}</p>}
+                      {getMemberBio(m as never) && <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{getMemberBio(m as never)}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {!m.userId ? (
+                      <Button size="icon" variant="outline" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => openLinkDialog(m)} title="ربط بحساب" aria-label="ربط بحساب">
+                        <Link2 className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button size="icon" variant="outline" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => handleUnlink(m)} title="إلغاء الربط" aria-label="إلغاء الربط">
+                        <Unlink className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {m.userId && (m as unknown as { user?: { username: string } }).user && (
+                      <Link
+                        href={`/profile/${(m as unknown as { user: { username: string } }).user.username}`}
+                        target="_blank"
+                        className="h-8 w-8 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md hover:bg-muted border"
+                        title="عرض البروفايل"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    )}
                     <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => startEdit(m)} title="تعديل" aria-label="تعديل">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -163,7 +222,23 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
           )
         })}
         {memberships.length === 0 && <p className="text-sm text-muted-foreground">لا يوجد أعضاء بعد.</p>}
-      </div>
-    </div>
-  )
-}
+       </div>
+
+      <LinkMemberDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        member={selectedMember as never}
+        teamId={teamId}
+        onSuccess={async () => {
+          try {
+            const res = await fetch(`/api/admin/teams/${teamId}`)
+            const data = await res.json()
+            const team = data?.data ?? data?.team
+            if (team?.memberships) onMembersChange(team.memberships)
+          } catch {}
+          setLinkDialogOpen(false)
+        }}
+      />
+     </div>
+   )
+ }

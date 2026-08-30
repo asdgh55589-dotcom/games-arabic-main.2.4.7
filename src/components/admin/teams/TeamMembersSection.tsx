@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
+import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember, getMemberRoleLabel } from '@/lib/team-members'
 
 interface Membership {
   id: string
@@ -165,16 +167,40 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
         {memberships.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">لا يوجد أعضاء بعد</p>
         ) : (
-          memberships.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 p-3 bg-card rounded-lg border">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={m.avatarUrl || m.user?.avatarUrl || undefined} />
-                <AvatarFallback className="text-xs">{(m.name || m.user?.username || '?')[0]?.toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{m.user?.username || m.name}</div>
-                <div className="text-xs text-muted-foreground">انضم في {new Date(m.joinedAt).toLocaleDateString('ar-EG')}</div>
-              </div>
+          memberships.map((m) => {
+            const displayName = getMemberDisplayName(m as never)
+            const avatar = getMemberAvatar(m as never)
+            const bio = getMemberBio(m as never)
+            const profileUrl = getMemberProfileUrl(m as never)
+            const isLinked = isLinkedMember(m as never)
+            return (
+              <div key={m.id} className="flex items-center gap-3 p-3 bg-card rounded-lg border">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatar || undefined} />
+                  <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {profileUrl ? (
+                      <Link href={profileUrl} target="_blank" className="text-sm font-medium hover:text-primary hover:underline truncate">
+                        {displayName}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium truncate">{displayName}</span>
+                    )}
+                    {isLinked && (
+                      <Badge variant="outline" className="bg-green-500/10 text-green-600 text-xs">
+                        <Link2 className="h-3 w-3 ml-1" />
+                        مرتبط
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="text-xs">
+                      {getMemberRoleLabel(m.role)}
+                    </Badge>
+                  </div>
+                  {bio && <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{bio}</div>}
+                  <div className="text-xs text-muted-foreground">انضم في {new Date(m.joinedAt).toLocaleDateString('ar-EG')}</div>
+                </div>
 
               <select
                 value={m.role}
@@ -215,7 +241,8 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                 <UserX className="h-4 w-4" />
               </Button>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 
