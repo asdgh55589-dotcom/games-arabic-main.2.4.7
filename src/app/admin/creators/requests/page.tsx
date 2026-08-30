@@ -136,8 +136,8 @@ export default function AdminCreatorRequestsPage() {
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h1 className="text-2xl font-bold">طلبات المُعَرِّبين</h1>
-        <p className="text-sm text-muted-foreground mt-1">مراجعة طلبات الترقية لمُعَرِّب وإدارتها</p>
+        <h1 className="text-2xl font-bold">طلبات الترقية</h1>
+        <p className="text-sm text-muted-foreground mt-1">مراجعة طلبات الأعضاء الراغبين في الانضمام لفريق المُعَرِّبين</p>
       </div>
 
       <div className="flex gap-2 flex-wrap">

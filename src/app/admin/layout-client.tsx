@@ -86,8 +86,9 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/users', label: 'المستخدمون', icon: Users, adminOnly: true },
       { href: '/admin/admins', label: 'المسؤولون', icon: Shield, adminOnly: true },
       { href: '/admin/creators', label: 'المُعَرِّبون والناشرون', icon: PenTool, adminOnly: true },
-      { href: '/admin/creators/requests', label: 'طلبات المُعَرِّبين', icon: UserPlus, adminOnly: true },
+      { href: '/admin/creators/requests', label: 'طلبات الترقية', icon: UserPlus, adminOnly: true },
       { href: '/admin/publication-requests', label: 'طلبات نشر التعريبات', icon: Inbox, adminOnly: true },
+      { href: '/admin/mod-requests', label: 'طلبات التعريب', icon: MessageSquare, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
   },
@@ -131,6 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingCreatorCount, setPendingCreatorCount] = useState(0)
   const [pendingPublicationCount, setPendingPublicationCount] = useState(0)
+  const [pendingModRequestsCount, setPendingModRequestsCount] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -186,9 +188,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let cancelled = false
     const fetchPending = async () => {
       try {
-        const [creatorRes, pubRes] = await Promise.all([
+        const [creatorRes, pubRes, modReqRes] = await Promise.all([
           fetch('/api/admin/creator-requests?status=pending', { cache: 'no-store' }),
           fetch('/api/admin/mods?workflowStatus=IN_REVIEW&limit=1', { cache: 'no-store' }),
+          fetch('/api/admin/mod-requests?status=open&limit=1', { cache: 'no-store' }).catch(() => null as never),
         ])
         if (creatorRes.ok) {
           const json = await creatorRes.json()
@@ -199,6 +202,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           const json = await pubRes.json()
           const count = json.pagination?.total ?? json.data?.length ?? 0
           if (!cancelled) setPendingPublicationCount(count)
+        }
+        if (modReqRes && (modReqRes as Response).ok) {
+          const json = await (modReqRes as Response).json()
+          const count = json.pagination?.total ?? json.data?.length ?? 0
+          if (!cancelled) setPendingModRequestsCount(count)
+        } else {
+          // Fallback: try to fetch via direct mod-requests list
+          try {
+            const alt = await fetch('/api/mod-requests?status=open&limit=1', { cache: 'no-store' })
+            if (alt.ok) {
+              const j = await alt.json()
+              const c = j.pagination?.total ?? j.data?.length ?? 0
+              if (!cancelled) setPendingModRequestsCount(c)
+            }
+          } catch {}
         }
       } catch {}
     }
@@ -281,6 +299,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       {item.href === '/admin/publication-requests' && pendingPublicationCount > 0 && (
                         <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
                           {pendingPublicationCount}
+                        </span>
+                      )}
+                      {item.href === '/admin/mod-requests' && pendingModRequestsCount > 0 && (
+                        <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {pendingModRequestsCount}
                         </span>
                       )}
                     </Link>
