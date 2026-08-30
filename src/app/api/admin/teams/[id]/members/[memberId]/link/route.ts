@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, AuthError } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, notFound, validationFail, conflict } from '@/lib/api-response'
+import { ok, notFound, validationFail, conflict, unauthorized, forbidden } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string; memberId: string }>
@@ -9,7 +9,16 @@ interface RouteParams {
 
 // POST: ربط عضو وهمي بحساب حقيقي
 export async function POST(req: NextRequest, { params }: RouteParams) {
-  const admin = await requireAdmin()
+  let admin: Awaited<ReturnType<typeof requireAdmin>>
+  try {
+    admin = await requireAdmin()
+  } catch (err) {
+    if (err instanceof AuthError) {
+      if (err.status === 401) return unauthorized('يجب تسجيل الدخول')
+      if (err.status === 403) return forbidden('ليس لديك صلاحية للربط')
+    }
+    return unauthorized('يجب تسجيل الدخول')
+  }
   const { id: teamId, memberId } = await params
 
   let body: unknown
@@ -114,7 +123,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
 // DELETE: إلغاء ربط عضو (العودة لوهمي)
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  const admin = await requireAdmin()
+  let admin: Awaited<ReturnType<typeof requireAdmin>>
+  try {
+    admin = await requireAdmin()
+  } catch (err) {
+    if (err instanceof AuthError) {
+      if (err.status === 401) return unauthorized('يجب تسجيل الدخول')
+      if (err.status === 403) return forbidden('ليس لديك صلاحية لإلغاء الربط')
+    }
+    return unauthorized('يجب تسجيل الدخول')
+  }
   const { id: teamId, memberId } = await params
 
   const member = await db.teamMembership.findUnique({
