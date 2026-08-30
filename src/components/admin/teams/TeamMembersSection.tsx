@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Crown, UserX, UserPlus, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { Users, Crown, UserX, UserPlus, Trash2, Link2, Unlink, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
-import { formatNumber } from '@/lib/format'
+import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
 
 interface Membership {
   id: string
@@ -32,6 +33,8 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
   const [selectedUser, setSelectedUser] = useState<{ id: string; username: string; avatarUrl: string | null } | null>(null)
   const [adding, setAdding] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<Membership | null>(null)
 
   const handleSearch = async (value: string) => {
     setNewUsername(value)
@@ -131,6 +134,26 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
     }
   }
 
+  const openLinkDialog = (member: Membership) => {
+    setSelectedMember(member)
+    setLinkDialogOpen(true)
+  }
+
+  const handleUnlink = async (member: Membership) => {
+    if (!confirm('هل تريد إلغاء ربط هذا العضو؟ سيعود عضواً وهمياً.')) return
+    try {
+      const res = await fetch(`/api/admin/teams/${teamId}/members/${member.id}/link`, { method: 'DELETE' })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err?.error?.message || err?.error || 'فشل إلغاء الربط')
+      }
+      toast({ title: 'تم إلغاء الربط بنجاح' })
+      onRefresh()
+    } catch (e) {
+      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+    }
+  }
+
   return (
     <div className="p-4 bg-muted/30 border-t" dir="rtl">
       <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -166,6 +189,23 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                 <option value="tester">مختبر</option>
                 <option value="viewer">مشاهد</option>
               </select>
+
+              {/* ربط / إلغاء ربط بحساب حقيقي */}
+              {!m.userId ? (
+                <Button variant="outline" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => openLinkDialog(m)} title="ربط بحساب حقيقي" aria-label="ربط بحساب">
+                  <Link2 className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button variant="outline" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => handleUnlink(m)} title="إلغاء الربط" aria-label="إلغاء الربط">
+                  <Unlink className="h-4 w-4" />
+                </Button>
+              )}
+
+              {m.userId && m.user && (
+                <Link href={`/profile/${m.user.username}`} target="_blank" className="h-11 w-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md hover:bg-muted border" title="عرض البروفايل" aria-label="عرض البروفايل">
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              )}
 
               <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => handleTransferOwnership(m.userId)} title="نقل الملكية" aria-label="نقل الملكية">
                 <Crown className="h-4 w-4" />
@@ -220,6 +260,17 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
           </div>
         )}
       </div>
+
+      <LinkMemberDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        member={selectedMember as never}
+        teamId={teamId}
+        onSuccess={() => {
+          onRefresh()
+          setLinkDialogOpen(false)
+        }}
+      />
     </div>
   )
 }
