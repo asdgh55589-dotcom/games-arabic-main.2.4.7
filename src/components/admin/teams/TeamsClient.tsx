@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
 import { TeamActions } from '@/components/admin/teams/TeamActions'
 import { TeamMembersSection } from '@/components/admin/teams/TeamMembersSection'
+import { TeamCard } from '@/components/admin/teams/TeamCard'
 
 interface TeamMembership {
   id: string
@@ -67,36 +68,25 @@ export function TeamsClient() {
   const [newLogoUrl, setNewLogoUrl] = useState('')
   const [newBannerUrl, setNewBannerUrl] = useState('')
 
-  const fetchTeams = async () => {
+  const fetchTeams = async (signal?: AbortSignal) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/teams')
+      const res = await fetch('/api/admin/teams', { signal })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       const raw: Array<Record<string, unknown>> = data?.data || []
-      // Enrich: fetch details per team for memberships if needed (fallback to _count)
-      const enriched: EnrichedTeam[] = await Promise.all(
-        raw.map(async (t) => {
-          const team = t as Record<string, unknown> & EnrichedTeam
-          // Try to fetch full details for memberships
-          let memberships: TeamMembership[] = []
-          let mods: { id: string; downloads: number }[] = []
-          try {
-            const detailRes = await fetch(`/api/admin/teams/${team.id}`)
-            if (detailRes.ok) {
-              const detail = await detailRes.json()
-              const d = detail?.data ?? detail?.team ?? detail
-              if (d?.memberships) memberships = d.memberships
-              if (d?.mods) mods = d.mods
-            }
-          } catch {}
-          const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
-          const leader = memberships.find((m) => m.role === 'leader')?.user || null
-          return {
-            id: team.id,
-            slug: team.slug || '',
-            name: team.name,
+      // Preloaded: API now includes memberships and mods, no N+1 fetch
+      const enriched: EnrichedTeam[] = raw.map((t) => {
+        const team = t as Record<string, unknown> & EnrichedTeam & { memberships?: TeamMembership[]; mods?: { id: string; downloads: number }[] }
+        const memberships: TeamMembership[] = (team.memberships as unknown as TeamMembership[]) || []
+        const mods: { id: string; downloads: number }[] = (team.mods as unknown as { id: string; downloads: number }[]) || []
+        const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
+        const leader = memberships.find((m) => m.role === 'leader')?.user || null
+        return {
+          id: team.id,
+          slug: team.slug || '',
+          name: team.name,
             description: team.description || '',
             logoUrl: team.logoUrl || '',
             bannerUrl: team.bannerUrl || '',
@@ -113,17 +103,18 @@ export function TeamsClient() {
             publishedModCount: mods.length || team._count?.mods || 0,
           }
         })
-      )
       setTeams(enriched)
-    } catch {
-      setError('فشل تحميل الفرق')
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') setError('فشل تحميل الفرق')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchTeams()
+    const controller = new AbortController()
+    fetchTeams(controller.signal)
+    return () => controller.abort()
   }, [])
 
   const handleCreate = async () => {
@@ -460,7 +451,7 @@ export function TeamsClient() {
     return (
       <div className="grid place-items-center py-20 text-center" dir="rtl">
         <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" size="sm" className="mt-4" onClick={fetchTeams}>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => fetchTeams()}>
           إعادة المحاولة
         </Button>
       </div>
@@ -547,55 +538,23 @@ export function TeamsClient() {
         exportable
         exportFilename="teams.csv"
         mobileCardView={(team, isSelected, onToggle) => (
-          <Card className={isSelected ? 'ring-1 ring-primary/30 bg-primary/5' : ''}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={team.logoUrl || undefined} />
-                  <AvatarFallback>{team.name[0]?.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium flex items-center gap-1 truncate">
-                    {team.name}
-                    {team.isOfficial && <BadgeCheck className="h-3 w-3 text-green-500" />}
-                    {team.isFeatured && <Star className="h-3 w-3 text-yellow-500" />}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {team.memberCount} عضو · {team._count.mods} تعريب
-                  </div>
-                </div>
-                <TeamActions team={team as never} onActionComplete={fetchTeams} />
+          <div className={isSelected ? 'ring-1 ring-primary/30 rounded-xl overflow-hidden' : 'rounded-xl overflow-hidden border bg-card'}>
+            <TeamCard team={team as never} onRefresh={fetchTeams} />
+            <div className="flex gap-2 p-3 bg-card border-t">
+              <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+                {isSelected ? 'إلغاء التحديد' : 'تحديد'}
+              </Button>
+              <Button variant="ghost" size="sm" className="flex-1 min-h-[44px] text-xs gap-1" onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}>
+                {expandedId === team.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {expandedId === team.id ? 'إخفاء الأعضاء' : 'إدارة الأعضاء'}
+              </Button>
+            </div>
+            {expandedId === team.id && (
+              <div className="border-t">
+                <TeamMembersSection teamId={team.id} memberships={team.memberships as never} onRefresh={fetchTeams} />
               </div>
-              <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-                <div className="text-center">
-                  <div className="font-bold">{team.memberCount}</div>
-                  <div className="text-xs text-muted-foreground">عضو</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold">{team._count.mods}</div>
-                  <div className="text-xs text-muted-foreground">تعريب</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold">{team.totalDownloads.toLocaleString('ar-EG')}</div>
-                  <div className="text-xs text-muted-foreground">تحميل</div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
-                  {isSelected ? 'إلغاء التحديد' : 'تحديد'}
-                </Button>
-                <Button variant="ghost" size="sm" className="flex-1 min-h-[44px] text-xs gap-1" onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}>
-                  {expandedId === team.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  {expandedId === team.id ? 'إخفاء الأعضاء' : 'إدارة الأعضاء'}
-                </Button>
-              </div>
-              {expandedId === team.id && (
-                <div className="mt-3 rounded-lg border overflow-hidden">
-                  <TeamMembersSection teamId={team.id} memberships={team.memberships as never} onRefresh={fetchTeams} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
         )}
       />
 

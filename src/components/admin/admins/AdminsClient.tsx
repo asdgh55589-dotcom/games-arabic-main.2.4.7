@@ -136,7 +136,7 @@ export function AdminsClient({
 
   const columns: Column<AdminUser>[] = [
     {
-      key: 'user',
+      key: 'username',
       label: 'المستخدم',
       sortable: true,
       render: (u) => (
@@ -177,7 +177,7 @@ export function AdminsClient({
       render: (u) => formatNumber(u._count.comments),
     },
     {
-      key: 'joinedAt',
+      key: 'createdAt',
       label: 'تاريخ الانضمام',
       sortable: true,
       render: (u) => new Date(u.createdAt).toLocaleDateString('ar-EG'),

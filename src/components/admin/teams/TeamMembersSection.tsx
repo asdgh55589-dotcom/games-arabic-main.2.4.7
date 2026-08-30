@@ -167,11 +167,11 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                 <option value="viewer">مشاهد</option>
               </select>
 
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTransferOwnership(m.userId)} title="نقل الملكية" aria-label="نقل الملكية">
+              <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => handleTransferOwnership(m.userId)} title="نقل الملكية" aria-label="نقل الملكية">
                 <Crown className="h-4 w-4" />
               </Button>
 
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-500/10" onClick={() => handleRemoveMember(m.id)} title="إزالة العضو" aria-label="إزالة العضو">
+              <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] text-red-500 hover:bg-red-500/10" onClick={() => handleRemoveMember(m.id)} title="إزالة العضو" aria-label="إزالة العضو">
                 <UserX className="h-4 w-4" />
               </Button>
             </div>

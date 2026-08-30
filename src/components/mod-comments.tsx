@@ -653,7 +653,7 @@ function CommentItem({
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <span className={`font-bold text-foreground flex flex-wrap items-center gap-1 ${isNested ? 'text-sm' : 'text-sm'}`}>
                 {displayName}
-                {(comment.user as unknown as { role?: string })?.role && (comment.user as unknown as { role: string }).role !== 'member' && (
+                {(comment.user as unknown as { role?: string })?.role && (
                   <RoleBadge role={(comment.user as unknown as { role: string }).role} size="sm" />
                 )}
                 {(comment.user as unknown as { tier?: number; role?: string })?.tier !== undefined && (

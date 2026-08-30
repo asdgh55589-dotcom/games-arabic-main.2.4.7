@@ -196,7 +196,8 @@ export function PublicationRequestsClient({
           <div className="min-w-0">
             <div className="text-sm flex items-center gap-1 truncate">
               {mod.author.username}
-              <CreatorBadge specialRoles={mod.author.specialRoles} size="sm" />
+              <RoleBadge role={mod.author.role} size="sm" />
+              <CreatorBadge role={mod.author.role} specialRoles={mod.author.specialRoles} size="sm" />
             </div>
             <div className="text-xs text-muted-foreground">
               <TierBadge role={mod.author.role} tier={mod.author.tier} size="sm" />

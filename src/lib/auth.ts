@@ -314,8 +314,8 @@ export async function requireCreator(): Promise<SessionUser> {
 export async function requireCreatorStudio(req: NextRequest): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
-    const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-    if (!creatorRoles.includes(user.role)) {
+    const CREATOR_ONLY = ['creator', 'publisher']
+    if (!CREATOR_ONLY.includes(user.role)) {
       const { forbidden } = await import('@/lib/api-response')
       return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
     }

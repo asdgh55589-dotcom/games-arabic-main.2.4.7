@@ -159,7 +159,7 @@ export function CreatorsClient({
 
   const columns: Column<CreatorUser>[] = [
     {
-      key: 'user',
+      key: 'username',
       label: 'المُعَرِّب',
       sortable: true,
       render: (u) => (
@@ -171,7 +171,7 @@ export function CreatorsClient({
           <div className="min-w-0">
             <div className="font-medium flex items-center gap-1 truncate">
               {u.username}
-              <CreatorBadge specialRoles={u.specialRoles} size="sm" />
+              <CreatorBadge role={u.role} specialRoles={u.specialRoles} size="sm" />
             </div>
             <div className="text-xs text-muted-foreground truncate">{u.email}</div>
           </div>
@@ -247,7 +247,7 @@ export function CreatorsClient({
       },
     },
     {
-      key: 'joinedAt',
+      key: 'createdAt',
       label: 'تاريخ الانضمام',
       sortable: true,
       render: (u) => new Date(u.createdAt).toLocaleDateString('ar-EG'),
@@ -464,7 +464,7 @@ export function CreatorsClient({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium flex items-center gap-1 truncate">
                     {user.username}
-                    <CreatorBadge specialRoles={user.specialRoles} size="sm" />
+                    <CreatorBadge role={user.role} specialRoles={user.specialRoles} size="sm" />
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                     <RoleBadge role={user.role} size="sm" />

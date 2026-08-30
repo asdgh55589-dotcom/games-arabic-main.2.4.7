@@ -10,7 +10,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
 
   const CREATOR_ONLY = ['creator', 'publisher']
   if (!CREATOR_ONLY.includes(session.role)) {
-    redirect('/')
+    redirect('/become-creator')
   }
 
   const fullUser = await db.user.findUnique({

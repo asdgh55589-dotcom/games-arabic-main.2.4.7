@@ -11,6 +11,11 @@ export async function GET() {
     const teams = await db.team.findMany({
       orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
       include: {
+        memberships: {
+          include: { user: { select: { id: true, username: true, avatarUrl: true, role: true } } },
+          orderBy: { joinedAt: 'asc' },
+        },
+        mods: { where: { workflowStatus: 'PUBLISHED' }, select: { id: true, downloads: true } },
         _count: { select: { mods: true, memberships: true, follows: true } },
       },
     })
