@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
 
   const mods = await db.mod.findMany({
     where: {
+      workflowStatus: 'PUBLISHED',
       ...(q
         ? {
             OR: [

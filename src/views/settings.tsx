@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
-  ArrowRight, User, Lock, Bell, Eye,
-  Loader2, Save, Upload, X, Camera, Check
+  ArrowRight, User, Lock, Bell, Eye, ChevronLeft, Upload, Users, BarChart3,
+  Loader2, Save, X, Camera, Check
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,13 +40,29 @@ interface ProfileData {
   role: string
 }
 
-type SettingsSection = 'profile' | 'account' | 'notifications' | 'privacy'
+type SettingsSection = 'profile' | 'account' | 'notifications' | 'privacy' | 'translation'
 
 const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode; description: string }[] = [
-  { key: 'profile', label: 'تخصيص الملف الشخصي', icon: <User className="h-4 w-4" />, description: 'صورتك وبياناتك العامة' },
-  { key: 'account', label: 'الحساب', icon: <Lock className="h-4 w-4" />, description: 'كلمة المرور والأمان' },
-  { key: 'notifications', label: 'الإشعارات', icon: <Bell className="h-4 w-4" />, description: 'تفضيلات الإشعارات' },
-  { key: 'privacy', label: 'الخصوصية', icon: <Eye className="h-4 w-4" />, description: 'من يرى ملفك الشخصي' },
+  { key: 'profile', label: 'تخصيص الملف الشخصي', icon: <User className="h-[18px] w-[18px]" />, description: 'صورتك وبياناتك العامة' },
+  { key: 'account', label: 'الحساب', icon: <Lock className="h-[18px] w-[18px]" />, description: 'كلمة المرور والأمان' },
+  { key: 'notifications', label: 'الإشعارات', icon: <Bell className="h-[18px] w-[18px]" />, description: 'تفضيلات الإشعارات' },
+  { key: 'privacy', label: 'الخصوصية', icon: <Eye className="h-[18px] w-[18px]" />, description: 'من يرى ملفك الشخصي' },
+  { key: 'translation', label: 'كن معرّباً', icon: <Upload className="h-[18px] w-[18px]" />, description: 'شارك تعريباتك مع الآخرين' },
+]
+
+const TRANSLATOR_ROLES = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+
+const TRANSLATOR_BENEFITS = [
+  { icon: <Upload className="h-5 w-5" />, title: 'انشر تعريباتك', description: 'ارفع تعريباتك وشاركها مع آلاف اللاعبين' },
+  { icon: <Users className="h-5 w-5" />, title: 'تفاعل مع الجمهور', description: 'استقبل التعليقات والتقييمات وابنِ جمهورك' },
+  { icon: <BarChart3 className="h-5 w-5" />, title: 'تابع إحصائياتك', description: 'شاهد التحميلات والمشاهدات والتقدم' },
+]
+
+const TRANSLATOR_STEPS = [
+  { title: 'قدّم طلبك', desc: 'املأ نموذج التقديم من زر «قدّم طلبك الآن» — يستغرق دقيقتين فقط.' },
+  { title: 'استلم الرد', desc: 'تُراجع الطلبات خلال 48 ساعة، وتصلك الموافقة على حسابك.' },
+  { title: 'ابدأ بالنشر', desc: 'بعد الموافقة تصبح معرّباً رسمياً ويمكنك رفع تعريباتك من لوحة المُعرّب.' },
+  { title: 'تابع النتائج', desc: 'تتبع تحميلاتك ومشاهداتك واستقبل تعليقات وتقييمات جمهورك.' },
 ]
 
 const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string }> = {
@@ -67,7 +83,6 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection)
-  const [debugMode, setDebugMode] = useState(false)
 
    const [bio, setBio] = useState('')
    const [socialLinks, setSocialLinks] = useState<Record<string, string>>({})
@@ -698,6 +713,7 @@ export function SettingsPage() {
   }
 
   const accent = profile.accentColor || '#ff8c00'
+  const isCreator = TRANSLATOR_ROLES.includes(user?.role || '')
   const displayAvatar = avatarRemoved ? null : (avatarPreview || profile.avatarUrl)
   const displayBanner = bannerRemoved ? null : (bannerPreview || profile.bannerUrl)
 
@@ -717,46 +733,12 @@ export function SettingsPage() {
               <h1 className="text-lg font-bold">إدارة الحساب والإعدادات</h1>
               <p className="text-xs text-muted-foreground">تخصيص ملفك الشخصي وإعدادات حسابك</p>
             </div>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className="ml-auto text-xs min-h-[44px]"
-              onClick={() => setDebugMode(!debugMode)}
-            >
-              {debugMode ? 'إيقاف Debug' : 'Debug'}
-            </Button>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 lg:px-6 py-6">
-        {debugMode && (
-          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg text-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-yellow-800 dark:text-yellow-300">DEBUG MODE</span>
-              <button 
-                onClick={() => setDebugMode(false)}
-                className="text-yellow-800 dark:text-yellow-300 hover:underline"
-              >
-                إخفاء
-              </button>
-            </div>
-            <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">
-              {JSON.stringify({
-                username: newUsername,
-                bio: bio.substring(0, 100),
-                emailNotifications,
-                pushNotifications,
-                dailySummary,
-                profileVisibility,
-                hideJoinDate,
-                avatarRemoved,
-                bannerRemoved
-              }, null, 2)}
-            </pre>
-          </div>
-        )}
-        {profile?.role === 'member' && (
+        {(profile?.role === 'member' || user?.role === 'member') && (
           <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -776,28 +758,31 @@ export function SettingsPage() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <nav className="lg:w-64 shrink-0">
-            <div className="lg:sticky lg:top-24 space-y-1">
+            <div className="space-y-3 lg:sticky lg:top-24">
               {SECTIONS.map((section) => (
                 <button
                   key={section.key}
                   onClick={() => handleSectionChange(section.key)}
-                  className={`flex w-full items-center gap-3 rounded-none px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  className={`group flex w-full items-center gap-3 rounded-none border-[3px] px-4 py-3 text-start cursor-pointer transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] ${
                     activeSection === section.key
-                      ? 'bg-accent text-accent-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                      ? 'border-primary bg-primary/10 shadow-[4px_4px_0_0_var(--border)]'
+                      : 'border-border bg-card shadow-[4px_4px_0_0_var(--border)] hover:bg-card-hover'
                   }`}
                 >
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg border-2 transition-colors ${
                     activeSection === section.key
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-transparent text-muted-foreground'
                   }`}>
                     {section.icon}
                   </div>
-                  <div className="text-right">
-                    <div>{section.label}</div>
-                    <div className="text-[10px] text-muted-foreground/70">{section.description}</div>
+                  <div className="min-w-0 text-start">
+                    <div className="text-sm font-bold text-foreground">{section.label}</div>
+                    <div className="text-[10px] font-medium text-muted-foreground">{section.description}</div>
                   </div>
+                  <ChevronLeft className={`ms-auto h-4 w-4 shrink-0 text-primary transition-opacity ${
+                    activeSection === section.key ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`} />
                 </button>
               ))}
             </div>
@@ -809,7 +794,7 @@ export function SettingsPage() {
             {activeSection === 'profile' && (
               <div className="space-y-6">
                 {/* Banner — مع ImageUpload الجديد */}
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-4 text-sm font-bold">البانر الخلفي</h3>
                   <div className="relative h-[180px] overflow-hidden rounded-none border-2 border-border">
                     {displayBanner ? (
@@ -850,7 +835,7 @@ export function SettingsPage() {
                 </div>
 
                 {/* Avatar */}
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-4 text-sm font-bold">الصورة الرمزية</h3>
                   <div className="flex items-center gap-6">
                     <div className="relative">
@@ -899,7 +884,7 @@ export function SettingsPage() {
                 </div>
 
                  {/* Username */}
-                 <div className="rounded-none bg-card border-2 border-border p-6">
+                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">اسم المستخدم</h3>
                    <div className="space-y-2">
                      <div className="flex items-center justify-between">
@@ -927,7 +912,7 @@ export function SettingsPage() {
                  </div>
 
                  {/* Accent Color */}
-                  <div className="rounded-none bg-card border-2 border-border p-6">
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
                    <div className="flex items-center gap-6">
                      <div className="flex items-center gap-3">
@@ -963,7 +948,7 @@ export function SettingsPage() {
                  </div>
 
                  {/* Bio */}
-                  <div className="rounded-none bg-card border-2 border-border p-6">
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">النبذة الشخصية</h3>
                    <div className="flex items-center justify-between mb-2">
                      <Label htmlFor="bio" className="text-sm text-muted-foreground">أخبر الآخرين عن نفسك</Label>
@@ -990,7 +975,7 @@ export function SettingsPage() {
                  </div>
 
                 {/* Social Links */}
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
                    <SocialLinksEditor
                      websiteUrl={websiteUrl}
@@ -1019,7 +1004,7 @@ export function SettingsPage() {
             {/* ========== Account Section ========== */}
             {activeSection === 'account' && (
               <div className="space-y-6">
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
                   <p className="text-xs text-muted-foreground mb-6">تأكد من استخدام كلمة مرور قوية (6 أحرف على الأقل)</p>
                   <div className="space-y-4 max-w-md">
@@ -1073,7 +1058,7 @@ export function SettingsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">الحسابات المرتبطة</h3>
                   <p className="text-xs text-muted-foreground mb-6">إدارة حسابات OAuth المرتبطة بحسابك</p>
                   {loadingAccounts ? (
@@ -1128,7 +1113,7 @@ export function SettingsPage() {
             {/* ========== Privacy Section ========== */}
             {activeSection === 'privacy' && (
               <div className="space-y-6">
-                <div className="rounded-none bg-card border-2 border-border p-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">إعدادات الخصوصية</h3>
                   <p className="text-xs text-muted-foreground mb-6">تحكم في من يمكنه رؤية معلومات ملفك الشخصي</p>
                   <div className="space-y-6">
@@ -1156,6 +1141,100 @@ export function SettingsPage() {
 
                 <div className="flex justify-end">
                   <SaveButton onClick={handleSaveProfile} saving={saving} saved={saved} />
+                </div>
+              </div>
+            )}
+
+            {/* ========== Become Translator Section ========== */}
+            {activeSection === 'translation' && (
+              <div className="space-y-6">
+                {/* Hero */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none border-2 border-primary bg-primary/10 text-primary">
+                      <Upload className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold">صبح معرّباً — شارك تعريباتك مع الآخرين</h3>
+                      <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                        انضم إلى مجتمع المُعَرِّبين، انشر تعريباتك، وتفاعل مع آلاف اللاعبين المتحمسين للعب بالعربية.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What it means */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-3 text-sm font-bold">ما معنى أن تكون معرّباً؟</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    المعرّب هو من يتكفل بتحويل الألعاب إلى اللغة العربية ليجعلها في متناول الآلاف من اللاعبين العرب. كل تعريب تنشره على المنصة يصبح متاحاً للتحميل والاستخدام، وتُحفظ حقوقك كصاحب الترجمة بذكر اسمك وفريقك كاملين في صفحة التعريب.
+                  </p>
+                </div>
+
+                {/* Benefits */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {TRANSLATOR_BENEFITS.map((benefit) => (
+                    <div key={benefit.title} className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-none border-2 border-primary bg-primary/10 text-primary">
+                        {benefit.icon}
+                      </div>
+                      <h4 className="text-sm font-bold">{benefit.title}</h4>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{benefit.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Steps */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-4 text-sm font-bold">كيف تصبح معرّباً؟</h3>
+                  <ol className="space-y-4">
+                    {TRANSLATOR_STEPS.map((step, i) => (
+                      <li key={step.title} className="flex items-start gap-3">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none border-2 border-primary bg-primary/10 text-xs font-bold text-primary">
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold">{step.title}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Instructions */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-4 text-sm font-bold">تعليمات المشاركة مع الآخرين</h3>
+                  <ul className="space-y-3">
+                    {[
+                      'اصنع في صفحة التعريب قسم «فريق التعريب» وضيف روابط التواصل والدعم الخاصة بك.',
+                      'حافظ على تحديث نسخة تعريبك وترفعها أولاً بأول حتى يستفيد الجميع.',
+                      'تابع تعليقات وتقييمات اللاعبين على تعريباتك وردّ عليها لبناء جمهورك.',
+                      'روّج لتعريباتك في المجتمع وشاركها ليصل أثر تعريبك لأكبر عدد ممكن.',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-3">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">{item}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* CTA */}
+                <div className="rounded-none border-[3px] border-primary/40 bg-primary/5 p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold">{isCreator ? 'أنت معرّب بالفعل' : 'جاهز تبدأ رحلتك؟'}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {isCreator
+                          ? 'من لوحة المُعرّب تقدر ترفع تعريباتك وتتابع إحصائياتك مباشرة.'
+                          : 'يستغرق التقديم دقيقتين فقط — سيتم مراجعة طلبك خلال 48 ساعة.'}
+                      </p>
+                    </div>
+                    <Link href={isCreator ? '/creator' : '/become-creator/apply'}>
+                      <Button className="min-h-[44px]">{isCreator ? 'لوحة المُعرّب' : 'قدّم طلبك الآن'}</Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}

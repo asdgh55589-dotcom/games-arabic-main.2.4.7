@@ -134,6 +134,17 @@ export async function POST(req: NextRequest) {
       return validationFail('يجب على الناشر ذكر المصدر الأصلي للتعريب')
     }
 
+    // fallback للـ gameId — لم يعد مطلوباً في الواجهة (استُبدل بـ seriesId/teamId)
+    // نحافظ على توافق قاعدة البيانات (gameId NOT NULL) عبر استخدام أول لعبة موجودة إن لم يُرسل
+    let effectiveGameId: string | null = (data.gameId as string) || (body as any).gameId || null
+    if (!effectiveGameId) {
+      const fallbackGame = await db.game.findFirst({ select: { id: true } })
+      effectiveGameId = fallbackGame?.id || null
+    }
+    if (!effectiveGameId) {
+      return validationFail('لا توجد لعبة في قاعدة البيانات — أنشئ لعبة افتراضية أولاً')
+    }
+
     // حساب درجة الجودة
     const qualityScore = calculateModQualityScore({
       name: data.name,
@@ -150,7 +161,7 @@ export async function POST(req: NextRequest) {
       galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),
       files: body.files || [],
       teamMembers: body.teamMembers || [],
-      gameId: data.gameId,
+      gameId: effectiveGameId,
       teamId: data.teamId || null,
     })
 
@@ -176,8 +187,8 @@ export async function POST(req: NextRequest) {
           translationScope: data.translationScope || '',
           compatibility: data.compatibility || '',
           authorId: user.id,
-          gameId: data.gameId,
-          categoryId: data.categoryId || null,
+          gameId: effectiveGameId!,
+          categoryId: (data.categoryId as string) || null,
           thumbnailUrl: data.thumbnailUrl,
           imageUrl: data.imageUrl,
           galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),

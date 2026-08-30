@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { getTierLabel } from '@/lib/tiers'
 import { TierBadge } from '@/components/tier-badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Trophy, Medal, Shield } from 'lucide-react'
 
@@ -56,9 +57,7 @@ export default async function ModeratorsLeaderboard() {
       </div>
 
       {ranked.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">لا يوجد مشرفون نشطون بعد</CardContent>
-        </Card>
+        <EmptyState icon="users" title="لا يوجد مشرفون بعد" description="كن أول مشرف ينضم للمنصة!" action={{ label: 'لوحة التحكم', href: '/admin' }} />
       ) : (
         <div className="space-y-4">
           {ranked.map((item, index) => (

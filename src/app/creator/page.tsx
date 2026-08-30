@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Eye, Download, ThumbsUp, MessageSquare, Star, FileText, Clock, CheckCircle, XCircle, TrendingUp, Plus } from 'lucide-react'
+import { Eye, Download, ThumbsUp, MessageSquare, Star, FileText, Clock, CheckCircle, XCircle, TrendingUp, Plus, BarChart3 } from 'lucide-react'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { CreatorBadge } from '@/components/creator-badge'
 
 export const metadata: Metadata = {
-  title: 'استوديو المُعَرِّب | Games Arabic',
+  title: 'لوحة تحكم المُعَرِّب | Games Arabic',
   description: 'لوحة تحكم المُعَرِّب لإدارة التعريبات ومتابعة الأداء',
   robots: { index: false, follow: false },
 }
@@ -118,6 +118,83 @@ export default async function CreatorDashboard() {
         <WorkflowCard label="مسودة" count={drafts.length} icon={FileText} color="text-gray-500" href="/creator/mods?status=DRAFT" />
         <WorkflowCard label="بانتظار المراجعة" count={pending.length} icon={Clock} color="text-yellow-500" href="/creator/mods?status=IN_REVIEW" />
         <WorkflowCard label="مرفوض" count={rejected.length} icon={XCircle} color="text-red-500" href="/creator/mods?status=REJECTED" />
+      </div>
+
+      {/* Tier & Performance Overview */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Star className="h-4 w-4 text-yellow-500" />
+              مستواك الحالي
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <TierBadge role={displayUser.role} tier={displayUser.tier} size="md" />
+              <div className="text-sm">
+                <div className="font-bold">{displayUser.role === 'creator' ? 'مُعَرِّب' : displayUser.role === 'publisher' ? 'ناشر' : displayUser.role}</div>
+                <div className="text-xs text-muted-foreground">المستوى {displayUser.tier}</div>
+              </div>
+            </div>
+            <Link href={`/profile/${encodeURIComponent(displayUser.username)}/level`} className="mt-3 inline-block text-xs text-primary hover:underline">
+              عرض التقدم ←
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-blue-500" />
+              نظرة عامة
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">متوسط التقييم</span>
+                <span className="font-bold">{averageRating.toFixed(1)} ⭐</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">إجمالي التعليقات</span>
+                <span className="font-bold">{totalComments}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">نسبة النشر</span>
+                <span className="font-bold">{mods.length ? Math.round((published.length / mods.length) * 100) : 0}%</span>
+              </div>
+              <div className="pt-2">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${mods.length ? (published.length / mods.length) * 100 : 0}%` }} />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-500" />
+              النشاط الأخير
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mods.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد نشاط بعد</p>
+            ) : (
+              <div className="space-y-2">
+                {mods.slice(0, 3).map((m) => (
+                  <Link key={m.id} href={`/mod/${m.slug}`} className="flex items-center justify-between p-2 rounded hover:bg-muted text-sm">
+                    <span className="truncate font-medium">{m.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{new Date(m.createdAt).toLocaleDateString('ar-EG')}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Top mods */}

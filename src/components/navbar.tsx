@@ -54,19 +54,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
-
-  // Fetch sections from API on mount
-  useEffect(() => {
-    fetch('/api/sections')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          setSections(json.data)
-        }
-      })
-      .catch(() => {}) // keep fallback
-  }, [])
+  const sections = FALLBACK_SECTIONS
 
   // Support both new routes (/platform/PC) and old SPA (?view=platform&platform=PC)
   const resolvedView = currentView || (() => {
@@ -246,16 +234,9 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 الفرق
               </MobileLink>
 
-              <MobileLink href="/leaderboard" onClick={() => setMobileOpen(false)} isActive={pathname.startsWith('/leaderboard')}>
-                <Trophy width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
-                الصدارة
+              <MobileLink href="/request" onClick={() => setMobileOpen(false)} isActive={pathname === '/request'}>
+                <span className="text-base">📝</span> طلب تعريب
               </MobileLink>
-
-              {currentUser && ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
-                <MobileLink href="/creator" onClick={() => setMobileOpen(false)} isActive={pathname.startsWith('/creator')}>
-                  <span className="text-base">🎨</span> الاستوديو
-                </MobileLink>
-              )}
 
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex items-center justify-end px-3">
@@ -268,6 +249,13 @@ export function Navbar({ games, currentView }: NavbarProps) {
                         <User className="mr-2 h-4 w-4" /> {currentUser.username}
                       </Link>
                     </Button>
+                    {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                      <Button asChild variant="ghost" className="w-full justify-start text-muted-foreground text-sm font-normal">
+                        <Link href="/creator" onClick={() => setMobileOpen(false)}>
+                          لوحة التحكم
+                        </Link>
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       className="w-full text-destructive"
@@ -311,12 +299,11 @@ export function Navbar({ games, currentView }: NavbarProps) {
               <Link
                 key={s.id}
                 href={`/platform/${s.key}`}
-                className={`whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+                className={`whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
                   isActive
-                    ? 'bg-white/15 text-white border border-white/30 nav-link-active-glow'
-                    : 'text-white hover:bg-white/10 hover:text-white'
+                    ? 'bg-white/10 text-gray-200'
+                    : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
                 }`}
-                style={isActive ? { '--link-glow': s.color } as React.CSSProperties : undefined}
               >
                 {s.name} <Icon width={12} height={12} color={s.color} className="inline-block align-middle ms-0.5" />
               </Link>
@@ -328,10 +315,10 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
           <Link
             href="/series"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
               resolvedView === 'series' || resolvedView === 'series-detail'
-                ? 'bg-white/15 text-white border border-white/30'
-                : 'text-white hover:bg-white/10 hover:text-white'
+                ? 'bg-white/10 text-gray-200'
+                : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
             }`}
           >
             <Package width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
@@ -339,25 +326,22 @@ export function Navbar({ games, currentView }: NavbarProps) {
           </Link>
           <Link
             href="/teams"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
               resolvedView === 'teams' || resolvedView === 'team-detail'
-                ? 'bg-white/15 text-white border border-white/30'
-                : 'text-white hover:bg-white/10 hover:text-white'
+                ? 'bg-white/10 text-gray-200'
+                : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
             }`}
           >
             <Users width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
             الفرق
           </Link>
           <Link
-            href="/leaderboard"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-sm font-black uppercase tracking-wide transition-colors ${
-              pathname.startsWith('/leaderboard')
-                ? 'bg-white/15 text-white border border-white/30'
-                : 'text-white hover:bg-white/10 hover:text-white'
+            href="/request"
+            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
+              pathname === '/request' ? 'bg-white/10 text-gray-200' : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
             }`}
           >
-            <Trophy width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
-            الصدارة
+            <span className="text-[11px]">📝</span> طلب تعريب
           </Link>
         </nav>
         </div>
@@ -460,14 +444,6 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
         {/* Right actions — موسّع */}
         <div className="hidden items-center gap-1.5 sm:flex shrink-0 ml-auto">
-          {currentUser && ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
-            <Link
-              href="/creator"
-              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
-            >
-              🎨 الاستوديو
-            </Link>
-          )}
           <NotificationBell currentUser={currentUser} />
 
           {currentUser ? (
@@ -496,6 +472,13 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`} className="flex items-center gap-2 flex-row-reverse">
                         <FileText className="h-4 w-4" />
                         تعريباتي
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/creator" className="flex items-center gap-2 flex-row-reverse text-sm text-muted-foreground">
+                        لوحة التحكم
                       </Link>
                     </DropdownMenuItem>
                   )}

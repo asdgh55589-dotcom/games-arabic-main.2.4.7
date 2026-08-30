@@ -21,6 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
+import { hasRoleAtLeast } from '@/lib/roles'
 
 // Re-export for use in other modules
 export { jwtVerify }
@@ -276,7 +277,7 @@ export async function requireAuth(): Promise<SessionUser> {
 /** يتأكد إن المستخدم أدمن أو أعلى (admin | manager | owner) — يطابق PERMISSION_MIN_ROLE site.settings/admin */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['admin', 'manager', 'owner'].includes(user.role)) {
+  if (!hasRoleAtLeast(user.role, 'admin')) {
     throw new AuthError('Forbidden — admin access required', 403)
   }
   return user
@@ -294,7 +295,7 @@ export async function requireOwner(): Promise<SessionUser> {
 /** يتأكد إن المستخدم مشرف أو أعلى (moderator | admin | manager | owner) — يطابق mod.review/reports.manage */
 export async function requireModerator(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['moderator', 'manager', 'admin', 'owner'].includes(user.role)) {
+  if (!hasRoleAtLeast(user.role, 'moderator')) {
     throw new AuthError('Forbidden — moderator access required', 403)
   }
   return user
@@ -303,13 +304,13 @@ export async function requireModerator(): Promise<SessionUser> {
 /** يتأكد إن المستخدم مُعَرِّب أو أعلى (creator | publisher | moderator | admin | manager | owner) — يطابق mod.createOwn */
 export async function requireCreator(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+  if (!hasRoleAtLeast(user.role, 'creator')) {
     throw new AuthError('Forbidden — creator access required', 403)
   }
   return user
 }
 
-/** حارس خاص لاستوديو المُعَرِّب — يعيد { user } أو { error: Response } ليتناسب مع نمط API المحدد */
+/** حارس خاص للوحة تحكم المُعَرِّب — يعيد { user } أو { error: Response } ليتناسب مع نمط API المحدد */
 export async function requireCreatorStudio(req: NextRequest): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
@@ -330,7 +331,7 @@ export async function requireCreatorStudio(req: NextRequest): Promise<{ user: Se
 /** يتأكد إن المستخدم ناشر أو أعلى (publisher | moderator | admin | manager | owner) — يطابق mod.republishExternal — لا يتضمن creator (creator لا يستطيع إعادة نشر خارجي) */
 export async function requirePublisher(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['publisher', 'moderator', 'admin', 'manager', 'owner'].includes(user.role)) {
+  if (!hasRoleAtLeast(user.role, 'publisher')) {
     throw new AuthError('Forbidden — publisher access required', 403)
   }
   return user
@@ -339,7 +340,7 @@ export async function requirePublisher(): Promise<SessionUser> {
 /** يتأكد إن المستخدم مدير أو أعلى (manager | owner) — يطابق site.settings/system.apiKeys */
 export async function requireManager(): Promise<SessionUser> {
   const user = await requireAuth()
-  if (!['manager', 'owner'].includes(user.role)) {
+  if (!hasRoleAtLeast(user.role, 'manager')) {
     throw new AuthError('Forbidden — manager access required', 403)
   }
   return user

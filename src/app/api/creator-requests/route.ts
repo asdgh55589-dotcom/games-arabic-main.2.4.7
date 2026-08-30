@@ -22,15 +22,41 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { experience, preferredGames, portfolioLinks, reason } = body as {
+    const { experience, preferredGames, portfolioLinks, reason, twitterUrl, youtubeUrl, discordHandle, websiteUrl } = body as {
       experience?: string
       preferredGames?: string
       portfolioLinks?: string
       reason?: string
+      twitterUrl?: string
+      youtubeUrl?: string
+      discordHandle?: string
+      websiteUrl?: string
     }
 
     if (!experience?.trim() || !reason?.trim()) {
       return validationFail('الخبرة وسبب الرغبة مطلوبان')
+    }
+
+    // تحقق اختياري لروابط التواصل
+    const validateOptionalUrl = (val: string | undefined, fieldName: string) => {
+      if (!val?.trim()) return null
+      try {
+        const u = new URL(val.trim())
+        if (!['http:', 'https:'].includes(u.protocol)) throw new Error('invalid')
+        return val.trim()
+      } catch {
+        throw new Error(`رابط ${fieldName} غير صحيح`)
+      }
+    }
+    let cleanTwitter: string | null = null
+    let cleanYoutube: string | null = null
+    let cleanWebsite: string | null = null
+    try {
+      cleanTwitter = validateOptionalUrl(twitterUrl, 'تويتر')
+      cleanYoutube = validateOptionalUrl(youtubeUrl, 'يوتيوب')
+      cleanWebsite = validateOptionalUrl(websiteUrl, 'الموقع')
+    } catch (e) {
+      return validationFail((e as Error).message)
     }
 
     const created = await db.creatorRequest.create({
@@ -40,6 +66,10 @@ export async function POST(req: NextRequest) {
         preferredGames: preferredGames?.trim() || null,
         portfolioLinks: portfolioLinks?.trim() || null,
         reason: reason.trim(),
+        twitterUrl: cleanTwitter,
+        youtubeUrl: cleanYoutube,
+        discordHandle: discordHandle?.trim() || null,
+        websiteUrl: cleanWebsite,
       },
     })
 

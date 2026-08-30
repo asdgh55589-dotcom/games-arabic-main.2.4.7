@@ -35,13 +35,15 @@ export const ChangePasswordSchema = z.object({
 // ===== Mod Schemas =====
 
 export const CreateModSchema = z.object({
-  name: z.string().min(1).max(200),
-  summary: z.string().min(1).max(500),
-  description: z.string().min(1),
-  gameId: z.string().min(1),
-  categoryId: z.string().optional(),
-  thumbnailUrl: z.string().url(),
-  imageUrl: z.string().url(),
+  name: z.string().min(1, 'اسم التعريب مطلوب').max(200, 'اسم التعريب طويل جداً (الحد الأقصى 200 حرف)'),
+  summary: z.string().max(500, 'الملخص طويل جداً (الحد الأقصى 500 حرف)').optional().default(''),
+  description: z.string().min(10, 'الوصف قصير جداً (10 أحرف على الأقل)').max(5000, 'الوصف طويل جداً (الحد الأقصى 5000 حرف)'),
+  gameId: z.string().optional(),
+  categoryId: z.string().optional().nullable(),
+  seriesId: z.string().optional().nullable(),
+  teamId: z.string().optional().nullable(),
+  thumbnailUrl: z.string().url('رابط الصورة المصغرة غير صالح'),
+  imageUrl: z.string().url('رابط الصورة الرئيسية غير صالح'),
   version: z.string().default('1.0.0'),
   fileSize: z.string().default('MB 0'),
   fileFormat: z.string().default('zip'),
@@ -64,10 +66,8 @@ export const CreateModSchema = z.object({
   translationScope: z.string().optional(),
   compatibility: z.string().optional(),
   galleryUrls: z.union([z.string(), z.array(z.string())]).optional(),
-  seriesId: z.string().optional(),
-  teamId: z.string().optional(),
   files: z.array(z.object({
-    title: z.string().min(1),
+    title: z.string().min(1, 'عنوان الملف مطلوب'),
     description: z.string().optional(),
     alert: z.string().optional(),
     version: z.string().optional(),
@@ -76,7 +76,7 @@ export const CreateModSchema = z.object({
     fileFormat: z.string().optional(),
     order: z.number().optional(),
     links: z.array(z.object({
-      url: z.string().url().refine(
+      url: z.string().url('رابط غير صالح').refine(
         (url) => isAllowedDownloadUrl(url),
         { message: 'رابط التحميل يجب أن يكون من موقع مسموح (Google Drive, Mega, Mediafire, etc.)' }
       ),
@@ -84,7 +84,7 @@ export const CreateModSchema = z.object({
     })).optional(),
   })).optional(),
   teamMembers: z.array(z.object({
-    name: z.string().min(1),
+    name: z.string().min(1, 'اسم العضو مطلوب'),
     avatarUrl: z.string().optional(),
     role: z.string().optional(),
     contribution: z.string().optional(),
@@ -93,15 +93,15 @@ export const CreateModSchema = z.object({
   contactLinks: z.array(z.object({
     type: z.string().optional(),
     label: z.string().optional(),
-    url: z.string().url(),
+    url: z.string().url('رابط غير صالح'),
     order: z.number().optional(),
   })).optional(),
   videoGroups: z.array(z.object({
-    name: z.string().min(1),
+    name: z.string().min(1, 'اسم المجموعة مطلوب'),
     order: z.number().optional(),
     videos: z.array(z.object({
-      title: z.string().min(1),
-      url: z.string().url(),
+      title: z.string().min(1, 'عنوان الفيديو مطلوب'),
+      url: z.string().url('رابط الفيديو غير صالح'),
       thumbnail: z.string().optional(),
       duration: z.string().optional(),
       description: z.string().optional(),

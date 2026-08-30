@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/auth-context'
-import { Loader2, CheckCircle, Clock, XCircle, ArrowRight } from 'lucide-react'
+import { Loader2, CheckCircle, Clock, XCircle, ArrowRight, Link2 } from 'lucide-react'
 
 interface CreatorRequestStatus {
   id: string
@@ -28,6 +28,10 @@ export default function BecomeCreatorApplyPage() {
   const [preferredGames, setPreferredGames] = useState('')
   const [portfolioLinks, setPortfolioLinks] = useState('')
   const [reason, setReason] = useState('')
+  const [twitterUrl, setTwitterUrl] = useState('')
+  const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [discordHandle, setDiscordHandle] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [existing, setExisting] = useState<CreatorRequestStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -58,7 +62,16 @@ export default function BecomeCreatorApplyPage() {
       const res = await fetch('/api/creator-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ experience: experience.trim(), preferredGames: preferredGames.trim(), portfolioLinks: portfolioLinks.trim(), reason: reason.trim() }),
+        body: JSON.stringify({
+          experience: experience.trim(),
+          preferredGames: preferredGames.trim(),
+          portfolioLinks: portfolioLinks.trim(),
+          reason: reason.trim(),
+          twitterUrl: twitterUrl.trim() || undefined,
+          youtubeUrl: youtubeUrl.trim() || undefined,
+          discordHandle: discordHandle.trim() || undefined,
+          websiteUrl: websiteUrl.trim() || undefined,
+        }),
       })
       const json = await res.json()
       if (res.ok) {
@@ -68,6 +81,10 @@ export default function BecomeCreatorApplyPage() {
         setPreferredGames('')
         setPortfolioLinks('')
         setReason('')
+        setTwitterUrl('')
+        setYoutubeUrl('')
+        setDiscordHandle('')
+        setWebsiteUrl('')
       } else {
         const msg = (typeof json?.error?.details === 'string' ? json.error.details : null) || json?.error?.message || json?.error || 'فشل الإرسال'
         toast({ title: msg, variant: 'destructive' })
@@ -142,7 +159,7 @@ export default function BecomeCreatorApplyPage() {
           <Card>
             <CardContent className="p-8">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold mb-2">🎉 مبروك! تم قبول طلبك</h2>
+              <h2 className="text-xl font-bold mb-2">مبروك! تم قبول طلبك</h2>
               <p className="text-sm text-muted-foreground mb-6">أنت الآن معرّب رسمي — يمكنك رفع تعريباتك</p>
               <Link href="/upload"><Button>ابدأ رفع تعريب</Button></Link>
             </CardContent>
@@ -232,6 +249,60 @@ export default function BecomeCreatorApplyPage() {
                 required
                 className="resize-none"
               />
+            </div>
+
+            {/* Social links */}
+            <div className="space-y-4 border-t pt-6">
+              <h3 className="font-bold flex items-center gap-2 text-sm">
+                <Link2 className="h-5 w-5 text-primary" />
+                روابط التواصل الاجتماعي (اختياري)
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="twitterUrl">حساب تويتر / X</Label>
+                  <Input
+                    id="twitterUrl"
+                    value={twitterUrl}
+                    onChange={(e) => setTwitterUrl(e.target.value)}
+                    placeholder="https://twitter.com/username"
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="youtubeUrl">قناة يوتيوب</Label>
+                  <Input
+                    id="youtubeUrl"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://youtube.com/@channel"
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="discordHandle">حساب ديسكورد</Label>
+                  <Input
+                    id="discordHandle"
+                    value={discordHandle}
+                    onChange={(e) => setDiscordHandle(e.target.value)}
+                    placeholder="username#1234"
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="websiteUrl">موقع شخصي / مدونة</Label>
+                  <Input
+                    id="websiteUrl"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    placeholder="https://yourwebsite.com"
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+              </div>
             </div>
 
             <Button type="submit" className="w-full min-h-[48px] text-base" disabled={submitting}>

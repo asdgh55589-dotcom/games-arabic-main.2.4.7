@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationDropdown } from '@/components/notification-dropdown'
@@ -13,14 +13,109 @@ interface NotificationBellProps {
 export function NotificationBell({ currentUser }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   const {
-    notifications,
-    unreadCount,
+    notifications: pollingNotifications,
+    unreadCount: pollingUnread,
     isLoading,
     markAsRead,
     markAllAsRead,
   } = useNotificationPolling({ userId: currentUser?.id ?? null })
+
+  const [sseNotifications, setSseNotifications] = useState<typeof pollingNotifications>([])
+  const [sseUnread, setSseUnread] = useState(0)
+  const [sseConnected, setSseConnected] = useState(false)
+
+  // Merge polling + SSE
+  const notifications = sseNotifications.length > 0 ? sseNotifications : pollingNotifications
+  const unreadCount = sseUnread || pollingUnread
+
+  const connectSSE = useCallback(() => {
+    if (!currentUser?.id) return
+    if (eventSourceRef.current) eventSourceRef.current.close()
+
+    try {
+      const es = new EventSource('/api/notifications/stream')
+      eventSourceRef.current = es
+
+      es.onopen = () => setSseConnected(true)
+
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'connected') {
+            setSseConnected(true)
+          } else if (data.type === 'new_notifications' && Array.isArray(data.notifications)) {
+            setSseNotifications((prev) => {
+              const merged = [...data.notifications, ...prev]
+              // dedup by id
+              const seen = new Set<string>()
+              return merged.filter((n: { id: string }) => {
+                if (seen.has(n.id)) return false
+                seen.add(n.id)
+                return true
+              }).slice(0, 50)
+            })
+            setSseUnread((prev) => prev + data.notifications.length)
+            // Browser notification if permitted
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              data.notifications.forEach((n: { title: string; message: string }) => {
+                try {
+                  new Notification(n.title, { body: n.message })
+                } catch {}
+              })
+            }
+          } else if (data.type === 'heartbeat') {
+            // keep alive
+          }
+        } catch {}
+      }
+
+      es.onerror = () => {
+        es.close()
+        setSseConnected(false)
+        setTimeout(connectSSE, 5000)
+      }
+    } catch {
+      setTimeout(connectSSE, 5000)
+    }
+  }, [currentUser?.id])
+
+  useEffect(() => {
+    if (!currentUser?.id) return
+    // Request browser notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
+    connectSSE()
+    return () => {
+      eventSourceRef.current?.close()
+      eventSourceRef.current = null
+    }
+  }, [currentUser?.id, connectSSE])
+
+  // Sync polling notifications to SSE state initially
+  useEffect(() => {
+    if (pollingNotifications.length > 0 && sseNotifications.length === 0) {
+      setSseNotifications(pollingNotifications)
+    }
+  }, [pollingNotifications, sseNotifications.length])
+
+  const handleMarkAsRead = useCallback(
+    async (id: string) => {
+      await markAsRead(id)
+      setSseNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } as never : n)))
+      setSseUnread((prev) => Math.max(0, prev - 1))
+    },
+    [markAsRead]
+  )
+
+  const handleMarkAllAsRead = useCallback(async () => {
+    await markAllAsRead()
+    setSseNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() } as never)))
+    setSseUnread(0)
+  }, [markAllAsRead])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -54,8 +149,8 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
         <NotificationDropdown
           notifications={notifications}
           loading={isLoading}
-          onMarkAsRead={markAsRead}
-          onMarkAllAsRead={markAllAsRead}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAllAsRead={handleMarkAllAsRead}
           onClose={() => setOpen(false)}
         />
       )}

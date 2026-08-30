@@ -11,6 +11,7 @@ import { HeroSlider } from '@/components/hero-slider'
 import { HomeSidebar } from '@/components/home-sidebar'
 import { AdSection } from '@/components/ad-section'
 import { SiteTeamCard } from '@/components/site-team-card'
+import { CreatorLeaderboardCard } from '@/components/creator-leaderboard-card'
 import { NewsTicker } from '@/components/news-ticker'
 import { NewsFeatured } from '@/components/news-featured'
 import { formatNumber } from '@/lib/format'
@@ -26,6 +27,15 @@ interface SectionItem {
   icon: string
   color: string
   order: number
+}
+
+interface TeamSummary {
+  id: string
+  slug: string
+  name: string
+  logoUrl: string
+  bannerUrl: string
+  modCount: number
 }
 
 const FALLBACK_SECTIONS: SectionItem[] = [
@@ -46,6 +56,8 @@ export function HomePage() {
   const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
 
   const homeData = data?.data
+
+  const { data: teamsData, loading: teamsLoading } = useFetch<{ data: TeamSummary[] }>('/api/teams')
 
   useEffect(() => {
     fetch('/api/sections')
@@ -74,9 +86,10 @@ export function HomePage() {
       {/* ===== الصف الرئيسي: المحتوى + الشريط الجانبي ===== */}
       <div className="mx-auto flex max-w-[1600px] gap-8 py-4 px-4 lg:px-6" dir="rtl">
         {/* ===== اليمين: الإعلانات فوق + الشريط الجانبي تحت ===== */}
-        <div className="w-[340px] shrink-0 space-y-4 -mr-[104px]">
+        <div className="w-[340px] shrink-0 space-y-4 -mr-[140px]">
           <AdSection />
           <SiteTeamCard />
+          <CreatorLeaderboardCard />
           {loading ? (
             <div className="space-y-4">
               <div className="h-64 animate-pulse rounded-lg bg-secondary" />
@@ -93,7 +106,7 @@ export function HomePage() {
         </div>
 
         {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
-        <div className="min-w-0 flex-1 space-y-8 -ml-[104px]">
+        <div className="min-w-0 flex-1 space-y-8 -ml-[140px]">
 
       {/* آخر الأخبار — قبل أقسام المنصات */}
       {!loading && <NewsFeatured />}
@@ -183,6 +196,50 @@ export function HomePage() {
         </div>
       </section>
 
+        {/* فرق التعريب */}
+      <section className="pt-4">
+        <div className="mb-6 h-[3px] bg-border" />
+        <SectionHeader
+          title="فرق التعريب"
+          subtitle="استكشف الفرق والأعمال التي قدّموها"
+          href="/teams"
+        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {teamsLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-28 animate-pulse bg-secondary border-[3px] border-border" />
+            ))
+          ) : teamsData?.data?.length ? (
+            teamsData.data.slice(0, 6).map((t) => (
+              <Link
+                key={t.id}
+                href={`/teams/${t.slug}`}
+                className="group relative flex h-28 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)]"
+              >
+                {t.bannerUrl || t.logoUrl ? (
+                  <img
+                    src={t.bannerUrl || t.logoUrl}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover opacity-55 transition-opacity group-hover:opacity-75"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
+                <div className="relative">
+                  <h3 className="line-clamp-1 text-sm font-black uppercase tracking-wider text-foreground group-hover:text-primary">
+                    {t.name}
+                  </h3>
+                  <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                    {formatNumber(t.modCount)} تعريب
+                  </p>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-full py-8 text-center text-sm text-muted-foreground">لا توجد فرق تعريب بعد</div>
+          )}
+        </div>
+      </section>
         </div>
 
       </div>

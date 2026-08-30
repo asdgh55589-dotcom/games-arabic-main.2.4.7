@@ -106,9 +106,20 @@ export async function POST(req: NextRequest) {
   const existing = await db.mod.findUnique({ where: { slug } })
   if (existing) slug = `${baseSlug}-${Date.now().toString(36)}`
 
+  // fallback للـ gameId — لم يعد مطلوباً في الواجهة (استُبدل بـ seriesId/teamId)
+  let effectiveGameId = (data as unknown as { gameId?: string }).gameId
+  if (!effectiveGameId) {
+    const fallbackGame = await db.game.findFirst({ select: { id: true } })
+    effectiveGameId = fallbackGame?.id || undefined as unknown as string
+  }
+  if (!effectiveGameId) {
+    return validationFail('لا توجد لعبة في قاعدة البيانات — أنشئ لعبة افتراضية أولاً')
+  }
+
   const mod = await db.mod.create({
     data: {
       ...(data as unknown as Record<string, unknown>),
+      gameId: effectiveGameId,
       authorId: user.id,
       workflowStatus,
       slug,

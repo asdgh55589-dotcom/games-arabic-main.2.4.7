@@ -5,6 +5,7 @@ import { Footer } from '@/components/footer'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { BookmarksProvider } from '@/contexts/bookmarks-context'
+import { CookieConsent } from '@/components/cookie-consent'
 import { useAuth } from '@/contexts/auth-context'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ErrorBoundary>
         </main>
         <Footer />
+        <CookieConsent />
         <ScrollToTop />
       </div>
     </BookmarksProvider>

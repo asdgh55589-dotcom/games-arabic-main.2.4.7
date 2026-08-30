@@ -84,8 +84,11 @@ interface BadgeData {
 
 const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   owner:     { label: 'مالك الموقع', icon: <Crown className="h-3 w-3" />, className: 'bg-amber-500 text-white' },
-  admin:     { label: 'مدير',         icon: <Shield className="h-3 w-3" />, className: 'bg-red-500 text-white' },
+  manager:   { label: 'مدير',         icon: <Shield className="h-3 w-3" />, className: 'bg-orange-500 text-white' },
+  admin:     { label: 'مسؤول',        icon: <Shield className="h-3 w-3" />, className: 'bg-red-500 text-white' },
   moderator: { label: 'مشرف',         icon: <User className="h-3 w-3" />,  className: 'bg-purple-500 text-white' },
+  publisher: { label: 'ناشر',         icon: <User className="h-3 w-3" />,  className: 'bg-teal-500 text-white' },
+  creator:   { label: 'مُعَرِّب',      icon: <User className="h-3 w-3" />,  className: 'bg-sky-500 text-white' },
   member:    { label: 'عضو',          icon: <User className="h-3 w-3" />,  className: 'bg-blue-500 text-white' },
 }
 
@@ -318,15 +321,8 @@ export function ProfilePage() {
                     profile.onlineStatus === 'online' ? 'bg-green-500' : 'bg-gray-500'
                   }`}
                 />
-                {/* Role badge */}
-                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold shadow-lg ${roleBadge.className}`}>
-                  <span className="flex items-center gap-1">
-                    {roleBadge.icon}
-                    {roleBadge.label}
-                  </span>
-                </div>
-                {/* Tier badge */}
-                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
+                {/* Tier badge — role badge now only next to name to avoid duplication */}
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
                   <TierBadge tier={(profile as any).tier || 0} role={profile.role} size="md" />
                 </div>
               </div>

@@ -70,6 +70,46 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         return ok({ success: true, message: 'تم أرشفة التعريب' })
       }
 
+      case 'resubmit': {
+        if (mod.workflowStatus !== 'REJECTED') {
+          return validationFail('يمكن فقط إعادة إرسال التعريبات المرفوضة')
+        }
+        await db.$transaction(async (tx) => {
+          await tx.mod.update({
+            where: { id: mod.id },
+            data: { workflowStatus: 'IN_REVIEW', submittedAt: new Date() },
+          })
+          await tx.workflowEntry.create({
+            data: {
+              modId: mod.id,
+              fromStatus: 'REJECTED',
+              toStatus: 'IN_REVIEW',
+              changedBy: user.id,
+            },
+          })
+        })
+        // Notify admins
+        try {
+          const admins = await db.user.findMany({
+            where: { role: { in: ['admin', 'manager', 'owner'] } },
+            select: { id: true },
+          })
+          for (const admin of admins) {
+            await db.notification.create({
+              data: {
+                userId: admin.id,
+                actorId: user.id,
+                type: 'admin_report',
+                title: '🔄 إعادة إرسال تعريب',
+                message: `${user.username} أعاد إرسال تعريب "${mod.name}" للمراجعة`,
+                data: { modId: mod.id, modName: mod.name },
+              },
+            })
+          }
+        } catch {}
+        return ok({ success: true, message: 'تم إعادة إرسال التعريب للمراجعة' })
+      }
+
       case 'delete': {
         if (!['DRAFT', 'ARCHIVED', 'REJECTED'].includes(mod.workflowStatus)) {
           return validationFail('يمكن حذف المسودات والمؤرشفة والمرفوضة فقط')

@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth'
 import { ModsListClient } from '@/components/creator/mods-list-client'
 
 export const metadata: Metadata = {
-  title: 'تعريباتي | استوديو المُعَرِّب',
+  title: 'تعريباتي | لوحة تحكم المُعَرِّب',
   robots: { index: false, follow: false },
 }
 

@@ -381,13 +381,25 @@ export function ModDetailPage() {
                 <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
                   {mod.name}
                 </h1>
-                {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false ? (
-                  <div className="mt-2 inline-flex items-center gap-2 rounded bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
-                    منشور من مصدر خارجي{(mod as unknown as { originalAuthor?: string | null }).originalAuthor ? ` • ${(mod as unknown as { originalAuthor: string }).originalAuthor}` : ''}{(mod as unknown as { originalSource?: string | null }).originalSource ? ` — ${(mod as unknown as { originalSource: string }).originalSource}` : ''}
-                  </div>
-                ) : (
-                  <div className="mt-2 inline-flex items-center gap-1 rounded bg-green-500/15 px-2 py-1 text-xs font-bold text-green-700 dark:text-green-400">
-                    عمل أصلي
+                {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">منشور من مصدر خارجي</span>
+                    {(mod as unknown as { originalAuthor?: string | null }).originalAuthor && (
+                      <span className="text-xs text-muted-foreground">• {(mod as unknown as { originalAuthor: string }).originalAuthor}</span>
+                    )}
+                    {(mod as unknown as { originalSource?: string | null }).originalSource && (
+                      <>
+                        <span className="text-muted-foreground">—</span>
+                        {(mod as unknown as { originalSource: string }).originalSource.startsWith('http') ? (
+                          <a href={(mod as unknown as { originalSource: string }).originalSource} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">
+                            {(mod as unknown as { originalSource: string }).originalSource}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{(mod as unknown as { originalSource: string }).originalSource}</span>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 

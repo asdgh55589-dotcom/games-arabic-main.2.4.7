@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** جلب slug من الاسم (عربي/إنجليزي) */
+/** جلب slug من الاسم (عربي/إنجليزي) — مقتطع لـ 80 حرف */
 export function slugify(name: string): string {
   return name
     .toLowerCase()
@@ -14,4 +14,5 @@ export function slugify(name: string): string {
     .replace(/[^\w\u0600-\u06FF-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+    .substring(0, 80)
 }

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
+import { CreatorBadge } from '@/components/creator-badge'
 
 interface CreatorSidebarProps {
   user: {
@@ -49,6 +50,7 @@ export function CreatorSidebar({ user }: CreatorSidebarProps) {
             <div className="flex items-center gap-1 mt-1 flex-wrap">
               <RoleBadge role={user.role} size="sm" />
               <TierBadge role={user.role} tier={user.tier} size="sm" />
+              <CreatorBadge role={user.role} specialRoles={user.specialRoles} size="sm" />
             </div>
           </div>
         </div>

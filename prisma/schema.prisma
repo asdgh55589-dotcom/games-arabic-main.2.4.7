@@ -127,6 +127,8 @@ model User {
   newsClicks             NewsClick[]
   apiKeys                ApiKey[]
   creatorRequests        CreatorRequest[]
+  modRequests            ModRequest[]
+  acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
 
   @@index([role])
   @@index([joinedAt])
@@ -147,6 +149,10 @@ model CreatorRequest {
   reviewedBy     String?
   reviewedAt     DateTime?
   rejectReason   String?   @db.Text
+  twitterUrl     String?
+  youtubeUrl     String?
+  discordHandle  String?
+  websiteUrl     String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -323,6 +329,7 @@ model Mod {
   scheduledPost       String? // المنشور المولد للنشر
   scheduledSent       Boolean          @default(false)
   scheduledSentAt     DateTime?
+  requests            ModRequest[]
 
   @@index([authorId])
   @@index([gameId])
@@ -762,6 +769,7 @@ model ModComment {
   dislikes     Int           @default(0)
   isPinned     Boolean       @default(false)
   isEdited     Boolean       @default(false)
+  isHidden     Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -773,7 +781,34 @@ model ModComment {
   @@index([userId, createdAt])
 }
 
- // ===== سجل النشاطات (Audit Log) =====
+// ===== طلبات التعريب =====
+model ModRequest {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameName         String
+  platform         String
+  storeLink        String?   @db.Text // deprecated — استخدم storeLinks
+  storeLinks       String?   @db.Text // JSON array: ["https://...","https://..."]
+  translationType  String? // deprecated — لم يعد مستخدماً
+  notes            String?   @db.Text
+  status           String    @default("open") // open | accepted | completed | cancelled
+  acceptedBy       String?
+  acceptedUser     User?     @relation("AcceptedRequests", fields: [acceptedBy], references: [id], onDelete: SetNull)
+  acceptedAt       DateTime?
+  modId            String?
+  mod              Mod?      @relation(fields: [modId], references: [id], onDelete: SetNull)
+  interestCount    Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([acceptedBy])
+  @@index([gameName])
+}
+
+  // ===== سجل النشاطات (Audit Log) =====
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?

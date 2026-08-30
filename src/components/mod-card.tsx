@@ -140,13 +140,10 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
           <h3 className="w-full text-sm font-bold leading-snug text-foreground line-clamp-2 min-h-[2.5em] transition-colors group-hover:text-primary">
             {mod.name}
           </h3>
-          {mod.isOriginalWork === false ? (
-            <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">
+          {mod.isOriginalWork === false && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
               منشور من مصدر خارجي{mod.originalAuthor ? ` • ${mod.originalAuthor}` : ''}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] font-bold text-green-600">
-              عمل أصلي
             </span>
           )}
 

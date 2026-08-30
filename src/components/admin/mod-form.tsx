@@ -93,12 +93,15 @@ interface CustomTab {
   content: string
   visible: boolean
 }
-interface Game {
+interface SeriesOpt {
   id: string
   name: string
   slug: string
-  platform: string
-  categories: { id: string; name: string; slug: string }[]
+}
+interface TeamOpt {
+  id: string
+  name: string
+  slug: string
 }
 
 interface ModFormProps {
@@ -129,8 +132,9 @@ export default function ModForm({ modId }: ModFormProps) {
 
   const [saving, setSaving] = useState(false)
   const [loadingMod, setLoadingMod] = useState(isEdit)
-  const [games, setGames] = useState<Game[]>([])
-  const [loadingGames, setLoadingGames] = useState(true)
+  const [seriesList, setSeriesList] = useState<SeriesOpt[]>([])
+  const [teamsList, setTeamsList] = useState<TeamOpt[]>([])
+  const [loadingMeta, setLoadingMeta] = useState(true)
   const [workflowStatus, setWorkflowStatus] = useState('DRAFT')
   const [workflowHistory, setWorkflowHistory] = useState<any[]>([])
   const [versionHistory, setVersionHistory] = useState<any[]>([])
@@ -150,8 +154,8 @@ export default function ModForm({ modId }: ModFormProps) {
   const [series, setSeries] = useState('')
   const [translationTeam, setTranslationTeam] = useState('')
   const [translationType, setTranslationType] = useState('تعريب غير رسمي')
-  const [gameId, setGameId] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+  const [seriesId, setSeriesId] = useState('')
+  const [teamId, setTeamId] = useState('')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
@@ -176,33 +180,25 @@ export default function ModForm({ modId }: ModFormProps) {
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
 
-  // تحميل الألعاب
+  // تحميل السلاسل والفرق — للعلاقات (dropdown) + للإكمال التلقائي
   useEffect(() => {
-    fetch('/api/games?sort=name&limit=100')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.data) {
-          setGames(data.data.map((g: Game & { categories?: any }) => ({
-            ...g,
-            categories: g.categories || [],
-          })))
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingGames(false))
-  }, [])
-
-  // تحميل السلاسل والفرق الحالية للإكمال التلقائي
-  useEffect(() => {
+    setLoadingMeta(true)
     Promise.all([
       fetch('/api/series').then((r) => r.json()),
       fetch('/api/teams').then((r) => r.json()),
     ])
       .then(([seriesData, teamsData]) => {
-        if (seriesData?.data) setExistingSeries(seriesData.data.map((s: any) => s.name))
-        if (teamsData?.data) setExistingTeams(teamsData.data.map((t: any) => t.name))
+        if (seriesData?.data) {
+          setSeriesList(seriesData.data.map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })))
+          setExistingSeries(seriesData.data.map((s: any) => s.name))
+        }
+        if (teamsData?.data) {
+          setTeamsList(teamsData.data.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })))
+          setExistingTeams(teamsData.data.map((t: any) => t.name))
+        }
       })
       .catch(() => {})
+      .finally(() => setLoadingMeta(false))
   }, [])
 
   // جلب دور المستخدم
@@ -235,8 +231,8 @@ export default function ModForm({ modId }: ModFormProps) {
         setSeries(m.series || '')
         setTranslationTeam(m.translationTeam || '')
         setTranslationType(m.translationType || 'تعريب غير رسمي')
-        setGameId(m.gameId || '')
-        setCategoryId(m.categoryId || '')
+        setSeriesId((m as any).seriesId || '')
+        setTeamId((m as any).teamId || '')
         setThumbnailUrl(m.thumbnailUrl || '')
         setImageUrl(m.imageUrl || '')
         setGalleryUrls(m.galleryUrls ? m.galleryUrls.split(',').filter(Boolean) : [])
@@ -283,22 +279,7 @@ export default function ModForm({ modId }: ModFormProps) {
       .finally(() => setLoadingMod(false))
   }, [modId])
 
-  const selectedGame = games.find((g) => g.id === gameId)
 
-  // تحميل أقسام اللعبة المختارة
-  useEffect(() => {
-    if (!selectedGame?.slug) return
-    fetch(`/api/games/${selectedGame?.slug}/categories`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.categories) {
-          setGames((prev) => prev.map((g) =>
-            g.id === gameId ? { ...g, categories: data.categories } : g
-          ))
-        }
-      })
-      .catch(() => {})
-  }, [gameId])
 
   // جلب بيانات فيديو يوتيوب تلقائياً
   const onFetchVideoMetadata = async (groupIdx: number, videoIdx: number, videoUrl: string) => {
@@ -390,18 +371,15 @@ export default function ModForm({ modId }: ModFormProps) {
   // ===== Save =====
   const onSave = async () => {
     const _name = (name || '').trim()
-    const _summary = (summary || '').trim()
     const _description = (description || '').trim()
-    const _gameId = (gameId || '').trim()
-    if (!_name || !_summary || !_description || !_gameId) {
+    if (!_name || !_description) {
       const missing: string[] = []
       if (!_name) missing.push('الاسم')
-      if (!_summary) missing.push('الوصف المختصر')
       if (!_description) missing.push('الوصف الكامل')
-      if (!_gameId) missing.push('اللعبة')
       toast({ title: 'بيانات ناقصة', description: `الحقول التالية مطلوبة: ${missing.join('، ')}`, variant: 'destructive' })
       return
     }
+    const _summary = (summary || '').trim() || _description.slice(0, 150) || _name
     if (!(thumbnailUrl || '').trim() || !(imageUrl || '').trim()) {
       toast({ title: 'صور ناقصة', description: 'الصورة الرئيسية والصورة المصغّرة مطلوبتان', variant: 'destructive' })
       return
@@ -412,7 +390,7 @@ export default function ModForm({ modId }: ModFormProps) {
       name: _name, summary: _summary, description: _description, changelog, installGuide, arabicTitle, translationScope, compatibility,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       series, translationTeam, translationType,
-      gameId: _gameId, categoryId: categoryId || null,
+      seriesId: seriesId || null, teamId: teamId || null,
       thumbnailUrl, imageUrl, galleryUrls,
       version, fileSize, fileFormat,
       releaseDate: releaseDate || null,
@@ -455,7 +433,7 @@ export default function ModForm({ modId }: ModFormProps) {
     }
   }
 
-  if (loadingMod || loadingGames) {
+  if (loadingMod || loadingMeta) {
     return (
       <div className="grid place-items-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -514,37 +492,15 @@ export default function ModForm({ modId }: ModFormProps) {
         <Field label="نطاق التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
           <Input value={translationScope} onChange={(e) => setTranslationScope(e.target.value)} placeholder="مثال: العالم العربي" />
         </Field>
-        <Field label="الوصف المختصر *" required>
-          <Input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="جملة واحدة تصف التعريب" maxLength={200} />
-          <p className="text-xs text-muted-foreground">{summary.length}/200</p>
-        </Field>
         <Field label="الوصف الكامل *" required hint="يدعم Markdown — استخدم ## للعناوين و - للقوائم">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={8} placeholder="## عن هذا التعريب\n\n..." />
         </Field>
         <Field label="الوسوم" hint="افصل بينها بفاصلة">
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Bugfix, UI, Gameplay" />
         </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="السلسلة">
-            <Input value={series} onChange={(e) => setSeries(e.target.value)} placeholder="اختر أو اكتب اسم السلسلة" list="series-list" />
-            <datalist id="series-list">
-              {existingSeries.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label="فريق التعريب">
-            <Input value={translationTeam} onChange={(e) => setTranslationTeam(e.target.value)} placeholder="اختر أو اكتب اسم الفريق" list="teams-list" />
-            <datalist id="teams-list">
-              {existingTeams.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label="نوع التعريب" hint="اكتب أي نوع: رسمي، غير رسمي، واجهة، أسلحة، إلخ">
-            <Input value={translationType} onChange={(e) => setTranslationType(e.target.value)} placeholder="مثال: تعريب رسمي - واجهة وقوالب" />
-          </Field>
-        </div>
+        <Field label="نوع التعريب" hint="اكتب أي نوع: رسمي، غير رسمي، واجهة، أسلحة، إلخ">
+          <Input value={translationType} onChange={(e) => setTranslationType(e.target.value)} placeholder="مثال: تعريب رسمي - واجهة وقوالب" />
+        </Field>
       </Section>
 
       {/* ===== 2. الصور — Supabase Storage (mods bucket) + قص اختياري ===== */}
@@ -637,33 +593,32 @@ export default function ModForm({ modId }: ModFormProps) {
         </div>
       </Section>
 
-      {/* ===== 4. العلاقات ===== */}
+      {/* ===== 4. العلاقات — السلسلة وفريق التعريب (تظهر أي سلسلة/فريق جديد تلقائياً) ===== */}
       <Section title="العلاقات">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="اللعبة *" required>
+          <Field label="السلسلة" hint="اختر السلسلة — أي سلسلة جديدة تضاف ستظهر هنا تلقائياً">
             <select
-              value={gameId}
-              onChange={(e) => { setGameId(e.target.value); setCategoryId('') }}
+              value={seriesId}
+              onChange={(e) => setSeriesId(e.target.value)}
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
             >
-              <option value="">— اختر اللعبة —</option>
-              {games.map((g) => (
-                <option key={g.id} value={g.id}>
-                  [{g.platform}] {g.name}
+              <option value="">— بدون سلسلة —</option>
+              {seriesList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="القسم">
+          <Field label="فريق التعريب" hint="اختر الفريق — أي فريق جديد يضاف سيظهر هنا تلقائياً">
             <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-              disabled={!selectedGame}
             >
-              <option value="">— بدون قسم —</option>
-              {selectedGame?.categories?.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              <option value="">— بدون فريق —</option>
+              {teamsList.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           </Field>

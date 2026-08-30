@@ -5,6 +5,7 @@ import { getTierLabel } from '@/lib/tiers'
 import { TierBadge } from '@/components/tier-badge'
 import { CreatorBadge } from '@/components/creator-badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Trophy, Medal, Star } from 'lucide-react'
 
@@ -55,9 +56,7 @@ export default async function CreatorsLeaderboard() {
       </div>
 
       {ranked.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">لا يوجد مُعَرِّبون بعد</CardContent>
-        </Card>
+        <EmptyState icon="users" title="لا يوجد مُعَرِّبون بعد" description="كن أول مُعَرِّب ينضم للمنصة!" action={{ label: 'كن معرّباً', href: '/become-creator' }} />
       ) : (
         <div className="space-y-4">
           {ranked.map((item, index) => (

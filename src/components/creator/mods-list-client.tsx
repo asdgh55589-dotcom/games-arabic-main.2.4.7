@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { EmptyState } from '@/components/ui/empty-state'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Edit, Trash2, Archive, Send, Eye, Download, Star, Clock, CheckCircle, XCircle, FileText, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -61,7 +62,7 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
   const [page, setPage] = useState(1)
 
   const fetchMods = useCallback(
-    async (pageNum = 1) => {
+    async (pageNum = 1, signal?: AbortSignal) => {
       setLoading(true)
       try {
         const params = new URLSearchParams()
@@ -69,7 +70,7 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
         if (query) params.set('q', query)
         params.set('page', pageNum.toString())
         params.set('limit', '20')
-        const res = await fetch(`/api/creator/mods?${params.toString()}`, { cache: 'no-store' })
+        const res = await fetch(`/api/creator/mods?${params.toString()}`, { cache: 'no-store', signal })
         const data = await res.json()
         if (res.ok) {
           setMods(data.data?.mods || [])
@@ -77,16 +78,21 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
           setPage(pageNum)
         }
       } catch (error) {
-        console.error('Failed to fetch mods:', error)
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to fetch mods:', error)
+          // يمكن إضافة toast هنا لكن نكتفي بالسجل لتجنب الإزعاج
+        }
       } finally {
-        setLoading(false)
+        if (!signal?.aborted) setLoading(false)
       }
     },
     [status, query]
   )
 
   useEffect(() => {
-    fetchMods(1)
+    const controller = new AbortController()
+    fetchMods(1, controller.signal)
+    return () => controller.abort()
   }, [fetchMods])
 
   const handleStatusChange = (newStatus: string) => {
@@ -161,16 +167,12 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
       ) : mods.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">لا توجد تعريبات</h3>
-            <p className="text-muted-foreground mb-4">{query ? 'لم يتم العثور على نتائج مطابقة لبحثك' : 'ابدأ بإنشاء أول تعريب لك'}</p>
-            <Link href="/creator/mods/new">
-              <Button>+ إنشاء تعريب جديد</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon="inbox"
+          title="لا توجد تعريبات بعد"
+          description={query ? 'لم يتم العثور على نتائج مطابقة لبحثك' : 'ابدأ بإنشاء أول تعريب لك وشاركه مع المجتمع'}
+          action={{ label: 'إنشاء تعريب جديد', href: '/creator/mods/new' }}
+        />
       ) : (
         <div className="space-y-3">
           {mods.map((mod) => (
@@ -265,6 +267,11 @@ function ModCard({ mod, onAction }: { mod: ModItem; onAction: (id: string, actio
               {mod.workflowStatus === 'DRAFT' && (
                 <DropdownMenuItem onClick={() => onAction(mod.id, 'submit')}>
                   <Send className="h-4 w-4 ml-2" /> إرسال للمراجعة
+                </DropdownMenuItem>
+              )}
+              {mod.workflowStatus === 'REJECTED' && (
+                <DropdownMenuItem onClick={() => onAction(mod.id, 'resubmit')}>
+                  <Send className="h-4 w-4 ml-2" /> 🔄 إعادة إرسال
                 </DropdownMenuItem>
               )}
               {mod.workflowStatus === 'PUBLISHED' && (
