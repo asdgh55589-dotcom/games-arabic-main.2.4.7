@@ -4,10 +4,10 @@ import { db } from '@/lib/db'
 import { ok, notFound, fail, unauthorized } from '@/lib/api-response'
 
 interface RouteParams {
-  params: Promise<{ teamId: string }>
+  params: Promise<{ slug: string }>
 }
 
-// POST /api/teams/[teamId]/leave — مغادرة فريق مرتبط
+// POST /api/teams/[slug]/leave — مغادرة فريق مرتبط (يدعم id أو slug)
 export async function POST(req: NextRequest, { params }: RouteParams) {
   let user: Awaited<ReturnType<typeof requireAuth>>
   try {
@@ -19,18 +19,26 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return unauthorized('يجب تسجيل الدخول أولاً')
   }
 
-  const { teamId } = await params
+  const { slug: teamIdOrSlug } = await params
 
-  if (!teamId || typeof teamId !== 'string') {
+  if (!teamIdOrSlug || typeof teamIdOrSlug !== 'string') {
     return fail('VALIDATION_ERROR', 'معرّف الفريق غير صالح', 422)
   }
 
-  // Verify team exists
-  const team = await db.team.findUnique({
-    where: { id: teamId },
+  // Supports both teamId (cuid) and slug — try id first then slug
+  let team = await db.team.findUnique({
+    where: { id: teamIdOrSlug },
     select: { id: true, name: true, ownerId: true },
   })
+  if (!team) {
+    team = await db.team.findFirst({
+      where: { slug: teamIdOrSlug },
+      select: { id: true, name: true, ownerId: true },
+    })
+  }
   if (!team) return notFound('الفريق غير موجود')
+
+  const teamId = team.id
 
   // Find the user's membership in this team
   const membership = await db.teamMembership.findFirst({
@@ -49,16 +57,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return fail('VALIDATION_ERROR', 'لا يمكنك مغادرة الفريق لأنك المالك. يجب نقل الملكية أولاً قبل المغادرة.', 422)
   }
 
-  // Store old data for notification
   const oldUsername = user.username
 
-  // Revert to phantom (set userId to null, preserve name/avatar/bio)
   await db.teamMembership.update({
     where: { id: membership.id },
     data: { userId: null },
   })
 
-  // Audit log
   try {
     const { logAction } = await import('@/lib/audit')
     await logAction({
@@ -77,7 +82,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     console.error('[LeaveTeam] Failed to log action:', err)
   }
 
-  // Notify team owner
   if (team.ownerId) {
     try {
       await db.notification.create({
