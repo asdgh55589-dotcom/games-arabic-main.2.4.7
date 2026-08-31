@@ -18,6 +18,7 @@ import { jwtVerify } from 'jose'
 import { updateSession } from '@/lib/supabase/middleware'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { getTokenVersionCache } from '@/lib/token-version-cache'
+import { withRedisCircuit, isCircuitOpen } from '@/lib/redis-circuit-breaker'
 import { logger } from '@/lib/logger'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
@@ -47,20 +48,35 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
 
-    // Validate tokenVersion against Redis cache (Edge-safe) — مع timeout 1s
-    // If cache has a value and it doesn't match → session revoked
-    // لو Redis معلق، نتجاهل الفحص (fail-open) بدل ما نعلق الـ middleware
+    // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker
+    // إذا كان Redis معطلاً، نستخدم fail-closed للمسارات الإدارية (أمان > توفر)
     if (tv !== undefined && userId) {
       try {
-        const cachedTv = await Promise.race([
-          getTokenVersionCache(userId),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
-        ])
+        const cachedTv = await withRedisCircuit(
+          async () =>
+            await Promise.race([
+              getTokenVersionCache(userId),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+            ]),
+          async () => {
+            // Fallback عند فشل Redis — لا يمكن التحقق
+            // نُرجع null لكن isCircuitOpen() سيكون true، فيُعامل كـ unknown
+            return null
+          }
+        )
+
+        // إذا كان Circuit مفتوحاً (Redis معطل) و tv موجود — نتحقق من نوع المسار
+        // سيتم التعامل مع fail-closed في proxy() لاحقاً عبر isCircuitOpen()،
+        // لكن هنا نكتفي بالتحقق الصارم عند وجود قيمة في الكاش
         if (cachedTv !== null && cachedTv !== tv) {
-          return null  // Session revoked — tv mismatch
+          return null // Session revoked — tv mismatch
         }
+
+        // إذا كان cachedTv === null ولا يوجد fallback، قد يكون إما:
+        // - لا يوجد إبطال سابق (طبيعي) → سماح
+        // - Redis معطل → سيُكشف عبر isCircuitOpen() في proxy() للمسارات الإدارية
       } catch {
-        // Redis فشل — نسمح بالمرور (لا نكسر تسجيل الدخول بسبب cache)
+        // Redis فشل — مع circuit breaker، نسمح مؤقتاً لكن isCircuitOpen() سيكشف الحالة
       }
     }
 
@@ -202,6 +218,16 @@ export async function proxy(req: NextRequest) {
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
     const rolePayload = await getRoleFromCookie(req)
+    // FAIL-CLOSED: إذا كان Redis معطلاً ولا يمكن التحقق من tokenVersion لمستخدم إداري — نرفض الوصول
+    if (rolePayload?.role && rolePayload.tv !== undefined && isCircuitOpen()) {
+      console.error('[Proxy] Cannot verify tokenVersion for admin route — rejecting (fail-closed)', { path: pathname, userId: rolePayload.userId })
+      const loginUrl = new URL('/admin/login', req.url)
+      loginUrl.searchParams.set('from', pathname)
+      const redirectRes = NextResponse.redirect(loginUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'redis_unavailable')
+      return redirectRes
+    }
     if (!rolePayload?.role) {
       const loginUrl = new URL('/admin/login', req.url)
       loginUrl.searchParams.set('from', pathname)
@@ -227,6 +253,11 @@ export async function proxy(req: NextRequest) {
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
     const rolePayload = await getRoleFromCookie(req)
+    // FAIL-CLOSED لـ API الإداري عند فشل Redis
+    if (rolePayload?.role && rolePayload.tv !== undefined && isCircuitOpen()) {
+      console.error('[Proxy] Cannot verify tokenVersion for /api/admin — rejecting', { path: pathname, userId: rolePayload.userId })
+      return NextResponse.json({ error: 'Service temporarily unavailable — please re-login', code: 'REDIS_UNAVAILABLE' }, { status: 503 })
+    }
     if (!rolePayload?.role) {
       const res = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       if (req.cookies.has(ROLE_COOKIE_NAME)) {
