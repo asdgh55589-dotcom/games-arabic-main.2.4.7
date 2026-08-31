@@ -32,7 +32,6 @@ import { createClient } from './supabase/server'
 import { setTokenVersionCache } from './token-version-cache'
 import { logger } from './logger'
 import { authenticateApiKey } from './api-key-auth'
-import { generateUsernameFromEmail } from './username-generator'
 
 export const getJWTSecret = (): Uint8Array => {
   const secret = process.env.JWT_SECRET
@@ -195,56 +194,6 @@ export async function getSession(): Promise<SessionUser | null> {
   }
 }
 
-/**
- * مزامنة مستخدم Supabase مع Neon DB — ينشئ أو يحدث الملف الشخصي
- */
-export async function syncNeonUser(supabaseUser: {
-  id: string
-  email?: string
-  user_metadata?: Record<string, unknown>
-}): Promise<{ id: string; username: string; email: string; role: string; avatarUrl: string | null } | null> {
-  try {
-    const email = supabaseUser.email || ''
-    const username = (supabaseUser.user_metadata?.username as string) || (email ? await generateUsernameFromEmail(email) : 'مستخدم')
-
-    const existing = await db.user.findFirst({
-      where: {
-        OR: [
-          { supabaseId: supabaseUser.id },
-          { email: email.toLowerCase() },
-        ],
-      },
-      select: { id: true, username: true, email: true, role: true, avatarUrl: true, supabaseId: true },
-    })
-
-    if (existing) {
-      // تحديث supabaseId لو مش موجود (التسجيل قبل التفعيل)
-      if (!existing.supabaseId) {
-        const updated = await db.user.update({
-          where: { id: existing.id },
-          data: { supabaseId: supabaseUser.id },
-        })
-        return { id: updated.id, username: updated.username, email: updated.email, role: updated.role, avatarUrl: updated.avatarUrl }
-      }
-      return existing
-    }
-
-    // إنشاء مستخدم جديد
-    const newUser = await db.user.create({
-      data: {
-        supabaseId: supabaseUser.id,
-        username,
-        email: email.toLowerCase(),
-        role: 'member',
-      },
-    })
-
-    return { id: newUser.id, username: newUser.username, email: newUser.email, role: newUser.role, avatarUrl: newUser.avatarUrl }
-  } catch {
-    return null
-  }
-}
-
 // ===== Role cookie helpers =====
 
 /** إنشاء role cookie — بيحط الـ userId + role + tokenVersion في httpOnly cookie موقّع */
@@ -352,15 +301,6 @@ export async function requireCreatorStudio(req: NextRequest): Promise<{ user: Se
   }
 }
 
-/** يتأكد إن المستخدم ناشر أو أعلى (publisher | moderator | admin | manager | owner) — يطابق mod.republishExternal — لا يتضمن creator (creator لا يستطيع إعادة نشر خارجي) */
-export async function requirePublisher(): Promise<SessionUser> {
-  const user = await requireAuth()
-  if (!hasRoleAtLeast(user.role, 'publisher')) {
-    throw new AuthError('Forbidden — publisher access required', 403)
-  }
-  return user
-}
-
 /** يتأكد إن المستخدم مدير أو أعلى (manager | owner) — يطابق site.settings/system.apiKeys */
 export async function requireManager(): Promise<SessionUser> {
   const user = await requireAuth()
@@ -441,28 +381,6 @@ export async function invalidateUserSessions(userId: string): Promise<number> {
   }
 }
 
-/** فحص IP ضد IpBan — server-side فقط (مش Edge) */
-export async function checkIpBan(ip: string): Promise<{
-  banned: boolean
-  reason?: string | null
-  expiresAt?: Date | null
-}> {
-  try {
-    const ban = await db.ipBan.findUnique({
-      where: { ipAddress: ip },
-    })
-    if (!ban) return { banned: false }
-    // لو مؤقت وانتهى → فعلياً مش محظور
-    if (ban.expiresAt && ban.expiresAt <= new Date()) {
-      return { banned: false }
-    }
-    return { banned: true, reason: ban.reason, expiresAt: ban.expiresAt }
-  } catch (err) {
-    logger.error('[checkIpBan] failed', err)
-    return { banned: false }
-  }
-}
-
 /** استخراج IP من طلب Next.js */
 export function getClientIp(req: { headers: Headers }): string {
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -485,42 +403,6 @@ export class AuthError extends Error {
 
 // ===== Middleware helpers (Edge runtime compatible) =====
 
-/** قراءة الـ role من Request cookies أو API Key (للـ middleware — Edge runtime) */
-export async function getRoleFromRequestCookies(req: NextRequest): Promise<UserRole | null> {
-  // أولاً: فحص API Key في Authorization header
-  const authHeader = req.headers.get('authorization')
-  if (authHeader) {
-    const key = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim()
-    if (key && key.startsWith('sk_live_')) {
-      // في Edge runtime، نتحقق من المفتاح بشكل مبسط
-      // التحقق الكامل يحدث في getSession() عبر Server-side
-      try {
-        const apiKey = await db.apiKey.findUnique({
-          where: { key },
-          select: { role: true, isActive: true, expiresAt: true },
-        })
-        if (apiKey && apiKey.isActive) {
-          if (!apiKey.expiresAt || apiKey.expiresAt > new Date()) {
-            return apiKey.role as UserRole
-          }
-        }
-      } catch {
-        // نكمل مع cookie
-      }
-    }
-  }
-
-  // ثانياً: فحص role cookie
-  const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
-  if (!token) return null
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload.role as UserRole
-  } catch {
-    return null
-  }
-}
-
 /** قراءة userId من الـ role cookie — رخيصة (JWT محلي، بدون شبكة أو DB) — للعدادات */
 export async function getUserIdFromRequestCookies(req: Request): Promise<string | null> {
   try {
@@ -534,9 +416,6 @@ export async function getUserIdFromRequestCookies(req: Request): Promise<string 
     return null
   }
 }
-
-// re-export cookie name for middleware
-export const ROLE_COOKIE = ROLE_COOKIE_NAME
 
 // ===== Supabase Auth admin helpers =====
 
@@ -571,51 +450,6 @@ export async function createSupabaseAuthUser(
     return data.id as string
   } catch {
     return null
-  }
-}
-
-/** تحديث كلمة مرور مستخدم في Supabase Auth */
-export async function updateSupabaseAuthPassword(
-  supabaseId: string,
-  newPassword: string
-): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey || serviceRoleKey === 'REPLACE_WITH_SERVICE_ROLE_KEY') return false
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${supabaseId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-      body: JSON.stringify({ password: newPassword }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-/** حذف مستخدم من Supabase Auth */
-export async function deleteSupabaseAuthUser(supabaseId: string): Promise<boolean> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey || serviceRoleKey === 'REPLACE_WITH_SERVICE_ROLE_KEY') return false
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${supabaseId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-    })
-    return res.ok
-  } catch {
-    return false
   }
 }
 
