@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return ok({ ok: true })
     }
 
-    const sessionData = await redisGet<string>(`telegram_auth:${sessionToken}`)
+    const sessionData = await redisGet<string>(`telegram_session:${sessionToken}`)
     if (!sessionData) {
       await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')
       return ok({ ok: true })
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return ok({ ok: true })
     }
 
-    await redisSet(`telegram_auth:${sessionToken}`, JSON.stringify({
+    await redisSet(`telegram_session:${sessionToken}`, JSON.stringify({
       used: true,
       expiresAt: session.expiresAt,
       userData: {
