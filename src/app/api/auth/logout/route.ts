@@ -1,33 +1,59 @@
-import { clearRoleCookie, getSession } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { clearRoleCookie, getSession, requireAuth, invalidateUserSessions } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { logAction } from '@/lib/audit'
-import { ok, internalError } from '@/lib/api-response'
+import { ok } from '@/lib/api-response'
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  let user: Awaited<ReturnType<typeof getSession>>
   try {
-    const user = await getSession()
-    if (user) {
-      await logAction({
-        userId: user.id,
-        username: user.username,
-        action: 'logout',
-        entity: 'user',
-        entityId: user.id,
-      })
-    }
+    user = await requireAuth()
+  } catch {
+    // المستخدم غير مسجل دخول أصلاً — امسح الكوكيز بحذر
+    try {
+      await clearRoleCookie()
+    } catch {}
+    try {
+      const supabase = await createClient()
+      await supabase.auth.signOut()
+    } catch {}
+    return ok({ message: 'تم تسجيل الخروج بنجاح' })
+  }
 
+  // CRITICAL: إبطال كل الجلسات عبر كل الأجهزة — يزيد tokenVersion في DB و Redis
+  try {
+    await invalidateUserSessions(user.id)
+  } catch (e) {
+    console.error('[Logout] invalidateUserSessions failed:', e)
+  }
+
+  // مسح كوكي الجهاز الحالي
+  try {
+    await clearRoleCookie()
+  } catch (e) {
+    console.error('[Logout] clearRoleCookie failed:', e)
+  }
+
+  // تسجيل خروج Supabase
+  try {
     const supabase = await createClient()
     const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      console.error('[auth/logout] Supabase signOut failed:', error.message)
-    }
-
-    await clearRoleCookie()
-
-    return ok({ success: true })
-  } catch (err) {
-    console.error('[auth/logout] failed:', err instanceof Error ? err.message : 'unknown error')
-    return internalError('Failed to logout')
+    if (error) console.error('[Logout] Supabase signOut failed:', error.message)
+  } catch (e) {
+    console.error('[Logout] Supabase signOut failed:', e)
   }
+
+  // سجل تدقيق
+  try {
+    await logAction({
+      userId: user.id,
+      username: user.username,
+      action: 'logout',
+      entity: 'user',
+      entityId: user.id,
+      details: JSON.stringify({ username: user.username, allSessionsInvalidated: true }),
+    })
+  } catch {}
+
+  return ok({ message: 'تم تسجيل الخروج بنجاح', success: true })
 }
