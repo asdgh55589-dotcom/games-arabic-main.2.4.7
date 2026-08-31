@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
+import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/username-generator'
 
 // تحديد الـ base URL بناءً على الـ request
 function getBaseUrl(req: NextRequest): string {
@@ -57,11 +58,15 @@ export async function GET(req: NextRequest) {
     const fullName = supabaseUser.user_metadata?.full_name
       || supabaseUser.user_metadata?.name
       || ''
-    const username = supabaseUser.user_metadata?.username
+    let username = supabaseUser.user_metadata?.username
       || supabaseUser.user_metadata?.preferred_username
       || fullName
-      || email.split('@')[0]
-      || 'مستخدم'
+      || ''
+    if (!username) {
+      username = await generateUsernameFromEmail(email)
+    } else {
+      username = await generateUniqueUsername(username)
+    }
 
     // الخطوة 1: البحث عن المستخدم في Neon DB عبر supabaseId
     let neonUser = await db.user.findFirst({
@@ -123,18 +128,8 @@ export async function GET(req: NextRequest) {
           return NextResponse.redirect(new URL('/?error=email_exists_link_accounts', baseUrl))
         }
 
-        // الخطوة 4: إنشاء مستخدم جديد + OAuthAccount (داخل transaction)
-        let finalUsername = username
-        let counter = 1
-        while (true) {
-          const existing = await db.user.findUnique({
-            where: { username: finalUsername },
-            select: { id: true },
-          })
-          if (!existing) break
-          finalUsername = `${username}${counter}`
-          counter++
-        }
+        // الخطوة 4: إنشاء مستخدم جديد + OAuthAccount (داخل transaction) — username أصبح فريداً مسبقاً عبر generateUniqueUsername
+        const finalUsername = username
 
         neonUser = await db.$transaction(async (tx) => {
           const user = await tx.user.create({

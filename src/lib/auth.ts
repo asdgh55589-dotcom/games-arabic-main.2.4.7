@@ -32,6 +32,7 @@ import { createClient } from './supabase/server'
 import { setTokenVersionCache } from './token-version-cache'
 import { logger } from './logger'
 import { authenticateApiKey } from './api-key-auth'
+import { generateUsernameFromEmail } from './username-generator'
 
 export const getJWTSecret = (): Uint8Array => {
   const secret = process.env.JWT_SECRET
@@ -204,7 +205,7 @@ export async function syncNeonUser(supabaseUser: {
 }): Promise<{ id: string; username: string; email: string; role: string; avatarUrl: string | null } | null> {
   try {
     const email = supabaseUser.email || ''
-    const username = (supabaseUser.user_metadata?.username as string) || email.split('@')[0] || 'مستخدم'
+    const username = (supabaseUser.user_metadata?.username as string) || (email ? await generateUsernameFromEmail(email) : 'مستخدم')
 
     const existing = await db.user.findFirst({
       where: {

@@ -4,6 +4,7 @@ import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
 import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
 import { ok, validationFail } from '@/lib/api-response'
+import { generateUniqueUsername } from '@/lib/username-generator'
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 
@@ -153,18 +154,9 @@ async function performLogin(userData: {
           },
         }).catch(() => {})
       } else {
-        // Step 3: Create new user + OAuthAccount (handle concurrent creation with upsert)
-        let finalUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
-        let counter = 1
-        while (true) {
-          const existing = await db.user.findUnique({
-            where: { username: finalUsername },
-            select: { id: true },
-          })
-          if (!existing) break
-          finalUsername = `${username || 'telegram_user'}${counter}`
-          counter++
-        }
+        // Step 3: Create new user + OAuthAccount — use unified generator
+        const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
+        const finalUsername = await generateUniqueUsername(baseUsername)
 
         const user = await db.user.upsert({
           where: { email },

@@ -88,12 +88,19 @@ export async function POST(req: NextRequest) {
     const currentUser = await requireAdmin()
     const body = await req.json()
 
-    if (!body.username || !body.email) {
-      return validationFail({ message: 'username, email مطلوبة' })
+    if (!body.email) {
+      return validationFail({ message: 'البريد مطلوب' })
+    }
+
+    // استخدام username المُعطى أو توليده من البريد
+    let username = body.username
+    if (!username) {
+      const { generateUsernameFromEmail } = await import('@/lib/username-generator')
+      username = await generateUsernameFromEmail(body.email)
     }
 
     const existing = await db.user.findFirst({
-      where: { OR: [{ username: body.username }, { email: body.email }] },
+      where: { OR: [{ username }, { email: body.email }] },
     })
     if (existing) {
       return validationFail({ message: 'اسم المستخدم أو البريد مستخدم بالفعل' })
@@ -106,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.create({
       data: {
-        username: body.username,
+        username,
         email: body.email,
         avatarUrl: body.avatarUrl || null,
         bio: body.bio || null,

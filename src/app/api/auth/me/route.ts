@@ -47,11 +47,13 @@ export async function GET() {
           return ok({ user })
         }
 
-        // المستخدم جديد — أنشئ ملف شخصي
+        // المستخدم جديد — أنشئ ملف شخصي (استخدم مولد موحد)
+        const { generateUsernameFromEmail } = await import('@/lib/username-generator')
+        const newUsername = supabaseUser.user_metadata?.username || (supabaseUser.email ? await generateUsernameFromEmail(supabaseUser.email) : 'مستخدم')
         const newUser = await db.user.create({
           data: {
             supabaseId: supabaseUser.id,
-            username: supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'مستخدم',
+            username: newUsername,
             email: supabaseUser.email || '',
             role: 'member',
           },

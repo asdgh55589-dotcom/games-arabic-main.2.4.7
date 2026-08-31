@@ -702,15 +702,15 @@ export function ModDetailPage() {
             const hasRelated = filteredRelated.length > 0
             if (!relatedLoading && !hasRelated) return null
             return (
-              <div dir="rtl" className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8 mb-6 sm:mb-8 pb-6">
-                <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold">قد يعجبك أيضاً</h2>
+              <div dir="rtl" className="px-4 sm:px-8 lg:px-16 xl:px-24 mt-8 sm:mt-10 mb-10 sm:mb-12 pb-8">
+                <h2 className="mb-5 sm:mb-6 text-lg sm:text-xl font-bold">قد يعجبك أيضاً</h2>
                 {relatedLoading ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {Array.from({ length: 4 }).map((_, i) => <ModCardSkeleton key={i} variant="compact" />)}
+                  <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => <ModCardSkeleton key={i} />)}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {filteredRelated.map((m) => <div key={m.id} className="max-w-[260px]"><ModCard mod={m} variant="compact" /></div>)}
+                  <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                    {filteredRelated.map((m) => <ModCard key={m.id} mod={m} />)}
                   </div>
                 )}
               </div>

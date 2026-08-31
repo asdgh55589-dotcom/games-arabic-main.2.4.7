@@ -5,6 +5,7 @@ import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
 import { createTelegramSession, getTelegramSession, deleteTelegramSession } from '@/lib/telegram-sessions'
 import { ok, validationFail, internalError } from '@/lib/api-response'
+import { generateUniqueUsername } from '@/lib/username-generator'
 
 export async function POST(req: NextRequest) {
   try {
@@ -140,17 +141,8 @@ async function performLogin(userData: {
           },
         }).catch(() => {})
       } else {
-        let finalUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
-        let counter = 1
-        while (true) {
-          const existing = await db.user.findUnique({
-            where: { username: finalUsername },
-            select: { id: true },
-          })
-          if (!existing) break
-          finalUsername = `${username || 'telegram_user'}${counter}`
-          counter++
-        }
+        const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
+        const finalUsername = await generateUniqueUsername(baseUsername)
 
         neonUser = await db.user.upsert({
           where: { email },
