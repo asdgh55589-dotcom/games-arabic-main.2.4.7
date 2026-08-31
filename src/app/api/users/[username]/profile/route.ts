@@ -19,6 +19,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         username: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
         avatarUrl: true,
         bannerUrl: true,
         bio: true,
@@ -192,10 +195,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       updateData.username = body.username
     }
 
-    const allowedFields = ['bio', 'websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl', 'accentColor', 'avatarUrl', 'bannerUrl', 'profileVisibility', 'hideJoinDate']
+    const allowedFields = ['displayName', 'firstName', 'lastName', 'bio', 'websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl', 'accentColor', 'avatarUrl', 'bannerUrl', 'profileVisibility', 'hideJoinDate']
     const urlFields = ['websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl']
     const booleanFields = ['hideJoinDate']
-    const nullableFields = ['avatarUrl', 'bannerUrl']
+    const nullableFields = ['avatarUrl', 'bannerUrl', 'displayName', 'firstName', 'lastName']
     const allowedVisibility = ['everyone', 'followers', 'nobody']
 
     for (const field of allowedFields) {
@@ -241,6 +244,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         username: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
         bio: true,
         websiteUrl: true,
         twitterUrl: true,

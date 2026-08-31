@@ -1,6 +1,9 @@
 export interface UserItem {
   id: string
   username: string
+  displayName: string | null
+  firstName: string | null
+  lastName: string | null
   email: string
   avatarUrl: string | null
   bio: string | null

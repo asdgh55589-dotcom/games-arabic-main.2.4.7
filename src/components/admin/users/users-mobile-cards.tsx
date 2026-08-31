@@ -56,8 +56,11 @@ export function UsersMobileCards({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="truncate text-base font-black text-white">
-                    {u.username}
+                    {u.displayName || u.username}
                   </h3>
+                  {u.displayName && (
+                    <span className="text-xs text-muted-foreground">@{u.username}</span>
+                  )}
 
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black ${role.className}`}

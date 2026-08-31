@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
     if (search) {
       where.OR = [
         { username: { contains: search } },
+        { displayName: { contains: search } },
         { email: { contains: search } },
       ]
     }
@@ -50,6 +51,9 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           username: true,
+          displayName: true,
+          firstName: true,
+          lastName: true,
           email: true,
           avatarUrl: true,
           bio: true,
@@ -114,12 +118,15 @@ export async function POST(req: NextRequest) {
     const user = await db.user.create({
       data: {
         username,
+        displayName: body.displayName || null,
+        firstName: body.firstName || null,
+        lastName: body.lastName || null,
         email: body.email,
         avatarUrl: body.avatarUrl || null,
         bio: body.bio || null,
         role,
       },
-      select: { id: true, username: true, email: true, role: true, avatarUrl: true },
+      select: { id: true, username: true, displayName: true, email: true, role: true, avatarUrl: true },
     })
 
     return ok(user)

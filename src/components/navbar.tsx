@@ -451,12 +451,12 @@ export function Navbar({ games, currentView }: NavbarProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px]">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={currentUser.avatarUrl || undefined} />
+                    <AvatarImage src={currentUser.avatarUrl || undefined} alt={(currentUser as unknown as { displayName?: string }).displayName || currentUser.username} />
                     <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-                      {currentUser.username[0]?.toUpperCase()}
+                      {((currentUser as unknown as { displayName?: string }).displayName || currentUser.username)[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline">{currentUser.username}</span>
+                  <span className="hidden md:inline">{(currentUser as unknown as { displayName?: string }).displayName || currentUser.username}</span>
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -465,6 +465,12 @@ export function Navbar({ games, currentView }: NavbarProps) {
                     <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`} className="flex items-center gap-2 flex-row-reverse">
                       <User className="h-4 w-4" />
                       الملف الشخصي
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/profile/${encodeURIComponent(currentUser.username)}/settings`} className="flex items-center gap-2 flex-row-reverse">
+                      <Settings className="h-4 w-4" />
+                      إعدادات الملف الشخصي
                     </Link>
                   </DropdownMenuItem>
                   {['owner', 'admin', 'moderator'].includes(currentUser.role) && (

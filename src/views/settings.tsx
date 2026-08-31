@@ -24,6 +24,9 @@ import { NotificationSettings } from '@/views/notification-settings'
 interface ProfileData {
   id: string
   username: string
+  displayName: string | null
+  firstName: string | null
+  lastName: string | null
   avatarUrl: string | null
   bannerUrl: string | null
   bio: string | null
@@ -87,6 +90,9 @@ export function SettingsPage() {
    const [bio, setBio] = useState('')
    const [socialLinks, setSocialLinks] = useState<Record<string, string>>({})
   const [newUsername, setNewUsername] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [twitterUrl, setTwitterUrl] = useState('')
   const [instagramUrl, setInstagramUrl] = useState('')
@@ -137,6 +143,9 @@ export function SettingsPage() {
     return (
       bio !== (profile.bio || '') ||
       newUsername !== (profile.username || '') ||
+      displayName !== (profile.displayName || '') ||
+      firstName !== (profile.firstName || '') ||
+      lastName !== (profile.lastName || '') ||
       websiteUrl !== (profile.websiteUrl || '') ||
       twitterUrl !== (profile.twitterUrl || '') ||
       instagramUrl !== (profile.instagramUrl || '') ||
@@ -149,7 +158,7 @@ export function SettingsPage() {
       hideJoinDate !== !!profile.hideJoinDate ||
       !!avatarFile || !!bannerFile || avatarRemoved || bannerRemoved
     )
-  }, [profile, bio, newUsername, websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl, accentColor, profileVisibility, hideJoinDate, avatarFile, bannerFile, avatarRemoved, bannerRemoved])
+  }, [profile, bio, newUsername, displayName, firstName, lastName, websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl, accentColor, profileVisibility, hideJoinDate, avatarFile, bannerFile, avatarRemoved, bannerRemoved])
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -177,6 +186,9 @@ export function SettingsPage() {
           setProfile(p)
           setBio(p.bio || '')
           setNewUsername(p.username || '')
+          setDisplayName(p.displayName || '')
+          setFirstName(p.firstName || '')
+          setLastName(p.lastName || '')
           setWebsiteUrl(p.websiteUrl || '')
           setTwitterUrl(p.twitterUrl || '')
           setInstagramUrl(p.instagramUrl || '')
@@ -460,6 +472,7 @@ export function SettingsPage() {
         body: JSON.stringify({
           bio,
           username: newUsername !== profile.username ? newUsername : undefined,
+          displayName, firstName, lastName,
           websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl,
           accentColor,
           avatarUrl,
@@ -567,6 +580,7 @@ export function SettingsPage() {
           body: JSON.stringify({
             bio,
             username: newUsername !== profile.username ? newUsername : undefined,
+            displayName, firstName, lastName,
             websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl,
             accentColor,
             avatarUrl,
@@ -840,9 +854,9 @@ export function SettingsPage() {
                   <div className="flex items-center gap-6">
                     <div className="relative">
                       <Avatar className="h-24 w-24 border-4" style={{ borderColor: accent, boxShadow: `0 0 20px ${accent}33` }}>
-                        <AvatarImage src={displayAvatar || undefined} />
+                        <AvatarImage src={displayAvatar || undefined} alt={displayName || profile.username} />
                         <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accent + '33', color: accent }}>
-                          {profile.username[0]?.toUpperCase()}
+                          {(displayName || profile.username)[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <button
@@ -907,11 +921,51 @@ export function SettingsPage() {
                        className="bg-background border-border"
                        placeholder="اسم المستخدم"
                      />
-                     <p className="text-xs text-muted-foreground">سيتم تحويلك للصفحة الجديدة بعد الحفظ</p>
-                   </div>
-                 </div>
+                      <p className="text-xs text-muted-foreground">سيتم تحويلك للصفحة الجديدة بعد الحفظ</p>
+                    </div>
+                  </div>
 
-                 {/* Accent Color */}
+                  {/* Display Name */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">اسم العرض</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName" className="text-sm text-muted-foreground">اسم العرض</Label>
+                        <Input
+                          id="displayName"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className="bg-background border-border"
+                          placeholder="الاسم اللي هيظهر للمستخدمين"
+                        />
+                        <p className="text-xs text-muted-foreground">هذا الاسم سيظهر للآخرين بدلاً من اسم المستخدم</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName" className="text-sm text-muted-foreground">الاسم الأول</Label>
+                          <Input
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="bg-background border-border"
+                            placeholder="الاسم الأول"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName" className="text-sm text-muted-foreground">اسم العائلة</Label>
+                          <Input
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="bg-background border-border"
+                            placeholder="اسم العائلة"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
                   <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
                    <div className="flex items-center gap-6">
@@ -932,13 +986,13 @@ export function SettingsPage() {
                          افتراضي
                        </Button>
                      </div>
-                     <div className="flex items-center gap-4">
-                       <Avatar className="h-16 w-16 border-3" style={{ borderColor: accentColor, boxShadow: `0 0 15px ${accentColor}55` }}>
-                         <AvatarImage src={displayAvatar || undefined} />
-                         <AvatarFallback className="text-xl font-bold" style={{ backgroundColor: accentColor + '33', color: accentColor }}>
-                           {profile.username[0]?.toUpperCase()}
-                         </AvatarFallback>
-                       </Avatar>
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16 border-3" style={{ borderColor: accentColor, boxShadow: `0 0 15px ${accentColor}55` }}>
+                          <AvatarImage src={displayAvatar || undefined} alt={displayName || profile.username} />
+                          <AvatarFallback className="text-xl font-bold" style={{ backgroundColor: accentColor + '33', color: accentColor }}>
+                            {(displayName || profile.username)[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                        <div>
                          <p className="text-xs text-muted-foreground">معاينة الهالة</p>
                          <p className="text-xs text-muted-foreground/70">اللون يظهر حول الأفاتار</p>

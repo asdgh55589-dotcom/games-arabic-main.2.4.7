@@ -15,7 +15,7 @@ export async function GET(
       include: {
         memberships: {
           orderBy: { joinedAt: 'desc' },
-          include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+          include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
         },
         contactLinks: { orderBy: { order: 'asc' } },
         customTabs: { where: { visible: true }, orderBy: { order: 'asc' } },

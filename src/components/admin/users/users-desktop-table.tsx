@@ -68,8 +68,11 @@ export function UsersDesktopTable({
 
                     <div>
                       <div className="font-black text-white">
-                        {u.username}
+                        {u.displayName || u.username}
                       </div>
+                      {u.displayName && (
+                        <div className="text-xs text-muted-foreground">@{u.username}</div>
+                      )}
 
                       <div className="mt-1 text-xs text-muted-foreground">
                         {u._count.mods} تعريب · {u._count.comments} تعليق

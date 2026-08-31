@@ -24,6 +24,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         username: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
         avatarUrl: true,
         bannerUrl: true,
         bio: true,

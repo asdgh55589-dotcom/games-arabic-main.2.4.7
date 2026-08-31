@@ -16,6 +16,9 @@ export async function GET() {
       select: {
         id: true,
         username: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
         bio: true,
         websiteUrl: true,
         twitterUrl: true,

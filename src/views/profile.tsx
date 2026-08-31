@@ -30,6 +30,9 @@ import type { ModSummary } from '@/lib/types'
 interface ProfileData {
   id: string
   username: string
+  displayName: string | null
+  firstName: string | null
+  lastName: string | null
   avatarUrl: string | null
   bannerUrl: string | null
   bio: string | null
@@ -109,7 +112,7 @@ export function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
 
-  useDocumentTitle(profile?.username || 'الملف الشخصي')
+  useDocumentTitle(profile?.displayName || profile?.username || 'الملف الشخصي')
 
   const fetchProfile = useCallback(async (retry = true) => {
     if (!username) { setError('لم يُحدد مستخدم'); setLoading(false); return }
@@ -310,9 +313,9 @@ export function ProfilePage() {
                   className="h-24 w-24 border-4 border-[#121212] shadow-xl"
                   style={{ boxShadow: `0 0 18px ${accentSoft}` }}
                 >
-                  <AvatarImage src={profile.avatarUrl || undefined} />
+                  <AvatarImage src={profile.avatarUrl || undefined} alt={profile.displayName || profile.username} />
                   <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accentSoft, color: accent }}>
-                    {profile.username[0]?.toUpperCase()}
+                    {(profile.displayName || profile.username)[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {/* Online status */}
@@ -331,7 +334,7 @@ export function ProfilePage() {
             {/* Name + actions */}
             <div className="flex-1 pt-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-white">{profile.username}</h1>
+                <h1 className="text-2xl font-bold text-white">{profile.displayName || profile.username}</h1>
                 <RoleBadge role={profile.role} size="sm" />
                 <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
                 <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles} showLabels size="sm" />
@@ -378,11 +381,18 @@ export function ProfilePage() {
                   </Button>
                 </Link>
                 {isOwner ? (
-                  <Link href="/settings">
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
-                      <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/settings">
+                      <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
+                        <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
+                      </Button>
+                    </Link>
+                    <Link href={`/profile/${encodeURIComponent(profile.username)}/settings`}>
+                      <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
+                        <Settings className="h-3.5 w-3.5" /> إعدادات الملف الشخصي
+                      </Button>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Button

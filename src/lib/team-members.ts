@@ -3,6 +3,7 @@ import type { TeamMembership } from '@prisma/client'
 interface MembershipUser {
   id: string
   username: string
+  displayName?: string | null
   avatar?: string | null
   avatarUrl?: string | null
 }
@@ -26,10 +27,10 @@ export function isLinkedMember(member: MembershipWithUser): boolean {
 }
 
 /**
- * اسم العرض — الحساب الحقيقي له الأولوية عند الربط
+ * اسم العرض — الحساب الحقيقي له الأولوية عند الربط (displayName أولاً)
  */
 export function getMemberDisplayName(member: MembershipWithUser): string {
-  if (member.user) return member.user.username
+  if (member.user) return (member.user.displayName as string) || member.user.username
   return member.name || 'عضو'
 }
 
