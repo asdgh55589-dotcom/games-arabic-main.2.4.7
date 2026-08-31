@@ -424,7 +424,7 @@ export function getBanStatus(user: {
 }
 
 /** زيادة tokenVersion → يُبطل كل الكوكيز القديمة */
-export async function invalidateUserSessions(userId: string): Promise<void> {
+export async function invalidateUserSessions(userId: string): Promise<number> {
   try {
     const user = await db.user.update({
       where: { id: userId },
@@ -433,8 +433,10 @@ export async function invalidateUserSessions(userId: string): Promise<void> {
     })
     // Write new tokenVersion to Redis cache for Edge middleware
     await setTokenVersionCache(userId, user.tokenVersion)
+    return user.tokenVersion
   } catch (err) {
     logger.error('[invalidateUserSessions] failed', err)
+    return -1
   }
 }
 

@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
 import { ok, unauthorized, validationFail, internalError } from '@/lib/api-response'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
+import { logAction } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   // Rate limiting: 5 attempts per 60 seconds
@@ -47,7 +50,52 @@ export async function POST(req: NextRequest) {
       return validationFail({ password: error.message })
     }
 
-    return ok({ success: true })
+    // CRITICAL: إبطال كل الجلسات الأخرى — يجبر كل الأجهزة الأخرى على إعادة التسجيل
+    try {
+      // البحث عن المستخدم في Neon عبر Supabase ID أو البريد
+      let neonUser = null as { id: string; username: string; role: string; tokenVersion: number; email: string } | null
+      try {
+        neonUser = await db.user.findFirst({
+          where: {
+            OR: [
+              { supabaseId: supabaseUser.id },
+              { email: supabaseUser.email || '' },
+            ],
+          },
+          select: { id: true, username: true, role: true, tokenVersion: true, email: true },
+        })
+      } catch {}
+
+      if (neonUser) {
+        const newTokenVersion = await invalidateUserSessions(neonUser.id)
+
+        // إعادة إصدار الكوكي للجلسة الحالية فقط — يبقى المستخدم الحالي مسجلاً
+        if (newTokenVersion !== -1) {
+          try {
+            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion)
+          } catch (e) {
+            console.error('[ChangePassword] setRoleCookie failed:', e)
+          }
+        }
+
+        // سجل تدقيق
+        try {
+          await logAction({
+            userId: neonUser.id,
+            username: neonUser.username,
+            action: 'password_changed',
+            entity: 'user',
+            entityId: neonUser.id,
+            details: JSON.stringify({ username: neonUser.username, allOtherSessionsInvalidated: true }),
+          })
+        } catch {}
+      }
+    } catch (e) {
+      console.error('[ChangePassword] session invalidation failed:', e)
+      // لا نفشل الطلب — تغيير كلمة المرور نجح حتى لو فشل الإبطال
+    }
+
+    return ok({ success: true, message: 'تم تغيير كلمة المرور بنجاح' })
   } catch (err) {
     console.error('[change-password POST] failed:', err)
     return internalError('Failed')
