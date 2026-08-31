@@ -9,11 +9,17 @@ import { generateUniqueUsername } from '@/lib/username-generator'
 
 export async function POST(req: NextRequest) {
   try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    const botName = process.env.TELEGRAM_BOT_NAME || process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'GAMES_ARABIC_BOT'
+    if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
+      console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured')
+      return internalError('خدمة Telegram غير مهيأة حالياً')
+    }
+
     const sessionToken = crypto.randomUUID()
 
     await createTelegramSession(sessionToken)
 
-    const botName = process.env.TELEGRAM_BOT_NAME || 'GAMES_ARABIC_BOT'
     const deepLink = `https://t.me/${botName}?start=${sessionToken}`
 
     return ok({ sessionToken, deepLink })
@@ -25,6 +31,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
+      console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured')
+      return internalError('خدمة Telegram غير مهيأة حالياً')
+    }
+
     const { searchParams } = new URL(req.url)
     const sessionToken = searchParams.get('token')
 

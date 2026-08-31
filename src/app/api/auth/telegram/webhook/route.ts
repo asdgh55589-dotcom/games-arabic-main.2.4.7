@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { redisGet, redisSet } from '@/lib/redis'
-import { createHmac } from 'crypto'
 import { ok, internalError } from '@/lib/api-response'
 
 export async function POST(req: NextRequest) {
@@ -20,8 +19,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
-    if (!botToken) {
-      return internalError('Bot not configured')
+    if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
+      console.error('[Telegram webhook] TELEGRAM_BOT_TOKEN not configured')
+      return internalError('خدمة Telegram غير مهيأة حالياً')
     }
 
     const message = body.message || body.callback_query?.message
@@ -58,7 +58,26 @@ export async function POST(req: NextRequest) {
       return ok({ ok: true })
     }
 
-    await redisSet(`telegram_session:${sessionToken}`, JSON.stringify({
+    // محاولة جلب صورة المستخدم من Telegram (Task 8)
+    let photoUrl: string | null = null
+    try {
+      const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${user.id}&limit=1`)
+      const photosData = await photosRes.json().catch(() => null)
+      if (photosData?.ok && photosData.result?.total_count > 0) {
+        const fileId = photosData.result.photos[0][0]?.file_id
+        if (fileId) {
+          const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`)
+          const fileData = await fileRes.json().catch(() => null)
+          if (fileData?.ok && fileData.result?.file_path) {
+            photoUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[Telegram webhook] failed to fetch photo:', e)
+    }
+
+    await redisSet(`telegram_session:${sessionToken}`, {
       used: true,
       expiresAt: session.expiresAt,
       userData: {
@@ -66,9 +85,9 @@ export async function POST(req: NextRequest) {
         firstName: user.first_name,
         lastName: user.last_name || null,
         username: user.username || null,
-        photoUrl: null,
+        photoUrl,
       },
-    }), 300)
+    }, 300)
 
     const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ')
     await sendMessage(

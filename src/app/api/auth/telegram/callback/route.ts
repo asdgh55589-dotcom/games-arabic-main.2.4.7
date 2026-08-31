@@ -2,61 +2,68 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
-import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
-import { ok, validationFail } from '@/lib/api-response'
+import { ok, validationFail, internalError } from '@/lib/api-response'
 import { generateUniqueUsername } from '@/lib/username-generator'
+import { verifyTelegramAuth, isAuthDateValid } from '@/lib/telegram-verify'
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-    if (!BOT_TOKEN) {
-      console.error('[Telegram poll] TELEGRAM_BOT_TOKEN not configured')
-      return ok({ status: 'pending', warning: 'Telegram غير مُهيأ' })
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
+      console.error('[Telegram callback] TELEGRAM_BOT_TOKEN not configured')
+      return internalError('خدمة Telegram غير مهيأة حالياً')
     }
 
-    const { searchParams } = new URL(req.url)
-    const sessionToken = searchParams.get('token')
+    const body = await req.json()
 
-    if (!sessionToken) {
-      return validationFail({ token: 'token required' })
+    // body يحتوي على بيانات Telegram Login Widget
+    const { id, first_name, last_name, username, photo_url, auth_date, hash } = body
+
+    if (!id || !hash || !auth_date) {
+      return validationFail({ message: 'بيانات Telegram غير مكتملة' })
     }
 
-    const session = await getTelegramSession(sessionToken)
-
-    if (!session) {
-      return ok({ status: 'pending' })
+    // التحقق من صحة auth_date (خلال 24 ساعة)
+    if (!isAuthDateValid(auth_date)) {
+      return validationFail({ message: 'انتهت صلاحية بيانات Telegram' })
     }
 
-    if (Date.now() > session.expiresAt) {
-      return ok({ status: 'expired' })
+    // التحقق من الهاش
+    const dataForVerify: Record<string, string> = {}
+    if (id) dataForVerify.id = String(id)
+    if (first_name) dataForVerify.first_name = String(first_name)
+    if (last_name) dataForVerify.last_name = String(last_name)
+    if (username) dataForVerify.username = String(username)
+    if (photo_url) dataForVerify.photo_url = String(photo_url)
+    dataForVerify.auth_date = String(auth_date)
+    dataForVerify.hash = String(hash)
+
+    if (!verifyTelegramAuth(dataForVerify)) {
+      console.warn('[Telegram callback] Invalid hash', { id })
+      return validationFail({ message: 'بيانات Telegram غير صحيحة' })
     }
 
-    // إذا اكتملت عبر الـ webhook (session.used && userData) ولم يُسجّل الدخول بعد — قم بتسجيل الدخول الآن
-    if (session.used && session.userData && !session.user) {
-      const loginResult = await performLogin(session.userData)
-      if (loginResult.error) {
-        return ok({ status: loginResult.status, error: loginResult.error })
-      }
-      await updateTelegramSession(sessionToken, {
-        ...session,
-        user: loginResult.user,
-      })
-      return ok({ status: 'success', user: loginResult.user })
+    const userData = {
+      telegramId: Number(id),
+      firstName: String(first_name),
+      lastName: last_name ? String(last_name) : null,
+      username: username ? String(username) : null,
+      photoUrl: photo_url ? String(photo_url) : null,
     }
 
-    if (session.used && session.user) {
-      return ok({ status: 'success', user: session.user })
+    const loginResult = await performLogin(userData)
+
+    if (loginResult.error) {
+      return validationFail({ message: loginResult.error })
     }
 
-    // لا يزال في انتظار تأكيد المستخدم عبر Telegram — الـ webhook هو المسؤول عن استقبال /start
-    return ok({ status: 'pending' })
+    return ok({ user: loginResult.user })
   } catch (err) {
-    console.error('[telegram poll] failed:', err instanceof Error ? err.message : 'unknown error')
-    return ok({ status: 'pending' })
+    console.error('[Telegram callback] failed:', err instanceof Error ? err.message : 'unknown')
+    return internalError('حدث خطأ أثناء تسجيل الدخول')
   }
 }
 
-// دالة مساعدة لتسجيل الدخول ووضع الكوكيز
 async function performLogin(userData: {
   telegramId: number
   firstName: string
@@ -76,11 +83,11 @@ async function performLogin(userData: {
       banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
     } as const
 
-    // Step 1: Find by OAuthAccount (telegram, telegramId)
     let neonUser: {
       id: string; username: string; email: string; role: string; avatarUrl: string | null;
       banStatus: string; bannedUntil: Date | null; banReason: string | null; tokenVersion: number;
     } | null = null
+
     const existingOAuth = await db.oAuthAccount.findUnique({
       where: {
         provider_providerAccountId: {
@@ -88,11 +95,7 @@ async function performLogin(userData: {
           providerAccountId: telegramId.toString(),
         },
       },
-      include: {
-        user: {
-          select: userSelect,
-        },
-      },
+      include: { user: { select: userSelect } },
     })
 
     if (existingOAuth) {
@@ -103,9 +106,17 @@ async function performLogin(userData: {
           data: { avatarUrl },
           select: userSelect,
         })
+      } else if (avatarUrl && neonUser.avatarUrl !== avatarUrl) {
+        // تحديث الصورة إذا كانت مختلفة
+        try {
+          neonUser = await db.user.update({
+            where: { id: neonUser.id },
+            data: { avatarUrl },
+            select: userSelect,
+          })
+        } catch {}
       }
     } else {
-      // Step 2: Try to find by email (telegram_{id}@telegram.local)
       const emailUser = await db.user.findUnique({
         where: { email },
         select: userSelect,
@@ -124,14 +135,14 @@ async function performLogin(userData: {
           },
         }).catch(() => {})
       } else {
-        // Step 3: Create new user + OAuthAccount — use unified generator
         const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
         const finalUsername = await generateUniqueUsername(baseUsername)
 
-        const user = await db.user.upsert({
+        neonUser = await db.user.upsert({
           where: { email },
           create: {
             username: finalUsername,
+            displayName,
             email,
             avatarUrl,
             role: 'member',
@@ -141,11 +152,9 @@ async function performLogin(userData: {
           select: userSelect,
         })
 
-        neonUser = user
-
         await db.oAuthAccount.create({
           data: {
-            userId: user.id,
+            userId: neonUser.id,
             provider: 'telegram',
             providerAccountId: telegramId.toString(),
             providerEmail: email,
@@ -156,22 +165,18 @@ async function performLogin(userData: {
       }
     }
 
-    // فحص الحظر
     const ban = getBanStatus(neonUser!)
     if (ban.banned) {
       return { status: 'banned', error: 'حسابك محظور' }
     }
 
-    // إنشاء role cookie — مرة واحدة فقط
     await setRoleCookie(neonUser!.id, neonUser!.role as UserRole, neonUser!.tokenVersion)
 
-    // تحديث lastLoginAt
     await db.user.update({
       where: { id: neonUser!.id },
       data: { lastLoginAt: new Date(), loginCount: { increment: 1 } },
     })
 
-    // تسجيل audit
     await logAction({
       userId: neonUser!.id,
       username: neonUser!.username,
@@ -190,7 +195,7 @@ async function performLogin(userData: {
       }
     }
   } catch (err) {
-    console.error('[performLogin] failed:', err)
+    console.error('[performLogin callback] failed:', err)
     return { status: 'error', error: 'حدث خطأ أثناء تسجيل الدخول' }
   }
 }

@@ -8,6 +8,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -41,6 +42,7 @@ export function LoginPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
   const { user, loading: authLoading } = useAuth()
+  const telegramEnabled = !!(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME)
 
   // Redirect if already logged in
   useEffect(() => {
@@ -196,21 +198,63 @@ export function LoginPage() {
                 <span>المتابعة بـ Discord</span>
               </Button>
 
-              {/* زر Telegram */}
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 w-full justify-center gap-3 bg-[#0088cc]/10 text-[#0088cc] backdrop-blur-sm transition-colors hover:bg-[#0088cc]/20"
-                onClick={handleTelegramLogin}
-                disabled={loading !== null}
-              >
-                {loading === 'telegram' ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <TelegramIcon className="h-5 w-5" />
-                )}
-                <span>المتابعة بـ Telegram</span>
-              </Button>
+              {/* زر Telegram — يظهر فقط إذا كان البوت مُهيأ */}
+              {telegramEnabled && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 w-full justify-center gap-3 bg-[#0088cc]/10 text-[#0088cc] backdrop-blur-sm transition-colors hover:bg-[#0088cc]/20"
+                  onClick={handleTelegramLogin}
+                  disabled={loading !== null}
+                >
+                  {loading === 'telegram' ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <TelegramIcon className="h-5 w-5" />
+                  )}
+                  <span>المتابعة بـ Telegram</span>
+                </Button>
+              )}
+
+              {/* Telegram Login Widget — يظهر كخيار إضافي إذا كان البوت مُهيأ */}
+              {telegramEnabled && (
+                <>
+                  <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-white/10" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card/80 backdrop-blur-sm px-2 text-muted-foreground">أو</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <TelegramWidget
+                      botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME || 'GAMES_ARABIC_BOT'}
+                      onAuth={async (data) => {
+                        try {
+                          setLoading('telegram')
+                          const res = await fetch('/api/auth/telegram/callback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data),
+                          })
+                          const json = await res.json().catch(() => null)
+                          if (res.ok) {
+                            toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
+                            setTimeout(() => { window.location.href = '/' }, 200)
+                          } else {
+                            toast({ title: 'خطأ', description: json?.error?.message || 'فشل تسجيل الدخول عبر Telegram', variant: 'destructive' })
+                            setLoading(null)
+                          }
+                        } catch {
+                          toast({ title: 'خطأ', description: 'تعذّر الاتصال بالخادم', variant: 'destructive' })
+                          setLoading(null)
+                        }
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
