@@ -18,7 +18,7 @@ import { jwtVerify } from 'jose'
 import { updateSession } from '@/lib/supabase/middleware'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { getTokenVersionCache } from '@/lib/token-version-cache'
-import { withRedisCircuit, isCircuitOpen } from '@/lib/redis-circuit-breaker'
+import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
 import { logger } from '@/lib/logger'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
@@ -36,6 +36,7 @@ interface RoleCookiePayload {
   userId?: string
   role?: string
   tv?: number // tokenVersion
+  tvVerified: boolean
 }
 
 /** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
@@ -48,8 +49,8 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
 
-    // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker
-    // إذا كان Redis معطلاً، نستخدم fail-closed للمسارات الإدارية (أمان > توفر)
+    // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
+    let tvVerified = false
     if (tv !== undefined && userId) {
       try {
         const cachedTv = await withRedisCircuit(
@@ -58,29 +59,28 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
               getTokenVersionCache(userId),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
             ]),
-          async () => {
-            // Fallback عند فشل Redis — لا يمكن التحقق
-            // نُرجع null لكن isCircuitOpen() سيكون true، فيُعامل كـ unknown
-            return null
-          }
+          async () => null
         )
 
-        // إذا كان Circuit مفتوحاً (Redis معطل) و tv موجود — نتحقق من نوع المسار
-        // سيتم التعامل مع fail-closed في proxy() لاحقاً عبر isCircuitOpen()،
-        // لكن هنا نكتفي بالتحقق الصارم عند وجود قيمة في الكاش
-        if (cachedTv !== null && cachedTv !== tv) {
-          return null // Session revoked — tv mismatch
+        if (tv !== undefined) {
+          if (cachedTv === null) {
+            tvVerified = false
+          } else if (cachedTv !== tv) {
+            return null
+          } else {
+            tvVerified = true
+          }
+        } else {
+          tvVerified = false
         }
-
-        // إذا كان cachedTv === null ولا يوجد fallback، قد يكون إما:
-        // - لا يوجد إبطال سابق (طبيعي) → سماح
-        // - Redis معطل → سيُكشف عبر isCircuitOpen() في proxy() للمسارات الإدارية
       } catch {
-        // Redis فشل — مع circuit breaker، نسمح مؤقتاً لكن isCircuitOpen() سيكشف الحالة
+        tvVerified = false
       }
+    } else {
+      tvVerified = false
     }
 
-    return { userId, role, tv }
+    return { userId, role, tv, tvVerified }
   } catch (err) {
     logger.warn('[middleware] invalid role cookie', err)
     return null
@@ -218,34 +218,24 @@ export async function proxy(req: NextRequest) {
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
     const rolePayload = await getRoleFromCookie(req)
-    // FAIL-CLOSED: إذا كان Redis معطلاً ولا يمكن التحقق من tokenVersion لمستخدم إداري — نرفض الوصول
-    if (rolePayload?.role && rolePayload.tv !== undefined && isCircuitOpen()) {
-      console.error('[Proxy] Cannot verify tokenVersion for admin route — rejecting (fail-closed)', { path: pathname, userId: rolePayload.userId })
+    if (!rolePayload || !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)) {
       const loginUrl = new URL('/admin/login', req.url)
-      loginUrl.searchParams.set('from', pathname)
+      if (!rolePayload?.role) loginUrl.searchParams.set('from', pathname)
+      else loginUrl.searchParams.set('error', 'insufficient_role')
       const redirectRes = NextResponse.redirect(loginUrl)
       copyCookies(supabaseResponse, redirectRes)
-      redirectRes.headers.set('x-auth-reason', 'redis_unavailable')
-      return redirectRes
-    }
-    if (!rolePayload?.role) {
-      const loginUrl = new URL('/admin/login', req.url)
-      loginUrl.searchParams.set('from', pathname)
-      const redirectRes = NextResponse.redirect(loginUrl)
-      copyCookies(supabaseResponse, redirectRes)
-      // Debugging header — helps identify invalid/expired cookie vs missing cookie
-      if (req.cookies.has(ROLE_COOKIE_NAME)) {
+      if (req.cookies.has(ROLE_COOKIE_NAME) && !rolePayload?.role) {
         redirectRes.headers.set('x-auth-reason', 'invalid_jwt')
       }
       return redirectRes
     }
-    // مش moderator أو أعلى → redirect لـ /admin/login مع رسالة خطأ
-    // التسلسل: member < creator < publisher < moderator < admin < manager < owner
-    if (!['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
+    if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
       const loginUrl = new URL('/admin/login', req.url)
-      loginUrl.searchParams.set('error', 'insufficient_role')
+      loginUrl.searchParams.set('token_check_failed', '1')
       const redirectRes = NextResponse.redirect(loginUrl)
       copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'token_version_unverified')
+      console.error('[Proxy] Admin tvVerified failed — rejecting', { path: pathname, userId: rolePayload.userId })
       return redirectRes
     }
   }
@@ -253,20 +243,18 @@ export async function proxy(req: NextRequest) {
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
     const rolePayload = await getRoleFromCookie(req)
-    // FAIL-CLOSED لـ API الإداري عند فشل Redis
-    if (rolePayload?.role && rolePayload.tv !== undefined && isCircuitOpen()) {
-      console.error('[Proxy] Cannot verify tokenVersion for /api/admin — rejecting', { path: pathname, userId: rolePayload.userId })
-      return NextResponse.json({ error: 'Service temporarily unavailable — please re-login', code: 'REDIS_UNAVAILABLE' }, { status: 503 })
-    }
-    if (!rolePayload?.role) {
-      const res = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!rolePayload || !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)) {
+      const res = NextResponse.json({ error: rolePayload?.role ? 'Forbidden — insufficient role' : 'Unauthorized' }, { status: rolePayload?.role ? 403 : 401 })
       if (req.cookies.has(ROLE_COOKIE_NAME)) {
         res.headers.set('x-auth-reason', 'invalid_jwt')
       }
       return res
     }
-    if (!['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role)) {
-      return NextResponse.json({ error: 'Forbidden — insufficient role' }, { status: 403 })
+    if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
+      return NextResponse.json(
+        { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
+        { status: 503 }
+      )
     }
   }
 
