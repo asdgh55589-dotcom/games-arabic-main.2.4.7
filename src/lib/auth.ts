@@ -121,7 +121,18 @@ export async function getSession(): Promise<SessionUser | null> {
         if (token) {
           const { payload } = await jwtVerify(token, JWT_SECRET)
           if (typeof payload.tv === 'number' && payload.tv !== user.tokenVersion) {
-            cookieStore.delete(ROLE_COOKIE_NAME)
+            // مسح الكوكي بنفس خيارات setRoleCookie (domain/path)
+            const delOpts: any = {
+              name: ROLE_COOKIE_NAME,
+              value: '',
+              path: '/',
+              httpOnly: true,
+              sameSite: 'lax' as const,
+              secure: process.env.NODE_ENV === 'production',
+              maxAge: 0,
+            }
+            if (process.env.COOKIE_DOMAIN) delOpts.domain = process.env.COOKIE_DOMAIN
+            cookieStore.set(delOpts)
             return null
           }
         } else if (user.tokenVersion > 0) {
@@ -257,10 +268,22 @@ export async function setRoleCookie(userId: string, role: UserRole, tokenVersion
   })
 }
 
-/** مسح الـ role cookie */
+/** مسح الـ role cookie — يجب أن يطابق EXACT نفس خيارات setRoleCookie */
 export async function clearRoleCookie(): Promise<void> {
   const cookieStore = await cookies()
-  cookieStore.delete(ROLE_COOKIE_NAME)
+  const cookieOptions: any = {
+    name: ROLE_COOKIE_NAME,
+    value: '',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 0,
+  }
+  if (process.env.COOKIE_DOMAIN) {
+    cookieOptions.domain = process.env.COOKIE_DOMAIN
+  }
+  cookieStore.set(cookieOptions)
 }
 
 // ===== Authorization helpers =====

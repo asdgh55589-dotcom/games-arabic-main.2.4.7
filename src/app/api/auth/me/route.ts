@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
-import { getBanStatus, jwtVerify, getJWTSecret } from '@/lib/auth'
+import { getBanStatus, jwtVerify, getJWTSecret, clearRoleCookie } from '@/lib/auth'
 import { ok } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 
@@ -88,7 +88,7 @@ export async function GET() {
     } catch {
       // JWT غير صالح (قديم أو مزور) — امسح الـ cookie الفاسد
       logger.warn('[auth/me] invalid role cookie — clearing')
-      cookieStore.delete(ROLE_COOKIE_NAME)
+      await clearRoleCookie()
       return ok({ user: null })
     }
     const userId = payload.userId as string
@@ -96,7 +96,7 @@ export async function GET() {
     const tokenVersion = payload.tv as number | undefined
 
     if (!userId || !role) {
-      cookieStore.delete(ROLE_COOKIE_NAME)
+      await clearRoleCookie()
       return ok({ user: null })
     }
 
@@ -120,14 +120,14 @@ export async function GET() {
     })
 
     if (!user) {
-      cookieStore.delete(ROLE_COOKIE_NAME)
+      await clearRoleCookie()
       return ok({ user: null })
     }
 
     // فحص tokenVersion — لو غير متطابق → الجلسة ملغاة
     if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) {
       logger.warn('[auth/me] tokenVersion mismatch — clearing cookie', { userId, tokenVersion, dbVersion: user.tokenVersion })
-      cookieStore.delete(ROLE_COOKIE_NAME)
+      await clearRoleCookie()
       return ok({ user: null })
     }
 
@@ -150,11 +150,7 @@ export async function GET() {
     logger.error('[auth/me] failed', err)
     // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع
     try {
-      const { cookies } = await import('next/headers')
-      const cs = await cookies()
-      if (cs.get(ROLE_COOKIE_NAME)?.value) {
-        cs.delete(ROLE_COOKIE_NAME)
-      }
+      await clearRoleCookie()
     } catch {}
     return ok({ user: null })
   }
