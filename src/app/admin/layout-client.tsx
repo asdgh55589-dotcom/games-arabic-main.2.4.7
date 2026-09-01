@@ -239,7 +239,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } catch {}
     }
     fetchPending()
-    const id = setInterval(fetchPending, 30000)
+    const id = setInterval(fetchPending, 60000)
     return () => { cancelled = true; clearInterval(id) }
   }, [user, pathname])
 
