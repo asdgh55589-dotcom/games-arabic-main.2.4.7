@@ -37,6 +37,7 @@ interface RoleCookiePayload {
   role?: string
   tv?: number // tokenVersion
   tvVerified: boolean
+  mfaVerified?: boolean
 }
 
 /** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
@@ -48,6 +49,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const userId = payload.userId as string
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
+    const mfaVerified = payload.mfa === true
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
     let tvVerified = false
@@ -80,7 +82,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
       tvVerified = false
     }
 
-    return { userId, role, tv, tvVerified }
+    return { userId, role, tv, tvVerified, mfaVerified }
   } catch (err) {
     logger.warn('[middleware] invalid role cookie', err)
     return null
@@ -238,6 +240,15 @@ export async function proxy(req: NextRequest) {
       console.error('[Proxy] Admin tvVerified failed — rejecting', { path: pathname, userId: rolePayload.userId })
       return redirectRes
     }
+    // إلزام MFA لكل أدوار الإدارة — يُسمح فقط بـ /admin/security لإعداده
+    if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
+      const securityUrl = new URL('/admin/security', req.url)
+      securityUrl.searchParams.set('mfa_required', '1')
+      const redirectRes = NextResponse.redirect(securityUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'mfa_required')
+      return redirectRes
+    }
   }
 
   // حماية /api/admin/* — تحقق من role cookie فقط
@@ -254,6 +265,13 @@ export async function proxy(req: NextRequest) {
       return NextResponse.json(
         { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
         { status: 503 }
+      )
+    }
+    // إلزام MFA لـ API — يُسمح لـ /api/auth/mfa/* حتى بدون MFA
+    if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
+      return NextResponse.json(
+        { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
+        { status: 403 }
       )
     }
   }

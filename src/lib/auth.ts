@@ -196,10 +196,11 @@ export async function getSession(): Promise<SessionUser | null> {
 
 // ===== Role cookie helpers =====
 
-/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion في httpOnly cookie موقّع */
-export async function setRoleCookie(userId: string, role: UserRole, tokenVersion?: number): Promise<void> {
+/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa في httpOnly cookie موقّع */
+export async function setRoleCookie(userId: string, role: UserRole, tokenVersion?: number, mfaVerified: boolean = false): Promise<void> {
   const payload: Record<string, unknown> = { userId, role }
   if (tokenVersion !== undefined) payload.tv = tokenVersion
+  if (mfaVerified) payload.mfa = true
 
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })

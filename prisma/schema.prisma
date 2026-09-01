@@ -84,6 +84,14 @@ model User {
   bannedBy               String? // id الأدمن الذي أصدر الحظر
   bannedAt               DateTime? // متى تم الحظر
   tokenVersion           Int                     @default(0) // لإبطال الجلسات القديمة عند الحظر/تغيير الدور
+  // ===== MFA fields — TOTP/WebAuthn/Recovery =====
+  totpSecret             String? // مشفّر base64 — سر TOTP
+  totpEnabled            Boolean                 @default(false)
+  webauthnCredentials    Json? // مصفوفة مفاتيح الأمان
+  mfaRequiredAt          DateTime? // متى فُرضت MFA
+  mfaEnabledAt           DateTime? // متى فعّلها المستخدم أول مرة
+  recoveryCodes          String? // مشفّر base64 — JSON array
+  recoveryCodesUsed      Json? // مصفوفة indices المستعملة
   tier                   Int                     @default(0) // 0=مبتدئ, 1=مترجم, 2=محترف, 3=خبير, 4=مشرف, 5=مدير
   specialRoles           String                  @default("") // CSV: "official_translator,reviewer,team"
   qualityScore           Float                   @default(0) // محسوب تلقائي

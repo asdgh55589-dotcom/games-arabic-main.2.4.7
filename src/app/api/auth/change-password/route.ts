@@ -70,9 +70,15 @@ export async function POST(req: NextRequest) {
         const newTokenVersion = await invalidateUserSessions(neonUser.id)
 
         // إعادة إصدار الكوكي للجلسة الحالية فقط — يبقى المستخدم الحالي مسجلاً
+        // إذا كان MFA مفعلاً، نحتاج إلى الحفاظ على حالة التحقق
         if (newTokenVersion !== -1) {
           try {
-            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion)
+            const fullUser = await db.user.findUnique({
+              where: { id: neonUser.id },
+              select: { totpEnabled: true },
+            })
+            const mfaVerified = !!fullUser?.totpEnabled
+            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified)
           } catch (e) {
             console.error('[ChangePassword] setRoleCookie failed:', e)
           }

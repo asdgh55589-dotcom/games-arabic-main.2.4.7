@@ -151,7 +151,24 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // إنشاء role cookie مع tokenVersion
+    // فحص MFA — إذا كان مفعلاً، لا نضع الكوكيز الآن بل نطلب رمز MFA
+    const freshUser = await db.user.findUnique({
+      where: { id: neonUser.id },
+      select: { totpEnabled: true, totpSecret: true, recoveryCodesUsed: true },
+    })
+
+    if (freshUser?.totpEnabled && freshUser.totpSecret) {
+      const { generateMFAToken } = await import('@/lib/mfa-token')
+      const mfaToken = await generateMFAToken(neonUser.id)
+      const remainingCodes = freshUser.recoveryCodesUsed ? 10 - (freshUser.recoveryCodesUsed as number[]).length : 10
+      return ok({
+        mfaRequired: true,
+        mfaToken,
+        recoveryCodesCount: remainingCodes,
+      })
+    }
+
+    // إنشاء role cookie مع tokenVersion (لا MFA)
     await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
 
     // تتبع تسجيل الدخول
