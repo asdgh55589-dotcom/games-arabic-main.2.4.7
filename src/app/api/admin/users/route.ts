@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, type UserRole } from '@/lib/auth'
+import { requireAdmin, hashPassword, type UserRole } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
-import { ok, okPaginated, forbidden, internalError, validationFail } from '@/lib/api-response'
+import { ok, okPaginated, fail, forbidden, internalError, validationFail } from '@/lib/api-response'
+import { createAdminClient } from '@/lib/supabase/server'
 
 // Role assignment restrictions (hierarchy: member < creator < publisher < moderator < admin < manager < owner):
 // - Admin can assign: member, creator, publisher, moderator
@@ -128,6 +129,55 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, username: true, displayName: true, email: true, role: true, avatarUrl: true },
     })
+
+    // ===== إنشاء حساب Supabase (FIX #2) =====
+    if (body.password && typeof body.password === 'string' && body.password.trim()) {
+      const rawPassword = body.password.trim()
+      if (rawPassword.length < 8) {
+        await db.user.delete({ where: { id: user.id } })
+        return fail('VALIDATION_ERROR', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', 400)
+      }
+      const adminClient = createAdminClient()
+      if (adminClient) {
+        try {
+          const { data: supabaseUser, error: createError } = await adminClient.auth.admin.createUser({
+            email: body.email.toLowerCase(),
+            password: rawPassword,
+            email_confirm: true,
+            user_metadata: {
+              username,
+              display_name: body.displayName || username,
+            },
+          })
+          if (createError) {
+            console.error('[admin/users POST] Supabase creation failed:', createError)
+            await db.user.delete({ where: { id: user.id } })
+            return fail('INTERNAL_ERROR', 'فشل إنشاء حساب المصادقة: ' + createError.message, 500)
+          }
+          if (supabaseUser?.user?.id) {
+            await db.user.update({
+              where: { id: user.id },
+              data: { supabaseId: supabaseUser.user.id } as any,
+            })
+          }
+          // حفظ كلمة المرور مشفرة محلياً أيضاً للتوافق
+          try {
+            const hashed = await hashPassword(rawPassword)
+            await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
+          } catch {}
+        } catch (error) {
+          console.error('[admin/users POST] Supabase creation error:', error)
+          await db.user.delete({ where: { id: user.id } })
+          return fail('INTERNAL_ERROR', 'خطأ في إنشاء حساب المصادقة', 500)
+        }
+      } else {
+        // Supabase غير مُهيأ — fallback محلي فقط
+        try {
+          const hashed = await hashPassword(rawPassword)
+          await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
+        } catch {}
+      }
+    }
 
     return ok(user)
   } catch (err) {
