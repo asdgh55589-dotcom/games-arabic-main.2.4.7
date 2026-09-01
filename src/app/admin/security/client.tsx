@@ -146,19 +146,22 @@ export default function SecurityClient() {
         </div>
       )}
 
-      <Card>
+      <Card className="border-dashed">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            المصادقة الثنائية (TOTP)
+            المصادقة الثنائية (اختيارية)
             {totpEnabled ? (
               <Badge className="bg-green-500 text-white">مفعلة</Badge>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground">غير مفعلة</Badge>
+              <Badge variant="outline" className="text-muted-foreground">غير مفعلة — افتراضي</Badge>
             )}
           </CardTitle>
           <CardDescription>
-            استخدم تطبيقاً مثل Google Authenticator أو Authy لتأمين حسابك
+            حماية إضافية اختيارية — غير مفعلة افتراضياً. يمكنك تفعيلها لزيادة أمان حسابك. إذا فعّلتها، سيُطلب رمز التحقق عند كل تسجيل دخول.
           </CardDescription>
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800 dark:bg-blue-950/20 dark:border-blue-900 dark:text-blue-300">
+            ℹ️ هذه الميزة اختيارية تماماً — تسجيل الدخول يعتمد أساساً على 4 بيانات اعتماد (اسم المستخدم + البريد + كلمة المرور + مفتاح الأمان). التفعيل اختياري لزيادة الحماية.
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {totpEnabled ? (

@@ -239,15 +239,15 @@ export async function proxy(req: NextRequest) {
       console.error('[Proxy] Admin tvVerified failed — rejecting', { path: pathname, userId: rolePayload.userId })
       return redirectRes
     }
-    // إلزام MFA لكل أدوار الإدارة — يُسمح فقط بـ /admin/security لإعداده
-    if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
-      const securityUrl = new URL('/admin/security', req.url)
-      securityUrl.searchParams.set('mfa_required', '1')
-      const redirectRes = NextResponse.redirect(securityUrl)
-      copyCookies(supabaseResponse, redirectRes)
-      redirectRes.headers.set('x-auth-reason', 'mfa_required')
-      return redirectRes
-    }
+    // TOTP اختياري — غير مفعلة افتراضياً — لا نفرض MFA (اختياري فقط)
+    // if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
+    //   const securityUrl = new URL('/admin/security', req.url)
+    //   securityUrl.searchParams.set('mfa_required', '1')
+    //   const redirectRes = NextResponse.redirect(securityUrl)
+    //   copyCookies(supabaseResponse, redirectRes)
+    //   redirectRes.headers.set('x-auth-reason', 'mfa_required')
+    //   return redirectRes
+    // }
   }
 
   // حماية /api/admin/* — تحقق من role cookie فقط
@@ -266,13 +266,13 @@ export async function proxy(req: NextRequest) {
         { status: 503 }
       )
     }
-    // إلزام MFA لـ API — يُسمح لـ /api/auth/mfa/* حتى بدون MFA
-    if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
-      return NextResponse.json(
-        { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
-        { status: 403 }
-      )
-    }
+    // TOTP اختياري — لا نفرض MFA لـ API أيضاً
+    // if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
+    //   return NextResponse.json(
+    //     { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
+    //     { status: 403 }
+    //   )
+    // }
   }
 
   // حماية /creator/* — creator/publisher فقط (moderator+ يُمنع)
