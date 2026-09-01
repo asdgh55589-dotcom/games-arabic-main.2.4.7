@@ -16,6 +16,7 @@ interface UsersDesktopTableProps {
   onUnban: (userId: string) => void
   onWarn: (userId: string) => void
   onDelete: (user: UserItem) => void
+  onEdit?: (user: UserItem) => void
 }
 
 export function UsersDesktopTable({
@@ -26,6 +27,7 @@ export function UsersDesktopTable({
   onUnban,
   onWarn,
   onDelete,
+  onEdit,
 }: UsersDesktopTableProps) {
   return (
     <div className="overflow-x-auto scrollbar-thin">
@@ -133,6 +135,7 @@ export function UsersDesktopTable({
                     onUnban={() => onUnban(u.id)}
                     onWarn={() => onWarn(u.id)}
                     onDelete={() => onDelete(u)}
+                    onEdit={onEdit ? () => onEdit(u) : undefined}
                   />
                 </td>
               </tr>

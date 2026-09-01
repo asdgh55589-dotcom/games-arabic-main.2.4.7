@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, Ban, CheckCircle, Eye, Key, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Ban, CheckCircle, Eye, Key, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,6 +19,7 @@ import { AddUserModal } from '@/components/admin/users/add-user-modal'
 import { PasswordModal } from '@/components/admin/users/password-modal'
 import { BanModal } from '@/components/admin/users/ban-modal'
 import { WarningDialog } from '@/components/admin/users/warning-dialog'
+import { EditUserDialog } from '@/components/admin/users/edit-user-dialog'
 import type { UserItem } from '@/components/admin/users/users-types'
 
 export default function AdminUsersPage() {
@@ -36,6 +37,7 @@ export default function AdminUsersPage() {
   const [changePwUserId, setChangePwUserId] = useState<string | null>(null)
   const [banUserId, setBanUserId] = useState<string | null>(null)
   const [warningUser, setWarningUser] = useState<{ id: string; username: string } | null>(null)
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
@@ -351,6 +353,7 @@ export default function AdminUsersPage() {
           onUnban={onUnban}
           onWarn={onWarn}
           onDelete={onDelete}
+          onEdit={(user) => setEditingUser(user)}
         />
       </div>
 
@@ -416,6 +419,15 @@ export default function AdminUsersPage() {
                     <Eye className="h-4 w-4" />
                     التفاصيل
                   </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-[44px] rounded-md border border-border bg-background-secondary"
+                    onClick={() => setEditingUser(u)}
+                  >
+                    <Pencil className="ml-2 h-4 w-4" />
+                    تعديل
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -521,6 +533,15 @@ export default function AdminUsersPage() {
           onOpenChange={(open) => !open && setWarningUser(null)}
           userId={warningUser.id}
           username={warningUser.username}
+          onSuccess={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
+
+      {editingUser && (
+        <EditUserDialog
+          open={!!editingUser}
+          onOpenChange={(open) => !open && setEditingUser(null)}
+          user={editingUser}
           onSuccess={() => setRefreshKey((k) => k + 1)}
         />
       )}

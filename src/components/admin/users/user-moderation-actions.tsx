@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AlertTriangle, Ban, CheckCircle, Eye, Key, Trash2 } from 'lucide-react'
+import { AlertTriangle, Ban, CheckCircle, Eye, Key, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
@@ -12,6 +12,7 @@ interface UserModerationActionsProps {
   onUnban: () => void
   onWarn: () => void
   onDelete: () => void
+  onEdit?: () => void
 }
 
 export function UserModerationActions({
@@ -23,6 +24,7 @@ export function UserModerationActions({
   onUnban,
   onWarn,
   onDelete,
+  onEdit,
 }: UserModerationActionsProps) {
   return (
     <div className="flex items-center gap-2">
@@ -33,6 +35,18 @@ export function UserModerationActions({
       >
         <Eye className="h-4 w-4" />
       </Link>
+
+      {onEdit && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 rounded-md border border-border bg-background-secondary text-muted-foreground hover:text-primary min-h-[44px] min-w-[44px]"
+          onClick={onEdit}
+          title="تعديل البيانات" aria-label="تعديل البيانات"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
 
       <Button
         size="icon"
