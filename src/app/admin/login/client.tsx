@@ -33,7 +33,7 @@ function AdminLoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [securityKey, setSecurityKey] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ message: string; field?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -57,19 +57,19 @@ function AdminLoginContent() {
 
   useEffect(() => {
     if (errorCode === 'insufficient_role') {
-      setError('لا تملك صلاحية الوصول إلى لوحة التحكم. سجّل دخول بحساب مشرف أو أعلى.')
+      setError({ message: 'لا تملك صلاحية الوصول إلى لوحة التحكم. سجّل دخول بحساب مشرف أو أعلى.' })
       return
     }
     const from = searchParams.get('from')
     if (from) {
-      setError('انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.')
+      setError({ message: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.' })
     }
   }, [errorCode, searchParams])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username || !email || !password || !securityKey) {
-      setError('جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان')
+      setError({ message: 'جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان' })
       return
     }
     setLoading(true)
@@ -83,8 +83,9 @@ function AdminLoginContent() {
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل تسجيل الدخول'
-        setError(msg)
+        const msg = typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تسجيل الدخول'
+        const field = data?.field || data?.error?.details?.field
+        setError({ message: msg, field })
         return
       }
       // فحص إذا كانت المصادقة الثنائية مطلوبة
@@ -97,7 +98,7 @@ function AdminLoginContent() {
       }
       window.location.href = fromPath
     } catch {
-      setError('تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+      setError({ message: 'تعذّر الاتصال بالخادم. حاول مرة أخرى.' })
     } finally {
       setLoading(false)
     }
@@ -106,7 +107,7 @@ function AdminLoginContent() {
   const onMfaSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mfaCode || mfaCode.length < 6) {
-      setError('أدخل رمز التحقق المكون من 6 أرقام')
+      setError({ message: 'أدخل رمز التحقق المكون من 6 أرقام' })
       return
     }
     setLoading(true)
@@ -129,13 +130,13 @@ function AdminLoginContent() {
         const recoveryData = await recoveryRes.json().catch(() => null)
         if (!recoveryRes.ok) {
           const msg = data?.error?.message || recoveryData?.error?.message || 'رمز التحقق غير صحيح'
-          setError(msg)
+          setError({ message: msg })
           return
         }
       }
       window.location.href = fromPath
     } catch {
-      setError('تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+      setError({ message: 'تعذّر الاتصال بالخادم. حاول مرة أخرى.' })
     } finally {
       setLoading(false)
     }
@@ -180,14 +181,19 @@ function AdminLoginContent() {
                 <Input
                   id="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => { setUsername(e.target.value); if (error?.field === 'username') setError(null) }}
+                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'username' }) }}
                   placeholder="L0L0Y8"
-                  className="h-11 pr-10"
+                  className={`h-11 pr-10 ${error?.field === 'username' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="username"
                   disabled={loading}
                   autoFocus
+                  aria-invalid={error?.field === 'username'}
                 />
               </div>
+              {error?.field === 'username' && (
+                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -200,13 +206,18 @@ function AdminLoginContent() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (error?.field === 'email') setError(null) }}
+                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'email' }) }}
                   placeholder="Arabic_games@gmail.com"
-                  className="h-11 pr-10"
+                  className={`h-11 pr-10 ${error?.field === 'email' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="email"
                   disabled={loading}
+                  aria-invalid={error?.field === 'email'}
                 />
               </div>
+              {error?.field === 'email' && (
+                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -219,13 +230,18 @@ function AdminLoginContent() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (error?.field === 'password') setError(null) }}
+                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'password' }) }}
                   placeholder="••••••••"
-                  className="h-11 pr-10"
+                  className={`h-11 pr-10 ${error?.field === 'password' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="current-password"
                   disabled={loading}
+                  aria-invalid={error?.field === 'password'}
                 />
               </div>
+              {error?.field === 'password' && (
+                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -238,19 +254,24 @@ function AdminLoginContent() {
                   id="securityKey"
                   type="password"
                   value={securityKey}
-                  onChange={(e) => setSecurityKey(e.target.value)}
+                  onChange={(e) => { setSecurityKey(e.target.value); if (error?.field === 'securityKey') setError(null) }}
+                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'securityKey' }) }}
                   placeholder="••••••••"
-                  className="h-11 pr-10"
+                  className={`h-11 pr-10 ${error?.field === 'securityKey' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="off"
                   disabled={loading}
+                  aria-invalid={error?.field === 'securityKey'}
                 />
               </div>
+              {error?.field === 'securityKey' && (
+                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+              )}
             </div>
 
-            {error && (
+            {error && !error.field && (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
+                <span>{error.message}</span>
               </div>
             )}
 
@@ -296,7 +317,7 @@ function AdminLoginContent() {
             {error && (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
+                <span>{error.message}</span>
               </div>
             )}
 

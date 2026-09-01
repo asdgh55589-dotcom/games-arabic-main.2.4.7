@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import {
   setRoleCookie,
@@ -140,37 +140,60 @@ export async function POST(req: NextRequest) {
       return rateLimited()
     }
 
-    // البحث عن المستخدم — يجب أن يتطابق username و email مع نفس المستخدم
-    const neonUser = await db.user.findFirst({
-      where: {
-        username: username,
-        email: email.toLowerCase(),
-      },
+    // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)
+    const userByUsername = await db.user.findUnique({
+      where: { username },
     })
 
-    if (!neonUser || !neonUser.password) {
-      return unauthorized('بيانات الاعتماد غير صحيحة')
+    if (!userByUsername || !userByUsername.password) {
+      return NextResponse.json(
+        { error: 'اسم المستخدم أو البريد الإلكتروني غير صحيح', field: 'username' },
+        { status: 401 }
+      )
     }
 
-    // التحقق من كلمة المرور (bcrypt)
-    const passwordValid = await bcrypt.compare(password, neonUser.password)
+    // 2. التحقق من تطابق البريد (حساسية حالة الأحرف غير مهمة)
+    if (userByUsername.email.toLowerCase() !== email.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'البريد الإلكتروني لا يطابق اسم المستخدم', field: 'email' },
+        { status: 401 }
+      )
+    }
+
+    const neonUser = userByUsername
+
+    // 3. التحقق من كلمة المرور
+    const passwordValid = await bcrypt.compare(password, neonUser.password!)
     if (!passwordValid) {
-      return unauthorized('بيانات الاعتماد غير صحيحة')
+      return NextResponse.json(
+        { error: 'كلمة المرور غير صحيحة', field: 'password' },
+        { status: 401 }
+      )
     }
 
-    // التحقق من مفتاح الأمان
+    // 4. التحقق من وجود مفتاح الأمان
     if (!neonUser.securityKey) {
-      return forbidden('لا يوجد مفتاح أمان مسجل — تواصل مع مدير الموقع')
+      return NextResponse.json(
+        { error: 'لا يوجد مفتاح أمان مسجل — تواصل مع مدير الموقع', field: 'securityKey' },
+        { status: 403 }
+      )
     }
 
+    // 5. التحقق من مفتاح الأمان
     const keyValid = await verifySecurityKey(securityKey, neonUser.securityKey)
     if (!keyValid) {
-      return unauthorized('مفتاح الأمان غير صحيح')
+      return NextResponse.json(
+        { error: 'مفتاح الأمان غير صحيح', field: 'securityKey' },
+        { status: 401 }
+      )
     }
 
-    // فحص انتهاء صلاحية المفتاح
+    // 6. فحص انتهاء صلاحية المفتاح
     if (isSecurityKeyExpired(neonUser.securityKeyExpiresAt as Date | null)) {
-      return forbidden('مفتاح الأمان منتهي الصلاحية — تواصل مع مدير الموقع')
+      return NextResponse.json(
+        { error: 'مفتاح الأمان منتهي الصلاحية — تواصل مع مدير الموقع', field: 'securityKey' },
+        { status: 403 }
+      )
     }
 
     // فحص الحظر قبل أي محاولة دخول
