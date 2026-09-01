@@ -11,6 +11,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { AuthProvider } from "@/contexts/auth-context";
 import { SettingsProvider } from "@/contexts/settings-context";
 import { organizationJsonLd } from "@/lib/seo/structured-data";
+import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,6 +82,7 @@ export default function RootLayout({
           <AuthProvider>
             <SettingsProvider>
               <SeoUpdater />
+              <WebVitalsReporter />
               <SmoothScrollProvider>
                 <Suspense fallback={null}>
                   <AppShell>
