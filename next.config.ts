@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: false,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-select',
+    ],
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     qualities: [100, 85, 75, 50],

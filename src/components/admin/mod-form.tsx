@@ -132,6 +132,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
   const [saving, setSaving] = useState(false)
   const [loadingMod, setLoadingMod] = useState(isEdit)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [seriesList, setSeriesList] = useState<SeriesOpt[]>([])
   const [teamsList, setTeamsList] = useState<TeamOpt[]>([])
   const [loadingMeta, setLoadingMeta] = useState(true)
@@ -214,10 +215,14 @@ export default function ModForm({ modId }: ModFormProps) {
   // لو تعديل: حمّل بيانات التعريب
   useEffect(() => {
     if (!modId) return
-    fetch(`/api/admin/mods/${modId}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (!data?.data) return
+    const fetchMod = async () => {
+      setLoadingMod(true)
+      setLoadError(null)
+      try {
+        const res = await fetch(`/api/admin/mods/${modId}`)
+        if (!res.ok) throw new Error('فشل تحميل بيانات التعريب')
+        const data = await res.json()
+        if (!data?.data) throw new Error('البيانات فارغة')
         const m = data.data
         setName(m.name || '')
         setSummary(m.summary || '')
@@ -274,9 +279,13 @@ export default function ModForm({ modId }: ModFormProps) {
         setCustomTabs(m.customTabs?.map((t: any) => ({
           id: t.id, name: t.name, slug: t.slug, content: t.content, visible: t.visible,
         })) || [])
-      })
-      .catch(() => {})
-      .finally(() => setLoadingMod(false))
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'فشل تحميل بيانات التعريب')
+      } finally {
+        setLoadingMod(false)
+      }
+    }
+    fetchMod()
   }, [modId])
 
 
@@ -370,6 +379,10 @@ export default function ModForm({ modId }: ModFormProps) {
 
   // ===== Save =====
   const onSave = async () => {
+    if (loadError) {
+      toast({ title: 'تنبيه', description: 'لا يمكن الحفظ — فشل تحميل البيانات', variant: 'destructive' })
+      return
+    }
     const _name = (name || '').trim()
     const _description = (description || '').trim()
     if (!_name || !_description) {
@@ -441,6 +454,16 @@ export default function ModForm({ modId }: ModFormProps) {
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg" dir="rtl">
+        <h2 className="text-red-700 font-bold mb-2">⚠️ فشل تحميل البيانات</h2>
+        <p className="text-red-600 mb-4">{loadError}</p>
+        <Button onClick={() => window.location.reload()}>إعادة المحاولة</Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       {/* رأس */}
@@ -455,7 +478,7 @@ export default function ModForm({ modId }: ModFormProps) {
           <Button asChild variant="outline">
             <Link href="/admin/mods">إلغاء</Link>
           </Button>
-          <Button onClick={onSave} disabled={saving}>
+          <Button onClick={onSave} disabled={saving || !!loadError}>
             {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
             {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
           </Button>
@@ -1027,7 +1050,7 @@ export default function ModForm({ modId }: ModFormProps) {
         <Button asChild variant="outline">
           <Link href="/admin/mods">إلغاء</Link>
         </Button>
-        <Button onClick={onSave} disabled={saving}>
+        <Button onClick={onSave} disabled={saving || !!loadError}>
           {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
           {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
         </Button>

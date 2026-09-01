@@ -73,19 +73,33 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [activeGroup, setActiveGroup] = useState('general')
   const [userRole, setUserRole] = useState<string>('')
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const fetchSettings = async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const [settingsRes, userRes] = await Promise.all([
+        fetch('/api/admin/settings'),
+        fetch('/api/auth/me'),
+      ])
+      if (!settingsRes.ok) throw new Error('فشل تحميل الإعدادات')
+      const settingsJson = await settingsRes.json()
+      const userJson = userRes.ok ? await userRes.json() : null
+      const loaded = settingsJson?.data?.settings || settingsJson?.settings
+      if (loaded) setSettings(loaded)
+      else if (!settingsJson?.data && !settingsJson?.settings) throw new Error('البيانات فارغة')
+      const user = userJson?.data?.user || userJson?.user
+      if (user) setUserRole(user.role)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'فشل تحميل الإعدادات')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/settings').then((r) => r.ok ? r.json() : null),
-      fetch('/api/auth/me').then((r) => r.json()),
-    ])
-      .then(([settingsJson, userJson]) => {
-        if (settingsJson?.settings) setSettings(settingsJson.settings)
-        const user = userJson?.data?.user
-        if (user) setUserRole(user.role)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchSettings()
   }, [])
 
   const getSetting = (group: string, key: string): string => {
@@ -100,6 +114,12 @@ export default function AdminSettingsPage() {
   }
 
   const onSave = async () => {
+    // حماية من حفظ نموذج فارغ
+    const isFormEmpty = Object.values(settings).every((group) => !group || Object.values(group).every((v) => !v || v === ''))
+    if (isFormEmpty) {
+      toast({ title: 'تنبيه', description: 'لا يمكن حفظ نموذج فارغ — تحقق من تحميل البيانات', variant: 'destructive' })
+      return
+    }
     setSaving(true)
     try {
       const res = await fetch('/api/admin/settings', {
@@ -118,6 +138,16 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return <DataTableSkeleton rows={5} cols={6} />
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg" dir="rtl">
+        <h2 className="text-red-700 font-bold mb-2">⚠️ فشل تحميل الإعدادات</h2>
+        <p className="text-red-600 mb-4">{loadError}</p>
+        <Button onClick={fetchSettings}>إعادة المحاولة</Button>
+      </div>
+    )
   }
 
   const currentGroup = SETTING_GROUPS.find((g) => g.id === activeGroup)

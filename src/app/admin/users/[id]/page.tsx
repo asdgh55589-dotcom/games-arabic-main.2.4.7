@@ -82,18 +82,27 @@ export default function UserDetailPage() {
   const [tierHistory, setTierHistory] = useState([])
   const [specialRoles, setSpecialRoles] = useState<any[]>([])
 
+  const fetchUser = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/users/${id}`)
+      if (!res.ok) throw new Error('فشل تحميل بيانات المستخدم')
+      const data = await res.json()
+      const payload = data?.data ?? data
+      if (!payload?.user) throw new Error('المستخدم غير موجود')
+      setUser(payload.user)
+      setActions(payload.actions || [])
+      setComments(payload.comments || [])
+    } catch {
+      setError('فشل تحميل بيانات المستخدم')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    fetch(`/api/admin/users/${id}`)
-      .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
-      .then((data) => {
-        const payload = data?.data ?? data
-        if (!payload?.user) throw new Error('المستخدم غير موجود')
-        setUser(payload.user)
-        setActions(payload.actions || [])
-        setComments(payload.comments || [])
-      })
-      .catch(() => setError('فشل تحميل بيانات المستخدم'))
-      .finally(() => setLoading(false))
+    fetchUser()
   }, [id])
 
   useEffect(() => {
@@ -164,7 +173,15 @@ export default function UserDetailPage() {
   }
 
   if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-  if (error || !user) return <div className="grid place-items-center py-20 text-center"><p className="text-sm text-destructive">{error || 'المستخدم غير موجود'}</p></div>
+  if (error || !user) return (
+    <div className="grid place-items-center py-20 text-center" dir="rtl">
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg max-w-md">
+        <h2 className="text-red-700 font-bold mb-2">⚠️ فشل تحميل البيانات</h2>
+        <p className="text-red-600 mb-4 text-sm">{error || 'المستخدم غير موجود'}</p>
+        <Button onClick={fetchUser}>إعادة المحاولة</Button>
+      </div>
+    </div>
+  )
 
   const role = ROLE_BADGE[user.role] || ROLE_BADGE.member
   const isPermBanned = user.banStatus === 'banned_perm'
