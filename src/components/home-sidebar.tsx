@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { forwardRef } from 'react'
 import Link from 'next/link'
 import { Flame, Heart, Zap, ThumbsUp, Download, Eye } from 'lucide-react'
@@ -34,7 +36,7 @@ function SidebarItem({ mod, variant, rank }: { mod: ModSummary; variant: Sidebar
           {String(rank).padStart(2, '0')}
         </span>
       )}
-      <img
+      <Image width={40} height={40}
         src={mod.thumbnailUrl}
         alt={mod.name}
         loading="lazy"

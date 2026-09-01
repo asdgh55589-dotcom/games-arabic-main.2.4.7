@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { Upload, X, Image as ImageIcon, Loader2, AlertCircle, Eye } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -211,7 +213,7 @@ export function ImageUpload({
             {displayValue ? (
               <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={displayValue} alt={label || 'صورة'} className="h-full w-full object-cover" />
+                <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={displayValue} alt={label || 'صورة'} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -319,7 +321,7 @@ export function ImageUpload({
                   onClick={() => setPreviewModal(url)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`gallery-${idx}`} className="h-full w-full object-cover" />
+                  <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={url} alt={`gallery-${idx}`} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
                   <button
                     type="button"
@@ -366,7 +368,7 @@ export function ImageUpload({
         <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setPreviewModal(null)}>
           <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-xl border-2 border-white/20 bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewModal} alt="معاينة" className="max-h-[80vh] w-auto max-w-full object-contain" />
+            <Image width={800} height={600} src={previewModal} alt="معاينة" className="max-h-[80vh] w-auto max-w-full object-contain" />
             <div className="flex items-center justify-between border-t border-border bg-card p-3">
               <p className="truncate text-xs text-muted-foreground" dir="ltr">
                 {previewModal}

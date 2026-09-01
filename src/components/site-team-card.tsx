@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Users, Crown, Shield, UserCheck, User, Circle, Clock } from 'lucide-react'
@@ -41,7 +43,7 @@ function MemberRow({ member }: { member: SiteMember }) {
       <div className="relative shrink-0">
         {member.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image unoptimized width={40} height={40}
             src={member.avatarUrl}
             alt={member.username}
             className="h-11 w-11 rounded-full object-cover border-2 border-border group-hover:border-primary/30 transition-colors"

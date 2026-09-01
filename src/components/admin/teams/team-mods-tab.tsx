@@ -1,3 +1,4 @@
+import Image from 'next/image'
 // Updated for new API response format
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -163,7 +164,7 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
               <div key={mod.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/30 p-3">
                 <div className="flex items-center gap-3">
                   {mod.thumbnailUrl ? (
-                    <img src={mod.thumbnailUrl} alt="" className="h-10 w-16 rounded object-cover" />
+                    <Image loading="lazy" width={40} height={40} src={mod.thumbnailUrl} alt="" className="h-10 w-16 rounded object-cover" />
                   ) : (
                     <span className="grid h-10 w-16 place-items-center rounded bg-muted text-xs text-muted-foreground">—</span>
                   )}
@@ -315,7 +316,7 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
                             className="h-4 w-4 accent-primary"
                           />
                           {mod.thumbnailUrl ? (
-                            <img src={mod.thumbnailUrl} alt="" className="h-8 w-12 rounded object-cover" />
+                            <Image loading="lazy" width={40} height={40} src={mod.thumbnailUrl} alt="" className="h-8 w-12 rounded object-cover" />
                           ) : (
                             <span className="grid h-8 w-12 place-items-center rounded bg-muted text-[10px] text-muted-foreground">—</span>
                           )}

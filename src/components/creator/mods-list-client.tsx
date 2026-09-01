@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -209,7 +211,7 @@ function ModCard({ mod, onAction }: { mod: ModItem; onAction: (id: string, actio
         <div className="flex items-start gap-4">
           {mod.thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mod.thumbnailUrl} alt={mod.name} className="w-20 h-14 object-cover rounded-lg shrink-0" />
+            <Image loading="lazy" width={56} height={56} src={mod.thumbnailUrl} alt={mod.name} className="w-20 h-14 object-cover rounded-lg shrink-0" />
           ) : (
             <div className="w-20 h-14 bg-muted rounded-lg shrink-0 grid place-items-center">
               <FileText className="h-6 w-6 text-muted-foreground" />

@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useState } from 'react'
 import { Play, Clock, Eye, Youtube, ChevronLeft, X, VideoOff, ThumbsUp, MessageSquare, Calendar } from 'lucide-react'
 import { formatNumber, formatArabicDate } from '@/lib/format'
@@ -90,12 +92,7 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
                     <div className="relative aspect-video w-44 shrink-0 overflow-hidden bg-secondary sm:w-52 md:w-60">
                       {video.thumbnail ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={video.thumbnail}
-                          alt={video.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
+                        <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={video.thumbnail} alt={video.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                       ) : (
                         <div className="grid h-full place-items-center bg-secondary">
                           <Youtube className="h-9 w-9 text-muted-foreground/70" />

@@ -1,6 +1,8 @@
 // Updated for new API response format
 'use client'
 
+import Image from 'next/image'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -917,7 +919,7 @@ export default function ModForm({ modId }: ModFormProps) {
                               <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-secondary sm:w-40">
                                 {v.thumbnail ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                                  <Image loading="lazy" width={40} height={40} src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="grid h-full place-items-center">
                                     <Youtube className="h-6 w-6 text-muted-foreground" />

@@ -1,6 +1,8 @@
 // Updated for new API response format
 'use client'
 
+import Image from 'next/image'
+
 import { useState, useEffect } from 'react'
 import { Play, X, ExternalLink, Image as ImageIcon, Youtube } from 'lucide-react'
 import { cached } from '@/lib/cache'
@@ -167,11 +169,7 @@ function AdItem({ ad }: { ad: HomepageAd }) {
         {/* Thumbnail — مع fallback متدرج maxres → hq → mq → sd */}
         {videoInfo?.thumbnail && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={videoInfo.thumbnail}
-            alt={ad.title || ''}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 bg-black"
-            onError={(e) => {
+          <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={videoInfo.thumbnail} alt={ad.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 bg-black" onError={(e) => {
               const img = e.currentTarget as HTMLImageElement & { dataset: { fallbackStep?: string } }
               const step = img.dataset.fallbackStep || '0'
               const videoId = extractYouTubeId(ad.url)
@@ -229,11 +227,7 @@ function AdItem({ ad }: { ad: HomepageAd }) {
     const content = (
       <div className={`relative w-full overflow-hidden rounded-none border-2 border-border bg-card ${sizeInfo.className}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ad.url}
-          alt={ad.title || ''}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-        />
+        <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={ad.url} alt={ad.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
         {(ad.title || ad.description) && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
             {ad.title && <h3 className="text-base font-bold text-white">{ad.title}</h3>}

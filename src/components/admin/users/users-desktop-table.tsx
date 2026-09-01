@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { CheckCircle, Ban } from 'lucide-react'
 
 import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
@@ -61,7 +62,7 @@ export function UsersDesktopTable({
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     {u.avatarUrl && (
-                      <img
+                      <Image unoptimized loading="lazy" width={40} height={40}
                         src={u.avatarUrl}
                         alt=""
                         className="h-10 w-10 rounded-2xl object-cover"

@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import Link from 'next/link'
 import { AlertTriangle, Ban, CheckCircle, Eye, Key, Trash2 } from 'lucide-react'
 
@@ -46,7 +48,7 @@ export function UsersMobileCards({
             <CardContent className="p-4">
             <div className="flex items-start gap-4">
               {u.avatarUrl && (
-                <img
+                <Image unoptimized loading="lazy" width={56} height={56}
                   src={u.avatarUrl}
                   alt=""
                   className="h-14 w-14 rounded-2xl object-cover"

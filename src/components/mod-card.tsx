@@ -189,7 +189,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
                   onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 0 0 0 rgba(217,119,6,0)')}
                 >
                   {mod.author.avatarUrl && (
-                    <img
+                    <Image unoptimized width={16} height={16}
                       src={mod.author.avatarUrl}
                       alt=""
                       className="h-4 w-4 shrink-0 rounded-full object-cover border border-amber-700/50"

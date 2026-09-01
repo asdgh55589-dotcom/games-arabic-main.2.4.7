@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -403,7 +405,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                         activeSuggestionIdx === modIdx ? 'bg-accent' : 'hover:bg-accent/50'
                       )}
                     >
-                      <img src={m.thumbnailUrl} alt="" className="h-10 w-14 rounded-md object-cover" loading="lazy" />
+                      <Image unoptimized width={40} height={40} src={m.thumbnailUrl} alt="" className="h-10 w-14 rounded-md object-cover" loading="lazy" />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-bold text-foreground">{m.name}</div>
                         <div className="truncate text-xs text-muted-foreground">

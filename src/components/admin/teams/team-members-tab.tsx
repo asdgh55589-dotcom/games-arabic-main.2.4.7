@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Pencil, Plus, Trash2, X, Check, User as UserIcon, Link2, Unlink, ExternalLink, Ghost, Users } from 'lucide-react'
@@ -222,7 +223,7 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {getMemberAvatar(m as never) ? (
-                      <img src={getMemberAvatar(m as never)!} alt="" className="h-9 w-9 rounded-full object-cover" />
+                      <Image unoptimized loading="lazy" width={36} height={36} src={getMemberAvatar(m as never)!} alt="" className="h-9 w-9 rounded-full object-cover" />
                     ) : (
                       <span className="grid h-9 w-9 place-items-center rounded-full bg-muted"><UserIcon className="h-4 w-4 text-muted-foreground" /></span>
                     )}
