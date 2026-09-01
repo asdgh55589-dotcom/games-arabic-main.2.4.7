@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin, invalidateUserSessions, hashPassword } from '@/lib/auth'
-import { logUserAction } from '@/lib/audit'
+import { logAction, logUserAction } from '@/lib/audit'
 import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
 import { createAdminClient } from '@/lib/supabase/server'
 import { canAssignRole } from '@/lib/permissions'
@@ -102,9 +102,29 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       await db.user.update({ where: { id }, data: updateData })
     }
 
-    // لو تم تغيير الدور → إبطال الجلسات القديمة (tokenVersion)
+    // لو تم تغيير الدور → إبطال الجلسات القديمة (tokenVersion) + تسجيل في AuditLog (B1)
     if (newRole && newRole !== target.role) {
       await invalidateUserSessions(id)
+      try {
+        await logUserAction({
+          userId: id,
+          actorId: currentUser.id,
+          actorUsername: currentUser.username,
+          action: 'role_change',
+          reason: body.reason || `تغيير الدور من ${target.role} إلى ${newRole}`,
+          metadata: JSON.stringify({ oldRole: target.role, newRole }),
+          request: req,
+        })
+        await logAction({
+          userId: currentUser.id,
+          username: currentUser.username,
+          action: 'USER_ROLE_CHANGED',
+          entity: 'User',
+          entityId: id,
+          details: JSON.stringify({ oldRole: target.role, newRole, username: target.username, email: target.email }),
+          request: req,
+        })
+      } catch {}
     }
 
     // ===== معالجة تغيير كلمة المرور (FIX #1) =====

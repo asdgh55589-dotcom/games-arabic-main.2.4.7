@@ -438,7 +438,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
+        <main id="admin-main" tabIndex={-1} className="p-4 lg:p-6 outline-none">
           {children}
         </main>
       </div>

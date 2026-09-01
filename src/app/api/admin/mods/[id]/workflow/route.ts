@@ -5,6 +5,7 @@ import { requireModerator } from '@/lib/auth'
 import { isValidTransition, canTransition, type WorkflowStatus } from '@/lib/workflow'
 import { canApproveMods } from '@/lib/permissions'
 import { notifyWorkflowChange } from '@/lib/mod-notifications'
+import { logAction } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
 
 interface RouteParams {
@@ -101,6 +102,30 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       return updated
     })
+
+    // تسجيل في AuditLog (B2)
+    try {
+      const actionMap: Record<string, string> = {
+        APPROVED: 'MOD_APPROVED',
+        REJECTED: 'MOD_REJECTED',
+        PUBLISHED: 'MOD_PUBLISHED',
+      }
+      // جلب اسم التعريب للسجل إذا لم يكن متاحاً
+      let modNameForLog: string | null = null
+      try {
+        const tmp = await db.mod.findUnique({ where: { id }, select: { name: true } })
+        modNameForLog = tmp?.name || null
+      } catch {}
+      await logAction({
+        userId: user.id,
+        username: user.username,
+        action: actionMap[targetStatus] || 'MOD_WORKFLOW_CHANGED',
+        entity: 'Mod',
+        entityId: id,
+        details: JSON.stringify({ oldStatus: fromStatus, newStatus: targetStatus, modName: modNameForLog || id, reason: reason || '' }),
+        request: req,
+      })
+    } catch {}
 
     // إرسال إشعار تغيير الحالة
     const modForNotif = await db.mod.findUnique({

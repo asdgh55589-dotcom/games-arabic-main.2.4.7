@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
 import { slugify } from '@/lib/utils'
-import { ok, okPaginated, validationFail, internalError } from '@/lib/api-response'
+import { ok, okPaginated, fail, validationFail, internalError } from '@/lib/api-response'
 import { revalidatePath } from 'next/cache'
 
 // GET /api/admin/news — قائمة الأخبار
@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
   try {
     await requireModerator()
     const body = await req.json()
+
+    if (body.type !== undefined && !['ticker', 'featured'].includes(body.type)) {
+      return fail('VALIDATION_ERROR', 'نوع الخبر غير صالح (يجب أن يكون ticker أو featured)', 422)
+    }
 
     if (!body.title?.trim()) return validationFail({ title: 'العنوان مطلوب' })
 

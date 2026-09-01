@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -10,6 +11,19 @@ import { useAuth } from '@/contexts/auth-context'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
+  const pathname = usePathname()
+  const isAdmin = pathname?.startsWith('/admin')
+  if (isAdmin) {
+    return (
+      <BookmarksProvider>
+        <ErrorBoundary label="this page">
+          {children}
+        </ErrorBoundary>
+        <CookieConsent />
+        <ScrollToTop />
+      </BookmarksProvider>
+    )
+  }
   return (
     <BookmarksProvider>
       <div className="flex min-h-screen flex-col">

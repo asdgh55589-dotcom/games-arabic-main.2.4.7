@@ -36,8 +36,8 @@ export function UsersFilters({
           />
         </div>
 
-        <Select value={roleFilter} onValueChange={onRoleChange}>
-          <SelectTrigger className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+        <Select value={roleFilter} onValueChange={onRoleChange} aria-label="فلتر الأدوار">
+          <SelectTrigger aria-label="الدور الحالي" className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
             <SelectValue placeholder="كل الأدوار" />
           </SelectTrigger>
           <SelectContent>
@@ -50,8 +50,8 @@ export function UsersFilters({
           </SelectContent>
         </Select>
 
-        <Select value={bannedFilter} onValueChange={onBannedChange}>
-          <SelectTrigger className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+        <Select value={bannedFilter} onValueChange={onBannedChange} aria-label="فلتر حالة الحظر">
+          <SelectTrigger aria-label="حالة الحظر الحالية" className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
             <SelectValue placeholder="الكل" />
           </SelectTrigger>
           <SelectContent>

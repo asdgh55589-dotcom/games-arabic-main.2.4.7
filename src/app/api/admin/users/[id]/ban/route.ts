@@ -4,7 +4,7 @@ import { requireAdmin, invalidateUserSessions, getClientIp } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
 import { getUseCases } from '@/application/use-cases/factory'
 import { setIpBanCache, deleteIpBanCache } from '@/lib/ip-ban-cache'
-import { ok, forbidden, internalError, notFound, validationFail } from '@/lib/api-response'
+import { ok, fail, forbidden, internalError, notFound, validationFail } from '@/lib/api-response'
 
 // POST /api/admin/users/[id]/ban — حظر مستخدم (مؤقت/دائم + خيار حظر IP)
 //
@@ -28,7 +28,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (target.role === 'owner') return forbidden('لا يمكن حظر المالك')
     if (id === currentUser.id) return forbidden('لا يمكنك حظر نفسك')
 
-    const type: 'temp' | 'perm' = body.type === 'temp' ? 'temp' : 'perm'
+    // التحقق من نوع الحظر (B4)
+    const typeRaw = body.type
+    if (!typeRaw) {
+      return fail('VALIDATION_ERROR', 'نوع الحظر مطلوب (temp أو perm)', 422)
+    }
+    if (!['temp', 'perm'].includes(typeRaw)) {
+      return fail('VALIDATION_ERROR', 'نوع الحظر غير صالح', 422)
+    }
+    const type: 'temp' | 'perm' = typeRaw
+    if (type === 'temp' && (!body.days || Number(body.days) <= 0)) {
+      return fail('VALIDATION_ERROR', 'عدد الأيام مطلوب للحظر المؤقت', 422)
+    }
     let bannedUntil: Date | null = null
     let banStatus: string
 

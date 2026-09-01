@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
-import { ok, notFound, forbidden, internalError } from '@/lib/api-response'
+import { ok, fail, notFound, forbidden, internalError } from '@/lib/api-response'
 
 // GET /api/admin/news/[id]
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +24,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await requireModerator()
     const { id } = await params
     const body = await req.json()
+
+    if (body.type !== undefined && !['ticker', 'featured'].includes(body.type)) {
+      return fail('VALIDATION_ERROR', 'نوع الخبر غير صالح (يجب أن يكون ticker أو featured)', 422)
+    }
 
     const existing = await db.news.findUnique({ where: { id } })
     if (!existing) return notFound('الخبر غير موجود')
