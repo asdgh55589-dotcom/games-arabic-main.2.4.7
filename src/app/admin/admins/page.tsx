@@ -36,7 +36,7 @@ export default async function AdminsPage({ searchParams }: PageProps) {
   const sortDirection = params.direction === 'asc' ? 'asc' : 'desc'
 
   const where: Record<string, unknown> = {
-    role: { in: ['moderator', 'admin', 'manager'] },
+    role: { in: ['moderator', 'admin', 'manager', 'owner'] },
   }
 
   if (search) {
@@ -66,7 +66,7 @@ export default async function AdminsPage({ searchParams }: PageProps) {
   const orderBy = orderByMap[sortField] || { createdAt: 'desc' }
 
   // Fetch all matching for stats, then paginated
-  const [total, admins, allForStats] = await Promise.all([
+  const [total, admins, allForStats, auditLogs] = await Promise.all([
     db.user.count({ where }),
     db.user.findMany({
       where,
@@ -87,12 +87,20 @@ export default async function AdminsPage({ searchParams }: PageProps) {
         createdAt: true,
         lastLoginAt: true,
         joinedAt: true,
+        securityKeyExpiresAt: true,
+        securityKeyChangedAt: true,
         _count: { select: { mods: true, comments: true } },
       },
     }),
     db.user.findMany({
-      where: { role: { in: ['moderator', 'admin', 'manager'] } },
+      where: { role: { in: ['moderator', 'admin', 'manager', 'owner'] } },
       select: { role: true, banStatus: true, lastLoginAt: true },
+    }),
+    db.auditLog.findMany({
+      where: { entity: 'user', action: { in: ['STAFF_CREATED', 'PROMOTED', 'DEMOTED', 'ROLE_CHANGED', 'CREDENTIALS_UPDATED'] } },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: { id: true, username: true, action: true, entityId: true, details: true, createdAt: true },
     }),
   ])
 
@@ -117,6 +125,7 @@ export default async function AdminsPage({ searchParams }: PageProps) {
       initialStatus={statusFilter}
       initialSort={sortField}
       initialDirection={sortDirection}
+      auditLogs={auditLogs as never}
     />
   )
 }

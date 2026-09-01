@@ -3,15 +3,17 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Shield, UserCog, Crown, Activity, Ban, Users } from 'lucide-react'
+import { Plus, Shield, UserCog, Crown, Activity, Ban, Users, Key, Clock, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
 import { UserActions } from '@/components/admin/shared/UserActions'
 import { formatNumber, timeAgo } from '@/lib/format'
+import { CreateStaffDialog } from '@/components/admin/create-staff-dialog'
+import { EditCredentialsDialog } from '@/components/admin/edit-credentials-dialog'
 
 interface AdminUser {
   id: string
@@ -27,7 +29,18 @@ interface AdminUser {
   createdAt: string
   lastLoginAt: string | null
   joinedAt: string
+  securityKeyExpiresAt: string | null
+  securityKeyChangedAt: string | null
   _count: { mods: number; comments: number }
+}
+
+interface AuditLogItem {
+  id: string
+  username: string
+  action: string
+  entityId: string | null
+  details: string | null
+  createdAt: string
 }
 
 interface Props {
@@ -42,6 +55,7 @@ interface Props {
   initialStatus: string
   initialSort: string
   initialDirection: string
+  auditLogs?: AuditLogItem[]
 }
 
 export function AdminsClient({
@@ -56,6 +70,7 @@ export function AdminsClient({
   initialStatus,
   initialSort,
   initialDirection,
+  auditLogs = [],
 }: Props) {
   const router = useRouter()
   const [page, setPage] = useState(initialPage)
@@ -66,6 +81,8 @@ export function AdminsClient({
   const [sortField, setSortField] = useState(initialSort)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialDirection as 'asc' | 'desc')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [createOpen, setCreateOpen] = useState(false)
+  const [credUser, setCredUser] = useState<AdminUser | null>(null)
 
   const updateUrl = (patch: Record<string, string>) => {
     const params = new URLSearchParams(window.location.search)
@@ -159,28 +176,46 @@ export function AdminsClient({
       render: (u) => <RoleBadge role={u.role} size="sm" />,
     },
     {
-      key: 'tier',
-      label: 'المستوى',
-      sortable: true,
-      render: (u) => <TierBadge role={u.role} tier={u.tier || 0} size="sm" />,
+      key: 'keyStatus',
+      label: 'مفتاح الأمان',
+      sortable: false,
+      render: (u) => {
+        if (!u.securityKeyExpiresAt) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-bold text-green-600">
+              <Key className="h-3 w-3" /> بدون انتهاء
+            </span>
+          )
+        }
+        const exp = new Date(u.securityKeyExpiresAt)
+        const isExpired = exp < new Date()
+        const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000)
+        if (isExpired) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-bold text-red-500">
+              <Clock className="h-3 w-3" /> منتهي
+            </span>
+          )
+        }
+        if (daysLeft <= 7) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-600">
+              <Clock className="h-3 w-3" /> {daysLeft} يوم
+            </span>
+          )
+        }
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-500">
+            <Clock className="h-3 w-3" /> {daysLeft} يوم
+          </span>
+        )
+      },
     },
     {
       key: 'mods',
       label: 'التعريبات',
       sortable: true,
       render: (u) => formatNumber(u._count.mods),
-    },
-    {
-      key: 'comments',
-      label: 'التعليقات',
-      sortable: true,
-      render: (u) => formatNumber(u._count.comments),
-    },
-    {
-      key: 'createdAt',
-      label: 'تاريخ الانضمام',
-      sortable: true,
-      render: (u) => new Date(u.createdAt).toLocaleDateString('ar-EG'),
     },
     {
       key: 'lastLogin',
@@ -208,9 +243,14 @@ export function AdminsClient({
       label: 'إجراءات',
       sortable: false,
       render: (u) => (
-        <UserActions user={u as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCredUser(u)} title="تعديل بيانات الاعتماد">
+            <Key className="h-4 w-4" />
+          </Button>
+          <UserActions user={u as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+        </div>
       ),
-      width: '80px',
+      width: '120px',
     },
   ]
 
@@ -223,6 +263,7 @@ export function AdminsClient({
         { label: 'مشرف', value: 'moderator' },
         { label: 'مسؤول', value: 'admin' },
         { label: 'مدير', value: 'manager' },
+        { label: 'مالك', value: 'owner' },
       ],
     },
     {
@@ -299,14 +340,12 @@ export function AdminsClient({
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">إدارة المسؤولين</h1>
-          <p className="mt-1 text-sm text-muted-foreground">إدارة المشرفين والمسؤولين والمديرين — {totalCount} مسؤول</p>
+          <h1 className="text-3xl font-bold tracking-tight">إدارة الفريق</h1>
+          <p className="mt-1 text-sm text-muted-foreground">إدارة المشرفين والمسؤولين والمديرين — {totalCount} مسؤول — شامل 4 بيانات اعتماد ومفتاح الأمان</p>
         </div>
-        <Button asChild className="min-h-[44px]">
-          <Link href="/admin/admins/new">
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة مسؤول جديد
-          </Link>
+        <Button onClick={() => setCreateOpen(true)} className="min-h-[44px]">
+          <Plus className="h-4 w-4 ml-2" />
+          تعيين عضو جديد
         </Button>
       </div>
 
@@ -352,14 +391,28 @@ export function AdminsClient({
                   <div className="font-medium truncate">{user.username}</div>
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                 </div>
-                <UserActions user={user as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCredUser(user)}>
+                    <Key className="h-4 w-4" />
+                  </Button>
+                  <UserActions user={user as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   الدور: <RoleBadge role={user.role} size="sm" />
                 </div>
                 <div>
-                  المستوى: <TierBadge role={user.role} tier={user.tier || 0} size="sm" />
+                  المفتاح:{' '}
+                  {user.securityKeyExpiresAt ? (
+                    new Date(user.securityKeyExpiresAt) < new Date() ? (
+                      <span className="text-red-500 font-bold">منتهي</span>
+                    ) : (
+                      <span className="text-blue-500 font-bold">{Math.ceil((new Date(user.securityKeyExpiresAt).getTime() - Date.now()) / 86400000)} يوم</span>
+                    )
+                  ) : (
+                    <span className="text-green-600 font-bold">بدون انتهاء</span>
+                  )}
                 </div>
                 <div>التعريبات: {formatNumber(user._count.mods)}</div>
                 <div>
@@ -388,6 +441,54 @@ export function AdminsClient({
           </Card>
         )}
       />
+
+      {/* سجل الإجراءات */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" /> سجل الإجراءات
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {auditLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سجل بعد — ستظهر إجراءات التعيين والترقية وتغيير المفتاح هنا.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-2 text-right">الإجراء</th>
+                    <th className="py-2 text-right">بواسطة</th>
+                    <th className="py-2 text-right">التفاصيل</th>
+                    <th className="py-2 text-right">التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="border-b last:border-0">
+                      <td className="py-2 font-medium">{log.action}</td>
+                      <td className="py-2">{log.username}</td>
+                      <td className="py-2 text-xs text-muted-foreground max-w-xs truncate">{log.details || '—'}</td>
+                      <td className="py-2 text-xs">{new Date(log.createdAt).toLocaleDateString('ar-EG')} {new Date(log.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <CreateStaffDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => router.refresh()} />
+      {credUser && (
+        <EditCredentialsDialog
+          open={!!credUser}
+          onOpenChange={(o) => !o && setCredUser(null)}
+          userId={credUser.id}
+          username={credUser.username}
+          onUpdated={() => router.refresh()}
+        />
+      )}
     </div>
   )
 }
