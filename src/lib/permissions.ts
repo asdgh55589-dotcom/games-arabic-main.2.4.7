@@ -115,3 +115,21 @@ export function canManageTeam(role: string, specialRoles?: string | null): boole
   if (hasSpecialRole(specialRoles, 'team_lead')) return true
   return false
 }
+
+/**
+ * هل يمكن للدور الحالي تعيين الدور المستهدف؟
+ * Owner → الكل، Manager → حتى admin، Admin → حتى moderator
+ */
+export function canAssignRole(actorRole: string, targetRole: string): boolean {
+  if (actorRole === 'owner') return true
+  const actorLevel = ROLE_ORDER.indexOf(actorRole as UserRole)
+  const targetLevel = ROLE_ORDER.indexOf(targetRole as UserRole)
+  if (actorLevel === -1 || targetLevel === -1) return false
+  // لا يمكن تعيين دور مساوٍ أو أعلى من دورك (إلا المالك)
+  if (actorLevel <= targetLevel) return false
+  // Manager لا يستطيع تعيين manager أو owner
+  if (actorRole === 'manager' && targetLevel >= ROLE_ORDER.indexOf('manager' as UserRole)) return false
+  // Admin لا يستطيع تعيين admin أو أعلى
+  if (actorRole === 'admin' && targetLevel >= ROLE_ORDER.indexOf('admin' as UserRole)) return false
+  return true
+}

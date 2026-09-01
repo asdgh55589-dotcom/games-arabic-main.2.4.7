@@ -1,20 +1,10 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, invalidateUserSessions, hashPassword, type UserRole } from '@/lib/auth'
+import { requireAdmin, invalidateUserSessions, hashPassword } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
 import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
 import { createAdminClient } from '@/lib/supabase/server'
-
-// Role assignment restrictions (hierarchy: member < creator < publisher < moderator < admin < manager < owner):
-// - Admin can assign: member, creator, publisher, moderator
-// - Manager can assign: member, creator, publisher, moderator, admin
-// - Owner can assign: all roles including owner
-function canAssignRole(actorRole: UserRole, targetRole: string): boolean {
-  if (actorRole === 'owner') return true
-  if (actorRole === 'manager') return ['member', 'creator', 'publisher', 'moderator', 'admin'].includes(targetRole)
-  if (actorRole === 'admin') return ['member', 'creator', 'publisher', 'moderator'].includes(targetRole)
-  return false
-}
+import { canAssignRole } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>

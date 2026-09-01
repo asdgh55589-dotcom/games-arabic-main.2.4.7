@@ -1,20 +1,10 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, hashPassword, type UserRole } from '@/lib/auth'
+import { requireAdmin, hashPassword } from '@/lib/auth'
 import { parsePagination } from '@/lib/api-utils'
 import { ok, okPaginated, fail, forbidden, internalError, validationFail } from '@/lib/api-response'
 import { createAdminClient } from '@/lib/supabase/server'
-
-// Role assignment restrictions (hierarchy: member < creator < publisher < moderator < admin < manager < owner):
-// - Admin can assign: member, creator, publisher, moderator
-// - Manager can assign: member, creator, publisher, moderator, admin
-// - Owner can assign: all roles including owner
-function canAssignRole(actorRole: UserRole, targetRole: string): boolean {
-  if (actorRole === 'owner') return true
-  if (actorRole === 'manager') return ['member', 'creator', 'publisher', 'moderator', 'admin'].includes(targetRole)
-  if (actorRole === 'admin') return ['member', 'creator', 'publisher', 'moderator'].includes(targetRole)
-  return false
-}
+import { canAssignRole } from '@/lib/permissions'
 
 // GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
 export async function GET(req: NextRequest) {
@@ -33,14 +23,26 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = {}
     if (search) {
       where.OR = [
-        { username: { contains: search } },
-        { displayName: { contains: search } },
-        { email: { contains: search } },
+        { username: { contains: search, mode: 'insensitive' } },
+        { displayName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (role) where.role = role
-    if (banned === 'banned') where.bannedUntil = { not: null, gt: new Date() }
-    if (banned === 'active') where.OR = [{ bannedUntil: null }, { bannedUntil: { lte: new Date() } }]
+    if (banned === 'banned') {
+      // حظر دائم أو مؤقت ساري
+      ;(where as any).bannedUntil = { not: null, gt: new Date() }
+    }
+    if (banned === 'active') {
+      const activeOr = [{ bannedUntil: null }, { bannedUntil: { lte: new Date() } }]
+      if (search && where.OR) {
+        const searchOr = where.OR
+        delete where.OR
+        ;(where as any).AND = [{ OR: searchOr }, { OR: activeOr }]
+      } else {
+        where.OR = activeOr
+      }
+    }
 
     const [total, users] = await Promise.all([
       db.user.count({ where }),
