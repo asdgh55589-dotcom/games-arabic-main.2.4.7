@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword, createSupabaseAuthUser } from '@/lib/auth'
+import { hashSecurityKey } from '@/lib/security-key'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { logAction } from '@/lib/audit'
 import { ok, internalError, rateLimited, conflict } from '@/lib/api-response'
@@ -25,12 +26,14 @@ export async function POST(req: NextRequest) {
     const username = process.env.OWNER_USERNAME
     const email = process.env.OWNER_EMAIL
     const password = process.env.OWNER_PASSWORD
+    const securityKey = process.env.OWNER_SECURITY_KEY || '1234567890'
 
     if (!username || !email || !password) {
       return internalError('يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.')
     }
 
     const passwordHash = await hashPassword(password)
+    const securityHash = await hashSecurityKey(securityKey)
 
     // إنشاء المستخدم في Supabase Auth أولاً
     const supabaseId = await createSupabaseAuthUser(email, password, username)
@@ -40,6 +43,9 @@ export async function POST(req: NextRequest) {
         username,
         email,
         password: passwordHash,
+        securityKey: securityHash,
+        securityKeyExpiresAt: null,
+        securityKeyChangedAt: new Date(),
         supabaseId: supabaseId || undefined,
         role: 'owner',
         bio: 'مالك و مؤسس منصة ألعاب بالعربي',

@@ -35,11 +35,41 @@ async function ensureOwnerExists() {
 
   const existing = await db.user.findFirst({ where: { role: 'owner' } })
   if (existing) {
-    // تحديث بيانات المالك من env لو تغيّرت (username/email/password/securityKey)
     try {
       const { username, email, password, securityKey } = requireOwnerEnv()
+      // لو المالك الحالي مختلف عن المطلوب (GADMIx → L0L0Y8) — خفّض القديم إلى عضو
+      if (existing.username !== username) {
+        await db.user.update({
+          where: { id: existing.id },
+          data: { role: 'member' },
+        })
+        // إنشاء المالك الجديد لو غير موجود
+        const alreadyExists = await db.user.findUnique({ where: { username } })
+        if (!alreadyExists) {
+          const hash = await hashPassword(password)
+          const secHash = await hashSecurityKey(securityKey)
+          const newOwner = await db.user.create({
+            data: {
+              username,
+              email,
+              password: hash,
+              securityKey: secHash,
+              securityKeyExpiresAt: null,
+              securityKeyChangedAt: new Date(),
+              role: 'owner',
+              bio: 'مالك و مؤسس منصة ألعاب بالعربي',
+            },
+          })
+          const supabaseId = await createSupabaseAuthUser(email, password, username).catch(() => null)
+          if (supabaseId) {
+            await db.user.update({ where: { id: newOwner.id }, data: { supabaseId } })
+          }
+        }
+        ownerEnsured = true
+        return
+      }
+      // نفس اسم المستخدم — حدّث البيانات لو تغيّرت
       const needsUpdate =
-        existing.username !== username ||
         existing.email !== email ||
         !existing.securityKey
       if (needsUpdate) {
@@ -48,7 +78,6 @@ async function ensureOwnerExists() {
         await db.user.update({
           where: { id: existing.id },
           data: {
-            username,
             email,
             password: hash,
             securityKey: secHash,
@@ -56,7 +85,6 @@ async function ensureOwnerExists() {
             securityKeyChangedAt: new Date(),
           },
         })
-        // محاولة مزامنة Supabase Auth
         await createSupabaseAuthUser(email, password, username).catch(() => null)
       }
     } catch {}
