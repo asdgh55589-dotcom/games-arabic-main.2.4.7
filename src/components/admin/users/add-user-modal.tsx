@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
 
 interface AddUserModalProps {
   onClose: () => void
@@ -44,9 +45,11 @@ export function AddUserModal({ onClose, onSubmit }: AddUserModalProps) {
               <SelectValue placeholder="اختر الدور" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="member">عضو</SelectItem>
-              <SelectItem value="moderator">مشرف</SelectItem>
-              <SelectItem value="admin">مدير</SelectItem>
+              {ROLE_ORDER.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

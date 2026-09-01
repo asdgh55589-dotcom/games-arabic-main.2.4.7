@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 import { AdminSurface } from '@/components/admin/admin-surface'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
 
 interface UsersFiltersProps {
   search: string
@@ -41,10 +42,11 @@ export function UsersFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">كل الأدوار</SelectItem>
-            <SelectItem value="owner">مالك</SelectItem>
-            <SelectItem value="admin">مدير</SelectItem>
-            <SelectItem value="moderator">مشرف</SelectItem>
-            <SelectItem value="member">عضو</SelectItem>
+            {ROLE_ORDER.map((r) => (
+              <SelectItem key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
