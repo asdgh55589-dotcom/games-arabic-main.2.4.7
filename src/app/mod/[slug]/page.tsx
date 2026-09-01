@@ -4,6 +4,22 @@ import { modJsonLd } from '@/lib/seo/structured-data'
 
 export const revalidate = 300 // ISR: 5m — بيانات التعريب نادراً ما تتغير
 
+export async function generateStaticParams() {
+  try {
+    const { db } = await import('@/lib/db')
+    const topMods = await db.mod.findMany({
+      where: { workflowStatus: 'PUBLISHED' },
+      orderBy: { downloads: 'desc' },
+      take: 100,
+      select: { slug: true },
+    })
+    return topMods.map((mod) => ({ slug: mod.slug }))
+  } catch (error) {
+    console.error('[generateStaticParams:mod] Failed:', error)
+    return []
+  }
+}
+
 interface ModPageProps {
   params: Promise<{ slug: string }>
 }

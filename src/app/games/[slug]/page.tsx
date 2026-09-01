@@ -4,6 +4,21 @@ import { gameJsonLd } from '@/lib/seo/structured-data'
 
 export const revalidate = 300 // ISR: 5m — بيانات الألعاب نادرة التغير
 
+export async function generateStaticParams() {
+  try {
+    const { db } = await import('@/lib/db')
+    const topGames = await db.game.findMany({
+      orderBy: { totalDownloads: 'desc' },
+      take: 50,
+      select: { slug: true },
+    })
+    return topGames.map((game) => ({ slug: game.slug }))
+  } catch (error) {
+    console.error('[generateStaticParams:games] Failed:', error)
+    return []
+  }
+}
+
 interface GamePageProps {
   params: Promise<{ slug: string }>
 }

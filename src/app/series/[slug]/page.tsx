@@ -1,6 +1,19 @@
 import type { Metadata } from 'next'
 import { SeriesDetailPage } from '@/views/series-detail'
 
+export async function generateStaticParams() {
+  try {
+    const { db } = await import('@/lib/db')
+    const topSeries = await db.series.findMany({
+      take: 30,
+      select: { slug: true },
+    })
+    return topSeries.map((s) => ({ slug: s.slug }))
+  } catch (error) {
+    return []
+  }
+}
+
 interface SeriesDetailPageProps {
   params: Promise<{ slug: string }>
 }
