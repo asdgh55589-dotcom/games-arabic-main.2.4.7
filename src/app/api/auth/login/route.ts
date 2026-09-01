@@ -7,20 +7,23 @@ import {
   createSupabaseAuthUser,
   type UserRole,
 } from '@/lib/auth'
+import bcrypt from 'bcryptjs'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { logAction } from '@/lib/audit'
 import { LoginSchema } from '@/lib/schemas'
 import { ok, validationFail, rateLimited, unauthorized, forbidden, internalError } from '@/lib/api-response'
+import { verifySecurityKey, isSecurityKeyExpired, hashSecurityKey } from '@/lib/security-key'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME
   const email = process.env.OWNER_EMAIL
   const password = process.env.OWNER_PASSWORD
+  const securityKey = process.env.OWNER_SECURITY_KEY || '1234567890'
   if (!username || !email || !password) {
     throw new Error('OWNER_USERNAME, OWNER_EMAIL, OWNER_PASSWORD must be set — configure env vars')
   }
-  return { username, email, password }
+  return { username, email, password, securityKey }
 }
 
 // كاش لمنع ensureOwnerExists من الاستدعاء المتكرر في نفس البروسيس
@@ -32,19 +35,48 @@ async function ensureOwnerExists() {
 
   const existing = await db.user.findFirst({ where: { role: 'owner' } })
   if (existing) {
+    // تحديث بيانات المالك من env لو تغيّرت (username/email/password/securityKey)
+    try {
+      const { username, email, password, securityKey } = requireOwnerEnv()
+      const needsUpdate =
+        existing.username !== username ||
+        existing.email !== email ||
+        !existing.securityKey
+      if (needsUpdate) {
+        const hash = await hashPassword(password)
+        const secHash = await hashSecurityKey(securityKey)
+        await db.user.update({
+          where: { id: existing.id },
+          data: {
+            username,
+            email,
+            password: hash,
+            securityKey: secHash,
+            securityKeyExpiresAt: null,
+            securityKeyChangedAt: new Date(),
+          },
+        })
+        // محاولة مزامنة Supabase Auth
+        await createSupabaseAuthUser(email, password, username).catch(() => null)
+      }
+    } catch {}
     ownerEnsured = true
     return
   }
 
-  const { username, email, password } = requireOwnerEnv()
+  const { username, email, password, securityKey } = requireOwnerEnv()
 
-  // إنشاء الـ owner في Neon DB
+  // إنشاء الـ owner في Neon DB مع مفتاح الأمان
   const hash = await hashPassword(password)
+  const secHash = await hashSecurityKey(securityKey)
   const owner = await db.user.create({
     data: {
       username,
       email,
       password: hash,
+      securityKey: secHash,
+      securityKeyExpiresAt: null,
+      securityKeyChangedAt: new Date(),
       role: 'owner',
       bio: 'مالك و مؤسس منصة ألعاب بالعربي',
     },
@@ -73,25 +105,44 @@ export async function POST(req: NextRequest) {
       return validationFail(parsed.error.flatten())
     }
 
-    const { username, password } = parsed.data
+    const { username, email, password, securityKey } = parsed.data
 
     const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:login' })
     if (!rl.success) {
       return rateLimited()
     }
 
-    // البحث عن المستخدم في Neon DB للحصول على البريد الإلكتروني والدور
+    // البحث عن المستخدم — يجب أن يتطابق username و email مع نفس المستخدم
     const neonUser = await db.user.findFirst({
       where: {
-        OR: [
-          { username: { equals: username } },
-          { email: { equals: username.toLowerCase() } },
-        ],
+        username: username,
+        email: email.toLowerCase(),
       },
     })
 
     if (!neonUser || !neonUser.password) {
-      return unauthorized('Invalid credentials')
+      return unauthorized('بيانات الاعتماد غير صحيحة')
+    }
+
+    // التحقق من كلمة المرور (bcrypt)
+    const passwordValid = await bcrypt.compare(password, neonUser.password)
+    if (!passwordValid) {
+      return unauthorized('بيانات الاعتماد غير صحيحة')
+    }
+
+    // التحقق من مفتاح الأمان
+    if (!neonUser.securityKey) {
+      return forbidden('لا يوجد مفتاح أمان مسجل — تواصل مع مدير الموقع')
+    }
+
+    const keyValid = await verifySecurityKey(securityKey, neonUser.securityKey)
+    if (!keyValid) {
+      return unauthorized('مفتاح الأمان غير صحيح')
+    }
+
+    // فحص انتهاء صلاحية المفتاح
+    if (isSecurityKeyExpired(neonUser.securityKeyExpiresAt as Date | null)) {
+      return forbidden('مفتاح الأمان منتهي الصلاحية — تواصل مع مدير الموقع')
     }
 
     // فحص الحظر قبل أي محاولة دخول

@@ -24,7 +24,9 @@ export const UsernameParamSchema = z.string().min(1).max(50).regex(/^[a-zA-Z0-9_
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'اسم المستخدم مطلوب').max(100).trim(),
+  email: z.string().min(1, 'البريد الإلكتروني مطلوب').email('البريد الإلكتروني غير صالح').trim(),
   password: z.string().min(1, 'كلمة المرور مطلوبة').max(200),
+  securityKey: z.string().min(1, 'مفتاح الأمان مطلوب').max(100).trim(),
 })
 
 export const ChangePasswordSchema = z.object({
