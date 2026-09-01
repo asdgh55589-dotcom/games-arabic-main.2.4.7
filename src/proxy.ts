@@ -52,6 +52,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const mfaVerified = payload.mfa === true
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
+    // الأمن الحقيقي في getSession() عبر DB — Edge هنا دفاع إضافي فقط، لذا FAIL-OPEN عند عدم وجود Redis
     let tvVerified = false
     if (tv !== undefined && userId) {
       try {
@@ -64,16 +65,14 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
           async () => null
         )
 
-        if (tv !== undefined) {
-          if (cachedTv === null) {
-            tvVerified = false
-          } else if (cachedTv !== tv) {
-            return null
-          } else {
-            tvVerified = true
-          }
+        if (cachedTv === null) {
+          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss) — FAIL-OPEN، getSession() سيتحقق عبر DB
+          tvVerified = true
+        } else if (cachedTv !== tv) {
+          // تباين مؤكد → الجلسة أُبطلت → رفض
+          return null
         } else {
-          tvVerified = false
+          tvVerified = true
         }
       } catch {
         tvVerified = false

@@ -27,6 +27,7 @@ function AdminLoginContent() {
   const searchParams = useSearchParams()
   const fromPath = searchParams.get('from') || '/admin'
   const errorCode = searchParams.get('error')
+  const tokenCheckFailed = searchParams.get('token_check_failed')
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -43,14 +44,14 @@ function AdminLoginContent() {
       .then((r) => r.json())
       .then((json) => {
         const user = json?.data?.user
-        if (user && user.role !== 'member') {
+        if (user && user.role !== 'member' && !tokenCheckFailed) {
           router.replace(fromPath)
         } else {
           setCheckingSession(false)
         }
       })
       .catch(() => setCheckingSession(false))
-  }, [router, fromPath])
+  }, [router, fromPath, tokenCheckFailed])
 
   useEffect(() => {
     if (errorCode === 'insufficient_role') {
@@ -158,6 +159,13 @@ function AdminLoginContent() {
           <img src="/logo.png" alt="ألعاب عربية" className="mx-auto mb-3 h-10 w-auto object-contain" />
           <p className="mt-1 text-sm text-muted-foreground">لوحة تحكم نشر التعريبات</p>
         </div>
+
+        {tokenCheckFailed && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm mb-4" dir="rtl">
+            ⚠️ تعذر التحقق من الجلسة. تم تسجيل دخولك — اضغط زر الدخول للمتابعة.
+            <Link href="/admin" className="block mt-2 text-center font-bold underline">دخول لوحة التحكم</Link>
+          </div>
+        )}
 
         {!mfaRequired ? (
           <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur">
