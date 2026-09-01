@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Lock, User, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
+import { Lock, User, AlertCircle, Loader2, ShieldCheck, Mail, Key } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,7 +30,9 @@ function AdminLoginContent() {
   const tokenCheckFailed = searchParams.get('token_check_failed')
 
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [securityKey, setSecurityKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
@@ -66,8 +68,8 @@ function AdminLoginContent() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username || !password) {
-      setError('اسم المستخدم وكلمة المرور مطلوبان')
+    if (!username || !email || !password || !securityKey) {
+      setError('جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان')
       return
     }
     setLoading(true)
@@ -77,7 +79,7 @@ function AdminLoginContent() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, email, password, securityKey }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -171,7 +173,7 @@ function AdminLoginContent() {
           <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-medium text-foreground">
-                اسم المستخدم أو البريد الإلكتروني
+                اسم المستخدم
               </Label>
               <div className="relative">
                 <User className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -179,11 +181,30 @@ function AdminLoginContent() {
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Momen Hani"
+                  placeholder="L0L0Y8"
                   className="h-11 pr-10"
                   autoComplete="username"
                   disabled={loading}
                   autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                البريد الإلكتروني
+              </Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Arabic_games@gmail.com"
+                  className="h-11 pr-10"
+                  autoComplete="email"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -202,6 +223,25 @@ function AdminLoginContent() {
                   placeholder="••••••••"
                   className="h-11 pr-10"
                   autoComplete="current-password"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="securityKey" className="text-sm font-medium text-foreground">
+                مفتاح الأمان
+              </Label>
+              <div className="relative">
+                <Key className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="securityKey"
+                  type="password"
+                  value={securityKey}
+                  onChange={(e) => setSecurityKey(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 pr-10"
+                  autoComplete="off"
                   disabled={loading}
                 />
               </div>
