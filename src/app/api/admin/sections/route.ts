@@ -12,6 +12,7 @@ export async function GET() {
     await requireManager()
 
     const sections = await db.section.findMany({
+      take: 20,
       orderBy: { order: 'asc' },
       select: {
         id: true,

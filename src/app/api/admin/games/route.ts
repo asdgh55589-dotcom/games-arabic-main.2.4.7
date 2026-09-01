@@ -10,11 +10,18 @@ export async function GET() {
   try {
     await requireModerator()
     const games = await db.game.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      include: {
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        platform: true,
+        thumbnailUrl: true,
+        releaseYear: true,
+        createdAt: true,
         _count: { select: { mods: true } },
       },
+      orderBy: { createdAt: 'desc' },
     })
     return ok(games)
   } catch (err) {

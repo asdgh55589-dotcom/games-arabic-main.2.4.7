@@ -9,6 +9,20 @@ export async function GET() {
   try {
     await requireModerator()
     const ads = await db.homepageAd.findMany({
+      take: 10,
+      select: {
+        id: true,
+        type: true,
+        url: true,
+        title: true,
+        description: true,
+        link: true,
+        size: true,
+        order: true,
+        visible: true,
+        createdAt: true,
+        clicksCount: true,
+      },
       orderBy: { order: 'asc' },
     })
     return ok(ads)
