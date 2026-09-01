@@ -255,16 +255,24 @@ export default function UserDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div role="tablist" aria-label="تبويبات المستخدم" className="flex gap-1 border-b border-border">
         {(['overview', 'activity', 'comments', 'tier'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === t ? 'border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+          <button
+            key={t}
+            role="tab"
+            id={`${t}-tab`}
+            aria-selected={tab === t}
+            aria-controls={`${t}-panel`}
+            onClick={() => setTab(t)}
+            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === t ? 'border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          >
             {t === 'overview' ? 'البيانات' : t === 'activity' ? 'النشاط' : t === 'comments' ? 'التعليقات' : 'المستوى والأدوار'}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {tab === 'overview' && (
+      <div id="overview-panel" role="tabpanel" aria-labelledby="overview-tab" hidden={tab !== 'overview'}>
         <div className="rounded-xl border border-border bg-card p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div><span className="text-xs text-muted-foreground">تاريخ الانضمام</span><div className="text-sm">{new Date(user.joinedAt).toLocaleDateString('ar')}</div></div>
@@ -292,9 +300,9 @@ export default function UserDetailPage() {
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {tab === 'activity' && (
+      <div id="activity-panel" role="tabpanel" aria-labelledby="activity-tab" hidden={tab !== 'activity'}>
         <div className="rounded-xl border border-border bg-card p-6">
           {actions.length === 0 ? (
             <p className="text-sm text-muted-foreground">لا يوجد نشاط</p>
@@ -309,7 +317,7 @@ export default function UserDetailPage() {
                       <span className={`font-medium ${info.color}`}>{info.label}</span>
                       {a.byUsername && <span className="text-muted-foreground"> بواسطة {a.byUsername}</span>}
                       {a.reason && <span className="text-muted-foreground"> — {a.reason}</span>}
-                      <div className="text-xs text-muted-foreground">{timeAgo(a.createdAt)}{a.ipAddress ? ` · ${a.ipAddress}` : ''}</div>
+                      <div className="text-xs text-muted-foreground">{timeAgo(a.createdAt)}{a.ipAddress ? <><span> · </span><span dir="ltr" className="inline-block">{a.ipAddress}</span></> : ''}</div>
                     </div>
                   </div>
                 )
@@ -317,9 +325,9 @@ export default function UserDetailPage() {
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {tab === 'comments' && (
+      <div id="comments-panel" role="tabpanel" aria-labelledby="comments-tab" hidden={tab !== 'comments'}>
         <div className="rounded-xl border border-border bg-card p-6">
           {comments.length === 0 ? (
             <p className="text-sm text-muted-foreground">لا يوجد تعليقات</p>
@@ -334,9 +342,9 @@ export default function UserDetailPage() {
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {tab === 'tier' && (
+      <div id="tier-panel" role="tabpanel" aria-labelledby="tier-tab" hidden={tab !== 'tier'}>
         <div className="space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div className="flex items-center gap-4">
@@ -363,7 +371,7 @@ export default function UserDetailPage() {
             <TierHistoryTable history={tierHistory} />
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

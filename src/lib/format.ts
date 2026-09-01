@@ -58,3 +58,46 @@ export function parseTags(s: string | null | undefined): string[] {
   if (!s) return []
   return s.split(',').map((t) => t.trim()).filter(Boolean)
 }
+
+export function formatAuditDetails(action: string, details: any): string {
+  if (!details) return '—'
+  let obj: Record<string, any>
+  try {
+    obj = typeof details === 'string' ? JSON.parse(details) : details
+  } catch {
+    return String(details)
+  }
+  if (typeof obj !== 'object' || obj === null) return String(details)
+  const keyTranslations: Record<string, string> = {
+    oldRole: 'الدور السابق',
+    newRole: 'الدور الجديد',
+    username: 'اسم المستخدم',
+    email: 'البريد الإلكتروني',
+    reason: 'السبب',
+    oldStatus: 'الحالة السابقة',
+    newStatus: 'الحالة الجديدة',
+    modName: 'اسم التعريب',
+  }
+  const valueTranslations: Record<string, string> = {
+    member: 'عضو',
+    creator: 'مُعَرِّب',
+    publisher: 'ناشر',
+    moderator: 'مشرف',
+    admin: 'مسؤول',
+    manager: 'مدير',
+    owner: 'مالك الموقع',
+    DRAFT: 'مسودة',
+    IN_REVIEW: 'قيد المراجعة',
+    APPROVED: 'مقبول',
+    PUBLISHED: 'منشور',
+    ARCHIVED: 'مؤرشف',
+    REJECTED: 'مرفوض',
+  }
+  return Object.entries(obj)
+    .map(([key, value]) => {
+      const translatedKey = keyTranslations[key] || key
+      const translatedValue = typeof value === 'string' ? (valueTranslations[value] || value) : String(value)
+      return `${translatedKey}: ${translatedValue}`
+    })
+    .join(' • ')
+}

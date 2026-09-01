@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { timeAgo } from '@/lib/format'
+import { timeAgo, formatAuditDetails } from '@/lib/format'
 
 interface AuditLogEntry {
   id: string
@@ -252,7 +252,7 @@ export default function AdminAuditPage() {
                     </td>
                     <td className="px-4 py-3 text-xs">{ENTITY_LABELS[log.entity] || log.entity}</td>
                     <td className="hidden px-4 py-3 text-xs text-muted-foreground md:table-cell max-w-[200px] truncate">
-                      {log.details || '—'}
+                      {log.details ? formatAuditDetails(log.action, log.details) : '—'}
                     </td>
                     <td className="hidden px-4 py-3 text-xs text-muted-foreground sm:table-cell">
                       {timeAgo(log.createdAt)}
@@ -295,7 +295,7 @@ export default function AdminAuditPage() {
                   </div>
                   <div className="rounded-md bg-muted/50 p-2.5">
                     <div className="text-xs font-semibold text-muted-foreground">التفاصيل</div>
-                    <div className="mt-1 break-words text-sm">{log.details || '—'}</div>
+                    <div className="mt-1 break-words text-sm">{log.details ? formatAuditDetails(log.action, log.details) : '—'}</div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{timeAgo(log.createdAt)}</span>
@@ -320,7 +320,7 @@ export default function AdminAuditPage() {
                   {expandedId === log.id && log.details && (
                     <div className="rounded-md border border-border bg-card p-3 text-sm break-words">
                       <div className="text-xs font-semibold text-muted-foreground mb-1">التفاصيل الكاملة</div>
-                      {log.details}
+                      {formatAuditDetails(log.action, log.details)}
                       {log.entityId && (
                         <div className="mt-2 text-xs text-muted-foreground" dir="ltr">ID: {log.entityId}</div>
                       )}
