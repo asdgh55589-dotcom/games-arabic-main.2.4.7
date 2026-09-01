@@ -84,6 +84,10 @@ model User {
   bannedBy               String? // id الأدمن الذي أصدر الحظر
   bannedAt               DateTime? // متى تم الحظر
   tokenVersion           Int                     @default(0) // لإبطال الجلسات القديمة عند الحظر/تغيير الدور
+  // Security key (alphanumeric) for staff login
+  securityKey            String? // Hashed security key
+  securityKeyExpiresAt   DateTime? // Expiry set by owner
+  securityKeyChangedAt   DateTime? // Last change
   // ===== MFA fields — TOTP/WebAuthn/Recovery =====
   totpSecret             String? // مشفّر base64 — سر TOTP
   totpEnabled            Boolean                 @default(false)
