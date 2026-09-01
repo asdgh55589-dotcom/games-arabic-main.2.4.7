@@ -18,6 +18,7 @@ import { TierBadge } from '@/components/tier-badge'
 import { AddUserModal } from '@/components/admin/users/add-user-modal'
 import { PasswordModal } from '@/components/admin/users/password-modal'
 import { BanModal } from '@/components/admin/users/ban-modal'
+import { WarningDialog } from '@/components/admin/users/warning-dialog'
 import type { UserItem } from '@/components/admin/users/users-types'
 
 export default function AdminUsersPage() {
@@ -34,6 +35,8 @@ export default function AdminUsersPage() {
 
   const [changePwUserId, setChangePwUserId] = useState<string | null>(null)
   const [banUserId, setBanUserId] = useState<string | null>(null)
+  const [warningUser, setWarningUser] = useState<{ id: string; username: string } | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -63,7 +66,7 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-  }, [page, search, roleFilter, bannedFilter])
+  }, [page, search, roleFilter, bannedFilter, refreshKey])
 
   const onRoleChange = async (user: UserItem, newRole: string) => {
     try {
@@ -198,23 +201,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  const onWarn = async (userId: string) => {
-    const reason = prompt('سبب التحذير (اختياري):')
-    try {
-      const res = await fetch(`/api/admin/users/${userId}/warn`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      })
-      if (!res.ok) throw new Error('فشل التحذير')
-      toast({ title: 'تم التحذير' })
-    } catch (err) {
-      toast({
-        title: 'خطأ',
-        description: err instanceof Error ? err.message : 'فشل',
-        variant: 'destructive',
-      })
-    }
+  const onWarn = (userId: string) => {
+    const u = users.find((x) => x.id === userId)
+    if (u) setWarningUser({ id: u.id, username: u.username })
   }
 
   const onDelete = async (user: UserItem) => {
@@ -523,6 +512,16 @@ export default function AdminUsersPage() {
           userId={banUserId}
           onClose={() => setBanUserId(null)}
           onSubmit={onBan}
+        />
+      )}
+
+      {warningUser && (
+        <WarningDialog
+          open={!!warningUser}
+          onOpenChange={(open) => !open && setWarningUser(null)}
+          userId={warningUser.id}
+          username={warningUser.username}
+          onSuccess={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>
