@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin, invalidateUserSessions, type UserRole } from '@/lib/auth'
+import { requireAdmin, invalidateUserSessions, hashPassword, type UserRole } from '@/lib/auth'
 import { logUserAction } from '@/lib/audit'
-import { ok, forbidden, internalError, notFound } from '@/lib/api-response'
+import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
+import { createAdminClient } from '@/lib/supabase/server'
 
 // Role assignment restrictions (hierarchy: member < creator < publisher < moderator < admin < manager < owner):
 // - Admin can assign: member, creator, publisher, moderator
@@ -102,16 +103,82 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const updateData: Record<string, unknown> = {}
-    const allowed = ['username', 'email', 'avatarUrl', 'bio', 'role']
+    const allowed = ['username', 'displayName', 'firstName', 'lastName', 'email', 'avatarUrl', 'bio', 'role']
     for (const field of allowed) {
       if (body[field] !== undefined) updateData[field] = body[field]
     }
 
-    await db.user.update({ where: { id }, data: updateData })
+    if (Object.keys(updateData).length > 0) {
+      await db.user.update({ where: { id }, data: updateData })
+    }
 
     // لو تم تغيير الدور → إبطال الجلسات القديمة (tokenVersion)
     if (newRole && newRole !== target.role) {
       await invalidateUserSessions(id)
+    }
+
+    // ===== معالجة تغيير كلمة المرور (FIX #1) =====
+    if (body.password && typeof body.password === 'string' && body.password.trim()) {
+      const newPassword = body.password.trim()
+      if (newPassword.length < 8) {
+        return fail('VALIDATION_ERROR', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', 400)
+      }
+      try {
+        const adminClient = createAdminClient()
+        let supabaseUpdated = false
+        if (adminClient && target.supabaseId) {
+          const { error: updateError } = await adminClient.auth.admin.updateUserById(
+            target.supabaseId,
+            { password: newPassword }
+          )
+          if (updateError) {
+            console.error('[admin/users/[id] PUT] Supabase password update failed:', updateError)
+            return fail('INTERNAL_ERROR', 'فشل تحديث كلمة المرور: ' + updateError.message, 500)
+          }
+          supabaseUpdated = true
+        }
+        // Fallback: حفظ كلمة المرور مشفرة محلياً (للتوافق + في حال Supabase غير مُهيأ أو بدون supabaseId)
+        if (!supabaseUpdated) {
+          const hashed = await hashPassword(newPassword)
+          await db.user.update({ where: { id }, data: { password: hashed } as any })
+          // إذا كان هناك Supabase client لكن بدون supabaseId — حاول إنشاء حساب Supabase وربطه
+          if (adminClient && !target.supabaseId) {
+            try {
+              const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+                email: target.email,
+                password: newPassword,
+                email_confirm: true,
+                user_metadata: { username: target.username },
+              })
+              if (!createError && created?.user?.id) {
+                await db.user.update({ where: { id }, data: { supabaseId: created.user.id } as any })
+              }
+            } catch {
+              // ignore — كلمة المرور المحلية كافية
+            }
+          }
+        } else {
+          // حتى مع نجاح Supabase، حدّث الحقل المحلي أيضاً للتوافق
+          try {
+            const hashed = await hashPassword(newPassword)
+            await db.user.update({ where: { id }, data: { password: hashed } as any })
+          } catch {}
+        }
+
+        await logUserAction({
+          userId: id,
+          actorId: currentUser.id,
+          actorUsername: currentUser.username,
+          action: 'password_change',
+          reason: 'تغيير كلمة المرور بواسطة الإدارة',
+          request: req,
+        })
+
+        await invalidateUserSessions(id)
+      } catch (error) {
+        console.error('[admin/users/[id] PUT] Password update error:', error)
+        return fail('INTERNAL_ERROR', 'خطأ في تحديث كلمة المرور', 500)
+      }
     }
 
     return ok({ success: true })
