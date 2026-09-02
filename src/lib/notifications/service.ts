@@ -21,126 +21,94 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
     })
 
     // Determine which channels to use
-    const channels = determineChannels(recipient.channels, preferences, event.type)
+    let channels = determineChannels(recipient.channels, preferences, event.type)
 
-    // Create in-app notification
-    if (channels.includes('in_app')) {
-      await createInAppNotification(event, recipient.userId)
-    }
-
-    // Queue email
-    if (channels.includes('email')) {
-      await queueEmailNotification(event, recipient.userId)
-    }
-
-    // Queue Telegram
+    // Telegram requires telegramUrl — فلترة القناة إذا لم يكن موجوداً
     if (channels.includes('telegram')) {
-      await queueTelegramNotification(event, recipient.userId)
+      const user = await db.user.findUnique({
+        where: { id: recipient.userId },
+        select: { telegramUrl: true },
+      })
+      if (!user?.telegramUrl) {
+        channels = channels.filter((c) => c !== 'telegram')
+      }
+    }
+
+    if (channels.length === 0) continue
+
+    // إنشاء إشعار واحد مشترك لكل القنوات
+    const notification = await db.notification.create({
+      data: {
+        userId: recipient.userId,
+        actorId: event.actorId,
+        type: event.type,
+        title: event.title,
+        message: event.message,
+        data: event.data || {},
+      },
+    })
+
+    // إنشاء مهمة لكل قناة مرتبطة بنفس الإشعار
+    for (const channel of channels) {
+      if (channel === 'in_app') {
+        await db.notificationJob.create({
+          data: {
+            notificationId: notification.id,
+            channel: 'in_app',
+            status: 'sent',
+            processedAt: new Date(),
+          },
+        })
+        await db.notificationLog.create({
+          data: {
+            notificationId: notification.id,
+            channel: 'in_app',
+            status: 'sent',
+            sentAt: new Date(),
+          },
+        })
+      } else {
+        await db.notificationJob.create({
+          data: {
+            notificationId: notification.id,
+            channel,
+            status: 'pending',
+          },
+        })
+      }
     }
   }
 }
 
 /**
- * إنشاء إشعار داخل التطبيق
+ * إنشاء إشعار داخل التطبيق — مُهمل: استخدم sendNotification (ينشئ إشعار واحد)
+ * محفوظ للتوافق الخلفي فقط
  */
 async function createInAppNotification(
   event: NotificationEvent,
   userId: string
 ): Promise<void> {
-  try {
-    const notification = await db.notification.create({
-      data: {
-        userId,
-        actorId: event.actorId,
-        type: event.type,
-        title: event.title,
-        message: event.message,
-        data: event.data || {},
-      },
-    })
-
-    // Create job for tracking
-    await db.notificationJob.create({
-      data: {
-        notificationId: notification.id,
-        channel: 'in_app',
-        status: 'sent',
-        processedAt: new Date(),
-      },
-    })
-  } catch (err) {
-    console.error('[notification-service] Failed to create in-app notification:', err)
-  }
+  console.warn('[deprecated] createInAppNotification استخدم sendNotification')
 }
 
 /**
- * إضافة إشعار بريد إلى قائمة الانتظار
+ * إضافة إشعار بريد إلى قائمة الانتظار — مُهمل
  */
 async function queueEmailNotification(
   event: NotificationEvent,
   userId: string
 ): Promise<void> {
-  try {
-    const notification = await db.notification.create({
-      data: {
-        userId,
-        actorId: event.actorId,
-        type: event.type,
-        title: event.title,
-        message: event.message,
-        data: event.data || {},
-      },
-    })
-
-    await db.notificationJob.create({
-      data: {
-        notificationId: notification.id,
-        channel: 'email',
-        status: 'pending',
-      },
-    })
-  } catch (err) {
-    console.error('[notification-service] Failed to queue email:', err)
-  }
+  console.warn('[deprecated] queueEmailNotification استخدم sendNotification')
 }
 
 /**
- * إضافة إشعار Telegram إلى قائمة الانتظار
+ * إضافة إشعار Telegram إلى قائمة الانتظار — مُهمل
  */
 async function queueTelegramNotification(
   event: NotificationEvent,
   userId: string
 ): Promise<void> {
-  try {
-    // Get user's Telegram info
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { telegramUrl: true, username: true },
-    })
-
-    if (!user?.telegramUrl) return
-
-    const notification = await db.notification.create({
-      data: {
-        userId,
-        actorId: event.actorId,
-        type: event.type,
-        title: event.title,
-        message: event.message,
-        data: event.data || {},
-      },
-    })
-
-    await db.notificationJob.create({
-      data: {
-        notificationId: notification.id,
-        channel: 'telegram',
-        status: 'pending',
-      },
-    })
-  } catch (err) {
-    console.error('[notification-service] Failed to queue Telegram:', err)
-  }
+  console.warn('[deprecated] queueTelegramNotification استخدم sendNotification')
 }
 
 /**
