@@ -322,11 +322,39 @@ export function ModDetailPage() {
 
           </div>
 
-          {/* ===== CONTENT ROW — نص فقط بدون بوستر طولي (Steam-style) ===== */}
-          <div dir="rtl" className="relative z-10 me-auto ms-2 sm:ms-8 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-4 sm:pe-6 lg:pe-8 pt-6 sm:pt-8">
-            <div className="grid grid-cols-1 gap-6 sm:gap-8 items-start">
+          {/* ===== CONTENT ROW — poster hidden on mobile, visible on desktop ===== */}
+          <div dir="rtl" className="relative z-10 me-auto ms-0 sm:ms-2 lg:ms-32 ps-0 sm:ps-2 lg:ps-8 pe-4 sm:pe-6 lg:pe-36 pt-1 sm:pt-2 lg:pt-6 lg:-mt-[160px] xl:-mt-[280px]">
+            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
 
-              {/* TEXT COLUMN — كامل العرض */}
+              {/* POSTER COLUMN — hidden on mobile, visible on desktop */}
+              <div className="hidden lg:block w-[280px] mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
+                {/* Poster image */}
+                <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
+                  {mod.imageUrl ? (
+                    <img
+                      src={mod.imageUrl}
+                      alt={mod.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+                      <Gamepad2 className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground/40">{mod.game.name}</span>
+                    </div>
+                  )}
+                  {mod.game?.platform && (
+                    <span
+                      className="absolute top-1.5 sm:top-2 start-1.5 sm:start-2 inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-black uppercase leading-none text-white"
+                      style={{ background: platformColor || 'var(--primary)' }}
+                    >
+                      {mod.game.platform}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* TEXT COLUMN — beside poster */}
               <div className="text-right">
                 {/* Badges row */}
                 <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
@@ -342,12 +370,18 @@ export function ModDetailPage() {
                   )}
                 </div>
 
-                {/* Title — صغير وتحت الصورة مباشرة */}
+                {/* Title — mobile small under image (attached right), desktop large with blurred backdrop */}
                 <div
-                  className="ps-2 sm:ps-4 lg:ps-6 pe-2 sm:pe-4 lg:pe-6 pt-2 sm:pt-4 pb-4 sm:pb-6"
+                  className="ps-0 sm:ps-1 lg:ps-6 pe-2 sm:pe-4 lg:pe-10 pt-1 sm:pt-2 lg:pt-10 pb-4 sm:pb-6 lg:pb-8 lg:bg-black/25 lg:backdrop-blur-sm lg:-mt-3"
+                  style={{
+                    maskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
+                    WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
+                    maskComposite: 'intersect',
+                    WebkitMaskComposite: 'source-in',
+                  }}
                 >
                 {/* Title */}
-                <h1 className="break-words text-lg font-bold leading-tight text-foreground sm:text-xl md:text-2xl whitespace-normal">
+                <h1 className="break-words text-lg font-bold leading-tight text-foreground sm:text-xl lg:text-2xl xl:text-5xl whitespace-normal lg:whitespace-nowrap">
                   {mod.name}
                 </h1>
                 {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false && (
