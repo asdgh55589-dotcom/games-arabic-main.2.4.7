@@ -336,39 +336,11 @@ export function ModDetailPage() {
 
           </div>
 
-          {/* ===== CONTENT ROW — poster right, text left, overlaps banner ===== */}
-          <div dir="rtl" className="relative z-10 me-auto ms-2 sm:ms-8 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 -mt-[160px] sm:-mt-[280px] md:-mt-[360px]">
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
+          {/* ===== CONTENT ROW — نص فقط بدون بوستر طولي (Steam-style) ===== */}
+          <div dir="rtl" className="relative z-10 me-auto ms-2 sm:ms-8 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-4 sm:pe-6 lg:pe-8 pt-6 sm:pt-8">
+            <div className="grid grid-cols-1 gap-6 sm:gap-8 items-start">
 
-              {/* POSTER COLUMN — RIGHT side in RTL */}
-              <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
-                {/* Poster image */}
-                <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
-                  {mod.imageUrl ? (
-                    <img
-                      src={mod.imageUrl}
-                      alt={mod.name}
-                      className="h-full w-full object-cover"
-                      onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-                      <Gamepad2 className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />
-                      <span className="text-[10px] sm:text-xs text-muted-foreground/40">{mod.game.name}</span>
-                    </div>
-                  )}
-                  {mod.game?.platform && (
-                    <span
-                      className="absolute top-1.5 sm:top-2 start-1.5 sm:start-2 inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-black uppercase leading-none text-white"
-                      style={{ background: platformColor || 'var(--primary)' }}
-                    >
-                      {mod.game.platform}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* TEXT COLUMN — beside poster */}
+              {/* TEXT COLUMN — كامل العرض */}
               <div className="text-right">
                 {/* Badges row */}
                 <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
