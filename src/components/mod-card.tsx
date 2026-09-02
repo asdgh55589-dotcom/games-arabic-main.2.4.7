@@ -79,7 +79,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
           <div className="absolute top-2 end-2 z-20 flex items-center gap-1">
             {badgeStatus && <StatusBadge status={badgeStatus} />}
             {variant !== 'compact' && (
-              <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+              <span className="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -136,9 +136,9 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
         </div>
 
         {/* BODY */}
-        <div className="flex w-full flex-col gap-2 p-3">
+        <div className="flex w-full flex-col gap-1.5 p-2 sm:gap-2 sm:p-3">
           {/* ZONE 1: IDENTITY */}
-          <h3 className="w-full text-sm font-bold leading-snug text-foreground line-clamp-2 min-h-[2.5em] transition-colors group-hover:text-primary">
+          <h3 className="w-full text-xs font-bold leading-snug text-foreground line-clamp-2 min-h-[2.5em] transition-colors group-hover:text-primary sm:text-sm">
             {mod.name}
           </h3>
           {mod.isOriginalWork === false && (
@@ -183,7 +183,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
                       router.push(`/profile/${encodeURIComponent(mod.author.username)}`)
                     }
                   }}
-                  className="group/publisher flex w-full items-center gap-2 rounded-lg border border-amber-800/40 bg-gradient-to-l from-amber-900/20 to-orange-900/20 px-2.5 py-1.5 transition-all duration-150 hover:border-amber-600/60 hover:from-amber-900/30 hover:to-orange-900/30 cursor-pointer"
+                  className="group/publisher hidden w-full items-center gap-2 rounded-lg border border-amber-800/40 bg-gradient-to-l from-amber-900/20 to-orange-900/20 px-2.5 py-1.5 transition-all duration-150 hover:border-amber-600/60 hover:from-amber-900/30 hover:to-orange-900/30 cursor-pointer sm:flex"
                   style={{ boxShadow: '0 0 0 0 rgba(217,119,6,0)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 0 10px rgba(217,119,6,0.25)')}
                   onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 0 0 0 rgba(217,119,6,0)')}
@@ -208,7 +208,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
               )}
 
               {/* ZONE 2: SPEC PANEL */}
-              <div className="flex w-full flex-col gap-1 border-y-2 border-border/60 bg-muted/30 px-2.5 py-2">
+              <div className="hidden w-full flex-col gap-1 border-y-2 border-border/60 bg-muted/30 px-2.5 py-2 sm:flex">
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/70" />
                   <span className="w-16 shrink-0 text-[11px] text-muted-foreground">النشر</span>
@@ -246,16 +246,16 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
               {/* ZONE 3: STATS BAR */}
               <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
                 <div className="flex items-center justify-center gap-1" title="التحميلات">
-                  <Download className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.downloads)}</span>
+                  <Download className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
+                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.downloads)}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
-                  <Eye className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.views)}</span>
+                  <Eye className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
+                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.views)}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
-                  <ThumbsUp className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-foreground/90">{formatNumber(mod.endorsements)}</span>
+                  <ThumbsUp className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
+                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.endorsements)}</span>
                 </div>
               </div>
             </>
