@@ -411,8 +411,8 @@ export default function RequestPage() {
                     </Label>
                     <div className="space-y-2">
                       {storeLinks.map((link, idx) => (
-                        <div key={idx} className="flex gap-2">
-                          <div className="flex-1 relative">
+                        <div key={idx} className="flex gap-2 min-w-0">
+                          <div className="flex-1 relative min-w-0">
                             <ExternalLink className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
                             <Input
                               type="url"

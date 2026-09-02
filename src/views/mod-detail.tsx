@@ -737,11 +737,11 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 /** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 min-w-0">
       <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">{label}</span>
       <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
-      <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
+      <span className="min-w-0 flex-1 break-words text-xs font-bold text-foreground sm:text-sm">{value}</span>
     </div>
   )
 }

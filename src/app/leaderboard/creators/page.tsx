@@ -61,8 +61,8 @@ export default async function CreatorsLeaderboard() {
         <div className="space-y-4">
           {ranked.map((item, index) => (
             <Card key={item.user.id} className={index < 3 ? 'border-yellow-500/50' : ''}>
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="w-12 text-center shrink-0">{index < 3 ? RANK_ICONS[index + 1] : <span className="text-xl font-bold text-muted-foreground">{index + 1}</span>}</div>
+              <CardContent className="flex items-center gap-2 p-3 sm:gap-4 sm:p-4">
+                <div className="w-8 text-center shrink-0 sm:w-12">{index < 3 ? RANK_ICONS[index + 1] : <span className="text-lg font-bold text-muted-foreground sm:text-xl">{index + 1}</span>}</div>
 
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarImage src={item.user.avatarUrl || undefined} />
@@ -78,7 +78,7 @@ export default async function CreatorsLeaderboard() {
                   <div className="text-xs text-muted-foreground">{getTierLabel(item.user.role, item.user.tier)}</div>
                 </div>
 
-                <div className="flex items-center gap-4 sm:gap-6 text-sm shrink-0">
+                <div className="flex items-center gap-2 text-sm shrink-0 sm:gap-6">
                   <div className="text-center">
                     <div className="font-bold">{item.publishedCount}</div>
                     <div className="text-xs text-muted-foreground">تعريب</div>
