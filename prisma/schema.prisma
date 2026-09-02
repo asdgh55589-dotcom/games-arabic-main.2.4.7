@@ -908,6 +908,15 @@ model Notification {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
+  // Interactive target fields
+  targetType     String? @map("target_type")
+  targetId       String? @map("target_id")
+  targetSlug     String? @map("target_slug")
+  targetTitle    String? @map("target_title")
+  targetUrl      String? @map("target_url")
+  actorUsername  String? @map("actor_username")
+  actorAvatarUrl String? @map("actor_avatar_url")
+
   user  User              @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   actor User?             @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
   logs  NotificationLog[]
