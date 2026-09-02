@@ -128,10 +128,10 @@ export const HomeSidebar = forwardRef<HTMLElement, HomeSidebarProps>(
     return (
       <aside
         ref={ref}
-        className="w-[340px] shrink-0"
+        className="w-full lg:w-[340px] lg:shrink-0"
         dir="rtl"
       >
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-1">
           {/* ===== أحدث الإصدارات ===== */}
           <div className="border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)]">
             <div className="border-b-[3px] border-border bg-primary/10 px-4 py-3">

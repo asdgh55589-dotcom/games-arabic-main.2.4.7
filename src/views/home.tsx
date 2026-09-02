@@ -84,9 +84,9 @@ export function HomePage() {
       <NewsTicker />
 
       {/* ===== الصف الرئيسي: المحتوى + الشريط الجانبي ===== */}
-      <div className="mx-auto flex max-w-[1600px] gap-8 py-4 px-4 lg:px-6" dir="rtl">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 py-4 px-4 lg:flex-row lg:gap-8 lg:px-6" dir="rtl">
         {/* ===== اليمين: الإعلانات فوق + الشريط الجانبي تحت ===== */}
-        <div className="w-[340px] shrink-0 space-y-4 -mr-[140px]">
+        <div className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0">
           <AdSection />
           <SiteTeamCard />
           <CreatorLeaderboardCard />
@@ -106,7 +106,7 @@ export function HomePage() {
         </div>
 
         {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
-        <div className="min-w-0 flex-1 space-y-8 -ml-[140px]">
+        <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
 
       {/* آخر الأخبار — قبل أقسام المنصات */}
       {!loading && <NewsFeatured />}
