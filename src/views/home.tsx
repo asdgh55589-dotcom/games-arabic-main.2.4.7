@@ -84,7 +84,7 @@ export function HomePage() {
       <NewsTicker />
 
       {/* ===== الصف الرئيسي: المحتوى + الشريط الجانبي ===== */}
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 py-4 px-4 lg:flex-row lg:gap-8 lg:px-6" dir="rtl">
+      <div className="mx-auto flex max-w-[1840px] flex-col gap-6 py-4 px-4 lg:flex-row lg:gap-6 lg:px-4" dir="rtl">
         {/* ===== اليمين: الإعلانات فوق + الشريط الجانبي تحت ===== */}
         <div className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0">
           <AdSection />
