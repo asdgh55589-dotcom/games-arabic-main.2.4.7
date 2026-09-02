@@ -5,6 +5,7 @@ import { Bell, RefreshCw, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { NOTIFICATION_TYPE_LABELS, NotificationType } from '@/lib/notifications/types'
 
 interface NotificationLog {
   id: string
@@ -144,7 +145,7 @@ export default function NotificationHistoryPage() {
                 ) : (
                   logs.map((log) => (
                     <tr key={log.id} className="border-b hover:bg-muted/30">
-                      <td className="px-4 py-3 text-xs">{log.notification.type}</td>
+                      <td className="px-4 py-3 text-xs">{NOTIFICATION_TYPE_LABELS[log.notification.type as NotificationType] || log.notification.type}</td>
                       <td className="px-4 py-3">{log.notification.title}</td>
                       <td className="px-4 py-3">{log.notification.user.username}</td>
                       <td className="px-4 py-3">{CHANNEL_LABELS[log.channel] || log.channel}</td>

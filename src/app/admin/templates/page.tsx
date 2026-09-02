@@ -7,29 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-
-const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
-  comment_reply: 'رد على تعليق',
-  top_level_comment: 'تعليق جديد',
-  like: 'إعجاب',
-  follow: 'متابعة جديدة',
-  mod_endorse: 'تصويت على تعريب',
-  mod_endorse_milestone: 'إنجاز تصويت',
-  mod_featured: 'تعريب مميز',
-  mod_published: 'تعريب جديد',
-  mod_updated: 'تحديث تعريب',
-  mod_deleted: 'حذف تعريب',
-  tier_upgrade: 'ترقية مستوى',
-  tier_revoked: 'سحب مستوى',
-  special_role_assigned: 'منح دور خاص',
-  special_role_removed: 'سحب دور خاص',
-  admin_action: 'إجراء إداري',
-  admin_user_register: 'تسجيل مستخدم',
-  admin_request: 'طلب مستخدم',
-  admin_report: 'بلاغ',
-  admin_milestone: 'إنجاز إداري',
-  system_announcement: 'إعلان النظام',
-}
+import { NOTIFICATION_TYPE_LABELS, NotificationType } from '@/lib/notifications/types'
 
 const ALL_TYPES = Object.keys(NOTIFICATION_TYPE_LABELS)
 const ALL_CHANNELS = ['in_app', 'email', 'telegram']
