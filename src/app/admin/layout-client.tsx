@@ -109,6 +109,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/api-keys', label: 'مفاتيح API', icon: Key, adminOnly: true },
       { href: '/admin/templates', label: 'قوالب الإشعارات', icon: FileText, adminOnly: true },
       { href: '/admin/notifications/send', label: 'إرسال إشعار', icon: Send, adminOnly: true },
+      { href: '/admin/notifications/analytics', label: 'تحليلات الإشعارات', icon: BarChart3, adminOnly: true },
       { href: '/admin/notifications-health', label: 'صحة الإشعارات', icon: HeartPulse, adminOnly: true },
       { href: '/admin/notifications/history', label: 'سجل الإشعارات', icon: Bell, adminOnly: true },
       { href: '/admin/scheduler', label: 'الجدولة', icon: Clock, adminOnly: true },
