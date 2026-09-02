@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { Bell, MessageCircle, Heart, Star, Shield, Users, FileText, AlertTriangle, Award, CheckCheck, Trash2, Package, Send, Clock, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Bell, MessageCircle, Heart, Star, Shield, Users, FileText, AlertTriangle, Award, CheckCheck, Trash2, Package, Send, Clock, AlertCircle, ChevronLeft } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -39,6 +41,7 @@ const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
 
 export function NotificationsPage() {
   useDocumentTitle('الإشعارات')
+  const router = useRouter()
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +75,16 @@ export function NotificationsPage() {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch {}
+  }
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.readAt) {
+      await markAsRead(notification.id)
+    }
+    const url = (notification as any).targetUrl || notification.link
+    if (url) {
+      router.push(url)
+    }
   }
 
   const markAllAsRead = async () => {
@@ -135,25 +148,45 @@ export function NotificationsPage() {
               />
             ) : (
               <div className="space-y-2">
-                {notifications.map((notification) => (
+                {notifications.map((notification) => {
+                  const targetUrl = (notification as any).targetUrl || notification.link
+                  const targetTitle = (notification as any).targetTitle
+                  const targetType = (notification as any).targetType
+                  const actorUsername = (notification as any).actorUsername || notification.actor?.username
+                  const actorAvatarUrl = (notification as any).actorAvatarUrl || notification.actor?.avatarUrl
+                  const isClickable = !!targetUrl
+                  return (
                   <div
                     key={notification.id}
-                    onClick={() => !notification.readAt && markAsRead(notification.id)}
-                    className={`group flex gap-4 rounded-none border-2 p-4 transition-all hover:bg-accent ${
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`group flex gap-4 rounded-none border-2 p-4 transition-all hover:bg-accent cursor-pointer ${
                       !notification.readAt
                         ? 'border-gold/20 bg-gold/5'
                         : 'border-border bg-card'
                     }`}
                   >
-                    {/* Avatar or Icon */}
+                    {/* Avatar or Icon — clickable */}
                     <div className="shrink-0">
-                      {notification.actor ? (
+                      {actorUsername ? (
+                        <Link href={`/profile/${actorUsername}`} onClick={(e) => e.stopPropagation()} className="block">
+                          <Avatar className="h-11 w-11">
+                            <AvatarImage src={actorAvatarUrl || undefined} />
+                            <AvatarFallback className="bg-secondary text-sm font-bold text-gold">
+                              {actorUsername[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                      ) : notification.actor ? (
                         <Avatar className="h-11 w-11">
                           <AvatarImage src={notification.actor.avatarUrl || undefined} />
                           <AvatarFallback className="bg-secondary text-sm font-bold text-gold">
                             {notification.actor.username[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
+                      ) : targetType === 'team' ? (
+                        <Link href={targetUrl || '#'} onClick={(e) => e.stopPropagation()} className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100">
+                          <Users className="h-6 w-6 text-blue-600" />
+                        </Link>
                       ) : (
                         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary">
                           {TYPE_ICONS[notification.type as NotificationType] || <Bell className="h-5 w-5 text-muted-foreground" />}
@@ -168,6 +201,7 @@ export function NotificationsPage() {
                           {notification.title}
                         </p>
                         <div className="flex shrink-0 items-center gap-1">
+                          {isClickable && <ChevronLeft className="w-4 h-4 text-gray-400" />}
                           {!notification.readAt && <div className="h-2 w-2 rounded-full bg-gold" />}
                           <Button
                             variant="ghost"
@@ -180,7 +214,24 @@ export function NotificationsPage() {
                         </div>
                       </div>
                       {notification.message && (
-                        <p className="mt-1 text-xs text-muted-foreground">{notification.message}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {actorUsername && (
+                            <Link href={`/profile/${actorUsername}`} onClick={(e) => e.stopPropagation()} className="font-bold hover:underline hover:text-gold">
+                              {actorUsername}
+                            </Link>
+                          )}{' '}
+                          {notification.message}
+                        </p>
+                      )}
+                      {targetUrl && targetTitle && (
+                        <Link
+                          href={targetUrl}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
+                        >
+                          <span>{targetType === 'team' ? '👥' : targetType === 'profile' ? '👤' : '📄'}</span>
+                          <span className={targetType === 'team' ? 'font-bold' : ''}>{targetTitle}</span>
+                        </Link>
                       )}
                       <div className="mt-2 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -191,7 +242,8 @@ export function NotificationsPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
 
