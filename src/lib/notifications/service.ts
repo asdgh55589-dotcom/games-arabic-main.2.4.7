@@ -7,6 +7,7 @@
 import { db } from '../db'
 import { sendToChannel } from '../telegram-bot'
 import { NotificationType, type NotificationChannel, type NotificationEvent } from './types'
+import { renderNotificationContent } from './template-renderer'
 
 /**
  * إرسال إشعار عبر القنوات المتاحة
@@ -36,14 +37,31 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
 
     if (channels.length === 0) continue
 
-    // إنشاء إشعار واحد مشترك لكل القنوات
+    // بناء متغيرات القالب
+    const variables: Record<string, unknown> = {
+      actorName: (event as unknown as Record<string, unknown>).actorName || '',
+      recipientName: (recipient as unknown as Record<string, unknown>).displayName || (recipient as unknown as Record<string, unknown>).username || '',
+      modName: (event.data as Record<string, unknown> | undefined)?.modName || '',
+      teamName: (event.data as Record<string, unknown> | undefined)?.teamName || '',
+      ...(event.data || {}),
+    }
+
+    // عرض المحتوى من القالب مع fallback
+    const content = await renderNotificationContent(
+      event.type,
+      'in_app',
+      variables,
+      { title: event.title, message: event.message }
+    )
+
+    // إنشاء إشعار واحد مشترك لكل القنوات بمحتوى مُصيّر
     const notification = await db.notification.create({
       data: {
         userId: recipient.userId,
         actorId: event.actorId,
         type: event.type,
-        title: event.title,
-        message: event.message,
+        title: content.title,
+        message: content.message,
         data: event.data || {},
       },
     })
