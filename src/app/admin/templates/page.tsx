@@ -47,6 +47,8 @@ export default function AdminTemplatesPage() {
   // Filters
   const [filterType, setFilterType] = useState('')
   const [filterChannel, setFilterChannel] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   // Form state
   const [showForm, setShowForm] = useState(false)
@@ -66,19 +68,24 @@ export default function AdminTemplatesPage() {
 
   const fetchTemplates = useCallback(() => {
     const params = new URLSearchParams()
+    params.set('page', page.toString())
+    params.set('limit', '20')
     if (filterType) params.set('type', filterType)
     if (filterChannel) params.set('channel', filterChannel)
-    params.set('limit', '100')
 
     fetch(`/api/admin/templates?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then((data) => data?.data ? setTemplates(data.data) : null)
+      .then((data) => {
+        const list = data?.data?.templates || data?.data || []
+        setTemplates(Array.isArray(list) ? list : [])
+        setTotalPages(data?.data?.pagination?.totalPages || data?.pagination?.totalPages || 1)
+      })
       .catch(() => setError('فشل تحميل القوالب'))
       .finally(() => setLoading(false))
-  }, [filterType, filterChannel])
+  }, [filterType, filterChannel, page])
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
 
@@ -196,7 +203,7 @@ export default function AdminTemplatesPage() {
       <div className="flex gap-3">
         <select
           value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
+          onChange={(e) => { setFilterType(e.target.value); setPage(1) }}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">جميع الأنواع</option>
@@ -206,7 +213,7 @@ export default function AdminTemplatesPage() {
         </select>
         <select
           value={filterChannel}
-          onChange={(e) => setFilterChannel(e.target.value)}
+          onChange={(e) => { setFilterChannel(e.target.value); setPage(1) }}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">جميع القنوات</option>
@@ -333,60 +340,71 @@ export default function AdminTemplatesPage() {
           <h3 className="text-lg font-semibold">لا توجد قوالب</h3>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-right">
-            <thead className="border-b border-border bg-card/50 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-semibold">النوع</th>
-                <th className="px-4 py-3 font-semibold">القناة</th>
-                <th className="hidden px-4 py-3 font-semibold md:table-cell">العنوان</th>
-                <th className="hidden px-4 py-3 font-semibold md:table-cell">الإصدار</th>
-                <th className="hidden px-4 py-3 font-semibold md:table-cell">الحالة</th>
-                <th className="px-4 py-3 font-semibold">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {templates.map((t) => {
-                const ChannelIcon = CHANNEL_ICONS[t.channel] || FileText
-                return (
-                  <tr key={t.id} className="text-sm transition-colors hover:bg-accent/30">
-                    <td className="px-4 py-3">
-                      <span className="font-medium">{NOTIFICATION_TYPE_LABELS[t.type] || t.type}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                        <ChannelIcon className="h-3 w-3" />
-                        {t.channel}
-                      </span>
-                    </td>
-                    <td className="hidden max-w-[200px] truncate px-4 py-3 text-xs text-muted-foreground md:table-cell">
-                      {t.titleTemplate.substring(0, 50)}
-                    </td>
-                    <td className="hidden px-4 py-3 text-xs md:table-cell">v{t.version}</td>
-                    <td className="hidden px-4 py-3 md:table-cell">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${t.isActive ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>
-                        {t.isActive ? 'نشط' : 'معطّل'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onPreview(t)} title="معاينة" aria-label="معاينة">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => startEdit(t)} title="تعديل" aria-label="تعديل">
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(t)} title="حذف" aria-label="حذف">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="overflow-hidden rounded-xl border border-border">
+            <table className="w-full text-right">
+              <thead className="border-b border-border bg-card/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">النوع</th>
+                  <th className="px-4 py-3 font-semibold">القناة</th>
+                  <th className="hidden px-4 py-3 font-semibold md:table-cell">العنوان</th>
+                  <th className="hidden px-4 py-3 font-semibold md:table-cell">الإصدار</th>
+                  <th className="hidden px-4 py-3 font-semibold md:table-cell">الحالة</th>
+                  <th className="px-4 py-3 font-semibold">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {templates.map((t) => {
+                  const ChannelIcon = CHANNEL_ICONS[t.channel] || FileText
+                  return (
+                    <tr key={t.id} className="text-sm transition-colors hover:bg-accent/30">
+                      <td className="px-4 py-3">
+                        <span className="font-medium">{NOTIFICATION_TYPE_LABELS[t.type] || t.type}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                          <ChannelIcon className="h-3 w-3" />
+                          {t.channel}
+                        </span>
+                      </td>
+                      <td className="hidden max-w-[200px] truncate px-4 py-3 text-xs text-muted-foreground md:table-cell">
+                        {t.titleTemplate.substring(0, 50)}
+                      </td>
+                      <td className="hidden px-4 py-3 text-xs md:table-cell">v{t.version}</td>
+                      <td className="hidden px-4 py-3 md:table-cell">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${t.isActive ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>
+                          {t.isActive ? 'نشط' : 'معطّل'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onPreview(t)} title="معاينة" aria-label="معاينة">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => startEdit(t)} title="تعديل" aria-label="تعديل">
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(t)} title="حذف" aria-label="حذف">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between mt-4">
+            <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+              السابق
+            </Button>
+            <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
+            <Button variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              التالي
+            </Button>
+          </div>
+        </>
       )}
     </div>
   )
