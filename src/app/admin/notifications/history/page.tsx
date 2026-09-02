@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, RefreshCw, Filter } from 'lucide-react'
+import { Bell, RefreshCw, Filter, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -94,10 +94,25 @@ export default function NotificationHistoryPage() {
             <p className="text-sm text-muted-foreground">تاريخ الإشعارات المرسلة</p>
           </div>
         </div>
-        <Button onClick={fetchLogs} variant="outline" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          تحديث
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              const params = new URLSearchParams()
+              if (filter.channel) params.set('channel', filter.channel)
+              if (filter.status) params.set('status', filter.status)
+              window.open(`/api/admin/notifications/export?${params.toString()}`, '_blank')
+            }}
+          >
+            <Download className="h-4 w-4" />
+            تصدير CSV
+          </Button>
+          <Button onClick={fetchLogs} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            تحديث
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
