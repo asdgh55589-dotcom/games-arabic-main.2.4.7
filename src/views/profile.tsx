@@ -290,7 +290,7 @@ export function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#121212] text-white" dir="rtl">
       {/* ===== Banner ===== */}
-      <div className="relative h-[280px] overflow-hidden">
+      <div className="relative h-[180px] overflow-hidden sm:h-[280px]">
         {profile.bannerUrl ? (
           <Image src={profile.bannerUrl} alt="banner" fill quality={100} sizes="100vw" className="object-cover" priority />
         ) : (
@@ -305,12 +305,12 @@ export function ProfilePage() {
       {/* ===== User Info ===== */}
       <div className="mx-auto max-w-[1200px] px-4 lg:px-6">
         <div style={{ marginTop: '-80px' }} className="relative z-10">
-          <div className="flex gap-6">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6">
             {/* Avatar + badges */}
             <div className="shrink-0">
               <div className="relative">
                 <Avatar
-                  className="h-24 w-24 border-4 border-[#121212] shadow-xl"
+                  className="h-20 w-20 border-4 border-[#121212] shadow-xl sm:h-24 sm:w-24"
                   style={{ boxShadow: `0 0 18px ${accentSoft}` }}
                 >
                   <AvatarImage src={profile.avatarUrl || undefined} alt={profile.displayName || profile.username} />
@@ -332,8 +332,8 @@ export function ProfilePage() {
             </div>
 
             {/* Name + actions */}
-            <div className="flex-1 pt-2">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex-1 pt-2 text-center sm:text-right">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <h1 className="text-2xl font-bold text-white">{profile.displayName || profile.username}</h1>
                 <RoleBadge role={profile.role} size="sm" />
                 <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
@@ -342,7 +342,7 @@ export function ProfilePage() {
                   <CheckCircle className="h-5 w-5" style={{ color: accent }} />
                 )}
               </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
+              <div className="mt-1 flex items-center justify-center gap-3 text-xs text-gray-400 sm:justify-start">
                 {!profile.hideJoinDate && (
                   <>
                     <span className="flex items-center gap-1">
@@ -369,7 +369,7 @@ export function ProfilePage() {
               </div>
 
               {/* Action buttons */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                 <Link href={`/profile/${encodeURIComponent(profile.username)}/level`}>
                   <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
                     <Trophy className="h-3.5 w-3.5" /> المستوى
