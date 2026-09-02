@@ -12,6 +12,7 @@ interface AnalyticsData {
   byChannel: Record<string, number>
   byType: Record<string, number>
   timeSeries: { date: string; created: number; delivered: number; failed: number }[]
+  emailStats?: { sent: number; delivered: number; opened: number; clicked: number; openRate: number; clickRate: number }
 }
 
 export default function NotificationsAnalyticsPage() {
@@ -125,6 +126,56 @@ export default function NotificationsAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {data.emailStats && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-primary" /> تتبع البريد الإلكتروني</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold">{data.emailStats.sent}</div>
+                <div className="text-xs text-muted-foreground">مرسل</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-blue-600">{data.emailStats.delivered}</div>
+                <div className="text-xs text-muted-foreground">تم التوصيل</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">{data.emailStats.opened}</div>
+                <div className="text-xs text-muted-foreground">مفتوح ({data.emailStats.openRate.toFixed(1)}%)</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">{data.emailStats.clicked}</div>
+                <div className="text-xs text-muted-foreground">نقر ({data.emailStats.clickRate.toFixed(1)}%)</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold">
+                  {data.emailStats.sent > 0 ? ((data.emailStats.delivered / data.emailStats.sent) * 100).toFixed(1) : 0}%
+                </div>
+                <div className="text-xs text-muted-foreground">معدل التوصيل</div>
+              </div>
+            </div>
+            {data.emailStats.sent > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span>معدل الفتح</span><span>{data.emailStats.openRate.toFixed(1)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-green-500" style={{ width: `${Math.min(data.emailStats.openRate, 100)}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-xs mt-2">
+                  <span>معدل النقر</span><span>{data.emailStats.clickRate.toFixed(1)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-purple-500" style={{ width: `${Math.min(data.emailStats.clickRate, 100)}%` }} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

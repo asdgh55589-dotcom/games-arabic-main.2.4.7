@@ -101,6 +101,7 @@ export class HandlebarsTemplateRenderer implements TemplateRenderer {
         recipientName: variables.recipientName as string | undefined,
         actionUrl: variables.actionUrl as string | undefined,
         actionLabel: variables.actionLabel as string | undefined,
+        logId: variables.logId as string | undefined,
       })
       return { title, body, html }
     }

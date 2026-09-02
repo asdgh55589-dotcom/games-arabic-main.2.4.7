@@ -951,6 +951,9 @@ model NotificationLog {
   status         String
   errorMessage   String?   @map("error_message")
   sentAt         DateTime? @map("sent_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  openedAt       DateTime? @map("opened_at")
+  clickedAt      DateTime? @map("clicked_at")
   createdAt      DateTime  @default(now()) @map("created_at")
 
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)

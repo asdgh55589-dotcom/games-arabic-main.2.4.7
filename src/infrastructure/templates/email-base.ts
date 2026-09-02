@@ -9,6 +9,7 @@ export interface EmailTemplateData {
   recipientName?: string
   actionUrl?: string
   actionLabel?: string
+  logId?: string
 }
 
 /**
@@ -16,6 +17,10 @@ export interface EmailTemplateData {
  * Used as the outer shell for all notification emails.
  */
 export function generateEmailWrapper(data: EmailTemplateData): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+  const trackingPixel = data.logId && baseUrl
+    ? `<img src="${baseUrl}/api/notifications/track?id=${data.logId}&event=open" width="1" height="1" style="display:none" alt="" />`
+    : ''
   return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -64,6 +69,7 @@ export function generateEmailWrapper(data: EmailTemplateData): string {
       </td>
     </tr>
   </table>
+  ${trackingPixel}
 </body>
 </html>`
 }

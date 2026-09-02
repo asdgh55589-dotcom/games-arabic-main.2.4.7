@@ -59,6 +59,29 @@ export async function GET(req: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, counts]) => ({ date, ...counts }))
 
+    const emailLogs = currentLogs.filter((l) => l.channel === 'email')
+    // نحتاج openedAt/clickedAt/deliveredAt — نجلبه من DB إذا لم يكن في select أعلاه
+    // نعيد الجلب مع الحقول الجديدة للتوافق
+    let emailStats = { sent: 0, delivered: 0, opened: 0, clicked: 0, openRate: 0, clickRate: 0 }
+    if (emailLogs.length > 0 || true) {
+      const emailDetailedLogs = await db.notificationLog.findMany({
+        where: { channel: 'email', createdAt: { gte: startDate } },
+        select: { deliveredAt: true, openedAt: true, clickedAt: true },
+      })
+      const sent = emailDetailedLogs.length
+      const delivered = emailDetailedLogs.filter((l) => l.deliveredAt).length
+      const opened = emailDetailedLogs.filter((l) => l.openedAt).length
+      const clicked = emailDetailedLogs.filter((l) => l.clickedAt).length
+      emailStats = {
+        sent,
+        delivered,
+        opened,
+        clicked,
+        openRate: sent > 0 ? (opened / sent) * 100 : 0,
+        clickRate: sent > 0 ? (clicked / sent) * 100 : 0,
+      }
+    }
+
     return NextResponse.json({
       data: {
         range,
@@ -76,6 +99,7 @@ export async function GET(req: NextRequest) {
         byChannel,
         byType,
         timeSeries,
+        emailStats,
       },
     })
   } catch (error) {
