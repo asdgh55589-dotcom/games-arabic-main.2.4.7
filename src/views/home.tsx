@@ -71,7 +71,7 @@ export function HomePage() {
   }, [])
 
   return (
-    <div dir="rtl">
+    <div dir="rtl" className="overflow-x-clip">
       <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
       {/* ===== Hero Slider — شريط متحرك يعرض أحدث التعريبات ===== */}
       {loading ? (
