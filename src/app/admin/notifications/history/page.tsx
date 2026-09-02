@@ -46,22 +46,26 @@ export default function NotificationHistoryPage() {
   const [logs, setLogs] = useState<NotificationLog[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState({ channel: '', status: '' })
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     fetchLogs()
-  }, [filter])
+  }, [filter, page])
 
   const fetchLogs = async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
+      params.set('page', page.toString())
+      params.set('limit', '20')
       if (filter.channel) params.set('channel', filter.channel)
       if (filter.status) params.set('status', filter.status)
 
-      // Use the existing notifications-health endpoint
-      const res = await fetch(`/api/admin/notifications-health?${params}`)
+      const res = await fetch(`/api/admin/notifications?${params}`)
       const data = await res.json()
       setLogs(data.data?.logs || [])
+      setTotalPages(data.data?.pagination?.totalPages || 1)
     } catch (err) {
       console.error('Failed to fetch logs:', err)
     } finally {
@@ -100,7 +104,7 @@ export default function NotificationHistoryPage() {
       <div className="flex gap-2">
         <select
           value={filter.channel}
-          onChange={(e) => setFilter({ ...filter, channel: e.target.value })}
+          onChange={(e) => { setFilter({ ...filter, channel: e.target.value }); setPage(1) }}
           className="rounded-lg border bg-background px-3 py-2 text-sm"
         >
           <option value="">كل القنوات</option>
@@ -110,7 +114,7 @@ export default function NotificationHistoryPage() {
         </select>
         <select
           value={filter.status}
-          onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+          onChange={(e) => { setFilter({ ...filter, status: e.target.value }); setPage(1) }}
           className="rounded-lg border bg-background px-3 py-2 text-sm"
         >
           <option value="">كل الحالات</option>
@@ -165,6 +169,16 @@ export default function NotificationHistoryPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between mt-4">
+        <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+          السابق
+        </Button>
+        <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
+        <Button variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+          التالي
+        </Button>
+      </div>
     </div>
   )
 }
