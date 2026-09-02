@@ -320,6 +320,20 @@ export function ModDetailPage() {
               </span>
             </nav>
 
+            {/* ===== عنوان Steam — فوق الصورة مباشرة ===== */}
+            <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
+              <h1 className="break-words text-2xl font-black leading-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl">
+                {mod.name}
+              </h1>
+              <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-white/75 sm:text-sm">
+                {mod.game.name}
+                {mod.translationTeam && <span className="mx-2 opacity-40">•</span>}
+                {mod.translationTeam && <span>{mod.translationTeam}</span>}
+                {mod.series && <span className="mx-2 opacity-40">•</span>}
+                {mod.series && <span>{mod.series}</span>}
+              </p>
+            </div>
+
           </div>
 
           {/* ===== CONTENT ROW — poster right, text left, overlaps banner ===== */}
