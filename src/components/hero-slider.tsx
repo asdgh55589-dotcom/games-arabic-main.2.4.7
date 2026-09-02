@@ -133,7 +133,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
       {/* ===== المحتوى النصي ===== */}
       <div className="absolute inset-0 flex items-end pointer-events-none">
-        <div className="w-full px-6 pb-12 sm:px-12 sm:pb-16 lg:px-16">
+        <div className="w-full px-4 pb-12 sm:px-12 sm:pb-16 lg:px-16">
           <AnimatePresence mode="wait">
             <motion.div
               key={`txt-${active}`}
@@ -141,7 +141,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
               transition={{ duration: 0.45, ease: 'easeOut' }}
-              className="pointer-events-auto max-w-[650px]"
+              className="pointer-events-auto w-full max-w-[650px]"
             >
               <span
                 className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest"
@@ -204,7 +204,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       <button
         onClick={next}
         aria-label="الشريحة التالية"
-        className="absolute right-4 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full transition-all duration-150 hover:scale-110 active:scale-90"
+        className="absolute right-4 top-1/2 z-20 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full transition-all duration-150 hover:scale-110 active:scale-90 sm:h-10 sm:w-10"
         style={{
           background: 'rgba(255,255,255,0.1)',
           backdropFilter: 'blur(10px)',
@@ -218,7 +218,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       <button
         onClick={prev}
         aria-label="الشريحة السابقة"
-        className="absolute left-4 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full transition-all duration-150 hover:scale-110 active:scale-90"
+        className="absolute left-4 top-1/2 z-20 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full transition-all duration-150 hover:scale-110 active:scale-90 sm:h-10 sm:w-10"
         style={{
           background: 'rgba(255,255,255,0.1)',
           backdropFilter: 'blur(10px)',
