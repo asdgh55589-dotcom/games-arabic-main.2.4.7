@@ -320,20 +320,6 @@ export function ModDetailPage() {
               </span>
             </nav>
 
-            {/* ===== عنوان Steam — فوق الصورة مباشرة ===== */}
-            <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
-              <h1 className="break-words text-2xl font-black leading-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl">
-                {mod.name}
-              </h1>
-              <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-white/75 sm:text-sm">
-                {mod.game.name}
-                {mod.translationTeam && <span className="mx-2 opacity-40">•</span>}
-                {mod.translationTeam && <span>{mod.translationTeam}</span>}
-                {mod.series && <span className="mx-2 opacity-40">•</span>}
-                {mod.series && <span>{mod.series}</span>}
-              </p>
-            </div>
-
           </div>
 
           {/* ===== CONTENT ROW — نص فقط بدون بوستر طولي (Steam-style) ===== */}
@@ -356,18 +342,12 @@ export function ModDetailPage() {
                   )}
                 </div>
 
-                {/* Title + stats + data — shared blurred backdrop, faded edges */}
+                {/* Title — صغير وتحت الصورة مباشرة */}
                 <div
-                  className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-10 sm:pt-12 md:pt-14 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
-                  style={{
-                    maskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                    WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                    maskComposite: 'intersect',
-                    WebkitMaskComposite: 'source-in',
-                  }}
+                  className="ps-2 sm:ps-4 lg:ps-6 pe-2 sm:pe-4 lg:pe-6 pt-2 sm:pt-4 pb-4 sm:pb-6"
                 >
                 {/* Title */}
-                <h1 className="break-words text-2xl font-black text-foreground drop-shadow-2xl sm:text-3xl md:text-5xl whitespace-normal sm:whitespace-nowrap">
+                <h1 className="break-words text-lg font-bold leading-tight text-foreground sm:text-xl md:text-2xl whitespace-normal">
                   {mod.name}
                 </h1>
                 {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false && (
