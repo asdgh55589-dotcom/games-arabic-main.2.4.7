@@ -370,9 +370,9 @@ export function ModDetailPage() {
                   )}
                 </div>
 
-                {/* Title — mobile small under image (attached right), desktop large with blurred backdrop */}
+                {/* Title — mobile small under image (attached right) + lowered slightly on phone only */}
                 <div
-                  className="ps-0 sm:ps-1 lg:ps-6 pe-2 sm:pe-4 lg:pe-10 pt-1 sm:pt-2 lg:pt-10 pb-4 sm:pb-6 lg:pb-8 lg:bg-black/25 lg:backdrop-blur-sm lg:-mt-3"
+                  className="ps-0 sm:ps-1 lg:ps-6 pe-2 sm:pe-4 lg:pe-10 pt-3 sm:pt-4 lg:pt-10 pb-4 sm:pb-6 lg:pb-8 lg:bg-black/25 lg:backdrop-blur-sm lg:-mt-3"
                   style={{
                     maskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
                     WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
