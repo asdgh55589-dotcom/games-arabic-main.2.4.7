@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Loader2, Activity, AlertTriangle, CheckCircle, XCircle, Clock, Mail } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Loader2, Activity, AlertTriangle, CheckCircle, XCircle, Clock, Mail, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
 
 interface HealthData {
   metrics: {
@@ -33,16 +35,19 @@ interface HealthData {
 }
 
 export default function NotificationsHealthPage() {
+  const { toast } = useToast()
   const [data, setData] = useState<HealthData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryId, setRetryId] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchHealth = useCallback(() => {
+    setLoading(true)
     fetch('/api/admin/notifications-health')
-      .then(r => r.json())
-      .then(json => {
+      .then((r) => r.json())
+      .then((json) => {
         if (json.error) {
-          setError(json.error.message)
+          setError(json.error.message || json.error)
         } else {
           setData(json.data)
         }
@@ -50,6 +55,32 @@ export default function NotificationsHealthPage() {
       .catch(() => setError('Failed to load health data'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    fetchHealth()
+  }, [fetchHealth])
+
+  const handleRetry = async (jobId: string) => {
+    setRetryId(jobId)
+    try {
+      const res = await fetch('/api/admin/notifications/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) {
+        toast({ title: 'تمت إعادة الجدولة' })
+        fetchHealth()
+      } else {
+        toast({ title: json.error || 'فشل إعادة الإرسال', variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'خطأ في الاتصال', variant: 'destructive' })
+    } finally {
+      setRetryId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -154,6 +185,7 @@ export default function NotificationsHealthPage() {
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">المحاولات</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الخطأ</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">إجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light">
@@ -169,6 +201,18 @@ export default function NotificationsHealthPage() {
                     <td className="px-4 py-3 text-muted-foreground">{failure.attempts}</td>
                     <td className="max-w-[200px] truncate px-4 py-3 text-xs text-red-400">{failure.lastError}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(failure.updatedAt).toLocaleString('ar')}</td>
+                    <td className="px-4 py-3">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                        onClick={() => handleRetry(failure.id)}
+                        disabled={retryId === failure.id}
+                        aria-label="إعادة الإرسال"
+                      >
+                        {retryId === failure.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
