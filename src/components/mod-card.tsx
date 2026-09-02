@@ -138,7 +138,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
         {/* BODY */}
         <div className="flex w-full flex-col gap-1.5 p-2 sm:gap-2 sm:p-3">
           {/* ZONE 1: IDENTITY */}
-          <h3 className="w-full text-xs font-bold leading-snug text-foreground line-clamp-2 min-h-[2.5em] transition-colors group-hover:text-primary sm:text-sm">
+          <h3 className="line-clamp-2 h-[2.6em] w-full text-xs font-bold leading-[1.3] text-foreground transition-colors group-hover:text-primary sm:text-sm">
             {mod.name}
           </h3>
           {mod.isOriginalWork === false && (
@@ -153,15 +153,15 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
             <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
               <div className="flex items-center justify-center gap-1" title="التحميلات">
                 <Download className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.downloads)}</span>
+                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.downloads)}</span>
               </div>
               <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
                 <Eye className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.views)}</span>
+                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.views)}</span>
               </div>
               <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
                 <ThumbsUp className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold text-foreground/90">{formatNumber(mod.endorsements)}</span>
+                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.endorsements)}</span>
               </div>
             </div>
           ) : (
@@ -211,34 +211,34 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
               <div className="hidden w-full flex-col gap-1 border-y-2 border-border/60 bg-muted/30 px-2.5 py-2 sm:flex">
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground">النشر</span>
+                  <span className="w-16 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">النشر</span>
                   <span className="text-border">|</span>
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-xs font-bold leading-[1.3] text-foreground">
                     {new Date(mod.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <History className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground">التحديث</span>
+                  <span className="w-16 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">التحديث</span>
                   <span className="text-border">|</span>
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-xs font-bold leading-[1.3] text-foreground">
                     {new Date(mod.updatedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 {mod.translationTeam && (
                   <div className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5 text-muted-foreground/70" />
-                    <span className="w-16 shrink-0 text-[11px] text-muted-foreground">الفريق</span>
+                    <span className="w-16 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">الفريق</span>
                     <span className="text-border">|</span>
-                    <span className="text-xs font-bold text-foreground">{mod.translationTeam}</span>
+                    <span className="text-xs font-bold leading-[1.3] text-foreground">{mod.translationTeam}</span>
                   </div>
                 )}
                 {mod.series && (
                   <div className="flex items-center gap-1">
                     <Package className="h-3.5 w-3.5 text-muted-foreground/70" />
-                    <span className="w-16 shrink-0 text-[11px] text-muted-foreground">السلسلة</span>
+                    <span className="w-16 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">السلسلة</span>
                     <span className="text-border">|</span>
-                    <span className="text-xs font-bold text-foreground">{mod.series}</span>
+                    <span className="text-xs font-bold leading-[1.3] text-foreground">{mod.series}</span>
                   </div>
                 )}
               </div>
@@ -247,15 +247,15 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
               <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
                 <div className="flex items-center justify-center gap-1" title="التحميلات">
                   <Download className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.downloads)}</span>
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">{formatNumber(mod.downloads)}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
                   <Eye className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.views)}</span>
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">{formatNumber(mod.views)}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
                   <ThumbsUp className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold text-foreground/90 sm:text-[11px]">{formatNumber(mod.endorsements)}</span>
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">{formatNumber(mod.endorsements)}</span>
                 </div>
               </div>
             </>
