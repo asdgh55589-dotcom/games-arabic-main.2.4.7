@@ -197,7 +197,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]" aria-label="القائمة">
+            <Button variant="ghost" size="icon" className="xl:hidden min-h-[44px] min-w-[44px]" aria-label="القائمة">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Open menu</span>
             </Button>
@@ -293,7 +293,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
           </Link>
 
           {/* Desktop nav — الأقسام الديناميكية */}
-          <nav className="hidden items-center gap-0 lg:flex" aria-label="Main">
+          <nav className="no-scrollbar hidden min-w-0 flex-1 items-center gap-0 overflow-x-auto xl:flex" aria-label="Main">
           {sections.map((s) => {
             const isActive = resolvedView === 'platform' && resolvedPlatform === s.key
             const Icon = getSectionIcon(s.icon)
