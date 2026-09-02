@@ -322,8 +322,8 @@ export function ModDetailPage() {
 
           </div>
 
-          {/* ===== CONTENT ROW — poster hidden on mobile, visible on desktop ===== */}
-          <div dir="rtl" className="relative z-10 me-auto ms-0 sm:ms-2 lg:ms-32 ps-0 sm:ps-2 lg:ps-8 pe-4 sm:pe-6 lg:pe-36 pt-1 sm:pt-2 lg:pt-6 lg:-mt-[160px] xl:-mt-[280px]">
+          {/* ===== CONTENT ROW — poster hidden on mobile, visible on desktop (مرفوع على البانر زي ما كان) ===== */}
+          <div dir="rtl" className="relative z-10 me-auto ms-0 sm:ms-2 lg:ms-32 ps-0 sm:ps-2 lg:ps-8 pe-4 sm:pe-6 lg:pe-36 pt-1 sm:pt-2 lg:pt-6 -mt-[80px] sm:-mt-[120px] lg:-mt-[280px] xl:-mt-[360px]">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
 
               {/* POSTER COLUMN — hidden on mobile, visible on desktop */}
