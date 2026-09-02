@@ -80,7 +80,7 @@ export async function notifyWorkflowChange(params: NotifyWorkflowChangeParams) {
       }
     }
 
-    // Create notifications in database
+    // Create notifications in database with target fields
     for (const notif of notifications) {
       await db.notification.create({
         data: {
@@ -95,6 +95,12 @@ export async function notifyWorkflowChange(params: NotifyWorkflowChangeParams) {
             fromStatus,
             toStatus,
           },
+          targetType: 'mod',
+          targetId: modId,
+          targetSlug: modSlug,
+          targetTitle: modName,
+          targetUrl: `/mod/${modSlug}`,
+          actorUsername: changedByName,
         },
       })
     }

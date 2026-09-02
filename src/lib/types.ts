@@ -285,6 +285,13 @@ export interface Notification {
   title: string
   message: string | null
   link: string | null
+  targetType?: string | null
+  targetId?: string | null
+  targetSlug?: string | null
+  targetTitle?: string | null
+  targetUrl?: string | null
+  actorUsername?: string | null
+  actorAvatarUrl?: string | null
   readAt: string | null
   createdAt: string | Date
   actor: NotificationActor | null

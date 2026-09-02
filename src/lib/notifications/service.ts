@@ -63,6 +63,13 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
         title: content.title,
         message: content.message,
         data: event.data || {},
+        targetType: event.targetType || null,
+        targetId: event.targetId || null,
+        targetSlug: event.targetSlug || null,
+        targetTitle: event.targetTitle || null,
+        targetUrl: event.targetUrl || null,
+        actorUsername: event.actorUsername || null,
+        actorAvatarUrl: event.actorAvatarUrl || null,
       },
     })
 
@@ -247,17 +254,20 @@ function determineChannels(
 export async function notifyWorkflowChange(params: {
   modId: string
   modName: string
+  modSlug?: string
   fromStatus: string
   toStatus: string
   actorId: string
   reason?: string
+  actorUsername?: string
+  actorAvatarUrl?: string
 }): Promise<void> {
-  const { modId, modName, fromStatus, toStatus, actorId, reason } = params
+  const { modId, modName, modSlug, fromStatus, toStatus, actorId, reason, actorUsername, actorAvatarUrl } = params
 
   // Get mod author
   const mod = await db.mod.findUnique({
     where: { id: modId },
-    select: { authorId: true, teamRelation: { select: { name: true } } },
+    select: { authorId: true, slug: true, name: true, teamRelation: { select: { name: true } } },
   })
 
   if (!mod) return
@@ -278,14 +288,24 @@ export async function notifyWorkflowChange(params: {
     PUBLISHED: NotificationType.ModPublished,
   }
 
+  const slug = modSlug || mod.slug
+  const targetUrl = slug ? `/mod/${slug}` : undefined
+
   await sendNotification({
     type: typeMap[toStatus] || NotificationType.AdminAction,
     title: `تحديث حالة: ${modName}`,
     message: `تم تغيير حالة التعريب من "${STATUS_LABELS[fromStatus]}" إلى "${STATUS_LABELS[toStatus]}"${reason ? `\nالسبب: ${reason}` : ''}`,
-    data: { modId, modName, fromStatus, toStatus },
+    data: { modId, modName, fromStatus, toStatus, modSlug: slug },
     recipients: [
       { userId: mod.authorId, channels: ['in_app', 'email'] },
     ],
     actorId,
+    actorUsername,
+    actorAvatarUrl,
+    targetType: 'mod',
+    targetId: modId,
+    targetSlug: slug,
+    targetTitle: modName,
+    targetUrl,
   })
 }

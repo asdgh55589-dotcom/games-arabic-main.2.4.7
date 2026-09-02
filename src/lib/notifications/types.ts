@@ -69,4 +69,13 @@ export interface NotificationEvent {
   data?: Record<string, any>
   recipients: NotificationRecipient[]
   actorId?: string
+  // Interactive target
+  targetType?: 'mod' | 'profile' | 'team' | 'comment' | 'news'
+  targetId?: string
+  targetSlug?: string
+  targetTitle?: string
+  targetUrl?: string
+  // Actor info
+  actorUsername?: string
+  actorAvatarUrl?: string
 }

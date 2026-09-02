@@ -43,6 +43,13 @@ export async function GET(req: NextRequest) {
           data: true,
           readAt: true,
           createdAt: true,
+          targetType: true,
+          targetId: true,
+          targetSlug: true,
+          targetTitle: true,
+          targetUrl: true,
+          actorUsername: true,
+          actorAvatarUrl: true,
           actor: {
             select: { id: true, username: true, avatarUrl: true },
           },
@@ -53,7 +60,7 @@ export async function GET(req: NextRequest) {
     const notifications = rawNotifications.map((n) => ({
       ...n,
       actor: n.actor || null,
-      link: (n.data as any)?.link || null,
+      link: (n as any).targetUrl || (n.data as any)?.link || null,
     }))
 
     return okPaginatedWithMeta(notifications, {
