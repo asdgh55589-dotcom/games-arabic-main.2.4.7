@@ -145,7 +145,7 @@ export function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5">
                 {loading
                   ? Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)
                   : isEmpty
@@ -165,16 +165,16 @@ export function HomePage() {
           subtitle="استكشف التعريبات حسب السلسلة"
           href="/series"
         />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-28 animate-pulse bg-secondary border-[3px] border-border" />
+                <div key={i} className="h-24 animate-pulse bg-secondary border-[3px] border-border sm:h-28" />
               ))
             : homeData?.topSeries?.slice(0, 6).map((s) => (
                 <Link
                   key={s.name}
                   href={`/series/${encodeURIComponent(s.name)}`}
-                  className="group relative flex h-28 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)]"
+                  className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                 >
                   <img
                     src={s.thumbnailUrl}
@@ -204,17 +204,17 @@ export function HomePage() {
           subtitle="استكشف الفرق والأعمال التي قدّموها"
           href="/teams"
         />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {teamsLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-28 animate-pulse bg-secondary border-[3px] border-border" />
+              <div key={i} className="h-24 animate-pulse bg-secondary border-[3px] border-border sm:h-28" />
             ))
           ) : teamsData?.data?.length ? (
             teamsData.data.slice(0, 6).map((t) => (
               <Link
                 key={t.id}
                 href={`/teams/${t.slug}`}
-                className="group relative flex h-28 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)]"
+                className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
               >
                 {t.bannerUrl || t.logoUrl ? (
                   <img
