@@ -16,7 +16,7 @@ export function formatDate(date: Date | string | null | undefined): string {
 }
 
 // تنسيق التاريخ بالعربية كاملة (يوم شهر سنة) — باستخدام الأرقام العربية (1234567890)
-// مش الأرقام الهندية (١٢٣٤٥٦٧٨٩٠)
+// مش الأرقام الهندية (١٢٣٤٥٦٧٨٩٠) — نستخدم UTC لتجنب إزاحة يوم بسبب المنطقة الزمنية
 export function formatArabicDate(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
@@ -25,9 +25,9 @@ export function formatArabicDate(date: Date | string | null | undefined): string
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
   ]
-  const day = d.getDate()
-  const month = months[d.getMonth()]
-  const year = d.getFullYear()
+  const day = d.getUTCDate()
+  const month = months[d.getUTCMonth()]
+  const year = d.getUTCFullYear()
   return `${day} ${month} ${year}`
 }
 

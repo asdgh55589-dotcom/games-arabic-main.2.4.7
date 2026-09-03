@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import {
   Crown, Shield, User, Settings, Mail, UserPlus, UserCheck,
-  Calendar, CheckCircle, Download, ThumbsUp, MessageSquare, Package, Eye, Users, Loader2, Trophy
+  Calendar, CheckCircle, Download, ThumbsUp, MessageSquare, Package, Eye, Users, Loader2, Trophy, TrendingUp, History
 } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,8 @@ import { formatArabicDate, formatNumber } from '@/lib/format'
 import { ProfileStats } from '@/components/profile/profile-stats'
 import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
 import { ProfileXpBar } from '@/components/profile/profile-xp-bar'
+import { getTierLabel } from '@/lib/tiers'
+import { getRoleLabel } from '@/lib/roles'
 import { ProfileModsFilter } from '@/components/profile/profile-mods-filter'
 import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
 import { TierBadge } from '@/components/tier-badge'
@@ -70,7 +72,7 @@ interface ProfileData {
 }
 
 interface ActivityData {
-  comments: { id: string; text: string; createdAt: string; mod: { name: string; slug: string } }[]
+  comments: { id: string; text: string; createdAt: string; guestName?: string | null; user?: { username: string; avatarUrl: string | null } | null; mod: { name: string; slug: string } }[]
   mods: ModSummary[]
   modEdits?: { id: string; name: string; slug: string; updatedAt: string }[]
   endorsements?: { id: string; createdAt: string; mod: { name: string; slug: string } }[]
@@ -289,8 +291,8 @@ export function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#121212] text-white" dir="rtl">
-      {/* ===== Banner ===== */}
-      <div className="relative h-[180px] overflow-hidden sm:h-[280px]">
+      {/* ===== Banner — ينتهي عند الخط مباشرة بدون مساحة سوداء ===== */}
+      <div className="relative h-[300px] overflow-hidden border-b border-[#333]">
         {profile.bannerUrl ? (
           <Image src={profile.bannerUrl} alt="banner" fill quality={100} sizes="100vw" className="object-cover" priority />
         ) : (
@@ -299,18 +301,19 @@ export function ProfilePage() {
               style={{ background: `linear-gradient(135deg, ${accentSoft} 0%, ${accentMuted} 50%, #1a1a1a 100%)` }}
             />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent" />
+        {/* تعتيم خفيف جداً لدمج البنر — 20% فقط */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#121212]/20 via-[#121212]/10 to-transparent pointer-events-none" />
       </div>
 
-      {/* ===== User Info ===== */}
+      {/* ===== User Info — داخل البنر ليكون الخط نهاية البنر فعلاً ===== */}
       <div className="mx-auto max-w-[1200px] px-4 lg:px-6">
-        <div style={{ marginTop: '-80px' }} className="relative z-10">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6">
+        <div style={{ marginTop: '-130px' }} className="relative z-10 pb-4">
+          <div className="flex gap-6">
             {/* Avatar + badges */}
             <div className="shrink-0">
               <div className="relative">
                 <Avatar
-                  className="h-20 w-20 border-4 border-[#121212] shadow-xl sm:h-24 sm:w-24"
+                  className="h-24 w-24 border-4 border-[#121212] shadow-xl"
                   style={{ boxShadow: `0 0 18px ${accentSoft}` }}
                 >
                   <AvatarImage src={profile.avatarUrl || undefined} alt={profile.displayName || profile.username} />
@@ -324,25 +327,26 @@ export function ProfilePage() {
                     profile.onlineStatus === 'online' ? 'bg-green-500' : 'bg-gray-500'
                   }`}
                 />
-                {/* Tier badge — role badge now only next to name to avoid duplication */}
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-                  <TierBadge tier={(profile as any).tier || 0} role={profile.role} size="md" />
-                </div>
+                {/* Tier badge — مخفي عند التكرار مع RoleBadge */}
+                {profile.role !== 'member' && getTierLabel(profile.role, (profile as any).tier || 0) !== getRoleLabel(profile.role) && (
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                    <TierBadge tier={(profile as any).tier || 0} role={profile.role} size="md" />
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Name + actions */}
-            <div className="flex-1 pt-2 text-center sm:text-right">
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <div className="flex-1 pt-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold text-white">{profile.displayName || profile.username}</h1>
                 <RoleBadge role={profile.role} size="sm" />
-                <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
                 <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles} showLabels size="sm" />
                 {profile.role === 'owner' && (
                   <CheckCircle className="h-5 w-5" style={{ color: accent }} />
                 )}
               </div>
-              <div className="mt-1 flex items-center justify-center gap-3 text-xs text-gray-400 sm:justify-start">
+              <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
                 {!profile.hideJoinDate && (
                   <>
                     <span className="flex items-center gap-1">
@@ -369,30 +373,13 @@ export function ProfilePage() {
               </div>
 
               {/* Action buttons */}
-              <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-                <Link href={`/profile/${encodeURIComponent(profile.username)}/level`}>
-                  <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
-                    <Trophy className="h-3.5 w-3.5" /> المستوى
-                  </Button>
-                </Link>
-                <Link href={`/profile/${encodeURIComponent(profile.username)}/teams`}>
-                  <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
-                    <Users className="h-3.5 w-3.5" /> فرقي
-                  </Button>
-                </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
                 {isOwner ? (
-                  <>
-                    <Link href="/settings">
-                      <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
-                        <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
-                      </Button>
-                    </Link>
-                    <Link href={`/profile/${encodeURIComponent(profile.username)}/settings`}>
-                      <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
-                        <Settings className="h-3.5 w-3.5" /> إعدادات الملف الشخصي
-                      </Button>
-                    </Link>
-                  </>
+                  <Link href="/settings">
+                    <Button size="sm" variant="outline" className="h-8 gap-1.5 border-[#333] text-xs text-gray-300 hover:bg-[#222] min-h-[44px]">
+                      <Settings className="h-3.5 w-3.5" /> إدارة الحساب والإعدادات
+                    </Button>
+                  </Link>
                 ) : (
                   <>
                     <Button
@@ -431,13 +418,8 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ===== Divider ===== */}
-      <div className="px-4 lg:px-6 mt-4">
-        <div className="border-t border-[#333]" />
-      </div>
-
-      {/* ===== Stats (full width) ===== */}
-      <div className="px-4 lg:px-6 mt-4">
+      {/* ===== Stats — مسافة أكبر بين الخط والصناديق ===== */}
+      <div className="px-4 lg:px-6 mt-8">
         <div className="mx-auto max-w-[1400px]">
           <ProfileStats
             stats={profile.stats}
@@ -462,7 +444,7 @@ export function ProfilePage() {
           <TabsList className="w-full flex-row justify-start overflow-x-auto whitespace-nowrap border-b border-[#333] bg-transparent p-0 scrollbar-thin" style={{ direction: 'rtl' }}>
             <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">نبذة عني</TabsTrigger>
             <TabsTrigger value="badges" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الشارات</TabsTrigger>
-            <TabsTrigger value="xp" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">الخبرة</TabsTrigger>
+            <TabsTrigger value="comments" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">التعليقات ({activity.comments?.length || 0})</TabsTrigger>
             <TabsTrigger value="mods" className="rounded-none border-b-2 border-transparent bg-transparent text-gray-500 data-[state=active]:text-white">التعريبات ({profile.stats.mods})</TabsTrigger>
             <Link
               href={`/profile/${encodeURIComponent(profile.username)}/teams`}
@@ -480,89 +462,46 @@ export function ProfilePage() {
             </div>
           </TabsContent>
 
-          {/* Stats tab */}
-          <TabsContent value="stats" className="mt-6">
-            <div className="space-y-4">
-              {/* Main stats grid */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <StatCard
-                  icon={<Download className="h-5 w-5" />}
-                  label="التحميلات"
-                  value={formatNumber(profile.stats.totalDownloads)}
-                />
-                <StatCard
-                  icon={<ThumbsUp className="h-5 w-5" />}
-                  label="الإعجابات"
-                  value={formatNumber(profile.stats.totalEndorsements)}
-                />
-                <StatCard
-                  icon={<MessageSquare className="h-5 w-5" />}
-                  label="التعليقات"
-                  value={formatNumber(activity.comments?.length || 0)}
-                />
-                <StatCard
-                  icon={<Package className="h-5 w-5" />}
-                  label="التعريبات"
-                  value={formatNumber(profile.stats.mods)}
-                />
-                <StatCard
-                  icon={<Eye className="h-5 w-5" />}
-                  label="المشاهدات"
-                  value={formatNumber(profile.stats.totalViews)}
-                />
-                <StatCard
-                  icon={<Users className="h-5 w-5" />}
-                  label="المتابعين"
-                  value={formatNumber(profile.stats.followersCount)}
-                />
-              </div>
-
-              {/* Recent activity */}
-              {activity.comments && activity.comments.length > 0 ? (
-                <div className="rounded-lg bg-[#1a1a1a] p-4 border border-[#333]">
-                  <h3 className="text-sm font-bold text-white mb-3">آخر التعليقات</h3>
-                  <div className="space-y-2">
-                    {activity.comments.slice(0, 5).map((comment) => (
-                      <div key={comment.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#222] transition-colors">
-                        <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-300 line-clamp-2">{comment.text}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">على تعريب</span>
-                            <Link
-                              href={`/mod/${comment.mod.slug}`}
-                              className="text-xs text-primary hover:underline truncate"
-                            >
-                              {comment.mod.name}
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg bg-[#1a1a1a] p-8 text-center border border-[#333]">
-                  <MessageSquare className="mx-auto h-8 w-8 text-gray-600 mb-2" />
-                  <p className="text-sm text-gray-500">لا توجد تعليقات بعد</p>
-                  <p className="mt-1 text-xs text-gray-600">ستظهر تعليقاتك هنا عند المشاركة</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
           {/* Badges tab */}
           <TabsContent value="badges" className="mt-6">
             <ProfileBadgesGrid badges={badges} />
           </TabsContent>
 
-          {/* XP tab */}
-          <TabsContent value="xp" className="mt-6">
-            {profile.xp ? (
-              <ProfileXpBar xp={profile.xp} />
+          {/* Comments tab — التعليقات (يمين) */}
+          <TabsContent value="comments" className="mt-6" dir="rtl">
+            {activity.comments && activity.comments.length > 0 ? (
+              <div className="rounded-lg bg-[#1a1a1a] p-4 border border-[#333]" dir="rtl">
+                <h3 className="text-sm font-bold text-white mb-3 text-right">آخر التعليقات ({activity.comments.length})</h3>
+                <div className="space-y-2">
+                  {activity.comments.map((comment) => (
+                    <div key={comment.id} dir="rtl" className="flex flex-row items-start gap-3 p-3 rounded-lg hover:bg-[#222] transition-colors border border-transparent hover:border-[#333] text-right">
+                      <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="flex flex-row items-center justify-start gap-2 mb-1">
+                          <span className="text-xs font-bold text-gray-300">{(comment as any).user?.username || (comment as any).guestName || 'زائر'}</span>
+                          {(comment as any).parentId && <span className="text-[10px] bg-[#222] border border-[#333] px-1.5 py-0.5 rounded text-gray-400">رد</span>}
+                          <span className="text-xs text-gray-600">• {new Date(comment.createdAt).toLocaleDateString('ar-EG')}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 line-clamp-2 text-right" dir="rtl">{comment.text}</p>
+                        <div className="flex flex-row items-center justify-start gap-2 mt-1">
+                          <span className="text-xs text-gray-500">على تعريب</span>
+                          <Link
+                            href={`/mod/${comment.mod.slug}`}
+                            className="text-xs text-primary hover:underline truncate"
+                          >
+                            {comment.mod.name}
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
-              <div className="rounded-lg bg-[#1a1a1a] p-6 text-center">
-                <p className="text-sm text-gray-500">لم يبدأ بعد</p>
+              <div className="rounded-lg bg-[#1a1a1a] p-8 text-center border border-[#333]">
+                <MessageSquare className="mx-auto h-8 w-8 text-gray-600 mb-2" />
+                <p className="text-sm text-gray-500">لا توجد تعليقات بعد</p>
+                <p className="mt-1 text-xs text-gray-600">ستظهر تعليقاتك هنا عند المشاركة</p>
               </div>
             )}
           </TabsContent>
@@ -630,6 +569,125 @@ function TierProgressSection({ username, role, tier }: { username: string; role:
           <TierProgress role={role as unknown as import('@/lib/roles').UserRole} currentTier={tier} progress={data.progress} nextRequirements={data.nextTierRequirements} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function LevelTab({ username, role, tier }: { username: string; role: string; tier: number }) {
+  const [data, setData] = useState<null | {
+    user: { username: string; role: string; tier: number }
+    currentConfig: { label: string; description: string }
+    tierProgress: {
+      currentTier: number
+      suggestedTier: number
+      shouldUpgrade: boolean
+      requiresAdminApproval: boolean
+      progress: { publishedCount: number; averageRating: number; reviewsCount: number; monthsActive: number }
+      nextTierRequirements: { minPublishedCount?: number; minAverageRating?: number; minReviewsCount?: number; minMonthsActive?: number; requiresAdminApproval?: boolean } | null
+    }
+    tierHistory: { id: string; fromTier: number; toTier: number; reason: string; createdAt: string }[]
+  }>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/users/${encodeURIComponent(username)}/level`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) setData(json.data)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [username])
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-24 rounded-lg bg-[#1a1a1a] border border-[#333] animate-pulse" />
+        <div className="h-32 rounded-lg bg-[#1a1a1a] border border-[#333] animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="rounded-lg bg-[#1a1a1a] p-6 text-center border border-[#333]">
+        <p className="text-sm text-gray-500">فشل تحميل بيانات المستوى</p>
+      </div>
+    )
+  }
+
+  // استخدام getTierLabel لعرض أسماء المستويات في السجل
+  const getLabel = (t: number) => {
+    try {
+      // استيراد ديناميكي بسيط — نستخدم نفس منطق getTierLabel
+      const labels: Record<string, Record<number, string>> = {
+        member: { 0: 'عضو عادي' },
+        creator: { 1: 'مُعَرِّب جديد', 2: 'مُعَرِّب نشط', 3: 'مُعَرِّب محترف', 4: 'مُعَرِّب معتمد', 5: 'مُعَرِّب أسطوري' },
+        publisher: { 1: 'ناشر جديد', 2: 'ناشر موثوق', 3: 'ناشر رئيسي' },
+        moderator: { 1: 'مشرف جديد', 2: 'مشرف', 3: 'مشرف كبير' },
+        admin: { 1: 'مسؤول', 2: 'مسؤول أول' },
+        manager: { 1: 'مدير', 2: 'مدير عام', 3: 'مدير تنفيذي' },
+        owner: { 1: 'مالك الموقع' },
+      }
+      return labels[role]?.[t] || `المستوى ${t}`
+    } catch {
+      return `المستوى ${t}`
+    }
+  }
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      {/* Current Tier Card — مطابق لـ src/app/profile/[user]/level/page.tsx:55 */}
+      <div className="rounded-lg bg-[#1a1a1a] border border-[#333] p-6">
+        <h3 className="flex items-center gap-2 font-bold text-white mb-4">
+          <Trophy className="h-5 w-5 text-yellow-500" />
+          المستوى الحالي
+        </h3>
+        <div className="flex items-center gap-4">
+          <TierBadge role={role as unknown as import('@/lib/roles').UserRole} tier={data.user.tier} size="lg" />
+          <div>
+            <div className="font-bold text-white">{data.currentConfig.label}</div>
+            <div className="text-sm text-gray-400">{data.currentConfig.description}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress to Next Tier — مطابق لـ level/page.tsx:71 */}
+      <div className="rounded-lg bg-[#1a1a1a] border border-[#333] p-6">
+        <h3 className="flex items-center gap-2 font-bold text-white mb-4">
+          <TrendingUp className="h-5 w-5 text-green-500" />
+          التقدم نحو المستوى التالي
+        </h3>
+        <TierProgress role={role as unknown as import('@/lib/roles').UserRole} currentTier={data.user.tier} progress={data.tierProgress.progress} nextRequirements={data.tierProgress.nextTierRequirements} />
+      </div>
+
+      {/* Tier History — مطابق لـ level/page.tsx:84 */}
+      {data.tierHistory.length > 0 && (
+        <div className="rounded-lg bg-[#1a1a1a] border border-[#333] p-6">
+          <h3 className="flex items-center gap-2 font-bold text-white mb-4">
+            <History className="h-5 w-5 text-blue-500" />
+            سجل الترقيات
+          </h3>
+          <div className="space-y-3">
+            {data.tierHistory.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between p-3 bg-[#222] rounded-lg border border-[#333]">
+                <div className="flex items-center gap-3">
+                  {entry.toTier > entry.fromTier ? <span className="text-green-500">⬆️</span> : <span className="text-red-500">⬇️</span>}
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      من {getLabel(entry.fromTier)} إلى {getLabel(entry.toTier)}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {entry.reason === 'auto' ? 'ترقية تلقائية' : entry.reason === 'manual' ? 'قرار إداري' : entry.reason === 'admin' ? 'إجراء إداري' : entry.reason}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">{new Date(entry.createdAt).toLocaleDateString('ar-EG')}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

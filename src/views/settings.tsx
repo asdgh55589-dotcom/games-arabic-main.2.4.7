@@ -752,23 +752,6 @@ export function SettingsPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 lg:px-6 py-6">
-        {(profile?.role === 'member' || user?.role === 'member') && (
-          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-bold flex items-center gap-2 text-base">🎨 كن معرّباً</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    انضم لفريق المُعَرِّبين وشارك تعريباتك مع المجتمع
-                  </p>
-                </div>
-                <Link href="/become-creator">
-                  <Button className="min-h-[44px]">ابدأ الآن</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <nav className="lg:w-64 shrink-0">
@@ -925,9 +908,9 @@ export function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* Display Name */}
+                  {/* Display Name + Bio — خانة واحدة */}
                   <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                    <h3 className="mb-4 text-sm font-bold">اسم العرض</h3>
+                    <h3 className="mb-4 text-sm font-bold">الاسم والنبذة</h3>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="displayName" className="text-sm text-muted-foreground">اسم العرض</Label>
@@ -961,6 +944,30 @@ export function SettingsPage() {
                             placeholder="اسم العائلة"
                           />
                         </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="bio" className="text-sm text-muted-foreground">النبذة — أخبر الآخرين عن نفسك</Label>
+                          {bio && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
+                              onClick={() => setBio('')}
+                            >
+                              مسح
+                            </Button>
+                          )}
+                        </div>
+                        <textarea
+                          id="bio"
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value.substring(0, 500))}
+                          className="w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                          rows={4}
+                          placeholder="اكتب نبذة عن نفسك..."
+                        />
+                        <p className="text-xs text-muted-foreground">{bio.length}/500</p>
                       </div>
                     </div>
                   </div>
@@ -999,36 +1006,9 @@ export function SettingsPage() {
                        </div>
                      </div>
                    </div>
-                 </div>
+                  </div>
 
-                 {/* Bio */}
-                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                   <h3 className="mb-4 text-sm font-bold">النبذة الشخصية</h3>
-                   <div className="flex items-center justify-between mb-2">
-                     <Label htmlFor="bio" className="text-sm text-muted-foreground">أخبر الآخرين عن نفسك</Label>
-                     {bio && (
-                       <Button 
-                         size="sm" 
-                         variant="ghost" 
-                         className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
-                         onClick={() => setBio('')}
-                       >
-                         مسح
-                       </Button>
-                     )}
-                   </div>
-                   <textarea
-                     id="bio"
-                     value={bio}
-                     onChange={(e) => setBio(e.target.value.substring(0, 500))}
-                      className="mt-2 w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                     rows={4}
-                     placeholder="اكتب نبذة عن نفسك..."
-                   />
-                   <p className="text-xs text-muted-foreground mt-1">{bio.length}/500</p>
-                 </div>
-
-                {/* Social Links */}
+                 {/* Social Links */}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                    <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
                    <SocialLinksEditor
@@ -1464,7 +1444,7 @@ function SocialLinksEditor({
     const platform = SOCIAL_PLATFORMS[key]
     const entry = urlMap[platform.column]
     if (entry) {
-      entry.onChange('')
+      entry.onChange('https://')
     }
     setShowDropdown(false)
   }

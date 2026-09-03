@@ -1,7 +1,17 @@
 'use client'
 
-import { Package, Download, ThumbsUp, Eye, Users, UserPlus, Star, Award, Calendar, BarChart3 } from 'lucide-react'
-import { formatNumber, formatDate } from '@/lib/format'
+import { Package, Download, ThumbsUp, Eye, Users, UserPlus, Award, BarChart3 } from 'lucide-react'
+import { formatNumber } from '@/lib/format'
+
+const ROLE_STATS_LABEL: Record<string, string> = {
+  owner: 'المالك',
+  manager: 'المدير',
+  admin: 'المسؤول',
+  moderator: 'المشرف',
+  publisher: 'الناشر',
+  creator: 'المعرب',
+  member: 'العضو',
+}
 
 interface ProfileStatsProps {
   stats: {
@@ -28,59 +38,37 @@ interface ProfileStatsProps {
 }
 
 export function ProfileStats({ stats, xp, isTranslator, translatorStats, role }: ProfileStatsProps) {
-  // isTranslator الآن يحسب أيضاً بناءً على وجود mods (من API)، لكن نحتفظ بالمنطق القديم كـ fallback
   const hasTranslatorStats = isTranslator || (translatorStats && translatorStats.badgesCount > 0)
-  const isMember = (role === 'member' || !role) && !hasTranslatorStats
-  
+  const statsLabel = (() => {
+    // إذا كان معرّب لكن رتبته member، اعرض "المعرب" بدل "العضو"
+    if (hasTranslatorStats && role === 'member') return 'المعرب'
+    return ROLE_STATS_LABEL[role || 'member'] || 'المعرب'
+  })()
+
   return (
     <div className="space-y-3">
-      {/* Member-only — basic stats */}
-      {isMember ? (
-        <div className="grid grid-cols-3 gap-3">
-          <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="المشاهدات" value={formatNumber(stats.totalViews)} />
-          <HorizontalStatCard icon={<Users className="h-4 w-4" />} label="المتابعين" value={formatNumber(stats.followersCount)} />
-          <HorizontalStatCard icon={<UserPlus className="h-4 w-4" />} label="المتابَعين" value={formatNumber(stats.followingCount)} />
-        </div>
-      ) : (
-        <>
-          {/* Admin/Mod/Owner — full stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <HorizontalStatCard icon={<Package className="h-4 w-4" />} label="التعريبات" value={formatNumber(stats.mods)} />
-            <HorizontalStatCard icon={<Download className="h-4 w-4" />} label="التحميلات" value={formatNumber(stats.totalDownloads)} />
-            <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="التأييدات" value={formatNumber(stats.totalEndorsements)} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="المشاهدات" value={formatNumber(stats.totalViews)} />
-            <HorizontalStatCard icon={<Users className="h-4 w-4" />} label="المتابعين" value={formatNumber(stats.followersCount)} />
-            <HorizontalStatCard icon={<UserPlus className="h-4 w-4" />} label="المتابَعين" value={formatNumber(stats.followingCount)} />
-          </div>
-        </>
-      )}
+      {/* ثابت للكل — 3 صناديق */}
+      <div className="grid grid-cols-3 gap-3">
+        <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="المشاهدات" value={formatNumber(stats.totalViews)} />
+        <HorizontalStatCard icon={<Users className="h-4 w-4" />} label="المتابعين" value={formatNumber(stats.followersCount)} />
+        <HorizontalStatCard icon={<UserPlus className="h-4 w-4" />} label="المتابَعين" value={formatNumber(stats.followingCount)} />
+      </div>
 
-      {/* Translator-only — earned + translator stats */}
+      {/* إحصائيات X — 6 صناديق (5 سابقة + عدد التعريبات) */}
       {hasTranslatorStats && xp && (
         <>
           <div className="pt-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">إحصائيات المعرب</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">إحصائيات {statsLabel}</span>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <HorizontalStatCard icon={<Award className="h-4 w-4" />} label="الشارات" value={formatNumber(translatorStats?.badgesCount || 0)} />
-            <HorizontalStatCard icon={<BarChart3 className="h-4 w-4" />} label="المستوى" value={`${xp.name} (${xp.level})`} />
-            <HorizontalStatCard
-              icon={<Star className="h-4 w-4" />}
-              label="نسبة الإنجاز"
-              value={`${xp.progress}%`}
-              extra={
-                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#333]">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${xp.progress}%` }} />
-                </div>
-              }
-            />
+            <HorizontalStatCard icon={<Package className="h-4 w-4" />} label="عدد التعريبات" value={formatNumber(stats.mods)} />
+            <HorizontalStatCard icon={<Download className="h-4 w-4" />} label="إجمالي التحميلات" value={formatNumber(stats.totalDownloads)} />
+            <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="إجمالي الإعجابات" value={formatNumber(stats.totalEndorsements)} />
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <HorizontalStatCard icon={<ThumbsUp className="h-4 w-4" />} label="إجمالي تاييدات التعريبات" value={formatNumber(stats.totalEndorsements)} />
-            <HorizontalStatCard icon={<Download className="h-4 w-4" />} label="إجمالي تحميلات التعريبات" value={formatNumber(stats.totalDownloads)} />
-            <HorizontalStatCard icon={<Calendar className="h-4 w-4" />} label="أول تعريب" value={translatorStats?.firstModDate ? formatDate(translatorStats.firstModDate) : '—'} />
+            <HorizontalStatCard icon={<Eye className="h-4 w-4" />} label="إجمالي المشاهدات" value={formatNumber(stats.totalViews)} />
+            <HorizontalStatCard icon={<Award className="h-4 w-4" />} label="الشارات المكتسبة" value={formatNumber(translatorStats?.badgesCount || 0)} />
+            <HorizontalStatCard icon={<BarChart3 className="h-4 w-4" />} label="المستوى الحالي" value={`${xp.name} (${xp.level})`} />
           </div>
         </>
       )}

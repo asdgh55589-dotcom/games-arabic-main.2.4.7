@@ -109,10 +109,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       db.follow.count({ where: { followerId: user.id } }),
     ])
 
-    // حالة الاتصال
+    // حالة الاتصال — 15 دقيقة
     const now = new Date()
     const onlineStatus =
-      user.lastLoginAt && now.getTime() - user.lastLoginAt.getTime() < 5 * 60 * 1000
+      user.lastLoginAt && now.getTime() - user.lastLoginAt.getTime() < 15 * 60 * 1000
         ? 'online'
         : 'offline'
 

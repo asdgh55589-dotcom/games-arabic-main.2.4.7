@@ -322,12 +322,12 @@ export function ModDetailPage() {
 
           </div>
 
-          {/* ===== CONTENT ROW — poster hidden on mobile, visible on desktop (مرفوع على البانر زي ما كان) ===== */}
-          <div dir="rtl" className="relative z-10 me-auto ms-0 sm:ms-2 lg:ms-32 ps-0 sm:ps-2 lg:ps-8 pe-4 sm:pe-6 lg:pe-36 pt-1 sm:pt-2 lg:pt-6 -mt-[80px] sm:-mt-[120px] lg:-mt-[280px] xl:-mt-[360px]">
+          {/* ===== CONTENT ROW — poster right, text left, overlaps banner ===== */}
+          <div dir="rtl" className="relative z-10 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 -mt-[160px] sm:-mt-[280px] md:-mt-[360px]">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
 
-              {/* POSTER COLUMN — hidden on mobile, visible on desktop */}
-              <div className="hidden lg:block w-[280px] mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
+              {/* POSTER COLUMN — RIGHT side in RTL */}
+              <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
                 {/* Poster image */}
                 <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
                   {mod.imageUrl ? (
@@ -370,9 +370,9 @@ export function ModDetailPage() {
                   )}
                 </div>
 
-                {/* Title — mobile small under image (attached right) + lowered more on phone only */}
+                {/* Title + stats + data — shared blurred backdrop, faded edges */}
                 <div
-                  className="ps-0 sm:ps-1 lg:ps-6 pe-2 sm:pe-4 lg:pe-10 pt-8 sm:pt-10 lg:pt-10 pb-4 sm:pb-6 lg:pb-8 lg:bg-black/25 lg:backdrop-blur-sm lg:-mt-3"
+                  className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-10 sm:pt-12 md:pt-14 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
                   style={{
                     maskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
                     WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
@@ -381,7 +381,7 @@ export function ModDetailPage() {
                   }}
                 >
                 {/* Title */}
-                <h1 className="break-words text-lg font-bold leading-tight text-foreground sm:text-xl lg:text-2xl xl:text-5xl whitespace-normal lg:whitespace-nowrap">
+                <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
                   {mod.name}
                 </h1>
                 {(mod as unknown as { isOriginalWork?: boolean; originalSource?: string | null; originalAuthor?: string | null }).isOriginalWork === false && (
@@ -407,7 +407,7 @@ export function ModDetailPage() {
                 )}
 
                 {/* Data grid */}
-                <div className="mt-6 sm:mt-8 md:mt-10 grid w-full grid-cols-1 gap-x-6 gap-y-4 sm:w-[85%] sm:grid-cols-2 sm:gap-y-5">
+                <div className="mt-6 sm:mt-8 md:mt-10 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
                   <DataItem icon={<Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />} label="اسم اللعبة" value={mod.game.name} />
                   {mod.arabicTitle && (
                     <DataItem icon={<Languages className="h-4 w-4 text-emerald-500 shrink-0" />} label="الاسم بالعربي" value={mod.arabicTitle} />
@@ -434,11 +434,11 @@ export function ModDetailPage() {
 
           {/* ===== صندوق البيانات — مائل بدون حواف ناعمة وبارز بخطوط عريضة ===== */}
           <div dir="rtl" className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-8 sm:-mt-12 lg:-mt-14">
-            <div className="flex w-full flex-wrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] lg:flex-nowrap lg:-skew-x-[0.4deg]">
+            <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
               {/* السلسلة */}
               {mod.series && mod.series.trim() !== '' && (
                 <>
-              <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-orange-500">
                       <Layers className="h-3.5 w-3.5" />
                     </span>
@@ -453,7 +453,7 @@ export function ModDetailPage() {
               {/* الفريق */}
               {mod.translationTeam && mod.translationTeam.trim() !== '' && (
                 <>
-                  <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-indigo-500">
                       <Users className="h-3.5 w-3.5" />
                     </span>
@@ -466,7 +466,7 @@ export function ModDetailPage() {
               )}
 
               {/* اللايكات */}
-              <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-primary">
                   <ThumbsUp className="h-3.5 w-3.5" />
                 </span>
@@ -477,7 +477,7 @@ export function ModDetailPage() {
               <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
 
               {/* التحميلات */}
-              <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-sky-500">
                   <BarChart3 className="h-3.5 w-3.5" />
                 </span>
@@ -488,7 +488,7 @@ export function ModDetailPage() {
               <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
 
               {/* المشاهدات */}
-              <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-emerald-500">
                   <Eye className="h-3.5 w-3.5" />
                 </span>
@@ -499,7 +499,7 @@ export function ModDetailPage() {
               <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
 
               {/* تم النشر في */}
-              <span className="flex items-center gap-1.5 whitespace-normal sm:whitespace-nowrap">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-cyan-500">
                   <Calendar className="h-3.5 w-3.5" />
                 </span>
@@ -737,11 +737,11 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 /** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5 min-w-0">
+    <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">{label}</span>
       <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
-      <span className="min-w-0 flex-1 break-words text-xs font-bold text-foreground sm:text-sm">{value}</span>
+      <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
     </div>
   )
 }

@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
       return internalError('Storage unavailable')
     }
 
-    const path = `${bucket}/${neonUser.id}.${extension}`
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const path = `${bucket}/${neonUser.id}-${uniqueSuffix}.${extension}`
 
     let signedResult = await adminClient.storage
       .from(bucket)

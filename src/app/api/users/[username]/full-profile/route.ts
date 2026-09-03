@@ -59,25 +59,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             createdAt: true,
           },
         },
-        comments: {
-          take: limit,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            text: true,
-            createdAt: true,
-            mod: {
-              select: {
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
         _count: {
           select: {
             mods: true,
-            comments: true,
             endorsements: true,
           },
         },
@@ -131,6 +115,25 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const countsPromise = Promise.all([
       db.follow.count({ where: { followingId: user.id } }),
       db.follow.count({ where: { followerId: user.id } }),
+      db.modComment.findMany({
+        where: {
+          OR: [
+            { userId: user.id },
+            { parent: { userId: user.id } },
+          ],
+        },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          text: true,
+          createdAt: true,
+          guestName: true,
+          parentId: true,
+          user: { select: { username: true, avatarUrl: true } },
+          mod: { select: { name: true, slug: true } },
+        },
+      }),
     ])
 
     const resolvedViewer = await viewerPromise
@@ -149,7 +152,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         })
       : Promise.resolve(null)
 
-    const [[followersCount, followingCount], follow] = await Promise.all([
+    const [[followersCount, followingCount, commentsOnMods], follow] = await Promise.all([
       countsPromise,
       followPromise,
     ])
@@ -161,8 +164,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const now = new Date()
 
+    // 15 دقيقة بدل 5 لتجنب الظهور offline أثناء التصفح
     const onlineStatus =
-      user.lastLoginAt && now.getTime() - user.lastLoginAt.getTime() < 5 * 60 * 1000
+      user.lastLoginAt && now.getTime() - user.lastLoginAt.getTime() < 15 * 60 * 1000
         ? 'online'
         : 'offline'
 
@@ -222,7 +226,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           },
         },
         activity: {
-          comments: user.comments,
+          comments: commentsOnMods,
           mods: user.mods,
         },
         badges,
