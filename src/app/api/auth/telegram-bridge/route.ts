@@ -78,7 +78,6 @@ export async function POST(req: NextRequest) {
             avatarUrl: photoUrl,
             emailVerified: true, // telegram = verified
             role: 'member',
-            // image via better-auth maps to avatarUrl, so avatarUrl suffices
           },
         })
       }
@@ -159,15 +158,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn('[telegram-bridge] failed to set legacy cookie', e)
     }
-    // Set Better Auth cookie: better-auth.session_token (للبقاء متوافق)
-    res.cookies.set('better-auth.session_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      expires: expiresAt,
-    })
-    // سجل الجلسة المركزي لـ Supabase flow
+    // سجل الجلسة المركزي
     res.cookies.set('ga_session_ledger', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
