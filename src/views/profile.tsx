@@ -27,6 +27,7 @@ import { ReportButton } from '@/components/report-button'
 import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
 import { TierProgress } from '@/components/tier-progress'
+import { ProfileMobile } from './profile-mobile'
 import type { ModSummary } from '@/lib/types'
 
 interface ProfileData {
@@ -265,32 +266,64 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"
+      <>
+        <div className="hidden lg:block">
+          <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+            <div
+              className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"
+            />
+          </div>
+        </div>
+        <ProfileMobile
+          profile={null}
+          activity={activity}
+          badges={badges}
+          loading={loading}
+          error={null}
+          isFollowing={isFollowing}
+          followLoading={followLoading}
+          onFollowToggle={handleFollowToggle}
+          isOwner={isOwner}
         />
-      </div>
+      </>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-lg text-gray-400">{error || 'المستخدم غير موجود'}</p>
-          <div className="flex items-center justify-center gap-3">
-            <Button onClick={() => fetchProfile()} variant="outline" className="border-[#333] text-gray-300">
-              إعادة المحاولة
-            </Button>
-            <Link href="/" className="inline-block text-sm text-primary hover:underline">العودة للرئيسية</Link>
+      <>
+        <div className="hidden lg:block">
+          <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <p className="text-lg text-gray-400">{error || 'المستخدم غير موجود'}</p>
+              <div className="flex items-center justify-center gap-3">
+                <Button onClick={() => fetchProfile()} variant="outline" className="border-[#333] text-gray-300">
+                  إعادة المحاولة
+                </Button>
+                <Link href="/" className="inline-block text-sm text-primary hover:underline">العودة للرئيسية</Link>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+        <ProfileMobile
+          profile={null}
+          activity={activity}
+          badges={badges}
+          loading={false}
+          error={error}
+          isFollowing={isFollowing}
+          followLoading={followLoading}
+          onFollowToggle={handleFollowToggle}
+          isOwner={isOwner}
+        />
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white" dir="rtl">
+    <>
+      <div className="hidden lg:block">
+        <div className="min-h-screen bg-[#121212] text-white" dir="rtl">
       {/* ===== Banner — ينتهي عند الخط مباشرة بدون مساحة سوداء ===== */}
       <div className="relative h-[300px] overflow-hidden border-b border-[#333]">
         {profile.bannerUrl ? (
@@ -513,6 +546,19 @@ export function ProfilePage() {
         </Tabs>
       </div>
     </div>
+      </div>
+      <ProfileMobile
+        profile={profile}
+        activity={activity}
+        badges={badges}
+        loading={loading}
+        error={error}
+        isFollowing={isFollowing}
+        followLoading={followLoading}
+        onFollowToggle={handleFollowToggle}
+        isOwner={isOwner}
+      />
+    </>
   )
 }
 

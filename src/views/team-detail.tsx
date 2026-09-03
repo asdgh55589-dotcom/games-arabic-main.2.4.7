@@ -16,6 +16,7 @@ import { formatNumber } from '@/lib/format'
 import type { TeamDetail } from '@/lib/types'
 import { ROLE_LABELS, CONTACT_ICONS, CONTACT_COLORS, TEAM_TABS, type TabKey } from '@/lib/team-constants'
 import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember } from '@/lib/team-members'
+import { TeamDetailMobile } from './team-detail-mobile'
 
 export function TeamDetailPage() {
   const { team, loading, activeTab, setActiveTab } = useTeamDetail()
@@ -84,7 +85,9 @@ export function TeamDetailPage() {
   }
 
   return (
-    <div className="min-h-screen" dir="rtl">
+    <>
+      <div className="hidden lg:block">
+        <div className="min-h-screen" dir="rtl">
       {loading ? (
         <div className="space-y-0">
           <div className="h-72 animate-pulse bg-muted sm:h-80 lg:h-96" />
@@ -257,7 +260,10 @@ export function TeamDetailPage() {
           </div>
         </>
       )}
-    </div>
+        </div>
+      </div>
+      <TeamDetailMobile team={team} loading={loading} activeTab={activeTab} setActiveTab={setActiveTab} />
+    </>
   )
 }
 

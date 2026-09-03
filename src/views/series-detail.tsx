@@ -15,6 +15,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
+import { SeriesDetailMobile } from './series-detail-mobile'
 import type { ModSummary } from '@/lib/types'
 
 interface SeriesInfo {
@@ -77,8 +78,10 @@ export function SeriesDetailPage() {
   const modsData = data
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
-      {/* مسار التنقل */}
+    <>
+      <div className="hidden lg:block">
+        <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
+          {/* مسار التنقل */}
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/series" className="hover:text-foreground">سلاسل التعريبات</Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
@@ -158,6 +161,20 @@ export function SeriesDetailPage() {
           )}
         </>
       )}
-    </div>
+        </div>
+      </div>
+      <SeriesDetailMobile
+        displayName={displayName}
+        seriesInfo={seriesInfo}
+        modsData={modsData}
+        loading={loading}
+        search={search}
+        setSearch={setSearch}
+        sort={sort}
+        setSort={setSort}
+        page={page}
+        setPage={setPage}
+      />
+    </>
   )
 }

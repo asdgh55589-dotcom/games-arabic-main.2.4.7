@@ -6,6 +6,7 @@ import { Users, Star, Shield } from 'lucide-react'
 import { useFetch } from '@/hooks/use-fetch'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatNumber } from '@/lib/format'
+import { TeamsMobile } from './teams-mobile'
 
 interface TeamData {
   id: string
@@ -28,7 +29,9 @@ export function TranslationTeamsPage() {
   const { data, loading } = useFetch<TeamsResponse>('/api/teams')
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
+    <>
+      <div className="hidden lg:block">
+        <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">فرق التعريب</h1>
         <p className="mt-1 text-muted-foreground">
@@ -79,6 +82,9 @@ export function TranslationTeamsPage() {
           ))}
         </div>
       )}
-    </div>
+        </div>
+      </div>
+      <TeamsMobile data={data?.data} loading={loading} />
+    </>
   )
 }

@@ -157,7 +157,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               </span>
               اسم اللعبه:
             </span>
-            <span className="max-w-[150px] truncate text-xs font-black text-foreground">{mod.game.name}</span>
+            <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.game.name}</span>
           </div>
           {/* الاسم بالعربي */}
           {mod.arabicTitle && mod.arabicTitle.trim() !== '' && (
@@ -168,7 +168,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 الاسم بالعربي:
               </span>
-              <span className="max-w-[150px] truncate text-xs font-black text-foreground">{mod.arabicTitle}</span>
+              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.arabicTitle}</span>
             </div>
           )}
           {/* نوع التعريب */}
@@ -190,7 +190,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 نطاق التعريب:
               </span>
-              <span className="max-w-[150px] truncate text-xs font-black text-foreground">{mod.translationScope}</span>
+              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.translationScope}</span>
             </div>
           )}
           {/* توافق التعريب */}
@@ -202,7 +202,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 توافق التعريب:
               </span>
-              <span className="max-w-[150px] truncate text-xs font-black text-foreground">{mod.compatibility}</span>
+              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.compatibility}</span>
             </div>
           )}
           {/* تاريخ الاصدار */}
@@ -243,7 +243,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Calendar className="h-3.5 w-3.5" />
@@ -301,7 +301,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== زرارين قصاد بعض: لايكات / الإبلاغ — مصغر ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
         <Button
           onClick={onEndorse}
           className={`flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all ${
@@ -452,13 +452,13 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <section>
             <h2 className="mb-2 text-sm font-bold text-foreground">قد يعجبك أيضاً</h2>
             {relatedLoading ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <ModCardSkeleton key={i} />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {filteredRelated.map((m) => (
                   <ModCard key={m.id} mod={m} />
                 ))}
