@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   ArrowRight, User, Lock, Bell, Eye, ChevronLeft, Upload, Users, BarChart3,
-  Loader2, Save, X, Camera, Check
+  Loader2, Save, X, Camera, Check, Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -782,6 +782,20 @@ export function SettingsPage() {
                   }`} />
                 </button>
               ))}
+              {/* الأجهزة المتصلة — Better Auth sessions */}
+              <Link
+                href="/settings/sessions"
+                className="group flex w-full items-center gap-3 rounded-none border-[3px] border-border bg-card px-4 py-3 text-start shadow-[4px_4px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] hover:bg-card-hover transition-all cursor-pointer"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-border bg-transparent text-muted-foreground">
+                  <Shield className="h-[18px] w-[18px]" />
+                </div>
+                <div className="min-w-0 text-start">
+                  <div className="text-sm font-bold text-foreground">الأجهزة المتصلة</div>
+                  <div className="text-[10px] font-medium text-muted-foreground">إدارة جلساتك النشطة</div>
+                </div>
+                <ChevronLeft className="ms-auto h-4 w-4 shrink-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
             </div>
           </nav>
 

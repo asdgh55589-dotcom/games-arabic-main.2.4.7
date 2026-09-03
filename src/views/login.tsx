@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Mail, Lock, User as UserIcon, AtSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
-import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
+import { authClient } from '@/lib/auth-client'
+import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/auth/errors'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -21,14 +24,6 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
-function DiscordIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-    </svg>
-  )
-}
-
 function TelegramIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -37,90 +32,216 @@ function TelegramIcon({ className }: { className?: string }) {
   )
 }
 
+function translateError(code: string): string {
+  return getAuthErrorMessage(code)
+}
+
 export function LoginPage() {
   useDocumentTitle('تسجيل الدخول')
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
   const { user, loading: authLoading } = useAuth()
   const telegramEnabled = !!(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME)
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  // Redirect if already logged in
+  // form states
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [regUsername, setRegUsername] = useState('')
+  const [regDisplayName, setRegDisplayName] = useState('')
+  const [regEmail, setRegEmail] = useState('')
+  const [regPassword, setRegPassword] = useState('')
+
   useEffect(() => {
     if (!authLoading && user) {
       window.location.href = '/'
     }
   }, [user, authLoading])
 
-  const handleOAuthLogin = async (provider: 'google' | 'discord') => {
-    setLoading(provider)
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000)
+      return () => clearTimeout(t)
+    }
+  }, [resendCooldown])
+
+  const handleGoogleLogin = async () => {
+    setLoading('google')
+    setFieldErrors({})
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
-          // فرض اختيار الحساب لـ Google
-          ...(provider === 'google' && {
-            queryParams: {
-              prompt: 'select_account',
-            },
-          }),
-        },
+      const res = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/',
       })
-      if (error) {
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' })
+      if (res?.error) {
+        const msg = translateError(res.error.code || 'GOOGLE_FAILED')
+        toast({ title: 'خطأ', description: msg, variant: 'destructive' })
         setLoading(null)
       }
-    } catch {
-      toast({ title: 'خطأ', description: 'تعذّر الاتصال بالخادم', variant: 'destructive' })
+      // on success Better Auth will redirect
+    } catch (err) {
+      toast({ title: 'خطأ', description: getAuthErrorMessage('GOOGLE_FAILED'), variant: 'destructive' })
       setLoading(null)
     }
   }
 
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading('email')
+    setFieldErrors({})
+    try {
+      const res = await authClient.signIn.email({
+        email: loginEmail.trim(),
+        password: loginPassword,
+        callbackURL: '/',
+      } as any)
+      if ((res as any)?.error) {
+        const code = (res as any).error.code || (res as any).error.statusText || 'WRONG_PASSWORD'
+        // Better Auth returns various codes: INVALID_EMAIL, INVALID_PASSWORD etc
+        let mapped = code
+        if (code.includes('INVALID') && code.includes('EMAIL')) mapped = 'INVALID_EMAIL'
+        else if (code.includes('PASSWORD') || code.includes('WRONG')) mapped = 'WRONG_PASSWORD'
+        else if (code.includes('NOT_VERIFIED') || code.includes('EMAIL_NOT_VERIFIED')) mapped = 'EMAIL_NOT_VERIFIED'
+        else if (code.includes('BANNED')) mapped = 'USER_BANNED'
+        const msg = translateError(mapped)
+        if (mapped === 'EMAIL_NOT_VERIFIED') {
+          setPendingEmail(loginEmail.trim())
+          toast({ title: 'تأكيد مطلوب', description: msg })
+        } else {
+          toast({ title: 'خطأ', description: msg, variant: 'destructive' })
+        }
+        setLoading(null)
+        return
+      }
+      toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
+      setTimeout(() => (window.location.href = '/'), 300)
+    } catch (err: any) {
+      const msg = translateError(err?.code || 'WRONG_PASSWORD')
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' })
+      setLoading(null)
+    }
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFieldErrors({})
+    // client validation
+    const errs: Record<string, string> = {}
+    if (!regUsername.trim() || regUsername.trim().length < 3) errs.username = 'اسم المستخدم قصير جداً (3 أحرف على الأقل)'
+    if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(regUsername.trim())) errs.username = 'اسم المستخدم يحتوي رموز غير مسموحة'
+    if (!regDisplayName.trim()) errs.displayName = 'الاسم المعروض مطلوب'
+    if (!regEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) errs.email = AUTH_ERRORS.INVALID_EMAIL
+    if (!regPassword || regPassword.length < 8) errs.password = AUTH_ERRORS.WEAK_PASSWORD
+    if (Object.keys(errs).length) {
+      setFieldErrors(errs)
+      return
+    }
+    setLoading('register')
+    try {
+      const res = await authClient.signUp.email({
+        email: regEmail.trim(),
+        password: regPassword,
+        name: regDisplayName.trim(), // maps to displayName via user.fields
+        // @ts-ignore additionalFields
+        username: regUsername.trim(),
+        callbackURL: '/verify-email',
+      } as any)
+      if ((res as any)?.error) {
+        const code = (res as any).error.code || ''
+        let mapped = code
+        if (code.includes('USERNAME') || code.toLowerCase().includes('username')) mapped = 'USERNAME_TAKEN'
+        else if (code.includes('EMAIL') && code.includes('TAKEN')) mapped = 'EMAIL_TAKEN'
+        else if (code.includes('WEAK') || code.includes('PASSWORD')) mapped = 'WEAK_PASSWORD'
+        else if (code.includes('INVALID_EMAIL')) mapped = 'INVALID_EMAIL'
+        else if (code.includes('RATE')) mapped = 'RATE_LIMITED'
+        const msg = translateError(mapped)
+        toast({ title: 'خطأ', description: msg, variant: 'destructive' })
+        // inline field error
+        if (mapped === 'USERNAME_TAKEN') setFieldErrors({ username: msg })
+        if (mapped === 'EMAIL_TAKEN') setFieldErrors({ email: msg })
+        setLoading(null)
+        return
+      }
+      // success — email verification required
+      setPendingEmail(regEmail.trim())
+      toast({ title: 'تم إنشاء الحساب', description: 'تم إرسال رابط التأكيد لإيميلك' })
+      setLoading(null)
+      setResendCooldown(60)
+    } catch (err: any) {
+      const code = err?.code || err?.message || 'UNKNOWN'
+      toast({ title: 'خطأ', description: translateError(code), variant: 'destructive' })
+      setLoading(null)
+    }
+  }
+
+  const handleResend = async () => {
+    if (!pendingEmail || resendCooldown > 0) return
+    setLoading('resend')
+    try {
+      // Better Auth resend: use sendVerificationEmail via authClient
+      const res = await (authClient as any).sendVerificationEmail?.({ email: pendingEmail, callbackURL: '/verify-email' })
+      // fallback: try generic
+      if ((res as any)?.error) {
+        toast({ title: 'خطأ', description: translateError('RATE_LIMITED'), variant: 'destructive' })
+      } else {
+        toast({ title: 'تم الإرسال', description: `أعدنا إرسال الرابط إلى ${pendingEmail}` })
+        setResendCooldown(60)
+      }
+    } catch {
+      // لو الفنكشن غير موجودة — استخدم endpoint generic
+      try {
+        await fetch('/api/auth/send-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail }) })
+        toast({ title: 'تم الإرسال', description: `أعدنا إرسال الرابط إلى ${pendingEmail}` })
+        setResendCooldown(60)
+      } catch {
+        toast({ title: 'خطأ', description: translateError('RATE_LIMITED'), variant: 'destructive' })
+      }
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  // Telegram deep-link flow (existing)
   const handleTelegramLogin = async () => {
     setLoading('telegram')
     try {
       const res = await fetch('/api/auth/telegram', { method: 'POST' })
       const { data } = await res.json()
-
-      if (!res.ok || !data?.deepLink) {
-        throw new Error(data?.error?.message || 'Failed to create session')
-      }
-
+      if (!res.ok || !data?.deepLink) throw new Error(data?.error?.message || 'Failed to create session')
       window.open(data.deepLink, '_blank')
-
       const pollInterval = setInterval(async () => {
         try {
           const checkRes = await fetch(`/api/auth/telegram/poll?token=${data.sessionToken}`)
           const { data: checkData } = await checkRes.json()
-
           if (checkData?.status === 'success') {
             clearInterval(pollInterval)
+            // try bridge to Better Auth
+            try {
+              // إذا كان هناك telegram bridge، ننقله لجلسة Better Auth تلقائياً
+              await fetch('/api/auth/telegram-bridge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phase: 'poll_success', sessionToken: data.sessionToken }) }).catch(() => {})
+            } catch {}
             toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
-            setTimeout(() => {
-              window.location.href = '/'
-            }, 200)
+            setTimeout(() => (window.location.href = '/'), 200)
           } else if (checkData?.status === 'banned') {
             clearInterval(pollInterval)
-            toast({ title: 'محظور', description: 'حسابك محظور', variant: 'destructive' })
+            toast({ title: 'محظور', description: AUTH_ERRORS.USER_BANNED, variant: 'destructive' })
             setLoading(null)
           } else if (checkData?.status === 'expired') {
             clearInterval(pollInterval)
             toast({ title: 'منتهي', description: 'انتهت صلاحية الرابط. حاول مرة أخرى.', variant: 'destructive' })
             setLoading(null)
           }
-        } catch {
-          // تجاهل الأخطاء مؤقتاً
-        }
+        } catch {}
       }, 2000)
-
       setTimeout(() => {
         clearInterval(pollInterval)
         setLoading(null)
       }, 5 * 60 * 1000)
-
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'تعذّر الاتصال', variant: 'destructive' })
+      toast({ title: 'خطأ', description: err instanceof Error ? err.message : AUTH_ERRORS.TELEGRAM_FAILED, variant: 'destructive' })
       setLoading(null)
     }
   }
@@ -133,137 +254,244 @@ export function LoginPage() {
     )
   }
 
+  // Pending verification screen
+  if (pendingEmail) {
+    return (
+      <div className="relative min-h-screen overflow-hidden" dir="rtl">
+        <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/login-bg.jpg" alt="" className="h-full w-full object-cover" />
+        </div>
+        <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/85" />
+        <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+          <Button asChild variant="ghost" size="sm" className="bg-background/40 backdrop-blur-sm min-h-[44px]">
+            <Link href="/"><ArrowLeft className="ml-1.5 h-4 w-4" />العودة للرئيسية</Link>
+          </Button>
+        </div>
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
+          <div className="w-full max-w-[440px]">
+            <div className="rounded-2xl border border-white/10 bg-card/80 p-8 shadow-2xl backdrop-blur-xl text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl">📧</div>
+              <h1 className="text-xl font-bold">افتح بريدك وفعّل الحساب</h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                بعتنالك رابط تأكيد على <span className="font-medium text-foreground">{pendingEmail}</span>
+                <br />الرابط صالح 24 ساعة.
+              </p>
+              <div className="mt-6 space-y-3">
+                <Button
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || loading === 'resend'}
+                  className="h-11 w-full"
+                >
+                  {loading === 'resend' ? <Loader2 className="h-4 w-4 animate-spin" /> : resendCooldown > 0 ? `أعد الإرسال بعد ${resendCooldown}s` : 'أعد الإرسال'}
+                </Button>
+                <Button variant="outline" onClick={() => setPendingEmail(null)} className="h-11 w-full">
+                  سجلت بالغلط؟ غيّر الإيميل
+                </Button>
+                <Button variant="ghost" asChild className="w-full">
+                  <Link href="/login">العودة لتسجيل الدخول</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden" dir="rtl">
-      {/* خلفية تسجيل الدخول */}
       <div className="absolute inset-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/login-bg.jpg" alt="" className="h-full w-full object-cover" />
       </div>
       <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px]" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/85" />
-
-      {/* زر العودة */}
       <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
         <Button asChild variant="ghost" size="sm" className="bg-background/40 backdrop-blur-sm min-h-[44px]">
           <Link href="/"><ArrowLeft className="ml-1.5 h-4 w-4" />العودة للرئيسية</Link>
         </Button>
       </div>
-
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
         <div className="w-full max-w-[440px]">
           <div className="rounded-2xl border border-white/10 bg-card/80 p-8 shadow-2xl backdrop-blur-xl">
-            {/* العنوان */}
-            <div className="mb-8 text-center">
+            <div className="mb-6 text-center">
               <h1 className="text-3xl font-extrabold tracking-tight">
                 <span className="text-primary">GAMES</span>
                 <span className="text-foreground"> ARABIC</span>
               </h1>
-              <p className="mt-3 text-sm text-muted-foreground">
-                سجّل دخولك للوصول إلى حسابك
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground">سجّل دخولك للوصول إلى حسابك</p>
             </div>
 
-            {/* أزرار OAuth */}
-            <div className="space-y-3">
-              {/* زر Google */}
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 w-full justify-center gap-3 bg-background/50 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-background/80"
-                onClick={() => handleOAuthLogin('google')}
-                disabled={loading !== null}
-              >
-                {loading === 'google' ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <GoogleIcon className="h-5 w-5" />
-                )}
-                <span>المتابعة بـ Google</span>
-              </Button>
-
-              {/* زر Discord */}
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 w-full justify-center gap-3 bg-[#5865F2]/10 text-[#5865F2] backdrop-blur-sm transition-colors hover:bg-[#5865F2]/20"
-                onClick={() => handleOAuthLogin('discord')}
-                disabled={loading !== null}
-              >
-                {loading === 'discord' ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <DiscordIcon className="h-5 w-5" />
-                )}
-                <span>المتابعة بـ Discord</span>
-              </Button>
-
-              {/* زر Telegram — يظهر فقط إذا كان البوت مُهيأ */}
-              {telegramEnabled && (
+            {/* 1) Telegram PRIMARY — biggest */}
+            {telegramEnabled && (
+              <div className="space-y-3">
                 <Button
                   type="button"
-                  variant="outline"
-                  className="h-12 w-full justify-center gap-3 bg-[#0088cc]/10 text-[#0088cc] backdrop-blur-sm transition-colors hover:bg-[#0088cc]/20"
+                  className="h-[56px] w-full justify-center gap-3 bg-[#0088cc] text-white text-[15px] font-bold shadow-lg hover:bg-[#0077b5] transition-colors"
                   onClick={handleTelegramLogin}
                   disabled={loading !== null}
                 >
-                  {loading === 'telegram' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <TelegramIcon className="h-5 w-5" />
-                  )}
-                  <span>المتابعة بـ Telegram</span>
+                  {loading === 'telegram' ? <Loader2 className="h-5 w-5 animate-spin" /> : <TelegramIcon className="h-6 w-6" />}
+                  <span>سجل دخول بتليجرام</span>
                 </Button>
-              )}
-
-              {/* Telegram Login Widget — يظهر كخيار إضافي إذا كان البوت مُهيأ */}
-              {telegramEnabled && (
-                <>
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-white/10" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card/80 backdrop-blur-sm px-2 text-muted-foreground">أو</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <TelegramWidget
-                      botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME || 'GAMES_ARABIC_BOT'}
-                      onAuth={async (data) => {
-                        try {
-                          setLoading('telegram')
-                          const res = await fetch('/api/auth/telegram/callback', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data),
-                          })
-                          const json = await res.json().catch(() => null)
-                          if (res.ok) {
-                            toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
-                            setTimeout(() => { window.location.href = '/' }, 200)
-                          } else {
-                            toast({ title: 'خطأ', description: json?.error?.message || 'فشل تسجيل الدخول عبر Telegram', variant: 'destructive' })
-                            setLoading(null)
-                          }
-                        } catch {
-                          toast({ title: 'خطأ', description: 'تعذّر الاتصال بالخادم', variant: 'destructive' })
+                <div className="flex justify-center">
+                  <TelegramWidget
+                    botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME || 'GAMES_ARABIC_BOT'}
+                    onAuth={async (data) => {
+                      try {
+                        setLoading('telegram')
+                        // أولاً نحاول الجسر إلى Better Auth
+                        const bridge = await fetch('/api/auth/telegram-bridge', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(data),
+                        })
+                        if (bridge.ok) {
+                          toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
+                          setTimeout(() => { window.location.href = '/' }, 200)
+                          return
+                        }
+                        // fallback: الطريقة القديمة
+                        const res = await fetch('/api/auth/telegram/callback', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(data),
+                        })
+                        const json = await res.json().catch(() => null)
+                        if (res.ok) {
+                          toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
+                          setTimeout(() => { window.location.href = '/' }, 200)
+                        } else {
+                          toast({ title: 'خطأ', description: json?.error?.message || AUTH_ERRORS.TELEGRAM_FAILED, variant: 'destructive' })
                           setLoading(null)
                         }
-                      }}
-                    />
+                      } catch {
+                        toast({ title: 'خطأ', description: AUTH_ERRORS.TELEGRAM_FAILED, variant: 'destructive' })
+                        setLoading(null)
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card/80 backdrop-blur-sm px-3 text-muted-foreground">— أو —</span>
+              </div>
+            </div>
+
+            {/* 3) Google */}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full justify-center gap-3 bg-background/50 text-sm font-medium backdrop-blur-sm hover:bg-background/80"
+              onClick={handleGoogleLogin}
+              disabled={loading !== null}
+            >
+              {loading === 'google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
+              <span>سجل دخول بجوجل</span>
+            </Button>
+
+            {/* 4) Email/Password — toggle */}
+            <div className="mt-5">
+              <div className="flex gap-2 rounded-xl bg-muted/40 p-1">
+                <button
+                  onClick={() => setMode('login')}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition ${mode === 'login' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  دخول بالإيميل
+                </button>
+                <button
+                  onClick={() => setMode('register')}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition ${mode === 'register' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  حساب جديد
+                </button>
+              </div>
+
+              {mode === 'login' ? (
+                <form onSubmit={handleEmailLogin} className="mt-5 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email" className="text-xs">البريد الإلكتروني</Label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="login-email" type="email" placeholder="example@mail.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="pr-10 h-11" required dir="ltr" />
+                    </div>
                   </div>
-                </>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password" className="text-xs">كلمة المرور</Label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="pr-10 h-11" required dir="ltr" />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={loading !== null} className="h-11 w-full text-sm font-bold">
+                    {loading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'سجل دخول'}
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    مش عندك حساب؟{' '}
+                    <button type="button" onClick={() => setMode('register')} className="text-primary hover:underline font-medium">سجّل الآن</button>
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="mt-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="reg-username" className="text-xs">اسم المستخدم *</Label>
+                      <div className="relative">
+                        <AtSign className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input id="reg-username" placeholder="ahmed_99" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} className="pr-10 h-11" required dir="ltr" />
+                      </div>
+                      {fieldErrors.username && <p className="text-[11px] text-destructive">{fieldErrors.username}</p>}
+                      <p className="text-[10px] text-muted-foreground">سيظهر في /profile/[username]</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reg-displayName" className="text-xs">الاسم المعروض *</Label>
+                      <div className="relative">
+                        <UserIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input id="reg-displayName" placeholder="أحمد محمد" value={regDisplayName} onChange={(e) => setRegDisplayName(e.target.value)} className="pr-10 h-11" required />
+                      </div>
+                      {fieldErrors.displayName && <p className="text-[11px] text-destructive">{fieldErrors.displayName}</p>}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-email" className="text-xs">البريد الإلكتروني *</Label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="reg-email" type="email" placeholder="example@mail.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className="pr-10 h-11" required dir="ltr" />
+                    </div>
+                    {fieldErrors.email && <p className="text-[11px] text-destructive">{fieldErrors.email}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password" className="text-xs">كلمة المرور *</Label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="reg-password" type="password" placeholder="٨ أحرف على الأقل" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="pr-10 h-11" required dir="ltr" />
+                    </div>
+                    {fieldErrors.password && <p className="text-[11px] text-destructive">{fieldErrors.password}</p>}
+                  </div>
+                  <Button type="submit" disabled={loading !== null} className="h-11 w-full text-sm font-bold">
+                    {loading === 'register' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إنشاء حساب وإرسال التأكيد'}
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    عندك حساب؟{' '}
+                    <button type="button" onClick={() => setMode('login')} className="text-primary hover:underline font-medium">سجل دخول</button>
+                  </p>
+                </form>
               )}
             </div>
           </div>
 
-          {/* ملاحظة أمان */}
           <div className="mt-4 rounded-2xl border border-white/10 bg-card/60 p-5 text-center backdrop-blur-xl">
             <p className="text-xs text-muted-foreground leading-relaxed">
               بالتسجيل، أنت توافق على{' '}
-              <Link href="/terms" className="text-primary hover:underline">الشروط و الأحكام</Link>
-              {' '}و{' '}
+              <Link href="/terms" className="text-primary hover:underline">الشروط و الأحكام</Link> و{' '}
               <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
             </p>
           </div>

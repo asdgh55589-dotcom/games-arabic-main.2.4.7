@@ -20,6 +20,7 @@ import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { getTokenVersionCache } from '@/lib/token-version-cache'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
 import { logger } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 const JWT_SECRET = (() => {
@@ -212,6 +213,52 @@ export async function proxy(req: NextRequest) {
     } catch (err) {
       // If Redis/cache fails, allow the request (don't block all users)
       logger.error('[Middleware] IP ban check failed', err)
+    }
+  }
+
+  // ===== Rate limit for POST /api/auth/* (max 10/min) — additive, fail-open =====
+  if (pathname.startsWith('/api/auth') && req.method === 'POST') {
+    try {
+      const rl = await withRedisCircuit(
+        async () =>
+          await Promise.race([
+            rateLimit(req, { limit: 10, window: 60, keyPrefix: 'auth:post' }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+          ]),
+        async () => null
+      )
+      if (rl && !rl.success) {
+        return NextResponse.json(
+          { error: 'محاولات كتير جداً، استنى شوية', code: 'RATE_LIMITED' },
+          { status: 429, headers: rateLimitHeaders(rl) }
+        )
+      }
+    } catch (err) {
+      logger.error('[Middleware] auth rate limit failed', err)
+    }
+  }
+
+  // ===== Ban check on session load (GET /api/auth/*) — additive, fail-open =====
+  if (pathname.startsWith('/api/auth') && req.method === 'GET') {
+    // IP ban already checked for write paths; this adds check for session loads
+    // Do not block if Redis unavailable — fail-open
+    try {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')
+      if (ip && (pathname.includes('session') || pathname.includes('/me') || pathname.includes('get-session'))) {
+        const ipBan = await withRedisCircuit(
+          async () =>
+            await Promise.race([
+              getIpBanCache(ip),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
+            ]),
+          async () => null
+        )
+        if (ipBan?.banned) {
+          return NextResponse.json({ error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' }, { status: 403 })
+        }
+      }
+    } catch (err) {
+      logger.error('[Middleware] session ban check failed', err)
     }
   }
 

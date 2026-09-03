@@ -39,11 +39,30 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24, // 24 ساعة
     sendVerificationEmail: async ({ user, url }) => {
-      // TODO Phase 2: إرسال عبر Resend — حالياً log فقط
-      console.log('[BetterAuth] verification email for', user.email, 'url:', url);
-      // يمكن ربطه بـ Resend لاحقاً:
-      // const { sendEmail } = await import('@/lib/email');
-      // await sendEmail({ to: user.email, subject: 'تأكيد بريدك', html: `...${url}...` });
+      try {
+        const { getVerifyEmailHtml, getVerifyEmailText } = await import('@/lib/emails/verify-email')
+        const html = getVerifyEmailHtml({ displayName: (user as any).displayName || (user as any).name || user.email, url, siteName: 'Games Arabic' })
+        const text = getVerifyEmailText({ displayName: (user as any).displayName || (user as any).name || user.email, url, siteName: 'Games Arabic' })
+        // Resend إذا متوفر، وإلا log
+        if (process.env.RESEND_API_KEY) {
+          const { Resend } = await import('resend')
+          const resend = new Resend(process.env.RESEND_API_KEY)
+          const from = process.env.EMAIL_FROM || 'Games Arabic <noreply@games-arabic.com>'
+          await resend.emails.send({
+            from,
+            to: user.email,
+            subject: 'فعّل حسابك في Games Arabic',
+            html,
+            text,
+          })
+          console.log('[BetterAuth] verification email sent via Resend to', user.email)
+        } else {
+          console.log('[BetterAuth] RESEND_API_KEY missing — verification email for', user.email, 'url:', url)
+        }
+      } catch (e) {
+        console.error('[BetterAuth] sendVerificationEmail failed', e)
+        // لا نرمي خطأ يمنع التسجيل — نكتفي بالـ log
+      }
     },
   },
   socialProviders: {
