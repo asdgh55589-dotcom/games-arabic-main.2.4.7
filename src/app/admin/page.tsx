@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatNumber, timeAgo } from '@/lib/format'
 import { AdminDashboardSkeleton } from '@/components/admin/admin-dashboard-skeleton'
+import { GrowthChart } from '@/components/admin/charts/growth-chart'
+import { PlatformDonut } from '@/components/admin/charts/platform-donut'
 
 interface DashboardData {
   stats: {
@@ -82,6 +84,10 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [growthData, setGrowthData] = useState<any>(null)
+  const [platformData, setPlatformData] = useState<any>(null)
+  const [activeSessions, setActiveSessions] = useState<number>(0)
+  const [audit, setAudit] = useState<Array<{ id: string; action: string; entity: string; username: string; createdAt: string }>>([])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -104,6 +110,14 @@ export default function AdminDashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    // charts + sessions + audit — non-blocking, fail silent
+    fetch('/api/admin/analytics/growth?range=12').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data) setGrowthData(j.data) }).catch(()=>{})
+    fetch('/api/admin/analytics/platforms').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data) setPlatformData(j.data.platforms || j.data) }).catch(()=>{})
+    fetch('/api/admin/sessions?limit=1').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data?.stats) setActiveSessions(j.data.stats.totalActive || 0) }).catch(()=>{})
+    fetch('/api/admin/audit?limit=10').then(r=>r.ok?r.json():null).then(j=>{ const list=j?.data || j?.logs || []; if(Array.isArray(list)) setAudit(list.slice(0,10)) }).catch(()=>{})
+  }, [])
+
   if (loading) {
     return <AdminDashboardSkeleton />
   }
@@ -119,10 +133,10 @@ export default function AdminDashboard() {
   if (!data) return null
 
   const statsCards = [
-    { label: 'التعريبات', value: data.stats.mods, icon: Package, color: 'primary', href: '/admin/mods' },
     { label: 'المستخدمون', value: data.stats.users, icon: Users, color: 'blue', href: '/admin/users' },
+    { label: 'التعريبات', value: data.stats.mods, icon: Package, color: 'primary', href: '/admin/mods' },
     { label: 'التحميلات', value: data.stats.downloads, icon: Download, color: 'green', href: '/admin/mods' },
-    { label: 'التعليقات', value: data.stats.comments, icon: MessageSquare, color: 'purple', href: '/admin/comments' },
+    { label: 'الجلسات النشطة', value: activeSessions, icon: TrendingUp, color: 'yellow', href: '/admin/sessions' },
   ]
 
   return (
@@ -171,10 +185,10 @@ export default function AdminDashboard() {
       {/* Quick Actions Row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { label: 'نشر تعريب', icon: Package, href: '/admin/mods/new' },
-          { label: 'الإعلانات', icon: Megaphone, href: '/admin/ads' },
-          { label: 'التعليقات', icon: MessageSquare, href: '/admin/comments' },
-          { label: 'سجل النشاطات', icon: ScrollText, href: '/admin/audit' },
+          { label: 'إضافة مستخدم', icon: Users, href: '/admin/users' },
+          { label: 'مراجعة تعريب', icon: Package, href: '/admin/mods' },
+          { label: 'إرسال إشعار', icon: Megaphone, href: '/admin/notifications/send' },
+          { label: 'نسخة احتياطية', icon: ScrollText, href: '/admin/backup' },
         ].map((action) => {
           const Icon = action.icon
           return (
@@ -188,6 +202,12 @@ export default function AdminDashboard() {
             </Link>
           )
         })}
+      </div>
+
+      {/* Charts Row — إضافي احترافي */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <GrowthChart data={growthData} />
+        <PlatformDonut platforms={platformData} />
       </div>
 
       {/* Main Content Grid */}
@@ -290,6 +310,29 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Audit Timeline — جديد */}
+          {audit.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>آخر النشاطات</CardTitle>
+                <Link href="/admin/audit" className="text-xs text-primary hover:underline">عرض الكل</Link>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border-light">
+                  {audit.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] text-foreground truncate">{a.username} — {a.action} {a.entity}</div>
+                        <div className="text-[11px] text-muted-foreground">{timeAgo(a.createdAt)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

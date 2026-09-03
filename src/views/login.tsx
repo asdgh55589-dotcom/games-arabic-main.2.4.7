@@ -10,7 +10,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/auth/errors'
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -72,16 +72,20 @@ export function LoginPage() {
     setLoading('google')
     setFieldErrors({})
     try {
-      const res = await authClient.signIn.social({
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        callbackURL: '/',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          queryParams: { prompt: 'select_account' },
+        },
       })
-      if (res?.error) {
-        const msg = translateError(res.error.code || 'GOOGLE_FAILED')
+      if (error) {
+        const msg = translateError('GOOGLE_FAILED')
         toast({ title: 'خطأ', description: msg, variant: 'destructive' })
         setLoading(null)
       }
-      // on success Better Auth will redirect
+      // سيتم التوجيه تلقائياً — ledger سيُنشأ في /api/auth/callback
     } catch (err) {
       toast({ title: 'خطأ', description: getAuthErrorMessage('GOOGLE_FAILED'), variant: 'destructive' })
       setLoading(null)
@@ -93,28 +97,32 @@ export function LoginPage() {
     setLoading('email')
     setFieldErrors({})
     try {
-      const res = await authClient.signIn.email({
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail.trim(),
         password: loginPassword,
-        callbackURL: '/',
-      } as any)
-      if ((res as any)?.error) {
-        const code = (res as any).error.code || (res as any).error.statusText || 'WRONG_PASSWORD'
-        // Better Auth returns various codes: INVALID_EMAIL, INVALID_PASSWORD etc
-        let mapped = code
-        if (code.includes('INVALID') && code.includes('EMAIL')) mapped = 'INVALID_EMAIL'
-        else if (code.includes('PASSWORD') || code.includes('WRONG')) mapped = 'WRONG_PASSWORD'
-        else if (code.includes('NOT_VERIFIED') || code.includes('EMAIL_NOT_VERIFIED')) mapped = 'EMAIL_NOT_VERIFIED'
-        else if (code.includes('BANNED')) mapped = 'USER_BANNED'
-        const msg = translateError(mapped)
+      })
+      if (error) {
+        let mapped = 'WRONG_PASSWORD'
+        const msg = error.message.toLowerCase()
+        if (msg.includes('invalid') && msg.includes('email')) mapped = 'INVALID_EMAIL'
+        else if (msg.includes('email not confirmed') || msg.includes('not confirmed')) mapped = 'EMAIL_NOT_VERIFIED'
+        else if (msg.includes('banned') || msg.includes('banned')) mapped = 'USER_BANNED'
+        const tmsg = translateError(mapped)
         if (mapped === 'EMAIL_NOT_VERIFIED') {
           setPendingEmail(loginEmail.trim())
-          toast({ title: 'تأكيد مطلوب', description: msg })
+          toast({ title: 'تأكيد مطلوب', description: tmsg })
         } else {
-          toast({ title: 'خطأ', description: msg, variant: 'destructive' })
+          toast({ title: 'خطأ', description: tmsg, variant: 'destructive' })
         }
         setLoading(null)
         return
+      }
+      if (data.user) {
+        // أنشئ سجل ledger عبر API (يفشل مفتوح)
+        try {
+          await fetch('/api/auth/session-ledger', { method: 'POST' })
+        } catch {}
       }
       toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
       setTimeout(() => (window.location.href = '/'), 300)
@@ -128,7 +136,6 @@ export function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setFieldErrors({})
-    // client validation
     const errs: Record<string, string> = {}
     if (!regUsername.trim() || regUsername.trim().length < 3) errs.username = 'اسم المستخدم قصير جداً (3 أحرف على الأقل)'
     if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(regUsername.trim())) errs.username = 'اسم المستخدم يحتوي رموز غير مسموحة'
@@ -139,35 +146,60 @@ export function LoginPage() {
       setFieldErrors(errs)
       return
     }
+    // تحقق تفرد اسم المستخدم قبل Supabase
+    try {
+      const chk = await fetch(`/api/users/${encodeURIComponent(regUsername.trim())}/profile`)
+      if (chk.ok) {
+        setFieldErrors({ username: AUTH_ERRORS.USERNAME_TAKEN })
+        toast({ title: 'خطأ', description: AUTH_ERRORS.USERNAME_TAKEN, variant: 'destructive' })
+        return
+      }
+    } catch {}
     setLoading('register')
     try {
-      const res = await authClient.signUp.email({
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signUp({
         email: regEmail.trim(),
         password: regPassword,
-        name: regDisplayName.trim(), // maps to displayName via user.fields
-        // @ts-ignore additionalFields
-        username: regUsername.trim(),
-        callbackURL: '/verify-email',
-      } as any)
-      if ((res as any)?.error) {
-        const code = (res as any).error.code || ''
-        let mapped = code
-        if (code.includes('USERNAME') || code.toLowerCase().includes('username')) mapped = 'USERNAME_TAKEN'
-        else if (code.includes('EMAIL') && code.includes('TAKEN')) mapped = 'EMAIL_TAKEN'
-        else if (code.includes('WEAK') || code.includes('PASSWORD')) mapped = 'WEAK_PASSWORD'
-        else if (code.includes('INVALID_EMAIL')) mapped = 'INVALID_EMAIL'
-        else if (code.includes('RATE')) mapped = 'RATE_LIMITED'
-        const msg = translateError(mapped)
-        toast({ title: 'خطأ', description: msg, variant: 'destructive' })
-        // inline field error
-        if (mapped === 'USERNAME_TAKEN') setFieldErrors({ username: msg })
-        if (mapped === 'EMAIL_TAKEN') setFieldErrors({ email: msg })
+        options: {
+          data: { username: regUsername.trim(), displayName: regDisplayName.trim(), full_name: regDisplayName.trim() },
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        },
+      })
+      if (error) {
+        let mapped = 'EMAIL_TAKEN'
+        const msg = error.message.toLowerCase()
+        if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) mapped = 'EMAIL_TAKEN'
+        else if (msg.includes('username') || msg.includes('taken')) mapped = 'USERNAME_TAKEN'
+        else if (msg.includes('weak') || msg.includes('short')) mapped = 'WEAK_PASSWORD'
+        else if (msg.includes('invalid')) mapped = 'INVALID_EMAIL'
+        else if (msg.includes('rate')) mapped = 'RATE_LIMITED'
+        const tmsg = translateError(mapped)
+        toast({ title: 'خطأ', description: tmsg, variant: 'destructive' })
+        if (mapped === 'USERNAME_TAKEN') setFieldErrors({ username: tmsg })
+        if (mapped === 'EMAIL_TAKEN') setFieldErrors({ email: tmsg })
         setLoading(null)
         return
       }
-      // success — email verification required
+      // حاول إنشاء/تحديث صف Prisma User فوراً (Supabase قد لا يعيد supabaseId قبل التأكيد)
+      // سيتم إكماله أيضاً في /api/auth/callback بعد تأكيد الإيميل
+      try {
+        const supabaseId = data.user?.id
+        if (supabaseId) {
+          await fetch('/api/auth/register-ledger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              supabaseId,
+              username: regUsername.trim(),
+              displayName: regDisplayName.trim(),
+              email: regEmail.trim(),
+            }),
+          }).catch(() => {})
+        }
+      } catch {}
       setPendingEmail(regEmail.trim())
-      toast({ title: 'تم إنشاء الحساب', description: 'تم إرسال رابط التأكيد لإيميلك' })
+      toast({ title: 'تم إنشاء الحساب', description: 'تم إرسال رابط التأكيد لإيميلك — افحص بريدك' })
       setLoading(null)
       setResendCooldown(60)
     } catch (err: any) {
@@ -181,24 +213,17 @@ export function LoginPage() {
     if (!pendingEmail || resendCooldown > 0) return
     setLoading('resend')
     try {
-      // Better Auth resend: use sendVerificationEmail via authClient
-      const res = await (authClient as any).sendVerificationEmail?.({ email: pendingEmail, callbackURL: '/verify-email' })
-      // fallback: try generic
-      if ((res as any)?.error) {
-        toast({ title: 'خطأ', description: translateError('RATE_LIMITED'), variant: 'destructive' })
-      } else {
-        toast({ title: 'تم الإرسال', description: `أعدنا إرسال الرابط إلى ${pendingEmail}` })
-        setResendCooldown(60)
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({ type: 'signup', email: pendingEmail, options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` } })
+      if (error) {
+        // fallback Better Auth endpoint إن وجد
+        const r = await fetch('/api/auth/send-verification-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail, callbackURL: '/verify-email' }) }).catch(()=>null as any)
+        if (r && !r.ok) throw error
       }
+      toast({ title: 'تم الإرسال', description: `أعدنا إرسال الرابط إلى ${pendingEmail}` })
+      setResendCooldown(60)
     } catch {
-      // لو الفنكشن غير موجودة — استخدم endpoint generic
-      try {
-        await fetch('/api/auth/send-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail }) })
-        toast({ title: 'تم الإرسال', description: `أعدنا إرسال الرابط إلى ${pendingEmail}` })
-        setResendCooldown(60)
-      } catch {
-        toast({ title: 'خطأ', description: translateError('RATE_LIMITED'), variant: 'destructive' })
-      }
+      toast({ title: 'خطأ', description: translateError('RATE_LIMITED'), variant: 'destructive' })
     } finally {
       setLoading(null)
     }
@@ -218,10 +243,9 @@ export function LoginPage() {
           const { data: checkData } = await checkRes.json()
           if (checkData?.status === 'success') {
             clearInterval(pollInterval)
-            // try bridge to Better Auth
+            // أنشئ سجل ledger للجلسة عبر Supabase flow
             try {
-              // إذا كان هناك telegram bridge، ننقله لجلسة Better Auth تلقائياً
-              await fetch('/api/auth/telegram-bridge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phase: 'poll_success', sessionToken: data.sessionToken }) }).catch(() => {})
+              await fetch('/api/auth/session-ledger', { method: 'POST' }).catch(() => {})
             } catch {}
             toast({ title: 'تم تسجيل الدخول', description: 'مرحباً بعودتك!' })
             setTimeout(() => (window.location.href = '/'), 200)

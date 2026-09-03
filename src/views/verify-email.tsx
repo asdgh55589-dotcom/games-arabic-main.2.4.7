@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 
 type Status = 'idle' | 'verifying' | 'success' | 'expired' | 'invalid'
 
@@ -16,9 +16,11 @@ export default function VerifyEmailView() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
+  // للتوافق مع الروابط القديمة لـ Better Auth، لكن الآن نحن على Supabase — الصفحة معلوماتية
   const token = searchParams.get('token') || searchParams.get('t') || ''
+  const initialEmail = searchParams.get('email') || ''
   const [status, setStatus] = useState<Status>(token ? 'verifying' : 'idle')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(initialEmail)
   const [cooldown, setCooldown] = useState(0)
   const [loading, setLoading] = useState(false)
 
@@ -29,48 +31,33 @@ export default function VerifyEmailView() {
     }
   }, [cooldown])
 
+  // Supabase: التأكيد يتم عبر /api/auth/callback مع ?code=... وليس token
+  // هذه الصفحة الآن معلوماتية فقط — نعرض "افحص بريدك" ونسمح بإعادة الإرسال عبر supabase.auth.resend
   useEffect(() => {
     if (!token) return
-    let cancelled = false
-    async function verify() {
-      setStatus('verifying')
-      try {
-        // Better Auth verify endpoint: GET /api/auth/verify-email?token=...&callbackURL=/
-        // نحاول عبر fetch مباشر (أدق من authClient)
-        const url = `/api/auth/verify-email?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent('/')}`
-        const res = await fetch(url, { method: 'GET' })
-        // Better Auth قد تعيد redirect 302 إلى callbackURL عند النجاح
-        // fetch يتبع redirect تلقائياً → نفحص status نهائي
-        if (cancelled) return
-        if (res.ok) {
-          // إذا كانت الاستجابة OK أو redirected إلى / مع success
-          // نعتبرها نجاح إذا لم يكن هناك error في الـ body
-          const text = await res.clone().text().catch(() => '')
-          // بعض نسخ Better Auth تعيد JSON مع error عند الفشل
-          if (text.includes('expired') || text.includes('Expired')) {
-            setStatus('expired')
-          } else if (text.includes('invalid') || text.toLowerCase().includes('invalid token')) {
-            setStatus('invalid')
-          } else {
+    // إذا وصل token من Better Auth قديم، نعتبره منتهي ونطلب إعادة إرسال عبر Supabase
+    // لا نحاول التحقق عبر Better Auth بعد الآن
+    const timer = setTimeout(() => {
+      // نحاول فحص الجلسة الحالية — إذا المستخدم موثّق بالفعل → success
+      const check = async () => {
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user?.email_confirmed_at) {
             setStatus('success')
             toast({ title: 'تم التفعيل', description: 'تم تأكيد بريدك بنجاح' })
             setTimeout(() => router.push('/'), 1500)
+          } else {
+            // token قديم من Better Auth → نعرض expired للسماح بإعادة الإرسال عبر Supabase
+            setStatus('expired')
           }
-        } else {
-          const body = await res.json().catch(() => null)
-          const code = body?.error?.code || body?.code || ''
-          if (code.toLowerCase().includes('expired') || res.status === 410) setStatus('expired')
-          else if (res.status === 400 || res.status === 404) setStatus('invalid')
-          else setStatus('invalid')
+        } catch {
+          setStatus('expired')
         }
-      } catch {
-        if (!cancelled) setStatus('invalid')
       }
-    }
-    verify()
-    return () => {
-      cancelled = true
-    }
+      check()
+    }, 800)
+    return () => clearTimeout(timer)
   }, [token, router, toast])
 
   const handleResend = async (e?: React.FormEvent) => {
@@ -82,30 +69,24 @@ export default function VerifyEmailView() {
     }
     setLoading(true)
     try {
-      // نستخدم endpoint الرسمي: POST /api/auth/send-verification-email
-      // أو fallback عبر authClient
-      let ok = false
-      try {
-        const r = await fetch('/api/auth/send-verification-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), callbackURL: '/verify-email' }),
-        })
-        ok = r.ok
-        if (!ok) {
-          // جرب authClient كبديل
-          const alt = await (authClient as any).sendVerificationEmail?.({ email: email.trim(), callbackURL: '/verify-email' })
-          ok = !(alt as any)?.error
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+      })
+      if (error) {
+        // ترجمة أخطاء Supabase إلى عربي
+        const msg = error.message.toLowerCase()
+        if (msg.includes('already confirmed')) {
+          toast({ title: 'تم التأكيد مسبقاً', description: 'بريدك مُفعّل بالفعل — سجّل دخول' })
+          setStatus('success')
+        } else {
+          toast({ title: 'خطأ', description: 'تعذر الإرسال، جرّب لاحقاً', variant: 'destructive' })
         }
-      } catch {
-        const alt = await (authClient as any).sendVerificationEmail?.({ email: email.trim(), callbackURL: '/verify-email' })
-        ok = !(alt as any)?.error
-      }
-      if (ok) {
+      } else {
         toast({ title: 'تم الإرسال', description: `أرسلنا رابط جديد إلى ${email.trim()}` })
         setCooldown(60)
-      } else {
-        toast({ title: 'خطأ', description: 'تعذر الإرسال، جرّب لاحقاً', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'خطأ', description: 'تعذر الإرسال', variant: 'destructive' })

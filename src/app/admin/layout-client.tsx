@@ -112,6 +112,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/notifications/analytics', label: 'تحليلات الإشعارات', icon: BarChart3, adminOnly: true },
       { href: '/admin/notifications-health', label: 'صحة الإشعارات', icon: HeartPulse, adminOnly: true },
       { href: '/admin/notifications/history', label: 'سجل الإشعارات', icon: Bell, adminOnly: true },
+      { href: '/admin/sessions', label: 'الجلسات النشطة', icon: Shield, adminOnly: true },
       { href: '/admin/scheduler', label: 'الجدولة', icon: Clock, adminOnly: true },
       { href: '/admin/backup', label: 'النسخ الاحتياطي', icon: Database, ownerOnly: true },
       { href: '/admin/settings', label: 'الإعدادات', icon: Settings, ownerOnly: true },

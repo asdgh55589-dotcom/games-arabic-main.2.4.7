@@ -202,6 +202,31 @@ export async function GET(req: NextRequest) {
       data: { lastLoginAt: new Date(), loginCount: { increment: 1 } },
     })
 
+    // إنشاء سجل جلسة مركزي (ledger) لـ Supabase flow
+    let ledgerToken: string | null = null
+    let ledgerExpires: Date | null = null
+    try {
+      const { randomUUID } = await import('crypto')
+      ledgerToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
+      ledgerExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null
+      const ua = req.headers.get('user-agent') || null
+      await db.session.create({
+        data: {
+          id: randomUUID(),
+          token: ledgerToken,
+          userId: neonUser.id,
+          expiresAt: ledgerExpires,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ipAddress: ip,
+          userAgent: ua,
+        } as any,
+      })
+    } catch (e) {
+      console.warn('[auth/callback] ledger create failed', e)
+    }
+
     // تسجيل audit
     await logAction({
       userId: neonUser.id,
@@ -211,8 +236,18 @@ export async function GET(req: NextRequest) {
       entityId: neonUser.id,
     })
 
-    // redirect
-    return NextResponse.redirect(new URL(next, baseUrl))
+    // redirect مع كوكي ledger
+    const res = NextResponse.redirect(new URL(next, baseUrl))
+    if (ledgerToken && ledgerExpires) {
+      res.cookies.set('ga_session_ledger', ledgerToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: ledgerExpires,
+      })
+    }
+    return res
   } catch (err) {
     console.error('[auth/callback] failed:', err instanceof Error ? err.message : 'unknown error')
     const baseUrl = getBaseUrl(req)

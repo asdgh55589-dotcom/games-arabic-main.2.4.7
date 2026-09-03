@@ -187,6 +187,48 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // ===== Session ledger check (Supabase single auth) — fail-open, throttled =====
+  try {
+    const ledgerToken = req.cookies.get('ga_session_ledger')?.value
+    if (
+      ledgerToken &&
+      !pathname.startsWith('/api/auth/ledger-check') &&
+      !pathname.startsWith('/_next') &&
+      !pathname.startsWith('/api/auth/callback')
+    ) {
+      const active = await withRedisCircuit(
+        async () =>
+          await Promise.race([
+            fetch(`${req.nextUrl.origin}/api/auth/ledger-check?token=${encodeURIComponent(ledgerToken)}`, {
+              headers: { cookie: `ga_session_ledger=${ledgerToken}` },
+              cache: 'no-store',
+            })
+              .then(async (r) => {
+                if (!r.ok) return true
+                const j: any = await r.json().catch(() => null)
+                return j?.active !== false
+              })
+              .catch(() => true),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 600)),
+          ]),
+        async () => true
+      )
+      if (active === false) {
+        const isProtected = pathname.startsWith('/admin') || pathname.startsWith('/creator') || pathname.startsWith('/settings')
+        if (isProtected) {
+          const loginUrl = pathname.startsWith('/admin') ? new URL('/admin/login', req.url) : new URL('/login', req.url)
+          const res = NextResponse.redirect(loginUrl)
+          res.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
+          res.cookies.set('ga_admin_role', '', { path: '/', maxAge: 0 })
+          copyCookies(supabaseResponse, res)
+          return res
+        } else {
+          supabaseResponse.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
+        }
+      }
+    }
+  } catch {}
+
   // ===== IP ban check (ONLY for write/sensitive paths) =====
   // Read-only operations (GET /api/mods, /api/games, etc.) are NOT checked.
   // This prevents Redis/cache failures from blocking all data loading.

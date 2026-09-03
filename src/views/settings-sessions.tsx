@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { authClient } from '@/lib/auth-client'
 
 interface Session {
   id: string
@@ -69,35 +68,21 @@ export default function SessionsView() {
   const fetchSessions = async () => {
     setLoading(true)
     try {
-      // نحاول عبر authClient أولاً، ثم fallback لـ fetch
-      let data: any = null
-      try {
-        const res: any = await (authClient as any).listSessions?.()
-        if (res?.data) data = res.data
-        else if (Array.isArray(res)) data = res
-      } catch {}
-      if (!data) {
-        const r = await fetch('/api/auth/list-sessions', { cache: 'no-store' })
-        if (r.ok) {
-          const j = await r.json().catch(() => null)
-          data = j?.data || j || []
-        }
-      }
-      // Better Auth يعيد مصفوفة أو { sessions: [...] }
-      const list = Array.isArray(data) ? data : data?.sessions || data?.data || []
-      // تحديد الجلسة الحالية عبر مقارنة token إن وُجد cookie؟ نستخدم أول جلسة حديثة كـ current مؤقتاً
-      // سنحدد current عبر مقارنة مع /api/auth/get-session
+      const r = await fetch('/api/auth/session-ledger', { cache: 'no-store' })
+      if (!r.ok) throw new Error('failed')
+      const j = await r.json().catch(() => null)
+      const data = j?.data || j || []
+      const list = Array.isArray(data) ? data : data?.sessions || []
+      // تحديد الجلسة الحالية عبر ledger cookie
       let currentToken: string | null = null
       try {
-        const cur = await fetch('/api/auth/get-session', { cache: 'no-store' }).then((r) => r.json().catch(() => null))
-        currentToken = cur?.data?.session?.token || cur?.session?.token || null
-        // بعض النسخ تخزن token في cookie فقط، فنحدد عبر updatedAt الأحدث
+        const m = document.cookie.match(/(?:^|;\s*)ga_session_ledger=([^;]+)/)
+        currentToken = m ? decodeURIComponent(m[1]) : null
       } catch {}
       const mapped: Session[] = (list as any[]).map((s: any) => ({
         ...s,
         isCurrent: currentToken ? s.token === currentToken : false,
       }))
-      // لو لم نجد currentToken، نجعل أحدث جلسة هي الحالية مؤقتاً
       if (!mapped.some((s) => s.isCurrent) && mapped.length) {
         mapped.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         mapped[0].isCurrent = true
@@ -118,20 +103,8 @@ export default function SessionsView() {
     if (!confirm('هل تريد طرد هذه الجلسة؟')) return
     setRevoking(token)
     try {
-      let ok = false
-      try {
-        const r: any = await (authClient as any).revokeSession?.({ token })
-        ok = !r?.error
-      } catch {}
-      if (!ok) {
-        const r = await fetch('/api/auth/revoke-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        })
-        ok = r.ok
-      }
-      if (ok) {
+      const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(token)}`, { method: 'DELETE' })
+      if (r.ok) {
         toast({ title: 'تم طرد الجلسة' })
         setSessions((prev) => prev.filter((s) => s.token !== token))
       } else {
@@ -148,22 +121,11 @@ export default function SessionsView() {
     if (!confirm('هل تريد تسجيل الخروج من كل الأجهزة الأخرى؟ ستبقى الجلسة الحالية فقط.')) return
     setBulkLoading(true)
     try {
-      let ok = false
-      try {
-        const r: any = await (authClient as any).revokeOtherSessions?.()
-        ok = !r?.error
-      } catch {}
-      if (!ok) {
-        const r = await fetch('/api/auth/revoke-other-sessions', { method: 'POST' })
-        ok = r.ok
-        if (!ok) {
-          // fallback: revokeOthers via list
-          const others = sessions.filter((s) => !s.isCurrent)
-          for (const s of others) {
-            await fetch('/api/auth/revoke-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: s.token }) }).catch(() => {})
-          }
-          ok = true
-        }
+      const others = sessions.filter((s) => !s.isCurrent)
+      let ok = true
+      for (const s of others) {
+        const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(s.token)}`, { method: 'DELETE' }).catch(() => null as any)
+        if (r && !r.ok) ok = false
       }
       if (ok) {
         toast({ title: 'تم تسجيل الخروج من الأجهزة الأخرى' })
