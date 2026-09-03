@@ -144,6 +144,8 @@ model User {
   creatorRequests        CreatorRequest[]
   modRequests            ModRequest[]
   acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
+  sessions               Session[]
+  accounts               Account[]
 
   @@index([role])
   @@index([joinedAt])
@@ -1439,4 +1441,52 @@ model ImageHealthLog {
 
   @@index([platform, week])
   @@index([createdAt])
+}
+
+// ===== Better Auth — Session / Account / Verification (ADDITIVE ONLY, existing User table reused) =====
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
