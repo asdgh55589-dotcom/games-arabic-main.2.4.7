@@ -59,6 +59,7 @@ import { apiFetch } from '@/lib/api-client'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import type { ModDetail, ModSummary, EndorseResponse } from '@/lib/types'
+import { ModDetailMobile } from './mod-detail-mobile'
 
 interface PaginatedModsResponse {
   data: ModSummary[]
@@ -252,8 +253,10 @@ export function ModDetailPage() {
   }
 
   return (
-    <div>
-      {loading ? (
+    <>
+      <div className="hidden lg:block">
+        <div>
+          {loading ? (
         <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6">
           <div className="aspect-[21/9] animate-pulse rounded-lg bg-muted" />
           <div className="mt-4 sm:mt-6 h-16 sm:h-24 animate-pulse rounded bg-muted" />
@@ -718,7 +721,10 @@ export function ModDetailPage() {
           })()}
         </>
       ) : null}
-    </div>
+        </div>
+      </div>
+      {mod && <ModDetailMobile mod={mod} />}
+    </>
   )
 }
 

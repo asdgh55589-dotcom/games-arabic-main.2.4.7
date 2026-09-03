@@ -642,8 +642,8 @@ function CommentItem({
 
   return (
     <>
-      <div className={`rounded-lg border transition-all ${depthStyle.bg} ${depthStyle.border} ${isNested ? 'p-2.5' : 'p-2.5 sm:p-3'}`}>
-        <div className={`flex gap-2.5 ${comment.isPinned ? 'rounded-lg border border-primary/30 bg-primary/5 p-2.5 -m-1' : ''}`}>
+      <div className={`rounded-none border-[1.5px] shadow-[1.5px_1.5px_0_0_var(--border)] transition-all ${depthStyle.bg} ${depthStyle.border} ${isNested ? 'p-2' : 'p-2.5'}`}>
+        <div className={`flex gap-2 ${comment.isPinned ? 'rounded-none border border-primary/30 bg-primary/5 p-2 -m-1' : ''}`}>
           <Avatar className={`${avatarSize} shrink-0 ring-2 ring-background`}>
             <AvatarImage src={displayAvatar || undefined} alt={displayName} />
             <AvatarFallback>{displayName[0]}</AvatarFallback>
@@ -855,57 +855,54 @@ function CommentItem({
         </div>
       </div>
 
-      {/* الردود المتداخلة — recursive — مطوية إذا أكثر من رد واحد */}
+      {/* الردود المتداخلة — مسطحة (لا صناديق داخل بعضها) + تتعامل مع 5 ردود */}
       {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (() => {
-        const hasMultiple = comment.replies.length > 1
-        const visibleReplies = showAllReplies || !hasMultiple ? comment.replies : comment.replies.slice(0, 1)
+        const visibleCount = 5
+        const hasMultiple = comment.replies.length > visibleCount
+        const visibleReplies = showAllReplies || !hasMultiple ? comment.replies : comment.replies.slice(0, visibleCount)
         const hiddenCount = comment.replies.length - visibleReplies.length
         return (
-          <div className="relative mt-3 ms-4 sm:ms-6 border-s-2 border-primary/10 ps-3 sm:ps-4">
-            {/* نقطة ارتباط بالأب */}
-            <div className="absolute top-5 -start-1 h-2 w-2 rounded-full bg-primary/20 border-2 border-background" />
-            <div className="space-y-2">
-              {visibleReplies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  depth={depth + 1}
-                  modOwnerName={modOwnerName}
-                  replyToName={displayName}
-                  likedIds={likedIds}
-                  replyingTo={replyingTo}
-                  replyText={replyText}
-                  setReplyText={setReplyText}
-                  currentUser={currentUser}
-                  onLike={onLike}
-                  onReply={onReply}
-                  onSubmitReply={onSubmitReply}
-                  onCancelReply={onCancelReply}
-                  onReport={onReport}
-                  onRefresh={onRefresh}
-                  replyRef={replyRef}
-                  showEmojiReply={showEmojiReply}
-                  setShowEmojiReply={setShowEmojiReply}
-                  showColorReply={showColorReply}
-                  setShowColorReply={setShowColorReply}
-                />
-              ))}
-            </div>
+          <div className="mt-3 space-y-2">
+            {visibleReplies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                depth={depth + 1}
+                modOwnerName={modOwnerName}
+                replyToName={displayName}
+                likedIds={likedIds}
+                replyingTo={replyingTo}
+                replyText={replyText}
+                setReplyText={setReplyText}
+                currentUser={currentUser}
+                onLike={onLike}
+                onReply={onReply}
+                onSubmitReply={onSubmitReply}
+                onCancelReply={onCancelReply}
+                onReport={onReport}
+                onRefresh={onRefresh}
+                replyRef={replyRef}
+                showEmojiReply={showEmojiReply}
+                setShowEmojiReply={setShowEmojiReply}
+                showColorReply={showColorReply}
+                setShowColorReply={setShowColorReply}
+              />
+            ))}
             {hasMultiple && !showAllReplies && (
               <button
                 onClick={() => setShowAllReplies(true)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
+                className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
               >
-                <ChevronLeft className="h-3.5 w-3.5 rotate-90" />
+                <ChevronLeft className="h-3 w-3 rotate-90" />
                 عرض {hiddenCount} ردود إضافية
               </button>
             )}
             {hasMultiple && showAllReplies && (
               <button
                 onClick={() => setShowAllReplies(false)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="mt-1 inline-flex items-center gap-1 rounded-md border border-border/40 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+                <ChevronRight className="h-3 w-3 rotate-90" />
                 إخفاء الردود
               </button>
             )}
