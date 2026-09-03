@@ -45,13 +45,25 @@ export async function POST(req: NextRequest) {
       return ok({ ok: true })
     }
 
-    const sessionData = await redisGet<string>(`telegram_session:${sessionToken}`)
-    if (!sessionData) {
+    const rawSession = await redisGet<any>(`telegram_session:${sessionToken}`)
+    if (!rawSession) {
       await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')
       return ok({ ok: true })
     }
 
-    const session = JSON.parse(sessionData)
+    // redisGet يعيد object (بعد JSON.parse) في حالة memory fallback، أو string في حالة Upstash
+    let session: any = rawSession
+    if (typeof rawSession === 'string') {
+      try {
+        session = JSON.parse(rawSession)
+      } catch {
+        session = null
+      }
+    }
+    if (!session || typeof session.expiresAt !== 'number') {
+      await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')
+      return ok({ ok: true })
+    }
 
     if (Date.now() > session.expiresAt) {
       await sendMessage(botToken, user.id, '❌ رابط تسجيل الدخول منتهي الصلاحية. يرجى المحاولة مرة أخرى من الموقع.')

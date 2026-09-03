@@ -202,12 +202,12 @@ async function main() {
   const authorPool = [...staff, owner]
 
   console.log('Creating teams & series...')
-  const teams = []
+  const teams: any[] = []
   for (const t of TEAMS) {
     const team = await db.team.create({ data: { name: t.name, slug: t.slug, description: t.description, ownerId: owner.id } })
     teams.push(team)
   }
-  const series = []
+  const series: any[] = []
   for (const s of SERIES) {
     const ser = await db.series.create({ data: { name: s.name, slug: s.slug, description: s.description } })
     series.push(ser)

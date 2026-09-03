@@ -391,9 +391,11 @@ export function ProfileMobile({
           {/* mods tab → ModCard grid grid-cols-2 gap-1.5 sm:gap-2 (compact) */}
           <TabsContent value="mods" className="mt-4">
             {activity.mods && activity.mods.length > 0 ? (
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-2 gap-0.5 sm:gap-1">
                 {activity.mods.map((m) => (
-                  <ModCard key={m.id} mod={m} />
+                  <div key={m.id} className="origin-top scale-[0.80] [&_h3]:!text-[10px] [&_h3]:!leading-tight [&_h3]:!h-[2em] [&_h3]:!break-words [&_div.p-2\.5]:!p-1.5">
+                    <ModCard mod={m} variant="compact" />
+                  </div>
                 ))}
               </div>
             ) : (

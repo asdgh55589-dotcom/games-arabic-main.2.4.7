@@ -147,35 +147,35 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== صندوق المعلومات — نفس ستايل الصناديق 2×2 (box جنب box) ===== */}
-      <div className="mx-4 mt-3 overflow-hidden rounded-none border-[2px] border-border bg-card shadow-[1.5px_1.5px_0_0_var(--border)]">
+      <div className="mx-2 mt-2 overflow-hidden rounded-none border-[2px] border-border bg-card shadow-[1px_1px_0_0_var(--border)]">
         <div className="divide-y divide-border text-[11px]">
           {/* اسم اللعبه */}
-          <div className="flex items-center justify-between px-2.5 py-2">
+          <div className="flex items-center gap-2 px-2 py-1.5">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-blue-500/10 text-blue-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                <Gamepad2 className="h-3.5 w-3.5" />
+              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-blue-500/10 text-blue-500 shadow-[1px_1px_0_0_var(--border)]">
+                <Gamepad2 className="h-3 w-3" />
               </span>
               اسم اللعبه:
             </span>
-            <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.game.name}</span>
+            <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.game.name}</span>
           </div>
           {/* الاسم بالعربي */}
           {mod.arabicTitle && mod.arabicTitle.trim() !== '' && (
-            <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
+            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                  <Languages className="h-3.5 w-3.5" />
+                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-emerald-500/10 text-emerald-500 shadow-[1px_1px_0_0_var(--border)]">
+                  <Languages className="h-3 w-3" />
                 </span>
                 الاسم بالعربي:
               </span>
-              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.arabicTitle}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.arabicTitle}</span>
             </div>
           )}
           {/* نوع التعريب */}
-          <div className="flex items-center justify-between px-2.5 py-2">
+          <div className="flex items-center gap-2 px-2 py-1.5">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-purple-500/10 text-purple-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                <Shield className="h-3.5 w-3.5" />
+              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-purple-500/10 text-purple-500 shadow-[1px_1px_0_0_var(--border)]">
+                <Shield className="h-3 w-3" />
               </span>
               نوع التعريب:
             </span>
@@ -183,33 +183,33 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
           {/* نطاق التعريب */}
           {mod.translationScope && mod.translationScope.trim() !== '' && (
-            <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
+            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                  <Globe className="h-3.5 w-3.5" />
+                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-sky-500/10 text-sky-500 shadow-[1px_1px_0_0_var(--border)]">
+                  <Globe className="h-3 w-3" />
                 </span>
                 نطاق التعريب:
               </span>
-              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.translationScope}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.translationScope}</span>
             </div>
           )}
           {/* توافق التعريب */}
           {mod.compatibility && mod.compatibility.trim() !== '' && (
-            <div className="flex items-center justify-between px-2.5 py-2">
+            <div className="flex items-center gap-2 px-2 py-1.5">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-teal-500/10 text-teal-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                  <CheckCircle className="h-3.5 w-3.5" />
+                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-teal-500/10 text-teal-500 shadow-[1px_1px_0_0_var(--border)]">
+                  <CheckCircle className="h-3 w-3" />
                 </span>
                 توافق التعريب:
               </span>
-              <span className="max-w-[110px] sm:max-w-[150px] truncate text-xs font-black text-foreground">{mod.compatibility}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.compatibility}</span>
             </div>
           )}
           {/* تاريخ الاصدار */}
-          <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
+          <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                <Calendar className="h-3.5 w-3.5" />
+              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
+                <Calendar className="h-3 w-3" />
               </span>
               تاريخ الاصدار:
             </span>
@@ -217,10 +217,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
           {/* اصدار التعريب */}
           {mod.version && (
-            <div className="flex items-center justify-between px-2.5 py-2">
+            <div className="flex items-center gap-2 px-2 py-1.5">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-amber-500/10 text-amber-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                  <Tag className="h-3.5 w-3.5" />
+                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-amber-500/10 text-amber-500 shadow-[1px_1px_0_0_var(--border)]">
+                  <Tag className="h-3 w-3" />
                 </span>
                 اصدار التعريب:
               </span>
@@ -229,10 +229,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           )}
           {/* حجم التعريب */}
           {mod.fileSize && mod.fileSize.trim() !== '' && (
-            <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
+            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-rose-500/10 text-rose-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-                  <FileArchive className="h-3.5 w-3.5" />
+                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-rose-500/10 text-rose-500 shadow-[1px_1px_0_0_var(--border)]">
+                  <FileArchive className="h-3 w-3" />
                 </span>
                 حجم التعريب:
               </span>
@@ -243,59 +243,59 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <Calendar className="h-3.5 w-3.5" />
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
+            <Calendar className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">النشر</div>
-            <div className="truncate text-xs font-black leading-none text-foreground">{formatArabicDate(mod.releaseDate)}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">{formatArabicDate(mod.releaseDate)}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <Eye className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-emerald-500/10 text-emerald-500 shadow-[1px_1px_0_0_var(--border)]">
+            <Eye className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">مشاهدات</div>
-            <div className="text-xs font-black tabular-nums leading-none text-foreground">{formatNumber(mod.views ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.views ?? 0)}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <Download className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-sky-500/10 text-sky-500 shadow-[1px_1px_0_0_var(--border)]">
+            <Download className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">تحميلات</div>
-            <div className="text-xs font-black tabular-nums leading-none text-foreground">{formatNumber(mod.downloads ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.downloads ?? 0)}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-primary/10 text-primary shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <ThumbsUp className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-primary/10 text-primary shadow-[1px_1px_0_0_var(--border)]">
+            <ThumbsUp className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">لايكات</div>
-            <div className="text-xs font-black tabular-nums leading-none text-foreground">{formatNumber(mod.endorsements ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.endorsements ?? 0)}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-indigo-500/10 text-indigo-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <Users className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-indigo-500/10 text-indigo-500 shadow-[1px_1px_0_0_var(--border)]">
+            <Users className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">الفريق</div>
-            <div className="truncate text-xs font-black leading-none text-foreground">{mod.translationTeam && mod.translationTeam.trim() !== '' ? mod.translationTeam : '—'}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">{mod.translationTeam && mod.translationTeam.trim() !== '' ? mod.translationTeam : '—'}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-orange-500/10 text-orange-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
-            <Layers className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
+          <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-orange-500/10 text-orange-500 shadow-[1px_1px_0_0_var(--border)]">
+            <Layers className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">سلسلة</div>
-            <div className="truncate text-xs font-black leading-none text-foreground">{mod.series && mod.series.trim() !== '' ? mod.series : '—'}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">{mod.series && mod.series.trim() !== '' ? mod.series : '—'}</div>
           </div>
         </div>
       </div>

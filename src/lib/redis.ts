@@ -17,7 +17,9 @@ if (hasRedis) {
   })
 }
 
-const memoryStore = new Map<string, { value: string; expires: number }>()
+// استخدام globalThis لضمان مشاركة الذاكرة بين جميع الـ routes وتجاوز HMR/Turbopack isolation
+const _global = globalThis as unknown as { __memoryStore?: Map<string, { value: string; expires: number }> }
+const memoryStore: Map<string, { value: string; expires: number }> = _global.__memoryStore ?? (_global.__memoryStore = new Map<string, { value: string; expires: number }>())
 
 export async function redisGet<T>(key: string): Promise<T | null> {
   if (redisClient) {
