@@ -17,6 +17,7 @@ import { NewsFeatured } from '@/components/news-featured'
 import { formatNumber } from '@/lib/format'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'
+import { HomeMobile } from './home-mobile'
 
 interface SectionItem {
   id: string
@@ -71,8 +72,10 @@ export function HomePage() {
   }, [])
 
   return (
-    <div dir="rtl" className="overflow-x-clip">
-      <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
+    <>
+      <div className="hidden lg:block">
+        <div dir="rtl" className="overflow-x-clip">
+          <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
       {/* ===== Hero Slider — شريط متحرك يعرض أحدث التعريبات ===== */}
       {loading ? (
         <div className="h-[clamp(360px,52vh,580px)] w-full animate-pulse bg-secondary" />
@@ -246,6 +249,9 @@ export function HomePage() {
 
       </div>
     </div>
+  </div>
+      <HomeMobile homeData={homeData} teams={teamsData?.data} sections={sections} loading={loading} teamsLoading={teamsLoading} />
+    </>
   )
 }
 

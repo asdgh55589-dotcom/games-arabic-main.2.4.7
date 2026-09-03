@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark, Trophy } from 'lucide-react'
+import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark, Trophy, Bell } from 'lucide-react'
 import { PcIcon, NintendoSwitchIcon, PlayStationIcon, Xbox360Icon } from '@/components/platform-icons'
 import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
 import { getSectionIcon } from '@/lib/section-icons'
@@ -73,6 +73,8 @@ export function Navbar({ games, currentView }: NavbarProps) {
   const [suggestions, setSuggestions] = useState<SearchResponse>({ mods: [], games: [] })
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [sectionsOpen, setSectionsOpen] = useState(false)
   const [activeSuggestionIdx, setActiveSuggestionIdx] = useState(-1)
 
   const { user: currentUser, logout } = useAuth()
@@ -194,99 +196,12 @@ export function Navbar({ games, currentView }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/75 backdrop-blur-md" dir="ltr">
       <div className="flex h-11 max-w-[1700px] items-center gap-2 px-3">
-        {/* Mobile menu */}
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden min-h-[44px] min-w-[44px]" aria-label="القائمة">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] sm:w-[360px]">
-            <SheetHeader>
-              <SheetTitle className="text-left">
-                <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                  <span className="text-xl font-bold tracking-tight">
-                    <span className="text-primary">{siteName.split(' ')[0] || 'GAMES'}</span>
-                    <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
-                  </span>
-                </Link>
-              </SheetTitle>
-            </SheetHeader>
-            <nav className="mt-6 flex flex-col gap-1">
-              {sections.map((s) => {
-                const Icon = getSectionIcon(s.icon)
-                return (
-                  <MobileLink key={s.id} href={`/platform/${s.key}`} onClick={() => setMobileOpen(false)} isActive={resolvedView === 'platform' && resolvedPlatform === s.key}>
-                    {s.name} <Icon width={14} height={14} color={s.color} className="inline-block align-middle ms-1" />
-                  </MobileLink>
-                )
-              })}
-
-              {/* Vertical divider */}
-              <div className="mx-4 my-1 h-px bg-border/60" />
-
-              <MobileLink href="/series" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'series' || resolvedView === 'series-detail'}>
-                <Package width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
-                السلاسل
-              </MobileLink>
-
-              <MobileLink href="/teams" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'teams' || resolvedView === 'team-detail'}>
-                <Users width={16} height={16} style={{ color: 'var(--gold)' }} className="inline-block align-middle me-1" />
-                الفرق
-              </MobileLink>
-
-              <MobileLink href="/request" onClick={() => setMobileOpen(false)} isActive={pathname === '/request'}>
-                <span className="text-base">📝</span> طلب تعريب
-              </MobileLink>
-
-              <div className="mt-4 space-y-2 border-t pt-4">
-                <div className="flex items-center justify-end px-3">
-          <NotificationBell currentUser={currentUser} />
-                </div>
-                {currentUser ? (
-                  <>
-                    <Button asChild variant="ghost" className="w-full">
-                      <Link href={`/profile/${encodeURIComponent(currentUser.username)}`} onClick={() => setMobileOpen(false)}>
-                        <User className="mr-2 h-4 w-4" /> {currentUser.username}
-                      </Link>
-                    </Button>
-                    {['creator', 'publisher'].includes(currentUser.role) && (
-                      <Button asChild variant="ghost" className="w-full justify-start text-muted-foreground text-sm font-normal">
-                        <Link href="/creator" onClick={() => setMobileOpen(false)}>
-                          لوحة التحكم
-                        </Link>
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      className="w-full text-destructive"
-                      onClick={async () => {
-                        await logout()
-                        setMobileOpen(false)
-                        window.location.href = '/'
-                      }}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" /> تسجيل الخروج
-                    </Button>
-                  </>
-                ) : (
-                  <Button asChild className="w-full">
-                    <Link href="/login" onClick={() => setMobileOpen(false)}>
-                      <LogIn className="mr-2 h-4 w-4" /> تسجيل الدخول
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </nav>
-          </SheetContent>
-        </Sheet>
 
         {/* Left group: Logo + Desktop nav — يبقى على اليسار مع بعض */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Logo — English, على اليسار */}
           <Link href="/" className="flex shrink-0 items-center gap-1" aria-label="Games Arabic home">
-            <span className="text-xl font-extrabold tracking-tight">
+            <span className="text-base sm:text-xl font-extrabold tracking-tight">
               <span className="text-gradient">{siteName.split(' ')[0] || 'GAMES'}</span>
               <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
             </span>
@@ -517,6 +432,155 @@ export function Navbar({ games, currentView }: NavbarProps) {
               </Link>
             </Button>
           )}
+        </div>
+
+        {/* Mobile: Bell visible + hamburger on right (same direction) */}
+        <div className="flex items-center gap-1.5 lg:hidden shrink-0">
+          <NotificationBell currentUser={currentUser} />
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-none border-[2px] border-border bg-card shadow-[2px_2px_0_0_var(--border)] hover:shadow-[1px_1px_0_0_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px]" aria-label="القائمة">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[360px] overflow-y-auto overscroll-contain touch-pan-y p-0" dir="rtl">
+              <SheetHeader className="border-b border-border/60 px-4 py-3">
+                <SheetTitle className="text-right">
+                  <Link href="/" className="flex items-center justify-end gap-2" onClick={() => setMobileOpen(false)}>
+                    <span className="text-lg font-bold tracking-tight">
+                      <span className="text-primary">{siteName.split(' ')[0] || 'GAMES'}</span>
+                      <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
+                    </span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-0 overflow-y-auto overscroll-contain touch-pan-y">
+                {/* الحساب أولاً */}
+                <div className="border-b border-border/40 bg-muted/20 p-3">
+                  {currentUser ? (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setProfileOpen(!profileOpen)}
+                        className="flex w-full items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-right transition-colors hover:bg-accent"
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={currentUser.avatarUrl || undefined} alt={currentUser.username} />
+                          <AvatarFallback className="text-xs">{currentUser.username[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1 text-right">
+                          <div className="truncate text-sm font-bold text-foreground">{currentUser.username}</div>
+                          <div className="text-xs text-muted-foreground">الحساب</div>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {profileOpen && (
+                        <div className="ms-2 space-y-1 border-s-2 border-primary/20 ps-3">
+                          <MobileLink href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`} onClick={() => setMobileOpen(false)}>
+                            <User className="h-3.5 w-3.5" />
+                            الملف الشخصي
+                          </MobileLink>
+                          {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
+                            <MobileLink href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`} onClick={() => setMobileOpen(false)}>
+                              <FileText className="h-3.5 w-3.5" />
+                              تعريباتي
+                            </MobileLink>
+                          )}
+                          {['creator', 'publisher'].includes(currentUser.role) && (
+                            <MobileLink href="/creator" onClick={() => setMobileOpen(false)}>
+                              <Activity className="h-3.5 w-3.5" />
+                              لوحة التحكم
+                            </MobileLink>
+                          )}
+                          <MobileLink href="/notifications" onClick={() => setMobileOpen(false)}>
+                            <Bell className="h-3.5 w-3.5" />
+                            إشعاراتي
+                          </MobileLink>
+                          <MobileLink href="/favorites" onClick={() => setMobileOpen(false)}>
+                            <Bookmark className="h-3.5 w-3.5" />
+                            مفضلاتي
+                          </MobileLink>
+                          <MobileLink href="/settings" onClick={() => setMobileOpen(false)}>
+                            <Settings className="h-3.5 w-3.5" />
+                            الإعدادات
+                          </MobileLink>
+                          <button
+                            onClick={async () => {
+                              await logout()
+                              setMobileOpen(false)
+                              window.location.href = '/'
+                            }}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                          >
+                            <LogOut className="h-3.5 w-3.5" />
+                            تسجيل الخروج
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Button asChild className="w-full rounded-none border-[2px] border-primary bg-primary py-5 font-bold shadow-[2px_2px_0_0_var(--border)]">
+                      <Link href="/login" onClick={() => setMobileOpen(false)}>
+                        <LogIn className="me-2 h-4 w-4" />
+                        الحساب / تسجيل الدخول
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+
+                {/* الأقسام — قائمة منسدلة */}
+                <div className="p-3">
+                  <button
+                    onClick={() => setSectionsOpen(!sectionsOpen)}
+                    className="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2.5 text-sm font-bold hover:bg-accent"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-primary" />
+                      الأقسام
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${sectionsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {sectionsOpen && (
+                    <div className="mt-2 space-y-0.5 border-s-2 border-primary/20 ps-2">
+                      {sections.map((s) => {
+                        const Icon = getSectionIcon(s.icon)
+                        return (
+                          <MobileLink key={s.id} href={`/platform/${s.key}`} onClick={() => setMobileOpen(false)} isActive={resolvedView === 'platform' && resolvedPlatform === s.key}>
+                            <Icon width={14} height={14} color={s.color} className="shrink-0" />
+                            <span className="flex-1">{s.name}</span>
+                          </MobileLink>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mx-3 h-px bg-border" />
+
+                <div className="space-y-0.5 p-3">
+                  <MobileLink href="/series" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'series' || resolvedView === 'series-detail'}>
+                    <Package width={16} height={16} style={{ color: 'var(--gold)' }} />
+                    السلاسل
+                  </MobileLink>
+                  <MobileLink href="/teams" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'teams' || resolvedView === 'team-detail'}>
+                    <Users width={16} height={16} style={{ color: 'var(--gold)' }} />
+                    الفرق
+                  </MobileLink>
+                  <MobileLink href="/request" onClick={() => setMobileOpen(false)} isActive={pathname === '/request'}>
+                    <span className="text-base leading-none">📝</span> طلب تعريب
+                  </MobileLink>
+                </div>
+
+                <div className="mx-3 h-px bg-border" />
+
+                <div className="p-3">
+                  <div className="flex justify-center">
+                    <NotificationBell currentUser={currentUser} />
+                  </div>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>

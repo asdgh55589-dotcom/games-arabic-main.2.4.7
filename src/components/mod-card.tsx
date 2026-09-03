@@ -149,21 +149,43 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
           )}
 
           {variant === 'compact' ? (
-            /* COMPACT: minimal stats only */
-            <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
-              <div className="flex items-center justify-center gap-1" title="التحميلات">
-                <Download className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.downloads)}</span>
+            /* COMPACT: تاريخ النشر والتحديث + شريط الإحصائيات */
+            <>
+              <div className="flex w-full flex-col gap-1 border-t-2 border-border/60 bg-muted/30 px-2.5 py-2">
+                <div className="flex items-center gap-1">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/70" />
+                  <span className="w-12 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">النشر</span>
+                  <span className="text-border">|</span>
+                  <span className="text-xs font-bold leading-[1.3] text-foreground">
+                    {new Date(mod.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                {new Date(mod.updatedAt).getTime() !== new Date(mod.createdAt).getTime() && (
+                  <div className="flex items-center gap-1">
+                    <History className="h-3.5 w-3.5 text-muted-foreground/70" />
+                    <span className="w-12 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">التحديث</span>
+                    <span className="text-border">|</span>
+                    <span className="text-xs font-bold leading-[1.3] text-foreground">
+                      {new Date(mod.updatedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
-                <Eye className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.views)}</span>
+              <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
+                <div className="flex items-center justify-center gap-1" title="التحميلات">
+                  <Download className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.downloads)}</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 border-s border-border/60" title="المشاهدات">
+                  <Eye className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.views)}</span>
+                </div>
+                <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
+                  <ThumbsUp className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.endorsements)}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-center gap-1 border-s border-border/60" title="الإعجابات">
-                <ThumbsUp className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">{formatNumber(mod.endorsements)}</span>
-              </div>
-            </div>
+            </>
           ) : (
             <>
               {/* Publisher account box — full-width with profile link */}
@@ -274,14 +296,26 @@ export function ModCardSkeleton({ variant = 'full' }: { variant?: 'full' | 'comp
       <div className="flex flex-col gap-2 p-3">
         <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
         {isCompact ? (
-          <div className="grid grid-cols-3 pt-2 border-t-2 border-border/60">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={`flex items-center justify-center gap-1 ${i > 0 ? 'border-s border-border/60' : ''}`}>
-                <div className="h-3 w-3 bg-muted rounded animate-pulse" />
-                <div className="h-3 bg-muted rounded w-8 animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-1.5 border-t-2 border-border/60 bg-muted/30 px-2.5 py-2">
+              {[0, 1].map((i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <div className="h-3.5 w-3.5 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-12 animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-px animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-16 animate-pulse" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 pt-2 border-t-2 border-border/60">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={`flex items-center justify-center gap-1 ${i > 0 ? 'border-s border-border/60' : ''}`}>
+                  <div className="h-3 w-3 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded w-8 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <>
             <div className="h-3 bg-muted rounded w-1/3 animate-pulse" />
