@@ -113,7 +113,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-                <ImageIcon className="h-8 w-8" />
+                <ImageIcon className="h-8 w-8 min-h-[44px] min-w-[44px]" />
               </div>
             )}
           </div>
@@ -122,7 +122,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         <nav className="absolute inset-x-2 top-2 flex flex-nowrap items-center gap-1 overflow-hidden text-[10px] sm:text-xs text-muted-foreground/80" aria-label="مسار التنقل">
           <button
             onClick={() => router.back()}
-            className="inline-flex shrink-0 items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20 cursor-pointer"
+            className="inline-flex shrink-0 items-center justify-center h-7 w-7 min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20 cursor-pointer"
             aria-label="العودة للصفحة السابقة"
           >
             <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -152,7 +152,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {/* اسم اللعبه */}
           <div className="flex items-center justify-between px-2.5 py-2">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-blue-500/10 text-blue-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-blue-500/10 text-blue-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                 <Gamepad2 className="h-3.5 w-3.5" />
               </span>
               اسم اللعبه:
@@ -163,7 +163,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {mod.arabicTitle && mod.arabicTitle.trim() !== '' && (
             <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                   <Languages className="h-3.5 w-3.5" />
                 </span>
                 الاسم بالعربي:
@@ -174,7 +174,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {/* نوع التعريب */}
           <div className="flex items-center justify-between px-2.5 py-2">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-purple-500/10 text-purple-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-purple-500/10 text-purple-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                 <Shield className="h-3.5 w-3.5" />
               </span>
               نوع التعريب:
@@ -185,7 +185,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {mod.translationScope && mod.translationScope.trim() !== '' && (
             <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                   <Globe className="h-3.5 w-3.5" />
                 </span>
                 نطاق التعريب:
@@ -197,7 +197,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {mod.compatibility && mod.compatibility.trim() !== '' && (
             <div className="flex items-center justify-between px-2.5 py-2">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-teal-500/10 text-teal-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-teal-500/10 text-teal-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                   <CheckCircle className="h-3.5 w-3.5" />
                 </span>
                 توافق التعريب:
@@ -208,7 +208,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {/* تاريخ الاصدار */}
           <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
             <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+              <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                 <Calendar className="h-3.5 w-3.5" />
               </span>
               تاريخ الاصدار:
@@ -219,7 +219,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {mod.version && (
             <div className="flex items-center justify-between px-2.5 py-2">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-amber-500/10 text-amber-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-amber-500/10 text-amber-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                   <Tag className="h-3.5 w-3.5" />
                 </span>
                 اصدار التعريب:
@@ -231,7 +231,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           {mod.fileSize && mod.fileSize.trim() !== '' && (
             <div className="flex items-center justify-between bg-muted/10 px-2.5 py-2">
               <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-rose-500/10 text-rose-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+                <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-rose-500/10 text-rose-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
                   <FileArchive className="h-3.5 w-3.5" />
                 </span>
                 حجم التعريب:
@@ -245,7 +245,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
       <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Calendar className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -254,7 +254,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-emerald-500/10 text-emerald-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Eye className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -263,7 +263,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-sky-500/10 text-sky-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Download className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -272,7 +272,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-primary/10 text-primary shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-primary/10 text-primary shadow-[1.5px_1.5px_0_0_var(--border)]">
             <ThumbsUp className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-indigo-500/10 text-indigo-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-indigo-500/10 text-indigo-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Users className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -290,7 +290,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-hidden rounded-none border-[2px] border-border bg-card px-2.5 py-2 shadow-[2px_2px_0_0_var(--border)]">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border border-border bg-orange-500/10 text-orange-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
+          <span className="grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-orange-500/10 text-orange-500 shadow-[1.5px_1.5px_0_0_var(--border)]">
             <Layers className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -316,7 +316,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         {hasReported ? (
           <Button
             disabled
-            className="flex items-center justify-center gap-1.5 rounded-none border-[2px] border-green-600/30 bg-green-600/10 py-2.5 text-xs font-black text-green-600 shadow-[2px_2px_0_0_var(--border)] opacity-100"
+            className="flex items-center justify-center gap-1.5 rounded-none border-[2px] border-green-600/30 bg-green-600/10 py-2.5 text-xs font-black text-green-600 shadow-[2px_2px_0_0_var(--border)] opacity-100 touch-manipulation"
           >
             <Flag className="h-3.5 w-3.5" />
             تم البلاغ
@@ -334,7 +334,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           >
             <Button
               variant="outline"
-              className="flex w-full items-center justify-center gap-1.5 rounded-none border-[2px] border-border bg-card py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] hover:bg-accent"
+              className="flex w-full items-center justify-center gap-1.5 rounded-none border-[2px] border-border bg-card py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] hover:bg-accent touch-manipulation"
             >
               <Flag className="h-3.5 w-3.5" />
               إبلاغ
@@ -479,9 +479,9 @@ function CollapsibleCard({ title, icon, iconBg, children, defaultOpen = false }:
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-3 py-2.5 text-right transition-colors hover:bg-muted/20 cursor-pointer"
       >
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${iconBg}`}>{icon}</span>
+        <span className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md ${iconBg}`}>{icon}</span>
         <span className="flex-1 text-sm font-bold text-foreground text-right">{title}</span>
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md border border-border bg-card transition-transform ${open ? 'rotate-180' : ''}`}>
+        <span className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md border border-border bg-card transition-transform ${open ? 'rotate-180' : ''}`}>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </span>
       </button>

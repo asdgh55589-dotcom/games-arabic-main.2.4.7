@@ -83,7 +83,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="grid h-7 w-7 place-items-center border-[2px] border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
+                      className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center border-[2px] border-border bg-background/80 text-muted-foreground transition-colors hover:text-foreground"
                       aria-label="خيارات التعريب"
                       onClick={(e) => e.preventDefault()}
                     >

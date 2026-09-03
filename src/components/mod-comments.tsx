@@ -335,7 +335,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <button
                   type="button"
                   onClick={() => wrapSelection(newCommentRef.current, setNewComment, '**', '**', 'نص عريض')}
-                  className="grid h-7 w-7 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="عريض **نص**"
                 >
                   <Bold className="h-3.5 w-3.5" />
@@ -343,7 +343,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <button
                   type="button"
                   onClick={() => wrapSelection(newCommentRef.current, setNewComment, '*', '*', 'نص مائل')}
-                  className="grid h-7 w-7 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="مائل *نص*"
                 >
                   <Italic className="h-3.5 w-3.5" />
@@ -351,7 +351,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <button
                   type="button"
                   onClick={() => wrapSelection(newCommentRef.current, setNewComment, '~~', '~~', 'نص مشطوب')}
-                  className="grid h-7 w-7 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="مشطوب ~~نص~~"
                 >
                   <Strikethrough className="h-3.5 w-3.5" />
@@ -359,7 +359,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <button
                   type="button"
                   onClick={() => wrapSelection(newCommentRef.current, setNewComment, '## ', '', 'عنوان كبير')}
-                  className="grid h-7 w-7 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="تكبير ## عنوان"
                 >
                   <Heading2 className="h-3.5 w-3.5" />
@@ -369,7 +369,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                   <button
                     type="button"
                     onClick={() => setShowColorNew(!showColorNew)}
-                    className={`grid h-7 w-7 place-items-center rounded hover:bg-white/10 transition-colors ${showColorNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 transition-colors ${showColorNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                     title="لون النص"
                   >
                     <Palette className="h-3.5 w-3.5" />
@@ -401,7 +401,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                   <button
                     type="button"
                     onClick={() => setShowEmojiNew(!showEmojiNew)}
-                    className={`grid h-7 w-7 place-items-center rounded hover:bg-white/10 transition-colors ${showEmojiNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 transition-colors ${showEmojiNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                     title="إيموجي"
                   >
                     <Smile className="h-3.5 w-3.5" />
@@ -415,7 +415,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                             insertAtCursor(newCommentRef.current, setNewComment, e)
                             setShowEmojiNew(false)
                           }}
-                          className="grid h-7 w-7 place-items-center rounded hover:bg-white/10 text-base leading-none"
+                          className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-base leading-none"
                         >
                           {e}
                         </button>
@@ -437,7 +437,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <Button
                   onClick={onSubmitComment}
                   disabled={!newComment.trim() || submitting}
-                  size="sm" className="min-h-[44px]"
+                  size="sm" className="min-h-[44px] touch-manipulation"
                 >
                   {submitting ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="ml-1.5 h-3.5 w-3.5" />}
                   نشر التعليق
@@ -500,7 +500,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
             <div className="mt-6 flex items-center justify-center gap-3">
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm" className="min-h-[44px] touch-manipulation"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
@@ -512,7 +512,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
               </span>
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm" className="min-h-[44px] touch-manipulation"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
@@ -573,7 +573,7 @@ function CommentItem({
 }) {
   const liked = likedIds.has(comment.id)
   const isNested = depth > 0
-  const avatarSize = isNested ? 'h-8 w-8' : 'h-10 w-10'
+  const avatarSize = isNested ? 'h-8 w-8 min-h-[44px] min-w-[44px]' : 'h-10 w-10'
   const canReply = depth < MAX_DEPTH
   const displayName = comment.user?.username || comment.guestName || 'مستخدم'
   const displayAvatar = comment.user?.avatarUrl || comment.guestAvatar
@@ -728,10 +728,10 @@ function CommentItem({
                   rows={3}
                 />
                 <div className="flex gap-2 border-t border-white/5 bg-white/[0.01] p-2">
-                  <Button size="sm" className="min-h-[44px]" onClick={handleEdit} disabled={saving || !editText.trim()}>
+                  <Button size="sm" className="min-h-[44px] touch-manipulation" onClick={handleEdit} disabled={saving || !editText.trim()}>
                     {saving ? 'جاري الحفظ...' : 'حفظ'}
                   </Button>
-                  <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => { setIsEditing(false); setEditText(comment.text) }}>
+                  <Button size="sm" className="min-h-[44px] touch-manipulation" variant="outline" onClick={() => { setIsEditing(false); setEditText(comment.text) }}>
                     إلغاء
                   </Button>
                 </div>
@@ -773,7 +773,7 @@ function CommentItem({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       aria-label="خيارات"
                     >
                       <MoreVertical className="h-4 w-4" />
@@ -825,7 +825,7 @@ function CommentItem({
                   <span className="ms-auto text-[10px] text-muted-foreground/40 hidden sm:inline">حدد نص للتنسيق</span>
                 </div>
                 <div className="flex gap-2 p-2">
-                  <Avatar className="h-8 w-8 shrink-0">
+                  <Avatar className="h-8 w-8 min-h-[44px] min-w-[44px] shrink-0">
                     <AvatarFallback>{currentUser?.username?.[0] || 'ز'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -839,10 +839,10 @@ function CommentItem({
                       className="w-full resize-none rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <div className="mt-1.5 flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={onCancelReply}>
+                      <Button variant="ghost" size="sm" className="min-h-[44px] touch-manipulation" onClick={onCancelReply}>
                         إلغاء
                       </Button>
-                      <Button size="sm" className="min-h-[44px]" onClick={() => onSubmitReply(comment.id)} disabled={!replyText.trim()}>
+                      <Button size="sm" className="min-h-[44px] touch-manipulation" onClick={() => onSubmitReply(comment.id)} disabled={!replyText.trim()}>
                         <Send className="ml-1.5 h-3.5 w-3.5" />
                         نشر الرد
                       </Button>

@@ -82,7 +82,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_var(--border)] platform-hover-btn"
+                  className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_var(--border)] platform-hover-btn touch-manipulation"
                   style={{ '--platform-color': section.color } as React.CSSProperties}
                 >
                   <Link href={`/platform/${section.key}`}>
@@ -110,7 +110,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
             <h2 className="text-base font-black uppercase tracking-wider">سلاسل التعريبات</h2>
             <p className="mt-0.5 text-xs font-semibold text-muted-foreground">استكشف التعريبات حسب السلسلة</p>
           </div>
-          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)]">
+          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
             <Link href="/series">عرض الكل <ArrowLeft className="mr-1 h-3 w-3" /></Link>
           </Button>
         </div>
@@ -142,7 +142,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
             <h2 className="text-base font-black uppercase tracking-wider">فرق التعريب</h2>
             <p className="mt-0.5 text-xs font-semibold text-muted-foreground">استكشف الفرق والأعمال التي قدّموها</p>
           </div>
-          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)]">
+          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
             <Link href="/teams">عرض الكل <ArrowLeft className="mr-1 h-3 w-3" /></Link>
           </Button>
         </div>

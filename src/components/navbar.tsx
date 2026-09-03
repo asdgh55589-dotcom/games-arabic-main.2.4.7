@@ -366,7 +366,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
           {currentUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px]">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation">
                   <Avatar className="h-6 w-6">
                     <AvatarImage src={currentUser.avatarUrl || undefined} alt={(currentUser as unknown as { displayName?: string }).displayName || currentUser.username} />
                     <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
@@ -426,7 +426,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
           ) : (
-            <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary min-h-[44px]">
+            <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation">
               <Link href="/login">
                 تسجيل الدخول
               </Link>
@@ -439,7 +439,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
           <NotificationBell currentUser={currentUser} />
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-none border-[2px] border-border bg-card shadow-[2px_2px_0_0_var(--border)] hover:shadow-[1px_1px_0_0_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px]" aria-label="القائمة">
+              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-none border-[2px] border-border bg-card shadow-[2px_2px_0_0_var(--border)] hover:shadow-[1px_1px_0_0_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] touch-manipulation" aria-label="القائمة">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -519,7 +519,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       )}
                     </div>
                   ) : (
-                    <Button asChild className="w-full rounded-none border-[2px] border-primary bg-primary py-5 font-bold shadow-[2px_2px_0_0_var(--border)]">
+                    <Button asChild className="w-full rounded-none border-[2px] border-primary bg-primary py-5 font-bold shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
                       <Link href="/login" onClick={() => setMobileOpen(false)}>
                         <LogIn className="me-2 h-4 w-4" />
                         الحساب / تسجيل الدخول
