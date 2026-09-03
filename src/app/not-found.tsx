@@ -17,7 +17,7 @@ export default function NotFound() {
       <h2 className="text-xl font-bold text-foreground">
         الصفحة غير موجودة
       </h2>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+      <p className="mt-2 max-w-sm break-words text-sm text-muted-foreground">
         يبدو أن هذه الصفحة لم تكن موجودة في ألعابنا. ربما تم حذفها أو أن الرابط غير صحيح.
       </p>
       <Button asChild className="mt-6" size="lg">

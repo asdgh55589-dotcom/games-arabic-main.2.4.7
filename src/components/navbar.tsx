@@ -263,8 +263,8 @@ export function Navbar({ games, currentView }: NavbarProps) {
         </nav>
         </div>
 
-        {/* Smart Search — يبدأ ضيق، يتمدّد عند التركيز */}
-        <div ref={searchRef} className="relative min-w-[160px] max-w-[200px] shrink flex-1 transition-all duration-200 focus-within:max-w-[260px] lg:min-w-[180px]">
+        {/* Smart Search — يبدأ ضيق، يتمدّد عند التركيز — متجاوب 320 */}
+        <div ref={searchRef} className="relative min-w-0 max-w-[140px] shrink flex-1 transition-all duration-200 focus-within:max-w-[260px] sm:min-w-[160px] sm:max-w-[200px] lg:min-w-[180px]">
           <form onSubmit={onSearch} role="search">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

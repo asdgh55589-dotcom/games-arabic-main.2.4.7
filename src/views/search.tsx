@@ -128,7 +128,7 @@ export function SearchPage() {
                 onClick={() => togglePlatform(p.key)}
                 aria-pressed={active}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
+                  'flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition-colors min-h-[40px] touch-manipulation',
                   active
                     ? 'border-transparent text-foreground'
                     : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground'
@@ -157,7 +157,7 @@ export function SearchPage() {
               onClick={() => setTierFilter(f.minTier)}
               aria-pressed={minTier === f.minTier}
               className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
+                'rounded-full border px-3 py-2 text-xs font-bold transition-colors min-h-[40px] touch-manipulation',
                 minTier === f.minTier
                   ? 'border-transparent bg-primary text-primary-foreground'
                   : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground'

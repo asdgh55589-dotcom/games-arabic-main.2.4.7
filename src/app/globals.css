@@ -391,3 +391,18 @@ article[style*="--card-platform"]:hover {
     font-size: 16px !important;
   }
 }
+
+/* ===== تحسينات اللمس والتجاوب ===== */
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-padding-top: 3.5rem;
+  scrollbar-gutter: stable;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  touch-action: manipulation;
+}
