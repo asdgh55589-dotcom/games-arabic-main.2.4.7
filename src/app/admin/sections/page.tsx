@@ -216,7 +216,8 @@ export default function AdminSectionsPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-right">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right">
             <thead className="border-b border-border bg-card/50 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-semibold">الترتيب</th>
@@ -282,7 +283,8 @@ export default function AdminSectionsPage() {
                 )
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

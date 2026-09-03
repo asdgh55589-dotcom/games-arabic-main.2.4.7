@@ -394,7 +394,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-[252px] shrink-0 flex-col border-l border-border-light bg-sidebar transition-transform duration-200 lg:hidden ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-[252px] max-w-[85vw] shrink-0 flex-col border-l border-border-light bg-sidebar transition-transform duration-200 lg:hidden ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

@@ -143,7 +143,7 @@ export default function AdminAuditPage() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={exportDays} onValueChange={setExportDays}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full max-w-[160px] sm:w-[160px]">
               <SelectValue placeholder="اختر المدة" />
             </SelectTrigger>
             <SelectContent>
@@ -177,7 +177,7 @@ export default function AdminAuditPage() {
 
       {/* الفلاتر */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-full max-w-[200px] sm:w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
@@ -251,7 +251,7 @@ export default function AdminAuditPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs">{ENTITY_LABELS[log.entity] || log.entity}</td>
-                    <td className="hidden px-4 py-3 text-xs text-muted-foreground md:table-cell max-w-[200px] truncate">
+                    <td className="hidden px-4 py-3 text-xs text-muted-foreground md:table-cell max-w-full max-w-[200px] sm:w-[200px] truncate">
                       {log.details ? formatAuditDetails(log.action, log.details) : '—'}
                     </td>
                     <td className="hidden px-4 py-3 text-xs text-muted-foreground sm:table-cell">
