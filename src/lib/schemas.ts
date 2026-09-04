@@ -28,6 +28,55 @@ export const UsernameParamSchema = z
   .max(50)
   .regex(/^[a-zA-Z0-9_-]+$/)
 
+// ===== Reusable form building blocks (client + server) =====
+
+export const UsernameSchema = z
+  .string()
+  .min(3, 'اسم المستخدم لازم يكون 3 أحرف على الأقل')
+  .max(30, 'الحد الأقصى 30 حرف')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'حروف إنجليزي وأرقام و _ - فقط')
+
+export const EmailSchema = z.string().min(1, 'الإيميل مطلوب').email('الإيميل غير صحيح')
+
+export const PasswordSchema = z
+  .string()
+  .min(8, '٨ أحرف على الأقل')
+  .max(100, 'كلمة المرور طويلة جداً')
+
+export const DisplayNameSchema = z
+  .string()
+  .min(1, 'الاسم مطلوب')
+  .max(50, 'الحد الأقصى 50 حرف')
+
+export const PublicRegisterSchema = z.object({
+  username: UsernameSchema,
+  displayName: DisplayNameSchema,
+  email: EmailSchema,
+  password: PasswordSchema,
+})
+
+export const PublicLoginSchema = z.object({
+  email: EmailSchema,
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
+})
+
+export const SettingsPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة'),
+    newPassword: PasswordSchema,
+    confirmPassword: z.string().min(1, 'تأكيد كلمة المرور مطلوب'),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين',
+    path: ['confirmPassword'],
+  })
+
+export const ProfileUpdateSchema = z.object({
+  username: UsernameSchema.optional(),
+  displayName: DisplayNameSchema.optional(),
+  bio: z.string().max(500, 'الحد الأقصى 500 حرف').optional(),
+})
+
 // ===== Auth Schemas =====
 
 export const LoginSchema = z.object({
