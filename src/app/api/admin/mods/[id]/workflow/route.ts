@@ -164,6 +164,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }
     } catch {}
 
+    // Meilisearch sync (no-op without env, fire-and-forget)
+    if (targetStatus === 'PUBLISHED') {
+      import('@/lib/meilisearch/indexer').then((m) => m.indexMod(id)).catch(() => {})
+    } else {
+      import('@/lib/meilisearch/indexer').then((m) => m.deleteModFromIndex(id)).catch(() => {})
+    }
+
     return ok(updatedMod)
   } catch (err) {
     console.error('[admin/mods/[id]/workflow POST] failed:', err)

@@ -32,6 +32,15 @@ export async function PUT(req: NextRequest) {
 
       await db.mod.updateMany({ where: { id: { in: ids } }, data: updateData })
       const affected = await db.mod.count({ where: { id: { in: ids } } })
+      // Meilisearch sync (no-op without env, fire-and-forget)
+      import('@/lib/meilisearch/indexer')
+        .then((m) => {
+          for (const modId of ids) {
+            if (status === 'PUBLISHED') m.indexMod(modId).catch(() => {})
+            else m.deleteModFromIndex(modId).catch(() => {})
+          }
+        })
+        .catch(() => {})
       return ok({ success: true, updated: affected })
     }
 
