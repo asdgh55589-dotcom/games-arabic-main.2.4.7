@@ -5,6 +5,8 @@
  * photos, and inline keyboards.
  */
 
+import { telegramPolicy } from '@/lib/resilience/policies'
+
 const TELEGRAM_API = 'https://api.telegram.org/bot'
 
 interface TelegramResponse {
@@ -44,11 +46,15 @@ async function apiCall(method: string, body: object): Promise<TelegramResponse> 
   }
 
   try {
-    const res = await fetch(`${TELEGRAM_API}${token}/${method}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    // Retry network failures via cockatiel (2 attempts, fast backoff).
+    // Behavior unchanged: any failure still resolves to { ok: false }.
+    const res = await telegramPolicy.execute(() =>
+      fetch(`${TELEGRAM_API}${token}/${method}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    )
     return await res.json()
   } catch (err) {
     console.error(`[telegram-bot] ${method} failed:`, err)
