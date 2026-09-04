@@ -1,4 +1,6 @@
+import { FetchError } from 'ofetch'
 import { db } from '@/lib/db'
+import { http } from '@/lib/http'
 
 // المنصات للتناوب الأسبوعي — مطابقة لـ Game.platform الفعلية
 const PLATFORMS = ['PC', 'PS3', 'X360', 'NS']
@@ -70,30 +72,24 @@ export async function getTodayBatch() {
   }
 }
 
-// فحص رابط واحد مع مهلة وإعادة محاولة
+// فحص رابط واحد مع مهلة وإعادة محاولة (عبر ofetch: timeout + retry مدمجان)
 export async function checkUrl(url: string, retries = 3): Promise<boolean> {
   if (!url) return false
 
-  for (let i = 0; i < retries; i++) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 5000) // مهلة 5 ثوانٍ
-
-      const res = await fetch(url, {
-        method: 'HEAD',
-        signal: controller.signal,
-      })
-      clearTimeout(timeout)
-
-      if (res.ok) return true
-      if (res.status === 404) return false // مكسور بالتأكيد
-      // 5xx = مؤقت، إعادة محاولة
-    } catch {
-      // خطأ شبكة، إعادة محاولة
-    }
-    await new Promise((r) => setTimeout(r, 1000 * (i + 1))) // تأخير متزايد: 1ث، 2ث، 3ث
+  try {
+    // ofetch يعيد المحاولة تلقائياً للأخطاء المؤقتة (5xx/شبكة) فقط،
+    // ويرمي فوراً لـ 404 — نفس سلوك الحلقة اليدوية السابقة.
+    await http.raw(url, {
+      method: 'HEAD',
+      timeout: 5000, // مهلة 5 ثوانٍ
+      retry: retries,
+      retryDelay: 1000,
+    })
+    return true
+  } catch (err) {
+    if (err instanceof FetchError && err.response?.status === 404) return false // مكسور بالتأكيد
+    return false
   }
-  return false
 }
 
 // فحص كل صور التعديل — متوافق مع نموذج Mod الفعلي (thumbnailUrl, imageUrl, galleryUrls)
