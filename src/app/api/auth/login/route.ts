@@ -147,6 +147,16 @@ export async function POST(req: NextRequest) {
       return rateLimited()
     }
 
+    // Distributed rate limit (Upstash, no-op without env) — additive guard
+    const { checkRateLimit } = await import('@/lib/ratelimit')
+    const loginIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      'unknown'
+    if (!(await checkRateLimit(`auth:login:${loginIp}`))) {
+      return rateLimited()
+    }
+
     // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)
     const userByUsername = await db.user.findUnique({
       where: { username },

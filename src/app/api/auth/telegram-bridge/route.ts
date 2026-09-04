@@ -18,6 +18,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Distributed rate limit (Upstash, no-op without env) — additive guard
+    const { checkRateLimit } = await import('@/lib/ratelimit')
+    const bridgeIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      'unknown'
+    if (!(await checkRateLimit(`auth:telegram-bridge:${bridgeIp}`))) {
+      return NextResponse.json(
+        { error: AUTH_ERRORS.RATE_LIMITED, code: 'RATE_LIMITED' },
+        { status: 429 },
+      )
+    }
+
     const body = await req.json().catch(() => null)
     if (!body || typeof body.id === 'undefined') {
       return NextResponse.json(
