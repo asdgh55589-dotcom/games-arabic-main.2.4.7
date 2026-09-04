@@ -57,6 +57,71 @@ interface NavbarProps {
   currentView?: string
 }
 
+interface DropdownTeam {
+  id: string
+  name: string
+  modCount?: number
+  isOfficial?: boolean
+}
+
+interface DropdownUser {
+  id: string
+  username: string
+  displayName?: string | null
+}
+
+interface DropdownGame {
+  id: string
+  name: string
+  slug?: string
+  platform?: string
+}
+
+type SuggestionState = SearchResponse & {
+  teams?: DropdownTeam[]
+  users?: DropdownUser[]
+  games: DropdownGame[]
+}
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function highlight(text: string, query: string) {
+  if (!query || !text) return text
+  const re = new RegExp(`(${escapeRegex(query.trim())})`, 'gi')
+  return text.split(re).map((p, i) =>
+    i % 2 ? (
+      <mark key={i} className="bg-yellow-500/30 text-inherit">
+        {p}
+      </mark>
+    ) : (
+      p
+    ),
+  )
+}
+
+const RECENT_KEY = 'recent_searches'
+
+function loadRecent(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY)
+    const arr = raw ? (JSON.parse(raw) as unknown) : []
+    return Array.isArray(arr)
+      ? arr.filter((x): x is string => typeof x === 'string').slice(0, 5)
+      : []
+  } catch {
+    return []
+  }
+}
+
+function pushRecent(query: string) {
+  try {
+    const next = [query, ...loadRecent().filter((x) => x !== query)].slice(0, 5)
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next))
+  } catch {}
+}
+
 interface SectionItem {
   id: string
   slug: string
@@ -184,8 +249,10 @@ export function Navbar({ games, currentView }: NavbarProps) {
       return match ? decodeURIComponent(match[1]) : null
     })()
   const [q, setQ] = useState('')
-  const [suggestions, setSuggestions] = useState<SearchResponse>({ mods: [], games: [] })
+  const [suggestions, setSuggestions] = useState<SuggestionState>({ mods: [], games: [] })
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [recent, setRecent] = useState<string[]>([])
+  const [trending, setTrending] = useState<string[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [sectionsOpen, setSectionsOpen] = useState(false)
@@ -197,6 +264,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const trendingTried = useRef(false)
 
   const debouncedQ = useDebounced(q, 200)
 
@@ -207,6 +275,16 @@ export function Navbar({ games, currentView }: NavbarProps) {
         setActiveSuggestionIdx(-1)
       })
       return
+    }
+    // Trending suggestions (lazy, once per session)
+    if (!trendingTried.current) {
+      trendingTried.current = true
+      fetch('/api/search/trending')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json: { data?: { queries?: string[] } } | null) => {
+          if (json?.data?.queries) setTrending(json.data.queries)
+        })
+        .catch(() => {})
     }
     const controller = new AbortController()
     let cancelled = false
@@ -260,12 +338,23 @@ export function Navbar({ games, currentView }: NavbarProps) {
     return () => document.removeEventListener('keydown', handler)
   }, [showSuggestions])
 
-  const hasSuggestions = suggestions.mods.length > 0
+  const hasSuggestions =
+    suggestions.mods.length > 0 ||
+    suggestions.games.length > 0 ||
+    (suggestions.teams?.length ?? 0) > 0 ||
+    (suggestions.users?.length ?? 0) > 0
+
+  const totalSuggestions =
+    suggestions.mods.length +
+    suggestions.games.length +
+    (suggestions.teams?.length ?? 0) +
+    (suggestions.users?.length ?? 0)
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (q.trim()) {
       const trimmed = q.trim()
+      pushRecent(trimmed)
       // Search tracking — fire-and-forget
       fetch('/api/search/track', {
         method: 'POST',
@@ -414,7 +503,13 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 ref={inputRef}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onFocus={() => hasSuggestions && setShowSuggestions(true)}
+                onFocus={() => {
+                  if (hasSuggestions) setShowSuggestions(true)
+                  else if (!q.trim()) {
+                    setRecent(loadRecent())
+                    setShowSuggestions(true)
+                  }
+                }}
                 onKeyDown={onKeyDown}
                 placeholder="ابحث عن تعريب…"
                 aria-label="ابحث عن تعريب"
@@ -429,6 +524,8 @@ export function Navbar({ games, currentView }: NavbarProps) {
                   onClick={() => {
                     setQ('')
                     setSuggestions({ mods: [], games: [] })
+                    setRecent(loadRecent())
+                    setShowSuggestions(true)
                     inputRef.current?.focus()
                   }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -476,7 +573,9 @@ export function Navbar({ games, currentView }: NavbarProps) {
                         loading="lazy"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-bold text-foreground">{m.name}</div>
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {highlight(m.name, q)}
+                        </div>
                         <div className="truncate text-xs text-muted-foreground">
                           {m.game.name} · {formatNumber(m.downloads)} تحميل
                         </div>
@@ -489,6 +588,94 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 </div>
               )}
 
+              {/* قسم: الألعاب */}
+              {suggestions.games.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    🎮 الألعاب ({suggestions.games.length})
+                  </div>
+                  {suggestions.games.map((g) => (
+                    <Link
+                      key={g.id}
+                      href={g.slug ? `/games/${g.slug}` : `/search?q=${encodeURIComponent(g.name)}`}
+                      onClick={clearSuggestions}
+                      role="option"
+                      aria-selected={false}
+                      className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {highlight(g.name, q)}
+                        </div>
+                        {g.platform && (
+                          <div className="truncate text-xs text-muted-foreground">{g.platform}</div>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* قسم: الفرق */}
+              {(suggestions.teams?.length ?? 0) > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    الفرق ({suggestions.teams?.length})
+                  </div>
+                  {suggestions.teams?.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/teams/${encodeURIComponent(t.name)}`}
+                      onClick={clearSuggestions}
+                      role="option"
+                      aria-selected={false}
+                      className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {highlight(t.name, q)}
+                        </div>
+                        {typeof t.modCount === 'number' && (
+                          <div className="truncate text-xs text-muted-foreground">
+                            {t.modCount} تعريب
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* قسم: المستخدمون */}
+              {(suggestions.users?.length ?? 0) > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    المستخدمون ({suggestions.users?.length})
+                  </div>
+                  {suggestions.users?.map((u) => (
+                    <Link
+                      key={u.id}
+                      href={`/profile/${encodeURIComponent(u.username)}`}
+                      onClick={clearSuggestions}
+                      role="option"
+                      aria-selected={false}
+                      className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {highlight(u.displayName || u.username, q)}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground" dir="ltr">
+                          @{u.username}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
               {/* قسم: روابط سريعة */}
               <div className="border-t border-border bg-secondary/20 px-4 py-2">
                 <Link
@@ -496,19 +683,65 @@ export function Navbar({ games, currentView }: NavbarProps) {
                   onClick={clearSuggestions}
                   className="flex items-center justify-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
-                  عرض كل النتائج لـ &quot;{q}&quot;
+                  عرض كل النتائج لـ &quot;{q}&quot; ({totalSuggestions})
                   <ChevronDown className="h-3 w-3 -rotate-90" />
                 </Link>
               </div>
             </div>
           )}
 
-          {/* اقتراحات سريعة لما البحث فاضي */}
+          {/* عمليات البحث الأخيرة — لما الحقل فاضي */}
+          {showSuggestions && !hasSuggestions && !q.trim() && recent.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl">
+              <div className="border-b border-border bg-secondary/30 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                🕘 عمليات بحث أخيرة
+              </div>
+              {recent.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => {
+                    setQ(r)
+                    setShowSuggestions(false)
+                    router.push(`/search?q=${encodeURIComponent(r)}`)
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-right text-sm text-foreground transition-colors hover:bg-accent/50"
+                >
+                  <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="truncate">{r}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* اقتراحات لما لا توجد نتائج */}
           {showSuggestions && !hasSuggestions && q.trim() && (
             <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl">
               <div className="px-4 py-3 text-center text-sm text-muted-foreground">
-                لا توجد نتائج لـ &quot;{q}&quot;
+                🔍 لا توجد نتائج لـ &quot;{q}&quot;
               </div>
+              {trending.length > 0 && (
+                <div className="border-t border-border px-4 py-3">
+                  <div className="mb-2 text-xs font-bold text-muted-foreground">جرّب:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {trending.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => {
+                          setQ(t)
+                          pushRecent(t)
+                          router.push(`/search?q=${encodeURIComponent(t)}`)
+                          setShowSuggestions(false)
+                        }}
+                        className="rounded-full border border-border bg-secondary/50 px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
