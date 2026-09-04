@@ -1,17 +1,6 @@
 {
   "$schema": "https://knip.dev/schema.json",
   "project": ["src/**/*.{ts,tsx}"],
-  "ignore": [
-    "src/**/*.legacy.*",
-    "**/*.d.ts",
-    "prisma/**",
-    "scripts/seed.ts"
-  ],
-  "entry": [
-    "src/proxy.ts",
-    "src/middleware.ts",
-    "next.config.ts",
-    "postcss.config.mjs",
-    "scripts/*.ts"
-  ]
+  "ignore": ["prisma/**", "scripts/seed.ts"],
+  "entry": ["postcss.config.mjs", "scripts/*.ts"]
 }
