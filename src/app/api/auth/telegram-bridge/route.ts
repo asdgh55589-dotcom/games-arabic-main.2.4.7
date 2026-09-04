@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { getBanStatus } from '@/lib/auth'
 import { AUTH_ERRORS } from '@/lib/auth/errors'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     // Verify HMAC
     if (!verifyTelegramAuth(data)) {
+      logger.warn({ route: 'telegram-bridge' }, 'telegram signature invalid')
       return NextResponse.json(
         { error: AUTH_ERRORS.TELEGRAM_FAILED, code: 'TELEGRAM_FAILED' },
         { status: 401 },
@@ -196,7 +198,7 @@ export async function POST(req: NextRequest) {
         domain: process.env.COOKIE_DOMAIN || undefined,
       })
     } catch (e) {
-      console.warn('[telegram-bridge] failed to set legacy cookie', e)
+      logger.warn({ route: 'telegram-bridge', err: e }, 'failed to set legacy cookie')
     }
     // سجل الجلسة المركزي
     res.cookies.set('ga_session_ledger', token, {
@@ -209,7 +211,7 @@ export async function POST(req: NextRequest) {
     // Also set broader domain if COOKIE_DOMAIN set
     return res
   } catch (err) {
-    console.error('[telegram-bridge] failed:', err)
+    logger.error({ route: 'telegram-bridge', err }, 'telegram bridge failed')
     return NextResponse.json(
       { error: AUTH_ERRORS.TELEGRAM_FAILED, code: 'TELEGRAM_FAILED' },
       { status: 500 },

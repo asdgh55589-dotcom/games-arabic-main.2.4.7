@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const SESSION_TTL_DAYS = 7
 
@@ -29,6 +30,7 @@ export async function createSessionLedger(userId: string, opts: CreateLedgerOpts
       userAgent: opts.userAgent,
     } as any,
   })
+  logger.info({ userId, sessionId: id }, 'session created')
   return row
 }
 
@@ -47,6 +49,7 @@ export async function revokeSession(token: string): Promise<void> {
   if (!token) return
   try {
     await db.session.deleteMany({ where: { token } as any })
+    logger.warn({ token: `${token.slice(0, 8)}...` }, 'session revoked')
   } catch {}
 }
 
@@ -58,6 +61,7 @@ export async function revokeOtherSessions(userId: string, currentToken: string) 
         token: { not: currentToken },
       } as any,
     })
+    logger.warn({ userId }, 'other sessions revoked')
   } catch {}
 }
 

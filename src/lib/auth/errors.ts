@@ -21,3 +21,12 @@ export type AuthErrorCode = keyof typeof AUTH_ERRORS
 export function getAuthErrorMessage(code: string, fallback = 'حصل خطأ، جرّب تاني'): string {
   return AUTH_ERRORS[code] ?? fallback
 }
+
+export async function logAuthFailure(code: string, context?: Record<string, unknown>) {
+  try {
+    const { logger } = await import('@/lib/logger')
+    logger.warn({ code, ...context }, 'auth failure')
+  } catch {
+    // logger unavailable (edge) — no-op
+  }
+}
