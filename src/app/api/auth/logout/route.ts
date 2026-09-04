@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { clearRoleCookie, getSession, requireAuth, invalidateUserSessions } from '@/lib/auth'
+import type { NextRequest } from 'next/server'
+import { clearRoleCookie, type getSession, requireAuth, invalidateUserSessions } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { logAction } from '@/lib/audit'
 import { ok } from '@/lib/api-response'

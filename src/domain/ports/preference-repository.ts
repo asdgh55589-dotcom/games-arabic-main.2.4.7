@@ -3,7 +3,7 @@
  * Interface only — implementation provided by infrastructure layer.
  */
 
-import { NotificationPreference } from '../entities'
+import type { NotificationPreference } from '../entities'
 
 export interface PreferenceRepository {
   /** Find preferences for a user */

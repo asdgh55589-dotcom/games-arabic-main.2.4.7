@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { runDailyHealthCheck } from '@/lib/image-health-check'
 
 // محمي بـ CRON_SECRET — للاستخدام مع خدمة cron خارجية (cron-job.org)

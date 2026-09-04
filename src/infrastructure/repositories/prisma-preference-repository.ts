@@ -3,8 +3,8 @@
  * Maps between domain entity and Prisma schema including quietHours and typePreferences.
  */
 
-import { PrismaClient, Prisma } from '@prisma/client'
-import { NotificationPreference, PreferenceRepository } from '@/domain'
+import type { PrismaClient, Prisma } from '@prisma/client'
+import { NotificationPreference, type PreferenceRepository } from '@/domain'
 import type { TypePreference } from '@/domain'
 
 export class PrismaPreferenceRepository implements PreferenceRepository {

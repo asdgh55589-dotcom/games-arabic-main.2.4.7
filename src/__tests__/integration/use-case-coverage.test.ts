@@ -3,7 +3,7 @@
  * Ensures every use case has at least happy path, self-action, and preference tests.
  */
 
-import { NotificationService } from '@/application/services/notification-service'
+import type { NotificationService } from '@/application/services/notification-service'
 import { SendCommentReplyNotification } from '@/application/use-cases/social/send-comment-reply'
 import { SendTopLevelCommentNotification } from '@/application/use-cases/social/send-top-level-comment'
 import { SendLikeNotification } from '@/application/use-cases/social/send-like'

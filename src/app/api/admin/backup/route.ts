@@ -1,6 +1,6 @@
 import { requireOwner } from '@/lib/auth'
 import { ok, internalError, fail } from '@/lib/api-response'
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import {
   createDatabaseBackup,
   listBackups,

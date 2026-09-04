@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireAdmin, AuthError } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ok, notFound, validationFail, conflict, unauthorized, forbidden } from '@/lib/api-response'

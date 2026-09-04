@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { NotificationType } from '@/lib/notifications/types'
 import { getOptionalSession } from '@/lib/auth'

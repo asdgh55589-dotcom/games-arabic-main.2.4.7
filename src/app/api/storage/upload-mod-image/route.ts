@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/cloudinary'
 import { ok, validationFail, internalError } from '@/lib/api-response'

@@ -3,8 +3,8 @@
  * Checks user preferences before delivering notifications.
  */
 
-import { NotificationType, NotificationChannel } from '../value-objects'
-import { PreferenceRepository } from '../ports'
+import type { NotificationType, NotificationChannel } from '../value-objects'
+import type { PreferenceRepository } from '../ports'
 
 export class PreferencePolicy {
   constructor(private readonly preferenceRepository: PreferenceRepository) {}

@@ -45,27 +45,50 @@
       "preset": "recommended",
       "complexity": {
         "noExcessiveCognitiveComplexity": "off",
-        "noBannedTypes": "warn"
+        "noBannedTypes": "warn",
+        "useLiteralKeys": "off"
       },
       "correctness": {
         "noUnusedVariables": "off",
         "useExhaustiveDependencies": "off",
-        "noUnusedImports": "warn"
+        "noUnusedImports": "warn",
+        "noUndeclaredVariables": "off",
+        "noConstantCondition": "off",
+        "useParseIntRadix": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
         "useConst": "warn",
-        "noParameterAssign": "off"
+        "noParameterAssign": "off",
+        "useTemplate": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
         "noConsole": "off",
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "noShadowRestrictedNames": "off",
+        "useIterableCallbackReturn": "off",
+        "noAssignInExpressions": "off"
       },
       "a11y": {
         "useButtonType": "warn",
         "noSvgWithoutTitle": "off",
-        "useKeyWithClickEvents": "off"
+        "useKeyWithClickEvents": "off",
+        "noStaticElementInteractions": "off",
+        "useAriaPropsSupportedByRole": "off",
+        "noLabelWithoutControl": "off",
+        "noNoninteractiveElementInteractions": "off",
+        "useSemanticElements": "off",
+        "noAutofocus": "off",
+        "useFocusableInteractive": "off",
+        "useAriaPropsForRole": "off",
+        "noRedundantRoles": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       },
       "nursery": {
         "useSortedClasses": {

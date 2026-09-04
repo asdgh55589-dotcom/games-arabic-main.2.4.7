@@ -51,7 +51,7 @@ export async function GET() {
           : 0
       const variance =
         qualityScores.length > 0
-          ? qualityScores.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / qualityScores.length
+          ? qualityScores.reduce((s, v) => s + (v - avg) ** 2, 0) / qualityScores.length
           : 0
       const consistency = Math.round(Math.max(0, 100 - Math.sqrt(variance)))
 

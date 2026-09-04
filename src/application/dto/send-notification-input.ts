@@ -3,7 +3,7 @@
  * DTO for the NotificationService.send() method.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import type { NotificationType, NotificationChannel } from '@/domain'
 
 export interface SendNotificationInput {
   /** Recipient user ID */

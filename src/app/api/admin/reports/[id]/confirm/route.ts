@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { executeAutoAction } from '@/lib/reports/auto-actions'
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // Phase 2: Update trust scores — المُبلِغ والهدف (حتى لو هدف تعريب/تعليق نحتاج كاتب المحتوى)
     // نستخدم الهوية المحسوبة مبكراً مع تحديث العنوان فقط
-    let targetUserIdToNotify = targetUserIdToNotifyEarly
+    const targetUserIdToNotify = targetUserIdToNotifyEarly
     let targetTitle = 'محتوى'
 
     if (report.targetType === 'mod' && report.targetModId) {

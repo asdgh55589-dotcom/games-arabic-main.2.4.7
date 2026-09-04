@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getInactiveUsers } from '@/lib/admin/inactive-users'
 import { sendInactiveUserAlert } from '@/lib/admin/send-inactive-alert'

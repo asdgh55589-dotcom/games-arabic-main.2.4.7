@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { ok, notFound, internalError, rateLimited } from '@/lib/api-response'

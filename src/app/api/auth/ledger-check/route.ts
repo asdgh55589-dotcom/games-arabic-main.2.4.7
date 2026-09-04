@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { isSessionActive } from '@/lib/session-ledger'
 
 export async function GET(req: NextRequest) {

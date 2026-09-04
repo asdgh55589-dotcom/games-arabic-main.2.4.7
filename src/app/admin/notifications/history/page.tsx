@@ -5,7 +5,7 @@ import { Bell, RefreshCw, Filter, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { NOTIFICATION_TYPE_LABELS, NotificationType } from '@/lib/notifications/types'
+import { NOTIFICATION_TYPE_LABELS, type NotificationType } from '@/lib/notifications/types'
 
 interface NotificationLog {
   id: string

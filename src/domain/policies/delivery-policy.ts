@@ -3,7 +3,7 @@
  * Determines retry behavior and circuit breaker state.
  */
 
-import { NotificationJob } from '../entities'
+import type { NotificationJob } from '../entities'
 
 export interface DeliveryPolicy {
   /** Check if a failed job should be retried */
@@ -32,7 +32,7 @@ export class ExponentialBackoffDeliveryPolicy implements DeliveryPolicy {
   }
 
   calculateRetryDelay(attempt: number): number {
-    const exponentialDelay = this.baseDelayMs * Math.pow(2, attempt)
+    const exponentialDelay = this.baseDelayMs * 2 ** attempt
     const jitter = Math.random() * this.jitterMs
     return Math.min(exponentialDelay + jitter, this.maxDelayMs)
   }

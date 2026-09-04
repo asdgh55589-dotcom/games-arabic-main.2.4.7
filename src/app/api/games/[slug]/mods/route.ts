@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { okPaginated, notFound } from '@/lib/api-response'

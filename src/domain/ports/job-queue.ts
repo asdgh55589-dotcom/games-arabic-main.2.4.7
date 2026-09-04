@@ -3,7 +3,7 @@
  * Interface only — implementation provided by infrastructure layer.
  */
 
-import { NotificationJob } from '../entities'
+import type { NotificationJob } from '../entities'
 
 export interface JobQueue {
   /** Add a job to the queue */

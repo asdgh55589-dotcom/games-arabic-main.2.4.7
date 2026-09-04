@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireManager } from '@/lib/auth'
 import { ok, okPaginated, validationFail, internalError } from '@/lib/api-response'

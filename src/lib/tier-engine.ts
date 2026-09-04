@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { Mod } from '@prisma/client'
+import type { Mod } from '@prisma/client'
 import { getUseCases } from '@/application/use-cases/factory'
 import { getRequirementsForRole, type TierRequirement } from '@/lib/tier-requirements'
 import { getMaxTierForRole } from '@/lib/tiers'

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     // يرفض: //evil.com, /\evil.com, URL-encoded variants, protocol-relative URLs, path traversal
     // searchParams.get() تفك الترميز تلقائياً → %2F%2F يصبح // ويُرفض
     const next =
-      /^\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]*$/.test(rawNext) &&
+      /^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/.test(rawNext) &&
       !rawNext.startsWith('//') &&
       !rawNext.includes('/../')
         ? rawNext

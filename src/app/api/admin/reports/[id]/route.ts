@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { isValidTransition } from '@/lib/reports/constants'

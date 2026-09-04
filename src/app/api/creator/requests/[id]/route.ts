@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ok, validationFail, notFound, forbidden } from '@/lib/api-response'

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin, invalidateUserSessions, hashPassword } from '@/lib/auth'
 import { logAction, logUserAction } from '@/lib/audit'

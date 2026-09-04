@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { getActiveNews } from '@/lib/news-helpers'
 import { ok, internalError } from '@/lib/api-response'
 

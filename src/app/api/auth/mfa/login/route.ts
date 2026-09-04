@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyTOTP, decryptTOTPSecret } from '@/lib/totp'
 import { verifyMFAToken } from '@/lib/mfa-token'

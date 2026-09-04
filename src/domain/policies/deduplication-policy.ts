@@ -3,9 +3,9 @@
  * Prevents duplicate notifications within a configurable time window.
  */
 
-import { Notification } from '../entities'
+import type { Notification } from '../entities'
 import { NotificationType } from '../value-objects'
-import { NotificationRepository } from '../ports'
+import type { NotificationRepository } from '../ports'
 
 export interface DeduplicationResult {
   action: 'create' | 'skip'

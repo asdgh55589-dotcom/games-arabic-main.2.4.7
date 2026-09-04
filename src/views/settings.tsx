@@ -373,7 +373,7 @@ export function SettingsPage() {
       return { avatarUrl: undefined, bannerUrl: undefined }
     }
 
-    let avatarUrl: string | null | undefined = undefined
+    let avatarUrl: string | null | undefined
 
     if (avatarFile) {
       const extension = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -416,7 +416,7 @@ export function SettingsPage() {
       avatarUrl = null
     }
 
-    let bannerUrl: string | null | undefined = undefined
+    let bannerUrl: string | null | undefined
 
     if (bannerFile) {
       const extension = bannerFile.name.split('.').pop()?.toLowerCase() || 'jpg'

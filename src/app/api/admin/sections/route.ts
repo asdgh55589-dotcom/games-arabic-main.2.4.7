@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireManager } from '@/lib/auth'
 import { slugify } from '@/lib/utils'

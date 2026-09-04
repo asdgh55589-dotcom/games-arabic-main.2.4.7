@@ -115,12 +115,12 @@ function AdminLoginContent() {
     setError(null)
     try {
       // محاولة التحقق عبر TOTP أولاً، ثم عبر رمز الاسترداد إذا فشل
-      let res = await fetch('/api/auth/mfa/login', {
+      const res = await fetch('/api/auth/mfa/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mfaToken, code: mfaCode }),
       })
-      let data = await res.json().catch(() => null)
+      const data = await res.json().catch(() => null)
       if (!res.ok) {
         // جرب كود الاسترداد
         const recoveryRes = await fetch('/api/auth/mfa/recovery', {

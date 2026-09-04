@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, canDelete } from '@/lib/auth'
 import { slugify, syncSeriesCounts } from '@/lib/series-helpers'

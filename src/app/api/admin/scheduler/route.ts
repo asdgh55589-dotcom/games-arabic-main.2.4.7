@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
 import { ok, fail, internalError } from '@/lib/api-response'
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 // GET /api/admin/scheduler — قائمة المهام المجدولة
 export async function GET(req: NextRequest) {

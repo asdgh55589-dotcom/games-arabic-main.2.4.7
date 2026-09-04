@@ -30,7 +30,7 @@ export function useSmoothWheelScroll() {
     let currentScroll = window.scrollY
     let targetScroll = window.scrollY
 
-    const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3)
+    const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
     const DURATION_MS = 400
     let animStart: number | null = null
     let startScroll = 0

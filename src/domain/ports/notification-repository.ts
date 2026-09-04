@@ -3,8 +3,8 @@
  * Interface only — implementation provided by infrastructure layer.
  */
 
-import { Notification } from '../entities'
-import { NotificationType } from '../value-objects'
+import type { Notification } from '../entities'
+import type { NotificationType } from '../value-objects'
 
 export interface PaginationOptions {
   page: number

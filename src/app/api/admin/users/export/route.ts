@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { exportUsersToCSV, exportUsersToExcel } from '@/lib/admin/export-users'
 import { internalError } from '@/lib/api-response'

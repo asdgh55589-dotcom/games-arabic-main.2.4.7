@@ -3,7 +3,7 @@
  * InMemoryJobQueue — قائمة انتظار المهام في الذاكرة
  */
 
-import { NotificationJob, JobQueue } from '@/domain'
+import type { NotificationJob, JobQueue } from '@/domain'
 
 export class InMemoryJobQueue implements JobQueue {
   private queue: NotificationJob[] = []

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { spawn } from 'node:child_process'
 import { rateLimit } from '@/lib/rate-limit'
 import { ok, validationFail, rateLimited, internalError } from '@/lib/api-response'

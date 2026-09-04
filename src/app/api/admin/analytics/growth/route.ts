@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { ok, internalError } from '@/lib/api-response'
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 const ARABIC_MONTHS = [
   'يناير',

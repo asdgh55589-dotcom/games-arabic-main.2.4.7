@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyTelegramAuth, isAuthDateValid } from '@/lib/telegram-verify'
 import { rateLimit } from '@/lib/rate-limit'

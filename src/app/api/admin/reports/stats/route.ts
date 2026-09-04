@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ok, internalError } from '@/lib/api-response'

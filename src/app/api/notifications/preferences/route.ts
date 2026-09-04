@@ -1,6 +1,6 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { requireAuth } from '@/lib/auth'
 import { ok, unauthorized, validationFail, internalError } from '@/lib/api-response'
 import { UpdatePreferencesSchema } from '@/lib/schemas'

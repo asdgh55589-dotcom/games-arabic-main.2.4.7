@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'

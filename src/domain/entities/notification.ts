@@ -4,7 +4,7 @@
  * No external dependencies — pure TypeScript only.
  */
 
-import { NotificationType } from '../value-objects'
+import type { NotificationType } from '../value-objects'
 
 /** Props for creating a new Notification */
 export interface CreateNotificationProps {

@@ -4,8 +4,8 @@
  * Uses atomic updateMany to prevent double-processing in concurrent workers.
  */
 
-import { PrismaClient } from '@prisma/client'
-import { NotificationJob, JobQueue, DeliveryStatus, NotificationChannel } from '@/domain'
+import type { PrismaClient } from '@prisma/client'
+import { NotificationJob, type JobQueue, DeliveryStatus, type NotificationChannel } from '@/domain'
 
 export class PrismaJobQueue implements JobQueue {
   constructor(private readonly db: PrismaClient) {}

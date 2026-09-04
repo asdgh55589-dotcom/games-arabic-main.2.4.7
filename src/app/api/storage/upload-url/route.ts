@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'

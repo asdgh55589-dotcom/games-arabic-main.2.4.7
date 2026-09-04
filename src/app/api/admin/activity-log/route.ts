@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getActivityLog } from '@/lib/admin/activity-log'
 import { ok, internalError } from '@/lib/api-response'

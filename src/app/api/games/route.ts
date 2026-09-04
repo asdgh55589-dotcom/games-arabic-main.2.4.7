@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { pickSort, serialize } from '@/lib/api-utils'
 import { ok } from '@/lib/api-response'

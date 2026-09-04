@@ -4,7 +4,7 @@
  * No external dependencies — pure TypeScript only.
  */
 
-import { NotificationType, NotificationChannel } from '../value-objects'
+import { type NotificationType, NotificationChannel } from '../value-objects'
 
 /** Per-type preference override */
 export interface TypePreference {

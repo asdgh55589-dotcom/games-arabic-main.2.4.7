@@ -19,7 +19,7 @@
  *          كلمة المرور تُستخدم فقط لإدارة حساب Owner في وضع التطوير.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest, NextResponse } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
 import { hasRoleAtLeast } from '@/lib/roles'
 

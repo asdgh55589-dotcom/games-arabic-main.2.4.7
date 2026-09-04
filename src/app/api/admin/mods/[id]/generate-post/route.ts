@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { ok, notFound, internalError } from '@/lib/api-response'
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { formatPost, validatePostLength, getDefaultTemplate } from '@/lib/telegram-templates'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

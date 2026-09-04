@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyRecoveryCode, markRecoveryCodeUsed } from '@/lib/recovery-codes'
 import { ok, validationFail, internalError } from '@/lib/api-response'

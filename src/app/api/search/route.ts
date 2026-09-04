@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { parseIntParam, clamp, serialize } from '@/lib/api-utils'
 import { rateLimit } from '@/lib/rate-limit'

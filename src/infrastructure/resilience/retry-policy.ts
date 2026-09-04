@@ -15,7 +15,7 @@ export class RetryPolicy {
   constructor(private readonly options: RetryOptions) {}
 
   calculateDelay(attempt: number): number {
-    const exponentialDelay = this.options.baseDelayMs * Math.pow(2, attempt)
+    const exponentialDelay = this.options.baseDelayMs * 2 ** attempt
     const jitter = Math.random() * this.options.jitterMs
     return Math.min(exponentialDelay + jitter, this.options.maxDelayMs)
   }

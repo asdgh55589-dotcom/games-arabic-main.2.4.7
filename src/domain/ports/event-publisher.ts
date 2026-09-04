@@ -3,7 +3,7 @@
  * Interface only — implementation provided by infrastructure layer.
  */
 
-import { DomainEvent } from '../events'
+import type { DomainEvent } from '../events'
 
 export type EventHandler = (event: DomainEvent) => Promise<void>
 

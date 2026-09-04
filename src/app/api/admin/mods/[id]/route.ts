@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { ok, forbidden, internalError, notFound } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { requireModerator, canEditMod, canDelete } from '@/lib/auth'

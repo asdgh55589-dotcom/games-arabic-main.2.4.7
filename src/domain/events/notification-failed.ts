@@ -2,8 +2,8 @@
  * NotificationFailedEvent — يُطلق عند فشل توصيل الإشعار
  */
 
-import { DomainEvent } from './base'
-import { NotificationChannel } from '../value-objects'
+import type { DomainEvent } from './base'
+import type { NotificationChannel } from '../value-objects'
 
 export interface NotificationFailedEvent extends DomainEvent {
   readonly eventType: 'notification.failed'

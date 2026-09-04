@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { redisGet, redisSet } from '@/lib/redis'
 import { ok, internalError } from '@/lib/api-response'
 

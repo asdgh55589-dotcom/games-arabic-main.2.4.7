@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { ok, notFound, internalError } from '@/lib/api-response'
 import { recordNewsClick, isBot } from '@/lib/counters'

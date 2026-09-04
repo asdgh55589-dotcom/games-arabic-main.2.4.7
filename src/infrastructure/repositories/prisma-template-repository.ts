@@ -2,7 +2,7 @@
  * PrismaTemplateRepository — مستودع القوالب via Prisma
  */
 
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '@prisma/client'
 import type { TemplateStore } from '../adapters/handlebars-template-renderer'
 
 export class PrismaTemplateRepository implements TemplateStore {
