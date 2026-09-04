@@ -30,7 +30,15 @@ export const gamesIndex: IndexDef = {
   searchableAttributes: ['name', 'tagline', 'category', 'platform'],
   filterableAttributes: ['platform', 'category', 'featured'],
   sortableAttributes: ['modCount', 'totalDownloads', 'createdAt'],
-  rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'totalDownloads:desc'],
+  rankingRules: [
+    'words',
+    'typo',
+    'proximity',
+    'attribute',
+    'sort',
+    'exactness',
+    'totalDownloads:desc',
+  ],
   typoTolerance: { enabled: true, minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 } },
 }
 

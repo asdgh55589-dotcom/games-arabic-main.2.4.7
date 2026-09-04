@@ -46,6 +46,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { useDebounced } from '@/hooks/use-debounced'
+import { highlightMatch } from '@/components/search-highlight'
 import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
 import { formatNumber } from '@/lib/format'
 import { getSectionIcon } from '@/lib/section-icons'
@@ -83,22 +84,8 @@ type SuggestionState = SearchResponse & {
   games: DropdownGame[]
 }
 
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function highlight(text: string, query: string) {
-  if (!query || !text) return text
-  const re = new RegExp(`(${escapeRegex(query.trim())})`, 'gi')
-  return text.split(re).map((p, i) =>
-    i % 2 ? (
-      <mark key={i} className="bg-yellow-500/30 text-inherit">
-        {p}
-      </mark>
-    ) : (
-      p
-    ),
-  )
+  return highlightMatch(text, query)
 }
 
 const RECENT_KEY = 'recent_searches'
