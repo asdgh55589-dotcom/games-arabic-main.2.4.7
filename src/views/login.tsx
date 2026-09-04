@@ -1,17 +1,31 @@
 'use client'
 
+import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, AtSign, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
 import { Button } from '@/components/ui/button'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/auth/errors'
+import { PublicLoginSchema, PublicRegisterSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/client'
+
+type PublicLoginInput = z.infer<typeof PublicLoginSchema>
+type PublicRegisterInput = z.infer<typeof PublicRegisterSchema>
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -66,15 +80,16 @@ export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  // form states
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-  const [regUsername, setRegUsername] = useState('')
-  const [regDisplayName, setRegDisplayName] = useState('')
-  const [regEmail, setRegEmail] = useState('')
-  const [regPassword, setRegPassword] = useState('')
+  const loginForm = useForm<PublicLoginInput>({
+    resolver: zodResolver(PublicLoginSchema),
+    defaultValues: { email: '', password: '' },
+  })
+
+  const registerForm = useForm<PublicRegisterInput>({
+    resolver: zodResolver(PublicRegisterSchema),
+    defaultValues: { username: '', displayName: '', email: '', password: '' },
+  })
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -91,7 +106,6 @@ export function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setLoading('google')
-    setFieldErrors({})
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.signInWithOAuth({
@@ -117,15 +131,12 @@ export function LoginPage() {
     }
   }
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading('email')
-    setFieldErrors({})
+  const handleEmailLogin = async (data: PublicLoginInput) => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim(),
-        password: loginPassword,
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email.trim(),
+        password: data.password,
       })
       if (error) {
         let mapped = 'WRONG_PASSWORD'
@@ -133,18 +144,18 @@ export function LoginPage() {
         if (msg.includes('invalid') && msg.includes('email')) mapped = 'INVALID_EMAIL'
         else if (msg.includes('email not confirmed') || msg.includes('not confirmed'))
           mapped = 'EMAIL_NOT_VERIFIED'
-        else if (msg.includes('banned') || msg.includes('banned')) mapped = 'USER_BANNED'
+        else if (msg.includes('banned')) mapped = 'USER_BANNED'
         const tmsg = translateError(mapped)
         if (mapped === 'EMAIL_NOT_VERIFIED') {
-          setPendingEmail(loginEmail.trim())
+          setPendingEmail(data.email.trim())
           toast({ title: 'تأكيد مطلوب', description: tmsg })
         } else {
+          loginForm.setError('root', { message: tmsg })
           toast({ title: 'خطأ', description: tmsg, variant: 'destructive' })
         }
-        setLoading(null)
         return
       }
-      if (data.user) {
+      if (authData.user) {
         // أنشئ سجل ledger عبر API (يفشل مفتوح)
         try {
           await fetch('/api/auth/session-ledger', { method: 'POST' })
@@ -154,47 +165,31 @@ export function LoginPage() {
       setTimeout(() => (window.location.href = '/'), 300)
     } catch (err: any) {
       const msg = translateError(err?.code || 'WRONG_PASSWORD')
+      loginForm.setError('root', { message: msg })
       toast({ title: 'خطأ', description: msg, variant: 'destructive' })
-      setLoading(null)
     }
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setFieldErrors({})
-    const errs: Record<string, string> = {}
-    if (!regUsername.trim() || regUsername.trim().length < 3)
-      errs.username = 'اسم المستخدم قصير جداً (3 أحرف على الأقل)'
-    if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(regUsername.trim()))
-      errs.username = 'اسم المستخدم يحتوي رموز غير مسموحة'
-    if (!regDisplayName.trim()) errs.displayName = 'الاسم المعروض مطلوب'
-    if (!regEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim()))
-      errs.email = AUTH_ERRORS.INVALID_EMAIL
-    if (!regPassword || regPassword.length < 8) errs.password = AUTH_ERRORS.WEAK_PASSWORD
-    if (Object.keys(errs).length) {
-      setFieldErrors(errs)
-      return
-    }
+  const handleRegister = async (data: PublicRegisterInput) => {
     // تحقق تفرد اسم المستخدم قبل Supabase
     try {
-      const chk = await fetch(`/api/users/${encodeURIComponent(regUsername.trim())}/profile`)
+      const chk = await fetch(`/api/users/${encodeURIComponent(data.username.trim())}/profile`)
       if (chk.ok) {
-        setFieldErrors({ username: AUTH_ERRORS.USERNAME_TAKEN })
+        registerForm.setError('username', { message: AUTH_ERRORS.USERNAME_TAKEN })
         toast({ title: 'خطأ', description: AUTH_ERRORS.USERNAME_TAKEN, variant: 'destructive' })
         return
       }
     } catch {}
-    setLoading('register')
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signUp({
-        email: regEmail.trim(),
-        password: regPassword,
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email.trim(),
+        password: data.password,
         options: {
           data: {
-            username: regUsername.trim(),
-            displayName: regDisplayName.trim(),
-            full_name: regDisplayName.trim(),
+            username: data.username.trim(),
+            displayName: data.displayName.trim(),
+            full_name: data.displayName.trim(),
           },
           emailRedirectTo: `${window.location.origin}/api/auth/callback`,
         },
@@ -213,37 +208,37 @@ export function LoginPage() {
         else if (msg.includes('invalid')) mapped = 'INVALID_EMAIL'
         else if (msg.includes('rate')) mapped = 'RATE_LIMITED'
         const tmsg = translateError(mapped)
+        if (mapped === 'USERNAME_TAKEN') registerForm.setError('username', { message: tmsg })
+        else if (mapped === 'EMAIL_TAKEN') registerForm.setError('email', { message: tmsg })
+        else registerForm.setError('root', { message: tmsg })
         toast({ title: 'خطأ', description: tmsg, variant: 'destructive' })
-        if (mapped === 'USERNAME_TAKEN') setFieldErrors({ username: tmsg })
-        if (mapped === 'EMAIL_TAKEN') setFieldErrors({ email: tmsg })
-        setLoading(null)
         return
       }
       // حاول إنشاء/تحديث صف Prisma User فوراً (Supabase قد لا يعيد supabaseId قبل التأكيد)
       // سيتم إكماله أيضاً في /api/auth/callback بعد تأكيد الإيميل
       try {
-        const supabaseId = data.user?.id
+        const supabaseId = authData.user?.id
         if (supabaseId) {
           await fetch('/api/auth/register-ledger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               supabaseId,
-              username: regUsername.trim(),
-              displayName: regDisplayName.trim(),
-              email: regEmail.trim(),
+              username: data.username.trim(),
+              displayName: data.displayName.trim(),
+              email: data.email.trim(),
             }),
           }).catch(() => {})
         }
       } catch {}
-      setPendingEmail(regEmail.trim())
+      setPendingEmail(data.email.trim())
       toast({ title: 'تم إنشاء الحساب', description: 'تم إرسال رابط التأكيد لإيميلك — افحص بريدك' })
-      setLoading(null)
       setResendCooldown(60)
     } catch (err: any) {
       const code = err?.code || err?.message || 'UNKNOWN'
-      toast({ title: 'خطأ', description: translateError(code), variant: 'destructive' })
-      setLoading(null)
+      const msg = translateError(code)
+      registerForm.setError('root', { message: msg })
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' })
     }
   }
 
@@ -554,175 +549,203 @@ export function LoginPage() {
               </div>
 
               {mode === 'login' ? (
-                <form onSubmit={handleEmailLogin} className="mt-5 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-xs">
-                      البريد الإلكتروني
-                    </Label>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="example@mail.com"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        className="pr-10 h-11"
-                        required
-                        dir="ltr"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-xs">
-                      كلمة المرور
-                    </Label>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        className="pr-10 h-11"
-                        required
-                        dir="ltr"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={loading !== null}
-                    className="h-11 w-full text-sm font-bold"
+                <Form {...loginForm}>
+                  <form
+                    onSubmit={loginForm.handleSubmit(handleEmailLogin)}
+                    className="mt-5 space-y-4"
                   >
-                    {loading === 'email' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'سجل دخول'
-                    )}
-                  </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    مش عندك حساب؟{' '}
-                    <button
-                      type="button"
-                      onClick={() => setMode('register')}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      سجّل الآن
-                    </button>
-                  </p>
-                </form>
-              ) : (
-                <form onSubmit={handleRegister} className="mt-5 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-username" className="text-xs">
-                        اسم المستخدم *
-                      </Label>
-                      <div className="relative">
-                        <AtSign className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          id="reg-username"
-                          placeholder="ahmed_99"
-                          value={regUsername}
-                          onChange={(e) => setRegUsername(e.target.value)}
-                          className="pr-10 h-11"
-                          required
-                          dir="ltr"
-                        />
-                      </div>
-                      {fieldErrors.username && (
-                        <p className="text-[11px] text-destructive">{fieldErrors.username}</p>
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">البريد الإلكتروني</FormLabel>
+                          <div className="relative">
+                            <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="example@mail.com"
+                                className="pr-10 h-11"
+                                dir="ltr"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="text-[11px]" />
+                        </FormItem>
                       )}
-                      <p className="text-[10px] text-muted-foreground">
-                        سيظهر في /profile/[username]
+                    />
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">كلمة المرور</FormLabel>
+                          <div className="relative">
+                            <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                className="pr-10 h-11"
+                                dir="ltr"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="text-[11px]" />
+                        </FormItem>
+                      )}
+                    />
+                    {loginForm.formState.errors.root && (
+                      <p className="text-[11px] text-destructive">
+                        {loginForm.formState.errors.root.message}
                       </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-displayName" className="text-xs">
-                        الاسم المعروض *
-                      </Label>
-                      <div className="relative">
-                        <UserIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          id="reg-displayName"
-                          placeholder="أحمد محمد"
-                          value={regDisplayName}
-                          onChange={(e) => setRegDisplayName(e.target.value)}
-                          className="pr-10 h-11"
-                          required
-                        />
-                      </div>
-                      {fieldErrors.displayName && (
-                        <p className="text-[11px] text-destructive">{fieldErrors.displayName}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-email" className="text-xs">
-                      البريد الإلكتروني *
-                    </Label>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="reg-email"
-                        type="email"
-                        placeholder="example@mail.com"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="pr-10 h-11"
-                        required
-                        dir="ltr"
-                      />
-                    </div>
-                    {fieldErrors.email && (
-                      <p className="text-[11px] text-destructive">{fieldErrors.email}</p>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-password" className="text-xs">
-                      كلمة المرور *
-                    </Label>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="reg-password"
-                        type="password"
-                        placeholder="٨ أحرف على الأقل"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        className="pr-10 h-11"
-                        required
-                        dir="ltr"
-                      />
-                    </div>
-                    {fieldErrors.password && (
-                      <p className="text-[11px] text-destructive">{fieldErrors.password}</p>
-                    )}
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={loading !== null}
-                    className="h-11 w-full text-sm font-bold"
-                  >
-                    {loading === 'register' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'إنشاء حساب وإرسال التأكيد'
-                    )}
-                  </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    عندك حساب؟{' '}
-                    <button
-                      type="button"
-                      onClick={() => setMode('login')}
-                      className="text-primary hover:underline font-medium"
+                    <Button
+                      type="submit"
+                      disabled={loginForm.formState.isSubmitting}
+                      className="h-11 w-full text-sm font-bold"
                     >
-                      سجل دخول
-                    </button>
-                  </p>
-                </form>
+                      {loginForm.formState.isSubmitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'سجل دخول'
+                      )}
+                    </Button>
+                    <p className="text-center text-xs text-muted-foreground">
+                      مش عندك حساب؟{' '}
+                      <button
+                        type="button"
+                        onClick={() => setMode('register')}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        سجّل الآن
+                      </button>
+                    </p>
+                  </form>
+                </Form>
+              ) : (
+                <Form {...registerForm}>
+                  <form
+                    onSubmit={registerForm.handleSubmit(handleRegister)}
+                    className="mt-5 space-y-4"
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={registerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">اسم المستخدم *</FormLabel>
+                            <div className="relative">
+                              <AtSign className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <FormControl>
+                                <Input
+                                  placeholder="ahmed_99"
+                                  className="pr-10 h-11"
+                                  dir="ltr"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage className="text-[11px]" />
+                            <p className="text-[10px] text-muted-foreground">
+                              سيظهر في /profile/[username]
+                            </p>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="displayName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">الاسم المعروض *</FormLabel>
+                            <div className="relative">
+                              <UserIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <FormControl>
+                                <Input placeholder="أحمد محمد" className="pr-10 h-11" {...field} />
+                              </FormControl>
+                            </div>
+                            <FormMessage className="text-[11px]" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">البريد الإلكتروني *</FormLabel>
+                          <div className="relative">
+                            <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="example@mail.com"
+                                className="pr-10 h-11"
+                                dir="ltr"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="text-[11px]" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">كلمة المرور *</FormLabel>
+                          <div className="relative">
+                            <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="٨ أحرف على الأقل"
+                                className="pr-10 h-11"
+                                dir="ltr"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="text-[11px]" />
+                        </FormItem>
+                      )}
+                    />
+                    {registerForm.formState.errors.root && (
+                      <p className="text-[11px] text-destructive">
+                        {registerForm.formState.errors.root.message}
+                      </p>
+                    )}
+                    <Button
+                      type="submit"
+                      disabled={registerForm.formState.isSubmitting}
+                      className="h-11 w-full text-sm font-bold"
+                    >
+                      {registerForm.formState.isSubmitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'إنشاء حساب وإرسال التأكيد'
+                      )}
+                    </Button>
+                    <p className="text-center text-xs text-muted-foreground">
+                      عندك حساب؟{' '}
+                      <button
+                        type="button"
+                        onClick={() => setMode('login')}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        سجل دخول
+                      </button>
+                    </p>
+                  </form>
+                </Form>
               )}
             </div>
           </div>
