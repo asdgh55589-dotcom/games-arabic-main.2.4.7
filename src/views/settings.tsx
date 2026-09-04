@@ -1,5 +1,6 @@
 'use client'
 
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowRight,
   BarChart3,
@@ -20,19 +21,33 @@ import {
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { CropModal } from '@/components/crop-modal'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
+import { ProfileUpdateSchema, SettingsPasswordSchema } from '@/lib/schemas'
 import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { NotificationSettings } from '@/views/notification-settings'
+
+type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>
+type SettingsPasswordInput = z.infer<typeof SettingsPasswordSchema>
 
 interface ProfileData {
   id: string
@@ -145,10 +160,7 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection)
 
-  const [bio, setBio] = useState('')
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({})
-  const [newUsername, setNewUsername] = useState('')
-  const [displayName, setDisplayName] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
@@ -173,11 +185,17 @@ export function SettingsPage() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
   const [cropType, setCropType] = useState<'avatar' | 'banner'>('avatar')
 
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [changingPassword, setChangingPassword] = useState(false)
-  const [passwordError, setPasswordError] = useState('')
+  const profileForm = useForm<ProfileUpdateInput>({
+    resolver: zodResolver(ProfileUpdateSchema),
+    defaultValues: { username: '', displayName: '', bio: '' },
+  })
+
+  const passwordForm = useForm<SettingsPasswordInput>({
+    resolver: zodResolver(SettingsPasswordSchema),
+    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  })
+
+  const profileValues = profileForm.watch()
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(true)
@@ -201,9 +219,9 @@ export function SettingsPage() {
   const isDirty = useMemo(() => {
     if (!profile) return false
     return (
-      bio !== (profile.bio || '') ||
-      newUsername !== (profile.username || '') ||
-      displayName !== (profile.displayName || '') ||
+      (profileValues.bio || '') !== (profile.bio || '') ||
+      (profileValues.username || '') !== (profile.username || '') ||
+      (profileValues.displayName || '') !== (profile.displayName || '') ||
       firstName !== (profile.firstName || '') ||
       lastName !== (profile.lastName || '') ||
       websiteUrl !== (profile.websiteUrl || '') ||
@@ -223,9 +241,9 @@ export function SettingsPage() {
     )
   }, [
     profile,
-    bio,
-    newUsername,
-    displayName,
+    profileValues.bio,
+    profileValues.username,
+    profileValues.displayName,
     firstName,
     lastName,
     websiteUrl,
@@ -271,9 +289,11 @@ export function SettingsPage() {
           const p = payload.profile
 
           setProfile(p)
-          setBio(p.bio || '')
-          setNewUsername(p.username || '')
-          setDisplayName(p.displayName || '')
+          profileForm.reset({
+            username: p.username || '',
+            displayName: p.displayName || '',
+            bio: p.bio || '',
+          })
           setFirstName(p.firstName || '')
           setLastName(p.lastName || '')
           setWebsiteUrl(p.websiteUrl || '')
@@ -486,11 +506,12 @@ export function SettingsPage() {
   }
 
   const ensureUsernameAvailable = async () => {
-    if (!profile || !newUsername || newUsername === profile.username) {
+    const currentUsername = profileValues.username || ''
+    if (!profile || !currentUsername || currentUsername === profile.username) {
       return true
     }
 
-    const checkRes = await fetch(`/api/users/${encodeURIComponent(newUsername)}/profile`)
+    const checkRes = await fetch(`/api/users/${encodeURIComponent(currentUsername)}/profile`)
 
     if (checkRes.ok) {
       toast({ title: 'اسم المستخدم مستخدم بالفعل', variant: 'destructive' })
@@ -556,7 +577,7 @@ export function SettingsPage() {
     reader.readAsDataURL(croppedFile)
   }
 
-  const handleSaveProfileOnly = async () => {
+  const handleSaveProfileOnly = async (values: ProfileUpdateInput) => {
     if (!profile) return
     console.log('[Settings] Saving profile only')
     setSaving(true)
@@ -566,6 +587,7 @@ export function SettingsPage() {
 
       if (!usernameAvailable) {
         setSaving(false)
+        profileForm.setError('username', { message: 'اسم المستخدم مستخدم بالفعل' })
         return
       }
 
@@ -575,9 +597,9 @@ export function SettingsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bio,
-          username: newUsername !== profile.username ? newUsername : undefined,
-          displayName,
+          bio: values.bio,
+          username: values.username !== profile.username ? values.username : undefined,
+          displayName: values.displayName,
           firstName,
           lastName,
           websiteUrl,
@@ -678,11 +700,11 @@ export function SettingsPage() {
     setSaving(false)
   }
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (values: ProfileUpdateInput) => {
     if (!profile) return
     console.log('[Settings] Starting save profile', {
-      newUsername,
-      bio: bio.substring(0, 50),
+      newUsername: values.username,
+      bio: (values.bio || '').substring(0, 50),
       emailNotifications,
       pushNotifications,
       dailySummary,
@@ -696,6 +718,7 @@ export function SettingsPage() {
 
       if (!usernameAvailable) {
         setSaving(false)
+        profileForm.setError('username', { message: 'اسم المستخدم مستخدم بالفعل' })
         return
       }
 
@@ -706,9 +729,9 @@ export function SettingsPage() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            bio,
-            username: newUsername !== profile.username ? newUsername : undefined,
-            displayName,
+            bio: values.bio,
+            username: values.username !== profile.username ? values.username : undefined,
+            displayName: values.displayName,
             firstName,
             lastName,
             websiteUrl,
@@ -775,45 +798,31 @@ export function SettingsPage() {
     setSaving(false)
   }
 
-  const handleChangePassword = async () => {
-    setPasswordError('')
-    if (!currentPassword) {
-      setPasswordError('كلمة المرور الحالية مطلوبة')
-      return
-    }
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordError('يجب أن تكون كلمة المرور 6 أحرف على الأقل')
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError('كلمتا المرور غير متطابقتين')
-      return
-    }
-    setChangingPassword(true)
+  const handleChangePassword = async (values: SettingsPasswordInput) => {
     try {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: newPassword, currentPassword }),
+        body: JSON.stringify({
+          password: values.newPassword,
+          currentPassword: values.currentPassword,
+        }),
       })
       if (res.ok) {
         toast({ title: 'تم تغيير كلمة المرور بنجاح' })
-        setCurrentPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
+        passwordForm.reset()
       } else {
         const data = await res.json()
         const msg = data?.error?.message || data?.error || ''
         if (msg.includes('Current password') || msg.includes('غير صحيحة')) {
-          setPasswordError('كلمة المرور الحالية غير صحيحة')
+          passwordForm.setError('currentPassword', { message: 'كلمة المرور الحالية غير صحيحة' })
         } else {
-          setPasswordError(msg || 'فشل التغيير')
+          passwordForm.setError('root', { message: msg || 'فشل التغيير' })
         }
       }
     } catch {
-      setPasswordError('حدث خطأ أثناء التغيير، تحقق من الاتصال')
+      passwordForm.setError('root', { message: 'حدث خطأ أثناء التغيير، تحقق من الاتصال' })
     }
-    setChangingPassword(false)
   }
 
   const handleUnlink = async (accountId: string) => {
@@ -954,329 +963,370 @@ export function SettingsPage() {
           <main className="flex-1 min-w-0">
             {/* ========== Profile Section ========== */}
             {activeSection === 'profile' && (
-              <div className="space-y-6">
-                {/* Banner — مع ImageUpload الجديد */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">البانر الخلفي</h3>
-                  <div className="relative h-[180px] overflow-hidden rounded-none border-2 border-border">
-                    {displayBanner ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={displayBanner}
-                        alt="banner"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-muted/30" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-3 right-3 flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer min-h-[44px]"
-                        onClick={() => bannerInputRef.current?.click()}
-                      >
-                        <Upload className="ml-1.5 h-3.5 w-3.5" /> رفع وقص
-                      </Button>
-                      {displayBanner && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="cursor-pointer min-h-[44px]"
-                          onClick={() => {
-                            setBannerPreview(null)
-                            setBannerFile(null)
-                            setBannerRemoved(true)
-                            if (bannerInputRef.current) bannerInputRef.current.value = ''
-                          }}
-                        >
-                          <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
-                        </Button>
-                      )}
-                    </div>
-                    <input
-                      ref={bannerInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleBannerChange}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">الحجم المقترح: 1500×400 بكسل</p>
-                  <div className="mt-4">
-                    <ImageUpload
-                      bucket="banners"
-                      value={displayBanner || ''}
-                      onChange={(url) => {
-                        // ImageUpload يرفع مباشرة ويعيد publicUrl — نستخدمه كـ preview ونحتفظ به للحفظ
-                        setBannerPreview(url)
-                        setBannerFile(null)
-                        setBannerRemoved(false)
-                      }}
-                      label="أو اسحب بانر جديد هنا (سحب وإفلات)"
-                      hint="أعلى جودة — سيتم حفظ الرابط تلقائياً عند الضغط على حفظ"
-                      folder="banners"
-                    />
-                  </div>
-                </div>
-
-                {/* Avatar */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">الصورة الرمزية</h3>
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <Avatar
-                        className="h-24 w-24 border-4"
-                        style={{ borderColor: accent, boxShadow: `0 0 20px ${accent}33` }}
-                      >
-                        <AvatarImage
-                          src={displayAvatar || undefined}
-                          alt={displayName || profile.username}
+              <Form {...profileForm}>
+                <div className="space-y-6">
+                  {/* Banner — مع ImageUpload الجديد */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">البانر الخلفي</h3>
+                    <div className="relative h-[180px] overflow-hidden rounded-none border-2 border-border">
+                      {displayBanner ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={displayBanner}
+                          alt="banner"
+                          className="h-full w-full object-cover"
                         />
-                        <AvatarFallback
-                          className="text-3xl font-bold"
-                          style={{ backgroundColor: accent + '33', color: accent }}
-                        >
-                          {(displayName || profile.username)[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <button
-                        onClick={() => avatarInputRef.current?.click()}
-                        className="absolute bottom-0 left-0 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </button>
-                      <input
-                        ref={avatarInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
+                      ) : (
+                        <div className="h-full w-full bg-muted/30" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-3 right-3 flex gap-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="border-border cursor-pointer min-h-[44px]"
-                          onClick={() => avatarInputRef.current?.click()}
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer min-h-[44px]"
+                          onClick={() => bannerInputRef.current?.click()}
                         >
                           <Upload className="ml-1.5 h-3.5 w-3.5" /> رفع وقص
                         </Button>
-                        {displayAvatar && (
+                        {displayBanner && (
                           <Button
                             size="sm"
                             variant="destructive"
                             className="cursor-pointer min-h-[44px]"
                             onClick={() => {
-                              setAvatarPreview(null)
-                              setAvatarFile(null)
-                              setAvatarRemoved(true)
-                              if (avatarInputRef.current) avatarInputRef.current.value = ''
+                              setBannerPreview(null)
+                              setBannerFile(null)
+                              setBannerRemoved(true)
+                              if (bannerInputRef.current) bannerInputRef.current.value = ''
                             }}
                           >
                             <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
                           </Button>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        الصورة الرمزية التي تظهر في ملفك الشخصي
-                      </p>
-                      <div className="mt-3">
-                        <ImageUpload
-                          bucket="avatars"
-                          value={displayAvatar || ''}
-                          onChange={(url) => {
-                            setAvatarPreview(url)
-                            setAvatarFile(null)
-                            setAvatarRemoved(false)
-                          }}
-                          label="أو اسحب صورة جديدة هنا (سحب وإفلات)"
-                          hint="أعلى جودة — سيتم الحفظ تلقائياً"
-                          folder="avatars"
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleBannerChange}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      الحجم المقترح: 1500×400 بكسل
+                    </p>
+                    <div className="mt-4">
+                      <ImageUpload
+                        bucket="banners"
+                        value={displayBanner || ''}
+                        onChange={(url) => {
+                          // ImageUpload يرفع مباشرة ويعيد publicUrl — نستخدمه كـ preview ونحتفظ به للحفظ
+                          setBannerPreview(url)
+                          setBannerFile(null)
+                          setBannerRemoved(false)
+                        }}
+                        label="أو اسحب بانر جديد هنا (سحب وإفلات)"
+                        hint="أعلى جودة — سيتم حفظ الرابط تلقائياً عند الضغط على حفظ"
+                        folder="banners"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">الصورة الرمزية</h3>
+                    <div className="flex items-center gap-6">
+                      <div className="relative">
+                        <Avatar
+                          className="h-24 w-24 border-4"
+                          style={{ borderColor: accent, boxShadow: `0 0 20px ${accent}33` }}
+                        >
+                          <AvatarImage
+                            src={displayAvatar || undefined}
+                            alt={profileValues.displayName || profile.username}
+                          />
+                          <AvatarFallback
+                            className="text-3xl font-bold"
+                            style={{ backgroundColor: accent + '33', color: accent }}
+                          >
+                            {(profileValues.displayName || profile.username)[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="absolute bottom-0 left-0 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </button>
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarChange}
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-border cursor-pointer min-h-[44px]"
+                            onClick={() => avatarInputRef.current?.click()}
+                          >
+                            <Upload className="ml-1.5 h-3.5 w-3.5" /> رفع وقص
+                          </Button>
+                          {displayAvatar && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="cursor-pointer min-h-[44px]"
+                              onClick={() => {
+                                setAvatarPreview(null)
+                                setAvatarFile(null)
+                                setAvatarRemoved(true)
+                                if (avatarInputRef.current) avatarInputRef.current.value = ''
+                              }}
+                            >
+                              <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          الصورة الرمزية التي تظهر في ملفك الشخصي
+                        </p>
+                        <div className="mt-3">
+                          <ImageUpload
+                            bucket="avatars"
+                            value={displayAvatar || ''}
+                            onChange={(url) => {
+                              setAvatarPreview(url)
+                              setAvatarFile(null)
+                              setAvatarRemoved(false)
+                            }}
+                            label="أو اسحب صورة جديدة هنا (سحب وإفلات)"
+                            hint="أعلى جودة — سيتم الحفظ تلقائياً"
+                            folder="avatars"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Username */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">اسم المستخدم</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="username" className="text-sm text-muted-foreground">
-                        اسم الملف الشخصي
-                      </Label>
-                      {newUsername !== profile.username && (
+                  {/* Username */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">اسم المستخدم</h3>
+                    <FormField
+                      control={profileForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="text-sm text-muted-foreground">
+                              اسم الملف الشخصي
+                            </FormLabel>
+                            {field.value !== profile?.username && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground min-h-[44px]"
+                                onClick={() =>
+                                  profileForm.setValue('username', profile?.username || '')
+                                }
+                              >
+                                تراجع
+                              </Button>
+                            )}
+                          </div>
+                          <FormControl>
+                            <Input
+                              className="bg-background border-border"
+                              placeholder="اسم المستخدم"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[11px]" />
+                          <p className="text-xs text-muted-foreground">
+                            سيتم تحويلك للصفحة الجديدة بعد الحفظ
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Display Name + Bio — خانة واحدة */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">الاسم والنبذة</h3>
+                    <div className="space-y-4">
+                      <FormField
+                        control={profileForm.control}
+                        name="displayName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-muted-foreground">
+                              اسم العرض
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                className="bg-background border-border"
+                                placeholder="الاسم اللي هيظهر للمستخدمين"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-[11px]" />
+                            <p className="text-xs text-muted-foreground">
+                              هذا الاسم سيظهر للآخرين بدلاً من اسم المستخدم
+                            </p>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName" className="text-sm text-muted-foreground">
+                            الاسم الأول
+                          </Label>
+                          <Input
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="bg-background border-border"
+                            placeholder="الاسم الأول"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName" className="text-sm text-muted-foreground">
+                            اسم العائلة
+                          </Label>
+                          <Input
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="bg-background border-border"
+                            placeholder="اسم العائلة"
+                          />
+                        </div>
+                      </div>
+                      <FormField
+                        control={profileForm.control}
+                        name="bio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center justify-between">
+                              <FormLabel className="text-sm text-muted-foreground">
+                                النبذة — أخبر الآخرين عن نفسك
+                              </FormLabel>
+                              {field.value && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
+                                  onClick={() => profileForm.setValue('bio', '')}
+                                >
+                                  مسح
+                                </Button>
+                              )}
+                            </div>
+                            <FormControl>
+                              <textarea
+                                className="w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                rows={4}
+                                placeholder="اكتب نبذة عن نفسك..."
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.substring(0, 500))}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-[11px]" />
+                            <p className="text-xs text-muted-foreground">
+                              {(field.value || '').length}/500
+                            </p>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={accentColor}
+                          onChange={(e) => setAccentColor(e.target.value)}
+                          className="h-12 w-12 cursor-pointer rounded-none border-2 border-border bg-transparent"
+                        />
+                        <span className="text-sm text-muted-foreground font-mono">
+                          {accentColor}
+                        </span>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground min-h-[44px]"
-                          onClick={() => setNewUsername(profile.username || '')}
+                          className="h-8 px-2 text-xs min-h-[44px]"
+                          onClick={() => setAccentColor('#ff8c00')}
                         >
-                          تراجع
+                          افتراضي
                         </Button>
-                      )}
-                    </div>
-                    <Input
-                      id="username"
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      className="bg-background border-border"
-                      placeholder="اسم المستخدم"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      سيتم تحويلك للصفحة الجديدة بعد الحفظ
-                    </p>
-                  </div>
-                </div>
-
-                {/* Display Name + Bio — خانة واحدة */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">الاسم والنبذة</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName" className="text-sm text-muted-foreground">
-                        اسم العرض
-                      </Label>
-                      <Input
-                        id="displayName"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="bg-background border-border"
-                        placeholder="الاسم اللي هيظهر للمستخدمين"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        هذا الاسم سيظهر للآخرين بدلاً من اسم المستخدم
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sm text-muted-foreground">
-                          الاسم الأول
-                        </Label>
-                        <Input
-                          id="firstName"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="bg-background border-border"
-                          placeholder="الاسم الأول"
-                        />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sm text-muted-foreground">
-                          اسم العائلة
-                        </Label>
-                        <Input
-                          id="lastName"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="bg-background border-border"
-                          placeholder="اسم العائلة"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="bio" className="text-sm text-muted-foreground">
-                          النبذة — أخبر الآخرين عن نفسك
-                        </Label>
-                        {bio && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
-                            onClick={() => setBio('')}
-                          >
-                            مسح
-                          </Button>
-                        )}
-                      </div>
-                      <textarea
-                        id="bio"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value.substring(0, 500))}
-                        className="w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        rows={4}
-                        placeholder="اكتب نبذة عن نفسك..."
-                      />
-                      <p className="text-xs text-muted-foreground">{bio.length}/500</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Accent Color */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="h-12 w-12 cursor-pointer rounded-none border-2 border-border bg-transparent"
-                      />
-                      <span className="text-sm text-muted-foreground font-mono">{accentColor}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-xs min-h-[44px]"
-                        onClick={() => setAccentColor('#ff8c00')}
-                      >
-                        افتراضي
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Avatar
-                        className="h-16 w-16 border-3"
-                        style={{ borderColor: accentColor, boxShadow: `0 0 15px ${accentColor}55` }}
-                      >
-                        <AvatarImage
-                          src={displayAvatar || undefined}
-                          alt={displayName || profile.username}
-                        />
-                        <AvatarFallback
-                          className="text-xl font-bold"
-                          style={{ backgroundColor: accentColor + '33', color: accentColor }}
+                      <div className="flex items-center gap-4">
+                        <Avatar
+                          className="h-16 w-16 border-3"
+                          style={{
+                            borderColor: accentColor,
+                            boxShadow: `0 0 15px ${accentColor}55`,
+                          }}
                         >
-                          {(displayName || profile.username)[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-xs text-muted-foreground">معاينة الهالة</p>
-                        <p className="text-xs text-muted-foreground/70">اللون يظهر حول الأفاتار</p>
+                          <AvatarImage
+                            src={displayAvatar || undefined}
+                            alt={profileValues.displayName || profile.username}
+                          />
+                          <AvatarFallback
+                            className="text-xl font-bold"
+                            style={{ backgroundColor: accentColor + '33', color: accentColor }}
+                          >
+                            {(profileValues.displayName || profile.username)[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-xs text-muted-foreground">معاينة الهالة</p>
+                          <p className="text-xs text-muted-foreground/70">
+                            اللون يظهر حول الأفاتار
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Social Links */}
-                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
-                  <SocialLinksEditor
-                    websiteUrl={websiteUrl}
-                    twitterUrl={twitterUrl}
-                    instagramUrl={instagramUrl}
-                    tiktokUrl={tiktokUrl}
-                    youtubeUrl={youtubeUrl}
-                    githubUrl={githubUrl}
-                    discordUrl={discordUrl}
-                    onWebsiteUrlChange={setWebsiteUrl}
-                    onTwitterUrlChange={setTwitterUrl}
-                    onInstagramUrlChange={setInstagramUrl}
-                    onTiktokUrlChange={setTiktokUrl}
-                    onYoutubeUrlChange={setYoutubeUrl}
-                    onGithubUrlChange={setGithubUrl}
-                    onDiscordUrlChange={setDiscordUrl}
-                  />
-                </div>
+                  {/* Social Links */}
+                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                    <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
+                    <SocialLinksEditor
+                      websiteUrl={websiteUrl}
+                      twitterUrl={twitterUrl}
+                      instagramUrl={instagramUrl}
+                      tiktokUrl={tiktokUrl}
+                      youtubeUrl={youtubeUrl}
+                      githubUrl={githubUrl}
+                      discordUrl={discordUrl}
+                      onWebsiteUrlChange={setWebsiteUrl}
+                      onTwitterUrlChange={setTwitterUrl}
+                      onInstagramUrlChange={setInstagramUrl}
+                      onTiktokUrlChange={setTiktokUrl}
+                      onYoutubeUrlChange={setYoutubeUrl}
+                      onGithubUrlChange={setGithubUrl}
+                      onDiscordUrlChange={setDiscordUrl}
+                    />
+                  </div>
 
-                <div className="flex justify-end">
-                  <SaveButton onClick={handleSaveProfile} saving={saving} saved={saved} />
+                  <div className="flex justify-end">
+                    <SaveButton
+                      onClick={profileForm.handleSubmit(handleSaveProfile)}
+                      saving={saving || profileForm.formState.isSubmitting}
+                      saved={saved}
+                    />
+                  </div>
                 </div>
-              </div>
+              </Form>
             )}
 
             {/* ========== Account Section ========== */}
@@ -1285,75 +1335,94 @@ export function SettingsPage() {
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
                   <p className="text-xs text-muted-foreground mb-6">
-                    تأكد من استخدام كلمة مرور قوية (6 أحرف على الأقل)
+                    تأكد من استخدام كلمة مرور قوية (٨ أحرف على الأقل)
                   </p>
-                  <div className="space-y-4 max-w-md">
-                    <div className="space-y-2">
-                      <Label htmlFor="current-password" className="text-sm text-muted-foreground">
-                        كلمة المرور الحالية *
-                      </Label>
-                      <Input
-                        id="current-password"
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => {
-                          setCurrentPassword(e.target.value)
-                          setPasswordError('')
-                        }}
-                        className="bg-background border-border"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password" className="text-sm text-muted-foreground">
-                        كلمة المرور الجديدة
-                      </Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => {
-                          setNewPassword(e.target.value)
-                          setPasswordError('')
-                        }}
-                        className="bg-background border-border"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">
-                        تأكيد كلمة المرور
-                      </Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value)
-                          setPasswordError('')
-                        }}
-                        className="bg-background border-border"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
-                    <Button
-                      variant="outline"
-                      className="border-border cursor-pointer"
-                      onClick={handleChangePassword}
-                      disabled={
-                        changingPassword || !currentPassword || !newPassword || !confirmPassword
-                      }
+                  <Form {...passwordForm}>
+                    <form
+                      onSubmit={passwordForm.handleSubmit(handleChangePassword)}
+                      className="space-y-4 max-w-md"
                     >
-                      {changingPassword ? (
-                        <>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري التحديث...
-                        </>
-                      ) : (
-                        'تحديث كلمة المرور'
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-muted-foreground">
+                              كلمة المرور الحالية *
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                className="bg-background border-border"
+                                placeholder="••••••••"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-[11px]" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-muted-foreground">
+                              كلمة المرور الجديدة
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                className="bg-background border-border"
+                                placeholder="••••••••"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-[11px]" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-muted-foreground">
+                              تأكيد كلمة المرور
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                className="bg-background border-border"
+                                placeholder="••••••••"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-[11px]" />
+                          </FormItem>
+                        )}
+                      />
+                      {passwordForm.formState.errors.root && (
+                        <p className="text-xs text-destructive">
+                          {passwordForm.formState.errors.root.message}
+                        </p>
                       )}
-                    </Button>
-                  </div>
+                      <Button
+                        type="submit"
+                        variant="outline"
+                        className="border-border cursor-pointer"
+                        disabled={passwordForm.formState.isSubmitting}
+                      >
+                        {passwordForm.formState.isSubmitting ? (
+                          <>
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري التحديث...
+                          </>
+                        ) : (
+                          'تحديث كلمة المرور'
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
                 </div>
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">الحسابات المرتبطة</h3>
@@ -1453,7 +1522,11 @@ export function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <SaveButton onClick={handleSaveProfile} saving={saving} saved={saved} />
+                  <SaveButton
+                    onClick={profileForm.handleSubmit(handleSaveProfile)}
+                    saving={saving || profileForm.formState.isSubmitting}
+                    saved={saved}
+                  />
                 </div>
               </div>
             )}
