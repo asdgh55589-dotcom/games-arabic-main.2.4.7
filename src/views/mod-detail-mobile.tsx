@@ -1,49 +1,49 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useMemo, useState, useEffect } from 'react'
 import {
-  ChevronRight,
+  Calendar,
+  CheckCircle,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
+  Clock,
   Download,
   Eye,
-  ThumbsUp,
-  MessageSquare,
-  Users,
-  Calendar,
-  FileText,
-  Image as ImageIcon,
-  Gamepad2,
-  Languages,
-  Shield,
-  CheckCircle,
-  Tag,
   FileArchive,
-  Globe,
-  Layers,
+  FileText,
   Flag,
-  Clock,
+  Gamepad2,
+  Globe,
+  Image as ImageIcon,
+  Languages,
+  Layers,
+  MessageSquare,
+  Shield,
+  Tag,
+  ThumbsUp,
+  Users,
   Youtube,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { ModGallery } from '@/components/mod-gallery'
-import { ModDownloadSection } from '@/components/mod-download-section'
-import { ModComments } from '@/components/mod-comments'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { ModComments } from '@/components/mod-comments'
+import { ModDownloadSection } from '@/components/mod-download-section'
+import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
+import { ReportDialog } from '@/components/report-dialog'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useFetch } from '@/hooks/use-fetch'
-import { formatNumber, formatArabicDate, parseGalleryUrls } from '@/lib/format'
-import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
-import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { useToast } from '@/hooks/use-toast'
 import { apiFetch } from '@/lib/api-client'
-import { ReportDialog } from '@/components/report-dialog'
-import type { ModDetail, ModSummary, EndorseResponse } from '@/lib/types'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
+import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { formatArabicDate, formatNumber, parseGalleryUrls } from '@/lib/format'
+import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 
 interface PaginatedModsResponse {
   data: ModSummary[]

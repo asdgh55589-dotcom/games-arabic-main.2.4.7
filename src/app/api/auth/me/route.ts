@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { db } from '@/lib/db'
-import { getBanStatus, jwtVerify, getJWTSecret, clearRoleCookie } from '@/lib/auth'
 import { ok } from '@/lib/api-response'
+import { clearRoleCookie, getBanStatus, getJWTSecret, jwtVerify } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { createClient } from '@/lib/supabase/server'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 

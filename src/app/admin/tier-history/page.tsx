@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Loader2, History } from 'lucide-react'
+import { History, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { TierHistoryTable } from '@/components/tier-history-table'
 
 interface TierHistoryEntry {

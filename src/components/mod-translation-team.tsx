@@ -1,10 +1,10 @@
 'use client'
 
-import { Users, Mail, Globe } from 'lucide-react'
+import { Globe, Mail, Users } from 'lucide-react'
 import { SiDiscord, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
-import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { ModTeamMember, ModContactLink } from '@/lib/types'
+import { Card } from '@/components/ui/card'
+import type { ModContactLink, ModTeamMember } from '@/lib/types'
 
 interface ModTranslationTeamProps {
   teamMembers: ModTeamMember[]

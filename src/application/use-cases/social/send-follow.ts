@@ -3,7 +3,7 @@
  * Notifies the followed user when someone follows them.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface FollowContext {

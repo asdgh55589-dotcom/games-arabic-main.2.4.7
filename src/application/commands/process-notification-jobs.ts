@@ -3,8 +3,13 @@
  * Processes queued jobs for email/telegram delivery with retry logic.
  */
 
-import type { JobQueue, EmailSender, NotificationRepository, DeliveryPolicy } from '@/domain'
-import type { NotificationJob } from '@/domain'
+import type {
+  DeliveryPolicy,
+  EmailSender,
+  JobQueue,
+  NotificationJob,
+  NotificationRepository,
+} from '@/domain'
 
 export interface ProcessResult {
   processed: number

@@ -1,13 +1,13 @@
-import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  generateAuthenticationOptions,
-  verifyAuthenticationResponse,
-} from '@simplewebauthn/server'
 import type {
-  RegistrationResponseJSON,
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/server'
+import {
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
 } from '@simplewebauthn/server'
 
 const rpName = 'GamesArabic'

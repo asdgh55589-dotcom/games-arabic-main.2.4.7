@@ -1,12 +1,12 @@
 'use client'
 
+import { Loader2, Send } from 'lucide-react'
 import { useState } from 'react'
-import { Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 

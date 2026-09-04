@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
+import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, validationFail, internalError, forbidden, unauthorized } from '@/lib/api-response'
-import { verifyTelegramAuth, isAuthDateValid } from '@/lib/telegram-verify'
+import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
 interface RouteParams {
   params: Promise<{ username: string }>

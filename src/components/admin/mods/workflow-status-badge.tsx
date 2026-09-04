@@ -1,6 +1,6 @@
+import { Archive, CheckCircle, Eye, FileEdit, Globe, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { WORKFLOW_LABELS, WORKFLOW_COLORS, type WorkflowStatus } from '@/lib/workflow'
-import { FileEdit, Eye, CheckCircle, Globe, Archive, XCircle } from 'lucide-react'
+import { WORKFLOW_COLORS, WORKFLOW_LABELS, type WorkflowStatus } from '@/lib/workflow'
 
 const STATUS_ICONS: Record<WorkflowStatus, React.ComponentType<{ className?: string }>> = {
   DRAFT: FileEdit,

@@ -1,7 +1,7 @@
-import { requireManager } from '@/lib/auth'
-import { metricsService } from '@/infrastructure/observability/metrics'
 import { PrismaClient } from '@prisma/client'
-import { ok, internalError } from '@/lib/api-response'
+import { metricsService } from '@/infrastructure/observability/metrics'
+import { internalError, ok } from '@/lib/api-response'
+import { requireManager } from '@/lib/auth'
 
 const db = new PrismaClient()
 

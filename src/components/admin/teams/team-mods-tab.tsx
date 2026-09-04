@@ -1,23 +1,23 @@
-import Image from 'next/image'
-// Updated for new API response format
-import { useEffect, useState, useMemo } from 'react'
-import Link from 'next/link'
 import {
+  ChevronLeft,
   Download,
   ExternalLink,
-  Link2,
-  Unlink,
-  Search,
-  ChevronLeft,
-  Gamepad2,
   FolderOpen,
+  Gamepad2,
+  Link2,
+  Search,
+  Unlink,
   X,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+// Updated for new API response format
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { formatNumber } from '@/lib/format'
 import { PLATFORMS } from '@/lib/constants'
+import { formatNumber } from '@/lib/format'
 import type { TeamMod } from './types'
 
 interface ModWithGame {

@@ -1,8 +1,8 @@
 'use client'
 
-import { useDocumentTitle } from '@/hooks/use-document-title'
-import { Card } from '@/components/ui/card'
 import { Shield } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function PrivacyPage() {
   useDocumentTitle('سياسة الخصوصية — GAMES ARABIC')

@@ -1,9 +1,9 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireManager } from '@/lib/auth'
-import { ok, notFound, internalError } from '@/lib/api-response'
-import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
 import Handlebars from 'handlebars/dist/cjs/handlebars.js'
+import type { NextRequest } from 'next/server'
+import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
+import { internalError, notFound, ok } from '@/lib/api-response'
+import { requireManager } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 interface RouteParams {
   params: Promise<{ id: string }>

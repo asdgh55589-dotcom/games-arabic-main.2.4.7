@@ -1,28 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { ArrowRight, Check, Loader2, Shield, X } from 'lucide-react'
 import Link from 'next/link'
-import { ArrowRight, Loader2, Check, X, Shield } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import type { UserRole } from '@/lib/roles'
 import {
-  SPECIAL_ROLES,
-  parseSpecialRoles,
   canHaveSpecialRole,
+  parseSpecialRoles,
+  SPECIAL_ROLES,
   type SpecialRole,
 } from '@/lib/special-roles'
-import type { UserRole } from '@/lib/roles'
 
 interface UserData {
   id: string

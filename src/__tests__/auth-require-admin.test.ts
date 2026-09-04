@@ -21,9 +21,9 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
+import { cookies } from 'next/headers'
 import { AuthError, requireAdmin } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
 const mockCookies = cookies as jest.MockedFunction<typeof cookies>

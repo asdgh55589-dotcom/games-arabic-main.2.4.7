@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
-import { hasRoleAtLeast } from '@/lib/roles'
-import { db } from '@/lib/db'
 import { PublicationRequestsClient } from '@/components/admin/publication-requests/PublicationRequestsClient'
+import { getSession } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { hasRoleAtLeast } from '@/lib/roles'
 
 export const metadata = {
   title: 'طلبات نشر التعريبات | Games Arabic',

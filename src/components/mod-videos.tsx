@@ -1,21 +1,20 @@
 'use client'
 
-import Image from 'next/image'
-
-import { useState } from 'react'
 import {
-  Play,
+  Calendar,
+  ChevronLeft,
   Clock,
   Eye,
-  Youtube,
-  ChevronLeft,
-  X,
-  VideoOff,
-  ThumbsUp,
   MessageSquare,
-  Calendar,
+  Play,
+  ThumbsUp,
+  VideoOff,
+  X,
+  Youtube,
 } from 'lucide-react'
-import { formatNumber, formatArabicDate } from '@/lib/format'
+import Image from 'next/image'
+import { useState } from 'react'
+import { formatArabicDate, formatNumber } from '@/lib/format'
 import type { ModVideoGroup } from '@/lib/types'
 
 interface ModVideosProps {

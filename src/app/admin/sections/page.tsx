@@ -1,13 +1,13 @@
 'use client'
 
+import { Edit2, GripVertical, Monitor, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Button } from '@/components/ui/button'
+import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { getSectionIcon } from '@/lib/section-icons'
-import { Plus, Trash2, Edit2, GripVertical, Monitor } from 'lucide-react'
 
 interface SectionItem {
   id: string

@@ -22,10 +22,10 @@ jest.mock('@/lib/auth', () => ({
   }),
 }))
 
-import { GET, PUT } from '../route'
-import { db } from '@/lib/db'
-import { requireAuth } from '@/lib/auth'
 import { NextRequest } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { GET, PUT } from '../route'
 
 const mockDb = db as unknown as {
   notificationPreference: {

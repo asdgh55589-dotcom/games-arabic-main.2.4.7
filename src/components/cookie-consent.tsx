@@ -1,8 +1,8 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-import Link from 'next/link'
 import { X } from 'lucide-react'
+import Link from 'next/link'
+import { useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
 
 const CONSENT_COOKIE = 'cookie_consent'

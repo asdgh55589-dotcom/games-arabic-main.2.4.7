@@ -2,9 +2,9 @@
  * PrismaNotificationRepository — مستودع الإشعارات via Prisma
  */
 
-import type { PrismaClient, Prisma } from '@prisma/client'
-import { Notification, type NotificationType, type NotificationRepository } from '@/domain'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import type { PaginationOptions } from '@/domain'
+import { Notification, type NotificationRepository, type NotificationType } from '@/domain'
 
 export class PrismaNotificationRepository implements NotificationRepository {
   constructor(private readonly db: PrismaClient) {}

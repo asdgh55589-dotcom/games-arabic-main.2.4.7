@@ -2,8 +2,8 @@
  * DeduplicationPolicy Unit Tests
  */
 
-import { DeduplicationPolicy, DEFAULT_DEDUPLICATION_CONFIG } from '../policies/deduplication-policy'
 import { Notification } from '../entities'
+import { DEFAULT_DEDUPLICATION_CONFIG, DeduplicationPolicy } from '../policies/deduplication-policy'
 import { NotificationType } from '../value-objects'
 
 function createMockNotificationRepo(recentNotification: any = null) {

@@ -1,4 +1,4 @@
-import { generateEmailWrapper, type EmailTemplateData } from '../email-base'
+import { type EmailTemplateData, generateEmailWrapper } from '../email-base'
 
 describe('generateEmailWrapper', () => {
   const baseData: EmailTemplateData = {

@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
 import { ok } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 const DEFAULTS: Record<string, string> = {
   site_name: 'GAMES ARABIC',

@@ -1,5 +1,5 @@
 import { NotificationJob } from '../entities/notification-job'
-import { NotificationChannel, DeliveryStatus } from '../value-objects'
+import { DeliveryStatus, NotificationChannel } from '../value-objects'
 
 describe('NotificationJob Entity', () => {
   describe('create', () => {

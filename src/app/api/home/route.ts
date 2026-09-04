@@ -1,8 +1,8 @@
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
+import { getHomeCache, getHomeCacheTtl, setHomeCache } from '@/lib/home-cache'
 import type { ModSummary, SeriesSummary } from '@/lib/types'
-import { getHomeCache, setHomeCache, getHomeCacheTtl } from '@/lib/home-cache'
 
 interface HomeData {
   stats: {

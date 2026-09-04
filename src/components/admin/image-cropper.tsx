@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { RotateCw, ZoomIn, ZoomOut } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Slider } from '@/components/ui/slider'
-import { ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
 
 interface Area {
   x: number
@@ -166,5 +166,3 @@ export function ImageCropper({
     </Dialog>
   )
 }
-
-export { getCroppedImg }

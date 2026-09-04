@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/auth'
-import { logUserAction } from '@/lib/audit'
 import { getUseCases } from '@/application/use-cases/factory'
+import { internalError, notFound, ok } from '@/lib/api-response'
+import { logUserAction } from '@/lib/audit'
+import { requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { deleteIpBanCache } from '@/lib/ip-ban-cache'
-import { ok, internalError, notFound } from '@/lib/api-response'
 
 // POST /api/admin/users/[id]/unban — إلغاء الحظر
 //

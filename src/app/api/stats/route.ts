@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
 import { ok } from '@/lib/api-response'
+import { db } from '@/lib/db'
 import type { SiteStats } from '@/lib/types'
 
 // GET /api/stats - aggregate site-wide stats

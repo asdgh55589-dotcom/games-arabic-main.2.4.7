@@ -1,8 +1,8 @@
 'use client'
 
 import { Progress } from '@/components/ui/progress'
-import { getTierLabel } from '@/lib/tiers'
 import type { UserRole } from '@/lib/roles'
+import { getTierLabel } from '@/lib/tiers'
 
 interface Props {
   role: UserRole

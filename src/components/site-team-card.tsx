@@ -1,10 +1,9 @@
 'use client'
 
+import { Circle, Clock, Crown, Shield, User, UserCheck, Users } from 'lucide-react'
 import Image from 'next/image'
-
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Users, Crown, Shield, UserCheck, User, Circle, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { timeAgo } from '@/lib/format'
 
 interface SiteMember {

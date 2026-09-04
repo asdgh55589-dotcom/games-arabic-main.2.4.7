@@ -1,33 +1,33 @@
 'use client'
 
-import { useMemo, useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
-  Bell,
-  MessageCircle,
-  Heart,
-  Star,
-  Shield,
-  Users,
-  FileText,
+  AlertCircle,
   AlertTriangle,
   Award,
+  Bell,
   CheckCheck,
-  Trash2,
+  ChevronLeft,
+  Clock,
+  FileText,
+  Heart,
+  MessageCircle,
   Package,
   Send,
-  Clock,
-  AlertCircle,
-  ChevronLeft,
+  Shield,
+  Star,
+  Trash2,
+  Users,
 } from 'lucide-react'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { formatArabicDate } from '@/lib/format'
-import { NotificationType, NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
+import { NOTIFICATION_TYPE_LABELS, NotificationType } from '@/lib/notifications/types'
 import type { Notification } from '@/lib/types'
 
 const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {

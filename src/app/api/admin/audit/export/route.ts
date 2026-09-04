@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { exportAuditToCSV } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { exportAuditToCSV } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {

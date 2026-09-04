@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireManager, requireModerator } from '@/lib/auth'
-import { ok, internalError, validationFail } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // GET /api/admin/settings — قراءة الإعدادات
 export async function GET() {

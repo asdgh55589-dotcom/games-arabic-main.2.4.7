@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import {
   createSessionLedger,
   listUserSessions,
-  revokeSession,
   revokeOtherSessions,
+  revokeSession,
 } from '@/lib/session-ledger'
-import { requireAuth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 
 // GET /api/auth/session-ledger — list own sessions
 export async function GET(req: NextRequest) {

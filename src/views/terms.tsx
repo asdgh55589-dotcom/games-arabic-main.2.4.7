@@ -1,8 +1,8 @@
 'use client'
 
-import { useDocumentTitle } from '@/hooks/use-document-title'
+import { AlertTriangle, FileText, Heart } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { FileText, AlertTriangle, Heart } from 'lucide-react'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function TermsPage() {
   useDocumentTitle('شروط الخدمة — GAMES ARABIC')

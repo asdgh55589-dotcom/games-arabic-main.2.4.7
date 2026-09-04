@@ -3,7 +3,7 @@
  * Interface only — implementation provided by infrastructure layer.
  */
 
-import type { NotificationType, NotificationChannel } from '../value-objects'
+import type { NotificationChannel, NotificationType } from '../value-objects'
 
 export interface RenderedTemplate {
   title: string

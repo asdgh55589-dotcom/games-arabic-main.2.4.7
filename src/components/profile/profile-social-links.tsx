@@ -1,6 +1,6 @@
 'use client'
 
-import { SOCIAL_PLATFORMS, PLATFORM_KEYS } from '@/lib/social-platforms'
+import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
 
 interface ProfileSocialLinksProps {
   websiteUrl?: string | null

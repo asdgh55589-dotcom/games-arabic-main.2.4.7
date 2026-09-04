@@ -1,5 +1,5 @@
 import { NotificationPreference } from '../entities/notification-preference'
-import { NotificationType, NotificationChannel } from '../value-objects'
+import { NotificationChannel, NotificationType } from '../value-objects'
 
 describe('NotificationPreference Entity', () => {
   describe('createDefault', () => {

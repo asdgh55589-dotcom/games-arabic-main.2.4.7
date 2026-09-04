@@ -1,26 +1,26 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import {
-  setRoleCookie,
-  hashPassword,
-  getBanStatus,
-  createSupabaseAuthUser,
-  type UserRole,
-} from '@/lib/auth'
 import bcrypt from 'bcryptjs'
-import { createClient } from '@/lib/supabase/server'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
-import { logAction } from '@/lib/audit'
-import { LoginSchema } from '@/lib/schemas'
+import { type NextRequest, NextResponse } from 'next/server'
 import {
-  ok,
-  validationFail,
-  rateLimited,
-  unauthorized,
   forbidden,
   internalError,
+  ok,
+  rateLimited,
+  unauthorized,
+  validationFail,
 } from '@/lib/api-response'
-import { verifySecurityKey, isSecurityKeyExpired, hashSecurityKey } from '@/lib/security-key'
+import { logAction } from '@/lib/audit'
+import {
+  createSupabaseAuthUser,
+  getBanStatus,
+  hashPassword,
+  setRoleCookie,
+  type UserRole,
+} from '@/lib/auth'
+import { db } from '@/lib/db'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { LoginSchema } from '@/lib/schemas'
+import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
+import { createClient } from '@/lib/supabase/server'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME

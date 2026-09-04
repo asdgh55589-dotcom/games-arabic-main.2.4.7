@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
 import { getInactiveUsers } from '@/lib/admin/inactive-users'
-import { ok, internalError } from '@/lib/api-response'
+import { internalError, ok } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {

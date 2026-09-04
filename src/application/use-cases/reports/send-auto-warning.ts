@@ -3,7 +3,7 @@
  * Notifies the target user when they receive an auto-warning from report system.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface AutoWarningContext {

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok, unauthorized } from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, unauthorized, internalError } from '@/lib/api-response'
 
 export async function GET(req: NextRequest) {
   try {

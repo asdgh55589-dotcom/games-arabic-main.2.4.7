@@ -3,7 +3,7 @@
  * Notifies all admins when a new report is submitted.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface ReportSubmittedContext {

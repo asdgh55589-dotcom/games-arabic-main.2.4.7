@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { verifyTOTP, decryptTOTPSecret } from '@/lib/totp'
-import { verifyMFAToken } from '@/lib/mfa-token'
+import { internalError, ok, validationFail } from '@/lib/api-response'
 import { setRoleCookie } from '@/lib/auth'
-import { ok, validationFail, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
+import { verifyMFAToken } from '@/lib/mfa-token'
+import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,41 +1,41 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
 import {
-  BarChart3,
-  Pencil,
-  Link2,
-  Layout,
-  Users,
-  Package,
-  Gift,
-  Star,
-  BadgeCheck,
   Archive,
-  Trash2,
+  BadgeCheck,
+  BarChart3,
+  Gift,
+  Layout,
+  Link2,
   MoreHorizontal,
+  Package,
+  Pencil,
+  Star,
+  Trash2,
+  Users,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 
 interface TeamItem {

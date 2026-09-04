@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { syncTeamCounts } from '@/lib/team-helpers'
-import { ok, notFound, validationFail, internalError } from '@/lib/api-response'
 
 // PUT /api/admin/teams/[id]/mods — ربط/فصل تعريبة
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -1,13 +1,13 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { ErrorBoundary } from '@/components/error-boundary'
-import { ScrollToTop } from '@/components/scroll-to-top'
-import { BookmarksProvider } from '@/contexts/bookmarks-context'
 import { CookieConsent } from '@/components/cookie-consent'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { Footer } from '@/components/footer'
+import { Navbar } from '@/components/navbar'
+import { ScrollToTop } from '@/components/scroll-to-top'
 import { useAuth } from '@/contexts/auth-context'
+import { BookmarksProvider } from '@/contexts/bookmarks-context'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()

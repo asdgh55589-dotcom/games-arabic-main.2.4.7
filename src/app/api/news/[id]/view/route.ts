@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok } from '@/lib/api-response'
+import { isBot, recordNewsView } from '@/lib/counters'
 import { db } from '@/lib/db'
-import { ok, notFound, internalError } from '@/lib/api-response'
-import { recordNewsView, isBot } from '@/lib/counters'
 
 interface RouteParams {
   params: Promise<{ id: string }>

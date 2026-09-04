@@ -1,37 +1,37 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import {
   ArrowRight,
-  User,
-  Lock,
-  Bell,
-  Eye,
-  ChevronLeft,
-  Upload,
-  Users,
   BarChart3,
-  Loader2,
-  Save,
-  X,
+  Bell,
   Camera,
   Check,
+  ChevronLeft,
+  Eye,
+  Loader2,
+  Lock,
+  Save,
   Shield,
+  Upload,
+  User,
+  Users,
+  X,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ImageUpload } from '@/components/admin/image-upload'
+import { CropModal } from '@/components/crop-modal'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { useDocumentTitle } from '@/hooks/use-document-title'
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { CropModal } from '@/components/crop-modal'
-import { ImageUpload } from '@/components/admin/image-upload'
-import { SOCIAL_PLATFORMS, PLATFORM_KEYS } from '@/lib/social-platforms'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useToast } from '@/hooks/use-toast'
+import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { NotificationSettings } from '@/views/notification-settings'
 
 interface ProfileData {

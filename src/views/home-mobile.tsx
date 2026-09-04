@@ -1,13 +1,13 @@
 'use client'
 
-import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import Link from 'next/link'
 import { HeroSlider } from '@/components/hero-slider'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { NewsFeatured } from '@/components/news-featured'
 // Sidebar blocks removed for phone — kept in desktop home.tsx
 import { NewsTicker } from '@/components/news-ticker'
-import { NewsFeatured } from '@/components/news-featured'
+import { Button } from '@/components/ui/button'
 import { formatNumber } from '@/lib/format'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'

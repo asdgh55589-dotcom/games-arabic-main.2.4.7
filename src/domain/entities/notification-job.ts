@@ -4,7 +4,7 @@
  * No external dependencies — pure TypeScript only.
  */
 
-import { type NotificationChannel, DeliveryStatus } from '../value-objects'
+import { DeliveryStatus, type NotificationChannel } from '../value-objects'
 
 /** Props for creating a new job */
 export interface CreateNotificationJobProps {

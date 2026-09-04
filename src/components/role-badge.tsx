@@ -1,9 +1,8 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { getRoleLabel } from '@/lib/roles'
 import type { UserRole } from '@/lib/roles'
-import { ROLE_LABELS } from '@/lib/roles'
+import { getRoleLabel, ROLE_LABELS } from '@/lib/roles'
 
 interface RoleBadgeProps {
   role?: string | null

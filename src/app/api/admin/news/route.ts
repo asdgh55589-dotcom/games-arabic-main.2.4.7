@@ -1,10 +1,10 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { parsePagination } from '@/lib/api-utils'
-import { slugify } from '@/lib/utils'
-import { ok, okPaginated, fail, validationFail, internalError } from '@/lib/api-response'
 import { revalidatePath } from 'next/cache'
+import type { NextRequest } from 'next/server'
+import { fail, internalError, ok, okPaginated, validationFail } from '@/lib/api-response'
+import { parsePagination } from '@/lib/api-utils'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { slugify } from '@/lib/utils'
 
 // GET /api/admin/news — قائمة الأخبار
 export async function GET(req: NextRequest) {

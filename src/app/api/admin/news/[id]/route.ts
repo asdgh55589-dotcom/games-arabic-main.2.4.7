@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { requireModerator, canDelete } from '@/lib/auth'
-import { ok, fail, notFound, forbidden, internalError } from '@/lib/api-response'
 
 // GET /api/admin/news/[id]
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

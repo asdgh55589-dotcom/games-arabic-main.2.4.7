@@ -3,7 +3,7 @@
  * Notifies the reporter that their report was rejected.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface ReportRejectedContext {

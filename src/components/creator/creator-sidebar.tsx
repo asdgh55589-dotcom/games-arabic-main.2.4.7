@@ -1,24 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Package,
-  MessageSquare,
   BarChart3,
   Inbox,
-  Settings,
-  Plus,
+  LayoutDashboard,
   Menu,
+  MessageSquare,
+  Package,
+  Plus,
+  Settings,
   X,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useState } from 'react'
+import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
-import { CreatorBadge } from '@/components/creator-badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { cn } from '@/lib/utils'
 
 interface CreatorSidebarProps {
   user: {

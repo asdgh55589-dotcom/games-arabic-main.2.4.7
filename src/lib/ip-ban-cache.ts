@@ -14,7 +14,7 @@
  * لكن الفحص الكامل يحدث server-side في requireAuth عبر checkIpBan من DB).
  */
 
-import { redisGet, redisSet, redisDel } from './redis'
+import { redisDel, redisGet, redisSet } from './redis'
 
 export interface IpBanCacheValue {
   banned: boolean

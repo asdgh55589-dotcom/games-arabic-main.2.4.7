@@ -1,7 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { ArrowRight, Home, Package, Search, Star } from 'lucide-react'
+import Link from 'next/link'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -10,8 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 

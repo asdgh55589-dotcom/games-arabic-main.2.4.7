@@ -1,5 +1,5 @@
+import { DeliveryStatus, NotificationChannel, NotificationJob } from '@/domain'
 import { PrismaJobQueue } from '../repositories/prisma-job-queue'
-import { NotificationJob, NotificationChannel, DeliveryStatus } from '@/domain'
 
 function makeMockDb() {
   const store = new Map<string, any>()

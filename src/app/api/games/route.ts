@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { pickSort, serialize } from '@/lib/api-utils'
 import { ok } from '@/lib/api-response'
+import { pickSort, serialize } from '@/lib/api-utils'
+import { db } from '@/lib/db'
 
 const SORTS = ['popular', 'mods', 'name', 'newest'] as const
 type Sort = (typeof SORTS)[number]

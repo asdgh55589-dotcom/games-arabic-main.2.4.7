@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { z } from 'zod'
 
 const LinkAccountSchema = z.object({
   provider: z.enum(['google', 'discord', 'telegram']),

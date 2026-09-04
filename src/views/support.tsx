@@ -1,19 +1,19 @@
 'use client'
 
-import { useDocumentTitle } from '@/hooks/use-document-title'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { Card } from '@/components/ui/card'
 import {
   BookOpen,
-  Search,
-  Filter,
-  Package,
   Download,
   FileText,
-  Youtube,
-  Users,
+  Filter,
   MessageSquare,
+  Package,
+  Search,
+  Users,
+  Youtube,
 } from 'lucide-react'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { Card } from '@/components/ui/card'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function SupportPage() {
   useDocumentTitle('دعم الأقسام — GAMES ARABIC')

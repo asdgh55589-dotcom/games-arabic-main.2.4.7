@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Grid3x3, Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { Search, SlidersHorizontal, Grid3x3 } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { useMemo, useState } from 'react'
+import { GameCard, GameCardSkeleton } from '@/components/game-card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -12,10 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { GameCard, GameCardSkeleton } from '@/components/game-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import type { GameSummary } from '@/lib/types'
 
 const PLATFORMS = [

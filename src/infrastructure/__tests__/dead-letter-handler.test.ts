@@ -1,5 +1,5 @@
+import { NotificationChannel, NotificationJob } from '@/domain'
 import { DeadLetterHandler } from '../resilience/dead-letter-handler'
-import { NotificationJob, NotificationChannel } from '@/domain'
 
 describe('DeadLetterHandler', () => {
   let handler: DeadLetterHandler

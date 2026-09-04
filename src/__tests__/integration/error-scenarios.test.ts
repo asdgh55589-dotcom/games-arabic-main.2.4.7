@@ -3,12 +3,12 @@
  * Tests circuit breaker, retry, dead letter, and failure handling.
  */
 
-import { CircuitBreaker, CircuitOpenError } from '@/infrastructure/resilience/circuit-breaker'
-import { RetryPolicy } from '@/infrastructure/resilience/retry-policy'
-import { DeadLetterHandler } from '@/infrastructure/resilience/dead-letter-handler'
-import { NotificationJob, NotificationChannel, NotificationType } from '@/domain'
 import { NotificationService } from '@/application/services/notification-service'
-import type { NotificationRepository, TemplateRenderer, EventPublisher, JobQueue } from '@/domain'
+import type { EventPublisher, JobQueue, NotificationRepository, TemplateRenderer } from '@/domain'
+import { NotificationChannel, NotificationJob, NotificationType } from '@/domain'
+import { CircuitBreaker, CircuitOpenError } from '@/infrastructure/resilience/circuit-breaker'
+import { DeadLetterHandler } from '@/infrastructure/resilience/dead-letter-handler'
+import { RetryPolicy } from '@/infrastructure/resilience/retry-policy'
 
 function createFailingNotificationRepo(): NotificationRepository {
   return {

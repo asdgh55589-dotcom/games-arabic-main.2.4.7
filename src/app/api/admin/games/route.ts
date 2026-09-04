@@ -1,9 +1,9 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { slugify } from '@/lib/utils'
-import { ok, validationFail, internalError } from '@/lib/api-response'
 import { revalidatePath } from 'next/cache'
+import type { NextRequest } from 'next/server'
+import { internalError, ok, validationFail } from '@/lib/api-response'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { slugify } from '@/lib/utils'
 
 // GET /api/admin/games — قائمة الألعاب
 export async function GET() {

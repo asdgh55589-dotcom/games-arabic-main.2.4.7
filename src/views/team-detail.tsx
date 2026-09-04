@@ -1,49 +1,49 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
   ArrowRight,
-  Users,
-  Star,
-  Shield,
-  Globe,
-  ExternalLink,
-  Download,
-  Heart,
-  Eye,
-  Calendar,
-  Gamepad2,
-  User,
-  MessageCircle,
-  Layers,
-  Share2,
-  UserPlus,
-  UserCheck,
-  Link2,
   BadgeCheck,
+  Calendar,
+  Download,
+  ExternalLink,
+  Eye,
+  Gamepad2,
+  Globe,
+  Heart,
+  Layers,
+  Link2,
+  MessageCircle,
+  Share2,
+  Shield,
+  Star,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
 } from 'lucide-react'
-import { ModCard } from '@/components/mod-card'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { ModCard } from '@/components/mod-card'
+import { useAuth } from '@/contexts/auth-context'
 import { useTeamDetail } from '@/hooks/use-team-detail'
 import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/contexts/auth-context'
 import { formatNumber } from '@/lib/format'
-import type { TeamDetail } from '@/lib/types'
 import {
-  ROLE_LABELS,
-  CONTACT_ICONS,
   CONTACT_COLORS,
-  TEAM_TABS,
+  CONTACT_ICONS,
+  ROLE_LABELS,
   type TabKey,
+  TEAM_TABS,
 } from '@/lib/team-constants'
 import {
-  getMemberDisplayName,
   getMemberAvatar,
-  getMemberProfileUrl,
   getMemberBio,
+  getMemberDisplayName,
+  getMemberProfileUrl,
   isLinkedMember,
 } from '@/lib/team-members'
+import type { TeamDetail } from '@/lib/types'
 import { TeamDetailMobile } from './team-detail-mobile'
 
 export function TeamDetailPage() {

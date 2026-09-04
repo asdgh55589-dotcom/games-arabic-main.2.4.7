@@ -1,6 +1,6 @@
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 const PLATFORM_LABELS: Record<string, string> = {
   NS: 'Nintendo Switch',

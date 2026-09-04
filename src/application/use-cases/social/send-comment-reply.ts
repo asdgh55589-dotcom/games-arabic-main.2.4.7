@@ -3,7 +3,7 @@
  * Notifies the original commenter when someone replies to their comment.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface CommentReplyContext {

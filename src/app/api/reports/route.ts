@@ -1,14 +1,14 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { getOptionalSession } from '@/lib/auth'
-import { rateLimit } from '@/lib/rate-limit'
-import { validateReport, validateEvidenceUrls } from '@/lib/reports/validation'
-import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
-import { recalculateTrustScore } from '@/lib/reports/trust-score'
-import { checkFraudSpike } from '@/lib/reports/fraud-spike'
-import { REPORT_REASONS } from '@/lib/reports/constants'
 import { getUseCases } from '@/application/use-cases/factory'
-import { ok, unauthorized, internalError, validationFail, rateLimited } from '@/lib/api-response'
+import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { getOptionalSession } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
+import { REPORT_REASONS } from '@/lib/reports/constants'
+import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
+import { checkFraudSpike } from '@/lib/reports/fraud-spike'
+import { recalculateTrustScore } from '@/lib/reports/trust-score'
+import { validateEvidenceUrls, validateReport } from '@/lib/reports/validation'
 
 export async function POST(req: NextRequest) {
   try {

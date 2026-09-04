@@ -1,71 +1,71 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef, Fragment } from 'react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
 import {
-  Download,
-  ThumbsUp,
-  Eye,
-  MessageSquare,
-  Calendar,
-  HardDrive,
-  FileArchive,
-  Tag,
-  Clock,
-  Shield,
-  ExternalLink,
-  ChevronRight,
-  ChevronLeft,
-  Maximize2,
-  BarChart3,
-  FileText,
-  User,
   Award,
-  Star,
+  BarChart3,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
   Crown,
+  Download,
+  ExternalLink,
+  Eye,
+  FileArchive,
+  FileText,
+  Flag,
+  FolderOpen,
   Gamepad2,
+  Globe,
+  HardDrive,
+  Hash,
   Languages,
   Layers,
-  CheckCircle,
+  Maximize2,
+  MessageSquare,
+  Send,
+  Shield,
+  Star,
+  Tag,
+  ThumbsUp,
+  Twitter,
+  User,
   Users,
   Youtube,
-  Twitter,
-  Send,
-  Flag,
-  Hash,
-  Globe,
-  FolderOpen,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { useToast } from '@/hooks/use-toast'
-import { useFetch } from '@/hooks/use-fetch'
-import { useDocumentTitle } from '@/hooks/use-document-title'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { ModComments } from '@/components/mod-comments'
 import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
-import { ModVideos } from '@/components/mod-videos'
-import { ModComments } from '@/components/mod-comments'
-import { ReportButton } from '@/components/report-button'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
+import { ModVideos } from '@/components/mod-videos'
+import { ReportButton } from '@/components/report-button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
+import { useToast } from '@/hooks/use-toast'
+import { apiFetch } from '@/lib/api-client'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
+import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import {
-  formatNumber,
-  formatDate,
   formatArabicDate,
-  timeAgo,
+  formatDate,
+  formatNumber,
   parseGalleryUrls,
   parseTags,
+  timeAgo,
 } from '@/lib/format'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { apiFetch } from '@/lib/api-client'
-import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
-import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
-import type { ModDetail, ModSummary, EndorseResponse } from '@/lib/types'
+import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 import { ModDetailMobile } from './mod-detail-mobile'
 
 interface PaginatedModsResponse {

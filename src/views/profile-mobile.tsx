@@ -1,33 +1,33 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
 import {
-  Settings,
-  Mail,
-  UserPlus,
-  UserCheck,
-  Loader2,
   Calendar,
+  Download,
+  Eye,
+  Loader2,
+  Mail,
   MessageSquare,
   Package,
-  Users,
-  Eye,
-  Download,
+  Settings,
   ThumbsUp,
+  UserCheck,
+  UserPlus,
+  Users,
 } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useToast } from '@/hooks/use-toast'
-import { formatNumber, formatArabicDate } from '@/lib/format'
+import Image from 'next/image'
+import Link from 'next/link'
+import { CreatorBadge } from '@/components/creator-badge'
+import { ModCard } from '@/components/mod-card'
+import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
+import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
+import { ReportButton } from '@/components/report-button'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
-import { CreatorBadge } from '@/components/creator-badge'
-import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
-import { ModCard } from '@/components/mod-card'
-import { ReportButton } from '@/components/report-button'
-import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
+import { formatArabicDate, formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 // ---------------------------------------------------------------------------

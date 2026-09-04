@@ -1,33 +1,33 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import {
-  Users,
   Crown,
-  UserX,
-  UserPlus,
-  Trash2,
-  Link2,
-  Unlink,
   ExternalLink,
   Ghost,
+  Link2,
+  Trash2,
+  Unlink,
+  UserPlus,
+  Users,
+  UserX,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
 import {
-  getMemberDisplayName,
   getMemberAvatar,
-  getMemberProfileUrl,
   getMemberBio,
+  getMemberDisplayName,
+  getMemberProfileUrl,
+  getMemberRoleLabel,
   isLinkedMember,
   isPhantomMember,
-  getMemberRoleLabel,
 } from '@/lib/team-members'
 import { cn } from '@/lib/utils'
 

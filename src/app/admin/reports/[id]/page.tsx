@@ -1,41 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
-  Loader2,
-  ArrowRight,
-  Flag,
-  Package,
-  MessageSquare,
-  User,
-  UserX,
-  UserCog,
   AlertTriangle,
-  Clock,
-  Shield,
-  CheckCircle,
-  XCircle,
+  ArrowRight,
   Ban,
+  CheckCircle,
+  Clock,
   ExternalLink,
+  Flag,
+  Loader2,
+  MessageSquare,
+  Package,
+  Shield,
+  User,
+  UserCog,
+  UserX,
+  XCircle,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ReportStatusBadge } from '@/components/report-status-badge'
-import { getRoleLabel } from '@/lib/roles'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { ReportFraudCard } from '@/components/admin/report-fraud-card'
-import { UserTrustBadge } from '@/components/admin/user-trust-badge'
 import { ReportHistoryTimeline } from '@/components/admin/report-history-timeline'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { UserTrustBadge } from '@/components/admin/user-trust-badge'
+import { ReportStatusBadge } from '@/components/report-status-badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,16 +34,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
+import type { ReportAction, ReportPriority, ReportReason } from '@/lib/reports/constants'
 import {
-  REPORT_REASONS,
-  REPORT_PRIORITIES,
-  REPORT_STATUSES,
   REPORT_ACTIONS,
+  REPORT_PRIORITIES,
+  REPORT_REASONS,
+  REPORT_STATUSES,
   REPORT_TARGET_TYPES,
 } from '@/lib/reports/constants'
-import type { ReportReason, ReportPriority, ReportAction } from '@/lib/reports/constants'
+import { getRoleLabel } from '@/lib/roles'
 
 interface ReportDetail {
   id: string

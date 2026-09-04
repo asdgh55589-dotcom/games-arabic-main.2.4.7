@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
 import { getClientIP } from '@/lib/counters'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 interface RouteParams {
   params: Promise<{ slug: string }>

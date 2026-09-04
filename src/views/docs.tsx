@@ -1,15 +1,15 @@
 'use client'
 
+import { BookOpen, ChevronDown, Info, Wrench } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { ChevronDown, BookOpen, Wrench, Info } from 'lucide-react'
-import { SupportPage } from '@/views/support'
-import { ProblemsPage } from '@/views/problems'
-import { ExplorePage } from '@/views/explore'
 import { AboutPage } from '@/views/about'
-import { TermsPage } from '@/views/terms'
+import { ExplorePage } from '@/views/explore'
 import { PrivacyPage } from '@/views/privacy'
+import { ProblemsPage } from '@/views/problems'
+import { SupportPage } from '@/views/support'
+import { TermsPage } from '@/views/terms'
 
 const PLATFORMS = [
   { key: 'PC', label: 'PC' },

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, okPaginated } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { okPaginated, internalError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {

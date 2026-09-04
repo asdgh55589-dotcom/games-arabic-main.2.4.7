@@ -1,9 +1,9 @@
-import { db } from '@/lib/db'
 import type { Mod } from '@prisma/client'
 import { getUseCases } from '@/application/use-cases/factory'
+import { db } from '@/lib/db'
+import type { UserRole } from '@/lib/roles'
 import { getRequirementsForRole, type TierRequirement } from '@/lib/tier-requirements'
 import { getMaxTierForRole } from '@/lib/tiers'
-import type { UserRole } from '@/lib/roles'
 
 function calculateQualityScore(mods: Mod[]): number {
   if (mods.length === 0) return 0

@@ -1,8 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 interface ErrorBoundaryProps {
   children: ReactNode

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   try {

@@ -1,7 +1,7 @@
+import { BarChart3, Upload, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Upload, Users, BarChart3 } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'كن معرّباً — GAMES ARABIC',

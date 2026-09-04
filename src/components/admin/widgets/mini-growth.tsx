@@ -1,7 +1,7 @@
 'use client'
 
+import { TrendingDown, TrendingUp } from 'lucide-react'
 import { useMemo } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 

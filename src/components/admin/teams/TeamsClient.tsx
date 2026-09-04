@@ -1,37 +1,37 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import Link from 'next/link'
 import {
-  Users,
-  BadgeCheck,
-  Star,
-  Package,
-  UserPlus,
-  Download,
   Archive,
-  Plus,
+  BadgeCheck,
   ChevronDown,
   ChevronUp,
+  Download,
+  Package,
+  Plus,
   Shield,
+  Star,
+  UserPlus,
+  Users,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/hooks/use-toast'
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import {
   AdminDataTable,
+  type BulkAction,
   type Column,
   type FilterConfig,
-  type BulkAction,
   type StatItem,
 } from '@/components/admin/shared/AdminDataTable'
 import { TeamActions } from '@/components/admin/teams/TeamActions'
-import { TeamMembersSection } from '@/components/admin/teams/TeamMembersSection'
 import { TeamCard } from '@/components/admin/teams/TeamCard'
+import { TeamMembersSection } from '@/components/admin/teams/TeamMembersSection'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
 import { getMemberAvatar, getMemberDisplayName } from '@/lib/team-members'
 
 interface TeamMembership {

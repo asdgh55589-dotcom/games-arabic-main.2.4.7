@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
+import { CreatorSidebar } from '@/components/creator/creator-sidebar'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { CreatorSidebar } from '@/components/creator/creator-sidebar'
 
 export default async function CreatorLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()

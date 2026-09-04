@@ -1,22 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
   ArrowRight,
-  Loader2,
-  Monitor,
-  Smartphone,
-  Laptop,
-  LogOut,
-  Shield,
   Clock,
+  Laptop,
+  Loader2,
+  LogOut,
   MapPin,
+  Monitor,
+  Shield,
+  Smartphone,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useToast } from '@/hooks/use-toast'
 
 interface Session {
   id: string

@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { getOptionalSession } from '@/lib/auth'
 import { getUseCases } from '@/application/use-cases/factory'
+import { internalError, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { getOptionalSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { CreateCommentSchema } from '@/lib/schemas'
-import { ok, notFound, unauthorized, validationFail, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ slug: string }>

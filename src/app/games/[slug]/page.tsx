@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { GameDetailPage } from '@/views/game-detail'
 import { gameJsonLd } from '@/lib/seo/structured-data'
+import { GameDetailPage } from '@/views/game-detail'
 
 export const revalidate = 300 // ISR: 5m — بيانات الألعاب نادرة التغير
 

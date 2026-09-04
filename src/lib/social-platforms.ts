@@ -1,14 +1,14 @@
+import { Globe } from 'lucide-react'
+import type { IconType } from 'react-icons'
 import {
   SiDiscord,
   SiGithub,
   SiInstagram,
-  SiTiktok,
   SiTelegram,
+  SiTiktok,
   SiX,
   SiYoutube,
 } from 'react-icons/si'
-import { Globe } from 'lucide-react'
-import type { IconType } from 'react-icons'
 
 export interface SocialPlatform {
   label: string
@@ -69,10 +69,6 @@ export const SOCIAL_PLATFORMS: Record<string, SocialPlatform> = {
 } as const
 
 export const PLATFORM_KEYS = Object.keys(SOCIAL_PLATFORMS) as string[]
-
-export function getPlatformByKey(key: string): SocialPlatform | undefined {
-  return SOCIAL_PLATFORMS[key]
-}
 
 export function getColumnForPlatform(key: string): string | undefined {
   return SOCIAL_PLATFORMS[key]?.column

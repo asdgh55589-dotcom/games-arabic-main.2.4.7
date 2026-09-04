@@ -1,9 +1,10 @@
 // Updated for new API response format
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { useParams } from 'next/navigation'
 import { Package, Search } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,10 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import type { ModSummary } from '@/lib/types'
 
 export function PlatformPage() {

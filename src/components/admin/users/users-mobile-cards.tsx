@@ -1,15 +1,13 @@
 'use client'
 
-import Image from 'next/image'
-
-import Link from 'next/link'
 import { AlertTriangle, Ban, CheckCircle, Eye, Key, Trash2 } from 'lucide-react'
-
+import Image from 'next/image'
+import Link from 'next/link'
+import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
+import type { UserItem } from '@/components/admin/users/users-types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
-import type { UserItem } from '@/components/admin/users/users-types'
 
 interface UsersMobileCardsProps {
   users: UserItem[]

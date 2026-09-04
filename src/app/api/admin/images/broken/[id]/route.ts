@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, internalError, notFound } from '@/lib/api-response'
 
 // PATCH: تمييز الصورة المكسورة كمُصلحة أو مُتجاهلة
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

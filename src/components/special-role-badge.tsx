@@ -1,4 +1,4 @@
-import { Star, Languages, Eye, Users, Heart, Calendar } from 'lucide-react'
+import { Calendar, Eye, Heart, Languages, Star, Users } from 'lucide-react'
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Star,

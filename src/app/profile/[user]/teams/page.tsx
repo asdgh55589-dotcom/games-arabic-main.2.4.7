@@ -1,13 +1,13 @@
+import { Crown, Users } from 'lucide-react'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
-import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { notFound } from 'next/navigation'
 import { LeaveTeamButton } from '@/components/teams/leave-team-button'
-import { Users, Crown } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { getSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 interface PageProps {
   params: Promise<{ user: string }>

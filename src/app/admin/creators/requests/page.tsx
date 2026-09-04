@@ -1,26 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Check, CheckCircle, Clock, ExternalLink, Loader2, User, X, XCircle } from 'lucide-react'
 import Link from 'next/link'
-import { Loader2, Check, X, ExternalLink, Clock, CheckCircle, XCircle, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { RoleBadge } from '@/components/role-badge'
+import { TierBadge } from '@/components/tier-badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { EmptyState } from '@/components/ui/empty-state'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { RoleBadge } from '@/components/role-badge'
-import { TierBadge } from '@/components/tier-badge'
 
 interface CreatorRequest {
   id: string

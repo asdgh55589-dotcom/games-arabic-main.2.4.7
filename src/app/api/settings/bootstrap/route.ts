@@ -1,6 +1,6 @@
-import { db } from '@/lib/db'
+import { internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, notFound, unauthorized, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 export async function GET() {
   try {

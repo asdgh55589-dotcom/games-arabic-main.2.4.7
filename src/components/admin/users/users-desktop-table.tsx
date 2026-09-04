@@ -1,13 +1,11 @@
+import { Ban, CheckCircle } from 'lucide-react'
 import Image from 'next/image'
-import { CheckCircle, Ban } from 'lucide-react'
-
-import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
 import { UserModerationActions } from '@/components/admin/users/user-moderation-actions'
+import { ROLE_BADGE } from '@/components/admin/users/users-role-badge'
 import type { UserItem } from '@/components/admin/users/users-types'
-import { timeAgo } from '@/lib/format'
-import { ROLE_ORDER } from '@/lib/roles'
-import { getRoleLabel } from '@/lib/roles'
 import { TierBadge } from '@/components/tier-badge'
+import { timeAgo } from '@/lib/format'
+import { getRoleLabel, ROLE_ORDER } from '@/lib/roles'
 
 interface UsersDesktopTableProps {
   users: UserItem[]

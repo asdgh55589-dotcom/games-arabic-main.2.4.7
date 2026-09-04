@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { AlertCircle, Key, Loader2, Lock, Mail, ShieldCheck, User } from 'lucide-react'
 import Link from 'next/link'
-import { Lock, User, AlertCircle, Loader2, ShieldCheck, Mail, Key } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

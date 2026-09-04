@@ -1,13 +1,12 @@
 'use client'
 
+import { Download, Eye, Flame, Heart, ThumbsUp, Zap } from 'lucide-react'
 import Image from 'next/image'
-
-import { forwardRef } from 'react'
 import Link from 'next/link'
-import { Flame, Heart, Zap, ThumbsUp, Download, Eye } from 'lucide-react'
-import { formatNumber } from '@/lib/format'
-import { StatusBadge, getModBadgeStatus } from '@/components/status-badge'
+import { forwardRef } from 'react'
+import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 type SidebarVariant = 'latest' | 'trending' | 'topEndorsed'

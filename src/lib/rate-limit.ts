@@ -2,8 +2,8 @@
  * lib/rate-limit.ts — Rate limiting يستخدم Redis مع fallback لـ in-memory.
  */
 
-import { redisIncr } from './redis'
 import { NextResponse } from 'next/server'
+import { redisIncr } from './redis'
 
 interface RateLimitEntry {
   count: number

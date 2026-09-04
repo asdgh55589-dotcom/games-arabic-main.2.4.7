@@ -1,32 +1,32 @@
-import Image from 'next/image'
-import { useState } from 'react'
-import Link from 'next/link'
 import {
+  Check,
+  ExternalLink,
+  Ghost,
+  Link2,
   Pencil,
   Plus,
   Trash2,
-  X,
-  Check,
-  User as UserIcon,
-  Link2,
   Unlink,
-  ExternalLink,
-  Ghost,
+  User as UserIcon,
   Users,
+  X,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useState } from 'react'
+import { ImageUpload } from '@/components/admin/image-upload'
+import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { ImageUpload } from '@/components/admin/image-upload'
 import { useToast } from '@/hooks/use-toast'
 import { ROLE_LABELS } from '@/lib/team-constants'
-import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
 import {
-  getMemberDisplayName,
   getMemberAvatar,
-  getMemberProfileUrl,
   getMemberBio,
+  getMemberDisplayName,
+  getMemberProfileUrl,
   isLinkedMember,
   isPhantomMember,
 } from '@/lib/team-members'

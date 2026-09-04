@@ -5,7 +5,7 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
-import { NotificationJob, type JobQueue, DeliveryStatus, type NotificationChannel } from '@/domain'
+import { DeliveryStatus, type JobQueue, type NotificationChannel, NotificationJob } from '@/domain'
 
 export class PrismaJobQueue implements JobQueue {
   constructor(private readonly db: PrismaClient) {}

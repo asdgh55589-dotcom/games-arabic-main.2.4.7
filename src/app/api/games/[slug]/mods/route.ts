@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { notFound, okPaginated } from '@/lib/api-response'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
-import { okPaginated, notFound } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating'] as const
 type Sort = (typeof SORTS)[number]

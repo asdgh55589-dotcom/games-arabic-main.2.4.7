@@ -1,10 +1,10 @@
 'use client'
 
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { BadgeCheck, Star } from 'lucide-react'
 import { TeamActions } from '@/components/admin/teams/TeamActions'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 
 interface TeamCardProps {

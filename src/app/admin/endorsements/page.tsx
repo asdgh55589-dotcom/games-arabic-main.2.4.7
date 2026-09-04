@@ -1,8 +1,8 @@
 // Updated for new API response format
 'use client'
 
+import { Loader2, ThumbsDown, ThumbsUp, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Loader2, ThumbsUp, ThumbsDown, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatNumber, timeAgo } from '@/lib/format'
 

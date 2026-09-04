@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { BarChart3, Bell, Loader2, Mail, Send, TrendingDown, TrendingUp } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, TrendingDown, Mail, Bell, Send, Loader2, BarChart3 } from 'lucide-react'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 
 interface AnalyticsData {

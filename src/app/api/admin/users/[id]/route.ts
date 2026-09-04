@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin, invalidateUserSessions, hashPassword } from '@/lib/auth'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { logAction, logUserAction } from '@/lib/audit'
-import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
-import { createAdminClient } from '@/lib/supabase/server'
+import { hashPassword, invalidateUserSessions, requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { canAssignRole } from '@/lib/permissions'
+import { createAdminClient } from '@/lib/supabase/server'
 
 interface RouteParams {
   params: Promise<{ id: string }>

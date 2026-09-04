@@ -21,11 +21,11 @@ jest.mock('@/lib/auth', () => ({
   requireManager: jest.fn().mockResolvedValue({ id: 'admin-1', role: 'manager' }),
 }))
 
-import { GET, POST } from '../route'
-import { PUT, DELETE } from '../[id]/route'
-import { POST as previewPOST } from '../[id]/preview/route'
-import { db } from '@/lib/db'
 import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { POST as previewPOST } from '../[id]/preview/route'
+import { DELETE, PUT } from '../[id]/route'
+import { GET, POST } from '../route'
 
 const mockDb = db as unknown as {
   notificationTemplate: {

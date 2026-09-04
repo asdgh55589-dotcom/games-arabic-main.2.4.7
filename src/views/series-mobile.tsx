@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { ArrowLeft, Package, Search, Star, X } from 'lucide-react'
 import Link from 'next/link'
-import { Package, Star, Search, ArrowLeft, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { formatNumber } from '@/lib/format'
 
 // Reuse same shape as src/views/series.tsx

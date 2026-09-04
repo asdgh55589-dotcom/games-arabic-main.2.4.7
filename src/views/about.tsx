@@ -1,8 +1,8 @@
 'use client'
 
-import { useDocumentTitle } from '@/hooks/use-document-title'
+import { Bot, Gamepad2, Heart, MapPin, Monitor, Send, Smartphone } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Send, Bot, Gamepad2, Smartphone, Monitor, Heart, MapPin } from 'lucide-react'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function AboutPage() {
   useDocumentTitle('من نحن — GAMES ARABIC')

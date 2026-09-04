@@ -1,7 +1,7 @@
 'use client'
 
+import { Bold, Eye, EyeOff, Heading1, Heading2, Heading3, Italic, List } from 'lucide-react'
 import { useState } from 'react'
-import { Bold, Heading1, Heading2, Heading3, Italic, List, Eye, EyeOff } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 
 interface MarkdownEditorProps {

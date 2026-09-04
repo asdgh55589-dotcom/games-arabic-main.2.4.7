@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from 'react'
 import {
-  RadarChart,
-  PolarGrid,
+  Legend,
   PolarAngleAxis,
+  PolarGrid,
   PolarRadiusAxis,
   Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
-  Legend,
 } from 'recharts'
 import { ChartWrapper } from './chart-wrapper'
 

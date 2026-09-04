@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
-import { ok, notFound } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // GET /api/games/[slug] - get a single game by slug with its categories
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {

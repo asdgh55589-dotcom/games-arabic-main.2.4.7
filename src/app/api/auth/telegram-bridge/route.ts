@@ -1,10 +1,10 @@
+import { randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { verifyTelegramAuth, isAuthDateValid } from '@/lib/telegram-verify'
-import { rateLimit } from '@/lib/rate-limit'
 import { getBanStatus } from '@/lib/auth'
 import { AUTH_ERRORS } from '@/lib/auth/errors'
-import { randomUUID } from 'crypto'
+import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
+import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
 export async function POST(req: NextRequest) {
   try {

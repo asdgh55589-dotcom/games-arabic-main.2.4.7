@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { ArrowRight, Star, TrendingUp, Trophy } from 'lucide-react'
 import Link from 'next/link'
-import { ArrowRight, Star, Trophy, TrendingUp } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { use, useEffect, useState } from 'react'
 import { RatingDisplay } from '@/components/admin/mods/rating-display'
+import { Badge } from '@/components/ui/badge'
 
 interface TeamRewards {
   points: number

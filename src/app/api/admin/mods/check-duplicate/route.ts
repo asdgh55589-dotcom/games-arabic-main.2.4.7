@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
+import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { checkForDuplicates } from '@/lib/duplicate-detection'
-import { logAction } from '@/lib/audit'
 
 export async function POST(request: Request) {
   try {

@@ -1,13 +1,13 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { executeAutoAction } from '@/lib/reports/auto-actions'
-import { recalculateTrustScore } from '@/lib/reports/trust-score'
-import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
-import { REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
 import { getUseCases } from '@/application/use-cases/factory'
+import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
-import { ok, notFound, validationFail, internalError, forbidden } from '@/lib/api-response'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { executeAutoAction } from '@/lib/reports/auto-actions'
+import { REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
+import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
+import { recalculateTrustScore } from '@/lib/reports/trust-score'
 
 interface RouteParams {
   params: Promise<{ id: string }>

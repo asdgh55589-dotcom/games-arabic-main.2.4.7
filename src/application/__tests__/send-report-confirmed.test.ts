@@ -1,6 +1,6 @@
-import { SendReportConfirmedNotification } from '../use-cases/reports/send-report-confirmed'
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../services'
+import { SendReportConfirmedNotification } from '../use-cases/reports/send-report-confirmed'
 
 describe('SendReportConfirmedNotification', () => {
   let useCase: SendReportConfirmedNotification

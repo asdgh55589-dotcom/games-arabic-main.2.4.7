@@ -1,4 +1,4 @@
-import { User, Languages, Award, Crown, Shield } from 'lucide-react'
+import { Award, Crown, Languages, Shield, User } from 'lucide-react'
 import { getTierLabel } from '@/lib/tiers'
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

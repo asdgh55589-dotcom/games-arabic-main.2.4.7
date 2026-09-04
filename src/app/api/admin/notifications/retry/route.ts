@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,10 +1,10 @@
 // Updated for new API response format
 'use client'
 
+import { Shield, Star, Users } from 'lucide-react'
 import Link from 'next/link'
-import { Users, Star, Shield } from 'lucide-react'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
 import { TeamsMobile } from './teams-mobile'
 

@@ -1,7 +1,7 @@
 'use client'
 
+import { Archive, Check, Globe, Loader2, RotateCcw, Send, X } from 'lucide-react'
 import { useState } from 'react'
-import { Send, Check, X, Globe, Archive, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { getAvailableActions, WORKFLOW_LABELS, type WorkflowStatus } from '@/lib/workflow'
 

@@ -1,5 +1,5 @@
-import { db } from './db'
 import { logAction } from './audit'
+import { db } from './db'
 
 export async function awardPoints(
   teamId: string,

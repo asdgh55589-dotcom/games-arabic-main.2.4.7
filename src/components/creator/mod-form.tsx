@@ -1,49 +1,48 @@
 // Updated for new API response format
 'use client'
 
-import Image from 'next/image'
-
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
-  Save,
-  Loader2,
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
   ChevronRight,
-  Plus,
-  Trash2,
-  GripVertical,
+  Clock,
+  ExternalLink,
+  Eye,
   FileArchive,
+  GripVertical,
+  LayoutPanelTop,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Plus,
+  Save,
+  ThumbsUp,
+  Trash2,
   Users,
   Video,
-  LayoutPanelTop,
-  Mail,
-  AlertCircle,
-  ExternalLink,
-  CheckCircle2,
-  Eye,
-  ThumbsUp,
-  MessageSquare,
-  Clock,
-  Calendar,
   Youtube,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { ImageCropper } from '@/components/admin/image-cropper'
+import { ImageUpload } from '@/components/admin/image-upload'
+import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
+import { VersionHistory } from '@/components/admin/mods/version-history'
+import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
+import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
+import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
+import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
-import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
-import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
-import { VersionHistory } from '@/components/admin/mods/version-history'
-import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { getPlatformInfo } from '@/components/platform-upload-icons'
-import { formatNumber, formatArabicDate } from '@/lib/format'
-import { ImageCropper } from '@/components/admin/image-cropper'
-import { ImageUpload } from '@/components/admin/image-upload'
+import { formatArabicDate, formatNumber } from '@/lib/format'
 
 // ===== Types =====
 interface FileLink {

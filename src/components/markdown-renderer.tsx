@@ -1,7 +1,7 @@
 'use client'
 
-import { memo } from 'react'
 import type { JSX } from 'react'
+import { memo } from 'react'
 import { sanitizeUrl } from '@/lib/sanitize'
 
 interface MarkdownRendererProps {

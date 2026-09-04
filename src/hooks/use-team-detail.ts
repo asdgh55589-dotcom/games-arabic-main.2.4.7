@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { useFetch } from '@/hooks/use-fetch'
+import { useMemo, useState } from 'react'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import type { TeamDetail } from '@/lib/types'
+import { useFetch } from '@/hooks/use-fetch'
 import type { TabKey } from '@/lib/team-constants'
+import type { TeamDetail } from '@/lib/types'
 
 export function useTeamDetail() {
   const params = useParams()

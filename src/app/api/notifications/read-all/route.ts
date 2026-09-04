@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, unauthorized, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 async function markAllAsRead() {
   const neonUser = await getOptionalSession()

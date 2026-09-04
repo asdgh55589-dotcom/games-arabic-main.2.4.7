@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { conflict, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
-import { ok, conflict, validationFail, internalError } from '@/lib/api-response'
 
 // GET /api/admin/teams — قائمة الفرق
 export async function GET() {

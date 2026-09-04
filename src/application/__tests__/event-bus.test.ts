@@ -1,5 +1,5 @@
-import { InMemoryEventBus } from '../event-bus/in-memory-event-bus'
 import type { DomainEvent } from '@/domain'
+import { InMemoryEventBus } from '../event-bus/in-memory-event-bus'
 
 describe('InMemoryEventBus', () => {
   let bus: InMemoryEventBus

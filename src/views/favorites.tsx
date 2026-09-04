@@ -1,10 +1,11 @@
 'use client'
 
+import { Bookmark, Search, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
-import { Search, SlidersHorizontal, Bookmark } from 'lucide-react'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -12,10 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import type { ModSummary } from '@/lib/types'
 
 interface BookmarksResponse {

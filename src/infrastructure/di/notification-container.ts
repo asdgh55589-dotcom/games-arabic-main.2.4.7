@@ -4,17 +4,17 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { NotificationService } from '@/application/services/notification-service'
+import { InMemoryEventBus } from '@/application/event-bus/in-memory-event-bus'
 import { NotificationQueryService } from '@/application/services/notification-query-service'
+import { NotificationService } from '@/application/services/notification-service'
+import { DeduplicationPolicy } from '@/domain/policies/deduplication-policy'
+import { ExponentialBackoffDeliveryPolicy } from '@/domain/policies/delivery-policy'
+import { PreferencePolicy } from '@/domain/policies/preference-policy'
+import { HandlebarsTemplateRenderer } from '@/infrastructure/adapters/handlebars-template-renderer'
+import { PrismaJobQueue } from '@/infrastructure/repositories/prisma-job-queue'
 import { PrismaNotificationRepository } from '@/infrastructure/repositories/prisma-notification-repository'
 import { PrismaPreferenceRepository } from '@/infrastructure/repositories/prisma-preference-repository'
-import { PrismaJobQueue } from '@/infrastructure/repositories/prisma-job-queue'
 import { PrismaTemplateRepository } from '@/infrastructure/repositories/prisma-template-repository'
-import { HandlebarsTemplateRenderer } from '@/infrastructure/adapters/handlebars-template-renderer'
-import { InMemoryEventBus } from '@/application/event-bus/in-memory-event-bus'
-import { DeduplicationPolicy } from '@/domain/policies/deduplication-policy'
-import { PreferencePolicy } from '@/domain/policies/preference-policy'
-import { ExponentialBackoffDeliveryPolicy } from '@/domain/policies/delivery-policy'
 
 const db = new PrismaClient()
 

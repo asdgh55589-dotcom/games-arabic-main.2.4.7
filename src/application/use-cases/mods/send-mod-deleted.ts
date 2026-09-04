@@ -3,7 +3,7 @@
  * Notifies the mod author when their mod is deleted.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface ModDeletedContext {

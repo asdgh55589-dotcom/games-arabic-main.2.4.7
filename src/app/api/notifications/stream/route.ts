@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 

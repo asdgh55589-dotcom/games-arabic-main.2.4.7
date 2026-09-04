@@ -1,7 +1,7 @@
+import { ImageUpload } from '@/components/admin/image-upload'
+import { MarkdownEditor } from '@/components/admin/markdown-editor'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MarkdownEditor } from '@/components/admin/markdown-editor'
-import { ImageUpload } from '@/components/admin/image-upload'
 import type { TeamMember } from './types'
 
 export interface TeamGeneralFormData {

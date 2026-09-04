@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { upgradeUser } from '@/lib/tier-engine'
-import { ok, internalError, notFound, validationFail } from '@/lib/api-response'
-import { getMaxTierForRole } from '@/lib/tiers'
 import type { UserRole } from '@/lib/roles'
+import { upgradeUser } from '@/lib/tier-engine'
+import { getMaxTierForRole } from '@/lib/tiers'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

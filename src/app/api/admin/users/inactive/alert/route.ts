@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
 import { getInactiveUsers } from '@/lib/admin/inactive-users'
 import { sendInactiveUserAlert } from '@/lib/admin/send-inactive-alert'
-import { ok, internalError } from '@/lib/api-response'
+import { internalError, ok } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {

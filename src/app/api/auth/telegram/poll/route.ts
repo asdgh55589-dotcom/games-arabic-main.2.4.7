@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
-import { logAction } from '@/lib/audit'
-import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
-import { redisGet, redisSet } from '@/lib/redis'
 import { ok, validationFail } from '@/lib/api-response'
+import { logAction } from '@/lib/audit'
+import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { redisGet, redisSet } from '@/lib/redis'
+import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
 import { generateUniqueUsername } from '@/lib/username-generator'
 
 export async function GET(req: NextRequest) {

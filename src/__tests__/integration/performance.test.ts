@@ -4,8 +4,8 @@
  */
 
 import { NotificationService } from '@/application/services/notification-service'
-import { NotificationType, NotificationChannel } from '@/domain'
-import type { NotificationRepository, TemplateRenderer, EventPublisher, JobQueue } from '@/domain'
+import type { EventPublisher, JobQueue, NotificationRepository, TemplateRenderer } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 
 function createPerfMockNotificationRepo(): NotificationRepository {
   return {

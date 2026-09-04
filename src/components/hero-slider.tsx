@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import Image from 'next/image'
-import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react'
-import { PLATFORM_COLORS, type PlatformKey, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { PLATFORM_COLORS, PLATFORM_KEY_MAP, type PlatformKey } from '@/lib/constants/platforms'
 import type { ModSummary } from '@/lib/types'
 
 /** Derive a 3-stop palette from a single brand color for hero gradients. */

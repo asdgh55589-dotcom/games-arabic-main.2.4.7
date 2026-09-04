@@ -367,4 +367,4 @@ export async function getHealthStatus() {
   }
 }
 
-export { PLATFORMS, getCurrentWeekOfMonth, getCurrentWorkingDay }
+export { getCurrentWeekOfMonth, getCurrentWorkingDay, PLATFORMS }

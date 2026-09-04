@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireOwner, hashPassword, invalidateUserSessions } from '@/lib/auth'
-import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
-import { createAdminClient } from '@/lib/supabase/server'
-import { validateSecurityKey, hashSecurityKey } from '@/lib/security-key'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { logUserAction } from '@/lib/audit'
+import { hashPassword, invalidateUserSessions, requireOwner } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { hashSecurityKey, validateSecurityKey } from '@/lib/security-key'
+import { createAdminClient } from '@/lib/supabase/server'
 
 interface Params {
   params: Promise<{ id: string }>

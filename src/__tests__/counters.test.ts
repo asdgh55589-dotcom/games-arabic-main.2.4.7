@@ -5,8 +5,8 @@ jest.mock('@/lib/auth', () => ({
   getUserIdFromRequestCookies: jest.fn().mockResolvedValue(null),
 }))
 
-import { isBot, recordModView, recordTeamView, recordDownload } from '@/lib/counters'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
+import { isBot, recordDownload, recordModView, recordTeamView } from '@/lib/counters'
 
 const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<
   typeof getUserIdFromRequestCookies

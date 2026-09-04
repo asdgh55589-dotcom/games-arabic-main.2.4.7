@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { ArrowLeft, AtSign, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Mail, Lock, User as UserIcon, AtSign } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/contexts/auth-context'
-import { TelegramLogin as TelegramWidget } from '@/components/telegram-login'
-import { createClient } from '@/lib/supabase/client'
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/auth/errors'
+import { createClient } from '@/lib/supabase/client'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (

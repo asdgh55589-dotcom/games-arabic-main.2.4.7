@@ -5,7 +5,7 @@
  * يستند إلى ROLE_ORDER من src/lib/roles.ts لتجنب التكرار والتناقض.
  */
 
-import { ROLE_ORDER, type UserRole, hasRoleAtLeast } from '@/lib/roles'
+import { hasRoleAtLeast, ROLE_ORDER, type UserRole } from '@/lib/roles'
 import { hasSpecialRole, type SpecialRole } from '@/lib/special-roles'
 
 export type Permission =

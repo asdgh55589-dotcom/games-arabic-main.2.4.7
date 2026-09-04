@@ -1,11 +1,11 @@
 // Prisma enums are imported for type safety only — runtime values remain strings (matching DB enums)
 // This ensures constants.ts stays in sync with schema.prisma enums
 import type {
+  ReportAction as PrismaReportAction,
+  ReportPriority as PrismaReportPriority,
   ReportReason as PrismaReportReason,
   ReportStatus as PrismaReportStatus,
-  ReportPriority as PrismaReportPriority,
   ReportType as PrismaReportType,
-  ReportAction as PrismaReportAction,
 } from '@prisma/client'
 
 export const REPORT_REASONS: Record<string, { label: string; priority: string; icon: string }> = {
@@ -63,11 +63,11 @@ export type ReportAction = keyof typeof REPORT_ACTIONS
 
 // Re-export Prisma enums for callers that want strict typing
 export type {
+  PrismaReportAction,
+  PrismaReportPriority,
   PrismaReportReason,
   PrismaReportStatus,
-  PrismaReportPriority,
   PrismaReportType,
-  PrismaReportAction,
 }
 
 export const DAILY_REPORT_LIMIT = 5

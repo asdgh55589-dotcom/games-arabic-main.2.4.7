@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, Star, Users, FileText, Gem } from 'lucide-react'
+import { BadgeCheck, FileText, Gem, Star, Users } from 'lucide-react'
 import { parseSpecialRoles, SPECIAL_ROLES, type SpecialRole } from '@/lib/special-roles'
 import { cn } from '@/lib/utils'
 

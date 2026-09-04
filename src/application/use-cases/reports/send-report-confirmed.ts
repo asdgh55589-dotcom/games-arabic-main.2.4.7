@@ -4,7 +4,7 @@
  * Also notifies the reporter about the outcome.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface ReportConfirmedContext {

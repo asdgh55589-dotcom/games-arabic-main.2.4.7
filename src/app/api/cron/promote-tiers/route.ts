@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import type { UserRole } from '@/lib/roles'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierLabel } from '@/lib/tiers'
-import type { UserRole } from '@/lib/roles'
 
 export async function GET(req: NextRequest) {
   // Verify cron secret

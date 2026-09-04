@@ -1,9 +1,9 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator, canDelete } from '@/lib/auth'
-import { slugify } from '@/lib/utils'
-import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 import { revalidatePath } from 'next/cache'
+import type { NextRequest } from 'next/server'
+import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { canDelete, requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { slugify } from '@/lib/utils'
 
 interface RouteParams {
   params: Promise<{ id: string }>

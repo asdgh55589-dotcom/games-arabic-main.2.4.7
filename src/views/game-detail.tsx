@@ -1,12 +1,13 @@
 // Updated for new API response format
 'use client'
 
-import { useState, useMemo } from 'react'
+import { ArrowRight, ChevronLeft, Download, Filter, Package, Search, ThumbsUp } from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
-import { ChevronLeft, Download, ThumbsUp, Package, ArrowRight, Filter, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useMemo, useState } from 'react'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -16,10 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
 import type { GameDetail, ModSummary } from '@/lib/types'
 

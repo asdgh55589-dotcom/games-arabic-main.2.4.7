@@ -1,10 +1,10 @@
 // Updated for new API response format
 'use client'
 
-import Link from 'next/link'
 import { Package, Star } from 'lucide-react'
-import { useFetch } from '@/hooks/use-fetch'
+import Link from 'next/link'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
 import { SeriesMobile } from './series-mobile'
 

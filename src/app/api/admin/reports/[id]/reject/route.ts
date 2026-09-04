@@ -1,11 +1,11 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { recalculateTrustScore } from '@/lib/reports/trust-score'
-import { checkReporterStrikes } from '@/lib/reports/reporter-strike'
 import { getUseCases } from '@/application/use-cases/factory'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
-import { ok, notFound, internalError } from '@/lib/api-response'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { checkReporterStrikes } from '@/lib/reports/reporter-strike'
+import { recalculateTrustScore } from '@/lib/reports/trust-score'
 
 interface RouteParams {
   params: Promise<{ id: string }>

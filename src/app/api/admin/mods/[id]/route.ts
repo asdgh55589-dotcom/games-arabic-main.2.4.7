@@ -1,12 +1,12 @@
+import { revalidatePath } from 'next/cache'
 import type { NextRequest } from 'next/server'
-import { ok, forbidden, internalError, notFound } from '@/lib/api-response'
+import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { canDelete, canEditMod, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { requireModerator, canEditMod, canDelete } from '@/lib/auth'
+import { calculateModQualityScore } from '@/lib/mod-quality'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { slugify } from '@/lib/utils'
-import { calculateModQualityScore } from '@/lib/mod-quality'
-import { revalidatePath } from 'next/cache'
 
 interface RouteParams {
   params: Promise<{ id: string }>

@@ -1,22 +1,22 @@
 'use client'
 
-import { useState } from 'react'
 import {
-  FileArchive,
   AlertTriangle,
   Calendar,
-  Clock,
-  HardDrive,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
-  PackageX,
+  Clock,
   Download,
+  ExternalLink,
+  FileArchive,
+  HardDrive,
+  PackageX,
 } from 'lucide-react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { formatArabicDate, timeAgo } from '@/lib/format'
+import { useState } from 'react'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { formatArabicDate, timeAgo } from '@/lib/format'
 import type { ModFile } from '@/lib/types'
 
 interface DownloadSectionProps {

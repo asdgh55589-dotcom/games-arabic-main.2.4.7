@@ -1,8 +1,8 @@
 'use client'
 
-import { Inbox, Search, FileText, Users, Bell, Heart } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Bell, FileText, Heart, Inbox, Search, Users } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 interface EmptyStateProps {
   icon?: 'inbox' | 'search' | 'file' | 'users' | 'bell' | 'heart'

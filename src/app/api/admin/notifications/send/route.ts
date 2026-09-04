@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/auth'
-import { sendNotification } from '@/lib/notifications/service'
 import { logAction } from '@/lib/audit'
+import { requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { sendNotification } from '@/lib/notifications/service'
 
 export async function POST(req: NextRequest) {
   try {

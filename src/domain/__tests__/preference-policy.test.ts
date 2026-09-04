@@ -3,7 +3,7 @@
  */
 
 import { PreferencePolicy } from '../policies/preference-policy'
-import { NotificationType, NotificationChannel } from '../value-objects'
+import { NotificationChannel, NotificationType } from '../value-objects'
 
 function createMockPreferenceRepo(preference: any = null) {
   return {

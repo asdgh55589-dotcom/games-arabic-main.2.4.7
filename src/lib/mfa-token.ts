@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from 'jose'
+import { jwtVerify, SignJWT } from 'jose'
 
 const MFA_TOKEN_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-mfa-secret')
 const MFA_TOKEN_EXPIRY = '10m'

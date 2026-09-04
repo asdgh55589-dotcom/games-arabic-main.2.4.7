@@ -1,13 +1,12 @@
 'use client'
 
+import { AlertCircle, Eye, Image as ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import Image from 'next/image'
-
-import { useCallback, useRef, useState, useEffect } from 'react'
-import { Upload, X, Image as ImageIcon, Loader2, AlertCircle, Eye } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { createClient } from '@/lib/supabase/client'
 
 interface ImageUploadProps {
   bucket: 'mods' | 'teams' | 'series' | 'news' | string

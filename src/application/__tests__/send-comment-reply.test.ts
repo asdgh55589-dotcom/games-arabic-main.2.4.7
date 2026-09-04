@@ -1,6 +1,6 @@
-import { SendCommentReplyNotification } from '../use-cases/social/send-comment-reply'
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../services'
+import { SendCommentReplyNotification } from '../use-cases/social/send-comment-reply'
 
 describe('SendCommentReplyNotification', () => {
   let useCase: SendCommentReplyNotification

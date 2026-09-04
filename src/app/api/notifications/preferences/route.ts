@@ -1,8 +1,8 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
 import type { Prisma } from '@prisma/client'
+import type { NextRequest } from 'next/server'
+import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
-import { ok, unauthorized, validationFail, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 import { UpdatePreferencesSchema } from '@/lib/schemas'
 
 const DEFAULT_PREFERENCES = {

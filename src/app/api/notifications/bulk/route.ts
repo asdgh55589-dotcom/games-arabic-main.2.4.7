@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, unauthorized, validationFail, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 async function requireUser() {
   return getOptionalSession()

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
 import { ModsListClient } from '@/components/creator/mods-list-client'
+import { getSession } from '@/lib/auth'
 
 export const metadata: Metadata = {
   title: 'تعريباتي | لوحة تحكم المُعَرِّب',

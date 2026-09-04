@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
-import { ok, internalError } from '@/lib/api-response'
 
 export async function GET(_req: NextRequest) {
   try {

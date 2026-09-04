@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { isValidTransition } from '@/lib/reports/constants'
+import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
-import { ok, notFound, validationFail, internalError } from '@/lib/api-response'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { isValidTransition } from '@/lib/reports/constants'
 
 interface RouteParams {
   params: Promise<{ id: string }>

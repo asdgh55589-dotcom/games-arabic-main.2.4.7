@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
+import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { requireModerator, canDelete } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
-import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/admin/teams/[id] — تفاصيل الفريق
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

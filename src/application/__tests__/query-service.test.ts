@@ -1,6 +1,6 @@
-import { NotificationQueryService } from '../services/notification-query-service'
 import type { NotificationRepository } from '@/domain'
 import { Notification, NotificationType } from '@/domain'
+import { NotificationQueryService } from '../services/notification-query-service'
 
 describe('NotificationQueryService', () => {
   let service: NotificationQueryService

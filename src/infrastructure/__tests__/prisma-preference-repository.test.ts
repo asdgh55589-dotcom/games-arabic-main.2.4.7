@@ -1,5 +1,5 @@
-import { PrismaPreferenceRepository } from '../repositories/prisma-preference-repository'
 import { NotificationPreference } from '@/domain'
+import { PrismaPreferenceRepository } from '../repositories/prisma-preference-repository'
 
 function makeMockDb() {
   const store = new Map<string, any>()

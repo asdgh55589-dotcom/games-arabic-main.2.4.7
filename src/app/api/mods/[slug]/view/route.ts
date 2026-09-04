@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok, rateLimited } from '@/lib/api-response'
+import { isBot, recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { ok, notFound, internalError, rateLimited } from '@/lib/api-response'
-import { recordModView, isBot } from '@/lib/counters'
 
 interface RouteParams {
   params: Promise<{ slug: string }>

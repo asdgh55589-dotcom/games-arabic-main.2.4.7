@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { ok, notFound, internalError } from '@/lib/api-response'
-import { db } from '@/lib/db'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 // PUT /api/admin/comments/[id] — تثبيت/إلغاء تثبيت تعليق
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

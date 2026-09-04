@@ -1,19 +1,19 @@
 // Updated for new API response format
 'use client'
 
+import { Package, Search as SearchIcon, X } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { Search as SearchIcon, Package, X } from 'lucide-react'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import { PLATFORMS } from '@/lib/constants'
-import { getSectionIcon } from '@/lib/section-icons'
 import { getPlatformColor } from '@/lib/constants/platforms'
-import { cn } from '@/lib/utils'
+import { getSectionIcon } from '@/lib/section-icons'
 import type { SearchResponse } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 // Platform key → section icon name (يجب أن يطابق أيقونات الشريط العلوي)
 const PLATFORM_ICON: Record<string, string> = {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Loader2, Plus, Star, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface SpecialRole {
   id: string

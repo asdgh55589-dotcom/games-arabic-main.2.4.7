@@ -1,6 +1,6 @@
-import { Crown, Shield, Star, User as UserIcon, BadgeCheck, PenTool, Send } from 'lucide-react'
-import { getRoleLabel } from '@/lib/roles'
+import { BadgeCheck, Crown, PenTool, Send, Shield, Star, User as UserIcon } from 'lucide-react'
 import type { UserRole } from '@/lib/roles'
+import { getRoleLabel } from '@/lib/roles'
 
 export const ROLE_BADGE: Record<
   string,

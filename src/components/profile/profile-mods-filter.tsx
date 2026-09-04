@@ -1,7 +1,7 @@
 'use client'
 
+import { Download, Eye, Loader2, MessageCircle, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
-import { Loader2, Download, ThumbsUp, MessageCircle, Eye } from 'lucide-react'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'

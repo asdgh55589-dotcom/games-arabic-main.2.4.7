@@ -1,15 +1,15 @@
 // Updated for new API response format
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Edit2, ExternalLink, Gamepad2, Plus, Search, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { DataTableSkeleton } from '@/components/ui/data-skeleton'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { DataTableSkeleton } from '@/components/ui/data-skeleton'
+import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Search, Gamepad2, Edit2, Trash2, ExternalLink } from 'lucide-react'
 
 interface GameItem {
   id: string

@@ -1,51 +1,51 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
 import {
-  Crown,
-  Shield,
-  User,
-  Settings,
-  Mail,
-  UserPlus,
-  UserCheck,
   Calendar,
   CheckCircle,
+  Crown,
   Download,
-  ThumbsUp,
+  Eye,
+  History,
+  Loader2,
+  Mail,
   MessageSquare,
   Package,
-  Eye,
-  Users,
-  Loader2,
-  Trophy,
+  Settings,
+  Shield,
+  ThumbsUp,
   TrendingUp,
-  History,
+  Trophy,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
 } from 'lucide-react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useToast } from '@/hooks/use-toast'
-import { useDocumentTitle } from '@/hooks/use-document-title'
-import { useAuth } from '@/contexts/auth-context'
-import { formatArabicDate, formatNumber } from '@/lib/format'
-import { ProfileStats } from '@/components/profile/profile-stats'
+import Link from 'next/link'
+import { useParams, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { CreatorBadge } from '@/components/creator-badge'
 import { ProfileBadgesGrid } from '@/components/profile/profile-badges-grid'
-import { ProfileXpBar } from '@/components/profile/profile-xp-bar'
-import { getTierLabel } from '@/lib/tiers'
-import { getRoleLabel } from '@/lib/roles'
 import { ProfileModsFilter } from '@/components/profile/profile-mods-filter'
 import { ProfileSocialLinks } from '@/components/profile/profile-social-links'
-import { TierBadge } from '@/components/tier-badge'
+import { ProfileStats } from '@/components/profile/profile-stats'
+import { ProfileXpBar } from '@/components/profile/profile-xp-bar'
 import { ReportButton } from '@/components/report-button'
-import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
+import { TierBadge } from '@/components/tier-badge'
 import { TierProgress } from '@/components/tier-progress'
-import { ProfileMobile } from './profile-mobile'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuth } from '@/contexts/auth-context'
+import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useToast } from '@/hooks/use-toast'
+import { formatArabicDate, formatNumber } from '@/lib/format'
+import { getRoleLabel } from '@/lib/roles'
+import { getTierLabel } from '@/lib/tiers'
 import type { ModSummary } from '@/lib/types'
+import { ProfileMobile } from './profile-mobile'
 
 interface ProfileData {
   id: string

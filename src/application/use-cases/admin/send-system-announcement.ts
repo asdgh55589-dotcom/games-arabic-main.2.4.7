@@ -3,7 +3,7 @@
  * Broadcasts a system announcement to all users.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface SystemAnnouncementContext {

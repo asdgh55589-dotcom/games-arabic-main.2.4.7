@@ -1,12 +1,12 @@
+import { Medal, Shield, Trophy } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { db } from '@/lib/db'
-import { getTierLabel } from '@/lib/tiers'
 import { TierBadge } from '@/components/tier-badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Trophy, Medal, Shield } from 'lucide-react'
+import { db } from '@/lib/db'
+import { getTierLabel } from '@/lib/tiers'
 
 export const metadata: Metadata = {
   title: 'لوحة صدارة المشرفين | Games Arabic',

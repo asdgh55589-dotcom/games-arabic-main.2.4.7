@@ -1,6 +1,6 @@
-import { Clock, ArrowRight } from 'lucide-react'
-import { WorkflowStatusBadge } from './workflow-status-badge'
+import { ArrowRight, Clock } from 'lucide-react'
 import { timeAgo } from '@/lib/format'
+import { WorkflowStatusBadge } from './workflow-status-badge'
 
 interface WorkflowHistoryEntry {
   id: string

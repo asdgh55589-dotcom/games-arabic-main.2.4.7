@@ -1,15 +1,15 @@
 import type { NextRequest } from 'next/server'
+import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, internalError, notFound, validationFail, forbidden } from '@/lib/api-response'
+import type { UserRole } from '@/lib/roles'
 import {
-  parseSpecialRoles,
-  formatSpecialRoles,
   canHaveSpecialRole,
+  formatSpecialRoles,
+  parseSpecialRoles,
   SPECIAL_ROLES,
   type SpecialRole,
 } from '@/lib/special-roles'
-import type { UserRole } from '@/lib/roles'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

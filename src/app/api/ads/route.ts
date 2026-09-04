@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
 import { ok } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // GET /api/ads — جلب إعلانات الصفحة الرئيسية (المرئية فقط)
 export async function GET() {

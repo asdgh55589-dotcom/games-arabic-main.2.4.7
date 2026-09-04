@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Loader2, Save, Check, Moon, Clock } from 'lucide-react'
+import { Check, Clock, Loader2, Moon, Save } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
 import { NotificationType } from '@/domain/value-objects/notification-type'
+import { useToast } from '@/hooks/use-toast'
 
 // ===== Types =====
 

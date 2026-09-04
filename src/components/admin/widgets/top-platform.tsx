@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
 import { Gamepad2 } from 'lucide-react'
+import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 

@@ -5,11 +5,11 @@
  */
 
 import type { EmailSender, EmailSendResult } from '@/domain'
-import { CircuitBreaker } from '../resilience/circuit-breaker'
-import { RetryPolicy, type RetryOptions } from '../resilience/retry-policy'
 import { NOTIFICATION_CONFIG } from '../config/notification-config'
 import { notificationLogger } from '../observability/logger'
 import { metricsService } from '../observability/metrics'
+import { CircuitBreaker } from '../resilience/circuit-breaker'
+import { type RetryOptions, RetryPolicy } from '../resilience/retry-policy'
 
 export interface ResendEmailSenderOptions {
   retryOptions?: Partial<RetryOptions>

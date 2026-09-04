@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { LogOut, Loader2 } from 'lucide-react'
+import { Loader2, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 
 interface LeaveTeamButtonProps {
   teamId: string

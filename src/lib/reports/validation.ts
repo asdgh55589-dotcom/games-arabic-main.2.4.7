@@ -1,6 +1,6 @@
-import { REPORT_REASONS, REPORT_TARGET_TYPES, DAILY_REPORT_LIMIT } from './constants'
 import { db } from '@/lib/db'
 import type { ReportReason, ReportTargetType } from './constants'
+import { DAILY_REPORT_LIMIT, REPORT_REASONS, REPORT_TARGET_TYPES } from './constants'
 
 const ALLOWED_URL_PROTOCOLS = ['http:', 'https:']
 

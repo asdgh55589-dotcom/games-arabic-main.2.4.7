@@ -1,29 +1,29 @@
-import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { getSession } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
-  Eye,
-  Download,
-  ThumbsUp,
-  MessageSquare,
-  Star,
-  FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  Plus,
   BarChart3,
+  CheckCircle,
+  Clock,
+  Download,
+  Eye,
+  FileText,
+  MessageSquare,
+  Plus,
+  Star,
+  ThumbsUp,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react'
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { CreatorBadge } from '@/components/creator-badge'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
-import { CreatorBadge } from '@/components/creator-badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export const metadata: Metadata = {
   title: 'لوحة تحكم المُعَرِّب | Games Arabic',

@@ -1,45 +1,45 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
 import {
-  Eye,
-  UserCog,
-  TrendingUp,
-  TrendingDown,
-  Ban,
-  CheckCircle,
-  AlertTriangle,
-  Key,
-  Trash2,
   Activity,
+  AlertTriangle,
+  Ban,
   Bell,
-  History,
+  CheckCircle,
   Crown,
+  Eye,
+  History,
+  Key,
   MoreHorizontal,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  UserCog,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { ROLE_ORDER, hasRoleAtLeast, getRoleLabel, type UserRole } from '@/lib/roles'
+import { getRoleLabel, hasRoleAtLeast, ROLE_ORDER, type UserRole } from '@/lib/roles'
 
 // ===== Types (بدون اختصار) =====
 export type UserActionType =

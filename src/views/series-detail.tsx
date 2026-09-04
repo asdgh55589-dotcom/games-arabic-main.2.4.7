@@ -1,10 +1,11 @@
 // Updated for new API response format
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowRight, Package, Search, Star } from 'lucide-react'
+import Link from 'next/link'
+import { useParams, useSearchParams } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,13 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
-import { SeriesDetailMobile } from './series-detail-mobile'
 import type { ModSummary } from '@/lib/types'
+import { SeriesDetailMobile } from './series-detail-mobile'
 
 interface SeriesInfo {
   id: string

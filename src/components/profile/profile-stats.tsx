@@ -1,6 +1,6 @@
 'use client'
 
-import { Package, Download, ThumbsUp, Eye, Users, UserPlus, Award, BarChart3 } from 'lucide-react'
+import { Award, BarChart3, Download, Eye, Package, ThumbsUp, UserPlus, Users } from 'lucide-react'
 import { formatNumber } from '@/lib/format'
 
 const ROLE_STATS_LABEL: Record<string, string> = {

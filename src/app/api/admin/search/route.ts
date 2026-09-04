@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { search } from '@/lib/search'
 import { logAction } from '@/lib/audit'
+import { search } from '@/lib/search'
 
 export async function GET(request: Request) {
   try {

@@ -1,42 +1,39 @@
 'use client'
 
-import Image from 'next/image'
-
-import Link from 'next/link'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useEffect, useRef, useState, useCallback } from 'react'
 import {
-  Search,
-  Menu,
-  ChevronDown,
-  Upload,
-  LogIn,
-  X,
-  TrendingUp,
-  Flame,
-  Package,
-  Users,
-  LogOut,
-  User,
-  Settings,
-  FileText,
   Activity,
-  Bookmark,
-  Trophy,
   Bell,
+  Bookmark,
+  ChevronDown,
+  FileText,
+  Flame,
+  LogIn,
+  LogOut,
+  Menu,
+  Package,
+  Search,
+  Settings,
+  TrendingUp,
+  Trophy,
+  Upload,
+  User,
+  Users,
+  X,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { NotificationBell } from '@/components/notification-bell'
 import {
-  PcIcon,
   NintendoSwitchIcon,
+  PcIcon,
   PlayStationIcon,
   Xbox360Icon,
 } from '@/components/platform-icons'
-import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
-import { getSectionIcon } from '@/lib/section-icons'
-import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,14 +41,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { NotificationBell } from '@/components/notification-bell'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
-import { formatNumber } from '@/lib/format'
-import { useDebounced } from '@/hooks/use-debounced'
+import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
+import { useDebounced } from '@/hooks/use-debounced'
+import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
+import { formatNumber } from '@/lib/format'
+import { getSectionIcon } from '@/lib/section-icons'
 import type { SearchResponse } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 interface NavbarProps {
   games?: { slug: string; name: string; thumbnailUrl: string; modCount: number; platform: string }[]

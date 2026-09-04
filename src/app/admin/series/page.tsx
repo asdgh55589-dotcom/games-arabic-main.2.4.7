@@ -1,14 +1,14 @@
 // Updated for new API response format
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Edit2, Layers, Loader2, Plus, Shield, Star, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { Loader2, Layers, Trash2, Edit2, Plus, Star, Shield } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { formatNumber } from '@/lib/format'
 import { useToast } from '@/hooks/use-toast'
+import { formatNumber } from '@/lib/format'
 
 interface SeriesItem {
   id: string

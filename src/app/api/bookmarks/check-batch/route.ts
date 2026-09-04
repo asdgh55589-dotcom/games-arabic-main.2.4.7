@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // POST /api/bookmarks/check-batch — التحقق من حالة الحفظ لعدة تعريبات في طلب واحد
 export async function POST(req: NextRequest) {

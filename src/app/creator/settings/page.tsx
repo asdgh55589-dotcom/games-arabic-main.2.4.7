@@ -1,11 +1,11 @@
+import { Bell, Settings } from 'lucide-react'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Settings, Bell } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'إعدادات لوحة التحكم | لوحة تحكم المُعَرِّب',

@@ -1,11 +1,10 @@
 'use client'
 
+import { ChevronLeft, ChevronRight, ImageOff, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import Image from 'next/image'
-
-import { useState, useEffect, useCallback } from 'react'
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, ImageOff } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 
 interface ModGalleryProps {

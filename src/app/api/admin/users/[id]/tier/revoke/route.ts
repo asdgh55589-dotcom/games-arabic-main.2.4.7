@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { revokeTier } from '@/lib/tier-engine'
-import { ok, internalError, notFound } from '@/lib/api-response'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

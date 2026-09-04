@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // GET /api/notifications/unread — الإشعارات غير المقروءة
 export async function GET(_req: NextRequest) {

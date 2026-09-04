@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, okPaginated } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
-import { okPaginated, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 // GET /api/admin/endorsements — قائمة كل التأييدات
 export async function GET(req: NextRequest) {

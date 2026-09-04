@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok } from '@/lib/api-response'
 import { getActiveNews } from '@/lib/news-helpers'
-import { ok, internalError } from '@/lib/api-response'
 
 // GET /api/news?type=ticker|featured — الأخبار النشطة
 export async function GET(req: NextRequest) {

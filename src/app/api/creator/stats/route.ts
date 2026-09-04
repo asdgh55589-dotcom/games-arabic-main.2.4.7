@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok } from '@/lib/api-response'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)

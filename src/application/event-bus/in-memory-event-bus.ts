@@ -3,7 +3,7 @@
  * In-process event bus for domain events.
  */
 
-import type { EventPublisher, EventHandler, DomainEvent } from '@/domain'
+import type { DomainEvent, EventHandler, EventPublisher } from '@/domain'
 import { notificationLogger } from '@/infrastructure/observability/logger'
 
 export class InMemoryEventBus implements EventPublisher {

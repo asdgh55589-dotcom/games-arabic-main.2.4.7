@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
-import { ok, notFound } from '@/lib/api-response'
 import { recordModView } from '@/lib/counters'
+import { db } from '@/lib/db'
 
 // GET /api/mods/[slug] - single mod by slug
 //

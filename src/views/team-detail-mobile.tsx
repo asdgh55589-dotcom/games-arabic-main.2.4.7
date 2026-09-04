@@ -1,18 +1,18 @@
 'use client'
 
+import { BadgeCheck, Download, Eye, Gamepad2, Layers, Link2, Users } from 'lucide-react'
 import Link from 'next/link'
-import { Users, Gamepad2, Layers, Eye, Download, BadgeCheck, Link2 } from 'lucide-react'
 import { ModCard } from '@/components/mod-card'
 import { formatNumber } from '@/lib/format'
-import type { TeamDetail } from '@/lib/types'
-import { TEAM_TABS, ROLE_LABELS, type TabKey } from '@/lib/team-constants'
+import { ROLE_LABELS, type TabKey, TEAM_TABS } from '@/lib/team-constants'
 import {
-  getMemberDisplayName,
   getMemberAvatar,
-  getMemberProfileUrl,
   getMemberBio,
+  getMemberDisplayName,
+  getMemberProfileUrl,
   isLinkedMember,
 } from '@/lib/team-members'
+import type { TeamDetail } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Props — same data as team-detail.tsx, reuse via props (no new API calls)

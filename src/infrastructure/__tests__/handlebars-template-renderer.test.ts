@@ -1,8 +1,8 @@
+import { NotificationChannel, NotificationType } from '@/domain'
 import {
   HandlebarsTemplateRenderer,
   type TemplateStore,
 } from '../adapters/handlebars-template-renderer'
-import { NotificationType, NotificationChannel } from '@/domain'
 
 function makeMockTemplateStore(
   templates?: Record<string, { titleTemplate: string; bodyTemplate: string }>,

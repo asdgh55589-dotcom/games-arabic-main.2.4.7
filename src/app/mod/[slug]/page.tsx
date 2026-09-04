@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { ModDetailPage } from '@/views/mod-detail'
 import { modJsonLd } from '@/lib/seo/structured-data'
+import { ModDetailPage } from '@/views/mod-detail'
 
 export const revalidate = 300 // ISR: 5m — بيانات التعريب نادراً ما تتغير
 

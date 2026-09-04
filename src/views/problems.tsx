@@ -1,8 +1,8 @@
 'use client'
 
-import { useDocumentTitle } from '@/hooks/use-document-title'
+import { AlertTriangle, BookOpen, CheckCircle2, HelpCircle, Wrench } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Wrench, BookOpen, HelpCircle, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function ProblemsPage() {
   useDocumentTitle('مشاكل وحلول — GAMES ARABIC')

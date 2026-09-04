@@ -3,7 +3,7 @@
  * Notifies the user when a special role is removed from them.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface SpecialRoleRemovedContext {

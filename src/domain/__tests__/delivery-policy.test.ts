@@ -1,6 +1,6 @@
-import { ExponentialBackoffDeliveryPolicy } from '../policies/delivery-policy'
 import { NotificationJob } from '../entities/notification-job'
-import { NotificationChannel, DeliveryStatus } from '../value-objects'
+import { ExponentialBackoffDeliveryPolicy } from '../policies/delivery-policy'
+import { DeliveryStatus, NotificationChannel } from '../value-objects'
 
 describe('DeliveryPolicy', () => {
   describe('ExponentialBackoffDeliveryPolicy', () => {

@@ -2,8 +2,8 @@
  * NotificationCreatedEvent — يُطلق عند إنشاء إشعار جديد
  */
 
+import type { NotificationChannel, NotificationType } from '../value-objects'
 import type { DomainEvent } from './base'
-import type { NotificationType, NotificationChannel } from '../value-objects'
 
 export interface NotificationCreatedEvent extends DomainEvent {
   readonly eventType: 'notification.created'

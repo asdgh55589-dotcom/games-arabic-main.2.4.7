@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
 import { Resend } from 'resend'
+import { db } from '@/lib/db'
 
 let resend: Resend | null = null
 if (process.env.RESEND_API_KEY) {

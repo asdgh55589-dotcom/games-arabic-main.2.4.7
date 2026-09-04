@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Medal, Trophy } from 'lucide-react'
 import Link from 'next/link'
-import { Trophy, Medal } from 'lucide-react'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { useEffect, useState } from 'react'
 import { TierBadge } from '@/components/tier-badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface LeaderEntry {
   user: { id: string; username: string; avatarUrl: string | null; role: string; tier: number }

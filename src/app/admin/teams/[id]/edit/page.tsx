@@ -1,14 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowRight, Loader2, Save } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/hooks/use-toast'
-import { TeamGeneralTab, type TeamGeneralFormData } from '@/components/admin/teams/team-general-tab'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { TeamContactTab } from '@/components/admin/teams/team-contact-tab'
+import { type TeamGeneralFormData, TeamGeneralTab } from '@/components/admin/teams/team-general-tab'
 import { TeamMembersTab } from '@/components/admin/teams/team-members-tab'
 import { TeamModsTab } from '@/components/admin/teams/team-mods-tab'
 import { TeamTabsTab } from '@/components/admin/teams/team-tabs-tab'
@@ -17,6 +14,9 @@ import type {
   TeamContactLinkInput,
   TeamCustomTabData,
 } from '@/components/admin/teams/types'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
 
 const emptyForm: TeamGeneralFormData = {
   name: '',

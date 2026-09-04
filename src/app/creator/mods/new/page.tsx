@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
 import ModForm from '@/components/creator/mod-form'
+import { getSession } from '@/lib/auth'
 
 export const metadata: Metadata = {
   title: 'تعريب جديد | لوحة تحكم المُعَرِّب',

@@ -1,9 +1,9 @@
-import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireManager } from '@/lib/auth'
-import { ok, okPaginated, validationFail, internalError } from '@/lib/api-response'
-import { PaginationSchema, CreateTemplateSchema } from '@/lib/schemas'
 import Handlebars from 'handlebars/dist/cjs/handlebars.js'
+import type { NextRequest } from 'next/server'
+import { internalError, ok, okPaginated, validationFail } from '@/lib/api-response'
+import { requireManager } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { CreateTemplateSchema, PaginationSchema } from '@/lib/schemas'
 
 export async function GET(req: NextRequest) {
   try {

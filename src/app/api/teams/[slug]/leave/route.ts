@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { requireAuth, AuthError } from '@/lib/auth'
+import { fail, notFound, ok, unauthorized } from '@/lib/api-response'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, notFound, fail, unauthorized } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ slug: string }>

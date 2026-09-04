@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
+import { internalError, ok, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
-import { ok, validationFail, internalError } from '@/lib/api-response'
+import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 import { generateUniqueUsername } from '@/lib/username-generator'
-import { verifyTelegramAuth, isAuthDateValid } from '@/lib/telegram-verify'
 
 export async function POST(req: NextRequest) {
   try {

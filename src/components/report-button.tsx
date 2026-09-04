@@ -1,8 +1,8 @@
 'use client'
 
 import { Flag } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ReportDialog } from '@/components/report-dialog'
+import { Button } from '@/components/ui/button'
 import type { ReportTargetType } from '@/lib/reports/constants'
 
 interface ReportButtonProps {

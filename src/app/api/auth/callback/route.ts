@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { db } from '@/lib/db'
-import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
+import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/username-generator'
 
 // تحديد الـ base URL بناءً على الـ request

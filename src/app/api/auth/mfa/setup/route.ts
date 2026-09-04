@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, internalError, validationFail, unauthorized } from '@/lib/api-response'
-import { generateTOTPSecret, generateTOTPUri, generateQRCode, encryptTOTPSecret } from '@/lib/totp'
+import { encryptTOTPSecret, generateQRCode, generateTOTPSecret, generateTOTPUri } from '@/lib/totp'
 
 export async function POST(req: NextRequest) {
   try {

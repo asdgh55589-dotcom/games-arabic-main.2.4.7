@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok } from '@/lib/api-response'
 import { redisGet, redisSet } from '@/lib/redis'
-import { ok, internalError } from '@/lib/api-response'
 
 export async function POST(req: NextRequest) {
   try {

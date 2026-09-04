@@ -3,7 +3,7 @@
  * Notifies the mod author when someone likes their mod.
  */
 
-import { NotificationType, NotificationChannel } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 import type { NotificationService } from '../../services'
 
 export interface LikeContext {

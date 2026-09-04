@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from 'next'
-import { Suspense } from 'react'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Suspense } from 'react'
 import { cairo } from './fonts'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
-import { ThemeProvider } from '@/components/theme-provider'
-import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
-import { SeoUpdater } from '@/components/seo-updater'
 import { AppShell } from '@/components/layout/app-shell'
+import { SeoUpdater } from '@/components/seo-updater'
+import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
+import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
+import { WebVitalsReporter } from '@/components/web-vitals-reporter'
 import { AuthProvider } from '@/contexts/auth-context'
 import { SettingsProvider } from '@/contexts/settings-context'
 import { organizationJsonLd } from '@/lib/seo/structured-data'
-import { WebVitalsReporter } from '@/components/web-vitals-reporter'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

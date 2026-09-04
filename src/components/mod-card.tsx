@@ -1,38 +1,38 @@
 'use client'
 
-import { useEffect } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import {
-  Download,
-  ThumbsUp,
-  Eye,
-  CalendarDays,
-  History,
-  Users,
-  FileArchive,
-  Package,
-  MoreVertical,
   Bookmark,
+  CalendarDays,
+  Download,
+  Eye,
+  FileArchive,
   Flag,
+  History,
+  MoreVertical,
+  Package,
+  ThumbsUp,
+  Users,
 } from 'lucide-react'
-import { formatNumber } from '@/lib/format'
-import { StatusBadge, getModBadgeStatus } from '@/components/status-badge'
-import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { CreatorBadge } from '@/components/creator-badge'
+import { ReportDialog } from '@/components/report-dialog'
+import { RoleBadge } from '@/components/role-badge'
+import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
+import { TierBadge } from '@/components/tier-badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ReportDialog } from '@/components/report-dialog'
 import { useBookmarks } from '@/contexts/bookmarks-context'
 import { useToast } from '@/hooks/use-toast'
-import { CreatorBadge } from '@/components/creator-badge'
-import { RoleBadge } from '@/components/role-badge'
-import { TierBadge } from '@/components/tier-badge'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
+import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
+import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 interface ModCardProps {

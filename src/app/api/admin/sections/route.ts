@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
-import { slugify } from '@/lib/utils'
-import { ok, validationFail, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 import { clearHomeCache } from '@/lib/home-cache'
+import { slugify } from '@/lib/utils'
 
 const MAX_ACTIVE_MAIN_SECTIONS = 7
 

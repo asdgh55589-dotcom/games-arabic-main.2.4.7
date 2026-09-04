@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NotificationDropdown } from '@/components/notification-dropdown'
+import { Button } from '@/components/ui/button'
 import { useNotificationPolling } from '@/hooks/use-notification-polling'
 
 interface NotificationBellProps {

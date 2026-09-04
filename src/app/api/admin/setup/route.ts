@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { hashPassword, createSupabaseAuthUser } from '@/lib/auth'
-import { hashSecurityKey } from '@/lib/security-key'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { conflict, internalError, ok, rateLimited } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
-import { ok, internalError, rateLimited, conflict } from '@/lib/api-response'
+import { createSupabaseAuthUser, hashPassword } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { hashSecurityKey } from '@/lib/security-key'
 
 // POST /api/admin/setup — إنشاء أول حساب owner
 // محمي: لا يعمل لو يوجد owner بالفعل (flag في DB)

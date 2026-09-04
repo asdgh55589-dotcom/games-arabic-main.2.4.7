@@ -1,7 +1,7 @@
 'use client'
 
+import { Clock, Hash, Loader2, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Loader2, TrendingUp, Clock, Hash } from 'lucide-react'
 
 interface StatsData {
   total: number

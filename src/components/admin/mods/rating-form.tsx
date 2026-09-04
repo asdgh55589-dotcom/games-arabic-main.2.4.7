@@ -1,7 +1,7 @@
 'use client'
 
+import { Send, Star } from 'lucide-react'
 import { useState } from 'react'
-import { Star, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { RatingDisplay } from './rating-display'

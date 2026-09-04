@@ -9,10 +9,10 @@
 // نحن نمرّر نصوص القوالب كـ strings ولا نحمّل ملفات، لذا البناء المباشر كافٍ وأنظف.
 import Handlebars from 'handlebars/dist/cjs/handlebars.js'
 import type {
-  TemplateRenderer,
-  RenderedTemplate,
-  NotificationType,
   NotificationChannel,
+  NotificationType,
+  RenderedTemplate,
+  TemplateRenderer,
 } from '@/domain'
 import { NotificationChannel as Channel } from '@/domain'
 import { NOTIFICATION_CONFIG } from '../config/notification-config'

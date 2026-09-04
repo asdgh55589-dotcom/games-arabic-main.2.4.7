@@ -4,27 +4,27 @@
  */
 
 import { NotificationService } from '@/application/services/notification-service'
-import { SendCommentReplyNotification } from '@/application/use-cases/social/send-comment-reply'
-import { SendTopLevelCommentNotification } from '@/application/use-cases/social/send-top-level-comment'
-import { SendLikeNotification } from '@/application/use-cases/social/send-like'
-import { SendFollowNotification } from '@/application/use-cases/social/send-follow'
-import { SendEndorseMilestoneNotification } from '@/application/use-cases/social/send-endorse-milestone'
-import { SendModPublishedNotification } from '@/application/use-cases/mods/send-mod-published'
-import { SendTierUpgradeNotification } from '@/application/use-cases/tiers-roles/send-tier-upgrade'
-import { SendTierRevokedNotification } from '@/application/use-cases/tiers-roles/send-tier-revoked'
-import { SendReportConfirmedNotification } from '@/application/use-cases/reports/send-report-confirmed'
-import { SendAutoWarningNotification } from '@/application/use-cases/reports/send-auto-warning'
-import { SendAutoBanNotification } from '@/application/use-cases/reports/send-auto-ban'
 import { SendAdminAlertNotification } from '@/application/use-cases/admin/send-admin-alert'
 import { SendSystemAnnouncementNotification } from '@/application/use-cases/admin/send-system-announcement'
-import { NotificationType, NotificationChannel } from '@/domain'
+import { SendModPublishedNotification } from '@/application/use-cases/mods/send-mod-published'
+import { SendAutoBanNotification } from '@/application/use-cases/reports/send-auto-ban'
+import { SendAutoWarningNotification } from '@/application/use-cases/reports/send-auto-warning'
+import { SendReportConfirmedNotification } from '@/application/use-cases/reports/send-report-confirmed'
+import { SendCommentReplyNotification } from '@/application/use-cases/social/send-comment-reply'
+import { SendEndorseMilestoneNotification } from '@/application/use-cases/social/send-endorse-milestone'
+import { SendFollowNotification } from '@/application/use-cases/social/send-follow'
+import { SendLikeNotification } from '@/application/use-cases/social/send-like'
+import { SendTopLevelCommentNotification } from '@/application/use-cases/social/send-top-level-comment'
+import { SendTierRevokedNotification } from '@/application/use-cases/tiers-roles/send-tier-revoked'
+import { SendTierUpgradeNotification } from '@/application/use-cases/tiers-roles/send-tier-upgrade'
 import type {
+  EventPublisher,
+  JobQueue,
   NotificationRepository,
   PreferenceRepository,
   TemplateRenderer,
-  EventPublisher,
-  JobQueue,
 } from '@/domain'
+import { NotificationChannel, NotificationType } from '@/domain'
 
 interface MockServiceRefs {
   service: NotificationService

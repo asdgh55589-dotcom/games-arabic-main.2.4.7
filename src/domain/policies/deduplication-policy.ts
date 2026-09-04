@@ -4,8 +4,8 @@
  */
 
 import type { Notification } from '../entities'
-import { NotificationType } from '../value-objects'
 import type { NotificationRepository } from '../ports'
+import { NotificationType } from '../value-objects'
 
 export interface DeduplicationResult {
   action: 'create' | 'skip'

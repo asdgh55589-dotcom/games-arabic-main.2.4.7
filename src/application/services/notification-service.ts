@@ -5,19 +5,19 @@
  */
 
 import {
-  Notification,
-  NotificationType,
-  NotificationChannel,
-  type NotificationRepository,
-  type PreferenceRepository,
-  type TemplateRenderer,
+  createNotificationCreatedEvent,
+  type DeduplicationPolicy,
+  type DeliveryPolicy,
   type EventPublisher,
   type JobQueue,
-  type DeduplicationPolicy,
-  type PreferencePolicy,
-  type DeliveryPolicy,
+  Notification,
+  NotificationChannel,
   NotificationJob,
-  createNotificationCreatedEvent,
+  type NotificationRepository,
+  NotificationType,
+  type PreferencePolicy,
+  type PreferenceRepository,
+  type TemplateRenderer,
 } from '@/domain'
 import type { SendNotificationInput } from '../dto'
 

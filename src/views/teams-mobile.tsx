@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { ArrowLeft, Search, Shield, Star, Users, X } from 'lucide-react'
 import Link from 'next/link'
-import { Users, Star, Shield, Search, ArrowLeft, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { formatNumber } from '@/lib/format'
 
 // Reuse same shape as src/views/translation-teams.tsx

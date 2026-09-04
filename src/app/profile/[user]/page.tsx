@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { ProfilePage } from '@/views/profile'
 import { profileJsonLd } from '@/lib/seo/structured-data'
+import { ProfilePage } from '@/views/profile'
 
 export const dynamic = 'force-dynamic' // شخصي — يجب أن يكون مباشراً
 

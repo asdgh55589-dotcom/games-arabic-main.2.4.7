@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 
 export async function GET(req: NextRequest) {

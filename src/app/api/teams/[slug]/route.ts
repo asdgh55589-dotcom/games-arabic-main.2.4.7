@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { ok, notFound, internalError } from '@/lib/api-response'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { recordTeamView } from '@/lib/counters'
+import { db } from '@/lib/db'
 
 // GET /api/teams/[slug] — تفاصيل فريق
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {

@@ -1,25 +1,25 @@
 'use client'
 
+import {
+  Crown,
+  Globe,
+  Loader2,
+  Palette,
+  Save,
+  Search,
+  Settings,
+  Share2,
+  Shield,
+  Star,
+  User as UserIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Button } from '@/components/ui/button'
+import { DataTableSkeleton } from '@/components/ui/data-skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import {
-  Settings,
-  Crown,
-  Shield,
-  Star,
-  User as UserIcon,
-  Save,
-  Globe,
-  Palette,
-  Search,
-  Share2,
-  Loader2,
-} from 'lucide-react'
 
 interface SettingsData {
   [group: string]: {

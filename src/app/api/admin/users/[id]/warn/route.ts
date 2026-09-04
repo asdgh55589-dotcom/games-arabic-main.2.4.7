@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/auth'
+import { fail, internalError, ok } from '@/lib/api-response'
 import { logUserAction } from '@/lib/audit'
-import { ok, fail, internalError } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 // POST /api/admin/users/[id]/warn — تحذير مستخدم
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

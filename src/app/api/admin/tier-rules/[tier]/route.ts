@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, ok } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ tier: string }>

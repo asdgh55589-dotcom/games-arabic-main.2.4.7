@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, validationFail, notFound, internalError, unauthorized } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>

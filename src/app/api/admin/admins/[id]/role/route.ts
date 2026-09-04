@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireOwner, invalidateUserSessions } from '@/lib/auth'
-import { ok, fail, forbidden, internalError, notFound } from '@/lib/api-response'
-import { canAssignRole } from '@/lib/permissions'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { logUserAction } from '@/lib/audit'
+import { invalidateUserSessions, requireOwner } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { canAssignRole } from '@/lib/permissions'
 
 interface Params {
   params: Promise<{ id: string }>

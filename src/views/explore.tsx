@@ -1,9 +1,9 @@
 'use client'
 
+import { ArrowLeft, Gamepad2, Layers, Monitor, Smartphone } from 'lucide-react'
 import Link from 'next/link'
-import { useDocumentTitle } from '@/hooks/use-document-title'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Gamepad2, Monitor, Smartphone, Layers } from 'lucide-react'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 import { PLATFORM_COLORS } from '@/lib/constants/platforms'
 
 const EXPLORE_PLATFORMS = [

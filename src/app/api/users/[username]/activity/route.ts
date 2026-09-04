@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, notFound, forbidden, internalError } from '@/lib/api-response'
+import { db } from '@/lib/db'
 
 interface RouteParams {
   params: Promise<{ username: string }>

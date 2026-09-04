@@ -1,14 +1,14 @@
+import { History, TrendingUp, Trophy } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { db } from '@/lib/db'
-import { getTierConfig, getTierLabel } from '@/lib/tiers'
-import { calculateUserTier } from '@/lib/tier-engine'
-import type { UserRole } from '@/lib/roles'
-import { TierBadge } from '@/components/tier-badge'
 import { RoleBadge } from '@/components/role-badge'
+import { TierBadge } from '@/components/tier-badge'
 import { TierProgress } from '@/components/tier-progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, TrendingUp, History } from 'lucide-react'
+import { db } from '@/lib/db'
+import type { UserRole } from '@/lib/roles'
+import { calculateUserTier } from '@/lib/tier-engine'
+import { getTierConfig, getTierLabel } from '@/lib/tiers'
 
 export async function generateMetadata({
   params,

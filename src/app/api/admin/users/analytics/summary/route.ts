@@ -1,6 +1,6 @@
+import { internalError, ok } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { ok, internalError } from '@/lib/api-response'
 
 export async function GET() {
   try {

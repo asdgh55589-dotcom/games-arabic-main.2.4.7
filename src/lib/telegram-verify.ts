@@ -1,4 +1,4 @@
-import { createHmac, createHash } from 'crypto'
+import { createHash, createHmac } from 'crypto'
 
 /**
  * التحقق من بيانات Telegram Login Widget

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Trophy, Medal, Award, Star, TrendingUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Award, Medal, Star, TrendingUp, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 
 interface LeaderboardEntry {

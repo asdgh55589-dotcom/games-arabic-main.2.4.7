@@ -1,11 +1,11 @@
 'use client'
 
+import { GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { MarkdownEditor } from '@/components/admin/markdown-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MarkdownEditor } from '@/components/admin/markdown-editor'
 import { TEAM_TABS } from '@/lib/team-constants'
 import type { TeamCustomTabData } from './types'
 

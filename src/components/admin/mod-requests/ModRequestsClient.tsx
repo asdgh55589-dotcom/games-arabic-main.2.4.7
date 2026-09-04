@@ -1,30 +1,30 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
+  Archive,
+  CheckCircle,
+  Clock,
+  Download,
+  Eye,
   Gamepad2,
   Heart,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Archive,
-  Download,
   Inbox,
-  Clock,
+  XCircle,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
 import {
   AdminDataTable,
+  type BulkAction,
   type Column,
   type FilterConfig,
-  type BulkAction,
   type StatItem,
 } from '@/components/admin/shared/AdminDataTable'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
 interface ModRequestItem {

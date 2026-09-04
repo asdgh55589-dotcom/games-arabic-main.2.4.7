@@ -1,6 +1,6 @@
 import { Clock, FileArchive, User } from 'lucide-react'
-import { timeAgo } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
+import { timeAgo } from '@/lib/format'
 
 interface VersionEntry {
   id: string

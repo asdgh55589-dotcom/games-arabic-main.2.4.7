@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Loader2, Plus, Award, Settings, Trash2 } from 'lucide-react'
+import { Award, Loader2, Plus, Settings, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { TierRuleForm } from '@/components/tier-rule-form'
 
 interface TierRule {

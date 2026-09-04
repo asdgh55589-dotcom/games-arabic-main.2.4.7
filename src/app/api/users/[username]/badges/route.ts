@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
+import { internalError, notFound, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
-import { ok, notFound, internalError } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>

@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
+import { ok, rateLimited } from '@/lib/api-response'
+import { clamp, parseIntParam, serialize } from '@/lib/api-utils'
+import { PLATFORM_KEYS } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { parseIntParam, clamp, serialize } from '@/lib/api-utils'
 import { rateLimit } from '@/lib/rate-limit'
 import type { SearchResponse } from '@/lib/types'
-import { ok, rateLimited } from '@/lib/api-response'
-import { PLATFORM_KEYS } from '@/lib/constants'
 
 // GET /api/search?q=...&platform=PC,PS3&limit=...
 // بيدور في التعريبات فقط (مفيش ألعاب)

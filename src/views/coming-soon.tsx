@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { Construction } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 

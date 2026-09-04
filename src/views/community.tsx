@@ -1,10 +1,10 @@
 'use client'
 
+import { MessageCircle, Send, Users } from 'lucide-react'
 import Link from 'next/link'
-import { useDocumentTitle } from '@/hooks/use-document-title'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Send, Users, MessageCircle } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export function CommunityPage() {
   useDocumentTitle('المجتمع — GAMES ARABIC')

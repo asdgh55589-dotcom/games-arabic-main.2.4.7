@@ -1,6 +1,6 @@
+import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
 import { hashPassword } from '@/lib/auth'
-import bcrypt from 'bcryptjs'
 
 /**
  * توليد مفتاح أمان عشوائي أبجدي-رقمي

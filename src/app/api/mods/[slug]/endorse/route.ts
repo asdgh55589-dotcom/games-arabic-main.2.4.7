@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { getOptionalSession } from '@/lib/auth'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { getUseCases } from '@/application/use-cases/factory'
-import { ok, notFound, unauthorized, rateLimited, internalError } from '@/lib/api-response'
+import { internalError, notFound, ok, rateLimited, unauthorized } from '@/lib/api-response'
+import { getOptionalSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { clearHomeCache } from '@/lib/home-cache'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 // GET /api/mods/[slug]/endorse — check if current user has endorsed
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {

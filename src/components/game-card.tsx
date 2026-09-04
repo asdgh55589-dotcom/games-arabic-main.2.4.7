@@ -1,13 +1,12 @@
 'use client'
 
+import { Clock, Download, Package, ThumbsUp } from 'lucide-react'
 import Image from 'next/image'
-
 import Link from 'next/link'
-import { Package, Download, ThumbsUp, Clock } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { formatNumber, timeAgo } from '@/lib/format'
-import { StatusBadge, getModBadgeStatus } from '@/components/status-badge'
 import type { GameSummary } from '@/lib/types'
 
 export type GameCardData = GameSummary

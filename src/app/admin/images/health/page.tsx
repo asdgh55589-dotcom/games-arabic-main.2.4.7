@@ -1,39 +1,39 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { ar } from 'date-fns/locale'
+import {
+  AlertTriangle,
+  Calendar,
+  CalendarDays,
+  CheckCircle,
+  ClipboardList,
+  Cloud,
+  Download,
+  EyeOff,
+  Heart,
+  History,
+  Loader2,
+  RefreshCw,
+  Wrench,
+  XCircle,
+} from 'lucide-react'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useState } from 'react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
-import {
-  RefreshCw,
-  Download,
-  ClipboardList,
-  CheckCircle,
-  XCircle,
-  Heart,
-  Calendar,
-  CalendarDays,
-  AlertTriangle,
-  Cloud,
-  History,
-  Loader2,
-  Wrench,
-  EyeOff,
-} from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
-import { ar } from 'date-fns/locale'
 
 interface HealthData {
   currentWeek: number

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { updateModQualityScore } from '@/lib/quality-score'
 import { logAction } from '@/lib/audit'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { updateModQualityScore } from '@/lib/quality-score'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

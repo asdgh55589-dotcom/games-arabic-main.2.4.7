@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin, hashPassword } from '@/lib/auth'
+import { fail, forbidden, internalError, ok, okPaginated, validationFail } from '@/lib/api-response'
 import { parsePagination } from '@/lib/api-utils'
-import { ok, okPaginated, fail, forbidden, internalError, validationFail } from '@/lib/api-response'
-import { createAdminClient } from '@/lib/supabase/server'
+import { hashPassword, requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { canAssignRole } from '@/lib/permissions'
+import { createAdminClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
 export async function GET(req: NextRequest) {

@@ -1,24 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
   ArrowRight,
-  Loader2,
+  Ban,
+  Clock,
   Crown,
+  Loader2,
   Shield,
   Star,
   User as UserIcon,
-  Ban,
-  Clock,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { SpecialRoleBadge } from '@/components/special-role-badge'
+import { TierBadge } from '@/components/tier-badge'
+import { TierHistoryTable } from '@/components/tier-history-table'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { timeAgo, formatNumber } from '@/lib/format'
-import { TierBadge } from '@/components/tier-badge'
-import { SpecialRoleBadge } from '@/components/special-role-badge'
-import { TierHistoryTable } from '@/components/tier-history-table'
+import { formatNumber, timeAgo } from '@/lib/format'
 
 interface UserData {
   id: string

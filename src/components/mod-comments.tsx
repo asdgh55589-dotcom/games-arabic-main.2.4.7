@@ -1,31 +1,36 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import Link from 'next/link'
 import {
-  ThumbsUp,
-  Reply,
-  Flag,
-  Edit2,
-  MoreVertical,
-  Send,
-  MessageSquare,
-  Pin,
-  Heart,
-  Loader2,
+  Bold,
   ChevronLeft,
   ChevronRight,
-  Bold,
-  Italic,
-  Strikethrough,
+  Edit2,
+  Flag,
   Heading2,
+  Heart,
+  Italic,
+  Loader2,
+  MessageSquare,
+  MoreVertical,
   Palette,
+  Pin,
+  Reply,
+  Send,
   Smile,
+  Strikethrough,
+  ThumbsUp,
   Type,
 } from 'lucide-react'
+import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { CreatorBadge } from '@/components/creator-badge'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { ReportButton } from '@/components/report-button'
+import { RoleBadge } from '@/components/role-badge'
+import { TierBadge } from '@/components/tier-badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,16 +38,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/empty-state'
-import { formatNumber, timeAgo } from '@/lib/format'
-import { ReportButton } from '@/components/report-button'
+import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import type { SessionUser } from '@/lib/auth'
-import { useAuth } from '@/contexts/auth-context'
+import { formatNumber, timeAgo } from '@/lib/format'
 import type { ModCommentType } from '@/lib/types'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { CreatorBadge } from '@/components/creator-badge'
-import { RoleBadge } from '@/components/role-badge'
-import { TierBadge } from '@/components/tier-badge'
 
 interface ModCommentsProps {
   modSlug: string

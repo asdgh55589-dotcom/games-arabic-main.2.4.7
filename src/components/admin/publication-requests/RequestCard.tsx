@@ -1,11 +1,11 @@
 'use client'
 
-import { Package, AlertTriangle } from 'lucide-react'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
+import { AlertTriangle, Package } from 'lucide-react'
+import { ModWorkflowActions } from '@/components/admin/shared/ModWorkflowActions'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ModWorkflowActions } from '@/components/admin/shared/ModWorkflowActions'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface RequestCardProps {
   mod: {

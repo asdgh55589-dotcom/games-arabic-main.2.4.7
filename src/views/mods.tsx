@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Package, Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { Search, SlidersHorizontal, Package } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { useMemo, useState } from 'react'
+import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -12,10 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ModCard, ModCardSkeleton } from '@/components/mod-card'
-import { useFetch } from '@/hooks/use-fetch'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
+import { useFetch } from '@/hooks/use-fetch'
 import type { ModSummary } from '@/lib/types'
 
 interface PaginatedModsResponse {

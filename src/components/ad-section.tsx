@@ -1,10 +1,9 @@
 // Updated for new API response format
 'use client'
 
+import { ExternalLink, Image as ImageIcon, Play, X, Youtube } from 'lucide-react'
 import Image from 'next/image'
-
-import { useState, useEffect } from 'react'
-import { Play, X, ExternalLink, Image as ImageIcon, Youtube } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cached } from '@/lib/cache'
 import { sanitizeHTML } from '@/lib/sanitize'
 

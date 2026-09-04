@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { clearRoleCookie, type getSession, requireAuth, invalidateUserSessions } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
-import { logAction } from '@/lib/audit'
 import { ok } from '@/lib/api-response'
+import { logAction } from '@/lib/audit'
+import { clearRoleCookie, type getSession, invalidateUserSessions, requireAuth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   let user: Awaited<ReturnType<typeof getSession>>

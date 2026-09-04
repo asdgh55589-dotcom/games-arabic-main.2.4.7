@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
-import { requireAdmin, invalidateUserSessions, getClientIp } from '@/lib/auth'
-import { logUserAction } from '@/lib/audit'
 import { getUseCases } from '@/application/use-cases/factory'
-import { setIpBanCache, deleteIpBanCache } from '@/lib/ip-ban-cache'
-import { ok, fail, forbidden, internalError, notFound, validationFail } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
+import { logUserAction } from '@/lib/audit'
+import { getClientIp, invalidateUserSessions, requireAdmin } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { deleteIpBanCache, setIpBanCache } from '@/lib/ip-ban-cache'
 
 // POST /api/admin/users/[id]/ban — حظر مستخدم (مؤقت/دائم + خيار حظر IP)
 //

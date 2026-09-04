@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { db } from '@/lib/db'
+import { internalError, notFound, ok, rateLimited, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { ok, unauthorized, notFound, internalError, rateLimited } from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>

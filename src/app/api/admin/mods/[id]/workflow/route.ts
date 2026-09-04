@@ -1,12 +1,12 @@
-import type { NextRequest } from 'next/server'
-import { ok, validationFail, forbidden, notFound, internalError } from '@/lib/api-response'
-import { db } from '@/lib/db'
-import { requireModerator } from '@/lib/auth'
-import { isValidTransition, canTransition, type WorkflowStatus } from '@/lib/workflow'
-import { canApproveMods } from '@/lib/permissions'
-import { notifyWorkflowChange } from '@/lib/mod-notifications'
-import { logAction } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
+import type { NextRequest } from 'next/server'
+import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
+import { logAction } from '@/lib/audit'
+import { requireModerator } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { notifyWorkflowChange } from '@/lib/mod-notifications'
+import { canApproveMods } from '@/lib/permissions'
+import { canTransition, isValidTransition, type WorkflowStatus } from '@/lib/workflow'
 
 interface RouteParams {
   params: Promise<{ id: string }>

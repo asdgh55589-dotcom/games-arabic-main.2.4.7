@@ -1,14 +1,14 @@
 // Updated for new API response format
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { Loader2, MessageSquare, Trash2, Pin, PinOff, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
+import { Loader2, MessageSquare, Pin, PinOff, Search, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { formatNumber, timeAgo } from '@/lib/format'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { formatNumber, timeAgo } from '@/lib/format'
 
 interface Comment {
   id: string
