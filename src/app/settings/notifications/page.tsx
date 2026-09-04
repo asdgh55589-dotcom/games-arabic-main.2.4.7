@@ -81,7 +81,10 @@ export default function NotificationSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {preferences.map((pref) => (
-            <div key={pref.id} className="flex items-center justify-between py-2 border-b last:border-0">
+            <div
+              key={pref.id}
+              className="flex items-center justify-between py-2 border-b last:border-0"
+            >
               <Label htmlFor={pref.id} className="text-sm">
                 {pref.label}
               </Label>

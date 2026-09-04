@@ -34,7 +34,11 @@ export async function GET(req: NextRequest) {
         await db.$transaction([
           db.user.update({
             where: { id: user.id },
-            data: { tier: newTier, lastTierUpgradeAt: new Date(), tierUpgradeCount: { increment: 1 } },
+            data: {
+              tier: newTier,
+              lastTierUpgradeAt: new Date(),
+              tierUpgradeCount: { increment: 1 },
+            },
           }),
           db.tierHistory.create({
             data: {

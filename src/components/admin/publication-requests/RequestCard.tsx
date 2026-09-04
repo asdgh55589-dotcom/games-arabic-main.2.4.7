@@ -17,7 +17,14 @@ interface RequestCardProps {
     workflowStatus: string
     updatedAt: string
     qualityScore: number | null
-    author: { id: string; username: string; avatarUrl: string | null; role: string; tier: number; specialRoles: string | null }
+    author: {
+      id: string
+      username: string
+      avatarUrl: string | null
+      role: string
+      tier: number
+      specialRoles: string | null
+    }
     teamRelation: { id: string; name: string; logoUrl: string | null } | null
     game: { id: string; name: string } | null
     source: { label: string; color: string }
@@ -31,9 +38,23 @@ interface RequestCardProps {
   onRefresh: () => void
 }
 
-export function RequestCard({ mod, isSelected, onToggle, currentUser, onRefresh }: RequestCardProps) {
+export function RequestCard({
+  mod,
+  isSelected,
+  onToggle,
+  currentUser,
+  onRefresh,
+}: RequestCardProps) {
   return (
-    <Card className={mod.isOverdue ? 'border-red-500/50 bg-red-500/5' : isSelected ? 'ring-1 ring-primary/30 bg-primary/5' : ''}>
+    <Card
+      className={
+        mod.isOverdue
+          ? 'border-red-500/50 bg-red-500/5'
+          : isSelected
+            ? 'ring-1 ring-primary/30 bg-primary/5'
+            : ''
+      }
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <Avatar className="h-10 w-10 rounded-md">
@@ -54,7 +75,9 @@ export function RequestCard({ mod, isSelected, onToggle, currentUser, onRefresh 
             </div>
             <div className="text-xs text-muted-foreground truncate">
               {mod.game?.name || 'بدون لعبة'} · {mod.author.username} ·{' '}
-              <span className={`${mod.source.color} rounded px-1.5 py-0.5 text-[11px]`}>{mod.source.label}</span>
+              <span className={`${mod.source.color} rounded px-1.5 py-0.5 text-[11px]`}>
+                {mod.source.label}
+              </span>
             </div>
           </div>
         </div>
@@ -62,23 +85,34 @@ export function RequestCard({ mod, isSelected, onToggle, currentUser, onRefresh 
           <span>
             منذ {mod.waitingDays} يوم · جودة {mod.qualityScore ?? '—'}%
           </span>
-          <span>{(mod as unknown as { reviewer?: { username: string } }).reviewer ? `مُسند: ${(mod as unknown as { reviewer: { username: string } }).reviewer.username}` : 'غير مُسند'}</span>
+          <span>
+            {(mod as unknown as { reviewer?: { username: string } }).reviewer
+              ? `مُسند: ${(mod as unknown as { reviewer: { username: string } }).reviewer.username}`
+              : 'غير مُسند'}
+          </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 min-h-[44px] text-xs"
+            onClick={onToggle}
+          >
             {isSelected ? 'إلغاء' : 'تحديد'}
           </Button>
           <div className="flex-1">
             <ModWorkflowActions
-              mod={{
-                id: mod.id,
-                slug: mod.slug,
-                name: mod.name,
-                workflowStatus: mod.workflowStatus,
-                authorId: mod.author.id,
-                version: mod.version,
-                qualityScore: mod.qualityScore || undefined,
-              } as never}
+              mod={
+                {
+                  id: mod.id,
+                  slug: mod.slug,
+                  name: mod.name,
+                  workflowStatus: mod.workflowStatus,
+                  authorId: mod.author.id,
+                  version: mod.version,
+                  qualityScore: mod.qualityScore || undefined,
+                } as never
+              }
               currentUser={currentUser as never}
               onActionComplete={onRefresh}
             />

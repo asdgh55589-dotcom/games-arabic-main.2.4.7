@@ -5,7 +5,14 @@ import { Loader2, Key } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 
 interface Props {
@@ -80,7 +87,11 @@ export function EditCredentialsDialog({ open, onOpenChange, userId, username, on
         setKeyExpiryDays('')
       }
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -103,26 +114,48 @@ export function EditCredentialsDialog({ open, onOpenChange, userId, username, on
           <>
             <DialogHeader>
               <DialogTitle>تعديل بيانات الاعتماد — {username}</DialogTitle>
-              <DialogDescription>غيّر كلمة المرور، جدّد مفتاح الأمان، أو عدّل مدة الانتهاء. المفاتيح القديمة ستُبطل.</DialogDescription>
+              <DialogDescription>
+                غيّر كلمة المرور، جدّد مفتاح الأمان، أو عدّل مدة الانتهاء. المفاتيح القديمة ستُبطل.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <Label>كلمة المرور الجديدة (اختياري)</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="اتركه فارغاً لعدم التغيير" className="flex-1" dir="ltr" />
-                  <Button type="button" variant="outline" onClick={generatePassword}>توليد</Button>
+                  <Input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="اتركه فارغاً لعدم التغيير"
+                    className="flex-1"
+                    dir="ltr"
+                  />
+                  <Button type="button" variant="outline" onClick={generatePassword}>
+                    توليد
+                  </Button>
                 </div>
               </div>
               <div>
                 <Label>مفتاح الأمان الجديد (اختياري)</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input value={securityKey} onChange={(e) => setSecurityKey(e.target.value)} placeholder="اتركه فارغاً لعدم التغيير" className="flex-1" dir="ltr" />
-                  <Button type="button" variant="outline" onClick={generateKey} className="gap-1"><Key className="h-4 w-4" /> توليد</Button>
+                  <Input
+                    value={securityKey}
+                    onChange={(e) => setSecurityKey(e.target.value)}
+                    placeholder="اتركه فارغاً لعدم التغيير"
+                    className="flex-1"
+                    dir="ltr"
+                  />
+                  <Button type="button" variant="outline" onClick={generateKey} className="gap-1">
+                    <Key className="h-4 w-4" /> توليد
+                  </Button>
                 </div>
               </div>
               <div>
                 <Label>مدة انتهاء المفتاح</Label>
-                <select value={keyExpiryDays} onChange={(e) => setKeyExpiryDays(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+                <select
+                  value={keyExpiryDays}
+                  onChange={(e) => setKeyExpiryDays(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                >
                   <option value="">— بدون تغيير —</option>
                   <option value="30">30 يوم</option>
                   <option value="60">60 يوم</option>
@@ -133,8 +166,18 @@ export function EditCredentialsDialog({ open, onOpenChange, userId, username, on
                 </select>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => handleClose(false)}>إلغاء</Button>
-                <Button type="submit" disabled={loading}>{loading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري...</> : 'حفظ التغييرات'}</Button>
+                <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري...
+                    </>
+                  ) : (
+                    'حفظ التغييرات'
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </>
@@ -142,7 +185,9 @@ export function EditCredentialsDialog({ open, onOpenChange, userId, username, on
           <>
             <DialogHeader>
               <DialogTitle className="text-green-600">✅ تم التجديد — احفظ المفتاح</DialogTitle>
-              <DialogDescription className="text-destructive">المفتاح القديم أُبطل — انسخ الجديد الآن.</DialogDescription>
+              <DialogDescription className="text-destructive">
+                المفتاح القديم أُبطل — انسخ الجديد الآن.
+              </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border bg-green-50 p-4 text-center" dir="ltr">
               <div className="text-xs text-muted-foreground">مفتاح الأمان الجديد لـ {username}</div>

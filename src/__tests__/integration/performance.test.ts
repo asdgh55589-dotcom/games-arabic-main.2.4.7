@@ -5,12 +5,7 @@
 
 import { NotificationService } from '@/application/services/notification-service'
 import { NotificationType, NotificationChannel } from '@/domain'
-import type {
-  NotificationRepository,
-  TemplateRenderer,
-  EventPublisher,
-  JobQueue,
-} from '@/domain'
+import type { NotificationRepository, TemplateRenderer, EventPublisher, JobQueue } from '@/domain'
 
 function createPerfMockNotificationRepo(): NotificationRepository {
   return {
@@ -28,9 +23,9 @@ function createPerfMockNotificationRepo(): NotificationRepository {
 
 function createPerfMockTemplateRenderer(): TemplateRenderer {
   return {
-    render: jest.fn().mockImplementation(() =>
-      Promise.resolve({ title: 'اختبار', body: 'رسالة اختبار' })
-    ),
+    render: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve({ title: 'اختبار', body: 'رسالة اختبار' })),
   }
 }
 
@@ -78,13 +73,13 @@ describe('Performance', () => {
         type: NotificationType.CommentReply,
         title: `إشعار ${i}`,
         message: `رسالة ${i}`,
-      })
+      }),
     )
 
     const results = await Promise.all(promises)
 
     expect(results).toHaveLength(100)
-    results.forEach(result => {
+    results.forEach((result) => {
       expect(result.success).toBe(true)
       expect(result.notificationId).toBeTruthy()
     })
@@ -98,13 +93,13 @@ describe('Performance', () => {
         userId: `user-${i}`,
         type: NotificationType.TierUpgrade,
         channels: [NotificationChannel.InApp, NotificationChannel.Email],
-      })
+      }),
     )
 
     const results = await Promise.all(promises)
 
     expect(results).toHaveLength(50)
-    results.forEach(result => {
+    results.forEach((result) => {
       expect(result.success).toBe(true)
       expect(result.channelResults).toHaveLength(2)
     })
@@ -177,11 +172,11 @@ describe('Performance', () => {
         type: types[i % types.length],
         title: `إشعار ${i}`,
         message: `رسالة ${i}`,
-      })
+      }),
     )
 
     const results = await Promise.all(promises)
     expect(results).toHaveLength(50)
-    results.forEach(r => expect(r.success).toBe(true))
+    results.forEach((r) => expect(r.success).toBe(true))
   })
 })

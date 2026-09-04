@@ -3,12 +3,28 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Gamepad2, Heart, CheckCircle, XCircle, Eye, Archive, Download, Inbox, Clock } from 'lucide-react'
+import {
+  Gamepad2,
+  Heart,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Archive,
+  Download,
+  Inbox,
+  Clock,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
+import {
+  AdminDataTable,
+  type Column,
+  type FilterConfig,
+  type BulkAction,
+  type StatItem,
+} from '@/components/admin/shared/AdminDataTable'
 import { useToast } from '@/hooks/use-toast'
 
 interface ModRequestItem {
@@ -54,10 +70,16 @@ export function ModRequestsClient({
   const [page, setPage] = useState(initialPage)
   const [pageSize, setPageSize] = useState(initialPageSize)
   const [search, setSearch] = useState(initialSearch)
-  const [statusFilter, setStatusFilter] = useState<string[]>(initialStatus === 'all' ? [] : [initialStatus])
-  const [platformFilter, setPlatformFilter] = useState<string[]>(initialPlatform === 'all' ? [] : [initialPlatform])
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    initialStatus === 'all' ? [] : [initialStatus],
+  )
+  const [platformFilter, setPlatformFilter] = useState<string[]>(
+    initialPlatform === 'all' ? [] : [initialPlatform],
+  )
   const [sortField, setSortField] = useState(initialSort)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialDirection as 'asc' | 'desc')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
+    initialDirection as 'asc' | 'desc',
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const updateUrl = (patch: Record<string, string>) => {
@@ -105,7 +127,12 @@ export function ModRequestsClient({
     if (platformFilter.length > 0) d = d.filter((r) => platformFilter.includes(r.platform))
     if (search) {
       const q = search.toLowerCase()
-      d = d.filter((r) => r.gameName.toLowerCase().includes(q) || r.platform.toLowerCase().includes(q) || (r.notes || '').toLowerCase().includes(q))
+      d = d.filter(
+        (r) =>
+          r.gameName.toLowerCase().includes(q) ||
+          r.platform.toLowerCase().includes(q) ||
+          (r.notes || '').toLowerCase().includes(q),
+      )
     }
     return d
   }, [initialData, statusFilter, platformFilter, search])
@@ -113,9 +140,21 @@ export function ModRequestsClient({
   const stats: StatItem[] = [
     { label: 'إجمالي الطلبات', value: initialData.length, icon: Inbox },
     { label: 'مفتوحة', value: initialData.filter((r) => r.status === 'open').length, icon: Clock },
-    { label: 'مقبولة', value: initialData.filter((r) => r.status === 'accepted').length, icon: CheckCircle },
-    { label: 'مكتملة', value: initialData.filter((r) => r.status === 'completed').length, icon: Gamepad2 },
-    { label: 'إجمالي الاهتمام', value: initialData.reduce((sum, r) => sum + r.interestCount, 0), icon: Heart },
+    {
+      label: 'مقبولة',
+      value: initialData.filter((r) => r.status === 'accepted').length,
+      icon: CheckCircle,
+    },
+    {
+      label: 'مكتملة',
+      value: initialData.filter((r) => r.status === 'completed').length,
+      icon: Gamepad2,
+    },
+    {
+      label: 'إجمالي الاهتمام',
+      value: initialData.reduce((sum, r) => sum + r.interestCount, 0),
+      icon: Heart,
+    },
   ]
 
   const columns: Column<ModRequestItem>[] = [
@@ -140,7 +179,9 @@ export function ModRequestsClient({
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarImage src={req.user.avatarUrl || undefined} />
-            <AvatarFallback className="text-[10px]">{req.user.username[0]?.toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="text-[10px]">
+              {req.user.username[0]?.toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <span className="text-sm truncate">{req.user.username}</span>
         </div>
@@ -152,14 +193,29 @@ export function ModRequestsClient({
       sortable: true,
       render: (req) => {
         const map: Record<string, { label: string; className: string }> = {
-          open: { label: 'مفتوح', className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-          accepted: { label: 'مقبول', color: 'text-blue-500 bg-blue-500/10' } as unknown as { label: string; className: string },
-          completed: { label: 'مكتمل', className: 'bg-green-500/10 text-green-600 border-green-500/20' },
-          cancelled: { label: 'ملغي', className: 'bg-gray-500/10 text-gray-600 border-gray-500/20' },
+          open: {
+            label: 'مفتوح',
+            className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+          },
+          accepted: { label: 'مقبول', color: 'text-blue-500 bg-blue-500/10' } as unknown as {
+            label: string
+            className: string
+          },
+          completed: {
+            label: 'مكتمل',
+            className: 'bg-green-500/10 text-green-600 border-green-500/20',
+          },
+          cancelled: {
+            label: 'ملغي',
+            className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+          },
         }
         const cfg = map[req.status] || map.open
         // Fix accepted mapping
-        const acceptedFix = req.status === 'accepted' ? { label: 'مقبول', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' } : cfg
+        const acceptedFix =
+          req.status === 'accepted'
+            ? { label: 'مقبول', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' }
+            : cfg
         const finalCfg = req.status === 'accepted' ? acceptedFix : cfg
         return (
           <Badge variant="outline" className={finalCfg.className}>
@@ -182,14 +238,22 @@ export function ModRequestsClient({
     {
       key: 'acceptedBy',
       label: 'المُعَرِّب المسؤول',
-      render: (req) => (req.acceptedUser ? <span className="text-sm">{req.acceptedUser.username}</span> : <span className="text-xs text-muted-foreground">—</span>),
+      render: (req) =>
+        req.acceptedUser ? (
+          <span className="text-sm">{req.acceptedUser.username}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        ),
     },
     {
       key: 'mod',
       label: 'التعريب المكتمل',
       render: (req) =>
         req.mod ? (
-          <Link href={`/mod/${req.mod.slug}`} className="text-sm text-primary hover:underline truncate block max-w-[150px]">
+          <Link
+            href={`/mod/${req.mod.slug}`}
+            className="text-sm text-primary hover:underline truncate block max-w-[150px]"
+          >
             {req.mod.name}
           </Link>
         ) : (
@@ -200,14 +264,27 @@ export function ModRequestsClient({
       key: 'createdAt',
       label: 'تاريخ الطلب',
       sortable: true,
-      render: (req) => <span className="text-sm">{new Date(req.createdAt).toLocaleDateString('ar-EG')}</span>,
+      render: (req) => (
+        <span className="text-sm">{new Date(req.createdAt).toLocaleDateString('ar-EG')}</span>
+      ),
     },
     {
       key: 'actions',
       label: 'إجراءات',
       render: (req) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast({ title: `تفاصيل الطلب: ${req.gameName}`, description: req.notes || 'بدون ملاحظات' })} aria-label="عرض التفاصيل">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() =>
+              toast({
+                title: `تفاصيل الطلب: ${req.gameName}`,
+                description: req.notes || 'بدون ملاحظات',
+              })
+            }
+            aria-label="عرض التفاصيل"
+          >
             <Eye className="h-4 w-4" />
           </Button>
           <Button
@@ -215,7 +292,11 @@ export function ModRequestsClient({
             size="icon"
             className="h-8 w-8 text-red-500"
             disabled={req.status === 'completed' || req.status === 'cancelled'}
-            title={req.status === 'completed' || req.status === 'cancelled' ? 'الطلب مكتمل أو مغلق بالفعل' : 'إغلاق الطلب'}
+            title={
+              req.status === 'completed' || req.status === 'cancelled'
+                ? 'الطلب مكتمل أو مغلق بالفعل'
+                : 'إغلاق الطلب'
+            }
             onClick={async () => {
               if (!confirm(`هل تريد إغلاق طلب تعريب "${req.gameName}"؟`)) return
               try {
@@ -294,7 +375,14 @@ export function ModRequestsClient({
       onAction: async (ids) => {
         const selected = filteredData.filter((r) => ids.includes(r.id))
         const headers = ['اللعبة', 'المنصة', 'الطالب', 'الحالة', 'الاهتمام', 'تاريخ الطلب']
-        const rows = selected.map((r) => [r.gameName, r.platform, r.user.username, r.status, String(r.interestCount), new Date(r.createdAt).toLocaleDateString('ar-EG')])
+        const rows = selected.map((r) => [
+          r.gameName,
+          r.platform,
+          r.user.username,
+          r.status,
+          String(r.interestCount),
+          new Date(r.createdAt).toLocaleDateString('ar-EG'),
+        ])
         const csv = `\uFEFF${headers.join(',')}\n${rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')}`
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
@@ -311,7 +399,9 @@ export function ModRequestsClient({
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">طلبات التعريب</h1>
-        <p className="mt-1 text-sm text-muted-foreground">جميع طلبات التعريب من المستخدمين — يمكن للمُعَرِّبين قبولها</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          جميع طلبات التعريب من المستخدمين — يمكن للمُعَرِّبين قبولها
+        </p>
       </div>
 
       <AdminDataTable
@@ -355,7 +445,13 @@ export function ModRequestsClient({
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                  {req.status === 'open' ? 'مفتوح' : req.status === 'accepted' ? 'مقبول' : req.status === 'completed' ? 'مكتمل' : 'ملغي'}
+                  {req.status === 'open'
+                    ? 'مفتوح'
+                    : req.status === 'accepted'
+                      ? 'مقبول'
+                      : req.status === 'completed'
+                        ? 'مكتمل'
+                        : 'ملغي'}
                 </Badge>
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm mb-3">
@@ -371,15 +467,28 @@ export function ModRequestsClient({
                   <div className="text-xs text-muted-foreground">المُعَرِّب</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs">{new Date(req.createdAt).toLocaleDateString('ar-EG')}</div>
+                  <div className="text-xs">
+                    {new Date(req.createdAt).toLocaleDateString('ar-EG')}
+                  </div>
                   <div className="text-xs text-muted-foreground">التاريخ</div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-h-[44px] text-xs"
+                  onClick={onToggle}
+                >
                   {isSelected ? 'إلغاء' : 'تحديد'}
                 </Button>
-                <Button variant="ghost" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={() => (window.location.href = `/mod/${req.mod?.slug || ''}`)} disabled={!req.mod}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 min-h-[44px] text-xs"
+                  onClick={() => (window.location.href = `/mod/${req.mod?.slug || ''}`)}
+                  disabled={!req.mod}
+                >
                   عرض التعريب
                 </Button>
               </div>

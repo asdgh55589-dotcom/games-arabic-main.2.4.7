@@ -107,7 +107,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
     const prevMax = levelIndex > 0 ? xpLevels[levelIndex - 1].max : 0
     const currMax = xpLevels[levelIndex].max
-    const xpProgress = currMax === Infinity ? 100 : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
+    const xpProgress =
+      currMax === Infinity ? 100 : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
     const xp = { ...xpLevel, progress: xpProgress }
 
     console.time('[full-profile counts-query]')
@@ -117,10 +118,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       db.follow.count({ where: { followerId: user.id } }),
       db.modComment.findMany({
         where: {
-          OR: [
-            { userId: user.id },
-            { parent: { userId: user.id } },
-          ],
+          OR: [{ userId: user.id }, { parent: { userId: user.id } }],
         },
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -238,7 +236,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         headers: {
           'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
         },
-      }
+      },
     )
 
     console.timeEnd('[full-profile response]')

@@ -39,11 +39,18 @@ export default function AddAdminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || data?.error?.message || 'فشل الإنشاء')
-      toast({ title: 'تم إنشاء المسؤول بنجاح', description: `${username} بدور ${getRoleLabel(role)}` })
+      toast({
+        title: 'تم إنشاء المسؤول بنجاح',
+        description: `${username} بدور ${getRoleLabel(role)}`,
+      })
       router.push('/admin/admins')
       router.refresh()
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -112,7 +119,9 @@ export default function AddAdminPage() {
                 dir="ltr"
                 required
               />
-              <p className="mt-1 text-xs text-muted-foreground">سيتمكن المسؤول من تغييرها لاحقاً من الإعدادات</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                سيتمكن المسؤول من تغييرها لاحقاً من الإعدادات
+              </p>
             </div>
 
             <div>
@@ -127,11 +136,18 @@ export default function AddAdminPage() {
                 <option value="admin">مسؤول — يدير المستخدمين والمحتوى</option>
                 <option value="manager">مدير — صلاحيات إدارية متقدمة</option>
               </select>
-              <p className="mt-1 text-xs text-muted-foreground">فقط `owner` يمكنه إنشاء `manager` و `admin` بصلاحيات كاملة</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                فقط `owner` يمكنه إنشاء `manager` و `admin` بصلاحيات كاملة
+              </p>
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="button" variant="outline" className="flex-1 min-h-[44px]" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 min-h-[44px]"
+                onClick={() => router.back()}
+              >
                 إلغاء
               </Button>
               <Button type="submit" className="flex-1 min-h-[44px]" disabled={loading}>

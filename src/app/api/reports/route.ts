@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
     }
 
     // تحقق XSS لروابط الأدلة — يُسمح فقط بـ http/https
-    const evUrlsArray = Array.isArray(evidenceUrls) ? evidenceUrls : evidenceUrls ? [evidenceUrls] : []
+    const evUrlsArray = Array.isArray(evidenceUrls)
+      ? evidenceUrls
+      : evidenceUrls
+        ? [evidenceUrls]
+        : []
     const evValidation = validateEvidenceUrls(evUrlsArray)
     if (!evValidation.valid) {
       return validationFail(evValidation.error || 'روابط الأدلة غير صالحة')
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
       })
       const useCases = getUseCases()
       await useCases.sendReportSubmitted.execute({
-        adminUserIds: admins.map(a => a.id),
+        adminUserIds: admins.map((a) => a.id),
         reporterId: neonUser.id,
         reportId: report.id,
         targetType,
@@ -77,12 +81,12 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
-    analyzeReportFraud(report.id).catch(err => {
+    analyzeReportFraud(report.id).catch((err) => {
       console.error('[reports POST] fraud analysis failed:', err)
     })
 
     // Phase 2: Update reporter trust score
-    recalculateTrustScore(neonUser.id).catch(err => {
+    recalculateTrustScore(neonUser.id).catch((err) => {
       console.error('[reports POST] trust score update failed:', err)
     })
 

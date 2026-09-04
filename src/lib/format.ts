@@ -22,8 +22,18 @@ export function formatArabicDate(date: Date | string | null | undefined): string
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
   const months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ]
   const day = d.getUTCDate()
   const month = months[d.getUTCMonth()]
@@ -56,7 +66,10 @@ export function parseGalleryUrls(s: string | null | undefined): string[] {
 
 export function parseTags(s: string | null | undefined): string[] {
   if (!s) return []
-  return s.split(',').map((t) => t.trim()).filter(Boolean)
+  return s
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
 }
 
 export function formatAuditDetails(action: string, details: any): string {
@@ -96,7 +109,8 @@ export function formatAuditDetails(action: string, details: any): string {
   return Object.entries(obj)
     .map(([key, value]) => {
       const translatedKey = keyTranslations[key] || key
-      const translatedValue = typeof value === 'string' ? (valueTranslations[value] || value) : String(value)
+      const translatedValue =
+        typeof value === 'string' ? valueTranslations[value] || value : String(value)
       return `${translatedKey}: ${translatedValue}`
     })
     .join(' • ')

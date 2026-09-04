@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, Crown, UserX, UserPlus, Trash2, Link2, Unlink, ExternalLink, Ghost } from 'lucide-react'
+import {
+  Users,
+  Crown,
+  UserX,
+  UserPlus,
+  Trash2,
+  Link2,
+  Unlink,
+  ExternalLink,
+  Ghost,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +20,15 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { LinkMemberDialog } from '@/components/admin/teams/link-member-dialog'
-import { getMemberDisplayName, getMemberAvatar, getMemberProfileUrl, getMemberBio, isLinkedMember, isPhantomMember, getMemberRoleLabel } from '@/lib/team-members'
+import {
+  getMemberDisplayName,
+  getMemberAvatar,
+  getMemberProfileUrl,
+  getMemberBio,
+  isLinkedMember,
+  isPhantomMember,
+  getMemberRoleLabel,
+} from '@/lib/team-members'
 import { cn } from '@/lib/utils'
 
 interface Membership {
@@ -38,8 +56,14 @@ const MEMBER_TYPE_FILTERS = [
 export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
   const { toast } = useToast()
   const [newUsername, setNewUsername] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; username: string; avatarUrl: string | null }>>([])
-  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string; avatarUrl: string | null } | null>(null)
+  const [searchResults, setSearchResults] = useState<
+    Array<{ id: string; username: string; avatarUrl: string | null }>
+  >([])
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string
+    username: string
+    avatarUrl: string | null
+  } | null>(null)
   const [adding, setAdding] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
@@ -63,11 +87,13 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
     try {
       const res = await fetch(`/api/admin/users?search=${encodeURIComponent(value)}&limit=10`)
       const data = await res.json()
-      const users = (data.data || []).map((u: { id: string; username: string; avatarUrl: string | null }) => ({
-        id: u.id,
-        username: u.username,
-        avatarUrl: u.avatarUrl,
-      }))
+      const users = (data.data || []).map(
+        (u: { id: string; username: string; avatarUrl: string | null }) => ({
+          id: u.id,
+          username: u.username,
+          avatarUrl: u.avatarUrl,
+        }),
+      )
       setSearchResults(users)
     } catch {
       setSearchResults([])
@@ -86,7 +112,11 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
       const res = await fetch(`/api/admin/teams/${teamId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUser.id, role: 'member', name: selectedUser.username }),
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          role: 'member',
+          name: selectedUser.username,
+        }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -98,7 +128,11 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
       setSearchResults([])
       onRefresh()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setAdding(false)
     }
@@ -115,7 +149,11 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
       toast({ title: 'تم تغيير دور العضو' })
       onRefresh()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -135,19 +173,29 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
       toast({ title: 'تم نقل الملكية بنجاح' })
       onRefresh()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
   const handleRemoveMember = async (membershipId: string) => {
     if (!confirm('هل تريد إزالة هذا العضو من الفريق؟')) return
     try {
-      const res = await fetch(`/api/admin/teams/${teamId}/members/${membershipId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/teams/${teamId}/members/${membershipId}`, {
+        method: 'DELETE',
+      })
       if (!res.ok) throw new Error('فشل الإزالة')
       toast({ title: 'تمت إزالة العضو' })
       onRefresh()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -159,7 +207,9 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
   const handleUnlink = async (member: Membership) => {
     if (!confirm('هل تريد إلغاء ربط هذا العضو؟ سيعود عضواً وهمياً.')) return
     try {
-      const res = await fetch(`/api/admin/teams/${teamId}/members/${member.id}/link`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/teams/${teamId}/members/${member.id}/link`, {
+        method: 'DELETE',
+      })
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err?.error?.message || err?.error || 'فشل إلغاء الربط')
@@ -167,7 +217,11 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
       toast({ title: 'تم إلغاء الربط بنجاح' })
       onRefresh()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -198,7 +252,7 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
                 isActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  : 'bg-muted hover:bg-muted/80 text-muted-foreground',
               )}
             >
               <Icon className="h-4 w-4" />
@@ -216,7 +270,13 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
           <p className="text-sm text-muted-foreground text-center py-4">لا يوجد أعضاء بعد</p>
         ) : filteredMemberships.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            لا يوجد {memberFilter === 'phantom' ? 'أعضاء وهميين' : memberFilter === 'linked' ? 'أعضاء مرتبطين' : 'أعضاء'} في هذا التصنيف
+            لا يوجد{' '}
+            {memberFilter === 'phantom'
+              ? 'أعضاء وهميين'
+              : memberFilter === 'linked'
+                ? 'أعضاء مرتبطين'
+                : 'أعضاء'}{' '}
+            في هذا التصنيف
           </p>
         ) : (
           filteredMemberships.map((m) => {
@@ -231,19 +291,23 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                 key={m.id}
                 className={cn(
                   'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-                  isLinked
-                    ? 'bg-green-500/5 border-green-500/20'
-                    : 'bg-muted/30 border-border'
+                  isLinked ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-border',
                 )}
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={avatar || undefined} />
-                  <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-xs">
+                    {displayName[0]?.toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {profileUrl ? (
-                      <Link href={profileUrl} target="_blank" className="text-sm font-medium hover:text-primary hover:underline truncate">
+                      <Link
+                        href={profileUrl}
+                        target="_blank"
+                        className="text-sm font-medium hover:text-primary hover:underline truncate"
+                      >
                         {displayName}
                       </Link>
                     ) : (
@@ -255,7 +319,10 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                         مرتبط بحساب
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs"
+                      >
                         <Ghost className="h-3 w-3 ml-1" />
                         عضو وهمي
                       </Badge>
@@ -264,49 +331,87 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
                       {getMemberRoleLabel(m.role)}
                     </Badge>
                   </div>
-                  {bio && <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{bio}</div>}
-                  <div className="text-xs text-muted-foreground">انضم في {new Date(m.joinedAt).toLocaleDateString('ar-EG')}</div>
+                  {bio && (
+                    <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{bio}</div>
+                  )}
+                  <div className="text-xs text-muted-foreground">
+                    انضم في {new Date(m.joinedAt).toLocaleDateString('ar-EG')}
+                  </div>
                 </div>
 
-              <select
-                value={m.role}
-                onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                className="h-8 w-28 rounded-md border border-border bg-background px-2 text-xs"
-                aria-label="دور العضو"
-              >
-                <option value="leader">قائد</option>
-                <option value="admin">مسؤول</option>
-                <option value="member">عضو</option>
-                <option value="translator">مترجم</option>
-                <option value="tester">مختبر</option>
-                <option value="viewer">مشاهد</option>
-              </select>
+                <select
+                  value={m.role}
+                  onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                  className="h-8 w-28 rounded-md border border-border bg-background px-2 text-xs"
+                  aria-label="دور العضو"
+                >
+                  <option value="leader">قائد</option>
+                  <option value="admin">مسؤول</option>
+                  <option value="member">عضو</option>
+                  <option value="translator">مترجم</option>
+                  <option value="tester">مختبر</option>
+                  <option value="viewer">مشاهد</option>
+                </select>
 
-              {/* ربط / إلغاء ربط بحساب حقيقي */}
-              {!m.userId ? (
-                <Button variant="outline" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => openLinkDialog(m)} title="ربط بحساب حقيقي" aria-label="ربط بحساب">
-                  <Link2 className="h-4 w-4" />
+                {/* ربط / إلغاء ربط بحساب حقيقي */}
+                {!m.userId ? (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 min-h-[44px] min-w-[44px]"
+                    onClick={() => openLinkDialog(m)}
+                    title="ربط بحساب حقيقي"
+                    aria-label="ربط بحساب"
+                  >
+                    <Link2 className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 min-h-[44px] min-w-[44px]"
+                    onClick={() => handleUnlink(m)}
+                    title="إلغاء الربط"
+                    aria-label="إلغاء الربط"
+                  >
+                    <Unlink className="h-4 w-4" />
+                  </Button>
+                )}
+
+                {m.userId && m.user && (
+                  <Link
+                    href={`/profile/${m.user.username}`}
+                    target="_blank"
+                    className="h-11 w-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md hover:bg-muted border"
+                    title="عرض البروفايل"
+                    aria-label="عرض البروفايل"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px]"
+                  onClick={() => handleTransferOwnership(m.userId)}
+                  title="نقل الملكية"
+                  aria-label="نقل الملكية"
+                >
+                  <Crown className="h-4 w-4" />
                 </Button>
-              ) : (
-                <Button variant="outline" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => handleUnlink(m)} title="إلغاء الربط" aria-label="إلغاء الربط">
-                  <Unlink className="h-4 w-4" />
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] text-red-500 hover:bg-red-500/10"
+                  onClick={() => handleRemoveMember(m.id)}
+                  title="إزالة العضو"
+                  aria-label="إزالة العضو"
+                >
+                  <UserX className="h-4 w-4" />
                 </Button>
-              )}
-
-              {m.userId && m.user && (
-                <Link href={`/profile/${m.user.username}`} target="_blank" className="h-11 w-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md hover:bg-muted border" title="عرض البروفايل" aria-label="عرض البروفايل">
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              )}
-
-              <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={() => handleTransferOwnership(m.userId)} title="نقل الملكية" aria-label="نقل الملكية">
-                <Crown className="h-4 w-4" />
-              </Button>
-
-              <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] text-red-500 hover:bg-red-500/10" onClick={() => handleRemoveMember(m.id)} title="إزالة العضو" aria-label="إزالة العضو">
-                <UserX className="h-4 w-4" />
-              </Button>
-            </div>
+              </div>
             )
           })
         )}
@@ -316,10 +421,24 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
         <Label>إضافة عضو جديد</Label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Input value={newUsername} onChange={(e) => handleSearch(e.target.value)} placeholder="ابحث عن مستخدم لإضافته..." className="pr-3" dir="ltr" />
-            {searchLoading && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">جاري...</span>}
+            <Input
+              value={newUsername}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="ابحث عن مستخدم لإضافته..."
+              className="pr-3"
+              dir="ltr"
+            />
+            {searchLoading && (
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                جاري...
+              </span>
+            )}
           </div>
-          <Button onClick={handleAddMember} disabled={!selectedUser || adding} className="min-h-[44px]">
+          <Button
+            onClick={handleAddMember}
+            disabled={!selectedUser || adding}
+            className="min-h-[44px]"
+          >
             <UserPlus className="h-4 w-4 ml-1" />
             إضافة
           </Button>
@@ -329,11 +448,18 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
           <div className="flex items-center gap-2 rounded-md border bg-primary/5 p-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={selectedUser.avatarUrl || undefined} />
-              <AvatarFallback className="text-[10px]">{selectedUser.username[0]?.toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {selectedUser.username[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium">{selectedUser.username}</span>
             <span className="text-xs text-muted-foreground">محدد ✓</span>
-            <Button variant="ghost" size="sm" className="mr-auto h-7 text-xs" onClick={() => setSelectedUser(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mr-auto h-7 text-xs"
+              onClick={() => setSelectedUser(null)}
+            >
               إلغاء
             </Button>
           </div>
@@ -342,10 +468,17 @@ export function TeamMembersSection({ teamId, memberships, onRefresh }: Props) {
         {searchResults.length > 0 && !selectedUser && (
           <div className="max-h-48 overflow-y-auto rounded-lg border divide-y">
             {searchResults.map((u) => (
-              <button key={u.id} type="button" className="flex w-full items-center gap-2 p-2 text-right hover:bg-accent" onClick={() => setSelectedUser(u)}>
+              <button
+                key={u.id}
+                type="button"
+                className="flex w-full items-center gap-2 p-2 text-right hover:bg-accent"
+                onClick={() => setSelectedUser(u)}
+              >
                 <Avatar className="h-6 w-6">
                   <AvatarImage src={u.avatarUrl || undefined} />
-                  <AvatarFallback className="text-[10px]">{u.username[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-[10px]">
+                    {u.username[0]?.toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <span className="text-sm">{u.username}</span>
               </button>

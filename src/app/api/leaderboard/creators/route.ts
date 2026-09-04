@@ -20,7 +20,9 @@ export async function GET() {
     // Enrich with published count
     const enriched = await Promise.all(
       creators.map(async (u) => {
-        const publishedCount = await db.mod.count({ where: { authorId: u.id, workflowStatus: 'PUBLISHED' } })
+        const publishedCount = await db.mod.count({
+          where: { authorId: u.id, workflowStatus: 'PUBLISHED' },
+        })
         const totalDownloadsAgg = await db.mod.aggregate({
           where: { authorId: u.id, workflowStatus: 'PUBLISHED' },
           _sum: { downloads: true },
@@ -30,7 +32,7 @@ export async function GET() {
           publishedCount,
           totalDownloads: totalDownloadsAgg._sum.downloads || 0,
         }
-      })
+      }),
     )
 
     const ranked = enriched
@@ -41,7 +43,10 @@ export async function GET() {
       })
       .slice(0, 10)
 
-    return NextResponse.json({ data: ranked }, { headers: { 'Cache-Control': 'public, max-age=60' } })
+    return NextResponse.json(
+      { data: ranked },
+      { headers: { 'Cache-Control': 'public, max-age=60' } },
+    )
   } catch (err) {
     console.error('[leaderboard/creators] failed:', err)
     return NextResponse.json({ error: 'failed' }, { status: 500 })

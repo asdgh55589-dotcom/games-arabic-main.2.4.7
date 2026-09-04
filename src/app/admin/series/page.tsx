@@ -46,7 +46,7 @@ export default function AdminSeriesPage() {
         if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then((data) => data?.data ? setSeries(data.data) : null)
+      .then((data) => (data?.data ? setSeries(data.data) : null))
       .catch(() => setError('فشل تحميل السلاسل'))
       .finally(() => setLoading(false))
   }, [])
@@ -71,31 +71,54 @@ export default function AdminSeriesPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الإنشاء')
+      if (!res.ok)
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل الإنشاء',
+        )
       toast({ title: 'تم الإنشاء', description: `تم إنشاء سلسلة "${newName}" بنجاح` })
       setSeries((p) => [data.data, ...p])
-      setNewName(''); setNewDescription(''); setNewBannerUrl(''); setNewLogoUrl('')
-      setNewColor(''); setNewIsFeatured(false); setNewIsOfficial(false)
+      setNewName('')
+      setNewDescription('')
+      setNewBannerUrl('')
+      setNewLogoUrl('')
+      setNewColor('')
+      setNewIsFeatured(false)
+      setNewIsOfficial(false)
       setShowCreateForm(false)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
   const onDelete = async (s: SeriesItem) => {
-    if (!confirm(`هل أنت متأكد من حذف السلسلة "${s.name}"؟\nسيتم إلغاء الربط من كل التعريبات.`)) return
+    if (!confirm(`هل أنت متأكد من حذف السلسلة "${s.name}"؟\nسيتم إلغاء الربط من كل التعريبات.`))
+      return
     try {
       const res = await fetch(`/api/admin/series/${s.id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('فشل الحذف')
       toast({ title: 'تم الحذف', description: `تم حذف سلسلة "${s.name}"` })
       setSeries((p) => p.filter((x) => x.id !== s.id))
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error) {
@@ -125,37 +148,69 @@ export default function AdminSeriesPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <Label>الاسم</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="مثال: God of War" />
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="مثال: God of War"
+              />
             </div>
             <div>
               <Label>الوصف</Label>
-              <Input value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="وصف قصير للسلسلة" />
+              <Input
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="وصف قصير للسلسلة"
+              />
             </div>
             <div>
               <Label>صورة البانر</Label>
-              <Input value={newBannerUrl} onChange={(e) => setNewBannerUrl(e.target.value)} placeholder="https://..." />
+              <Input
+                value={newBannerUrl}
+                onChange={(e) => setNewBannerUrl(e.target.value)}
+                placeholder="https://..."
+              />
             </div>
             <div>
               <Label>الشعار</Label>
-              <Input value={newLogoUrl} onChange={(e) => setNewLogoUrl(e.target.value)} placeholder="https://..." />
+              <Input
+                value={newLogoUrl}
+                onChange={(e) => setNewLogoUrl(e.target.value)}
+                placeholder="https://..."
+              />
             </div>
             <div>
               <Label>اللون</Label>
-              <Input value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="#ff0000" />
+              <Input
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                placeholder="#ff0000"
+              />
             </div>
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={newIsFeatured} onChange={(e) => setNewIsFeatured(e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={newIsFeatured}
+                  onChange={(e) => setNewIsFeatured(e.target.checked)}
+                  className="rounded"
+                />
                 مميّزة
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={newIsOfficial} onChange={(e) => setNewIsOfficial(e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={newIsOfficial}
+                  onChange={(e) => setNewIsOfficial(e.target.checked)}
+                  className="rounded"
+                />
                 رسمية
               </label>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowCreateForm(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+              إلغاء
+            </Button>
             <Button onClick={onCreate}>إنشاء</Button>
           </div>
         </div>
@@ -187,14 +242,22 @@ export default function AdminSeriesPage() {
                     <div className="flex items-center gap-2">
                       {(s.bannerUrl || s.logoUrl) && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={s.bannerUrl || s.logoUrl} alt="" className="h-8 w-12 rounded object-cover" />
+                        <img
+                          src={s.bannerUrl || s.logoUrl}
+                          alt=""
+                          className="h-8 w-12 rounded object-cover"
+                        />
                       )}
                       <span className="font-medium">{s.name}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs">{s.modCount}</td>
-                  <td className="hidden px-4 py-3 text-xs sm:table-cell">{formatNumber(s.totalDownloads)}</td>
-                  <td className="hidden px-4 py-3 text-xs md:table-cell">{formatNumber(s.totalEndorsements)}</td>
+                  <td className="hidden px-4 py-3 text-xs sm:table-cell">
+                    {formatNumber(s.totalDownloads)}
+                  </td>
+                  <td className="hidden px-4 py-3 text-xs md:table-cell">
+                    {formatNumber(s.totalEndorsements)}
+                  </td>
                   <td className="hidden px-4 py-3 md:table-cell">
                     <div className="flex items-center gap-1">
                       {s.isFeatured && <Star className="h-3 w-3 fill-amber-400 text-amber-400" />}
@@ -215,7 +278,8 @@ export default function AdminSeriesPage() {
                         variant="ghost"
                         className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
                         onClick={() => onDelete(s)}
-                        title="حذف" aria-label="حذف"
+                        title="حذف"
+                        aria-label="حذف"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -33,41 +33,73 @@ function generateSummaryTemplate(grouped: GroupedNotifications): string {
         <h1>ملخص إشعاراتك</h1>
       </div>
 
-      ${grouped.endorsements.length > 0 ? `
+      ${
+        grouped.endorsements.length > 0
+          ? `
         <div class="section">
           <h2>إعجابات (${grouped.endorsements.length})</h2>
-          ${grouped.endorsements.map(n => `
+          ${grouped.endorsements
+            .map(
+              (n) => `
             <div class="notification">${n.message}</div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${grouped.comments.length > 0 ? `
+      ${
+        grouped.comments.length > 0
+          ? `
         <div class="section">
           <h2>تعليقات (${grouped.comments.length})</h2>
-          ${grouped.comments.map(n => `
+          ${grouped.comments
+            .map(
+              (n) => `
             <div class="notification">${n.message}</div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${grouped.admin.length > 0 ? `
+      ${
+        grouped.admin.length > 0
+          ? `
         <div class="section">
           <h2>إشعارات إدارية (${grouped.admin.length})</h2>
-          ${grouped.admin.map(n => `
+          ${grouped.admin
+            .map(
+              (n) => `
             <div class="notification">${n.message}</div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${grouped.system.length > 0 ? `
+      ${
+        grouped.system.length > 0
+          ? `
         <div class="section">
           <h2>إشعارات النظام (${grouped.system.length})</h2>
-          ${grouped.system.map(n => `
+          ${grouped.system
+            .map(
+              (n) => `
             <div class="notification">${n.message}</div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="section">
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/notifications">
@@ -83,33 +115,37 @@ export async function generateDailySummary(userId: string) {
   const unreadNotifications = await db.notification.findMany({
     where: {
       userId,
-      isRead: false
+      isRead: false,
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   })
 
   if (unreadNotifications.length === 0) return
 
   const grouped: GroupedNotifications = {
-    endorsements: unreadNotifications.filter(n =>
-      n.type === 'mod_endorse' || n.type === 'mod_endorse_milestone'
+    endorsements: unreadNotifications.filter(
+      (n) => n.type === 'mod_endorse' || n.type === 'mod_endorse_milestone',
     ),
-    comments: unreadNotifications.filter(n =>
-      n.type === 'comment_reply' || n.type === 'like'
+    comments: unreadNotifications.filter((n) => n.type === 'comment_reply' || n.type === 'like'),
+    admin: unreadNotifications.filter(
+      (n) =>
+        n.type === 'admin_action' ||
+        n.type === 'admin_user_register' ||
+        n.type === 'admin_request' ||
+        n.type === 'admin_report' ||
+        n.type === 'admin_milestone',
     ),
-    admin: unreadNotifications.filter(n =>
-      n.type === 'admin_action' || n.type === 'admin_user_register' ||
-      n.type === 'admin_request' || n.type === 'admin_report' ||
-      n.type === 'admin_milestone'
+    system: unreadNotifications.filter(
+      (n) =>
+        n.type === 'tier_upgrade' ||
+        n.type === 'special_role_assigned' ||
+        n.type === 'special_role_removed' ||
+        n.type === 'mod_featured',
     ),
-    system: unreadNotifications.filter(n =>
-      n.type === 'tier_upgrade' || n.type === 'special_role_assigned' ||
-      n.type === 'special_role_removed' || n.type === 'mod_featured'
-    )
   }
 
   const user = await db.user.findUnique({
-    where: { id: userId }
+    where: { id: userId },
   })
 
   if (!user?.email) return
@@ -123,7 +159,7 @@ export async function generateDailySummary(userId: string) {
     from: 'notifications@yourdomain.com',
     to: user.email,
     subject: `ملخص إشعاراتك - ${unreadNotifications.length} إشعار جديد`,
-    html: generateSummaryTemplate(grouped)
+    html: generateSummaryTemplate(grouped),
   })
 
   await db.notificationLog.create({
@@ -131,8 +167,8 @@ export async function generateDailySummary(userId: string) {
       notificationId: unreadNotifications[0].id,
       channel: 'email',
       status: 'sent',
-      sentAt: new Date()
-    }
+      sentAt: new Date(),
+    },
   })
 }
 
@@ -164,11 +200,16 @@ const REPORT_EMAIL_TEMPLATE = (title: string, body: string) => `
 
 export async function sendReportConfirmedEmail(
   reporterEmail: string,
-  report: { reason: string; targetType: string }
+  report: { reason: string; targetType: string },
 ): Promise<void> {
   const reasonLabels: Record<string, string> = {
-    spam: 'محتوى مزعج', inappropriate: 'محتوى غير لائق', copyright: 'انتهاك حقوق',
-    offensive: 'محتوى مسيء', false_info: 'معلومات كاذبة', technical: 'مشكلة تقنية', other: 'سبب آخر',
+    spam: 'محتوى مزعج',
+    inappropriate: 'محتوى غير لائق',
+    copyright: 'انتهاك حقوق',
+    offensive: 'محتوى مسيء',
+    false_info: 'معلومات كاذبة',
+    technical: 'مشكلة تقنية',
+    other: 'سبب آخر',
   }
   const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
 
@@ -176,7 +217,7 @@ export async function sendReportConfirmedEmail(
     'تأكيد البلاغ',
     `<p>مرحباً،</p>
      <p>تم تأكيد بلاغك على <strong>${targetLabels[report.targetType] || report.targetType}</strong> بسبب: <strong>${reasonLabels[report.reason] || report.reason}</strong>.</p>
-     <p>شكراً لمساهمتك في تحسين المنصة.</p>`
+     <p>شكراً لمساهمتك في تحسين المنصة.</p>`,
   )
 
   if (!resend) {
@@ -198,17 +239,20 @@ export async function sendReportConfirmedEmail(
 
 export async function sendReportRejectedEmail(
   reporterEmail: string,
-  report: { reason: string; targetType: string; resolution?: string }
+  report: { reason: string; targetType: string; resolution?: string },
 ): Promise<void> {
   const reasonLabels: Record<string, string> = {
-    spam: 'محتوى مزعج', inappropriate: 'محتوى غير لائق', copyright: 'انتهاك حقوق',
-    offensive: 'محتوى مسيء', false_info: 'معلومات كاذبة', technical: 'مشكلة تقنية', other: 'سبب آخر',
+    spam: 'محتوى مزعج',
+    inappropriate: 'محتوى غير لائق',
+    copyright: 'انتهاك حقوق',
+    offensive: 'محتوى مسيء',
+    false_info: 'معلومات كاذبة',
+    technical: 'مشكلة تقنية',
+    other: 'سبب آخر',
   }
   const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
 
-  const resolutionText = report.resolution
-    ? `<p>ملاحظات المراجعة: ${report.resolution}</p>`
-    : ''
+  const resolutionText = report.resolution ? `<p>ملاحظات المراجعة: ${report.resolution}</p>` : ''
 
   const html = REPORT_EMAIL_TEMPLATE(
     'نتيجة مراجعة البلاغ',
@@ -216,7 +260,7 @@ export async function sendReportRejectedEmail(
      <p>تمت مراجعة بلاغك على <strong>${targetLabels[report.targetType] || report.targetType}</strong> بسبب: <strong>${reasonLabels[report.reason] || report.reason}</strong>.</p>
      <p>لم نجد مخالفة في المحتوى المُبلَّغ.</p>
      ${resolutionText}
-     <p>إذا كنت تعتقد أن هذه النتيجة خاطئة، يمكنك تقديم بلاغ جديد مع أدلة إضافية.</p>`
+     <p>إذا كنت تعتقد أن هذه النتيجة خاطئة، يمكنك تقديم بلاغ جديد مع أدلة إضافية.</p>`,
   )
 
   if (!resend) {
@@ -239,11 +283,14 @@ export async function sendReportRejectedEmail(
 export async function sendReportActionEmail(
   targetEmail: string,
   report: { reason: string; targetType: string },
-  action: string
+  action: string,
 ): Promise<void> {
   const actionLabels: Record<string, string> = {
-    warned: 'تحذير', content_hidden: 'إخفاء محتوى', content_deleted: 'حذف محتوى',
-    temp_ban: 'تعليق مؤقت', perm_ban: 'حظر دائم',
+    warned: 'تحذير',
+    content_hidden: 'إخفاء محتوى',
+    content_deleted: 'حذف محتوى',
+    temp_ban: 'تعليق مؤقت',
+    perm_ban: 'حظر دائم',
   }
   const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'حسابك' }
 
@@ -252,7 +299,7 @@ export async function sendReportActionEmail(
     `<p>مرحباً،</p>
      <p>بناءً على بلاغ مقدم ضد <strong>${targetLabels[report.targetType] || report.targetType}</strong>، تمت مراجعة المحتوى واتُّخذ الإجراء التالي:</p>
      <p><strong>${actionLabels[action] || action}</strong></p>
-     <p>إذا كان لديك أي استفسار، يُرجى التواصل مع فريق الدعم.</p>`
+     <p>إذا كان لديك أي استفسار، يُرجى التواصل مع فريق الدعم.</p>`,
   )
 
   if (!resend) {

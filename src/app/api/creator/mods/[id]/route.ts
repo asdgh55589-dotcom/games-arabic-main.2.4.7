@@ -53,7 +53,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       data: {
         ...data,
         workflowStatus,
-        ...(action === 'submit' && mod.workflowStatus === 'DRAFT' ? { submittedAt: new Date() } : {}),
+        ...(action === 'submit' && mod.workflowStatus === 'DRAFT'
+          ? { submittedAt: new Date() }
+          : {}),
       },
     })
 

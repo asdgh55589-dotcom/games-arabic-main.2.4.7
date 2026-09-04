@@ -15,7 +15,7 @@ export function WorkflowBottleneck({ data, loading }: WorkflowBottleneckProps) {
     if (!data?.stages || data.stages.length === 0) return null
     // Find stage with longest avg time (excluding published/archived)
     const activeStages = data.stages.filter(
-      (s) => s.status !== 'PUBLISHED' && s.status !== 'ARCHIVED' && s.count > 0
+      (s) => s.status !== 'PUBLISHED' && s.status !== 'ARCHIVED' && s.count > 0,
     )
     if (activeStages.length === 0) return null
     return activeStages.reduce((max, s) => (s.avgDays > max.avgDays ? s : max), activeStages[0])

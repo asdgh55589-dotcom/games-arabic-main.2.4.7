@@ -25,8 +25,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         requiredQualityScore: body.requiredQualityScore,
         badge: body.badge,
         badgeColor: body.badgeColor,
-        features: JSON.stringify(body.features || [])
-      }
+        features: JSON.stringify(body.features || []),
+      },
     })
 
     return ok({ rule })

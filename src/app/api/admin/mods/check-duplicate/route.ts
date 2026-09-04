@@ -10,10 +10,7 @@ export async function POST(request: Request) {
     const { gameId, teamId, title, titleAr, fileHash, excludeModId } = body
 
     if (!gameId || !title) {
-      return NextResponse.json(
-        { error: 'اللعبة والعنوان مطلوبان' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'اللعبة والعنوان مطلوبان' }, { status: 400 })
     }
 
     const result = await checkForDuplicates({
@@ -43,9 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('[duplicate-check] Error:', error)
-    return NextResponse.json(
-      { error: 'خطأ في فحص التكرار' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'خطأ في فحص التكرار' }, { status: 500 })
   }
 }

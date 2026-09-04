@@ -46,9 +46,11 @@ export function RatingDisplay({
         })}
       </div>
       {showCount && (
-        <span className={`text-muted-foreground ${
-          size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'
-        }`}>
+        <span
+          className={`text-muted-foreground ${
+            size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'
+          }`}
+        >
           ({count})
         </span>
       )}

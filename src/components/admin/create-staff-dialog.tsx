@@ -5,7 +5,14 @@ import { Loader2, Key, Copy, Check, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { getRoleLabel } from '@/lib/roles'
@@ -25,7 +32,12 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
   const [role, setRole] = useState('moderator')
   const [keyExpiryDays, setKeyExpiryDays] = useState('90')
   const [loading, setLoading] = useState(false)
-  const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string; securityKey: string; role: string } | null>(null)
+  const [createdCreds, setCreatedCreds] = useState<{
+    username: string
+    password: string
+    securityKey: string
+    role: string
+  } | null>(null)
   const [copied, setCopied] = useState(false)
 
   const generateKey = () => {
@@ -67,7 +79,10 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
       return
     }
     if (!/^[a-zA-Z0-9]+$/.test(securityKey) || securityKey.length < 8) {
-      toast({ title: 'مفتاح الأمان يجب أن يكون 8 خانات وأحرف/أرقام إنجليزية فقط', variant: 'destructive' })
+      toast({
+        title: 'مفتاح الأمان يجب أن يكون 8 خانات وأحرف/أرقام إنجليزية فقط',
+        variant: 'destructive',
+      })
       return
     }
     setLoading(true)
@@ -86,11 +101,23 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error?.message || data?.error || 'فشل الإنشاء')
-      setCreatedCreds({ username: username.trim(), password: password.trim(), securityKey: securityKey.trim(), role })
-      toast({ title: 'تم إنشاء العضو بنجاح', description: `${username} بدور ${getRoleLabel(role)}` })
+      setCreatedCreds({
+        username: username.trim(),
+        password: password.trim(),
+        securityKey: securityKey.trim(),
+        role,
+      })
+      toast({
+        title: 'تم إنشاء العضو بنجاح',
+        description: `${username} بدور ${getRoleLabel(role)}`,
+      })
       onCreated()
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -119,28 +146,64 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
               <DialogTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" /> تعيين عضو جديد
               </DialogTitle>
-              <DialogDescription>أدخل 4 بيانات الاعتماد: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان + الدور ومدة الانتهاء.</DialogDescription>
+              <DialogDescription>
+                أدخل 4 بيانات الاعتماد: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان + الدور ومدة
+                الانتهاء.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="c-username">اسم المستخدم *</Label>
-                <Input id="c-username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="GAAdminAli" className="mt-1" dir="ltr" />
+                <Input
+                  id="c-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="GAAdminAli"
+                  className="mt-1"
+                  dir="ltr"
+                />
               </div>
               <div>
                 <Label htmlFor="c-email">البريد الإلكتروني *</Label>
-                <Input id="c-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ali@gamesarabic.com" className="mt-1" dir="ltr" />
+                <Input
+                  id="c-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ali@gamesarabic.com"
+                  className="mt-1"
+                  dir="ltr"
+                />
               </div>
               <div>
                 <Label htmlFor="c-password">كلمة المرور * (8 أحرف على الأقل)</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input id="c-password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="flex-1" dir="ltr" />
-                  <Button type="button" variant="outline" onClick={generatePassword}>توليد</Button>
+                  <Input
+                    id="c-password"
+                    type="text"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="flex-1"
+                    dir="ltr"
+                  />
+                  <Button type="button" variant="outline" onClick={generatePassword}>
+                    توليد
+                  </Button>
                 </div>
               </div>
               <div>
                 <Label htmlFor="c-key">مفتاح الأمان * (8 خانات، أحرف/أرقام إنجليزية)</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input id="c-key" type="text" value={securityKey} onChange={(e) => setSecurityKey(e.target.value)} placeholder="aB3kZ9mQ2xL7pN4w" className="flex-1" dir="ltr" />
+                  <Input
+                    id="c-key"
+                    type="text"
+                    value={securityKey}
+                    onChange={(e) => setSecurityKey(e.target.value)}
+                    placeholder="aB3kZ9mQ2xL7pN4w"
+                    className="flex-1"
+                    dir="ltr"
+                  />
                   <Button type="button" variant="outline" onClick={generateKey} className="gap-1">
                     <Key className="h-4 w-4" /> توليد تلقائي
                   </Button>
@@ -149,7 +212,11 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>الدور *</Label>
-                  <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  >
                     <option value="member">عضو</option>
                     <option value="creator">مُعَرِّب</option>
                     <option value="publisher">ناشر</option>
@@ -160,7 +227,11 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
                 </div>
                 <div>
                   <Label>انتهاء المفتاح</Label>
-                  <select value={keyExpiryDays} onChange={(e) => setKeyExpiryDays(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+                  <select
+                    value={keyExpiryDays}
+                    onChange={(e) => setKeyExpiryDays(e.target.value)}
+                    className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  >
                     <option value="30">30 يوم</option>
                     <option value="60">60 يوم</option>
                     <option value="90">90 يوم</option>
@@ -171,28 +242,58 @@ export function CreateStaffDialog({ open, onOpenChange, onCreated }: Props) {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => handleClose(false)}>إلغاء</Button>
-                <Button type="submit" disabled={loading}>{loading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الإنشاء...</> : 'إنشاء العضو'}</Button>
+                <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الإنشاء...
+                    </>
+                  ) : (
+                    'إنشاء العضو'
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-green-600">✅ تم الإنشاء بنجاح — احفظ البيانات</DialogTitle>
-              <DialogDescription className="text-destructive font-bold">هذه البيانات تظهر مرة واحدة فقط — انسخها الآن وسلّمها للعضو.</DialogDescription>
+              <DialogTitle className="text-green-600">
+                ✅ تم الإنشاء بنجاح — احفظ البيانات
+              </DialogTitle>
+              <DialogDescription className="text-destructive font-bold">
+                هذه البيانات تظهر مرة واحدة فقط — انسخها الآن وسلّمها للعضو.
+              </DialogDescription>
             </DialogHeader>
             <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
               <CardContent className="p-4 space-y-3 text-sm" dir="ltr">
-                <div><span className="font-bold">Username:</span> {createdCreds.username}</div>
-                <div><span className="font-bold">Email:</span> {email}</div>
-                <div><span className="font-bold">Password:</span> <code className="bg-white px-2 py-1 rounded border">{createdCreds.password}</code></div>
-                <div><span className="font-bold">Security Key:</span> <code className="bg-white px-2 py-1 rounded border">{createdCreds.securityKey}</code></div>
-                <div><span className="font-bold">Role:</span> {getRoleLabel(createdCreds.role)}</div>
+                <div>
+                  <span className="font-bold">Username:</span> {createdCreds.username}
+                </div>
+                <div>
+                  <span className="font-bold">Email:</span> {email}
+                </div>
+                <div>
+                  <span className="font-bold">Password:</span>{' '}
+                  <code className="bg-white px-2 py-1 rounded border">{createdCreds.password}</code>
+                </div>
+                <div>
+                  <span className="font-bold">Security Key:</span>{' '}
+                  <code className="bg-white px-2 py-1 rounded border">
+                    {createdCreds.securityKey}
+                  </code>
+                </div>
+                <div>
+                  <span className="font-bold">Role:</span> {getRoleLabel(createdCreds.role)}
+                </div>
               </CardContent>
             </Card>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={copyCreds} className="gap-2">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} نسخ البيانات</Button>
+              <Button variant="outline" onClick={copyCreds} className="gap-2">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} نسخ البيانات
+              </Button>
               <Button onClick={() => handleClose(false)}>تم — إغلاق</Button>
             </DialogFooter>
           </>

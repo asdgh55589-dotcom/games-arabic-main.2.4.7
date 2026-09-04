@@ -50,7 +50,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await db.$transaction([
       db.user.update({
         where: { id },
-        data: { tier, lastTierUpgradeAt: new Date(), tierUpgradeCount: { increment: tier > oldTier ? 1 : 0 } },
+        data: {
+          tier,
+          lastTierUpgradeAt: new Date(),
+          tierUpgradeCount: { increment: tier > oldTier ? 1 : 0 },
+        },
       }),
       db.tierHistory.create({
         data: {
@@ -67,7 +71,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // سجل تدقيق (اختياري)
     try {
       const { logUserAction } = await import('@/lib/audit')
-      await logUserAction({ userId: id, actorId: admin.id, action: 'TIER_MANUAL_SET', details: JSON.stringify({ oldTier, newTier: tier, reason }) } as unknown as Parameters<typeof logUserAction>[0])
+      await logUserAction({
+        userId: id,
+        actorId: admin.id,
+        action: 'TIER_MANUAL_SET',
+        details: JSON.stringify({ oldTier, newTier: tier, reason }),
+      } as unknown as Parameters<typeof logUserAction>[0])
     } catch {}
 
     // إشعار المستخدم

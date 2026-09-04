@@ -21,7 +21,16 @@ export async function GET(req: NextRequest) {
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
       include: {
         user: {
-          select: { id: true, username: true, avatarUrl: true, email: true, joinedAt: true, role: true, tier: true, specialRoles: true },
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+            email: true,
+            joinedAt: true,
+            role: true,
+            tier: true,
+            specialRoles: true,
+          },
         },
       },
     })

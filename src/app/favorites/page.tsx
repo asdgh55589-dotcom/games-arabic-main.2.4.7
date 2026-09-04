@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-const FavoritesPage = dynamic(() => import('@/views/favorites').then(m => ({ default: m.FavoritesPage })), { loading: () => <div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> })
+const FavoritesPage = dynamic(
+  () => import('@/views/favorites').then((m) => ({ default: m.FavoritesPage })),
+  {
+    loading: () => (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  },
+)
 
-export default function FavoritesRoutePage() { return <FavoritesPage /> }
+export default function FavoritesRoutePage() {
+  return <FavoritesPage />
+}

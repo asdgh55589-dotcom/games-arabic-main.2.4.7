@@ -43,13 +43,17 @@ function generateAlertTemplate(data: InactiveAlertData): string {
           <p>تم اكتشاف <strong>${data.inactiveUsers.length}</strong> مستخدم خامل منذ أكثر من <strong>${data.daysThreshold}</strong> يوم.</p>
         </div>
         <h2>قائمة المستخدمين الخاملين:</h2>
-        ${data.inactiveUsers.map(user => `
+        ${data.inactiveUsers
+          .map(
+            (user) => `
           <div class="user-item">
             <strong>${user.username}</strong> - ${user.email}<br>
             آخر دخول: ${user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString('ar') : 'لم يسجل دخول'}<br>
             التعريبات: ${user.modCount} | التحميلات: ${user.totalDownloads.toLocaleString()}
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     </body>
     </html>
@@ -63,7 +67,7 @@ export async function sendInactiveUserAlert(data: InactiveAlertData) {
   }
 
   const admins = await db.user.findMany({
-    where: { role: 'admin' }
+    where: { role: 'admin' },
   })
 
   const html = generateAlertTemplate(data)
@@ -73,7 +77,7 @@ export async function sendInactiveUserAlert(data: InactiveAlertData) {
       from: 'alerts@yourdomain.com',
       to: admin.email,
       subject: `تنبيه: ${data.inactiveUsers.length} مستخدم خامل`,
-      html
+      html,
     })
   }
 
@@ -83,8 +87,8 @@ export async function sendInactiveUserAlert(data: InactiveAlertData) {
       entity: 'user',
       details: JSON.stringify({
         inactiveCount: data.inactiveUsers.length,
-        daysThreshold: data.daysThreshold
-      })
-    }
+        daysThreshold: data.daysThreshold,
+      }),
+    },
   })
 }

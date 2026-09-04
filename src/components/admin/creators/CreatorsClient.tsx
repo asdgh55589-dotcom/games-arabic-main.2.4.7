@@ -11,7 +11,13 @@ import { Badge } from '@/components/ui/badge'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { CreatorBadge } from '@/components/creator-badge'
-import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
+import {
+  AdminDataTable,
+  type Column,
+  type FilterConfig,
+  type BulkAction,
+  type StatItem,
+} from '@/components/admin/shared/AdminDataTable'
 import { UserActions } from '@/components/admin/shared/UserActions'
 import { parseSpecialRoles, SPECIAL_ROLES } from '@/lib/special-roles'
 import { formatNumber } from '@/lib/format'
@@ -39,7 +45,13 @@ interface CreatorUser {
 interface Props {
   initialData: CreatorUser[]
   totalCount: number
-  stats: { creators: number; publishers: number; publishedMods: number; downloads: string; banned: number }
+  stats: {
+    creators: number
+    publishers: number
+    publishedMods: number
+    downloads: string
+    banned: number
+  }
   teams: { id: string; name: string }[]
   currentUser: { id: string; role: string; username: string }
   initialPage: number
@@ -77,11 +89,17 @@ export function CreatorsClient({
   const [search, setSearch] = useState(initialSearch)
   const [roleFilter, setRoleFilter] = useState<string[]>(initialRole === 'all' ? [] : [initialRole])
   const [tierFilter, setTierFilter] = useState<string[]>(initialTier === 'all' ? [] : [initialTier])
-  const [specialFilter, setSpecialFilter] = useState<string[]>(initialSpecial === 'all' ? [] : [initialSpecial])
-  const [statusFilter, setStatusFilter] = useState<string[]>(initialStatus === 'all' ? [] : [initialStatus])
+  const [specialFilter, setSpecialFilter] = useState<string[]>(
+    initialSpecial === 'all' ? [] : [initialSpecial],
+  )
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    initialStatus === 'all' ? [] : [initialStatus],
+  )
   const [teamFilter, setTeamFilter] = useState<string[]>(initialTeam === 'all' ? [] : [initialTeam])
   const [sortField, setSortField] = useState(initialSort)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialDirection as 'asc' | 'desc')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
+    initialDirection as 'asc' | 'desc',
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const updateUrl = (patch: Record<string, string>) => {
@@ -130,17 +148,19 @@ export function CreatorsClient({
     let d = [...initialData]
     if (roleFilter.length > 0) d = d.filter((u) => roleFilter.includes(u.role))
     if (tierFilter.length > 0) d = d.filter((u) => tierFilter.includes(String(u.tier)))
-    if (specialFilter.length > 0) d = d.filter((u) => {
-      const roles = parseSpecialRoles(u.specialRoles)
-      return specialFilter.some((f) => roles.includes(f as never))
-    })
+    if (specialFilter.length > 0)
+      d = d.filter((u) => {
+        const roles = parseSpecialRoles(u.specialRoles)
+        return specialFilter.some((f) => roles.includes(f as never))
+      })
     if (statusFilter.length > 0) {
       if (statusFilter[0] === 'banned') d = d.filter((u) => u.banStatus?.startsWith('banned'))
       if (statusFilter[0] === 'active') d = d.filter((u) => u.banStatus === 'active')
     }
     if (teamFilter.length > 0) {
       if (teamFilter[0] === 'none') d = d.filter((u) => u.teams.length === 0)
-      else if (teamFilter[0] !== 'all') d = d.filter((u) => u.teams.some((t) => t.id === teamFilter[0]))
+      else if (teamFilter[0] !== 'all')
+        d = d.filter((u) => u.teams.some((t) => t.id === teamFilter[0]))
     }
     if (search) {
       const q = search.toLowerCase()
@@ -217,7 +237,9 @@ export function CreatorsClient({
       key: 'totalDownloads',
       label: 'التحميلات',
       sortable: true,
-      render: (u) => <span className="font-medium">{u.totalDownloads.toLocaleString('ar-EG')}</span>,
+      render: (u) => (
+        <span className="font-medium">{u.totalDownloads.toLocaleString('ar-EG')}</span>
+      ),
     },
     {
       key: 'avgRating',
@@ -272,8 +294,18 @@ export function CreatorsClient({
       label: 'إجراءات',
       render: (u) => (
         <div className="flex items-center gap-1">
-          <UserActions user={u as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
-          <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="عرض التعريبات">
+          <UserActions
+            user={u as never}
+            currentUser={currentUser as never}
+            onActionComplete={() => router.refresh()}
+          />
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            aria-label="عرض التعريبات"
+          >
             <Link href={`/admin/mods?author=${u.id}`}>📦</Link>
           </Button>
         </div>
@@ -394,8 +426,24 @@ export function CreatorsClient({
       variant: 'outline',
       onAction: async (ids) => {
         const selected = filteredData.filter((u) => ids.includes(u.id))
-        const headers = ['اسم المستخدم', 'البريد', 'الدور', 'المستوى', 'التعريبات', 'التحميلات', 'التقييم']
-        const rows = selected.map((u) => [u.username, u.email, u.role, String(u.tier), String(u.publishedCount), String(u.totalDownloads), String(u.avgRating)])
+        const headers = [
+          'اسم المستخدم',
+          'البريد',
+          'الدور',
+          'المستوى',
+          'التعريبات',
+          'التحميلات',
+          'التقييم',
+        ]
+        const rows = selected.map((u) => [
+          u.username,
+          u.email,
+          u.role,
+          String(u.tier),
+          String(u.publishedCount),
+          String(u.totalDownloads),
+          String(u.avgRating),
+        ])
         const csv = `\uFEFF${headers.join(',')}\n${rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')}`
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
@@ -413,7 +461,9 @@ export function CreatorsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">إدارة المُعَرِّبين والناشرين</h1>
-          <p className="mt-1 text-sm text-muted-foreground">إدارة كل المُعَرِّبين والناشرين مع إحصائياتهم — {totalCount} مستخدم</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            إدارة كل المُعَرِّبين والناشرين مع إحصائياتهم — {totalCount} مستخدم
+          </p>
         </div>
         <Button asChild className="min-h-[44px]">
           <Link href="/admin/creators/new">
@@ -471,7 +521,11 @@ export function CreatorsClient({
                     <TierBadge role={user.role} tier={user.tier} size="sm" />
                   </div>
                 </div>
-                <UserActions user={user as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+                <UserActions
+                  user={user as never}
+                  currentUser={currentUser as never}
+                  onActionComplete={() => router.refresh()}
+                />
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm mb-3">
                 <div className="text-center">
@@ -502,7 +556,12 @@ export function CreatorsClient({
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-h-[44px] text-xs"
+                  onClick={onToggle}
+                >
                   {isSelected ? 'إلغاء التحديد' : 'تحديد'}
                 </Button>
                 <Button asChild variant="ghost" size="sm" className="flex-1 min-h-[44px] text-xs">

@@ -84,7 +84,12 @@ export async function POST(req: NextRequest) {
     return validationFail(parsed.error.issues[0]?.message || 'بيانات غير صالحة')
   }
 
-  const data = parsed.data as unknown as { isOriginalWork?: boolean; originalSource?: string; name: string; [key: string]: unknown }
+  const data = parsed.data as unknown as {
+    isOriginalWork?: boolean
+    originalSource?: string
+    name: string
+    [key: string]: unknown
+  }
 
   const isOriginalWork = (data.isOriginalWork as unknown as boolean) ?? true
 
@@ -110,7 +115,7 @@ export async function POST(req: NextRequest) {
   let effectiveGameId = (data as unknown as { gameId?: string }).gameId
   if (!effectiveGameId) {
     const fallbackGame = await db.game.findFirst({ select: { id: true } })
-    effectiveGameId = fallbackGame?.id || undefined as unknown as string
+    effectiveGameId = fallbackGame?.id || (undefined as unknown as string)
   }
   if (!effectiveGameId) {
     return validationFail('لا توجد لعبة في قاعدة البيانات — أنشئ لعبة افتراضية أولاً')
@@ -124,11 +129,11 @@ export async function POST(req: NextRequest) {
       workflowStatus,
       slug,
       galleryUrls: Array.isArray((data as unknown as { galleryUrls?: unknown }).galleryUrls)
-        ? ((data as unknown as { galleryUrls: string[] }).galleryUrls.join(','))
-        : ((data as unknown as { galleryUrls?: string }).galleryUrls || ''),
+        ? (data as unknown as { galleryUrls: string[] }).galleryUrls.join(',')
+        : (data as unknown as { galleryUrls?: string }).galleryUrls || '',
       tags: Array.isArray((data as unknown as { tags?: unknown }).tags)
-        ? ((data as unknown as { tags: string[] }).tags.join(','))
-        : ((data as unknown as { tags?: string }).tags || ''),
+        ? (data as unknown as { tags: string[] }).tags.join(',')
+        : (data as unknown as { tags?: string }).tags || '',
     } as unknown as Parameters<typeof db.mod.create>[0]['data'],
   })
 
@@ -154,5 +159,8 @@ export async function POST(req: NextRequest) {
     } catch {}
   }
 
-  return ok({ mod, message: action === 'submit' ? 'تم إرسال التعريب للمراجعة' : 'تم حفظ التعريب كمسودة' }, { status: 201 })
+  return ok(
+    { mod, message: action === 'submit' ? 'تم إرسال التعريب للمراجعة' : 'تم حفظ التعريب كمسودة' },
+    { status: 201 },
+  )
 }

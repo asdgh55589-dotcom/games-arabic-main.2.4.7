@@ -26,13 +26,13 @@ export interface ApiKeyAuthResult {
  * @param authHeader - قيمة Authorization header (قد تبدأ بـ "Bearer " أو لا)
  * @returns SessionUser إذا كان المفتاح ساري المفعول، أو null
  */
-export async function authenticateApiKey(authHeader: string | null): Promise<ApiKeyAuthResult | null> {
+export async function authenticateApiKey(
+  authHeader: string | null,
+): Promise<ApiKeyAuthResult | null> {
   if (!authHeader) return null
 
   // استخراج المفتاح: يدعم "Bearer <key>" أو "<key>" مباشرة
-  const key = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : authHeader.trim()
+  const key = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim()
 
   // التحقق من الصيغة: sk_live_...
   if (!key || !key.startsWith('sk_live_')) return null
@@ -82,12 +82,14 @@ export async function authenticateApiKey(authHeader: string | null): Promise<Api
     }
 
     // تحديث lastUsedAt بشكل غير متزامن (non-blocking)
-    db.apiKey.update({
-      where: { id: apiKey.id },
-      data: { lastUsedAt: new Date() },
-    }).catch((err) => {
-      logger.error('[ApiKeyAuth] Failed to update lastUsedAt', err)
-    })
+    db.apiKey
+      .update({
+        where: { id: apiKey.id },
+        data: { lastUsedAt: new Date() },
+      })
+      .catch((err) => {
+        logger.error('[ApiKeyAuth] Failed to update lastUsedAt', err)
+      })
 
     // إرجاع SessionUser
     return {

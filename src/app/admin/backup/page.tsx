@@ -83,7 +83,9 @@ export default function BackupPage() {
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-[100px] rounded-lg" />)}
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[100px] rounded-lg" />
+          ))}
         </div>
         <Skeleton className="h-[400px] rounded-lg" />
       </div>
@@ -103,7 +105,11 @@ export default function BackupPage() {
           </div>
         </div>
         <Button onClick={handleCreate} disabled={creating} className="gap-2">
-          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+          {creating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Database className="h-4 w-4" />
+          )}
           نسخ احتياطي الآن
         </Button>
       </div>

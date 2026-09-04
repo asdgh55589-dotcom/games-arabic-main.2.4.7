@@ -1,15 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Send,
-  Check,
-  X,
-  Globe,
-  Archive,
-  RotateCcw,
-  Loader2,
-} from 'lucide-react'
+import { Send, Check, X, Globe, Archive, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -31,16 +23,28 @@ interface WorkflowActionsProps {
   onStatusChange?: (newStatus: string) => void
 }
 
-const ACTION_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string; variant: 'default' | 'outline' | 'destructive' }> = {
+const ACTION_CONFIG: Record<
+  string,
+  {
+    icon: React.ComponentType<{ className?: string }>
+    label: string
+    variant: 'default' | 'outline' | 'destructive'
+  }
+> = {
   IN_REVIEW: { icon: Send, label: 'إرسال للمراجعة', variant: 'default' },
-  APPROVED:  { icon: Check, label: 'موافقة', variant: 'default' },
-  REJECTED:  { icon: X, label: 'رفض', variant: 'destructive' },
+  APPROVED: { icon: Check, label: 'موافقة', variant: 'default' },
+  REJECTED: { icon: X, label: 'رفض', variant: 'destructive' },
   PUBLISHED: { icon: Globe, label: 'نشر', variant: 'default' },
-  ARCHIVED:  { icon: Archive, label: 'أرشفة', variant: 'outline' },
-  DRAFT:     { icon: RotateCcw, label: 'إعادة للمسودة', variant: 'outline' },
+  ARCHIVED: { icon: Archive, label: 'أرشفة', variant: 'outline' },
+  DRAFT: { icon: RotateCcw, label: 'إعادة للمسودة', variant: 'outline' },
 }
 
-export function WorkflowActions({ modId, currentStatus, userRole, onStatusChange }: WorkflowActionsProps) {
+export function WorkflowActions({
+  modId,
+  currentStatus,
+  userRole,
+  onStatusChange,
+}: WorkflowActionsProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -107,7 +111,8 @@ export function WorkflowActions({ modId, currentStatus, userRole, onStatusChange
             <Button
               key={action}
               variant={config.variant}
-              size="sm" className="min-h-[44px]"
+              size="sm"
+              className="min-h-[44px]"
               onClick={() => handleAction(action)}
             >
               <Icon className="ml-1 h-3.5 w-3.5" />
@@ -120,12 +125,8 @@ export function WorkflowActions({ modId, currentStatus, userRole, onStatusChange
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {pendingAction && WORKFLOW_LABELS[pendingAction]}
-            </DialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من تغيير حالة التعريب؟
-            </DialogDescription>
+            <DialogTitle>{pendingAction && WORKFLOW_LABELS[pendingAction]}</DialogTitle>
+            <DialogDescription>هل أنت متأكد من تغيير حالة التعريب؟</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">

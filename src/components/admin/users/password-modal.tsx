@@ -38,7 +38,12 @@ export function PasswordModal({ userId, onClose, onSubmit }: PasswordModalProps)
           <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onClose}>
             إلغاء
           </Button>
-          <Button size="sm" className="min-h-[44px]" disabled={!isValid} onClick={() => onSubmit(userId, password)}>
+          <Button
+            size="sm"
+            className="min-h-[44px]"
+            disabled={!isValid}
+            onClick={() => onSubmit(userId, password)}
+          >
             حفظ
           </Button>
         </div>

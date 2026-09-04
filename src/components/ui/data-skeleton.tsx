@@ -9,5 +9,5 @@ export function DataTableSkeleton({ rows = 5, cols = 4 }) {
         </div>
       ))}
     </div>
-  );
+  )
 }

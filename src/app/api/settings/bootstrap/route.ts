@@ -40,25 +40,27 @@ export async function GET() {
     }
 
     const [notificationPreferences, settingsRows] = await Promise.all([
-      db.notificationPreference.findUnique({
-        where: { userId: user.id },
-      }).then(async (pref) => {
-        if (!pref) {
-          return db.notificationPreference.create({
-            data: {
-              userId: user.id,
-              emailEnabled: true,
-              pushEnabled: true,
-              dailySummary: true,
-              summaryIntervalDays: 3,
-              likeThreshold: 25,
-              quietHoursEnabled: false,
-              typePreferences: {},
-            },
-          })
-        }
-        return pref
-      }),
+      db.notificationPreference
+        .findUnique({
+          where: { userId: user.id },
+        })
+        .then(async (pref) => {
+          if (!pref) {
+            return db.notificationPreference.create({
+              data: {
+                userId: user.id,
+                emailEnabled: true,
+                pushEnabled: true,
+                dailySummary: true,
+                summaryIntervalDays: 3,
+                likeThreshold: 25,
+                quietHoursEnabled: false,
+                typePreferences: {},
+              },
+            })
+          }
+          return pref
+        }),
       db.siteSetting.findMany(),
     ])
 
@@ -80,7 +82,7 @@ export async function GET() {
         headers: {
           'Cache-Control': 'no-store',
         },
-      }
+      },
     )
   } catch (error) {
     console.error('[settings-bootstrap] failed:', error)

@@ -75,9 +75,7 @@ export async function getQualityMetrics(modId: string): Promise<QualityMetrics> 
   const storyScore = hasStory ? 10 : 0
 
   // Screenshots: +20 max (4 per screenshot)
-  const screenshotUrls = mod.galleryUrls
-    ? mod.galleryUrls.split(',').filter((u) => u.trim())
-    : []
+  const screenshotUrls = mod.galleryUrls ? mod.galleryUrls.split(',').filter((u) => u.trim()) : []
   const screenshotCount = Math.min(screenshotUrls.length, 5)
   const screenshotScore = screenshotCount * 4
 
@@ -91,13 +89,13 @@ export async function getQualityMetrics(modId: string): Promise<QualityMetrics> 
   } else if (fileSizeStr.includes('KB')) {
     fileSizeBytes = parseFloat(fileSizeStr) * 1024
   }
-  const hasReasonableFileSize = fileSizeBytes >= 1024 * 1024 && fileSizeBytes <= 2 * 1024 * 1024 * 1024
+  const hasReasonableFileSize =
+    fileSizeBytes >= 1024 * 1024 && fileSizeBytes <= 2 * 1024 * 1024 * 1024
   const fileSizeScore = hasReasonableFileSize ? 10 : 0
 
   // Rating: up to +50 (average * 10)
-  const averageRating = mod.qualityRatingsCount > 0
-    ? mod.qualityRatingsTotal / mod.qualityRatingsCount
-    : 0
+  const averageRating =
+    mod.qualityRatingsCount > 0 ? mod.qualityRatingsTotal / mod.qualityRatingsCount : 0
   const ratingScore = Math.round(averageRating * 10)
 
   // Team reputation: up to +20 (based on team's published mods)
@@ -113,9 +111,14 @@ export async function getQualityMetrics(modId: string): Promise<QualityMetrics> 
   }
   const teamReputationScore = teamReputation
 
-  const totalScore = Math.min(100,
-    descriptionScore + storyScore + screenshotScore +
-    fileSizeScore + ratingScore + teamReputationScore
+  const totalScore = Math.min(
+    100,
+    descriptionScore +
+      storyScore +
+      screenshotScore +
+      fileSizeScore +
+      ratingScore +
+      teamReputationScore,
   )
 
   return {

@@ -3,7 +3,24 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Bell, BellOff, MessageCircle, Heart, Star, Shield, CheckCheck, Users, FileText, AlertTriangle, Award, Package, Send, Clock, AlertCircle, ChevronLeft } from 'lucide-react'
+import {
+  Bell,
+  BellOff,
+  MessageCircle,
+  Heart,
+  Star,
+  Shield,
+  CheckCheck,
+  Users,
+  FileText,
+  AlertTriangle,
+  Award,
+  Package,
+  Send,
+  Clock,
+  AlertCircle,
+  ChevronLeft,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatArabicDate } from '@/lib/format'
@@ -44,10 +61,16 @@ interface NotificationDropdownProps {
   onClose: () => void
 }
 
-export function NotificationDropdown({ notifications, loading, onMarkAsRead, onMarkAllAsRead, onClose }: NotificationDropdownProps) {
+export function NotificationDropdown({
+  notifications,
+  loading,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onClose,
+}: NotificationDropdownProps) {
   const router = useRouter()
 
-  const unreadNotifications = notifications.filter(n => !n.readAt)
+  const unreadNotifications = notifications.filter((n) => !n.readAt)
 
   const handleClick = async (notification: Notification) => {
     if (!notification.readAt) {
@@ -68,14 +91,22 @@ export function NotificationDropdown({ notifications, loading, onMarkAsRead, onM
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-none border-2 border-border bg-card shadow-2xl" dir="rtl">
+    <div
+      className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-none border-2 border-border bg-card shadow-2xl"
+      dir="rtl"
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-gold" />
           <span className="text-sm font-bold text-foreground">الإشعارات</span>
         </div>
-        <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs text-muted-foreground hover:text-gold ${unreadNotifications.length === 0 ? 'hidden' : ''}`} onClick={onMarkAllAsRead}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-7 gap-1 text-xs text-muted-foreground hover:text-gold ${unreadNotifications.length === 0 ? 'hidden' : ''}`}
+          onClick={onMarkAllAsRead}
+        >
           <CheckCheck className="h-3.5 w-3.5" />
           تعيين الكل كمقروء
         </Button>
@@ -103,82 +134,100 @@ export function NotificationDropdown({ notifications, loading, onMarkAsRead, onM
             const targetUrl = (notification as any).targetUrl || notification.link
             const targetTitle = (notification as any).targetTitle
             const targetType = (notification as any).targetType
-            const actorUsername = (notification as any).actorUsername || notification.actor?.username
-            const actorAvatarUrl = (notification as any).actorAvatarUrl || notification.actor?.avatarUrl
+            const actorUsername =
+              (notification as any).actorUsername || notification.actor?.username
+            const actorAvatarUrl =
+              (notification as any).actorAvatarUrl || notification.actor?.avatarUrl
             return (
-            <div
-              key={notification.id}
-              onClick={() => handleClick(notification)}
-              className="flex cursor-pointer gap-3 border-b border-border bg-gold/5 px-4 py-3 transition-colors hover:bg-accent"
-            >
-              {/* Icon or Avatar — clickable to profile */}
-              <div className="shrink-0 pt-0.5">
-                {actorUsername ? (
-                  <Link href={`/profile/${actorUsername}`} onClick={(e) => handleActorClick(e, notification)} className="block">
+              <div
+                key={notification.id}
+                onClick={() => handleClick(notification)}
+                className="flex cursor-pointer gap-3 border-b border-border bg-gold/5 px-4 py-3 transition-colors hover:bg-accent"
+              >
+                {/* Icon or Avatar — clickable to profile */}
+                <div className="shrink-0 pt-0.5">
+                  {actorUsername ? (
+                    <Link
+                      href={`/profile/${actorUsername}`}
+                      onClick={(e) => handleActorClick(e, notification)}
+                      className="block"
+                    >
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={actorAvatarUrl || undefined} />
+                        <AvatarFallback className="bg-secondary text-xs font-bold text-gold">
+                          {actorUsername[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  ) : notification.actor ? (
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={actorAvatarUrl || undefined} />
+                      <AvatarImage src={notification.actor.avatarUrl || undefined} />
                       <AvatarFallback className="bg-secondary text-xs font-bold text-gold">
-                        {actorUsername[0]?.toUpperCase()}
+                        {notification.actor.username[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                  </Link>
-                ) : notification.actor ? (
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={notification.actor.avatarUrl || undefined} />
-                    <AvatarFallback className="bg-secondary text-xs font-bold text-gold">
-                      {notification.actor.username[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : targetType === 'team' ? (
-                  <Link href={targetUrl || '#'} onClick={(e) => e.stopPropagation()} className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
-                    <Users className="h-5 w-5 text-blue-600" />
-                  </Link>
-                ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary">
-                    {TYPE_ICONS[notification.type as NotificationType] || <Bell className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                )}
-              </div>
+                  ) : targetType === 'team' ? (
+                    <Link
+                      href={targetUrl || '#'}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100"
+                    >
+                      <Users className="h-5 w-5 text-blue-600" />
+                    </Link>
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary">
+                      {TYPE_ICONS[notification.type as NotificationType] || (
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  )}
+                </div>
 
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-snug text-foreground">
-                  {notification.title}
-                </p>
-                {notification.message && (
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                    {actorUsername && (
-                      <Link
-                        href={`/profile/${actorUsername}`}
-                        onClick={(e) => handleActorClick(e, notification)}
-                        className="font-bold hover:underline hover:text-gold"
-                      >
-                        {actorUsername}
-                      </Link>
-                    )}{' '}
-                    {notification.message}
+                {/* Content */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold leading-snug text-foreground">
+                    {notification.title}
                   </p>
-                )}
-                {/* Target title as link */}
-                {targetUrl && targetTitle && (
-                  <Link
-                    href={targetUrl}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 mt-1 text-sm text-blue-600 hover:underline"
-                  >
-                    <span>{targetType === 'team' ? '👥' : targetType === 'profile' ? '👤' : '📄'}</span>
-                    <span className={targetType === 'team' ? 'font-bold text-blue-600' : ''}>{targetTitle}</span>
-                  </Link>
-                )}
-                <p className="mt-1 text-[11px] text-muted-foreground/60">{formatArabicDate(notification.createdAt)}</p>
-              </div>
+                  {notification.message && (
+                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                      {actorUsername && (
+                        <Link
+                          href={`/profile/${actorUsername}`}
+                          onClick={(e) => handleActorClick(e, notification)}
+                          className="font-bold hover:underline hover:text-gold"
+                        >
+                          {actorUsername}
+                        </Link>
+                      )}{' '}
+                      {notification.message}
+                    </p>
+                  )}
+                  {/* Target title as link */}
+                  {targetUrl && targetTitle && (
+                    <Link
+                      href={targetUrl}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 mt-1 text-sm text-blue-600 hover:underline"
+                    >
+                      <span>
+                        {targetType === 'team' ? '👥' : targetType === 'profile' ? '👤' : '📄'}
+                      </span>
+                      <span className={targetType === 'team' ? 'font-bold text-blue-600' : ''}>
+                        {targetTitle}
+                      </span>
+                    </Link>
+                  )}
+                  <p className="mt-1 text-[11px] text-muted-foreground/60">
+                    {formatArabicDate(notification.createdAt)}
+                  </p>
+                </div>
 
-              {/* Arrow indicator if clickable + unread dot */}
-              <div className="shrink-0 flex flex-col items-center gap-2 pt-1">
-                {targetUrl && <ChevronLeft className="w-4 h-4 text-gray-400" />}
-                <div className="h-2 w-2 rounded-full bg-gold" />
+                {/* Arrow indicator if clickable + unread dot */}
+                <div className="shrink-0 flex flex-col items-center gap-2 pt-1">
+                  {targetUrl && <ChevronLeft className="w-4 h-4 text-gray-400" />}
+                  <div className="h-2 w-2 rounded-full bg-gold" />
+                </div>
               </div>
-            </div>
             )
           })
         )}
@@ -187,7 +236,10 @@ export function NotificationDropdown({ notifications, loading, onMarkAsRead, onM
       {/* Footer — always show "View All" */}
       <div className="border-t-2 border-border px-4 py-2.5 text-center">
         <button
-          onClick={() => { router.push('/notifications'); onClose() }}
+          onClick={() => {
+            router.push('/notifications')
+            onClose()
+          }}
           className="text-xs font-medium text-gold hover:underline"
         >
           عرض كل الإشعارات

@@ -2,7 +2,11 @@ import { User, Languages, Award, Crown, Shield } from 'lucide-react'
 import { getTierLabel } from '@/lib/tiers'
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  User, Languages, Award, Crown, Shield,
+  User,
+  Languages,
+  Award,
+  Crown,
+  Shield,
 }
 
 const TIER_ICONS: Record<string, string> = {
@@ -16,11 +20,11 @@ const TIER_ICONS: Record<string, string> = {
   'ناشر موثوق': 'Award',
   'ناشر رئيسي': 'Crown',
   'مشرف جديد': 'Shield',
-  'مشرف': 'Shield',
+  مشرف: 'Shield',
   'مشرف كبير': 'Crown',
-  'مسؤول': 'Shield',
+  مسؤول: 'Shield',
   'مسؤول أول': 'Crown',
-  'مدير': 'Shield',
+  مدير: 'Shield',
   'مدير عام': 'Crown',
   'مدير تنفيذي': 'Crown',
   'مالك الموقع': 'Crown',
@@ -37,11 +41,11 @@ const TIER_COLORS: Record<string, string> = {
   'ناشر موثوق': '#06b6d4',
   'ناشر رئيسي': '#8b5cf6',
   'مشرف جديد': '#a78bfa',
-  'مشرف': '#8b5cf6',
+  مشرف: '#8b5cf6',
   'مشرف كبير': '#7c3aed',
-  'مسؤول': '#ef4444',
+  مسؤول: '#ef4444',
   'مسؤول أول': '#dc2626',
-  'مدير': '#f97316',
+  مدير: '#f97316',
   'مدير عام': '#ea580c',
   'مدير تنفيذي': '#c2410c',
   'مالك الموقع': '#f59e0b',
@@ -60,7 +64,12 @@ export function TierBadge({ tier, role, size = 'sm' }: TierBadgeProps) {
   const iconName = TIER_ICONS[label] || 'User'
   const color = TIER_COLORS[label] || '#6b7280'
   const Icon = ICONS[iconName] || User
-  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5' : size === 'md' ? 'text-sm px-2 py-1' : 'text-base px-3 py-1.5'
+  const sizeClasses =
+    size === 'sm'
+      ? 'text-xs px-1.5 py-0.5'
+      : size === 'md'
+        ? 'text-sm px-2 py-1'
+        : 'text-base px-3 py-1.5'
 
   return (
     <span

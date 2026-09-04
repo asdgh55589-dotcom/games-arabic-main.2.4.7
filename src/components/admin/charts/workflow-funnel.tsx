@@ -19,11 +19,11 @@ interface WorkflowFunnelProps {
 }
 
 const STAGE_COLORS = [
-  'hsl(210, 16%, 55%)',   // draft - gray
-  'hsl(47, 100%, 50%)',   // in review - yellow
-  'hsl(142, 76%, 36%)',   // approved - green
-  'hsl(var(--primary))',   // published - primary
-  'hsl(210, 16%, 40%)',   // archived - dark gray
+  'hsl(210, 16%, 55%)', // draft - gray
+  'hsl(47, 100%, 50%)', // in review - yellow
+  'hsl(142, 76%, 36%)', // approved - green
+  'hsl(var(--primary))', // published - primary
+  'hsl(210, 16%, 40%)', // archived - dark gray
 ]
 
 export function WorkflowFunnel({ stages, loading, error, onStageClick }: WorkflowFunnelProps) {
@@ -35,7 +35,11 @@ export function WorkflowFunnel({ stages, loading, error, onStageClick }: Workflo
   }, [stages])
 
   if (!stages || stages.length === 0) {
-    return <ChartWrapper title="قمعية العمل" loading={loading} error={error}><div /></ChartWrapper>
+    return (
+      <ChartWrapper title="قمعية العمل" loading={loading} error={error}>
+        <div />
+      </ChartWrapper>
+    )
   }
 
   return (
@@ -59,9 +63,10 @@ export function WorkflowFunnel({ stages, loading, error, onStageClick }: Workflo
                   style={{
                     width: `${Math.max(widthPercent, 15)}%`,
                     height: 44,
-                    clipPath: idx === stages.length - 1
-                      ? 'polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%)'
-                      : 'polygon(0% 0%, 100% 0%, 95% 100%, 5% 100%)',
+                    clipPath:
+                      idx === stages.length - 1
+                        ? 'polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%)'
+                        : 'polygon(0% 0%, 100% 0%, 95% 100%, 5% 100%)',
                     backgroundColor: STAGE_COLORS[idx % STAGE_COLORS.length],
                     opacity: isHovered ? 1 : 0.85,
                     transform: isHovered ? 'scaleY(1.1)' : 'scaleY(1)',

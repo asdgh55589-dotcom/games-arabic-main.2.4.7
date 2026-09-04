@@ -22,11 +22,12 @@ export async function GET(req: NextRequest) {
     if (priority) where.priority = priority
     if (targetType) where.targetType = targetType
 
-    const orderBy = sort === 'oldest'
-      ? { createdAt: 'asc' as const }
-      : sort === 'priority'
-        ? { priority: 'desc' as const }
-        : { createdAt: 'desc' as const }
+    const orderBy =
+      sort === 'oldest'
+        ? { createdAt: 'asc' as const }
+        : sort === 'priority'
+          ? { priority: 'desc' as const }
+          : { createdAt: 'desc' as const }
 
     const [total, stats, reports] = await Promise.all([
       db.report.count({ where }),

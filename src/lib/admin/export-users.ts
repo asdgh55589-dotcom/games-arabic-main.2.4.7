@@ -27,7 +27,7 @@ async function getUsersWithStats(filters: ExportFilters) {
   if (filters.search) {
     where.OR = [
       { username: { contains: filters.search, mode: 'insensitive' } },
-      { email: { contains: filters.search, mode: 'insensitive' } }
+      { email: { contains: filters.search, mode: 'insensitive' } },
     ]
   }
 
@@ -36,7 +36,7 @@ async function getUsersWithStats(filters: ExportFilters) {
   }
 
   if (filters.dateTo) {
-    where.joinedAt = { ...where.joinedAt as object, lte: new Date(filters.dateTo) }
+    where.joinedAt = { ...(where.joinedAt as object), lte: new Date(filters.dateTo) }
   }
 
   const users = await db.user.findMany({
@@ -46,27 +46,27 @@ async function getUsersWithStats(filters: ExportFilters) {
         select: {
           mods: true,
           endorsements: true,
-        }
+        },
       },
       mods: {
         select: {
-          downloads: true
-        }
-      }
-    }
+          downloads: true,
+        },
+      },
+    },
   })
 
-  return users.map(user => ({
+  return users.map((user) => ({
     'اسم المستخدم': user.username,
     'البريد الإلكتروني': user.email,
-    'الدور': user.role,
-    'الحالة': user.banStatus === 'active' ? 'نشط' : 'محظور',
+    الدور: user.role,
+    الحالة: user.banStatus === 'active' ? 'نشط' : 'محظور',
     'تاريخ التسجيل': user.joinedAt.toISOString(),
     'آخر دخول': user.lastLoginAt?.toISOString() || 'لم يسجل دخول',
     'مرات الدخول': user.loginCount,
-    'التعريبات': user._count.mods,
-    'التحميلات': user.mods.reduce((sum, mod) => sum + mod.downloads, 0),
-    'الإعجابات': user._count.endorsements
+    التعريبات: user._count.mods,
+    التحميلات: user.mods.reduce((sum, mod) => sum + mod.downloads, 0),
+    الإعجابات: user._count.endorsements,
   }))
 }
 
@@ -92,10 +92,10 @@ export async function exportUsersToExcel(filters: ExportFilters) {
     { header: 'مرات الدخول', key: 'مرات الدخول', width: 15 },
     { header: 'التعريبات', key: 'التعريبات', width: 15 },
     { header: 'التحميلات', key: 'التحميلات', width: 15 },
-    { header: 'الإعجابات', key: 'الإعجابات', width: 15 }
+    { header: 'الإعجابات', key: 'الإعجابات', width: 15 },
   ]
 
-  users.forEach(user => {
+  users.forEach((user) => {
     worksheet.addRow(user)
   })
 

@@ -14,9 +14,7 @@ export function UsersHero({ totalUsers, bannedUsers }: UsersHeroProps) {
             Community Control
           </div>
 
-          <h1 className="mt-5 text-4xl font-black text-white">
-            إدارة المستخدمين
-          </h1>
+          <h1 className="mt-5 text-4xl font-black text-white">إدارة المستخدمين</h1>
 
           <p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
             مراقبة الحسابات وإدارة الأدوار والحظر والتحذيرات من مركز تحكم موحد.
@@ -25,17 +23,17 @@ export function UsersHero({ totalUsers, bannedUsers }: UsersHeroProps) {
 
         <div className="grid grid-cols-2 gap-4 lg:min-w-[420px]">
           <div className="rounded-lg border border-border bg-background-secondary p-4">
-            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">إجمالي المستخدمين</div>
-            <div className="mt-2 text-[22px] font-semibold text-foreground">
-              {totalUsers}
+            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
+              إجمالي المستخدمين
             </div>
+            <div className="mt-2 text-[22px] font-semibold text-foreground">{totalUsers}</div>
           </div>
 
           <div className="rounded-lg border border-border bg-background-secondary p-4">
-            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">الحسابات المحظورة</div>
-            <div className="mt-2 text-[22px] font-semibold text-red">
-              {bannedUsers}
+            <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
+              الحسابات المحظورة
             </div>
+            <div className="mt-2 text-[22px] font-semibold text-red">{bannedUsers}</div>
           </div>
         </div>
       </div>

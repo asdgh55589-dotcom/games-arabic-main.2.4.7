@@ -7,10 +7,7 @@ import { ok, notFound, unauthorized, rateLimited, internalError } from '@/lib/ap
 import { clearHomeCache } from '@/lib/home-cache'
 
 // GET /api/mods/[slug]/endorse — check if current user has endorsed
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const user = await getOptionalSession()
   if (!user) {
@@ -31,10 +28,7 @@ export async function GET(
 // Uses a transaction to avoid the race condition where two parallel requests
 // both pass the "existing endorsement" check and both try to create one,
 // which would hit the unique constraint and return a 500.
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'endorse' })
@@ -75,10 +69,14 @@ export async function POST(
         })
         // Cascade to Game/Series
         if (mod.gameId) {
-          await tx.game.update({ where: { id: mod.gameId }, data: { totalEndorsements: { decrement: 1 } } }).catch(() => {})
+          await tx.game
+            .update({ where: { id: mod.gameId }, data: { totalEndorsements: { decrement: 1 } } })
+            .catch(() => {})
         }
         if (mod.seriesId) {
-          await tx.series.update({ where: { id: mod.seriesId }, data: { totalEndorsements: { decrement: 1 } } }).catch(() => {})
+          await tx.series
+            .update({ where: { id: mod.seriesId }, data: { totalEndorsements: { decrement: 1 } } })
+            .catch(() => {})
         }
         return {
           notFound: false as const,
@@ -98,10 +96,14 @@ export async function POST(
         })
         // Cascade to Game/Series
         if (mod.gameId) {
-          await tx.game.update({ where: { id: mod.gameId }, data: { totalEndorsements: { increment: 1 } } }).catch(() => {})
+          await tx.game
+            .update({ where: { id: mod.gameId }, data: { totalEndorsements: { increment: 1 } } })
+            .catch(() => {})
         }
         if (mod.seriesId) {
-          await tx.series.update({ where: { id: mod.seriesId }, data: { totalEndorsements: { increment: 1 } } }).catch(() => {})
+          await tx.series
+            .update({ where: { id: mod.seriesId }, data: { totalEndorsements: { increment: 1 } } })
+            .catch(() => {})
         }
         return {
           notFound: false as const,
@@ -119,7 +121,10 @@ export async function POST(
     if (result.endorsed && result.endorsements) {
       const ENDORSE_MILESTONES = [10, 50, 100, 500, 1000]
       if (ENDORSE_MILESTONES.includes(result.endorsements)) {
-        const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true, authorId: true } })
+        const mod = await db.mod.findUnique({
+          where: { slug },
+          select: { id: true, name: true, authorId: true },
+        })
         if (mod) {
           try {
             const useCases = getUseCases()
@@ -136,7 +141,9 @@ export async function POST(
     }
 
     // Invalidate home cache for real-time stats
-    try { clearHomeCache() } catch {}
+    try {
+      clearHomeCache()
+    } catch {}
 
     return ok({
       endorsed: result.endorsed,

@@ -9,7 +9,7 @@ export async function getInactiveUsers(config: InactiveUsersConfig) {
   const thresholdDate = new Date(Date.now() - config.daysThreshold * 24 * 60 * 60 * 1000)
 
   const where: Record<string, unknown> = {
-    lastLoginAt: { lt: thresholdDate }
+    lastLoginAt: { lt: thresholdDate },
   }
 
   if (!config.includeWithNoActivity) {
@@ -23,18 +23,18 @@ export async function getInactiveUsers(config: InactiveUsersConfig) {
         select: {
           mods: true,
           endorsements: true,
-        }
+        },
       },
       mods: {
         select: {
-          downloads: true
-        }
-      }
+          downloads: true,
+        },
+      },
     },
-    orderBy: { lastLoginAt: 'asc' }
+    orderBy: { lastLoginAt: 'asc' },
   })
 
-  return users.map(user => ({
+  return users.map((user) => ({
     id: user.id,
     username: user.username,
     email: user.email,
@@ -43,6 +43,6 @@ export async function getInactiveUsers(config: InactiveUsersConfig) {
       ? Math.floor((Date.now() - user.lastLoginAt.getTime()) / (1000 * 60 * 60 * 24))
       : null,
     modCount: user._count.mods,
-    totalDownloads: user.mods.reduce((sum, mod) => sum + mod.downloads, 0)
+    totalDownloads: user.mods.reduce((sum, mod) => sum + mod.downloads, 0),
   }))
 }

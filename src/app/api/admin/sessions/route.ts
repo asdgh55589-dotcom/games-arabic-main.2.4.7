@@ -53,7 +53,16 @@ export async function GET(req: NextRequest) {
       db.session.findMany({
         where,
         include: {
-          user: { select: { id: true, username: true, displayName: true, email: true, avatarUrl: true, role: true } },
+          user: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              email: true,
+              avatarUrl: true,
+              role: true,
+            },
+          },
         },
         orderBy: { updatedAt: 'desc' },
         skip: (page - 1) * limit,
@@ -62,13 +71,23 @@ export async function GET(req: NextRequest) {
       // إحصائيات عامة (بدون فلترة search/device/time إلا للنشط)
       Promise.all([
         db.session.count({ where: { expiresAt: { gt: new Date() } } }),
-        db.session.count({ where: { expiresAt: { gt: new Date() }, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
-        db.session.findMany({ where: { expiresAt: { gt: new Date() } }, select: { userAgent: true } }),
+        db.session.count({
+          where: {
+            expiresAt: { gt: new Date() },
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+          },
+        }),
+        db.session.findMany({
+          where: { expiresAt: { gt: new Date() } },
+          select: { userAgent: true },
+        }),
       ]),
     ])
 
     const [totalActive, todayCount, allAgents] = allForStats
-    const uniqueDevices = new Set(allAgents.map((a) => (a.userAgent || '').slice(0, 80)).filter(Boolean)).size
+    const uniqueDevices = new Set(
+      allAgents.map((a) => (a.userAgent || '').slice(0, 80)).filter(Boolean),
+    ).size
 
     return ok({
       sessions,

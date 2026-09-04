@@ -119,22 +119,32 @@ export default function NotificationHistoryPage() {
       <div className="flex gap-2">
         <select
           value={filter.channel}
-          onChange={(e) => { setFilter({ ...filter, channel: e.target.value }); setPage(1) }}
+          onChange={(e) => {
+            setFilter({ ...filter, channel: e.target.value })
+            setPage(1)
+          }}
           className="rounded-lg border bg-background px-3 py-2 text-sm"
         >
           <option value="">كل القنوات</option>
           {Object.entries(CHANNEL_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
         <select
           value={filter.status}
-          onChange={(e) => { setFilter({ ...filter, status: e.target.value }); setPage(1) }}
+          onChange={(e) => {
+            setFilter({ ...filter, status: e.target.value })
+            setPage(1)
+          }}
           className="rounded-lg border bg-background px-3 py-2 text-sm"
         >
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
       </div>
@@ -164,12 +174,17 @@ export default function NotificationHistoryPage() {
                 ) : (
                   logs.map((log) => (
                     <tr key={log.id} className="border-b hover:bg-muted/30">
-                      <td className="px-4 py-3 text-xs">{NOTIFICATION_TYPE_LABELS[log.notification.type as NotificationType] || log.notification.type}</td>
+                      <td className="px-4 py-3 text-xs">
+                        {NOTIFICATION_TYPE_LABELS[log.notification.type as NotificationType] ||
+                          log.notification.type}
+                      </td>
                       <td className="px-4 py-3">{log.notification.title}</td>
                       <td className="px-4 py-3">{log.notification.user.username}</td>
                       <td className="px-4 py-3">{CHANNEL_LABELS[log.channel] || log.channel}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[log.status]}`}>
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[log.status]}`}
+                        >
                           {STATUS_LABELS[log.status]}
                         </span>
                       </td>
@@ -186,11 +201,21 @@ export default function NotificationHistoryPage() {
       </Card>
 
       <div className="flex items-center justify-between mt-4">
-        <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+        <Button
+          variant="outline"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+        >
           السابق
         </Button>
-        <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
-        <Button variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+        <span className="text-sm text-muted-foreground">
+          صفحة {page} من {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+        >
           التالي
         </Button>
       </div>

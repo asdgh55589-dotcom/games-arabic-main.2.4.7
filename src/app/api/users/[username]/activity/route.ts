@@ -123,7 +123,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     ])
 
     // تجميع البيانات الشهرية
-    const monthlyStatsMap: Record<string, { month: string; comments: number; mods: number; endorsements: number }> = {}
+    const monthlyStatsMap: Record<
+      string,
+      { month: string; comments: number; mods: number; endorsements: number }
+    > = {}
 
     // تهيئة الأشهر последние 6 أشهر
     for (let i = 5; i >= 0; i--) {
@@ -134,29 +137,34 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // حساب التعليقات الشهرية
-    monthlyComments.forEach(c => {
+    monthlyComments.forEach((c) => {
       const d = new Date(c.createdAt)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       if (monthlyStatsMap[key]) monthlyStatsMap[key].comments++
     })
 
     // حساب التعريبات الشهرية
-    monthlyMods.forEach(m => {
+    monthlyMods.forEach((m) => {
       const d = new Date(m.createdAt)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       if (monthlyStatsMap[key]) monthlyStatsMap[key].mods++
     })
 
     // حساب التأييدات الشهرية
-    monthlyEndorsements.forEach(e => {
+    monthlyEndorsements.forEach((e) => {
       const d = new Date(e.createdAt)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       if (monthlyStatsMap[key]) monthlyStatsMap[key].endorsements++
     })
 
-    const monthlyStats = Object.values(monthlyStatsMap).sort((a, b) => a.month.localeCompare(b.month))
+    const monthlyStats = Object.values(monthlyStatsMap).sort((a, b) =>
+      a.month.localeCompare(b.month),
+    )
 
-    return ok({ comments, mods, modEdits, endorsements, monthlyStats }, { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } })
+    return ok(
+      { comments, mods, modEdits, endorsements, monthlyStats },
+      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } },
+    )
   } catch (err) {
     console.error('[activity GET] failed:', err)
     return internalError('Failed')

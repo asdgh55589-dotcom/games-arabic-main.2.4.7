@@ -71,13 +71,19 @@ export async function validateReport(input: ValidateReportInput): Promise<Valida
   }
 
   if (targetType === 'mod') {
-    const mod = await db.mod.findUnique({ where: { id: targetId }, select: { id: true, authorId: true } })
+    const mod = await db.mod.findUnique({
+      where: { id: targetId },
+      select: { id: true, authorId: true },
+    })
     if (!mod) return { error: 'التعريب غير موجود' }
     if (mod.authorId === reporterId) return { error: 'لا يمكنك الإبلاغ عن تعريبك الخاص' }
   }
 
   if (targetType === 'comment') {
-    const comment = await db.modComment.findUnique({ where: { id: targetId }, select: { id: true, userId: true } })
+    const comment = await db.modComment.findUnique({
+      where: { id: targetId },
+      select: { id: true, userId: true },
+    })
     if (!comment) return { error: 'التعليق غير موجود' }
     if (comment.userId === reporterId) return { error: 'لا يمكنك الإبلاغ عن تعليقك الخاص' }
   }

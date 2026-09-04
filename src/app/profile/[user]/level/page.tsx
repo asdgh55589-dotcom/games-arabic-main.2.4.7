@@ -10,9 +10,15 @@ import { TierProgress } from '@/components/tier-progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trophy, TrendingUp, History } from 'lucide-react'
 
-export async function generateMetadata({ params }: { params: Promise<{ user: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ user: string }>
+}): Promise<Metadata> {
   const { user: username } = await params
-  const user = await db.user.findFirst({ where: { username: { equals: decodeURIComponent(username), mode: 'insensitive' } } })
+  const user = await db.user.findFirst({
+    where: { username: { equals: decodeURIComponent(username), mode: 'insensitive' } },
+  })
   if (!user) return { title: 'مستخدم غير موجود | Games Arabic' }
   return {
     title: `مستوى ${user.username} | Games Arabic`,
@@ -77,7 +83,12 @@ export default async function LevelPage({ params }: { params: Promise<{ user: st
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <TierProgress role={role} currentTier={user.tier} progress={tierResult.progress} nextRequirements={tierResult.nextTierRequirements} />
+          <TierProgress
+            role={role}
+            currentTier={user.tier}
+            progress={tierResult.progress}
+            nextRequirements={tierResult.nextTierRequirements}
+          />
         </CardContent>
       </Card>
 
@@ -93,19 +104,35 @@ export default async function LevelPage({ params }: { params: Promise<{ user: st
           <CardContent>
             <div className="space-y-3">
               {user.tierHistory.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
                   <div className="flex items-center gap-3">
-                    {entry.toTier > entry.fromTier ? <span className="text-green-500">⬆️</span> : <span className="text-red-500">⬇️</span>}
+                    {entry.toTier > entry.fromTier ? (
+                      <span className="text-green-500">⬆️</span>
+                    ) : (
+                      <span className="text-red-500">⬇️</span>
+                    )}
                     <div>
                       <div className="text-sm font-medium">
-                        من {getTierLabel(role, entry.fromTier)} إلى {getTierLabel(role, entry.toTier)}
+                        من {getTierLabel(role, entry.fromTier)} إلى{' '}
+                        {getTierLabel(role, entry.toTier)}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {entry.reason === 'auto' ? 'ترقية تلقائية' : entry.reason === 'manual' ? 'قرار إداري' : entry.reason === 'admin' ? 'إجراء إداري' : entry.reason}
+                        {entry.reason === 'auto'
+                          ? 'ترقية تلقائية'
+                          : entry.reason === 'manual'
+                            ? 'قرار إداري'
+                            : entry.reason === 'admin'
+                              ? 'إجراء إداري'
+                              : entry.reason}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{new Date(entry.createdAt).toLocaleDateString('ar-EG')}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(entry.createdAt).toLocaleDateString('ar-EG')}
+                  </div>
                 </div>
               ))}
             </div>

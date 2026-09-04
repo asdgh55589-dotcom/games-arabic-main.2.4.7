@@ -32,7 +32,9 @@ export function ProfileXpBar({ xp }: ProfileXpBarProps) {
           <Star className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-white">المستوى {xp.level} — {xp.name}</h3>
+          <h3 className="text-lg font-bold text-white">
+            المستوى {xp.level} — {xp.name}
+          </h3>
           <p className="text-sm text-gray-400">{xp.points} نقطة خبرة</p>
         </div>
       </div>
@@ -40,7 +42,9 @@ export function ProfileXpBar({ xp }: ProfileXpBarProps) {
       {/* Progress bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-gray-400">
-          <span>{pointsInLevel} / {pointsNeeded} XP</span>
+          <span>
+            {pointsInLevel} / {pointsNeeded} XP
+          </span>
           <span>{xp.progress}%</span>
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-[#222]">

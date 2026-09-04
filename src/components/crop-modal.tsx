@@ -46,31 +46,19 @@ function getRadianAngle(valueInDegrees: number) {
 function rotateSize(width: number, height: number, rotation: number) {
   const rotRad = getRadianAngle(rotation)
   return {
-    width:
-      Math.abs(Math.cos(rotRad) * width) +
-      Math.abs(Math.sin(rotRad) * height),
-    height:
-      Math.abs(Math.sin(rotRad) * width) +
-      Math.abs(Math.cos(rotRad) * height),
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
   }
 }
 
-async function getCroppedImg(
-  imageSrc: string,
-  pixelCrop: PixelCrop,
-  rotation = 0
-): Promise<Blob> {
+async function getCroppedImg(imageSrc: string, pixelCrop: PixelCrop, rotation = 0): Promise<Blob> {
   const image = await createImage(imageSrc)
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')!
 
   const rotRad = getRadianAngle(rotation)
 
-  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-    image.width,
-    image.height,
-    rotation
-  )
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation)
 
   canvas.width = bBoxWidth
   canvas.height = bBoxHeight
@@ -96,7 +84,7 @@ async function getCroppedImg(
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   )
 
   return new Promise((resolve, reject) => {
@@ -109,7 +97,7 @@ async function getCroppedImg(
         }
       },
       'image/jpeg',
-      0.95
+      0.95,
     )
   })
 }
@@ -137,12 +125,9 @@ export function CropModal({
     setZoom(zoom)
   }, [])
 
-  const onCropCompleteCallback = useCallback(
-    (_croppedArea: any, croppedAreaPixels: PixelCrop) => {
-      setCroppedAreaPixels(croppedAreaPixels)
-    },
-    []
-  )
+  const onCropCompleteCallback = useCallback((_croppedArea: any, croppedAreaPixels: PixelCrop) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
 
   const handleConfirm = async () => {
     if (!croppedAreaPixels) return
@@ -169,10 +154,15 @@ export function CropModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border p-0 gap-0 overflow-hidden" aria-describedby="crop-modal-description">
+      <DialogContent
+        className="sm:max-w-[500px] bg-card border-border p-0 gap-0 overflow-hidden"
+        aria-describedby="crop-modal-description"
+      >
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-sm font-bold">{title}</DialogTitle>
-          <DialogDescription id="crop-modal-description">اضبط القص بالتكبير والسحب ثم أكد.</DialogDescription>
+          <DialogDescription id="crop-modal-description">
+            اضبط القص بالتكبير والسحب ثم أكد.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Cropper */}
@@ -255,9 +245,7 @@ export function CropModal({
                 disabled={processing}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs min-h-[44px]"
               >
-                {processing ? (
-                  <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
+                {processing ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : null}
                 قص وتأكيد
               </Button>
             </div>

@@ -13,8 +13,12 @@ let dismissed = false
 const listeners = new Set<() => void>()
 
 function hasConsentCookie(): boolean {
-  return typeof document !== 'undefined'
-    && document.cookie.split(';').some((c) => c.trim().startsWith(`${CONSENT_COOKIE}=${CONSENT_VALUE}`))
+  return (
+    typeof document !== 'undefined' &&
+    document.cookie
+      .split(';')
+      .some((c) => c.trim().startsWith(`${CONSENT_COOKIE}=${CONSENT_VALUE}`))
+  )
 }
 
 function getSnapshot(): boolean {
@@ -50,8 +54,8 @@ export function CookieConsent() {
     >
       <p className="min-w-0 flex-1 text-xs leading-relaxed text-foreground/80 sm:text-[12.5px]">
         <span className="me-1.5 text-sm">🍪</span>
-        نستخدم ملفات تعريف الارتباط (Cookies) لضمان عمل الموقع وتحسين تجربتك. باستخدامك للموقع أو بالضغط على
-        «موافق»، فأنت توافق على استخدامها.{' '}
+        نستخدم ملفات تعريف الارتباط (Cookies) لضمان عمل الموقع وتحسين تجربتك. باستخدامك للموقع أو
+        بالضغط على «موافق»، فأنت توافق على استخدامها.{' '}
         <Link href="/privacy" className="font-semibold text-primary hover:underline">
           سياسة الخصوصية
         </Link>

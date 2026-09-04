@@ -32,7 +32,9 @@ export function TierProgress({ role, currentTier, progress, nextRequirements }: 
     return (
       <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
         <div className="text-sm font-medium">التقدم نحو: {nextLabel}</div>
-        <div className="text-xs text-muted-foreground mt-1">هذا المستوى يتطلب موافقة الإدارة بعد استيفاء الشروط</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          هذا المستوى يتطلب موافقة الإدارة بعد استيفاء الشروط
+        </div>
         {nextRequirements.minPublishedCount !== undefined && (
           <div className="text-xs mt-2">
             {progress.publishedCount}/{nextRequirements.minPublishedCount} تعريبات منشورة

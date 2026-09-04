@@ -9,9 +9,10 @@
 export function StatusBadge({ status }: { status: 'new' | 'updated' | null }) {
   if (!status) return null
 
-  const config = status === 'new'
-    ? { text: 'جديد', bg: 'bg-status-new', fg: 'text-status-new-foreground' }
-    : { text: 'محدّث', bg: 'bg-status-updated', fg: 'text-status-updated-foreground' }
+  const config =
+    status === 'new'
+      ? { text: 'جديد', bg: 'bg-status-new', fg: 'text-status-new-foreground' }
+      : { text: 'محدّث', bg: 'bg-status-updated', fg: 'text-status-updated-foreground' }
 
   return (
     <span
@@ -26,7 +27,10 @@ export function StatusBadge({ status }: { status: 'new' | 'updated' | null }) {
  * Determine badge status from creation/update timestamps.
  * Returns null if no badge should be shown.
  */
-export function getModBadgeStatus(createdAt: string | Date, updatedAt: string | Date): 'new' | 'updated' | null {
+export function getModBadgeStatus(
+  createdAt: string | Date,
+  updatedAt: string | Date,
+): 'new' | 'updated' | null {
   const THIRTY_HOURS_MS = 30 * 60 * 60 * 1000
   const now = Date.now()
   const ageSinceCreated = now - new Date(createdAt).getTime()

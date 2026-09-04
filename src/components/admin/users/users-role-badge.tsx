@@ -2,7 +2,10 @@ import { Crown, Shield, Star, User as UserIcon, BadgeCheck, PenTool, Send } from
 import { getRoleLabel } from '@/lib/roles'
 import type { UserRole } from '@/lib/roles'
 
-export const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
+export const ROLE_BADGE: Record<
+  string,
+  { label: string; icon: React.ReactNode; className: string }
+> = {
   owner: {
     label: getRoleLabel('owner'),
     icon: <Crown className="h-3 w-3" />,

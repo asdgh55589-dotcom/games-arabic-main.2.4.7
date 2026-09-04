@@ -35,9 +35,7 @@ interface MockServiceRefs {
   deduplicationPolicy: { check: jest.Mock }
 }
 
-function createService(overrides?: {
-  preferenceRepo?: PreferenceRepository
-}): MockServiceRefs {
+function createService(overrides?: { preferenceRepo?: PreferenceRepository }): MockServiceRefs {
   const created: any[] = []
   const notificationRepo: NotificationRepository & { created: any[] } = {
     created,
@@ -90,14 +88,17 @@ function createService(overrides?: {
 
   const service = new NotificationService({
     notificationRepo,
-    preferenceRepo: overrides?.preferenceRepo ?? { findByUserId: jest.fn().mockResolvedValue(null) } as any,
+    preferenceRepo:
+      overrides?.preferenceRepo ?? ({ findByUserId: jest.fn().mockResolvedValue(null) } as any),
     templateRenderer: {
-      render: jest.fn().mockImplementation((_type: string, _channel: string, vars: Record<string, unknown>) => {
-        return Promise.resolve({
-          title: `عنوان: ${vars.actorName ?? vars.modTitle ?? vars.targetTitle ?? 'اختبار'}`,
-          body: `رسالة اختبار`,
-        })
-      }),
+      render: jest
+        .fn()
+        .mockImplementation((_type: string, _channel: string, vars: Record<string, unknown>) => {
+          return Promise.resolve({
+            title: `عنوان: ${vars.actorName ?? vars.modTitle ?? vars.targetTitle ?? 'اختبار'}`,
+            body: `رسالة اختبار`,
+          })
+        }),
     },
     eventPublisher,
     jobQueue,
@@ -106,11 +107,17 @@ function createService(overrides?: {
     deliveryPolicy: {} as any,
   })
 
-  return { service, notificationRepo, eventPublisher, jobQueue, preferencePolicy, deduplicationPolicy }
+  return {
+    service,
+    notificationRepo,
+    eventPublisher,
+    jobQueue,
+    preferencePolicy,
+    deduplicationPolicy,
+  }
 }
 
 describe('Notification Integration Flows', () => {
-
   describe('Comment Reply Flow', () => {
     it('should create notification when user replies to a comment', async () => {
       const { service, notificationRepo } = createService()
@@ -449,9 +456,13 @@ describe('Notification Integration Flows', () => {
       const refs = createService()
       // Override preference policy to reject email channel
       refs.service['deps'].preferencePolicy = {
-        canDeliver: jest.fn().mockImplementation(async (_userId: string, _type: string, channel: NotificationChannel) => {
-          return channel !== NotificationChannel.Email
-        }),
+        canDeliver: jest
+          .fn()
+          .mockImplementation(
+            async (_userId: string, _type: string, channel: NotificationChannel) => {
+              return channel !== NotificationChannel.Email
+            },
+          ),
         shouldQueueForLater: jest.fn().mockResolvedValue(false),
       } as any
 

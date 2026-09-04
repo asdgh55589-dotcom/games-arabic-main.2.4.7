@@ -49,33 +49,33 @@ describe('Notification Entity', () => {
     })
 
     it('should throw if userId is missing', () => {
-      expect(() =>
-        Notification.create({ ...validProps, userId: '' }),
-      ).toThrow('Notification.userId is required')
+      expect(() => Notification.create({ ...validProps, userId: '' })).toThrow(
+        'Notification.userId is required',
+      )
     })
 
     it('should throw if type is missing', () => {
-      expect(() =>
-        Notification.create({ ...validProps, type: '' as NotificationType }),
-      ).toThrow('Notification.type is required')
+      expect(() => Notification.create({ ...validProps, type: '' as NotificationType })).toThrow(
+        'Notification.type is required',
+      )
     })
 
     it('should throw if title is empty', () => {
-      expect(() =>
-        Notification.create({ ...validProps, title: '' }),
-      ).toThrow('Notification.title is required')
+      expect(() => Notification.create({ ...validProps, title: '' })).toThrow(
+        'Notification.title is required',
+      )
     })
 
     it('should throw if title is whitespace only', () => {
-      expect(() =>
-        Notification.create({ ...validProps, title: '   ' }),
-      ).toThrow('Notification.title is required')
+      expect(() => Notification.create({ ...validProps, title: '   ' })).toThrow(
+        'Notification.title is required',
+      )
     })
 
     it('should throw if message is empty', () => {
-      expect(() =>
-        Notification.create({ ...validProps, message: '' }),
-      ).toThrow('Notification.message is required')
+      expect(() => Notification.create({ ...validProps, message: '' })).toThrow(
+        'Notification.message is required',
+      )
     })
   })
 
@@ -128,9 +128,7 @@ describe('Notification Entity', () => {
 
     it('should throw if message is empty', () => {
       const notification = Notification.create(validProps)
-      expect(() => notification.updateMessage('')).toThrow(
-        'Notification.message cannot be empty',
-      )
+      expect(() => notification.updateMessage('')).toThrow('Notification.message cannot be empty')
     })
   })
 

@@ -14,13 +14,18 @@ interface TierHistoryEntry {
 }
 
 const TIER_NAMES: Record<number, string> = {
-  0: 'مبتدئ', 1: 'مترجم', 2: 'محترف', 3: 'خبير', 4: 'مشرف', 5: 'مدير'
+  0: 'مبتدئ',
+  1: 'مترجم',
+  2: 'محترف',
+  3: 'خبير',
+  4: 'مشرف',
+  5: 'مدير',
 }
 
 const REASON_LABELS: Record<string, string> = {
   auto: 'تلقائي',
   manual: 'يدوي',
-  admin: 'إداري'
+  admin: 'إداري',
 }
 
 interface TierHistoryTableProps {

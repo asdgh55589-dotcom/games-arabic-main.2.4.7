@@ -33,20 +33,18 @@ export function ProfileSocialLinks({
     discordUrl,
   }
 
-  const links = PLATFORM_KEYS
-    .map((key) => {
-      const platform = SOCIAL_PLATFORMS[key]
-      const url = urlMap[platform.column]
-      if (!url) return null
-      const Icon = platform.icon
-      return {
-        key,
-        icon: <Icon className="h-4 w-4" />,
-        url,
-        label: platform.label,
-      }
-    })
-    .filter(Boolean)
+  const links = PLATFORM_KEYS.map((key) => {
+    const platform = SOCIAL_PLATFORMS[key]
+    const url = urlMap[platform.column]
+    if (!url) return null
+    const Icon = platform.icon
+    return {
+      key,
+      icon: <Icon className="h-4 w-4" />,
+      url,
+      label: platform.label,
+    }
+  }).filter(Boolean)
 
   if (links.length === 0) return null
 

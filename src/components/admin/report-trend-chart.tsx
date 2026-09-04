@@ -43,7 +43,9 @@ export function ReportTrendChart() {
 
   return (
     <div className="rounded-lg border border-border bg-card/50 p-4">
-      <h3 className="mb-4 text-sm font-semibold text-muted-foreground">البلاغات الشهرية (آخر 12 شهر)</h3>
+      <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
+        البلاغات الشهرية (آخر 12 شهر)
+      </h3>
       <div className="flex items-end gap-1" style={{ height: 120 }}>
         {trend.map((t) => {
           const heightPct = (t.count / maxCount) * 100

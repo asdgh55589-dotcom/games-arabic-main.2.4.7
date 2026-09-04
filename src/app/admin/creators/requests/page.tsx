@@ -8,7 +8,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
@@ -28,13 +35,32 @@ interface CreatorRequest {
   rejectReason: string | null
   createdAt: string
   updatedAt: string
-  user: { id: string; username: string; avatarUrl: string | null; email: string; joinedAt: string; role: string }
+  user: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    email: string
+    joinedAt: string
+    role: string
+  }
 }
 
 const STATUS_LABEL: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
-  pending: { label: 'قيد المراجعة', className: 'bg-amber-500 text-white', icon: <Clock className="h-3 w-3" /> },
-  approved: { label: 'مقبول', className: 'bg-green-500 text-white', icon: <CheckCircle className="h-3 w-3" /> },
-  rejected: { label: 'مرفوض', className: 'bg-red-500 text-white', icon: <XCircle className="h-3 w-3" /> },
+  pending: {
+    label: 'قيد المراجعة',
+    className: 'bg-amber-500 text-white',
+    icon: <Clock className="h-3 w-3" />,
+  },
+  approved: {
+    label: 'مقبول',
+    className: 'bg-green-500 text-white',
+    icon: <CheckCircle className="h-3 w-3" />,
+  },
+  rejected: {
+    label: 'مرفوض',
+    className: 'bg-red-500 text-white',
+    icon: <XCircle className="h-3 w-3" />,
+  },
 }
 
 export default function AdminCreatorRequestsPage() {
@@ -43,7 +69,10 @@ export default function AdminCreatorRequestsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null })
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  })
   const [rejectReason, setRejectReason] = useState('')
 
   const fetchRequests = async () => {
@@ -51,7 +80,9 @@ export default function AdminCreatorRequestsPage() {
     try {
       const params = new URLSearchParams()
       if (filter !== 'all') params.set('status', filter)
-      const res = await fetch(`/api/admin/creator-requests?${params.toString()}`, { cache: 'no-store' })
+      const res = await fetch(`/api/admin/creator-requests?${params.toString()}`, {
+        cache: 'no-store',
+      })
       if (res.ok) {
         const json = await res.json()
         setRequests(json.data?.requests || json.data || [])
@@ -80,7 +111,10 @@ export default function AdminCreatorRequestsPage() {
         toast({ title: 'تم قبول الطلب وإشعار المستخدم' })
         fetchRequests()
       } else {
-        toast({ title: json?.error?.message || json?.error?.details || 'فشل القبول', variant: 'destructive' })
+        toast({
+          title: json?.error?.message || json?.error?.details || 'فشل القبول',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -107,7 +141,10 @@ export default function AdminCreatorRequestsPage() {
         setRejectReason('')
         fetchRequests()
       } else {
-        toast({ title: json?.error?.message || json?.error?.details || 'فشل الرفض', variant: 'destructive' })
+        toast({
+          title: json?.error?.message || json?.error?.details || 'فشل الرفض',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -137,7 +174,9 @@ export default function AdminCreatorRequestsPage() {
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold">طلبات الترقية</h1>
-        <p className="text-sm text-muted-foreground mt-1">مراجعة طلبات الأعضاء الراغبين في الانضمام لفريق المُعَرِّبين</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          مراجعة طلبات الأعضاء الراغبين في الانضمام لفريق المُعَرِّبين
+        </p>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -147,14 +186,27 @@ export default function AdminCreatorRequestsPage() {
           { key: 'approved', label: 'مقبولة' },
           { key: 'rejected', label: 'مرفوضة' },
         ].map((f) => (
-          <Button key={f.key} variant={filter === f.key ? 'default' : 'outline'} size="sm" onClick={() => setFilter(f.key)}>
+          <Button
+            key={f.key}
+            variant={filter === f.key ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter(f.key)}
+          >
             {f.label}
           </Button>
         ))}
       </div>
 
       {requests.length === 0 ? (
-        <EmptyState icon="inbox" title="لا توجد طلبات" description={filter === 'pending' ? 'لا توجد طلبات قيد المراجعة حالياً' : 'لا توجد طلبات في هذا التصنيف'} />
+        <EmptyState
+          icon="inbox"
+          title="لا توجد طلبات"
+          description={
+            filter === 'pending'
+              ? 'لا توجد طلبات قيد المراجعة حالياً'
+              : 'لا توجد طلبات في هذا التصنيف'
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {requests.map((req) => {
@@ -171,26 +223,45 @@ export default function AdminCreatorRequestsPage() {
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <Link href={`/profile/${encodeURIComponent(req.user.username)}`} className="font-bold hover:underline">
+                          <Link
+                            href={`/profile/${encodeURIComponent(req.user.username)}`}
+                            className="font-bold hover:underline"
+                          >
                             {req.user.username}
                           </Link>
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${statusInfo.className}`}>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${statusInfo.className}`}
+                          >
                             {statusInfo.icon} {statusInfo.label}
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {req.user.email} • انضم {new Date(req.user.joinedAt).toLocaleDateString('ar-EG')} • الطلب {new Date(req.createdAt).toLocaleDateString('ar-EG')}
+                          {req.user.email} • انضم{' '}
+                          {new Date(req.user.joinedAt).toLocaleDateString('ar-EG')} • الطلب{' '}
+                          {new Date(req.createdAt).toLocaleDateString('ar-EG')}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <RoleBadge role={(req.user as unknown as { role?: string })?.role} size="sm" />
-                          <TierBadge tier={(req.user as unknown as { tier?: number })?.tier || 0} role={(req.user as unknown as { role?: string })?.role} size="sm" />
+                          <RoleBadge
+                            role={(req.user as unknown as { role?: string })?.role}
+                            size="sm"
+                          />
+                          <TierBadge
+                            tier={(req.user as unknown as { tier?: number })?.tier || 0}
+                            role={(req.user as unknown as { role?: string })?.role}
+                            size="sm"
+                          />
                           {(req.user as unknown as { specialRoles?: string })?.specialRoles && (
-                            <span className="text-xs text-muted-foreground">• { (req.user as unknown as { specialRoles: string }).specialRoles }</span>
+                            <span className="text-xs text-muted-foreground">
+                              • {(req.user as unknown as { specialRoles: string }).specialRoles}
+                            </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Link href={`/profile/${encodeURIComponent(req.user.username)}`} target="_blank">
+                    <Link
+                      href={`/profile/${encodeURIComponent(req.user.username)}`}
+                      target="_blank"
+                    >
                       <Button variant="outline" size="sm">
                         <ExternalLink className="h-3.5 w-3.5 ml-1" /> عرض البروفايل
                       </Button>
@@ -199,24 +270,38 @@ export default function AdminCreatorRequestsPage() {
 
                   <div className="grid gap-4 text-sm">
                     <div>
-                      <div className="font-semibold text-muted-foreground text-xs mb-1">الخبرة في الترجمة</div>
-                      <p className="whitespace-pre-wrap bg-muted/50 rounded p-3 text-sm">{req.experience || '—'}</p>
+                      <div className="font-semibold text-muted-foreground text-xs mb-1">
+                        الخبرة في الترجمة
+                      </div>
+                      <p className="whitespace-pre-wrap bg-muted/50 rounded p-3 text-sm">
+                        {req.experience || '—'}
+                      </p>
                     </div>
                     {req.preferredGames && (
                       <div>
-                        <div className="font-semibold text-muted-foreground text-xs mb-1">الألعاب المفضلة</div>
+                        <div className="font-semibold text-muted-foreground text-xs mb-1">
+                          الألعاب المفضلة
+                        </div>
                         <p className="text-sm">{req.preferredGames}</p>
                       </div>
                     )}
                     {req.portfolioLinks && (
                       <div>
-                        <div className="font-semibold text-muted-foreground text-xs mb-1">روابط أعمال سابقة</div>
-                        <p className="whitespace-pre-wrap text-sm break-all bg-muted/30 rounded p-2">{req.portfolioLinks}</p>
+                        <div className="font-semibold text-muted-foreground text-xs mb-1">
+                          روابط أعمال سابقة
+                        </div>
+                        <p className="whitespace-pre-wrap text-sm break-all bg-muted/30 rounded p-2">
+                          {req.portfolioLinks}
+                        </p>
                       </div>
                     )}
                     <div>
-                      <div className="font-semibold text-muted-foreground text-xs mb-1">سبب الرغبة</div>
-                      <p className="whitespace-pre-wrap bg-muted/50 rounded p-3 text-sm">{req.reason || '—'}</p>
+                      <div className="font-semibold text-muted-foreground text-xs mb-1">
+                        سبب الرغبة
+                      </div>
+                      <p className="whitespace-pre-wrap bg-muted/50 rounded p-3 text-sm">
+                        {req.reason || '—'}
+                      </p>
                     </div>
                     {req.status === 'rejected' && req.rejectReason && (
                       <div className="bg-destructive/10 border border-destructive/20 rounded p-3">
@@ -228,11 +313,26 @@ export default function AdminCreatorRequestsPage() {
 
                   {isPending && (
                     <div className="flex gap-2 mt-6">
-                      <Button onClick={() => handleApprove(req.id)} disabled={actionLoading === req.id} className="bg-green-600 hover:bg-green-700">
-                        {actionLoading === req.id ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Check className="h-4 w-4 ml-1" />}
+                      <Button
+                        onClick={() => handleApprove(req.id)}
+                        disabled={actionLoading === req.id}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {actionLoading === req.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                        ) : (
+                          <Check className="h-4 w-4 ml-1" />
+                        )}
                         قبول
                       </Button>
-                      <Button variant="destructive" onClick={() => { setRejectDialog({ open: true, id: req.id }); setRejectReason('') }} disabled={actionLoading === req.id}>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          setRejectDialog({ open: true, id: req.id })
+                          setRejectReason('')
+                        }}
+                        disabled={actionLoading === req.id}
+                      >
                         <X className="h-4 w-4 ml-1" /> رفض
                       </Button>
                     </div>
@@ -244,7 +344,10 @@ export default function AdminCreatorRequestsPage() {
         </div>
       )}
 
-      <Dialog open={rejectDialog.open} onOpenChange={(open) => setRejectDialog({ open, id: open ? rejectDialog.id : null })}>
+      <Dialog
+        open={rejectDialog.open}
+        onOpenChange={(open) => setRejectDialog({ open, id: open ? rejectDialog.id : null })}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>رفض الطلب</DialogTitle>
@@ -262,8 +365,14 @@ export default function AdminCreatorRequestsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialog({ open: false, id: null })}>إلغاء</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim() || !!actionLoading}>
+            <Button variant="outline" onClick={() => setRejectDialog({ open: false, id: null })}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={!rejectReason.trim() || !!actionLoading}
+            >
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : null} تأكيد الرفض
             </Button>
           </DialogFooter>

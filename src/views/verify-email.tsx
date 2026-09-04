@@ -42,7 +42,9 @@ export default function VerifyEmailView() {
       const check = async () => {
         try {
           const supabase = createClient()
-          const { data: { user } } = await supabase.auth.getUser()
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
           if (user?.email_confirmed_at) {
             setStatus('success')
             toast({ title: 'تم التفعيل', description: 'تم تأكيد بريدك بنجاح' })
@@ -117,38 +119,69 @@ export default function VerifyEmailView() {
               <>
                 <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
                 <h1 className="mt-4 text-xl font-bold">✅ تم التفعيل — جاري التحويل</h1>
-                <p className="mt-2 text-sm text-muted-foreground">تم تأكيد بريدك بنجاح، سيتم تحويلك للرئيسية…</p>
-                <Button asChild className="mt-6 w-full h-11"><Link href="/">اذهب للرئيسية الآن</Link></Button>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  تم تأكيد بريدك بنجاح، سيتم تحويلك للرئيسية…
+                </p>
+                <Button asChild className="mt-6 w-full h-11">
+                  <Link href="/">اذهب للرئيسية الآن</Link>
+                </Button>
               </>
             )}
             {status === 'expired' && (
               <>
                 <Clock className="mx-auto h-12 w-12 text-amber-500" />
                 <h1 className="mt-4 text-xl font-bold">⏰ الرابط انتهت صلاحيته</h1>
-                <p className="mt-2 text-sm text-muted-foreground">الرابط صالح 24 ساعة فقط. اطلب رابط جديد.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  الرابط صالح 24 ساعة فقط. اطلب رابط جديد.
+                </p>
                 <form onSubmit={handleResend} className="mt-6 space-y-3 text-right">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xs">البريد الإلكتروني</Label>
+                    <Label htmlFor="email" className="text-xs">
+                      البريد الإلكتروني
+                    </Label>
                     <div className="relative">
                       <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@mail.com" className="pr-10 h-11" dir="ltr" required />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@mail.com"
+                        className="pr-10 h-11"
+                        dir="ltr"
+                        required
+                      />
                     </div>
                   </div>
                   <Button type="submit" disabled={loading || cooldown > 0} className="h-11 w-full">
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : cooldown > 0 ? `أعد الإرسال بعد ${cooldown}s` : 'أعد الإرسال'}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : cooldown > 0 ? (
+                      `أعد الإرسال بعد ${cooldown}s`
+                    ) : (
+                      'أعد الإرسال'
+                    )}
                   </Button>
                 </form>
-                <Button variant="ghost" asChild className="mt-3 w-full"><Link href="/login">سجّل دخول</Link></Button>
+                <Button variant="ghost" asChild className="mt-3 w-full">
+                  <Link href="/login">سجّل دخول</Link>
+                </Button>
               </>
             )}
             {status === 'invalid' && (
               <>
                 <XCircle className="mx-auto h-12 w-12 text-destructive" />
                 <h1 className="mt-4 text-xl font-bold">❌ رابط غير صحيح</h1>
-                <p className="mt-2 text-sm text-muted-foreground">الرابط غير صالح أو مُستخدم مسبقاً.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  الرابط غير صالح أو مُستخدم مسبقاً.
+                </p>
                 <div className="mt-6 space-y-3">
-                  <Button asChild className="h-11 w-full"><Link href="/login">سجّل دخول</Link></Button>
-                  <Button variant="outline" asChild className="h-11 w-full"><Link href="/verify-email">جرّب رابط آخر</Link></Button>
+                  <Button asChild className="h-11 w-full">
+                    <Link href="/login">سجّل دخول</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="h-11 w-full">
+                    <Link href="/verify-email">جرّب رابط آخر</Link>
+                  </Button>
                 </div>
               </>
             )}
@@ -156,20 +189,41 @@ export default function VerifyEmailView() {
               <>
                 <Mail className="mx-auto h-12 w-12 text-primary" />
                 <h1 className="mt-4 text-xl font-bold">تأكيد البريد</h1>
-                <p className="mt-2 text-sm text-muted-foreground">أدخل بريدك لنرسل لك رابط تأكيد جديد</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  أدخل بريدك لنرسل لك رابط تأكيد جديد
+                </p>
                 <form onSubmit={handleResend} className="mt-6 space-y-3 text-right">
                   <div className="space-y-2">
-                    <Label htmlFor="email2" className="text-xs">البريد الإلكتروني</Label>
+                    <Label htmlFor="email2" className="text-xs">
+                      البريد الإلكتروني
+                    </Label>
                     <div className="relative">
                       <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input id="email2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@mail.com" className="pr-10 h-11" dir="ltr" required />
+                      <Input
+                        id="email2"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@mail.com"
+                        className="pr-10 h-11"
+                        dir="ltr"
+                        required
+                      />
                     </div>
                   </div>
                   <Button type="submit" disabled={loading || cooldown > 0} className="h-11 w-full">
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : cooldown > 0 ? `أعد الإرسال بعد ${cooldown}s` : 'أرسل رابط التأكيد'}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : cooldown > 0 ? (
+                      `أعد الإرسال بعد ${cooldown}s`
+                    ) : (
+                      'أرسل رابط التأكيد'
+                    )}
                   </Button>
                 </form>
-                <Button variant="ghost" asChild className="mt-3 w-full"><Link href="/login">العودة لتسجيل الدخول</Link></Button>
+                <Button variant="ghost" asChild className="mt-3 w-full">
+                  <Link href="/login">العودة لتسجيل الدخول</Link>
+                </Button>
               </>
             )}
           </div>

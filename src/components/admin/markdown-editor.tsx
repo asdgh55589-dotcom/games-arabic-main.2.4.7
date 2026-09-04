@@ -20,7 +20,12 @@ const TOOLBAR_ITEMS = [
   { icon: List, label: 'قائمة', before: '- ', after: '' },
 ]
 
-export function MarkdownEditor({ value, onChange, placeholder = 'اكتب الوصف هنا...', rows = 6 }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  placeholder = 'اكتب الوصف هنا...',
+  rows = 6,
+}: MarkdownEditorProps) {
   const [showPreview, setShowPreview] = useState(false)
   const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(null)
 
@@ -59,7 +64,9 @@ export function MarkdownEditor({ value, onChange, placeholder = 'اكتب الو
           type="button"
           onClick={() => setShowPreview(!showPreview)}
           className={`inline-flex h-7 items-center gap-1 rounded px-2 text-xs font-medium transition-colors ${
-            showPreview ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            showPreview
+              ? 'bg-primary/10 text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
           }`}
         >
           {showPreview ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

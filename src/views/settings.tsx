@@ -4,8 +4,21 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
-  ArrowRight, User, Lock, Bell, Eye, ChevronLeft, Upload, Users, BarChart3,
-  Loader2, Save, X, Camera, Check, Shield
+  ArrowRight,
+  User,
+  Lock,
+  Bell,
+  Eye,
+  ChevronLeft,
+  Upload,
+  Users,
+  BarChart3,
+  Loader2,
+  Save,
+  X,
+  Camera,
+  Check,
+  Shield,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,26 +58,71 @@ interface ProfileData {
 
 type SettingsSection = 'profile' | 'account' | 'notifications' | 'privacy' | 'translation'
 
-const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode; description: string }[] = [
-  { key: 'profile', label: 'تخصيص الملف الشخصي', icon: <User className="h-[18px] w-[18px]" />, description: 'صورتك وبياناتك العامة' },
-  { key: 'account', label: 'الحساب', icon: <Lock className="h-[18px] w-[18px]" />, description: 'كلمة المرور والأمان' },
-  { key: 'notifications', label: 'الإشعارات', icon: <Bell className="h-[18px] w-[18px]" />, description: 'تفضيلات الإشعارات' },
-  { key: 'privacy', label: 'الخصوصية', icon: <Eye className="h-[18px] w-[18px]" />, description: 'من يرى ملفك الشخصي' },
-  { key: 'translation', label: 'كن معرّباً', icon: <Upload className="h-[18px] w-[18px]" />, description: 'شارك تعريباتك مع الآخرين' },
+const SECTIONS: {
+  key: SettingsSection
+  label: string
+  icon: React.ReactNode
+  description: string
+}[] = [
+  {
+    key: 'profile',
+    label: 'تخصيص الملف الشخصي',
+    icon: <User className="h-[18px] w-[18px]" />,
+    description: 'صورتك وبياناتك العامة',
+  },
+  {
+    key: 'account',
+    label: 'الحساب',
+    icon: <Lock className="h-[18px] w-[18px]" />,
+    description: 'كلمة المرور والأمان',
+  },
+  {
+    key: 'notifications',
+    label: 'الإشعارات',
+    icon: <Bell className="h-[18px] w-[18px]" />,
+    description: 'تفضيلات الإشعارات',
+  },
+  {
+    key: 'privacy',
+    label: 'الخصوصية',
+    icon: <Eye className="h-[18px] w-[18px]" />,
+    description: 'من يرى ملفك الشخصي',
+  },
+  {
+    key: 'translation',
+    label: 'كن معرّباً',
+    icon: <Upload className="h-[18px] w-[18px]" />,
+    description: 'شارك تعريباتك مع الآخرين',
+  },
 ]
 
 const TRANSLATOR_ROLES = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
 
 const TRANSLATOR_BENEFITS = [
-  { icon: <Upload className="h-5 w-5" />, title: 'انشر تعريباتك', description: 'ارفع تعريباتك وشاركها مع آلاف اللاعبين' },
-  { icon: <Users className="h-5 w-5" />, title: 'تفاعل مع الجمهور', description: 'استقبل التعليقات والتقييمات وابنِ جمهورك' },
-  { icon: <BarChart3 className="h-5 w-5" />, title: 'تابع إحصائياتك', description: 'شاهد التحميلات والمشاهدات والتقدم' },
+  {
+    icon: <Upload className="h-5 w-5" />,
+    title: 'انشر تعريباتك',
+    description: 'ارفع تعريباتك وشاركها مع آلاف اللاعبين',
+  },
+  {
+    icon: <Users className="h-5 w-5" />,
+    title: 'تفاعل مع الجمهور',
+    description: 'استقبل التعليقات والتقييمات وابنِ جمهورك',
+  },
+  {
+    icon: <BarChart3 className="h-5 w-5" />,
+    title: 'تابع إحصائياتك',
+    description: 'شاهد التحميلات والمشاهدات والتقدم',
+  },
 ]
 
 const TRANSLATOR_STEPS = [
   { title: 'قدّم طلبك', desc: 'املأ نموذج التقديم من زر «قدّم طلبك الآن» — يستغرق دقيقتين فقط.' },
   { title: 'استلم الرد', desc: 'تُراجع الطلبات خلال 48 ساعة، وتصلك الموافقة على حسابك.' },
-  { title: 'ابدأ بالنشر', desc: 'بعد الموافقة تصبح معرّباً رسمياً ويمكنك رفع تعريباتك من لوحة المُعرّب.' },
+  {
+    title: 'ابدأ بالنشر',
+    desc: 'بعد الموافقة تصبح معرّباً رسمياً ويمكنك رفع تعريباتك من لوحة المُعرّب.',
+  },
   { title: 'تابع النتائج', desc: 'تتبع تحميلاتك ومشاهداتك واستقبل تعليقات وتقييمات جمهورك.' },
 ]
 
@@ -87,8 +145,8 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection)
 
-   const [bio, setBio] = useState('')
-   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({})
+  const [bio, setBio] = useState('')
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({})
   const [newUsername, setNewUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -102,18 +160,18 @@ export function SettingsPage() {
   const [discordUrl, setDiscordUrl] = useState('')
   const [accentColor, setAccentColor] = useState('#ff8c00')
 
-   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
-   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-   const [bannerFile, setBannerFile] = useState<File | null>(null)
-   const [avatarRemoved, setAvatarRemoved] = useState(false)
-   const [bannerRemoved, setBannerRemoved] = useState(false)
-   const avatarInputRef = useRef<HTMLInputElement>(null)
-   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
+  const [avatarRemoved, setAvatarRemoved] = useState(false)
+  const [bannerRemoved, setBannerRemoved] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
-   const [cropModalOpen, setCropModalOpen] = useState(false)
-   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
-   const [cropType, setCropType] = useState<'avatar' | 'banner'>('avatar')
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [cropType, setCropType] = useState<'avatar' | 'banner'>('avatar')
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -128,14 +186,16 @@ export function SettingsPage() {
   const [profileVisibility, setProfileVisibility] = useState('everyone')
   const [hideJoinDate, setHideJoinDate] = useState(false)
 
-  const [linkedAccounts, setLinkedAccounts] = useState<Array<{
-    id: string
-    provider: string
-    providerEmail: string | null
-    providerUsername: string | null
-    avatarUrl: string | null
-    createdAt: string
-  }>>([])
+  const [linkedAccounts, setLinkedAccounts] = useState<
+    Array<{
+      id: string
+      provider: string
+      providerEmail: string | null
+      providerUsername: string | null
+      avatarUrl: string | null
+      createdAt: string
+    }>
+  >([])
   const [loadingAccounts, setLoadingAccounts] = useState(true)
 
   const isDirty = useMemo(() => {
@@ -156,13 +216,40 @@ export function SettingsPage() {
       accentColor !== (profile.accentColor || '#ff8c00') ||
       profileVisibility !== (profile.profileVisibility || 'everyone') ||
       hideJoinDate !== !!profile.hideJoinDate ||
-      !!avatarFile || !!bannerFile || avatarRemoved || bannerRemoved
+      !!avatarFile ||
+      !!bannerFile ||
+      avatarRemoved ||
+      bannerRemoved
     )
-  }, [profile, bio, newUsername, displayName, firstName, lastName, websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl, accentColor, profileVisibility, hideJoinDate, avatarFile, bannerFile, avatarRemoved, bannerRemoved])
+  }, [
+    profile,
+    bio,
+    newUsername,
+    displayName,
+    firstName,
+    lastName,
+    websiteUrl,
+    twitterUrl,
+    instagramUrl,
+    tiktokUrl,
+    youtubeUrl,
+    githubUrl,
+    discordUrl,
+    accentColor,
+    profileVisibility,
+    hideJoinDate,
+    avatarFile,
+    bannerFile,
+    avatarRemoved,
+    bannerRemoved,
+  ])
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty) { e.preventDefault(); e.returnValue = '' }
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
     }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
@@ -177,8 +264,8 @@ export function SettingsPage() {
     fetch('/api/settings/bootstrap', {
       cache: 'no-store',
     })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
         const payload = data?.data
         if (payload?.profile) {
           const p = payload.profile
@@ -317,7 +404,12 @@ export function SettingsPage() {
       }
 
       avatarUrl = signedData.data.publicUrl
-    } else if (avatarPreview && typeof avatarPreview === 'string' && avatarPreview.startsWith('http') && avatarPreview !== profile.avatarUrl) {
+    } else if (
+      avatarPreview &&
+      typeof avatarPreview === 'string' &&
+      avatarPreview.startsWith('http') &&
+      avatarPreview !== profile.avatarUrl
+    ) {
       // ImageUpload already uploaded to Supabase and returned public URL
       avatarUrl = avatarPreview
     } else if (avatarRemoved) {
@@ -355,7 +447,12 @@ export function SettingsPage() {
       }
 
       bannerUrl = signedData.data.publicUrl
-    } else if (bannerPreview && typeof bannerPreview === 'string' && bannerPreview.startsWith('http') && bannerPreview !== profile.bannerUrl) {
+    } else if (
+      bannerPreview &&
+      typeof bannerPreview === 'string' &&
+      bannerPreview.startsWith('http') &&
+      bannerPreview !== profile.bannerUrl
+    ) {
       bannerUrl = bannerPreview
     } else if (bannerRemoved) {
       bannerUrl = null
@@ -407,7 +504,11 @@ export function SettingsPage() {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'الملف كبير جداً', description: 'الحد الأقصى 5 ميجابايت', variant: 'destructive' })
+        toast({
+          title: 'الملف كبير جداً',
+          description: 'الحد الأقصى 5 ميجابايت',
+          variant: 'destructive',
+        })
         return
       }
       const reader = new FileReader()
@@ -424,7 +525,11 @@ export function SettingsPage() {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast({ title: 'الملف كبير جداً', description: 'الحد الأقصى 10 ميجابايت', variant: 'destructive' })
+        toast({
+          title: 'الملف كبير جداً',
+          description: 'الحد الأقصى 10 ميجابايت',
+          variant: 'destructive',
+        })
         return
       }
       const reader = new FileReader()
@@ -472,8 +577,16 @@ export function SettingsPage() {
         body: JSON.stringify({
           bio,
           username: newUsername !== profile.username ? newUsername : undefined,
-          displayName, firstName, lastName,
-          websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl,
+          displayName,
+          firstName,
+          lastName,
+          websiteUrl,
+          twitterUrl,
+          instagramUrl,
+          tiktokUrl,
+          youtubeUrl,
+          githubUrl,
+          discordUrl,
           accentColor,
           avatarUrl,
           bannerUrl,
@@ -482,11 +595,17 @@ export function SettingsPage() {
         }),
       })
 
-      console.log('[Settings] Profile save response:', { status: profileRes.status, ok: profileRes.ok })
+      console.log('[Settings] Profile save response:', {
+        status: profileRes.status,
+        ok: profileRes.ok,
+      })
 
       if (profileRes.ok) {
         const data = await profileRes.json()
-        await finishSaveSuccess(data.data?.profile?.username || profile.username, 'تم تحديث الملف الشخصي')
+        await finishSaveSuccess(
+          data.data?.profile?.username || profile.username,
+          'تم تحديث الملف الشخصي',
+        )
       } else {
         toast({ title: 'خطأ', description: 'فشل حفظ الملف الشخصي', variant: 'destructive' })
       }
@@ -510,7 +629,10 @@ export function SettingsPage() {
     try {
       const notifRes = await saveNotificationSettings()
 
-      console.log('[Settings] Notifications save response:', { status: notifRes.status, ok: notifRes.ok })
+      console.log('[Settings] Notifications save response:', {
+        status: notifRes.status,
+        ok: notifRes.ok,
+      })
 
       if (notifRes.ok) {
         setSaved(true)
@@ -536,11 +658,17 @@ export function SettingsPage() {
         hideJoinDate,
       })
 
-      console.log('[Settings] Privacy save response:', { status: profileRes.status, ok: profileRes.ok })
+      console.log('[Settings] Privacy save response:', {
+        status: profileRes.status,
+        ok: profileRes.ok,
+      })
 
       if (profileRes.ok) {
         const data = await profileRes.json()
-        await finishSaveSuccess(data.data?.profile?.username || profile.username, 'تم تحديث إعدادات الخصوصية')
+        await finishSaveSuccess(
+          data.data?.profile?.username || profile.username,
+          'تم تحديث إعدادات الخصوصية',
+        )
       } else {
         toast({ title: 'خطأ', description: 'فشل حفظ إعدادات الخصوصية', variant: 'destructive' })
       }
@@ -552,14 +680,14 @@ export function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!profile) return
-    console.log('[Settings] Starting save profile', { 
-      newUsername, 
-      bio: bio.substring(0, 50), 
-      emailNotifications, 
-      pushNotifications, 
+    console.log('[Settings] Starting save profile', {
+      newUsername,
+      bio: bio.substring(0, 50),
+      emailNotifications,
+      pushNotifications,
       dailySummary,
       avatarRemoved,
-      bannerRemoved
+      bannerRemoved,
     })
     setSaving(true)
     setSaved(false)
@@ -580,8 +708,16 @@ export function SettingsPage() {
           body: JSON.stringify({
             bio,
             username: newUsername !== profile.username ? newUsername : undefined,
-            displayName, firstName, lastName,
-            websiteUrl, twitterUrl, instagramUrl, tiktokUrl, youtubeUrl, githubUrl, discordUrl,
+            displayName,
+            firstName,
+            lastName,
+            websiteUrl,
+            twitterUrl,
+            instagramUrl,
+            tiktokUrl,
+            youtubeUrl,
+            githubUrl,
+            discordUrl,
             accentColor,
             avatarUrl,
             bannerUrl,
@@ -592,27 +728,30 @@ export function SettingsPage() {
         fetch('/api/notifications/preferences', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            emailEnabled: emailNotifications, 
-            pushEnabled: pushNotifications, 
-            dailySummary 
+          body: JSON.stringify({
+            emailEnabled: emailNotifications,
+            pushEnabled: pushNotifications,
+            dailySummary,
           }),
         }),
       ])
-      
-      console.log('[Settings] Save responses:', { 
-        profileStatus: profileRes.status, 
+
+      console.log('[Settings] Save responses:', {
+        profileStatus: profileRes.status,
         profileOk: profileRes.ok,
         notifStatus: notifRes.status,
-        notifOk: notifRes.ok
+        notifOk: notifRes.ok,
       })
-      
+
       const profileOk = profileRes.ok
       const notifOk = notifRes.ok
-      
+
       if (profileOk && notifOk) {
         const data = await profileRes.json()
-        await finishSaveSuccess(data.data?.profile?.username || profile.username, 'تم تحديث جميع الإعدادات')
+        await finishSaveSuccess(
+          data.data?.profile?.username || profile.username,
+          'تم تحديث جميع الإعدادات',
+        )
       } else {
         let errorMsg = 'لم يتم الحفظ'
         if (!profileOk && !notifOk) {
@@ -679,16 +818,16 @@ export function SettingsPage() {
 
   const handleUnlink = async (accountId: string) => {
     if (!confirm('هل أنت متأكد من إلغاء ربط هذا الحساب؟')) return
-    
+
     try {
       const res = await fetch('/api/settings/unlink-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accountId }),
       })
-      
+
       if (res.ok) {
-        setLinkedAccounts(prev => prev.filter(a => a.id !== accountId))
+        setLinkedAccounts((prev) => prev.filter((a) => a.id !== accountId))
         toast({ title: 'تم إلغاء الربط بنجاح' })
       } else {
         const data = await res.json()
@@ -712,7 +851,9 @@ export function SettingsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg text-muted-foreground">يجب تسجيل الدخول أولاً</p>
-          <Link href="/login" className="mt-4 inline-block text-sm text-primary hover:underline">تسجيل الدخول</Link>
+          <Link href="/login" className="mt-4 inline-block text-sm text-primary hover:underline">
+            تسجيل الدخول
+          </Link>
         </div>
       </div>
     )
@@ -728,8 +869,8 @@ export function SettingsPage() {
 
   const accent = profile.accentColor || '#ff8c00'
   const isCreator = TRANSLATOR_ROLES.includes(user?.role || '')
-  const displayAvatar = avatarRemoved ? null : (avatarPreview || profile.avatarUrl)
-  const displayBanner = bannerRemoved ? null : (bannerPreview || profile.bannerUrl)
+  const displayAvatar = avatarRemoved ? null : avatarPreview || profile.avatarUrl
+  const displayBanner = bannerRemoved ? null : bannerPreview || profile.bannerUrl
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
@@ -766,20 +907,28 @@ export function SettingsPage() {
                       : 'border-border bg-card shadow-[4px_4px_0_0_var(--border)] hover:bg-card-hover'
                   }`}
                 >
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg border-2 transition-colors ${
-                    activeSection === section.key
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-transparent text-muted-foreground'
-                  }`}>
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg border-2 transition-colors ${
+                      activeSection === section.key
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-transparent text-muted-foreground'
+                    }`}
+                  >
                     {section.icon}
                   </div>
                   <div className="min-w-0 text-start">
                     <div className="text-sm font-bold text-foreground">{section.label}</div>
-                    <div className="text-[10px] font-medium text-muted-foreground">{section.description}</div>
+                    <div className="text-[10px] font-medium text-muted-foreground">
+                      {section.description}
+                    </div>
                   </div>
-                  <ChevronLeft className={`ms-auto h-4 w-4 shrink-0 text-primary transition-opacity ${
-                    activeSection === section.key ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`} />
+                  <ChevronLeft
+                    className={`ms-auto h-4 w-4 shrink-0 text-primary transition-opacity ${
+                      activeSection === section.key
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                  />
                 </button>
               ))}
               {/* الأجهزة المتصلة — Better Auth sessions */}
@@ -792,7 +941,9 @@ export function SettingsPage() {
                 </div>
                 <div className="min-w-0 text-start">
                   <div className="text-sm font-bold text-foreground">الأجهزة المتصلة</div>
-                  <div className="text-[10px] font-medium text-muted-foreground">إدارة جلساتك النشطة</div>
+                  <div className="text-[10px] font-medium text-muted-foreground">
+                    إدارة جلساتك النشطة
+                  </div>
                 </div>
                 <ChevronLeft className="ms-auto h-4 w-4 shrink-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -810,22 +961,46 @@ export function SettingsPage() {
                   <div className="relative h-[180px] overflow-hidden rounded-none border-2 border-border">
                     {displayBanner ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={displayBanner} alt="banner" className="h-full w-full object-cover" />
+                      <img
+                        src={displayBanner}
+                        alt="banner"
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="h-full w-full bg-muted/30" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-3 right-3 flex gap-2">
-                      <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer min-h-[44px]" onClick={() => bannerInputRef.current?.click()}>
+                      <Button
+                        size="sm"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer min-h-[44px]"
+                        onClick={() => bannerInputRef.current?.click()}
+                      >
                         <Upload className="ml-1.5 h-3.5 w-3.5" /> رفع وقص
                       </Button>
-                     {displayBanner && (
-                        <Button size="sm" variant="destructive" className="cursor-pointer min-h-[44px]" onClick={() => { setBannerPreview(null); setBannerFile(null); setBannerRemoved(true); if (bannerInputRef.current) bannerInputRef.current.value = '' }}>
+                      {displayBanner && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="cursor-pointer min-h-[44px]"
+                          onClick={() => {
+                            setBannerPreview(null)
+                            setBannerFile(null)
+                            setBannerRemoved(true)
+                            if (bannerInputRef.current) bannerInputRef.current.value = ''
+                          }}
+                        >
                           <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
                         </Button>
                       )}
                     </div>
-                    <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+                    <input
+                      ref={bannerInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBannerChange}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">الحجم المقترح: 1500×400 بكسل</p>
                   <div className="mt-4">
@@ -850,9 +1025,18 @@ export function SettingsPage() {
                   <h3 className="mb-4 text-sm font-bold">الصورة الرمزية</h3>
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <Avatar className="h-24 w-24 border-4" style={{ borderColor: accent, boxShadow: `0 0 20px ${accent}33` }}>
-                        <AvatarImage src={displayAvatar || undefined} alt={displayName || profile.username} />
-                        <AvatarFallback className="text-3xl font-bold" style={{ backgroundColor: accent + '33', color: accent }}>
+                      <Avatar
+                        className="h-24 w-24 border-4"
+                        style={{ borderColor: accent, boxShadow: `0 0 20px ${accent}33` }}
+                      >
+                        <AvatarImage
+                          src={displayAvatar || undefined}
+                          alt={displayName || profile.username}
+                        />
+                        <AvatarFallback
+                          className="text-3xl font-bold"
+                          style={{ backgroundColor: accent + '33', color: accent }}
+                        >
                           {(displayName || profile.username)[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -862,20 +1046,43 @@ export function SettingsPage() {
                       >
                         <Camera className="h-4 w-4" />
                       </button>
-                      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
                     </div>
                     <div className="space-y-2">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="border-border cursor-pointer min-h-[44px]" onClick={() => avatarInputRef.current?.click()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-border cursor-pointer min-h-[44px]"
+                          onClick={() => avatarInputRef.current?.click()}
+                        >
                           <Upload className="ml-1.5 h-3.5 w-3.5" /> رفع وقص
                         </Button>
-                       {displayAvatar && (
-                           <Button size="sm" variant="destructive" className="cursor-pointer min-h-[44px]" onClick={() => { setAvatarPreview(null); setAvatarFile(null); setAvatarRemoved(true); if (avatarInputRef.current) avatarInputRef.current.value = '' }}>
-                             <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
-                           </Button>
-                         )}
+                        {displayAvatar && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="cursor-pointer min-h-[44px]"
+                            onClick={() => {
+                              setAvatarPreview(null)
+                              setAvatarFile(null)
+                              setAvatarRemoved(true)
+                              if (avatarInputRef.current) avatarInputRef.current.value = ''
+                            }}
+                          >
+                            <X className="ml-1.5 h-3.5 w-3.5" /> إزالة
+                          </Button>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground">الصورة الرمزية التي تظهر في ملفك الشخصي</p>
+                      <p className="text-xs text-muted-foreground">
+                        الصورة الرمزية التي تظهر في ملفك الشخصي
+                      </p>
                       <div className="mt-3">
                         <ImageUpload
                           bucket="avatars"
@@ -894,153 +1101,176 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                 {/* Username */}
-                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                   <h3 className="mb-4 text-sm font-bold">اسم المستخدم</h3>
-                   <div className="space-y-2">
-                     <div className="flex items-center justify-between">
-                       <Label htmlFor="username" className="text-sm text-muted-foreground">اسم الملف الشخصي</Label>
-                       {newUsername !== profile.username && (
-                         <Button 
-                           size="sm" 
-                           variant="ghost" 
-                           className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground min-h-[44px]"
-                           onClick={() => setNewUsername(profile.username || '')}
-                         >
-                           تراجع
-                         </Button>
-                       )}
-                     </div>
-                     <Input
-                       id="username"
-                       value={newUsername}
-                       onChange={(e) => setNewUsername(e.target.value)}
-                       className="bg-background border-border"
-                       placeholder="اسم المستخدم"
-                     />
-                      <p className="text-xs text-muted-foreground">سيتم تحويلك للصفحة الجديدة بعد الحفظ</p>
-                    </div>
-                  </div>
-
-                  {/* Display Name + Bio — خانة واحدة */}
-                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                    <h3 className="mb-4 text-sm font-bold">الاسم والنبذة</h3>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="displayName" className="text-sm text-muted-foreground">اسم العرض</Label>
-                        <Input
-                          id="displayName"
-                          value={displayName}
-                          onChange={(e) => setDisplayName(e.target.value)}
-                          className="bg-background border-border"
-                          placeholder="الاسم اللي هيظهر للمستخدمين"
-                        />
-                        <p className="text-xs text-muted-foreground">هذا الاسم سيظهر للآخرين بدلاً من اسم المستخدم</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName" className="text-sm text-muted-foreground">الاسم الأول</Label>
-                          <Input
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            className="bg-background border-border"
-                            placeholder="الاسم الأول"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName" className="text-sm text-muted-foreground">اسم العائلة</Label>
-                          <Input
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            className="bg-background border-border"
-                            placeholder="اسم العائلة"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="bio" className="text-sm text-muted-foreground">النبذة — أخبر الآخرين عن نفسك</Label>
-                          {bio && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
-                              onClick={() => setBio('')}
-                            >
-                              مسح
-                            </Button>
-                          )}
-                        </div>
-                        <textarea
-                          id="bio"
-                          value={bio}
-                          onChange={(e) => setBio(e.target.value.substring(0, 500))}
-                          className="w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                          rows={4}
-                          placeholder="اكتب نبذة عن نفسك..."
-                        />
-                        <p className="text-xs text-muted-foreground">{bio.length}/500</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Accent Color */}
-                  <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                   <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
-                   <div className="flex items-center gap-6">
-                     <div className="flex items-center gap-3">
-                       <input
-                         type="color"
-                         value={accentColor}
-                         onChange={(e) => setAccentColor(e.target.value)}
-                          className="h-12 w-12 cursor-pointer rounded-none border-2 border-border bg-transparent"
-                       />
-                       <span className="text-sm text-muted-foreground font-mono">{accentColor}</span>
-                       <Button 
-                         size="sm" 
-                         variant="ghost" 
-                         className="h-8 px-2 text-xs min-h-[44px]"
-                         onClick={() => setAccentColor('#ff8c00')}
-                       >
-                         افتراضي
-                       </Button>
-                     </div>
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16 border-3" style={{ borderColor: accentColor, boxShadow: `0 0 15px ${accentColor}55` }}>
-                          <AvatarImage src={displayAvatar || undefined} alt={displayName || profile.username} />
-                          <AvatarFallback className="text-xl font-bold" style={{ backgroundColor: accentColor + '33', color: accentColor }}>
-                            {(displayName || profile.username)[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                       <div>
-                         <p className="text-xs text-muted-foreground">معاينة الهالة</p>
-                         <p className="text-xs text-muted-foreground/70">اللون يظهر حول الأفاتار</p>
-                       </div>
-                     </div>
-                   </div>
-                  </div>
-
-                 {/* Social Links */}
+                {/* Username */}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                   <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
-                   <SocialLinksEditor
-                     websiteUrl={websiteUrl}
-                     twitterUrl={twitterUrl}
-                     instagramUrl={instagramUrl}
-                     tiktokUrl={tiktokUrl}
-                     youtubeUrl={youtubeUrl}
-                     githubUrl={githubUrl}
-                     discordUrl={discordUrl}
-                     onWebsiteUrlChange={setWebsiteUrl}
-                     onTwitterUrlChange={setTwitterUrl}
-                     onInstagramUrlChange={setInstagramUrl}
-                     onTiktokUrlChange={setTiktokUrl}
-                     onYoutubeUrlChange={setYoutubeUrl}
-                     onGithubUrlChange={setGithubUrl}
-                     onDiscordUrlChange={setDiscordUrl}
-                   />
+                  <h3 className="mb-4 text-sm font-bold">اسم المستخدم</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="username" className="text-sm text-muted-foreground">
+                        اسم الملف الشخصي
+                      </Label>
+                      {newUsername !== profile.username && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground min-h-[44px]"
+                          onClick={() => setNewUsername(profile.username || '')}
+                        >
+                          تراجع
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      id="username"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      className="bg-background border-border"
+                      placeholder="اسم المستخدم"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      سيتم تحويلك للصفحة الجديدة بعد الحفظ
+                    </p>
+                  </div>
+                </div>
+
+                {/* Display Name + Bio — خانة واحدة */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-4 text-sm font-bold">الاسم والنبذة</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName" className="text-sm text-muted-foreground">
+                        اسم العرض
+                      </Label>
+                      <Input
+                        id="displayName"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="bg-background border-border"
+                        placeholder="الاسم اللي هيظهر للمستخدمين"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        هذا الاسم سيظهر للآخرين بدلاً من اسم المستخدم
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName" className="text-sm text-muted-foreground">
+                          الاسم الأول
+                        </Label>
+                        <Input
+                          id="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="bg-background border-border"
+                          placeholder="الاسم الأول"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName" className="text-sm text-muted-foreground">
+                          اسم العائلة
+                        </Label>
+                        <Input
+                          id="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="bg-background border-border"
+                          placeholder="اسم العائلة"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="bio" className="text-sm text-muted-foreground">
+                          النبذة — أخبر الآخرين عن نفسك
+                        </Label>
+                        {bio && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
+                            onClick={() => setBio('')}
+                          >
+                            مسح
+                          </Button>
+                        )}
+                      </div>
+                      <textarea
+                        id="bio"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value.substring(0, 500))}
+                        className="w-full rounded-none border-2 border-border bg-background p-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        rows={4}
+                        placeholder="اكتب نبذة عن نفسك..."
+                      />
+                      <p className="text-xs text-muted-foreground">{bio.length}/500</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accent Color */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-4 text-sm font-bold">اللون المميز</h3>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="h-12 w-12 cursor-pointer rounded-none border-2 border-border bg-transparent"
+                      />
+                      <span className="text-sm text-muted-foreground font-mono">{accentColor}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs min-h-[44px]"
+                        onClick={() => setAccentColor('#ff8c00')}
+                      >
+                        افتراضي
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Avatar
+                        className="h-16 w-16 border-3"
+                        style={{ borderColor: accentColor, boxShadow: `0 0 15px ${accentColor}55` }}
+                      >
+                        <AvatarImage
+                          src={displayAvatar || undefined}
+                          alt={displayName || profile.username}
+                        />
+                        <AvatarFallback
+                          className="text-xl font-bold"
+                          style={{ backgroundColor: accentColor + '33', color: accentColor }}
+                        >
+                          {(displayName || profile.username)[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-xs text-muted-foreground">معاينة الهالة</p>
+                        <p className="text-xs text-muted-foreground/70">اللون يظهر حول الأفاتار</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-4 text-sm font-bold">الروابط الاجتماعية</h3>
+                  <SocialLinksEditor
+                    websiteUrl={websiteUrl}
+                    twitterUrl={twitterUrl}
+                    instagramUrl={instagramUrl}
+                    tiktokUrl={tiktokUrl}
+                    youtubeUrl={youtubeUrl}
+                    githubUrl={githubUrl}
+                    discordUrl={discordUrl}
+                    onWebsiteUrlChange={setWebsiteUrl}
+                    onTwitterUrlChange={setTwitterUrl}
+                    onInstagramUrlChange={setInstagramUrl}
+                    onTiktokUrlChange={setTiktokUrl}
+                    onYoutubeUrlChange={setYoutubeUrl}
+                    onGithubUrlChange={setGithubUrl}
+                    onDiscordUrlChange={setDiscordUrl}
+                  />
                 </div>
 
                 <div className="flex justify-end">
@@ -1054,52 +1284,71 @@ export function SettingsPage() {
               <div className="space-y-6">
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
-                  <p className="text-xs text-muted-foreground mb-6">تأكد من استخدام كلمة مرور قوية (6 أحرف على الأقل)</p>
+                  <p className="text-xs text-muted-foreground mb-6">
+                    تأكد من استخدام كلمة مرور قوية (6 أحرف على الأقل)
+                  </p>
                   <div className="space-y-4 max-w-md">
                     <div className="space-y-2">
-                      <Label htmlFor="current-password" className="text-sm text-muted-foreground">كلمة المرور الحالية *</Label>
+                      <Label htmlFor="current-password" className="text-sm text-muted-foreground">
+                        كلمة المرور الحالية *
+                      </Label>
                       <Input
                         id="current-password"
                         type="password"
                         value={currentPassword}
-                        onChange={(e) => { setCurrentPassword(e.target.value); setPasswordError('') }}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value)
+                          setPasswordError('')
+                        }}
                         className="bg-background border-border"
                         placeholder="••••••••"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="new-password" className="text-sm text-muted-foreground">كلمة المرور الجديدة</Label>
+                      <Label htmlFor="new-password" className="text-sm text-muted-foreground">
+                        كلمة المرور الجديدة
+                      </Label>
                       <Input
                         id="new-password"
                         type="password"
                         value={newPassword}
-                        onChange={(e) => { setNewPassword(e.target.value); setPasswordError('') }}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value)
+                          setPasswordError('')
+                        }}
                         className="bg-background border-border"
                         placeholder="••••••••"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">تأكيد كلمة المرور</Label>
+                      <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">
+                        تأكيد كلمة المرور
+                      </Label>
                       <Input
                         id="confirm-password"
                         type="password"
                         value={confirmPassword}
-                        onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError('') }}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value)
+                          setPasswordError('')
+                        }}
                         className="bg-background border-border"
                         placeholder="••••••••"
                       />
                     </div>
-                    {passwordError && (
-                      <p className="text-xs text-destructive">{passwordError}</p>
-                    )}
+                    {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
                     <Button
                       variant="outline"
                       className="border-border cursor-pointer"
                       onClick={handleChangePassword}
-                      disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                      disabled={
+                        changingPassword || !currentPassword || !newPassword || !confirmPassword
+                      }
                     >
                       {changingPassword ? (
-                        <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري التحديث...</>
+                        <>
+                          <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري التحديث...
+                        </>
                       ) : (
                         'تحديث كلمة المرور'
                       )}
@@ -1108,7 +1357,9 @@ export function SettingsPage() {
                 </div>
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">الحسابات المرتبطة</h3>
-                  <p className="text-xs text-muted-foreground mb-6">إدارة حسابات OAuth المرتبطة بحسابك</p>
+                  <p className="text-xs text-muted-foreground mb-6">
+                    إدارة حسابات OAuth المرتبطة بحسابك
+                  </p>
                   {loadingAccounts ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1117,11 +1368,21 @@ export function SettingsPage() {
                   ) : (
                     <div className="space-y-4">
                       {linkedAccounts.map((account) => {
-                        const info = PROVIDER_INFO[account.provider] || { name: account.provider, icon: '🔗', color: '#666' }
+                        const info = PROVIDER_INFO[account.provider] || {
+                          name: account.provider,
+                          icon: '🔗',
+                          color: '#666',
+                        }
                         return (
-                          <div key={account.id} className="flex items-center justify-between gap-4 p-3 rounded-none hover:bg-accent/30 transition-colors">
+                          <div
+                            key={account.id}
+                            className="flex items-center justify-between gap-4 p-3 rounded-none hover:bg-accent/30 transition-colors"
+                          >
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg text-xl" style={{ backgroundColor: info.color + '20' }}>
+                              <div
+                                className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
+                                style={{ backgroundColor: info.color + '20' }}
+                              >
                                 {info.icon}
                               </div>
                               <div>
@@ -1137,7 +1398,9 @@ export function SettingsPage() {
                               className="border-border text-xs cursor-pointer min-h-[44px]"
                               onClick={() => handleUnlink(account.id)}
                               disabled={linkedAccounts.length <= 1}
-                              title={linkedAccounts.length <= 1 ? 'لا يمكن إلغاء ربط الحساب الأخير' : ''}
+                              title={
+                                linkedAccounts.length <= 1 ? 'لا يمكن إلغاء ربط الحساب الأخير' : ''
+                              }
                             >
                               إلغاء الربط
                             </Button>
@@ -1154,19 +1417,21 @@ export function SettingsPage() {
             )}
 
             {/* ========== Notifications Section ========== */}
-            {activeSection === 'notifications' && (
-              <NotificationSettings />
-            )}
+            {activeSection === 'notifications' && <NotificationSettings />}
 
             {/* ========== Privacy Section ========== */}
             {activeSection === 'privacy' && (
               <div className="space-y-6">
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">إعدادات الخصوصية</h3>
-                  <p className="text-xs text-muted-foreground mb-6">تحكم في من يمكنه رؤية معلومات ملفك الشخصي</p>
+                  <p className="text-xs text-muted-foreground mb-6">
+                    تحكم في من يمكنه رؤية معلومات ملفك الشخصي
+                  </p>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="visibility" className="text-sm text-muted-foreground">من يرى ملفك الشخصي</Label>
+                      <Label htmlFor="visibility" className="text-sm text-muted-foreground">
+                        من يرى ملفك الشخصي
+                      </Label>
                       <select
                         id="visibility"
                         value={profileVisibility}
@@ -1205,7 +1470,8 @@ export function SettingsPage() {
                     <div className="min-w-0">
                       <h3 className="text-lg font-bold">صبح معرّباً — شارك تعريباتك مع الآخرين</h3>
                       <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                        انضم إلى مجتمع المُعَرِّبين، انشر تعريباتك، وتفاعل مع آلاف اللاعبين المتحمسين للعب بالعربية.
+                        انضم إلى مجتمع المُعَرِّبين، انشر تعريباتك، وتفاعل مع آلاف اللاعبين المتحمسين
+                        للعب بالعربية.
                       </p>
                     </div>
                   </div>
@@ -1215,19 +1481,26 @@ export function SettingsPage() {
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-3 text-sm font-bold">ما معنى أن تكون معرّباً؟</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    المعرّب هو من يتكفل بتحويل الألعاب إلى اللغة العربية ليجعلها في متناول الآلاف من اللاعبين العرب. كل تعريب تنشره على المنصة يصبح متاحاً للتحميل والاستخدام، وتُحفظ حقوقك كصاحب الترجمة بذكر اسمك وفريقك كاملين في صفحة التعريب.
+                    المعرّب هو من يتكفل بتحويل الألعاب إلى اللغة العربية ليجعلها في متناول الآلاف من
+                    اللاعبين العرب. كل تعريب تنشره على المنصة يصبح متاحاً للتحميل والاستخدام، وتُحفظ
+                    حقوقك كصاحب الترجمة بذكر اسمك وفريقك كاملين في صفحة التعريب.
                   </p>
                 </div>
 
                 {/* Benefits */}
                 <div className="grid gap-4 sm:grid-cols-3">
                   {TRANSLATOR_BENEFITS.map((benefit) => (
-                    <div key={benefit.title} className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
+                    <div
+                      key={benefit.title}
+                      className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]"
+                    >
                       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-none border-2 border-primary bg-primary/10 text-primary">
                         {benefit.icon}
                       </div>
                       <h4 className="text-sm font-bold">{benefit.title}</h4>
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{benefit.description}</p>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {benefit.description}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1243,7 +1516,9 @@ export function SettingsPage() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-sm font-bold">{step.title}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                            {step.desc}
+                          </p>
                         </div>
                       </li>
                     ))}
@@ -1272,7 +1547,9 @@ export function SettingsPage() {
                 <div className="rounded-none border-[3px] border-primary/40 bg-primary/5 p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="min-w-0">
-                      <h3 className="text-base font-bold">{isCreator ? 'أنت معرّب بالفعل' : 'جاهز تبدأ رحلتك؟'}</h3>
+                      <h3 className="text-base font-bold">
+                        {isCreator ? 'أنت معرّب بالفعل' : 'جاهز تبدأ رحلتك؟'}
+                      </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {isCreator
                           ? 'من لوحة المُعرّب تقدر ترفع تعريباتك وتتابع إحصائياتك مباشرة.'
@@ -1280,7 +1557,9 @@ export function SettingsPage() {
                       </p>
                     </div>
                     <Link href={isCreator ? '/creator' : '/become-creator/apply'}>
-                      <Button className="min-h-[44px]">{isCreator ? 'لوحة المُعرّب' : 'قدّم طلبك الآن'}</Button>
+                      <Button className="min-h-[44px]">
+                        {isCreator ? 'لوحة المُعرّب' : 'قدّم طلبك الآن'}
+                      </Button>
                     </Link>
                   </div>
                 </div>
@@ -1310,7 +1589,15 @@ export function SettingsPage() {
 
 // ========== Reusable Components ==========
 
-function SettingsInput({ label, value, onChange, placeholder, id, type = 'text', onClear }: {
+function SettingsInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  id,
+  type = 'text',
+  onClear,
+}: {
   label: string
   value: string
   onChange: (v: string) => void
@@ -1322,11 +1609,13 @@ function SettingsInput({ label, value, onChange, placeholder, id, type = 'text',
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label htmlFor={id} className="text-sm text-muted-foreground">{label}</Label>
+        <Label htmlFor={id} className="text-sm text-muted-foreground">
+          {label}
+        </Label>
         {value && onClear && (
-          <Button 
-            size="sm" 
-            variant="ghost" 
+          <Button
+            size="sm"
+            variant="ghost"
             className="h-6 px-2 text-xs text-destructive hover:text-destructive min-h-[44px]"
             onClick={onClear}
           >
@@ -1346,7 +1635,12 @@ function SettingsInput({ label, value, onChange, placeholder, id, type = 'text',
   )
 }
 
-function ToggleSetting({ label, description, checked, onChange }: {
+function ToggleSetting({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
   label: string
   description?: string
   checked: boolean
@@ -1366,15 +1660,21 @@ function ToggleSetting({ label, description, checked, onChange }: {
         role="switch"
         aria-checked={checked}
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 ${
-          checked ? 'translate-x-5' : 'translate-x-0.5'
-        }`} />
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 ${
+            checked ? 'translate-x-5' : 'translate-x-0.5'
+          }`}
+        />
       </button>
     </div>
   )
 }
 
-function SaveButton({ onClick, saving, saved }: {
+function SaveButton({
+  onClick,
+  saving,
+  saved,
+}: {
   onClick: () => void
   saving: boolean
   saved: boolean
@@ -1390,11 +1690,17 @@ function SaveButton({ onClick, saving, saved }: {
       }`}
     >
       {saving ? (
-        <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الحفظ...</>
+        <>
+          <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الحفظ...
+        </>
       ) : saved ? (
-        <><Check className="ml-2 h-4 w-4" /> تم الحفظ</>
+        <>
+          <Check className="ml-2 h-4 w-4" /> تم الحفظ
+        </>
       ) : (
-        <><Save className="ml-2 h-4 w-4" /> حفظ التغييرات</>
+        <>
+          <Save className="ml-2 h-4 w-4" /> حفظ التغييرات
+        </>
       )}
     </Button>
   )
@@ -1446,12 +1752,10 @@ function SocialLinksEditor({
     discordUrl: { value: discordUrl, onChange: onDiscordUrlChange },
   }
 
-  const activePlatforms = PLATFORM_KEYS.filter(
-    (key) => urlMap[SOCIAL_PLATFORMS[key].column]?.value
-  )
+  const activePlatforms = PLATFORM_KEYS.filter((key) => urlMap[SOCIAL_PLATFORMS[key].column]?.value)
 
   const availablePlatforms = PLATFORM_KEYS.filter(
-    (key) => !urlMap[SOCIAL_PLATFORMS[key].column]?.value
+    (key) => !urlMap[SOCIAL_PLATFORMS[key].column]?.value,
   )
 
   const handleAddPlatform = (key: string) => {

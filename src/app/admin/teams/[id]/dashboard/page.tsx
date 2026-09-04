@@ -30,21 +30,22 @@ interface TeamDashboard {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'مسودة', IN_REVIEW: 'قيد المراجعة', PUBLISHED: 'منشور',
-  ARCHIVED: 'مؤرشفة', REJECTED: 'مرفوض',
+  DRAFT: 'مسودة',
+  IN_REVIEW: 'قيد المراجعة',
+  PUBLISHED: 'منشور',
+  ARCHIVED: 'مؤرشفة',
+  REJECTED: 'مرفوض',
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800', IN_REVIEW: 'bg-yellow-100 text-yellow-800',
-  PUBLISHED: 'bg-green-100 text-green-800', ARCHIVED: 'bg-blue-100 text-blue-800',
+  DRAFT: 'bg-gray-100 text-gray-800',
+  IN_REVIEW: 'bg-yellow-100 text-yellow-800',
+  PUBLISHED: 'bg-green-100 text-green-800',
+  ARCHIVED: 'bg-blue-100 text-blue-800',
   REJECTED: 'bg-red-100 text-red-800',
 }
 
-export default function TeamDashboardPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default function TeamDashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [data, setData] = useState<TeamDashboard | null>(null)
   const [loading, setLoading] = useState(true)
@@ -94,7 +95,11 @@ export default function TeamDashboardPage({
         {[
           { label: 'إجمالي التعريبات', value: data.stats.totalMods ?? 0, icon: Package },
           { label: 'المنشورات', value: data.stats.publishedMods ?? 0, icon: Package },
-          { label: 'التحميلات', value: (data.stats.totalDownloads ?? 0).toLocaleString('en-US'), icon: Download },
+          {
+            label: 'التحميلات',
+            value: (data.stats.totalDownloads ?? 0).toLocaleString('en-US'),
+            icon: Download,
+          },
           { label: 'متوسط التقييم', value: (data.stats.avgRating ?? 0).toFixed(1), icon: Star },
         ].map(({ label, value, icon: Icon }) => (
           <div key={label} className="p-4 rounded-lg border bg-card">
@@ -115,9 +120,7 @@ export default function TeamDashboardPage({
             {data.modsByStatus.map((item) => (
               <div key={item.status} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Badge className={STATUS_COLORS[item.status]}>
-                    {STATUS_LABELS[item.status]}
-                  </Badge>
+                  <Badge className={STATUS_COLORS[item.status]}>{STATUS_LABELS[item.status]}</Badge>
                 </div>
                 <span className="font-bold">{item.count}</span>
               </div>
@@ -141,9 +144,7 @@ export default function TeamDashboardPage({
               </div>
             ))}
             {data.members.length === 0 && (
-              <div className="text-sm text-muted-foreground text-center py-4">
-                لا يوجد أعضاء
-              </div>
+              <div className="text-sm text-muted-foreground text-center py-4">لا يوجد أعضاء</div>
             )}
           </div>
         </div>
@@ -154,7 +155,10 @@ export default function TeamDashboardPage({
         <h2 className="font-medium mb-3">النشاط الأخير</h2>
         <div className="space-y-2">
           {data.recentActivity.map((item) => (
-            <div key={item.modId} className="flex items-center justify-between py-2 border-b last:border-0">
+            <div
+              key={item.modId}
+              className="flex items-center justify-between py-2 border-b last:border-0"
+            >
               <div className="flex items-center gap-3">
                 <Badge className={STATUS_COLORS[item.status]} variant="outline">
                   {STATUS_LABELS[item.status]}
@@ -172,9 +176,7 @@ export default function TeamDashboardPage({
             </div>
           ))}
           {data.recentActivity.length === 0 && (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              لا يوجد نشاط
-            </div>
+            <div className="text-sm text-muted-foreground text-center py-4">لا يوجد نشاط</div>
           )}
         </div>
       </div>

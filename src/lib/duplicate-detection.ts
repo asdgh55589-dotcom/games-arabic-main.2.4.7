@@ -24,7 +24,8 @@ export interface DuplicateResult {
 
 // ===== Arabic Text Normalization =====
 
-const TASHKEEL_REGEX = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g
+const TASHKEEL_REGEX =
+  /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g
 const ALEF_VARIANTS = /[أإآ]/g
 const YA_VARIANTS = /[ى]/g
 const DAMMA = /ـ/g
@@ -50,7 +51,7 @@ function levenshteinDistance(a: string, b: string): number {
   if (lenB === 0) return lenA
 
   const matrix: number[][] = Array.from({ length: lenA + 1 }, () =>
-    Array.from({ length: lenB + 1 }, () => 0)
+    Array.from({ length: lenB + 1 }, () => 0),
   )
 
   for (let i = 0; i <= lenA; i++) matrix[i][0] = i
@@ -62,7 +63,7 @@ function levenshteinDistance(a: string, b: string): number {
       matrix[i][j] = Math.min(
         matrix[i - 1][j] + 1,
         matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
+        matrix[i - 1][j - 1] + cost,
       )
     }
   }
@@ -109,7 +110,10 @@ export async function checkForDuplicates(check: DuplicateCheck): Promise<Duplica
     const modNormalized = normalizeArabic(mod.name)
     const modArNormalized = normalizeArabic(mod.arabicTitle || '')
 
-    if (modNormalized === normalizedTitle || (modArNormalized && modArNormalized === normalizedTitleAr)) {
+    if (
+      modNormalized === normalizedTitle ||
+      (modArNormalized && modArNormalized === normalizedTitleAr)
+    ) {
       matches.push({
         modId: mod.id,
         modTitle: mod.name,
@@ -180,9 +184,7 @@ export async function checkForDuplicates(check: DuplicateCheck): Promise<Duplica
   }
 
   // Calculate overall confidence
-  const maxConfidence = matches.length > 0
-    ? Math.max(...matches.map((m) => m.similarity))
-    : 0
+  const maxConfidence = matches.length > 0 ? Math.max(...matches.map((m) => m.similarity)) : 0
 
   return {
     isDuplicate: matches.length > 0,

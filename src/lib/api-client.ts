@@ -9,15 +9,14 @@
  * distinguish success from failure. For data-fetching via `useFetch`, the
  * hook already handles non-ok responses internally.
  */
-export async function apiFetch<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
+export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options)
   if (!res.ok) {
     let message = `HTTP ${res.status}`
     try {
-      const body = (await res.json()) as { error?: { code?: string; message?: string; details?: unknown } }
+      const body = (await res.json()) as {
+        error?: { code?: string; message?: string; details?: unknown }
+      }
       if (body?.error?.message) message = body.error.message
     } catch {
       // Response body wasn't JSON — keep the default HTTP message

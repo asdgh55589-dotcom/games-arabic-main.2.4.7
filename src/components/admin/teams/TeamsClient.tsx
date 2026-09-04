@@ -2,7 +2,19 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Users, BadgeCheck, Star, Package, UserPlus, Download, Archive, Plus, ChevronDown, ChevronUp, Shield } from 'lucide-react'
+import {
+  Users,
+  BadgeCheck,
+  Star,
+  Package,
+  UserPlus,
+  Download,
+  Archive,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Shield,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +22,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
+import {
+  AdminDataTable,
+  type Column,
+  type FilterConfig,
+  type BulkAction,
+  type StatItem,
+} from '@/components/admin/shared/AdminDataTable'
 import { TeamActions } from '@/components/admin/teams/TeamActions'
 import { TeamMembersSection } from '@/components/admin/teams/TeamMembersSection'
 import { TeamCard } from '@/components/admin/teams/TeamCard'
@@ -96,32 +114,44 @@ export function TeamsClient() {
       const raw: Array<Record<string, unknown>> = data?.data || []
       // Preloaded: API now includes memberships and mods, no N+1 fetch
       const enriched: EnrichedTeam[] = raw.map((t) => {
-        const team = t as Record<string, unknown> & EnrichedTeam & { memberships?: TeamMembership[]; mods?: { id: string; downloads: number }[] }
-        const memberships: TeamMembership[] = (team.memberships as unknown as TeamMembership[]) || []
-        const mods: { id: string; downloads: number }[] = (team.mods as unknown as { id: string; downloads: number }[]) || []
+        const team = t as Record<string, unknown> &
+          EnrichedTeam & {
+            memberships?: TeamMembership[]
+            mods?: { id: string; downloads: number }[]
+          }
+        const memberships: TeamMembership[] =
+          (team.memberships as unknown as TeamMembership[]) || []
+        const mods: { id: string; downloads: number }[] =
+          (team.mods as unknown as { id: string; downloads: number }[]) || []
         const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
         const leader = memberships.find((m) => m.role === 'leader')?.user || null
         return {
-            id: team.id,
-            slug: team.slug || '',
-            name: team.name,
-              description: team.description || '',
-              logoUrl: team.logoUrl || '',
-              bannerUrl: team.bannerUrl || '',
-              isFeatured: Boolean(team.isFeatured),
-              isOfficial: Boolean(team.isOfficial),
-              ownerId: (team.ownerId as string | null) || null,
-              order: (team.order as number) || 0,
-              createdAt: (team.createdAt as string) || new Date().toISOString(),
-            memberships,
-            mods,
-            _count: team._count || { mods: mods.length, memberships: memberships.length, follows: 0 },
-            totalDownloads,
-            leader: leader ? { id: (leader as { id: string }).id, username: (leader as { username: string }).username, avatarUrl: (leader as { avatarUrl: string | null }).avatarUrl } : null,
-            memberCount: memberships.length || team._count?.memberships || 0,
-            publishedModCount: mods.length || team._count?.mods || 0,
-          }
-        })
+          id: team.id,
+          slug: team.slug || '',
+          name: team.name,
+          description: team.description || '',
+          logoUrl: team.logoUrl || '',
+          bannerUrl: team.bannerUrl || '',
+          isFeatured: Boolean(team.isFeatured),
+          isOfficial: Boolean(team.isOfficial),
+          ownerId: (team.ownerId as string | null) || null,
+          order: (team.order as number) || 0,
+          createdAt: (team.createdAt as string) || new Date().toISOString(),
+          memberships,
+          mods,
+          _count: team._count || { mods: mods.length, memberships: memberships.length, follows: 0 },
+          totalDownloads,
+          leader: leader
+            ? {
+                id: (leader as { id: string }).id,
+                username: (leader as { username: string }).username,
+                avatarUrl: (leader as { avatarUrl: string | null }).avatarUrl,
+              }
+            : null,
+          memberCount: memberships.length || team._count?.memberships || 0,
+          publishedModCount: mods.length || team._count?.mods || 0,
+        }
+      })
       setTeams(enriched)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setError('فشل تحميل الفرق')
@@ -146,7 +176,12 @@ export function TeamsClient() {
       const res = await fetch('/api/admin/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), description: newDescription, logoUrl: newLogoUrl, bannerUrl: newBannerUrl }),
+        body: JSON.stringify({
+          name: newName.trim(),
+          description: newDescription,
+          logoUrl: newLogoUrl,
+          bannerUrl: newBannerUrl,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error?.message || 'فشل الإنشاء')
@@ -158,7 +193,11 @@ export function TeamsClient() {
       setNewBannerUrl('')
       fetchTeams()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setCreating(false)
     }
@@ -168,7 +207,9 @@ export function TeamsClient() {
     let d = [...teams]
     if (search) {
       const q = search.toLowerCase()
-      d = d.filter((t) => t.name.toLowerCase().includes(q) || t.leader?.username.toLowerCase().includes(q))
+      d = d.filter(
+        (t) => t.name.toLowerCase().includes(q) || t.leader?.username.toLowerCase().includes(q),
+      )
     }
     if (typeFilter.length > 0) {
       if (typeFilter.includes('official')) d = d.filter((t) => t.isOfficial)
@@ -197,7 +238,9 @@ export function TeamsClient() {
         case 'team':
           va = a.name
           vb = b.name
-          return sortDirection === 'asc' ? String(va).localeCompare(String(vb), 'ar') : String(vb).localeCompare(String(va), 'ar')
+          return sortDirection === 'asc'
+            ? String(va).localeCompare(String(vb), 'ar')
+            : String(vb).localeCompare(String(va), 'ar')
         case 'members':
           va = a.memberCount
           vb = b.memberCount
@@ -222,11 +265,21 @@ export function TeamsClient() {
           va = a.name
           vb = b.name
       }
-      if (typeof va === 'number' && typeof vb === 'number') return sortDirection === 'asc' ? va - vb : vb - va
+      if (typeof va === 'number' && typeof vb === 'number')
+        return sortDirection === 'asc' ? va - vb : vb - va
       return 0
     })
     return d
-  }, [teams, search, typeFilter, statusFilter, sizeFilter, teamTypeFilter, sortField, sortDirection])
+  }, [
+    teams,
+    search,
+    typeFilter,
+    statusFilter,
+    sizeFilter,
+    teamTypeFilter,
+    sortField,
+    sortDirection,
+  ])
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -237,8 +290,16 @@ export function TeamsClient() {
     { label: 'إجمالي الفرق', value: teams.length, icon: Users },
     { label: 'الفرق الرسمية', value: teams.filter((t) => t.isOfficial).length, icon: BadgeCheck },
     { label: 'الفرق المميزة', value: teams.filter((t) => t.isFeatured).length, icon: Star },
-    { label: 'إجمالي الأعضاء', value: teams.reduce((sum, t) => sum + t.memberCount, 0), icon: UserPlus },
-    { label: 'إجمالي تعريبات الفرق', value: teams.reduce((sum, t) => sum + t._count.mods, 0), icon: Package },
+    {
+      label: 'إجمالي الأعضاء',
+      value: teams.reduce((sum, t) => sum + t.memberCount, 0),
+      icon: UserPlus,
+    },
+    {
+      label: 'إجمالي تعريبات الفرق',
+      value: teams.reduce((sum, t) => sum + t._count.mods, 0),
+      icon: Package,
+    },
   ]
 
   const columns: Column<EnrichedTeam>[] = [
@@ -269,7 +330,9 @@ export function TeamsClient() {
                 </Badge>
               )}
             </div>
-            <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{team.description || 'بدون وصف'}</div>
+            <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+              {team.description || 'بدون وصف'}
+            </div>
           </div>
         </div>
       ),
@@ -282,7 +345,9 @@ export function TeamsClient() {
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={team.leader.avatarUrl || undefined} />
-              <AvatarFallback className="text-[10px]">{team.leader.username[0]?.toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {team.leader.username[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm truncate">{team.leader.username}</span>
           </div>
@@ -303,12 +368,16 @@ export function TeamsClient() {
               return (
                 <Avatar key={m.id} className="h-6 w-6 border-2 border-background">
                   <AvatarImage src={avatar || undefined} />
-                  <AvatarFallback className="text-[10px]">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-[10px]">
+                    {displayName[0]?.toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
               )
             })}
             {team.memberships.length > 3 && (
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] border-2 border-background">+{team.memberships.length - 3}</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] border-2 border-background">
+                +{team.memberships.length - 3}
+              </span>
             )}
           </div>
           <span className="text-sm font-medium">{team.memberCount}</span>
@@ -325,7 +394,9 @@ export function TeamsClient() {
       key: 'downloads',
       label: 'التحميلات',
       sortable: true,
-      render: (team) => <span className="font-medium">{team.totalDownloads.toLocaleString('ar-EG')}</span>,
+      render: (team) => (
+        <span className="font-medium">{team.totalDownloads.toLocaleString('ar-EG')}</span>
+      ),
     },
     {
       key: 'followers',
@@ -344,10 +415,24 @@ export function TeamsClient() {
       label: 'الحالة',
       render: (team) => (
         <div className="flex flex-wrap gap-1">
-          {team.isOfficial && <Badge variant="outline" className="bg-green-500/10 text-green-600 text-[11px]">رسمي</Badge>}
-          {team.isFeatured && <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 text-[11px]">مميز</Badge>}
-          {team.archived && <Badge variant="secondary" className="text-[11px]">مؤرشف</Badge>}
-          {!team.isOfficial && !team.isFeatured && !team.archived && <span className="text-xs text-muted-foreground">عادي</span>}
+          {team.isOfficial && (
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 text-[11px]">
+              رسمي
+            </Badge>
+          )}
+          {team.isFeatured && (
+            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 text-[11px]">
+              مميز
+            </Badge>
+          )}
+          {team.archived && (
+            <Badge variant="secondary" className="text-[11px]">
+              مؤرشف
+            </Badge>
+          )}
+          {!team.isOfficial && !team.isFeatured && !team.archived && (
+            <span className="text-xs text-muted-foreground">عادي</span>
+          )}
         </div>
       ),
     },
@@ -355,8 +440,18 @@ export function TeamsClient() {
       key: 'expand',
       label: '',
       render: (team) => (
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(expandedId === team.id ? null : team.id)} aria-label="توسيع الأعضاء">
-          {expandedId === team.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
+          aria-label="توسيع الأعضاء"
+        >
+          {expandedId === team.id ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
         </Button>
       ),
       width: '50px',
@@ -480,7 +575,13 @@ export function TeamsClient() {
       onAction: async (ids) => {
         const selected = filtered.filter((t) => ids.includes(t.id))
         const headers = ['الفريق', 'القائد', 'الأعضاء', 'التعريبات', 'التحميلات']
-        const rows = selected.map((t) => [t.name, t.leader?.username || '', String(t.memberCount), String(t._count.mods), String(t.totalDownloads)])
+        const rows = selected.map((t) => [
+          t.name,
+          t.leader?.username || '',
+          String(t.memberCount),
+          String(t._count.mods),
+          String(t.totalDownloads),
+        ])
         const csv = `\uFEFF${headers.join(',')}\n${rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')}`
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
@@ -494,7 +595,11 @@ export function TeamsClient() {
   ]
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   if (error) {
@@ -513,7 +618,9 @@ export function TeamsClient() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">فرق التعريب</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{teams.length} فريق — إدارة كاملة من الصفحة الرئيسية</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {teams.length} فريق — إدارة كاملة من الصفحة الرئيسية
+          </p>
         </div>
         <Button onClick={() => setShowCreateForm((s) => !s)} className="min-h-[44px]">
           <Plus className="h-4 w-4 ml-2" /> إنشاء فريق جديد
@@ -526,19 +633,41 @@ export function TeamsClient() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label>الاسم *</Label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="مثال: فريق Arab4Games" className="mt-1" />
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="مثال: فريق Arab4Games"
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>البانر</Label>
-              <Input value={newBannerUrl} onChange={(e) => setNewBannerUrl(e.target.value)} placeholder="https://..." className="mt-1" dir="ltr" />
+              <Input
+                value={newBannerUrl}
+                onChange={(e) => setNewBannerUrl(e.target.value)}
+                placeholder="https://..."
+                className="mt-1"
+                dir="ltr"
+              />
             </div>
             <div className="sm:col-span-2">
               <Label>الوصف</Label>
-              <Input value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="وصف الفريق..." className="mt-1" />
+              <Input
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="وصف الفريق..."
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>الشعار</Label>
-              <Input value={newLogoUrl} onChange={(e) => setNewLogoUrl(e.target.value)} placeholder="https://..." className="mt-1" dir="ltr" />
+              <Input
+                value={newLogoUrl}
+                onChange={(e) => setNewLogoUrl(e.target.value)}
+                placeholder="https://..."
+                className="mt-1"
+                dir="ltr"
+              />
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
@@ -588,20 +717,44 @@ export function TeamsClient() {
         exportable
         exportFilename="teams.csv"
         mobileCardView={(team, isSelected, onToggle) => (
-          <div className={isSelected ? 'ring-1 ring-primary/30 rounded-xl overflow-hidden' : 'rounded-xl overflow-hidden border bg-card'}>
+          <div
+            className={
+              isSelected
+                ? 'ring-1 ring-primary/30 rounded-xl overflow-hidden'
+                : 'rounded-xl overflow-hidden border bg-card'
+            }
+          >
             <TeamCard team={team as never} onRefresh={fetchTeams} />
             <div className="flex gap-2 p-3 bg-card border-t">
-              <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 min-h-[44px] text-xs"
+                onClick={onToggle}
+              >
                 {isSelected ? 'إلغاء التحديد' : 'تحديد'}
               </Button>
-              <Button variant="ghost" size="sm" className="flex-1 min-h-[44px] text-xs gap-1" onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}>
-                {expandedId === team.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 min-h-[44px] text-xs gap-1"
+                onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
+              >
+                {expandedId === team.id ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
                 {expandedId === team.id ? 'إخفاء الأعضاء' : 'إدارة الأعضاء'}
               </Button>
             </div>
             {expandedId === team.id && (
               <div className="border-t">
-                <TeamMembersSection teamId={team.id} memberships={team.memberships as never} onRefresh={fetchTeams} />
+                <TeamMembersSection
+                  teamId={team.id}
+                  memberships={team.memberships as never}
+                  onRefresh={fetchTeams}
+                />
               </div>
             )}
           </div>
@@ -613,7 +766,7 @@ export function TeamsClient() {
         <Card className="overflow-hidden hidden md:block">
           <TeamMembersSection
             teamId={expandedId}
-            memberships={teams.find((t) => t.id === expandedId)?.memberships as never || []}
+            memberships={(teams.find((t) => t.id === expandedId)?.memberships as never) || []}
             onRefresh={fetchTeams}
           />
           <div className="p-3 flex justify-end border-t bg-muted/20">

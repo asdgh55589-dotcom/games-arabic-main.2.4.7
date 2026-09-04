@@ -40,7 +40,10 @@ export function UploadPage() {
   const imageFileRef = useRef<HTMLInputElement>(null)
 
   const { data: gamesData } = useFetch<{ data: GameSummary[] }>('/api/games?sort=name&limit=50')
-  const { data: gameData } = useFetch<{ data: GameDetail }>(gameSlug ? `/api/games/${gameSlug}` : null, [gameSlug])
+  const { data: gameData } = useFetch<{ data: GameDetail }>(
+    gameSlug ? `/api/games/${gameSlug}` : null,
+    [gameSlug],
+  )
 
   const resetForm = () => {
     setName('')
@@ -59,16 +62,28 @@ export function UploadPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !summary || !gameSlug) {
-      toast({ title: 'Missing fields', description: 'Please fill in all required fields', variant: 'destructive' })
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      })
       return
     }
     if (!modFileName) {
-      toast({ title: 'Missing mod file', description: 'Please select a mod archive to upload', variant: 'destructive' })
+      toast({
+        title: 'Missing mod file',
+        description: 'Please select a mod archive to upload',
+        variant: 'destructive',
+      })
       return
     }
     const game = gameData?.data
     if (!game) {
-      toast({ title: 'Game not found', description: 'Please select a valid game', variant: 'destructive' })
+      toast({
+        title: 'Game not found',
+        description: 'Please select a valid game',
+        variant: 'destructive',
+      })
       return
     }
     setSubmitting(true)
@@ -93,11 +108,19 @@ export function UploadPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         if (res.status === 401) {
-          toast({ title: 'Authentication required', description: 'You must be logged in as a moderator to upload mods.', variant: 'destructive' })
+          toast({
+            title: 'Authentication required',
+            description: 'You must be logged in as a moderator to upload mods.',
+            variant: 'destructive',
+          })
           return
         }
         if (res.status === 403) {
-          toast({ title: 'Insufficient permissions', description: 'Only moderators and admins can upload mods. Use the admin panel.', variant: 'destructive' })
+          toast({
+            title: 'Insufficient permissions',
+            description: 'Only moderators and admins can upload mods. Use the admin panel.',
+            variant: 'destructive',
+          })
           return
         }
         throw new Error(data?.error || 'Failed to submit mod')
@@ -126,11 +149,16 @@ export function UploadPage() {
         </div>
         <h1 className="text-3xl font-bold">Mod Submitted!</h1>
         <p className="mt-3 text-muted-foreground">
-          Thank you for contributing to the community. Your mod &quot;{name}&quot; is now in the moderation queue.
-          You&apos;ll receive a notification once it&apos;s approved and live.
+          Thank you for contributing to the community. Your mod &quot;{name}&quot; is now in the
+          moderation queue. You&apos;ll receive a notification once it&apos;s approved and live.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Button onClick={() => { setSubmitted(false); resetForm() }}>
+          <Button
+            onClick={() => {
+              setSubmitted(false)
+              resetForm()
+            }}
+          >
             Upload Another
           </Button>
           <Button asChild variant="outline">
@@ -144,7 +172,9 @@ export function UploadPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-6">
       <Button asChild variant="ghost" size="sm" className="mb-4 min-h-[44px]">
-        <Link href="/"><ChevronLeft className="mr-1 h-4 w-4" /> Back</Link>
+        <Link href="/">
+          <ChevronLeft className="mr-1 h-4 w-4" /> Back
+        </Link>
       </Button>
 
       <div className="mb-8">
@@ -202,11 +232,21 @@ export function UploadPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="game-select">Game *</Label>
-              <Select value={gameSlug} onValueChange={(v) => { setGameSlug(v); setCategory('') }}>
-                <SelectTrigger id="game-select"><SelectValue placeholder="Select a game" /></SelectTrigger>
+              <Select
+                value={gameSlug}
+                onValueChange={(v) => {
+                  setGameSlug(v)
+                  setCategory('')
+                }}
+              >
+                <SelectTrigger id="game-select">
+                  <SelectValue placeholder="Select a game" />
+                </SelectTrigger>
                 <SelectContent>
                   {gamesData?.data?.map((g) => (
-                    <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
+                    <SelectItem key={g.id} value={g.slug}>
+                      {g.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -214,10 +254,14 @@ export function UploadPage() {
             <div className="space-y-2">
               <Label htmlFor="category-select">Category</Label>
               <Select value={category} onValueChange={setCategory} disabled={!gameData?.data}>
-                <SelectTrigger id="category-select"><SelectValue placeholder="Select a category" /></SelectTrigger>
+                <SelectTrigger id="category-select">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
                 <SelectContent>
                   {gameData?.data?.categories?.map((c) => (
-                    <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.slug}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -274,11 +318,15 @@ export function UploadPage() {
             <div>
               <Label className="mb-2 block">Tag Preview</Label>
               <div className="flex flex-wrap gap-2">
-                {tags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
-                  <Badge key={t} variant="secondary" className="gap-1">
-                    <Tag className="h-3 w-3" /> {t}
-                  </Badge>
-                ))}
+                {tags
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+                  .map((t) => (
+                    <Badge key={t} variant="secondary" className="gap-1">
+                      <Tag className="h-3 w-3" /> {t}
+                    </Badge>
+                  ))}
               </div>
             </div>
           )}
@@ -326,7 +374,9 @@ function FileDropzone({
     >
       <div className={filled ? 'text-primary' : 'text-muted-foreground'}>{icon}</div>
       <div className="text-sm font-medium">{label}</div>
-      <div className={`max-w-full truncate text-xs ${filled ? 'text-primary' : 'text-muted-foreground'}`}>
+      <div
+        className={`max-w-full truncate text-xs ${filled ? 'text-primary' : 'text-muted-foreground'}`}
+      >
         {hint}
       </div>
       <input

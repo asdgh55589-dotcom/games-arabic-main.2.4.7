@@ -4,8 +4,18 @@ import { ok, internalError } from '@/lib/api-response'
 import { NextRequest } from 'next/server'
 
 const ARABIC_MONTHS = [
-  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+  'يناير',
+  'فبراير',
+  'مارس',
+  'أبريل',
+  'مايو',
+  'يونيو',
+  'يوليو',
+  'أغسطس',
+  'سبتمبر',
+  'أكتوبر',
+  'نوفمبر',
+  'ديسمبر',
 ]
 
 export async function GET(req: NextRequest) {
@@ -73,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     return ok(
       { months: resultMonths, modsPublished, newUsers, downloads },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
+      { headers: { 'Cache-Control': 'private, max-age=300' } },
     )
   } catch (err) {
     console.error('[admin/analytics/growth] failed:', err)

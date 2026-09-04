@@ -5,10 +5,7 @@ import { syncTeamCounts } from '@/lib/team-helpers'
 import { ok, notFound, validationFail, internalError } from '@/lib/api-response'
 
 // PUT /api/admin/teams/[id]/mods — ربط/فصل تعريبة
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -29,7 +26,10 @@ export async function PUT(
       await syncTeamCounts(id)
       if (prevTeamId) await syncTeamCounts(prevTeamId)
     } else if (body.unlinkModId) {
-      await db.mod.updateMany({ where: { id: body.unlinkModId, teamId: id }, data: { teamId: null } })
+      await db.mod.updateMany({
+        where: { id: body.unlinkModId, teamId: id },
+        data: { teamId: null },
+      })
       await syncTeamCounts(id)
     } else {
       return validationFail({ message: 'linkModId أو unlinkModId مطلوب' })

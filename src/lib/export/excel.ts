@@ -24,7 +24,7 @@ export interface ExcelSheet<T = any> {
  * إنشاء workbook بورقة واحدة
  */
 export async function toExcel<T extends Record<string, any>>(
-  sheet: ExcelSheet<T>
+  sheet: ExcelSheet<T>,
 ): Promise<Buffer> {
   return toExcelMulti([sheet])
 }
@@ -33,7 +33,7 @@ export async function toExcel<T extends Record<string, any>>(
  * إنشاء workbook بعدة أوراق
  */
 export async function toExcelMulti<T extends Record<string, any>>(
-  sheets: ExcelSheet<T>[]
+  sheets: ExcelSheet<T>[],
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'GAMES ARABIC'

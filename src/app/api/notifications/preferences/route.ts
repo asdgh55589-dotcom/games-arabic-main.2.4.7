@@ -57,7 +57,8 @@ export async function PUT(req: NextRequest) {
     if (data.emailEnabled !== undefined) updateData.emailEnabled = data.emailEnabled
     if (data.pushEnabled !== undefined) updateData.pushEnabled = data.pushEnabled
     if (data.dailySummary !== undefined) updateData.dailySummary = data.dailySummary
-    if (data.summaryIntervalDays !== undefined) updateData.summaryIntervalDays = data.summaryIntervalDays
+    if (data.summaryIntervalDays !== undefined)
+      updateData.summaryIntervalDays = data.summaryIntervalDays
     if (data.likeThreshold !== undefined) updateData.likeThreshold = data.likeThreshold
     if (data.quietHoursEnabled !== undefined) updateData.quietHoursEnabled = data.quietHoursEnabled
     if (data.quietHoursStart !== undefined) updateData.quietHoursStart = data.quietHoursStart

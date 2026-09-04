@@ -69,7 +69,9 @@ export async function checkReporterStrikes(reporterId: string) {
         })
       }
 
-      console.log(`[ReporterStrike] L2 restrict: ${user.username} (${trust.rejectedReports} مرفوض، دقة ${(accuracy * 100).toFixed(0)}%)`)
+      console.log(
+        `[ReporterStrike] L2 restrict: ${user.username} (${trust.rejectedReports} مرفوض، دقة ${(accuracy * 100).toFixed(0)}%)`,
+      )
     }
     return // تمت معالجة المستوى 2، تخطي المستوى 1
   }
@@ -106,7 +108,9 @@ export async function checkReporterStrikes(reporterId: string) {
         },
       })
 
-      console.log(`[ReporterStrike] L1 warn: ${user.username} (${trust.rejectedReports} مرفوض، دقة ${(accuracy * 100).toFixed(0)}%)`)
+      console.log(
+        `[ReporterStrike] L1 warn: ${user.username} (${trust.rejectedReports} مرفوض، دقة ${(accuracy * 100).toFixed(0)}%)`,
+      )
     }
   }
 }

@@ -12,7 +12,14 @@ import { createClient } from '@/lib/supabase/server'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { logAction } from '@/lib/audit'
 import { LoginSchema } from '@/lib/schemas'
-import { ok, validationFail, rateLimited, unauthorized, forbidden, internalError } from '@/lib/api-response'
+import {
+  ok,
+  validationFail,
+  rateLimited,
+  unauthorized,
+  forbidden,
+  internalError,
+} from '@/lib/api-response'
 import { verifySecurityKey, isSecurityKeyExpired, hashSecurityKey } from '@/lib/security-key'
 
 function requireOwnerEnv() {
@@ -60,7 +67,9 @@ async function ensureOwnerExists() {
               bio: 'مالك و مؤسس منصة ألعاب بالعربي',
             },
           })
-          const supabaseId = await createSupabaseAuthUser(email, password, username).catch(() => null)
+          const supabaseId = await createSupabaseAuthUser(email, password, username).catch(
+            () => null,
+          )
           if (supabaseId) {
             await db.user.update({ where: { id: newOwner.id }, data: { supabaseId } })
           }
@@ -69,9 +78,7 @@ async function ensureOwnerExists() {
         return
       }
       // نفس اسم المستخدم — حدّث البيانات لو تغيّرت
-      const needsUpdate =
-        existing.email !== email ||
-        !existing.securityKey
+      const needsUpdate = existing.email !== email || !existing.securityKey
       if (needsUpdate) {
         const hash = await hashPassword(password)
         const secHash = await hashSecurityKey(securityKey)
@@ -148,7 +155,7 @@ export async function POST(req: NextRequest) {
     if (!userByUsername || !userByUsername.password) {
       return NextResponse.json(
         { error: 'اسم المستخدم أو البريد الإلكتروني غير صحيح', field: 'username' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -156,7 +163,7 @@ export async function POST(req: NextRequest) {
     if (userByUsername.email.toLowerCase() !== email.toLowerCase()) {
       return NextResponse.json(
         { error: 'البريد الإلكتروني لا يطابق اسم المستخدم', field: 'email' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -167,7 +174,7 @@ export async function POST(req: NextRequest) {
     if (!passwordValid) {
       return NextResponse.json(
         { error: 'كلمة المرور غير صحيحة', field: 'password' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -175,7 +182,7 @@ export async function POST(req: NextRequest) {
     if (!neonUser.securityKey) {
       return NextResponse.json(
         { error: 'لا يوجد مفتاح أمان مسجل — تواصل مع مدير الموقع', field: 'securityKey' },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
@@ -184,7 +191,7 @@ export async function POST(req: NextRequest) {
     if (!keyValid) {
       return NextResponse.json(
         { error: 'مفتاح الأمان غير صحيح', field: 'securityKey' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -192,16 +199,17 @@ export async function POST(req: NextRequest) {
     if (isSecurityKeyExpired(neonUser.securityKeyExpiresAt as Date | null)) {
       return NextResponse.json(
         { error: 'مفتاح الأمان منتهي الصلاحية — تواصل مع مدير الموقع', field: 'securityKey' },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
     // فحص الحظر قبل أي محاولة دخول
     const ban = getBanStatus(neonUser)
     if (ban.banned) {
-      const msg = ban.type === 'perm'
-        ? 'Your account has been permanently banned.'
-        : `Your account has been temporarily banned. Ban expires on ${neonUser.bannedUntil!.toLocaleDateString('en')}`
+      const msg =
+        ban.type === 'perm'
+          ? 'Your account has been permanently banned.'
+          : `Your account has been temporarily banned. Ban expires on ${neonUser.bannedUntil!.toLocaleDateString('en')}`
       return forbidden(msg)
     }
 
@@ -262,7 +270,9 @@ export async function POST(req: NextRequest) {
     if (freshUser?.totpEnabled && freshUser.totpSecret) {
       const { generateMFAToken } = await import('@/lib/mfa-token')
       const mfaToken = await generateMFAToken(neonUser.id)
-      const remainingCodes = freshUser.recoveryCodesUsed ? 10 - (freshUser.recoveryCodesUsed as number[]).length : 10
+      const remainingCodes = freshUser.recoveryCodesUsed
+        ? 10 - (freshUser.recoveryCodesUsed as number[]).length
+        : 10
       return ok({
         mfaRequired: true,
         mfaToken,

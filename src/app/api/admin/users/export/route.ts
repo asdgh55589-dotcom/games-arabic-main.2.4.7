@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
   // Rate limiting: 5 requests per hour
   const rl = await rateLimit(request, { limit: 5, window: 3600, keyPrefix: 'admin:export' })
   if (!rl.success) {
-    return new NextResponse(
-      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
-      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
-    )
+    return new NextResponse(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
+    })
   }
 
   try {
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       status: searchParams.get('status') || undefined,
       search: searchParams.get('search') || undefined,
       dateFrom: searchParams.get('dateFrom') || undefined,
-      dateTo: searchParams.get('dateTo') || undefined
+      dateTo: searchParams.get('dateTo') || undefined,
     }
 
     if (format === 'excel') {
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': 'attachment; filename="users.xlsx"'
-        }
+          'Content-Disposition': 'attachment; filename="users.xlsx"',
+        },
       })
     }
 
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="users.csv"'
-      }
+        'Content-Disposition': 'attachment; filename="users.csv"',
+      },
     })
   } catch (err) {
     return internalError('خطأ في الخادم')

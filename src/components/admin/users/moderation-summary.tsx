@@ -22,13 +22,9 @@ export function ModerationSummary({
           Active Community
         </div>
 
-        <div className="mt-4 text-4xl font-black text-emerald-300">
-          {recentlyActive}
-        </div>
+        <div className="mt-4 text-4xl font-black text-emerald-300">{recentlyActive}</div>
 
-        <p className="mt-3 text-sm leading-6 text-emerald-100/60">
-          مستخدم نشط خلال آخر 7 أيام.
-        </p>
+        <p className="mt-3 text-sm leading-6 text-emerald-100/60">مستخدم نشط خلال آخر 7 أيام.</p>
       </AdminSurface>
 
       <AdminSurface className="border-orange-500/15 bg-orange-500/10 p-5">
@@ -37,13 +33,9 @@ export function ModerationSummary({
           Moderation Queue
         </div>
 
-        <div className="mt-4 text-4xl font-black text-orange-300">
-          {bannedUsers}
-        </div>
+        <div className="mt-4 text-4xl font-black text-orange-300">{bannedUsers}</div>
 
-        <p className="mt-3 text-sm leading-6 text-orange-100/60">
-          حسابات محظورة أو تحت المراجعة.
-        </p>
+        <p className="mt-3 text-sm leading-6 text-orange-100/60">حسابات محظورة أو تحت المراجعة.</p>
       </AdminSurface>
 
       <AdminSurface className="border-cyan-500/15 bg-cyan-500/10 p-5">
@@ -51,13 +43,9 @@ export function ModerationSummary({
           Moderators
         </div>
 
-        <div className="mt-4 text-4xl font-black text-cyan-300">
-          {moderators}
-        </div>
+        <div className="mt-4 text-4xl font-black text-cyan-300">{moderators}</div>
 
-        <p className="mt-3 text-sm leading-6 text-cyan-100/60">
-          مشرفون يديرون المجتمع حاليًا.
-        </p>
+        <p className="mt-3 text-sm leading-6 text-cyan-100/60">مشرفون يديرون المجتمع حاليًا.</p>
       </AdminSurface>
 
       <AdminSurface className="border-violet-500/15 bg-violet-500/10 p-5">
@@ -66,13 +54,9 @@ export function ModerationSummary({
           Administrators
         </div>
 
-        <div className="mt-4 text-4xl font-black text-violet-300">
-          {admins}
-        </div>
+        <div className="mt-4 text-4xl font-black text-violet-300">{admins}</div>
 
-        <p className="mt-3 text-sm leading-6 text-violet-100/60">
-          حسابات إدارية بصلاحيات مرتفعة.
-        </p>
+        <p className="mt-3 text-sm leading-6 text-violet-100/60">حسابات إدارية بصلاحيات مرتفعة.</p>
       </AdminSurface>
 
       <AdminSurface className="sm:col-span-2 2xl:col-span-4 p-5">
@@ -82,9 +66,7 @@ export function ModerationSummary({
               Moderation Workflow
             </div>
 
-            <h3 className="mt-3 text-xl font-black text-white">
-              مركز الإشراف السريع
-            </h3>
+            <h3 className="mt-3 text-xl font-black text-white">مركز الإشراف السريع</h3>
 
             <p className="mt-2 max-w-2xl text-sm leading-7 text-white/65">
               إدارة الحسابات والتنبيهات والحظر وإجراءات المجتمع من مكان واحد بسرعة أكبر.

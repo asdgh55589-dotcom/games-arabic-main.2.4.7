@@ -23,7 +23,7 @@ export class NotificationQueryService {
     ])
 
     return {
-      notifications: notifications.map(n => this.toOutput(n)),
+      notifications: notifications.map((n) => this.toOutput(n)),
       pagination: {
         page,
         limit,

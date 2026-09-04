@@ -24,9 +24,7 @@ interface WorkflowHistoryProps {
 export function WorkflowHistory({ history }: WorkflowHistoryProps) {
   if (history.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-muted-foreground">
-        لا يوجد سجل تغييرات بعد
-      </div>
+      <div className="py-8 text-center text-sm text-muted-foreground">لا يوجد سجل تغييرات بعد</div>
     )
   }
 
@@ -50,25 +48,25 @@ export function WorkflowHistory({ history }: WorkflowHistoryProps) {
               <span className="text-sm font-medium text-foreground">
                 {entry.changedByUser.username}
               </span>
-              <span className="text-xs text-muted-foreground">
-                غيرّ الحالة
-              </span>
-              <WorkflowStatusBadge status={entry.fromStatus} showIcon={false} className="text-[10px]" />
+              <span className="text-xs text-muted-foreground">غيرّ الحالة</span>
+              <WorkflowStatusBadge
+                status={entry.fromStatus}
+                showIcon={false}
+                className="text-[10px]"
+              />
               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-              <WorkflowStatusBadge status={entry.toStatus} showIcon={false} className="text-[10px]" />
+              <WorkflowStatusBadge
+                status={entry.toStatus}
+                showIcon={false}
+                className="text-[10px]"
+              />
             </div>
 
             {entry.reason && (
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                السبب: {entry.reason}
-              </p>
+              <p className="mt-1.5 text-sm text-muted-foreground">السبب: {entry.reason}</p>
             )}
 
-            {entry.notes && (
-              <p className="mt-1 text-xs text-muted-foreground/80">
-                {entry.notes}
-              </p>
-            )}
+            {entry.notes && <p className="mt-1 text-xs text-muted-foreground/80">{entry.notes}</p>}
 
             <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />

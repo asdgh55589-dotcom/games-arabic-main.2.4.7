@@ -73,11 +73,15 @@ export async function POST(req: NextRequest) {
         url: result.secureUrl,
         publicId: result.publicId,
       },
-      { status: 201 }
+      { status: 201 },
     )
   } catch (error) {
     // أخطاء المصادقة — نعيدها كما هي
-    if (error instanceof Error && (error.message.includes('Unauthorized') || (error as unknown as { status?: number }).status === 401)) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('Unauthorized') ||
+        (error as unknown as { status?: number }).status === 401)
+    ) {
       // دع requireAuth يعالجها — لكن هنا نعيد رسالة عربية
       return internalError('يجب تسجيل الدخول أولاً')
     }

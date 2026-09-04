@@ -9,12 +9,12 @@ cron.schedule('0 8 */3 * *', async () => {
   const usersWithUnread = await db.user.findMany({
     where: {
       notifications: {
-        some: { isRead: false }
-      }
+        some: { isRead: false },
+      },
     },
     include: {
-      notificationPreference: true
-    }
+      notificationPreference: true,
+    },
   })
 
   for (const user of usersWithUnread) {

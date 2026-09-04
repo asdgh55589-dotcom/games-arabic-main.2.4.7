@@ -3,14 +3,21 @@ import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { setRoleCookie, getBanStatus, type UserRole } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
-import { createTelegramSession, getTelegramSession, deleteTelegramSession } from '@/lib/telegram-sessions'
+import {
+  createTelegramSession,
+  getTelegramSession,
+  deleteTelegramSession,
+} from '@/lib/telegram-sessions'
 import { ok, validationFail, internalError } from '@/lib/api-response'
 import { generateUniqueUsername } from '@/lib/username-generator'
 
 export async function POST(req: NextRequest) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const botName = process.env.TELEGRAM_BOT_NAME || process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'GAMES_ARABIC_BOT'
+    const botName =
+      process.env.TELEGRAM_BOT_NAME ||
+      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
+      'GAMES_ARABIC_BOT'
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
       console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured')
       return internalError('خدمة Telegram غير مهيأة حالياً')
@@ -24,7 +31,10 @@ export async function POST(req: NextRequest) {
 
     return ok({ sessionToken, deepLink })
   } catch (err) {
-    console.error('[auth/telegram POST] failed:', err instanceof Error ? err.message : 'unknown error')
+    console.error(
+      '[auth/telegram POST] failed:',
+      err instanceof Error ? err.message : 'unknown error',
+    )
     return internalError('حدث خطأ')
   }
 }
@@ -75,7 +85,10 @@ export async function GET(req: NextRequest) {
       user: loginResult.user,
     })
   } catch (err) {
-    console.error('[auth/telegram GET] failed:', err instanceof Error ? err.message : 'unknown error')
+    console.error(
+      '[auth/telegram GET] failed:',
+      err instanceof Error ? err.message : 'unknown error',
+    )
     return internalError('حدث خطأ')
   }
 }
@@ -91,14 +104,22 @@ async function performLogin(userData: {
   try {
     const { telegramId, firstName, lastName, username, photoUrl } = userData
 
-    const displayName = [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
+    const displayName =
+      [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
     const email = `telegram_${telegramId}@telegram.local`
     const avatarUrl = photoUrl || null
 
     // البحث عن مستخدم موجود عبر OAuthAccount
     type NeonUser = {
-      id: string; username: string; email: string; role: string; avatarUrl: string | null;
-      banStatus: string; bannedUntil: Date | null; banReason: string | null; tokenVersion: number;
+      id: string
+      username: string
+      email: string
+      role: string
+      avatarUrl: string | null
+      banStatus: string
+      bannedUntil: Date | null
+      banReason: string | null
+      tokenVersion: number
     }
     let neonUser: NeonUser | null = null
     const existingOAuth = await db.oAuthAccount.findUnique({
@@ -111,8 +132,15 @@ async function performLogin(userData: {
       include: {
         user: {
           select: {
-            id: true, username: true, email: true, role: true, avatarUrl: true,
-            banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            banStatus: true,
+            bannedUntil: true,
+            banReason: true,
+            tokenVersion: true,
           },
         },
       },
@@ -125,8 +153,15 @@ async function performLogin(userData: {
           where: { id: neonUser.id },
           data: { avatarUrl },
           select: {
-            id: true, username: true, email: true, role: true, avatarUrl: true,
-            banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            banStatus: true,
+            bannedUntil: true,
+            banReason: true,
+            tokenVersion: true,
           },
         })
       }
@@ -135,23 +170,32 @@ async function performLogin(userData: {
       const emailUser = await db.user.findUnique({
         where: { email },
         select: {
-          id: true, username: true, email: true, role: true, avatarUrl: true,
-          banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+          banStatus: true,
+          bannedUntil: true,
+          banReason: true,
+          tokenVersion: true,
         },
       })
 
       if (emailUser) {
         neonUser = emailUser
-        await db.oAuthAccount.create({
-          data: {
-            userId: emailUser.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: emailUser.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       } else {
         const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
         const finalUsername = await generateUniqueUsername(baseUsername)
@@ -167,21 +211,30 @@ async function performLogin(userData: {
           },
           update: {},
           select: {
-            id: true, username: true, email: true, role: true, avatarUrl: true,
-            banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            banStatus: true,
+            bannedUntil: true,
+            banReason: true,
+            tokenVersion: true,
           },
         })
 
-        await db.oAuthAccount.create({
-          data: {
-            userId: neonUser.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: neonUser.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       }
     }
 
@@ -216,7 +269,7 @@ async function performLogin(userData: {
         email: neonUser.email,
         role: neonUser.role,
         avatarUrl: neonUser.avatarUrl,
-      }
+      },
     }
   } catch (err) {
     console.error('[performLogin] failed:', err)

@@ -28,10 +28,7 @@ export async function POST(request: Request) {
     const { name, query, filters, userId } = body
 
     if (!name || !query) {
-      return NextResponse.json(
-        { error: 'الاسم والاستعلام مطلوبان' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'الاسم والاستعلام مطلوبان' }, { status: 400 })
     }
 
     const search = await db.savedSearch.create({

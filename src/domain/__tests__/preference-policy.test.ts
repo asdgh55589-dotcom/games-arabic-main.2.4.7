@@ -17,7 +17,11 @@ describe('PreferencePolicy', () => {
       const repo = createMockPreferenceRepo(null)
       const policy = new PreferencePolicy(repo as any)
 
-      const result = await policy.canDeliver('user-1', NotificationType.CommentReply, NotificationChannel.InApp)
+      const result = await policy.canDeliver(
+        'user-1',
+        NotificationType.CommentReply,
+        NotificationChannel.InApp,
+      )
 
       expect(result).toBe(true)
     })
@@ -29,10 +33,17 @@ describe('PreferencePolicy', () => {
       const repo = createMockPreferenceRepo(mockPref)
       const policy = new PreferencePolicy(repo as any)
 
-      const result = await policy.canDeliver('user-1', NotificationType.CommentReply, NotificationChannel.Email)
+      const result = await policy.canDeliver(
+        'user-1',
+        NotificationType.CommentReply,
+        NotificationChannel.Email,
+      )
 
       expect(result).toBe(true)
-      expect(mockPref.canDeliver).toHaveBeenCalledWith(NotificationType.CommentReply, NotificationChannel.Email)
+      expect(mockPref.canDeliver).toHaveBeenCalledWith(
+        NotificationType.CommentReply,
+        NotificationChannel.Email,
+      )
     })
 
     it('should return false when preference denies delivery', async () => {
@@ -42,7 +53,11 @@ describe('PreferencePolicy', () => {
       const repo = createMockPreferenceRepo(mockPref)
       const policy = new PreferencePolicy(repo as any)
 
-      const result = await policy.canDeliver('user-1', NotificationType.Like, NotificationChannel.Email)
+      const result = await policy.canDeliver(
+        'user-1',
+        NotificationType.Like,
+        NotificationChannel.Email,
+      )
 
       expect(result).toBe(false)
     })

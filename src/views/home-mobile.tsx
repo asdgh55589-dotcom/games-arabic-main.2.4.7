@@ -74,9 +74,19 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
             <section key={section.id} className="pt-2">
               <div className="mb-3 flex items-center justify-between border-b-[2px] border-border pb-2">
                 <div className="flex items-center gap-1.5">
-                  <div className="section-glow relative w-1 self-stretch rounded-full" style={{ backgroundColor: section.color, '--glow-color': section.color } as React.CSSProperties} />
+                  <div
+                    className="section-glow relative w-1 self-stretch rounded-full"
+                    style={
+                      {
+                        backgroundColor: section.color,
+                        '--glow-color': section.color,
+                      } as React.CSSProperties
+                    }
+                  />
                   <Icon width={16} height={16} color={section.color} />
-                  <h2 className="text-base font-black uppercase tracking-wider text-foreground">{section.name}</h2>
+                  <h2 className="text-base font-black uppercase tracking-wider text-foreground">
+                    {section.name}
+                  </h2>
                 </div>
                 <Button
                   asChild
@@ -91,11 +101,17 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                 </Button>
               </div>
               <div className="grid grid-cols-1 gap-2">
-                {loading
-                  ? Array.from({ length: 3 }).map((_, i) => <ModCardSkeleton key={i} variant="compact" />)
-                  : isEmpty
-                    ? <div className="col-span-full py-6 text-center text-xs text-muted-foreground">لا توجد تعريبات في هذا القسم بعد</div>
-                    : mods.slice(0, 3).map((m) => <ModCard key={m.id} mod={m} variant="compact" />)}
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <ModCardSkeleton key={i} variant="compact" />
+                  ))
+                ) : isEmpty ? (
+                  <div className="col-span-full py-6 text-center text-xs text-muted-foreground">
+                    لا توجد تعريبات في هذا القسم بعد
+                  </div>
+                ) : (
+                  mods.slice(0, 3).map((m) => <ModCard key={m.id} mod={m} variant="compact" />)
+                )}
               </div>
             </section>
           )
@@ -108,26 +124,51 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
         <div className="mb-3 flex items-end justify-between gap-3 border-b-[2px] border-border pb-2">
           <div>
             <h2 className="text-base font-black uppercase tracking-wider">سلاسل التعريبات</h2>
-            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">استكشف التعريبات حسب السلسلة</p>
+            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+              استكشف التعريبات حسب السلسلة
+            </p>
           </div>
-          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
-            <Link href="/series">عرض الكل <ArrowLeft className="mr-1 h-3 w-3" /></Link>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation"
+          >
+            <Link href="/series">
+              عرض الكل <ArrowLeft className="mr-1 h-3 w-3" />
+            </Link>
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-2">
           {loading
-            ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 animate-pulse bg-secondary border-[2px] border-border" />)
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse bg-secondary border-[2px] border-border"
+                />
+              ))
             : homeData?.topSeries?.slice(0, 3).map((s) => (
                 <Link
                   key={s.name}
                   href={`/series/${encodeURIComponent(s.name)}`}
                   className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
                 >
-                  {s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-55" /> : null}
+                  {s.thumbnailUrl ? (
+                    <img
+                      src={s.thumbnailUrl}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover opacity-55"
+                    />
+                  ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
                   <div className="relative">
-                    <h3 className="line-clamp-1 text-xs font-black uppercase tracking-wider text-foreground">{s.name}</h3>
-                    <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{formatNumber(s.count)} تعريب</p>
+                    <h3 className="line-clamp-1 text-xs font-black uppercase tracking-wider text-foreground">
+                      {s.name}
+                    </h3>
+                    <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                      {formatNumber(s.count)} تعريب
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -140,28 +181,56 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
         <div className="mb-3 flex items-end justify-between gap-3 border-b-[2px] border-border pb-2">
           <div>
             <h2 className="text-base font-black uppercase tracking-wider">فرق التعريب</h2>
-            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">استكشف الفرق والأعمال التي قدّموها</p>
+            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+              استكشف الفرق والأعمال التي قدّموها
+            </p>
           </div>
-          <Button asChild variant="outline" size="sm" className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
-            <Link href="/teams">عرض الكل <ArrowLeft className="mr-1 h-3 w-3" /></Link>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 border-[2px] border-border px-2 text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_0_var(--border)] touch-manipulation"
+          >
+            <Link href="/teams">
+              عرض الكل <ArrowLeft className="mr-1 h-3 w-3" />
+            </Link>
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-2">
           {teamsLoading ? (
-            Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 animate-pulse bg-secondary border-[2px] border-border" />)
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse bg-secondary border-[2px] border-border" />
+            ))
           ) : teams?.length ? (
             teams.slice(0, 3).map((t) => (
-              <Link key={t.id} href={`/teams/${t.slug}`} className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]">
-                {t.bannerUrl || t.logoUrl ? <img src={t.bannerUrl || t.logoUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-55" /> : null}
+              <Link
+                key={t.id}
+                href={`/teams/${t.slug}`}
+                className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
+              >
+                {t.bannerUrl || t.logoUrl ? (
+                  <img
+                    src={t.bannerUrl || t.logoUrl}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover opacity-55"
+                  />
+                ) : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
                 <div className="relative">
-                  <h3 className="line-clamp-1 text-xs font-black uppercase tracking-wider text-foreground">{t.name}</h3>
-                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{formatNumber(t.modCount)} تعريب</p>
+                  <h3 className="line-clamp-1 text-xs font-black uppercase tracking-wider text-foreground">
+                    {t.name}
+                  </h3>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    {formatNumber(t.modCount)} تعريب
+                  </p>
                 </div>
               </Link>
             ))
           ) : (
-            <div className="col-span-full py-6 text-center text-xs text-muted-foreground">لا توجد فرق تعريب بعد</div>
+            <div className="col-span-full py-6 text-center text-xs text-muted-foreground">
+              لا توجد فرق تعريب بعد
+            </div>
           )}
         </div>
       </section>

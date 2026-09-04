@@ -92,7 +92,8 @@ function runYtDlp(youtubeUrl: string, timeoutMs = 25_000): Promise<any> {
       '--no-playlist',
       // لا نحتاج صيغ الفيديو — تخطّي تنزيل وتحليل player JS يسرّع الجلب بشكل ملحوظ.
       '--ignore-no-formats-error',
-      '--extractor-args', 'youtube:player_skip=js,configs',
+      '--extractor-args',
+      'youtube:player_skip=js,configs',
       '--dump-single-json',
       youtubeUrl,
     ]
@@ -110,8 +111,12 @@ function runYtDlp(youtubeUrl: string, timeoutMs = 25_000): Promise<any> {
       reject(new Error('yt-dlp timeout'))
     }, timeoutMs)
 
-    child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
-    child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
+    })
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
 
     child.on('error', (err) => {
       if (settled) return

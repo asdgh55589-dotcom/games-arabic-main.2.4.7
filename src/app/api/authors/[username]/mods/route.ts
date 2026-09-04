@@ -7,7 +7,7 @@ import type { AuthorModsResponse } from '@/lib/types'
 // GET /api/authors/[username]/mods - list mods by author username
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
+  { params }: { params: Promise<{ username: string }> },
 ) {
   const { username } = await params
   const user = await db.user.findFirst({

@@ -125,7 +125,10 @@ export async function GET(_req: NextRequest) {
     const topReasons = topReasonsRaw.map((g) => ({ reason: g.reason, count: g._count.id }))
     const topReporters = reporterGroups.map((g) => ({ userId: g.reporterId!, count: g._count.id }))
     const actionsTaken = actionGroups.map((g) => ({ action: g.actionTaken!, count: g._count.id }))
-    const repeatOffenders = repeatOffenderGroups.map((g) => ({ userId: g.targetUserId!, reportsReceived: g._count.id }))
+    const repeatOffenders = repeatOffenderGroups.map((g) => ({
+      userId: g.targetUserId!,
+      reportsReceived: g._count.id,
+    }))
 
     // تحويل للصيغ المتوافقة مع الواجهة القديمة والجديدة
     return ok({

@@ -5,7 +5,13 @@ import { useEffect, useState } from 'react'
 import { Loader2, ScrollText, Filter, Download, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { timeAgo, formatAuditDetails } from '@/lib/format'
@@ -105,11 +111,12 @@ export default function AdminAuditPage() {
   }
 
   const filteredLogs = searchQuery
-    ? logs.filter((log) =>
-        log.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.entity.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (log.details || '').toLowerCase().includes(searchQuery.toLowerCase())
+    ? logs.filter(
+        (log) =>
+          log.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          log.entity.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (log.details || '').toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : logs
 
@@ -119,11 +126,15 @@ export default function AdminAuditPage() {
       acc[log.action] = (acc[log.action] || 0) + 1
       return acc
     },
-    {} as Record<string, number>
+    {} as Record<string, number>,
   )
 
   if (loading && logs.length === 0) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error) {
@@ -167,9 +178,7 @@ export default function AdminAuditPage() {
           .slice(0, 4)
           .map(([action, count]) => (
             <div key={action} className="p-3 rounded-lg border bg-card">
-              <div className="text-xs text-muted-foreground">
-                {ACTION_LABELS[action] || action}
-              </div>
+              <div className="text-xs text-muted-foreground">{ACTION_LABELS[action] || action}</div>
               <div className="text-2xl font-bold">{count}</div>
             </div>
           ))}
@@ -191,23 +200,33 @@ export default function AdminAuditPage() {
           <Filter className="h-4 w-4 text-muted-foreground" />
           <select
             value={actionFilter}
-            onChange={(e) => { setActionFilter(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setActionFilter(e.target.value)
+              setPage(1)
+            }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm"
           >
             <option value="">كل الإجراءات</option>
             {Object.entries(ACTION_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+              <option key={k} value={k}>
+                {v}
+              </option>
             ))}
           </select>
         </div>
         <select
           value={entityFilter}
-          onChange={(e) => { setEntityFilter(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setEntityFilter(e.target.value)
+            setPage(1)
+          }}
           className="h-9 rounded-md border border-border bg-background px-3 text-sm"
         >
           <option value="">كل الكيانات</option>
           {Object.entries(ENTITY_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
       </div>
@@ -240,13 +259,25 @@ export default function AdminAuditPage() {
                   >
                     <td className="px-4 py-3 font-medium">{log.username}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${
-                        ['delete', 'ban', 'delete_ticket'].includes(log.action) ? 'bg-red-500/10 text-red-500' :
-                        ['create', 'unban', 'promote', 'create_ticket', 'create_rating'].includes(log.action) ? 'bg-green-500/10 text-green-500' :
-                        ['login', 'logout'].includes(log.action) ? 'bg-blue-500/10 text-blue-500' :
-                        ['warn', 'demote'].includes(log.action) ? 'bg-yellow-500/10 text-yellow-500' :
-                        'bg-primary/10 text-primary'
-                      }`}>
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${
+                          ['delete', 'ban', 'delete_ticket'].includes(log.action)
+                            ? 'bg-red-500/10 text-red-500'
+                            : [
+                                  'create',
+                                  'unban',
+                                  'promote',
+                                  'create_ticket',
+                                  'create_rating',
+                                ].includes(log.action)
+                              ? 'bg-green-500/10 text-green-500'
+                              : ['login', 'logout'].includes(log.action)
+                                ? 'bg-blue-500/10 text-blue-500'
+                                : ['warn', 'demote'].includes(log.action)
+                                  ? 'bg-yellow-500/10 text-yellow-500'
+                                  : 'bg-primary/10 text-primary'
+                        }`}
+                      >
                         {ACTION_LABELS[log.action] || log.action}
                       </span>
                     </td>
@@ -270,32 +301,52 @@ export default function AdminAuditPage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold">{log.username}</div>
                       {log.userId && (
-                        <div className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{log.userId}</div>
+                        <div className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">
+                          {log.userId}
+                        </div>
                       )}
                     </div>
-                    <Badge className={`shrink-0 rounded px-2 py-0.5 text-xs font-bold border-transparent ${
-                      ['delete', 'ban', 'delete_ticket'].includes(log.action) ? 'bg-red-500/10 text-red-500' :
-                      ['create', 'unban', 'promote', 'create_ticket', 'create_rating'].includes(log.action) ? 'bg-green-500/10 text-green-500' :
-                      ['login', 'logout'].includes(log.action) ? 'bg-blue-500/10 text-blue-500' :
-                      ['warn', 'demote'].includes(log.action) ? 'bg-yellow-500/10 text-yellow-500' :
-                      'bg-primary/10 text-primary'
-                    }`}>
+                    <Badge
+                      className={`shrink-0 rounded px-2 py-0.5 text-xs font-bold border-transparent ${
+                        ['delete', 'ban', 'delete_ticket'].includes(log.action)
+                          ? 'bg-red-500/10 text-red-500'
+                          : [
+                                'create',
+                                'unban',
+                                'promote',
+                                'create_ticket',
+                                'create_rating',
+                              ].includes(log.action)
+                            ? 'bg-green-500/10 text-green-500'
+                            : ['login', 'logout'].includes(log.action)
+                              ? 'bg-blue-500/10 text-blue-500'
+                              : ['warn', 'demote'].includes(log.action)
+                                ? 'bg-yellow-500/10 text-yellow-500'
+                                : 'bg-primary/10 text-primary'
+                      }`}
+                    >
                       {ACTION_LABELS[log.action] || log.action}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="rounded-md bg-muted p-2.5">
                       <div className="font-semibold text-muted-foreground">الكيان</div>
-                      <div className="mt-1 font-medium">{ENTITY_LABELS[log.entity] || log.entity}</div>
+                      <div className="mt-1 font-medium">
+                        {ENTITY_LABELS[log.entity] || log.entity}
+                      </div>
                     </div>
                     <div className="rounded-md bg-muted p-2.5">
                       <div className="font-semibold text-muted-foreground">معرّف الكيان</div>
-                      <div className="mt-1 truncate font-medium" dir="ltr">{log.entityId || '—'}</div>
+                      <div className="mt-1 truncate font-medium" dir="ltr">
+                        {log.entityId || '—'}
+                      </div>
                     </div>
                   </div>
                   <div className="rounded-md bg-muted/50 p-2.5">
                     <div className="text-xs font-semibold text-muted-foreground">التفاصيل</div>
-                    <div className="mt-1 break-words text-sm">{log.details ? formatAuditDetails(log.action, log.details) : '—'}</div>
+                    <div className="mt-1 break-words text-sm">
+                      {log.details ? formatAuditDetails(log.action, log.details) : '—'}
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{timeAgo(log.createdAt)}</span>
@@ -304,7 +355,9 @@ export default function AdminAuditPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="font-semibold text-muted-foreground">IP:</span>
-                    <span dir="ltr" className="font-mono text-muted-foreground">{log.ipAddress || '—'}</span>
+                    <span dir="ltr" className="font-mono text-muted-foreground">
+                      {log.ipAddress || '—'}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -319,13 +372,19 @@ export default function AdminAuditPage() {
                   </div>
                   {expandedId === log.id && log.details && (
                     <div className="rounded-md border border-border bg-card p-3 text-sm break-words">
-                      <div className="text-xs font-semibold text-muted-foreground mb-1">التفاصيل الكاملة</div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">
+                        التفاصيل الكاملة
+                      </div>
                       {formatAuditDetails(log.action, log.details)}
                       {log.entityId && (
-                        <div className="mt-2 text-xs text-muted-foreground" dir="ltr">ID: {log.entityId}</div>
+                        <div className="mt-2 text-xs text-muted-foreground" dir="ltr">
+                          ID: {log.entityId}
+                        </div>
                       )}
                       {log.ipAddress && (
-                        <div className="mt-1 text-xs text-muted-foreground" dir="ltr">IP: {log.ipAddress}</div>
+                        <div className="mt-1 text-xs text-muted-foreground" dir="ltr">
+                          IP: {log.ipAddress}
+                        </div>
                       )}
                     </div>
                   )}
@@ -339,9 +398,27 @@ export default function AdminAuditPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
-          <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>التالي</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            السابق
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            صفحة {page} من {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            التالي
+          </Button>
         </div>
       )}
     </div>

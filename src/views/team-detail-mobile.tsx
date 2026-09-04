@@ -29,7 +29,12 @@ export interface TeamDetailMobileProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function TeamDetailMobile({ team, loading, activeTab, setActiveTab }: TeamDetailMobileProps) {
+export function TeamDetailMobile({
+  team,
+  loading,
+  activeTab,
+  setActiveTab,
+}: TeamDetailMobileProps) {
   if (loading) {
     return (
       <div className="lg:hidden overflow-x-hidden" dir="rtl">
@@ -52,10 +57,16 @@ export function TeamDetailMobile({ team, loading, activeTab, setActiveTab }: Tea
 
   if (!team) {
     return (
-      <div className="lg:hidden grid place-items-center overflow-x-hidden px-3 sm:px-4 py-20 text-center" dir="rtl">
+      <div
+        className="lg:hidden grid place-items-center overflow-x-hidden px-3 sm:px-4 py-20 text-center"
+        dir="rtl"
+      >
         <Users className="mb-3 h-12 w-12 text-muted-foreground/50" aria-hidden />
         <h3 className="break-words text-lg font-semibold">الفريق غير موجود</h3>
-        <Link href="/teams" className="mt-4 inline-flex min-h-[44px] touch-manipulation items-center text-sm text-primary hover:underline">
+        <Link
+          href="/teams"
+          className="mt-4 inline-flex min-h-[44px] touch-manipulation items-center text-sm text-primary hover:underline"
+        >
           العودة لفرق التعريب
         </Link>
       </div>
@@ -98,7 +109,9 @@ export function TeamDetailMobile({ team, loading, activeTab, setActiveTab }: Tea
       {/* Name centered */}
       <div className="mt-3 flex flex-col items-center gap-1.5 px-3 sm:px-4 text-center">
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          <h1 className="break-words text-xl font-bold leading-tight tracking-tight">{team.name}</h1>
+          <h1 className="break-words text-xl font-bold leading-tight tracking-tight">
+            {team.name}
+          </h1>
           {team.isFeatured ? (
             <span
               className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/15 text-amber-500"
@@ -222,7 +235,9 @@ function StatCellMobile({
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="break-words text-[11px] font-medium leading-none">{label}</span>
       </span>
-      <span className="break-words text-sm font-bold leading-none tabular-nums">{formatNumber(value)}</span>
+      <span className="break-words text-sm font-bold leading-none tabular-nums">
+        {formatNumber(value)}
+      </span>
     </div>
   )
 }
@@ -236,7 +251,9 @@ function ModsTabMobile({ team }: { team: TeamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-card px-3 sm:px-4 py-12 text-center">
         <Gamepad2 className="h-10 w-10 text-muted-foreground/40" aria-hidden />
-        <p className="break-words text-sm font-medium text-muted-foreground">لا توجد تعريبات مسجلة في الفريق حالياً</p>
+        <p className="break-words text-sm font-medium text-muted-foreground">
+          لا توجد تعريبات مسجلة في الفريق حالياً
+        </p>
       </div>
     )
   }
@@ -259,7 +276,9 @@ function MembersTabMobile({ team }: { team: TeamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-card px-3 sm:px-4 py-12 text-center">
         <Users className="h-10 w-10 text-muted-foreground/40" aria-hidden />
-        <p className="break-words text-sm font-medium text-muted-foreground">لا يوجد أعضاء مسجلين في الفريق حالياً</p>
+        <p className="break-words text-sm font-medium text-muted-foreground">
+          لا يوجد أعضاء مسجلين في الفريق حالياً
+        </p>
       </div>
     )
   }
@@ -267,7 +286,11 @@ function MembersTabMobile({ team }: { team: TeamDetail }) {
   return (
     <div className="flex flex-col gap-3">
       {team.memberships.map((m) => {
-        const role = ROLE_LABELS[m.role] || { label: m.role, icon: Users, color: 'text-muted-foreground' }
+        const role = ROLE_LABELS[m.role] || {
+          label: m.role,
+          icon: Users,
+          color: 'text-muted-foreground',
+        }
         const RoleIcon = role.icon
         const displayName = getMemberDisplayName(m as never)
         const avatar = getMemberAvatar(m as never)
@@ -325,14 +348,18 @@ function MembersTabMobile({ team }: { team: TeamDetail }) {
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className={`inline-flex items-center gap-1 break-words text-xs ${role.color}`}>
+                <span
+                  className={`inline-flex items-center gap-1 break-words text-xs ${role.color}`}
+                >
                   <RoleIcon className="h-3 w-3 shrink-0" aria-hidden />
                   {role.label}
                 </span>
               </div>
 
               {bio ? (
-                <p className="line-clamp-1 break-words text-xs leading-relaxed text-muted-foreground">{bio}</p>
+                <p className="line-clamp-1 break-words text-xs leading-relaxed text-muted-foreground">
+                  {bio}
+                </p>
               ) : null}
             </div>
           </div>
@@ -394,27 +421,39 @@ function StatsTabMobile({ team }: { team: TeamDetail }) {
       <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">التعريبات</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.modCount)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.modCount)}
+          </span>
         </div>
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">الأعضاء</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.memberCount)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.memberCount)}
+          </span>
         </div>
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">التحميلات</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.totalDownloads)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.totalDownloads)}
+          </span>
         </div>
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">الإعجابات</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.totalEndorsements)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.totalEndorsements)}
+          </span>
         </div>
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">المشاهدات</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.totalViews)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.totalViews)}
+          </span>
         </div>
         <div className="flex justify-between gap-2 border-b py-2">
           <span className="break-words text-muted-foreground">المتابعون</span>
-          <span className="break-words font-bold tabular-nums">{formatNumber(team.stats.followersCount)}</span>
+          <span className="break-words font-bold tabular-nums">
+            {formatNumber(team.stats.followersCount)}
+          </span>
         </div>
       </div>
     </div>

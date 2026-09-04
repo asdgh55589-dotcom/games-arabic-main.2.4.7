@@ -53,28 +53,31 @@ export async function GET() {
 
     console.timeEnd('[admin-dashboard queries]')
 
-    const response = ok({
-      stats: {
-        games: gamesCount,
-        mods: modsCount,
-        users: usersCount,
-        downloads: downloadsAgg._sum.downloads || 0,
-        endorsements: endorsementsAgg._sum.endorsements || 0,
-        comments: commentsCount,
-        featured: featuredCount,
-        trending: trendingCount,
-        series: seriesCount,
+    const response = ok(
+      {
+        stats: {
+          games: gamesCount,
+          mods: modsCount,
+          users: usersCount,
+          downloads: downloadsAgg._sum.downloads || 0,
+          endorsements: endorsementsAgg._sum.endorsements || 0,
+          comments: commentsCount,
+          featured: featuredCount,
+          trending: trendingCount,
+          series: seriesCount,
+        },
+        recent: {
+          mods: recentMods,
+          users: recentUsers,
+          comments: recentComments,
+        },
       },
-      recent: {
-        mods: recentMods,
-        users: recentUsers,
-        comments: recentComments,
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=15',
+        },
       },
-    }, {
-      headers: {
-        'Cache-Control': 'private, max-age=15',
-      },
-    })
+    )
 
     console.timeEnd('[admin-dashboard total]')
 

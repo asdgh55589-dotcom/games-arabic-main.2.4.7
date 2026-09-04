@@ -22,7 +22,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params
-    const comment = await db.modComment.findUnique({ where: { id }, select: { id: true, likes: true, dislikes: true } })
+    const comment = await db.modComment.findUnique({
+      where: { id },
+      select: { id: true, likes: true, dislikes: true },
+    })
     if (!comment) {
       return notFound('Comment not found')
     }
@@ -43,7 +46,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           // Was disliked → switch to like
           await db.$transaction([
             db.commentLike.update({ where: { id: existing.id }, data: { value: 'like' } }),
-            db.modComment.update({ where: { id }, data: { likes: { increment: 1 }, dislikes: { decrement: 1 } } }),
+            db.modComment.update({
+              where: { id },
+              data: { likes: { increment: 1 }, dislikes: { decrement: 1 } },
+            }),
           ])
         }
       } else {
@@ -63,7 +69,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         'code' in err &&
         (err as { code: string }).code === 'P2002'
       ) {
-        const fresh = await db.modComment.findUnique({ where: { id }, select: { likes: true, dislikes: true } })
+        const fresh = await db.modComment.findUnique({
+          where: { id },
+          select: { likes: true, dislikes: true },
+        })
         return ok({ liked: true, likes: fresh?.likes ?? 0, dislikes: fresh?.dislikes ?? 0 })
       }
       throw err
@@ -74,7 +83,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       select: { likes: true, dislikes: true },
     })
 
-    return ok({ liked: !existing || existing.value !== 'like', likes: updated?.likes ?? 0, dislikes: updated?.dislikes ?? 0 })
+    return ok({
+      liked: !existing || existing.value !== 'like',
+      likes: updated?.likes ?? 0,
+      dislikes: updated?.dislikes ?? 0,
+    })
   } catch {
     return internalError('Failed')
   }

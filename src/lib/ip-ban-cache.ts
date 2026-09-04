@@ -37,7 +37,10 @@ function computeTtl(expiresAt: Date | null): number {
 }
 
 /** كتابة حظر IP في الـ cache */
-export async function setIpBanCache(ip: string, value: { banned: boolean; reason?: string | null; expiresAt?: Date | null }): Promise<void> {
+export async function setIpBanCache(
+  ip: string,
+  value: { banned: boolean; reason?: string | null; expiresAt?: Date | null },
+): Promise<void> {
   const payload: IpBanCacheValue = {
     banned: true,
     reason: value.reason,

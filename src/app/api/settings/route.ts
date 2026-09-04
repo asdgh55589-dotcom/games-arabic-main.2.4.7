@@ -9,7 +9,8 @@ const DEFAULTS: Record<string, string> = {
   primary_color: '#eab308',
   dark_mode_default: 'true',
   meta_title: 'GAMES ARABIC — تعريب الألعاب',
-  meta_description: 'منصة تعريب وأرشفة الألعاب — حمّل التعريبات العربية لأحدث الألعاب على PC وPlayStation وNintendo Switch',
+  meta_description:
+    'منصة تعريب وأرشفة الألعاب — حمّل التعريبات العربية لأحدث الألعاب على PC وPlayStation وNintendo Switch',
   og_image: '/hero-bg.jpg',
   robots_txt: 'User-agent: *\nAllow: /',
   site_url: 'https://games-arabic.vercel.app',

@@ -11,7 +11,7 @@ const RECOVERY_TIME = 60000 // 1 minute
 
 export async function withRedisCircuit<T>(
   operation: () => Promise<T>,
-  fallback: () => Promise<T>
+  fallback: () => Promise<T>,
 ): Promise<T> {
   const now = Date.now()
 

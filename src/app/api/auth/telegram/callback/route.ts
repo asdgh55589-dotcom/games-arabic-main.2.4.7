@@ -74,18 +74,33 @@ async function performLogin(userData: {
   try {
     const { telegramId, firstName, lastName, username, photoUrl } = userData
 
-    const displayName = [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
+    const displayName =
+      [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
     const email = `telegram_${telegramId}@telegram.local`
     const avatarUrl = photoUrl || null
 
     const userSelect = {
-      id: true, username: true, email: true, role: true, avatarUrl: true,
-      banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+      banStatus: true,
+      bannedUntil: true,
+      banReason: true,
+      tokenVersion: true,
     } as const
 
     let neonUser: {
-      id: string; username: string; email: string; role: string; avatarUrl: string | null;
-      banStatus: string; bannedUntil: Date | null; banReason: string | null; tokenVersion: number;
+      id: string
+      username: string
+      email: string
+      role: string
+      avatarUrl: string | null
+      banStatus: string
+      bannedUntil: Date | null
+      banReason: string | null
+      tokenVersion: number
     } | null = null
 
     const existingOAuth = await db.oAuthAccount.findUnique({
@@ -124,16 +139,18 @@ async function performLogin(userData: {
 
       if (emailUser) {
         neonUser = emailUser
-        await db.oAuthAccount.create({
-          data: {
-            userId: emailUser.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: emailUser.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       } else {
         const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
         const finalUsername = await generateUniqueUsername(baseUsername)
@@ -152,16 +169,18 @@ async function performLogin(userData: {
           select: userSelect,
         })
 
-        await db.oAuthAccount.create({
-          data: {
-            userId: neonUser.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: neonUser.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       }
     }
 
@@ -192,7 +211,7 @@ async function performLogin(userData: {
         email: neonUser!.email,
         role: neonUser!.role,
         avatarUrl: neonUser!.avatarUrl,
-      }
+      },
     }
   } catch (err) {
     console.error('[performLogin callback] failed:', err)

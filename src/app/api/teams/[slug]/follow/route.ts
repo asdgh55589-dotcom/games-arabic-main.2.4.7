@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, notFound, unauthorized, conflict, internalError, validationFail } from '@/lib/api-response'
+import {
+  ok,
+  notFound,
+  unauthorized,
+  conflict,
+  internalError,
+  validationFail,
+} from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ slug: string }>

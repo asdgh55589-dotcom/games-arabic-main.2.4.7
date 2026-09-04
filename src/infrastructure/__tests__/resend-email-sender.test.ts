@@ -3,7 +3,9 @@ import { ResendEmailSender } from '../adapters/resend-email-sender'
 describe('ResendEmailSender', () => {
   const mockSend = jest.fn()
   const mockResendClient = { emails: { send: mockSend } }
-  const testOptions = { retryOptions: { maxAttempts: 1, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 } }
+  const testOptions = {
+    retryOptions: { maxAttempts: 1, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 },
+  }
 
   beforeEach(() => {
     mockSend.mockClear()

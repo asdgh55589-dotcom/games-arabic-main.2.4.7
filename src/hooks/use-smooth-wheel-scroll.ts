@@ -69,8 +69,8 @@ export function useSmoothWheelScroll() {
         0,
         Math.min(
           document.documentElement.scrollHeight - window.innerHeight,
-          targetScroll + normalized
-        )
+          targetScroll + normalized,
+        ),
       )
 
       if (!isAnimating) {

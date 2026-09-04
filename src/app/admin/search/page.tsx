@@ -108,11 +108,16 @@ export default function SearchPage() {
           <Button
             key={key}
             variant={activeFilter === key ? 'default' : 'outline'}
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             onClick={() => setActiveFilter(key)}
           >
             {label}
-            {count > 0 && <Badge variant="secondary" className="mr-2 text-xs">{count}</Badge>}
+            {count > 0 && (
+              <Badge variant="secondary" className="mr-2 text-xs">
+                {count}
+              </Badge>
+            )}
           </Button>
         ))}
       </div>
@@ -129,9 +134,7 @@ export default function SearchPage() {
               className="block p-4 rounded-lg border hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-start gap-3">
-                <Badge className={TYPE_COLORS[result.type]}>
-                  {TYPE_LABELS[result.type]}
-                </Badge>
+                <Badge className={TYPE_COLORS[result.type]}>{TYPE_LABELS[result.type]}</Badge>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium">{result.title}</div>
                   <div className="text-sm text-muted-foreground mt-1">{result.subtitle}</div>
@@ -141,17 +144,13 @@ export default function SearchPage() {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {result.relevance}%
-                </div>
+                <div className="text-xs text-muted-foreground">{result.relevance}%</div>
               </div>
             </Link>
           ))}
         </div>
       ) : query ? (
-        <div className="text-center py-8 text-muted-foreground">
-          لا توجد نتائج لـ "{query}"
-        </div>
+        <div className="text-center py-8 text-muted-foreground">لا توجد نتائج لـ "{query}"</div>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           ابدأ البحث عن التعريبات والألعاب والفرق

@@ -42,7 +42,8 @@ export function UserModerationActions({
           variant="ghost"
           className="h-8 w-8 rounded-md border border-border bg-background-secondary text-muted-foreground hover:text-primary min-h-[44px] min-w-[44px]"
           onClick={onEdit}
-          title="تعديل البيانات" aria-label="تعديل البيانات"
+          title="تعديل البيانات"
+          aria-label="تعديل البيانات"
         >
           <Pencil className="h-4 w-4" />
         </Button>
@@ -53,7 +54,8 @@ export function UserModerationActions({
         variant="ghost"
         className="h-8 w-8 rounded-md border border-border bg-background-secondary text-muted-foreground hover:text-primary min-h-[44px] min-w-[44px]"
         onClick={onPassword}
-        title="تغيير كلمة المرور" aria-label="تغيير كلمة المرور"
+        title="تغيير كلمة المرور"
+        aria-label="تغيير كلمة المرور"
       >
         <Key className="h-4 w-4" />
       </Button>
@@ -66,7 +68,8 @@ export function UserModerationActions({
               variant="ghost"
               className="h-9 w-9 rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 min-h-[44px] min-w-[44px]"
               onClick={onUnban}
-              title="إلغاء الحظر" aria-label="إلغاء الحظر"
+              title="إلغاء الحظر"
+              aria-label="إلغاء الحظر"
             >
               <CheckCircle className="h-4 w-4" />
             </Button>
@@ -76,7 +79,8 @@ export function UserModerationActions({
               variant="ghost"
               className="h-9 w-9 rounded-xl border border-orange-500/20 bg-orange-500/10 text-orange-400 min-h-[44px] min-w-[44px]"
               onClick={onBan}
-              title="حظر" aria-label="حظر"
+              title="حظر"
+              aria-label="حظر"
             >
               <Ban className="h-4 w-4" />
             </Button>
@@ -87,7 +91,8 @@ export function UserModerationActions({
             variant="ghost"
             className="h-9 w-9 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-yellow-400 min-h-[44px] min-w-[44px]"
             onClick={onWarn}
-            title="تحذير" aria-label="تحذير"
+            title="تحذير"
+            aria-label="تحذير"
           >
             <AlertTriangle className="h-4 w-4" />
           </Button>
@@ -97,7 +102,8 @@ export function UserModerationActions({
             variant="ghost"
             className="h-9 w-9 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 min-h-[44px] min-w-[44px]"
             onClick={onDelete}
-            title="حذف" aria-label="حذف"
+            title="حذف"
+            aria-label="حذف"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

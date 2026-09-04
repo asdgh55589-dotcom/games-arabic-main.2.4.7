@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
         downloads: count,
         endorsements: mod?.endorsements ?? 0,
         gameName: mod?.game?.name || 'غير معروف',
-        platform: mod?.game ? (PLATFORM_LABELS[mod.game.platform] || mod.game.platform) : 'UNKNOWN',
+        platform: mod?.game ? PLATFORM_LABELS[mod.game.platform] || mod.game.platform : 'UNKNOWN',
         teamName: mod?.teamRelation?.name || null,
       }))
       .sort((a, b) => b.downloads - a.downloads)
@@ -149,9 +149,14 @@ export async function GET(req: NextRequest) {
         dailyTrend,
         byPlatform,
         byTeam,
-        _verification: { dailySum, platformSum, total, consistent: dailySum === total && platformSum === total },
+        _verification: {
+          dailySum,
+          platformSum,
+          total,
+          consistent: dailySum === total && platformSum === total,
+        },
       },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
+      { headers: { 'Cache-Control': 'private, max-age=300' } },
     )
   } catch (err) {
     console.error('[admin/analytics/downloads] failed:', err)

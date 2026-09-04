@@ -22,18 +22,26 @@ export async function generateMetadata({ params }: SeriesDetailPageProps): Promi
   const { slug } = await params
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/series`, {
-      next: { revalidate: 300 },
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/series`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
     if (!res.ok) return { title: 'سلسلة تعريبات | Games Arabic' }
     const { data: series } = await res.json()
-    const seriesItem = series?.find((s: { slug: string; name: string; description?: string }) => s.slug === slug || s.name === slug)
+    const seriesItem = series?.find(
+      (s: { slug: string; name: string; description?: string }) =>
+        s.slug === slug || s.name === slug,
+    )
 
     if (!seriesItem) return { title: 'سلسلة تعريبات | Games Arabic' }
 
     const title = `${seriesItem.name} - سلسلة تعريبات | Games Arabic`
-    const description = seriesItem.description || `تحميل تعريبات ${seriesItem.name} بالعربي - سلسلة كاملة مترجمة`
-    const imageUrl = seriesItem.bannerUrl || seriesItem.logoUrl || `https://games-arabic.com/og-default.jpg`
+    const description =
+      seriesItem.description || `تحميل تعريبات ${seriesItem.name} بالعربي - سلسلة كاملة مترجمة`
+    const imageUrl =
+      seriesItem.bannerUrl || seriesItem.logoUrl || `https://games-arabic.com/og-default.jpg`
 
     return {
       title,

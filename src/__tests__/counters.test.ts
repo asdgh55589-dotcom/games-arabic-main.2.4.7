@@ -8,7 +8,9 @@ jest.mock('@/lib/auth', () => ({
 import { isBot, recordModView, recordTeamView, recordDownload } from '@/lib/counters'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
 
-const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<typeof getUserIdFromRequestCookies>
+const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<
+  typeof getUserIdFromRequestCookies
+>
 
 function makeReq(ip: string, ua = 'Mozilla/5.0 (Windows NT 10.0) Chrome/120.0'): Request {
   return new Request('http://localhost/api/test', {
@@ -59,7 +61,7 @@ describe('recordModView — dedup', () => {
       expect.objectContaining({
         where: { id: 'mod-aaa' },
         data: { views: { increment: 1 } },
-      })
+      }),
     )
     expect(db.modView.create).toHaveBeenCalledTimes(1)
   })
@@ -125,11 +127,23 @@ describe('recordDownload — dedup لكل رابط', () => {
   it('نفس الرابط مرتين = تحميل واحد، روابط مختلفة = اثنان', async () => {
     const base = { modId: 'mod-dl', userId: null }
     const db = makeDb()
-    await recordDownload({ ...base, linkId: 'link-a', fileId: 'f1', linkUrl: 'http://x/a' }, makeReq('7.7.7.7'), db)
-    const r2 = await recordDownload({ ...base, linkId: 'link-a', fileId: 'f1', linkUrl: 'http://x/a' }, makeReq('7.7.7.7'), db)
+    await recordDownload(
+      { ...base, linkId: 'link-a', fileId: 'f1', linkUrl: 'http://x/a' },
+      makeReq('7.7.7.7'),
+      db,
+    )
+    const r2 = await recordDownload(
+      { ...base, linkId: 'link-a', fileId: 'f1', linkUrl: 'http://x/a' },
+      makeReq('7.7.7.7'),
+      db,
+    )
     expect(r2.counted).toBe(false)
 
-    const r3 = await recordDownload({ ...base, linkId: 'link-b', fileId: 'f2', linkUrl: 'http://x/b' }, makeReq('7.7.7.7'), db)
+    const r3 = await recordDownload(
+      { ...base, linkId: 'link-b', fileId: 'f2', linkUrl: 'http://x/b' },
+      makeReq('7.7.7.7'),
+      db,
+    )
     expect(r3.counted).toBe(true)
 
     // العداد زُيد مرتين فقط، وسجلا نقرات بـ fileId صحيح
@@ -143,7 +157,11 @@ describe('recordDownload — dedup لكل رابط', () => {
   it('المستخدم المسجل يظهر في سجل النقرات', async () => {
     mockGetUserId.mockResolvedValue('user-y')
     const db = makeDb()
-    await recordDownload({ modId: 'mod-dl2', userId: 'user-y', linkId: 'link-c', fileId: 'f3', linkUrl: 'u' }, makeReq('7.7.7.9'), db)
+    await recordDownload(
+      { modId: 'mod-dl2', userId: 'user-y', linkId: 'link-c', fileId: 'f3', linkUrl: 'u' },
+      makeReq('7.7.7.9'),
+      db,
+    )
     const data = db.downloadClick.create.mock.calls[0][0].data
     expect(data.userId).toBe('user-y')
     expect(data.linkId).toBe('link-c')

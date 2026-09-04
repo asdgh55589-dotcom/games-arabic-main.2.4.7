@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, unauthorized, notFound, forbidden, validationFail, internalError } from '@/lib/api-response'
+import {
+  ok,
+  unauthorized,
+  notFound,
+  forbidden,
+  validationFail,
+  internalError,
+} from '@/lib/api-response'
 import { UpdateCommentSchema } from '@/lib/schemas'
 
 interface RouteParams {

@@ -87,20 +87,30 @@ export default function AdminTemplatesPage() {
       .finally(() => setLoading(false))
   }, [filterType, filterChannel, page])
 
-  useEffect(() => { fetchTemplates() }, [fetchTemplates])
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   const resetForm = () => {
-    setFormType(ALL_TYPES[0]); setFormChannel('in_app')
-    setFormTitle(''); setFormBody(''); setFormVariables('')
-    setFormIsActive(true); setEditingId(null); setShowForm(false)
+    setFormType(ALL_TYPES[0])
+    setFormChannel('in_app')
+    setFormTitle('')
+    setFormBody('')
+    setFormVariables('')
+    setFormIsActive(true)
+    setEditingId(null)
+    setShowForm(false)
   }
 
   const startEdit = (t: TemplateItem) => {
     setEditingId(t.id)
-    setFormType(t.type); setFormChannel(t.channel)
-    setFormTitle(t.titleTemplate); setFormBody(t.bodyTemplate)
+    setFormType(t.type)
+    setFormChannel(t.channel)
+    setFormTitle(t.titleTemplate)
+    setFormBody(t.bodyTemplate)
     setFormVariables(t.variables.join(', '))
-    setFormIsActive(t.isActive); setShowForm(true)
+    setFormIsActive(t.isActive)
+    setShowForm(true)
   }
 
   const onSubmit = async () => {
@@ -115,7 +125,10 @@ export default function AdminTemplatesPage() {
       channel: formChannel,
       titleTemplate: formTitle.trim(),
       bodyTemplate: formBody.trim(),
-      variables: formVariables.split(',').map(v => v.trim()).filter(Boolean),
+      variables: formVariables
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean),
       isActive: formIsActive,
     }
 
@@ -134,14 +147,19 @@ export default function AdminTemplatesPage() {
       resetForm()
       fetchTemplates()
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
   }
 
   const onDelete = async (t: TemplateItem) => {
-    if (!confirm(`هل أنت متأكد من حذف قالب "${NOTIFICATION_TYPE_LABELS[t.type]}" (${t.channel})؟`)) return
+    if (!confirm(`هل أنت متأكد من حذف قالب "${NOTIFICATION_TYPE_LABELS[t.type]}" (${t.channel})؟`))
+      return
     try {
       const res = await fetch(`/api/admin/templates/${t.id}`, { method: 'DELETE' })
       if (!res.ok) {
@@ -151,7 +169,11 @@ export default function AdminTemplatesPage() {
       toast({ title: 'تم الحذف' })
       setTemplates((p) => p.filter((x) => x.id !== t.id))
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -169,14 +191,22 @@ export default function AdminTemplatesPage() {
       if (!res.ok) throw new Error(data?.error?.message || 'فشل المعاينة')
       setPreviewResult(data.data)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setPreviewLoading(false)
     }
   }
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error) {
@@ -194,7 +224,12 @@ export default function AdminTemplatesPage() {
           <h1 className="text-2xl font-bold tracking-tight">إدارة قوالب الإشعارات</h1>
           <p className="mt-1 text-sm text-muted-foreground">{templates.length} قالب</p>
         </div>
-        <Button onClick={() => { resetForm(); setShowForm((s) => !s) }}>
+        <Button
+          onClick={() => {
+            resetForm()
+            setShowForm((s) => !s)
+          }}
+        >
           <Plus className="ml-2 h-4 w-4" /> قالب جديد
         </Button>
       </div>
@@ -203,22 +238,32 @@ export default function AdminTemplatesPage() {
       <div className="flex gap-3">
         <select
           value={filterType}
-          onChange={(e) => { setFilterType(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setFilterType(e.target.value)
+            setPage(1)
+          }}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">جميع الأنواع</option>
-          {ALL_TYPES.map(t => (
-            <option key={t} value={t}>{NOTIFICATION_TYPE_LABELS[t]}</option>
+          {ALL_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {NOTIFICATION_TYPE_LABELS[t]}
+            </option>
           ))}
         </select>
         <select
           value={filterChannel}
-          onChange={(e) => { setFilterChannel(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setFilterChannel(e.target.value)
+            setPage(1)
+          }}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
         >
           <option value="">جميع القنوات</option>
-          {ALL_CHANNELS.map(c => (
-            <option key={c} value={c}>{c}</option>
+          {ALL_CHANNELS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
       </div>
@@ -235,8 +280,10 @@ export default function AdminTemplatesPage() {
                 onChange={(e) => setFormType(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               >
-                {ALL_TYPES.map(t => (
-                  <option key={t} value={t}>{NOTIFICATION_TYPE_LABELS[t]}</option>
+                {ALL_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {NOTIFICATION_TYPE_LABELS[t]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -247,15 +294,21 @@ export default function AdminTemplatesPage() {
                 onChange={(e) => setFormChannel(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               >
-                {ALL_CHANNELS.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                {ALL_CHANNELS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div>
             <Label>عنوان القالب (Handlebars)</Label>
-            <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="{{actorName}} رد على تعليقك" />
+            <Input
+              value={formTitle}
+              onChange={(e) => setFormTitle(e.target.value)}
+              placeholder="{{actorName}} رد على تعليقك"
+            />
           </div>
           <div>
             <Label>محتوى القالب (Handlebars)</Label>
@@ -270,17 +323,28 @@ export default function AdminTemplatesPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label>المتغيرات (مفصولة بفاصلة)</Label>
-              <Input value={formVariables} onChange={(e) => setFormVariables(e.target.value)} placeholder="actorName, modTitle" />
+              <Input
+                value={formVariables}
+                onChange={(e) => setFormVariables(e.target.value)}
+                placeholder="actorName, modTitle"
+              />
             </div>
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={formIsActive} onChange={(e) => setFormIsActive(e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={formIsActive}
+                  onChange={(e) => setFormIsActive(e.target.checked)}
+                  className="rounded"
+                />
                 نشط
               </label>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={resetForm}>إلغاء</Button>
+            <Button variant="outline" onClick={resetForm}>
+              إلغاء
+            </Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               {editingId ? 'تحديث' : 'إنشاء'}
@@ -295,12 +359,23 @@ export default function AdminTemplatesPage() {
           <div className="mx-4 max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-background p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold">معاينة القالب</h3>
-              <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px]" onClick={() => { setPreviewId(null); setPreviewResult(null) }} aria-label="إجراء">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-h-[44px] min-w-[44px]"
+                onClick={() => {
+                  setPreviewId(null)
+                  setPreviewResult(null)
+                }}
+                aria-label="إجراء"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             {previewLoading ? (
-              <div className="grid place-items-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              <div className="grid place-items-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
             ) : previewResult ? (
               <div className="space-y-4">
                 <div>
@@ -310,7 +385,10 @@ export default function AdminTemplatesPage() {
                 <div>
                   <Label className="text-xs text-muted-foreground">المحتوى</Label>
                   {previewResult.html ? (
-                    <div className="mt-1 overflow-auto rounded-lg border border-border" style={{ maxHeight: '400px' }}>
+                    <div
+                      className="mt-1 overflow-auto rounded-lg border border-border"
+                      style={{ maxHeight: '400px' }}
+                    >
                       <iframe
                         srcDoc={previewResult.html}
                         className="h-[400px] w-full border-0"
@@ -318,7 +396,9 @@ export default function AdminTemplatesPage() {
                       />
                     </div>
                   ) : (
-                    <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-card/50 p-3 text-sm">{previewResult.body}</p>
+                    <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-card/50 p-3 text-sm">
+                      {previewResult.body}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -359,7 +439,9 @@ export default function AdminTemplatesPage() {
                   return (
                     <tr key={t.id} className="text-sm transition-colors hover:bg-accent/30">
                       <td className="px-4 py-3">
-                        <span className="font-medium">{NOTIFICATION_TYPE_LABELS[t.type] || t.type}</span>
+                        <span className="font-medium">
+                          {NOTIFICATION_TYPE_LABELS[t.type] || t.type}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
@@ -372,19 +454,42 @@ export default function AdminTemplatesPage() {
                       </td>
                       <td className="hidden px-4 py-3 text-xs md:table-cell">v{t.version}</td>
                       <td className="hidden px-4 py-3 md:table-cell">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${t.isActive ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${t.isActive ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}
+                        >
                           {t.isActive ? 'نشط' : 'معطّل'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onPreview(t)} title="معاينة" aria-label="معاينة">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                            onClick={() => onPreview(t)}
+                            title="معاينة"
+                            aria-label="معاينة"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => startEdit(t)} title="تعديل" aria-label="تعديل">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                            onClick={() => startEdit(t)}
+                            title="تعديل"
+                            aria-label="تعديل"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(t)} title="حذف" aria-label="حذف">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
+                            onClick={() => onDelete(t)}
+                            title="حذف"
+                            aria-label="حذف"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -396,11 +501,21 @@ export default function AdminTemplatesPage() {
             </table>
           </div>
           <div className="flex items-center justify-between mt-4">
-            <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
               السابق
             </Button>
-            <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
-            <Button variant="outline" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+            <span className="text-sm text-muted-foreground">
+              صفحة {page} من {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
               التالي
             </Button>
           </div>

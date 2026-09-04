@@ -39,8 +39,11 @@ export default async function ModeratorsLeaderboard() {
   const ranked = moderators
     .map((u) => ({
       user: u,
-      reviewsCount: (u as unknown as { _count: { workflowChanges: number } })._count.workflowChanges,
-      monthsActive: Math.floor((Date.now() - new Date(u.joinedAt).getTime()) / (1000 * 60 * 60 * 24 * 30)),
+      reviewsCount: (u as unknown as { _count: { workflowChanges: number } })._count
+        .workflowChanges,
+      monthsActive: Math.floor(
+        (Date.now() - new Date(u.joinedAt).getTime()) / (1000 * 60 * 60 * 24 * 30),
+      ),
     }))
     .sort((a, b) => {
       if (b.user.tier !== a.user.tier) return b.user.tier - a.user.tier
@@ -57,23 +60,39 @@ export default async function ModeratorsLeaderboard() {
       </div>
 
       {ranked.length === 0 ? (
-        <EmptyState icon="users" title="لا يوجد مشرفون بعد" description="كن أول مشرف ينضم للمنصة!" action={{ label: 'لوحة التحكم', href: '/admin' }} />
+        <EmptyState
+          icon="users"
+          title="لا يوجد مشرفون بعد"
+          description="كن أول مشرف ينضم للمنصة!"
+          action={{ label: 'لوحة التحكم', href: '/admin' }}
+        />
       ) : (
         <div className="space-y-4">
           {ranked.map((item, index) => (
             <Card key={item.user.id} className={index < 3 ? 'border-yellow-500/50' : ''}>
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="w-12 text-center shrink-0">{index < 3 ? RANK_ICONS[index + 1] : <span className="text-xl font-bold text-muted-foreground">{index + 1}</span>}</div>
+                <div className="w-12 text-center shrink-0">
+                  {index < 3 ? (
+                    RANK_ICONS[index + 1]
+                  ) : (
+                    <span className="text-xl font-bold text-muted-foreground">{index + 1}</span>
+                  )}
+                </div>
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarImage src={item.user.avatarUrl || undefined} />
                   <AvatarFallback>{item.user.username[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/profile/${encodeURIComponent(item.user.username)}`} className="flex items-center gap-2 flex-wrap hover:underline">
+                  <Link
+                    href={`/profile/${encodeURIComponent(item.user.username)}`}
+                    className="flex items-center gap-2 flex-wrap hover:underline"
+                  >
                     <span className="font-medium truncate">{item.user.username}</span>
                     <TierBadge role={item.user.role} tier={item.user.tier} size="sm" />
                   </Link>
-                  <div className="text-xs text-muted-foreground">{getTierLabel(item.user.role, item.user.tier)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {getTierLabel(item.user.role, item.user.tier)}
+                  </div>
                 </div>
                 <div className="flex items-center gap-4 sm:gap-6 text-sm shrink-0">
                   <div className="text-center">

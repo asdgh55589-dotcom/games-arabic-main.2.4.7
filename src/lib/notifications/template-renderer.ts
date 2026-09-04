@@ -9,7 +9,7 @@ export async function renderNotificationContent(
   type: string,
   channel: string,
   variables: Record<string, unknown>,
-  fallback: { title: string; message: string }
+  fallback: { title: string; message: string },
 ): Promise<{ title: string; message: string }> {
   try {
     const template = await db.notificationTemplate.findFirst({

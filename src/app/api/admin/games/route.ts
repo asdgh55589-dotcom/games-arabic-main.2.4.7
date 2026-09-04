@@ -36,7 +36,15 @@ export async function POST(req: NextRequest) {
     await requireModerator()
     const body = await req.json()
 
-    const required = ['name', 'tagline', 'description', 'platform', 'category', 'bannerUrl', 'thumbnailUrl']
+    const required = [
+      'name',
+      'tagline',
+      'description',
+      'platform',
+      'category',
+      'bannerUrl',
+      'thumbnailUrl',
+    ]
     for (const field of required) {
       if (!body[field]) {
         return validationFail({ field, message: `الحقل "${field}" مطلوب` })

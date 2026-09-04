@@ -73,7 +73,9 @@ export default async function MyTeamsPage({ params }: PageProps) {
           <CardContent className="py-16 text-center">
             <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">لست عضواً في أي فريق حالياً</p>
-            <p className="text-xs text-muted-foreground mt-1">عندما يربطك مُعَرِّب بفريق، ستظهر فرقك هنا ويمكنك المغادرة في أي وقت</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              عندما يربطك مُعَرِّب بفريق، ستظهر فرقك هنا ويمكنك المغادرة في أي وقت
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -98,12 +100,18 @@ export default async function MyTeamsPage({ params }: PageProps) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold truncate">{m.team.name}</span>
                           {m.team.isOfficial && (
-                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                            <Badge
+                              variant="outline"
+                              className="bg-green-500/10 text-green-600 border-green-500/20"
+                            >
                               رسمي
                             </Badge>
                           )}
                           {isOwner && (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            >
                               <Crown className="h-3 w-3 ml-1" />
                               المالك
                             </Badge>
@@ -120,7 +128,11 @@ export default async function MyTeamsPage({ params }: PageProps) {
 
                     {/* Leave button — فقط لصاحب الملف ويجب أن يكون مسجلاً */}
                     {isOwnProfile ? (
-                      <LeaveTeamButton teamId={m.team.id} teamName={m.team.name} isOwner={isOwner} />
+                      <LeaveTeamButton
+                        teamId={m.team.id}
+                        teamName={m.team.name}
+                        isOwner={isOwner}
+                      />
                     ) : null}
                   </div>
                 </CardContent>

@@ -24,12 +24,12 @@ export const PLATFORM_KEYS = PLATFORMS.map((p) => p.key) as readonly string[]
 
 /** Arabic display label for each platform key. */
 export const PLATFORM_ARABIC: Record<string, string> = Object.fromEntries(
-  PLATFORMS.map((p) => [p.key, p.arabicLabel])
+  PLATFORMS.map((p) => [p.key, p.arabicLabel]),
 )
 
 /** English display label for each platform key. */
 export const PLATFORM_LABEL: Record<string, string> = Object.fromEntries(
-  PLATFORMS.map((p) => [p.key, p.label])
+  PLATFORMS.map((p) => [p.key, p.label]),
 )
 
 /**
@@ -44,11 +44,11 @@ export const GAME_ARABIC_NAMES: Record<string, string> = {
   'The Witcher 3: Wild Hunt': 'ويتشر 3: الصيد البري',
   "Baldur's Gate 3": 'بوابة بالدور 3',
   'Elden Ring': 'إلدن رينغ',
-  'Minecraft': 'ماينكرافت',
+  Minecraft: 'ماينكرافت',
   'God of War': 'إله الحرب',
   'Horizon Zero Dawn': 'هورايزن زيرو داون',
   "Marvel's Spider-Man": 'الرجل العنكبوت',
-  'Bloodborne': 'بلودبورن',
+  Bloodborne: 'بلودبورن',
   'The Last of Us': 'ذا لاست أوف أس',
   'Red Dead Redemption': 'ريد ديد ريديمبشن',
   'God of War III': 'إله الحرب 3',
@@ -69,9 +69,9 @@ export function translateGameName(name: string): string {
 export const TRANSLATION_FILTERS = ['الكل', 'official', 'unofficial'] as const
 
 export const TRANSLATION_LABELS: Record<string, string> = {
-  'الكل': 'الكل',
-  'official': 'التعريبات الرسمية',
-  'unofficial': 'التعريبات غير الرسمية',
+  الكل: 'الكل',
+  official: 'التعريبات الرسمية',
+  unofficial: 'التعريبات غير الرسمية',
 }
 
 // ===== URLs المسموح بها للتحميل الخارجي =====
@@ -89,9 +89,7 @@ export const ALLOWED_DOWNLOAD_HOSTS = [
 export function isAllowedDownloadUrl(url: string): boolean {
   try {
     const hostname = new URL(url).hostname
-    return ALLOWED_DOWNLOAD_HOSTS.some(
-      (h) => hostname === h || hostname.endsWith('.' + h)
-    )
+    return ALLOWED_DOWNLOAD_HOSTS.some((h) => hostname === h || hostname.endsWith('.' + h))
   } catch {
     return false
   }

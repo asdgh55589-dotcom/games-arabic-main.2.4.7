@@ -16,20 +16,16 @@ const ORDER_BY: Record<Sort, Record<string, 'desc' | 'asc'>> = {
 }
 
 // GET /api/games/[slug]/mods - list mods for a game
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category')
   const search = searchParams.get('search')?.trim() || null
   const sort = pickSort(searchParams.get('sort'), SORTS, 'downloads')
-  const { page, limit } = parsePagination(
-    searchParams.get('page'),
-    searchParams.get('limit'),
-    { limit: 24, maxLimit: 100 }
-  )
+  const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+    limit: 24,
+    maxLimit: 100,
+  })
   const featured = searchParams.get('featured')
 
   const game = await db.game.findUnique({ where: { slug } })

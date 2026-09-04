@@ -17,9 +17,8 @@ export class SendAutoBanNotification {
   constructor(private readonly notificationService: NotificationService) {}
 
   async execute(context: AutoBanContext): Promise<void> {
-    const title = context.banType === 'temp_ban'
-      ? `تعليق مؤقت — ${context.durationDays} أيام`
-      : 'حظر دائم'
+    const title =
+      context.banType === 'temp_ban' ? `تعليق مؤقت — ${context.durationDays} أيام` : 'حظر دائم'
 
     await this.notificationService.send({
       userId: context.targetUserId,

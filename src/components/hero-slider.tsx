@@ -37,8 +37,14 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     if (progressBarRef.current) progressBarRef.current.style.width = '0%'
   }, [])
 
-  const next = useCallback(() => goTo((activeRef.current + 1) % slides.length), [slides.length, goTo])
-  const prev = useCallback(() => goTo((activeRef.current - 1 + slides.length) % slides.length), [slides.length, goTo])
+  const next = useCallback(
+    () => goTo((activeRef.current + 1) % slides.length),
+    [slides.length, goTo],
+  )
+  const prev = useCallback(
+    () => goTo((activeRef.current - 1 + slides.length) % slides.length),
+    [slides.length, goTo],
+  )
 
   // Auto-advance
   useEffect(() => {
@@ -122,11 +128,16 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           />
           <div
             className="absolute inset-0"
-            style={{ background: 'linear-gradient(to left, color-mix(in srgb, var(--background) 65%, transparent) 0%, transparent 55%)' }}
+            style={{
+              background:
+                'linear-gradient(to left, color-mix(in srgb, var(--background) 65%, transparent) 0%, transparent 55%)',
+            }}
           />
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: `radial-gradient(ellipse at 75% 100%, ${meta.color}30 0%, transparent 60%)` }}
+            style={{
+              background: `radial-gradient(ellipse at 75% 100%, ${meta.color}30 0%, transparent 60%)`,
+            }}
           />
         </motion.div>
       </AnimatePresence>
@@ -166,7 +177,9 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               <p className="mb-5 text-sm font-semibold text-muted-foreground">
                 {slide.category?.name || slide.game?.name}
                 {slide.fileSize && <span className="mx-2 opacity-30">•</span>}
-                {slide.fileSize && <span className="text-muted-foreground/70">{slide.fileSize}</span>}
+                {slide.fileSize && (
+                  <span className="text-muted-foreground/70">{slide.fileSize}</span>
+                )}
               </p>
 
               <a
@@ -187,7 +200,10 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       </div>
 
       {/* ===== عدّاد الشرائح ===== */}
-      <div className="absolute left-6 top-5 flex items-center gap-1.5 pointer-events-none" dir="ltr">
+      <div
+        className="absolute left-6 top-5 flex items-center gap-1.5 pointer-events-none"
+        dir="ltr"
+      >
         <span
           className="text-sm font-black tabular-nums text-white"
           style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}
@@ -229,7 +245,10 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       </button>
 
       {/* ===== شريط التقدم + النقاط ===== */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 px-6 pb-3 sm:px-12 lg:px-16" dir="ltr">
+      <div
+        className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 px-6 pb-3 sm:px-12 lg:px-16"
+        dir="ltr"
+      >
         <div
           className="h-[2px] w-full overflow-hidden rounded-full"
           style={{ background: 'rgba(255,255,255,0.1)' }}

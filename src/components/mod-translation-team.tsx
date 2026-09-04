@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  Users,
-  Mail,
-  Globe,
-} from 'lucide-react'
+import { Users, Mail, Globe } from 'lucide-react'
 import { SiDiscord, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -43,7 +39,12 @@ const ROLE_BADGES: Record<number, string> = {
   2: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
 }
 
-export function ModTranslationTeam({ teamMembers, contactLinks, columns, gap = 'md' }: ModTranslationTeamProps) {
+export function ModTranslationTeam({
+  teamMembers,
+  contactLinks,
+  columns,
+  gap = 'md',
+}: ModTranslationTeamProps) {
   const count = teamMembers.length
   const autoCols = count <= 3 ? 1 : count <= 6 ? 2 : count <= 12 ? 3 : 4
   const desktopCols = columns || autoCols
@@ -67,10 +68,12 @@ export function ModTranslationTeam({ teamMembers, contactLinks, columns, gap = '
         ) : (
           <div
             className={`grid ${gapClass} team-grid`}
-            style={{
-              '--team-mobile-cols': mobileCols,
-              '--team-desktop-cols': desktopCols,
-            } as React.CSSProperties}
+            style={
+              {
+                '--team-mobile-cols': mobileCols,
+                '--team-desktop-cols': desktopCols,
+              } as React.CSSProperties
+            }
           >
             <style>{`
               .team-grid { grid-template-columns: repeat(var(--team-mobile-cols), minmax(0, 1fr)); }
@@ -84,21 +87,27 @@ export function ModTranslationTeam({ teamMembers, contactLinks, columns, gap = '
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 shrink-0 border-2 border-border/60 shadow-sm transition-colors group-hover:border-primary/40">
                     <AvatarImage src={member.avatarUrl || undefined} alt={member.name} />
-                    <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{member.name[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                      {member.name[0]}
+                    </AvatarFallback>
                   </Avatar>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">{member.name}</span>
                       {i < 3 && (
-                        <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none ${ROLE_BADGES[i] || ROLE_BADGES[2]}`}>
+                        <span
+                          className={`rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none ${ROLE_BADGES[i] || ROLE_BADGES[2]}`}
+                        >
                           {i === 0 ? 'قائد' : i === 1 ? 'رئيسي' : 'عضو'}
                         </span>
                       )}
                     </div>
                     <p className="mt-0.5 text-[11px] font-bold text-foreground/80">{member.role}</p>
                     {member.contribution && (
-                      <p className="mt-1 line-clamp-1 text-[10px] font-medium text-foreground/60">{member.contribution}</p>
+                      <p className="mt-1 line-clamp-1 text-[10px] font-medium text-foreground/60">
+                        {member.contribution}
+                      </p>
                     )}
                   </div>
                 </div>

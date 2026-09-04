@@ -37,26 +37,37 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: Mark
         if (block.type === 'ul') {
           return (
             <ul key={i} className="list-disc space-y-1 pl-6">
-              {block.items?.map((item, j) => <li key={j}>{renderInline(item)}</li>)}
+              {block.items?.map((item, j) => (
+                <li key={j}>{renderInline(item)}</li>
+              ))}
             </ul>
           )
         }
         if (block.type === 'ol') {
           return (
             <ol key={i} className="list-decimal space-y-1 pl-6">
-              {block.items?.map((item, j) => <li key={j}>{renderInline(item)}</li>)}
+              {block.items?.map((item, j) => (
+                <li key={j}>{renderInline(item)}</li>
+              ))}
             </ol>
           )
         }
         if (block.type === 'code') {
           return (
-            <pre key={i} className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 text-xs">
+            <pre
+              key={i}
+              className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 text-xs"
+            >
               <code className="font-mono text-foreground">{block.text}</code>
             </pre>
           )
         }
         // paragraph
-        return <p key={i} className="font-medium text-foreground">{renderInline(block.text)}</p>
+        return (
+          <p key={i} className="font-medium text-foreground">
+            {renderInline(block.text)}
+          </p>
+        )
       })}
     </div>
   )
@@ -172,22 +183,37 @@ function renderInline(text: string): React.ReactNode {
     }
 
     if (first.type === 'bold') {
-      parts.push(<strong key={key++} className="font-semibold text-foreground">{first.match[1]}</strong>)
+      parts.push(
+        <strong key={key++} className="font-semibold text-foreground">
+          {first.match[1]}
+        </strong>,
+      )
     } else if (first.type === 'italic') {
       parts.push(<em key={key++}>{first.match[1]}</em>)
     } else if (first.type === 'strike') {
-      parts.push(<s key={key++} className="text-muted-foreground">{first.match[1]}</s>)
+      parts.push(
+        <s key={key++} className="text-muted-foreground">
+          {first.match[1]}
+        </s>,
+      )
     } else if (first.type === 'color') {
       const color = first.match[1]
       const text = first.match[2]
       // sanitize color — allow only hex
       const safeColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : '#3b82f6'
-      parts.push(<span key={key++} style={{ color: safeColor }}>{text}</span>)
+      parts.push(
+        <span key={key++} style={{ color: safeColor }}>
+          {text}
+        </span>,
+      )
     } else if (first.type === 'code') {
       parts.push(
-        <code key={key++} className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">
+        <code
+          key={key++}
+          className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground"
+        >
           {first.match[1]}
-        </code>
+        </code>,
       )
     } else if (first.type === 'link') {
       // Sanitize the URL to prevent javascript: and other dangerous schemes.
@@ -202,11 +228,15 @@ function renderInline(text: string): React.ReactNode {
             target={safeHref.startsWith('http') ? '_blank' : undefined}
           >
             {first.match[1]}
-          </a>
+          </a>,
         )
       } else {
         // URL was unsafe — render the link text without a hyperlink
-        parts.push(<span key={key++} className="text-muted-foreground">{first.match[1]}</span>)
+        parts.push(
+          <span key={key++} className="text-muted-foreground">
+            {first.match[1]}
+          </span>,
+        )
       }
     }
 

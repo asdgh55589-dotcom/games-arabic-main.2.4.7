@@ -14,15 +14,15 @@ export const AUTH_ERRORS: Record<string, string> = {
   GOOGLE_FAILED: 'فشل الدخول بجوجل، جرّب تاني',
   SESSION_EXPIRED: 'انتهت الجلسة، سجل دخول تاني',
   RATE_LIMITED: 'محاولات كتير جداً، استنى شوية',
-} as const;
+} as const
 
-export type AuthErrorCode = keyof typeof AUTH_ERRORS;
+export type AuthErrorCode = keyof typeof AUTH_ERRORS
 
 export function getAuthErrorMessage(code: string, fallback = 'حصل خطأ، جرّب تاني'): string {
-  return AUTH_ERRORS[code] ?? fallback;
+  return AUTH_ERRORS[code] ?? fallback
 }
 
-export type AuthErrorCategory = 'user_error' | 'system_error' | 'rate_limit';
+export type AuthErrorCategory = 'user_error' | 'system_error' | 'rate_limit'
 
 export function categorizeAuthError(code: string): {
   message: string
@@ -48,7 +48,12 @@ export function categorizeAuthError(code: string): {
     return { message, category: 'rate_limit', showToast: true }
   }
   if (userCodes[code]) {
-    const redirect = code === 'EMAIL_NOT_VERIFIED' ? '/verify-email' : code === 'SESSION_EXPIRED' ? '/login' : undefined
+    const redirect =
+      code === 'EMAIL_NOT_VERIFIED'
+        ? '/verify-email'
+        : code === 'SESSION_EXPIRED'
+          ? '/login'
+          : undefined
     return { message, category: 'user_error', showToast: true, redirect }
   }
   // أي كود غير معروف يعتبر system_error

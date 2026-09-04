@@ -28,19 +28,27 @@ import { NotificationType, NotificationChannel } from '@/domain'
 
 function createMockService() {
   return {
-    send: jest.fn().mockResolvedValue({ success: true, channelResults: [{ channel: NotificationChannel.InApp, success: true }] }),
+    send: jest.fn().mockResolvedValue({
+      success: true,
+      channelResults: [{ channel: NotificationChannel.InApp, success: true }],
+    }),
   } as unknown as jest.Mocked<NotificationService>
 }
 
 describe('Use Case Coverage', () => {
-
   describe('SendCommentReplyNotification', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendCommentReplyNotification(service)
       await uc.execute({
-        commentOwnerId: 'owner-1', replierId: 'replier-1', replierName: 'أحمد',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', commentId: 'c-1', replyPreview: 'رائع',
+        commentOwnerId: 'owner-1',
+        replierId: 'replier-1',
+        replierName: 'أحمد',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        commentId: 'c-1',
+        replyPreview: 'رائع',
       })
       expect(service.send).toHaveBeenCalledTimes(1)
     })
@@ -49,8 +57,14 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendCommentReplyNotification(service)
       await uc.execute({
-        commentOwnerId: 'user-1', replierId: 'user-1', replierName: 'أحمد',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', commentId: 'c-1', replyPreview: 'رائع',
+        commentOwnerId: 'user-1',
+        replierId: 'user-1',
+        replierName: 'أحمد',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        commentId: 'c-1',
+        replyPreview: 'رائع',
       })
       expect(service.send).not.toHaveBeenCalled()
     })
@@ -61,8 +75,13 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendTopLevelCommentNotification(service)
       await uc.execute({
-        modAuthorId: 'author-1', commenterId: 'user-1', commenterName: 'محمد',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', commentPreview: 'تعليق',
+        modAuthorId: 'author-1',
+        commenterId: 'user-1',
+        commenterName: 'محمد',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        commentPreview: 'تعليق',
       })
       expect(service.send).toHaveBeenCalledTimes(1)
     })
@@ -71,8 +90,13 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendTopLevelCommentNotification(service)
       await uc.execute({
-        modAuthorId: 'user-1', commenterId: 'user-1', commenterName: 'المطور',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', commentPreview: 'تعليق',
+        modAuthorId: 'user-1',
+        commenterId: 'user-1',
+        commenterName: 'المطور',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        commentPreview: 'تعليق',
       })
       expect(service.send).not.toHaveBeenCalled()
     })
@@ -83,8 +107,13 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendLikeNotification(service)
       await uc.execute({
-        modAuthorId: 'author-1', likerId: 'user-1', likerName: 'علي',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', totalLikes: 10,
+        modAuthorId: 'author-1',
+        likerId: 'user-1',
+        likerName: 'علي',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        totalLikes: 10,
       })
       expect(service.send).toHaveBeenCalledTimes(1)
     })
@@ -93,8 +122,13 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendLikeNotification(service)
       await uc.execute({
-        modAuthorId: 'user-1', likerId: 'user-1', likerName: 'المطور',
-        modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', totalLikes: 10,
+        modAuthorId: 'user-1',
+        likerId: 'user-1',
+        likerName: 'المطور',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        totalLikes: 10,
       })
       expect(service.send).not.toHaveBeenCalled()
     })
@@ -121,8 +155,11 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendEndorseMilestoneNotification(service)
       await uc.execute({
-        modAuthorId: 'author-1', modId: 'mod-1', modTitle: 'لعبة',
-        modSlug: 'game', milestone: 100,
+        modAuthorId: 'author-1',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        milestone: 100,
       })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -138,7 +175,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendModPublishedNotification(service)
-      await uc.execute({ modAuthorId: 'author-1', modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game' })
+      await uc.execute({
+        modAuthorId: 'author-1',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'author-1', type: NotificationType.ModPublished }),
       )
@@ -149,7 +191,13 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendModUpdatedNotification(service)
-      await uc.execute({ modAuthorId: 'author-1', modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game', updatedBy: 'محمد' })
+      await uc.execute({
+        modAuthorId: 'author-1',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+        updatedBy: 'محمد',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'author-1', type: NotificationType.ModUpdated }),
       )
@@ -160,7 +208,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendModDeletedNotification(service)
-      await uc.execute({ modAuthorId: 'author-1', modTitle: 'لعبة', deletedBy: 'محمد', reason: 'مخالفة' })
+      await uc.execute({
+        modAuthorId: 'author-1',
+        modTitle: 'لعبة',
+        deletedBy: 'محمد',
+        reason: 'مخالفة',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'author-1', type: NotificationType.ModDeleted }),
       )
@@ -171,7 +224,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendModFeaturedNotification(service)
-      await uc.execute({ modAuthorId: 'author-1', modId: 'mod-1', modTitle: 'لعبة', modSlug: 'game' })
+      await uc.execute({
+        modAuthorId: 'author-1',
+        modId: 'mod-1',
+        modTitle: 'لعبة',
+        modSlug: 'game',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'author-1',
@@ -186,7 +244,13 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendTierUpgradeNotification(service)
-      await uc.execute({ userId: 'user-1', fromTier: 1, fromTierName: 'عضو', toTier: 2, toTierName: 'محرر' })
+      await uc.execute({
+        userId: 'user-1',
+        fromTier: 1,
+        fromTierName: 'عضو',
+        toTier: 2,
+        toTierName: 'محرر',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'user-1',
@@ -216,7 +280,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendSpecialRoleAssignedNotification(service)
-      await uc.execute({ userId: 'user-1', roleKey: 'translator', roleName: 'مترجم', assignedBy: 'admin-1' })
+      await uc.execute({
+        userId: 'user-1',
+        roleKey: 'translator',
+        roleName: 'مترجم',
+        assignedBy: 'admin-1',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'user-1', type: NotificationType.SpecialRoleAssigned }),
       )
@@ -227,7 +296,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendSpecialRoleRemovedNotification(service)
-      await uc.execute({ userId: 'user-1', roleKey: 'translator', roleName: 'مترجم', removedBy: 'admin-1' })
+      await uc.execute({
+        userId: 'user-1',
+        roleKey: 'translator',
+        roleName: 'مترجم',
+        removedBy: 'admin-1',
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'user-1', type: NotificationType.SpecialRoleRemoved }),
       )
@@ -238,7 +312,14 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendReportSubmittedNotification(service)
-      await uc.execute({ adminUserIds: ['admin-1', 'admin-2'], reporterId: 'user-1', reportId: 'r-1', targetType: 'comment', targetTitle: 'تعليق', reason: 'مخالفة' })
+      await uc.execute({
+        adminUserIds: ['admin-1', 'admin-2'],
+        reporterId: 'user-1',
+        reportId: 'r-1',
+        targetType: 'comment',
+        targetTitle: 'تعليق',
+        reason: 'مخالفة',
+      })
       expect(service.send).toHaveBeenCalledTimes(2) // 2 admins only
     })
   })
@@ -248,8 +329,13 @@ describe('Use Case Coverage', () => {
       const service = createMockService()
       const uc = new SendReportConfirmedNotification(service)
       await uc.execute({
-        reporterId: 'reporter-1', targetUserId: 'target-1', reportId: 'r-1',
-        targetType: 'comment', targetTitle: 'تعليق', reason: 'مخالفة', action: 'warned',
+        reporterId: 'reporter-1',
+        targetUserId: 'target-1',
+        reportId: 'r-1',
+        targetType: 'comment',
+        targetTitle: 'تعليق',
+        reason: 'مخالفة',
+        action: 'warned',
         moderatorId: 'mod-1',
       })
       expect(service.send).toHaveBeenCalledTimes(2) // target + reporter
@@ -260,7 +346,14 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendReportRejectedNotification(service)
-      await uc.execute({ reporterId: 'reporter-1', reportId: 'r-1', targetType: 'comment', targetTitle: 'تعليق', reason: 'غير مخالف', moderatorId: 'mod-1' })
+      await uc.execute({
+        reporterId: 'reporter-1',
+        reportId: 'r-1',
+        targetType: 'comment',
+        targetTitle: 'تعليق',
+        reason: 'غير مخالف',
+        moderatorId: 'mod-1',
+      })
       expect(service.send).toHaveBeenCalledTimes(1) // reporter only
     })
   })
@@ -284,7 +377,12 @@ describe('Use Case Coverage', () => {
     it('happy path', async () => {
       const service = createMockService()
       const uc = new SendAutoBanNotification(service)
-      await uc.execute({ targetUserId: 'target-1', reportId: 'r-1', banType: 'temp_ban', durationDays: 7 })
+      await uc.execute({
+        targetUserId: 'target-1',
+        reportId: 'r-1',
+        banType: 'temp_ban',
+        durationDays: 7,
+      })
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'target-1',

@@ -13,10 +13,7 @@ export interface CsvColumn<T = any> {
 /**
  * تحويل بيانات إلى CSV مع دعم العربية
  */
-export function toCsv<T extends Record<string, any>>(
-  data: T[],
-  columns: CsvColumn<T>[]
-): string {
+export function toCsv<T extends Record<string, any>>(data: T[], columns: CsvColumn<T>[]): string {
   const BOM = '\uFEFF' // UTF-8 BOM for Arabic support
 
   const headers = columns.map((c) => escapeCsvField(c.header)).join(',')
@@ -28,7 +25,7 @@ export function toCsv<T extends Record<string, any>>(
         const formatted = col.formatter ? col.formatter(value, row) : formatValue(value)
         return escapeCsvField(formatted)
       })
-      .join(',')
+      .join(','),
   )
 
   return BOM + headers + '\n' + rows.join('\n')
@@ -39,7 +36,7 @@ export function toCsv<T extends Record<string, any>>(
  */
 export function toCsvBuffer<T extends Record<string, any>>(
   data: T[],
-  columns: CsvColumn<T>[]
+  columns: CsvColumn<T>[],
 ): Buffer {
   return Buffer.from(toCsv(data, columns), 'utf-8')
 }

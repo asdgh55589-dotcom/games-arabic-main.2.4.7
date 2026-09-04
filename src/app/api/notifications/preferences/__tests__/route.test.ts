@@ -14,7 +14,12 @@ jest.mock('@/lib/db', () => ({
 }))
 
 jest.mock('@/lib/auth', () => ({
-  requireAuth: jest.fn().mockResolvedValue({ id: 'user-1', username: 'testuser', email: 'test@test.com', role: 'member' }),
+  requireAuth: jest.fn().mockResolvedValue({
+    id: 'user-1',
+    username: 'testuser',
+    email: 'test@test.com',
+    role: 'member',
+  }),
 }))
 
 import { GET, PUT } from '../route'
@@ -103,9 +108,11 @@ describe('PUT /api/notifications/preferences', () => {
     const updated = { ...DEFAULT_PREF, emailEnabled: false }
     mockDb.notificationPreference.upsert.mockResolvedValue(updated)
 
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      emailEnabled: false,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        emailEnabled: false,
+      }),
+    )
     const data = await res.json()
 
     expect(data.data.emailEnabled).toBe(false)
@@ -117,14 +124,21 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should update quiet hours settings', async () => {
-    const updated = { ...DEFAULT_PREF, quietHoursEnabled: true, quietHoursStart: '22:00', quietHoursEnd: '07:00' }
-    mockDb.notificationPreference.upsert.mockResolvedValue(updated)
-
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+    const updated = {
+      ...DEFAULT_PREF,
       quietHoursEnabled: true,
       quietHoursStart: '22:00',
       quietHoursEnd: '07:00',
-    }))
+    }
+    mockDb.notificationPreference.upsert.mockResolvedValue(updated)
+
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        quietHoursEnabled: true,
+        quietHoursStart: '22:00',
+        quietHoursEnd: '07:00',
+      }),
+    )
     const data = await res.json()
 
     expect(data.data.quietHoursEnabled).toBe(true)
@@ -137,20 +151,24 @@ describe('PUT /api/notifications/preferences', () => {
     const updated = { ...DEFAULT_PREF, typePreferences: typePrefs }
     mockDb.notificationPreference.upsert.mockResolvedValue(updated)
 
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      typePreferences: typePrefs,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        typePreferences: typePrefs,
+      }),
+    )
     const data = await res.json()
 
     expect(data.data.typePreferences.comment_reply.emailEnabled).toBe(false)
   })
 
   it('should validate time format for quietHoursStart', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      quietHoursEnabled: true,
-      quietHoursStart: 'invalid',
-      quietHoursEnd: '07:00',
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        quietHoursEnabled: true,
+        quietHoursStart: 'invalid',
+        quietHoursEnd: '07:00',
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -158,11 +176,13 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should validate time format for quietHoursEnd', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      quietHoursEnabled: true,
-      quietHoursStart: '22:00',
-      quietHoursEnd: '25:00',
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        quietHoursEnabled: true,
+        quietHoursStart: '22:00',
+        quietHoursEnd: '25:00',
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -170,11 +190,13 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should require both start and end when quietHours enabled', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      quietHoursEnabled: true,
-      quietHoursStart: '22:00',
-      quietHoursEnd: undefined,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        quietHoursEnabled: true,
+        quietHoursStart: '22:00',
+        quietHoursEnd: undefined,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -182,9 +204,11 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should reject likeThreshold below 5', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      likeThreshold: 3,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        likeThreshold: 3,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -192,9 +216,11 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should reject likeThreshold above 100', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      likeThreshold: 150,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        likeThreshold: 150,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -202,9 +228,11 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should reject summaryIntervalDays below 1', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      summaryIntervalDays: 0,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        summaryIntervalDays: 0,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -212,9 +240,11 @@ describe('PUT /api/notifications/preferences', () => {
   })
 
   it('should reject summaryIntervalDays above 30', async () => {
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      summaryIntervalDays: 31,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        summaryIntervalDays: 31,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error).toBeDefined()
@@ -224,9 +254,11 @@ describe('PUT /api/notifications/preferences', () => {
   it('should return 401 when not authenticated', async () => {
     mockRequireAuth.mockRejectedValueOnce(new Error('AuthError'))
 
-    const res = await PUT(makeReq('http://localhost/api/notifications/preferences', 'PUT', {
-      emailEnabled: false,
-    }))
+    const res = await PUT(
+      makeReq('http://localhost/api/notifications/preferences', 'PUT', {
+        emailEnabled: false,
+      }),
+    )
     const data = await res.json()
 
     expect(data.error.code).toBe('UNAUTHORIZED')

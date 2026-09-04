@@ -4,10 +4,7 @@ import { requireModerator } from '@/lib/auth'
 import { updateModQualityScore } from '@/lib/quality-score'
 import { logAction } from '@/lib/audit'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -51,10 +48,7 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -62,10 +56,7 @@ export async function POST(
     const { userId, rating, comment } = body
 
     if (!userId || !rating || rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'بيانات غير صحيحة' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'بيانات غير صحيحة' }, { status: 400 })
     }
 
     // Upsert rating
@@ -128,10 +119,7 @@ export async function POST(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -139,10 +127,7 @@ export async function DELETE(
     const userId = searchParams.get('userId')
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'معرف المستخدم مطلوب' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'معرف المستخدم مطلوب' }, { status: 400 })
     }
 
     const existing = await db.modRating.findUnique({
@@ -150,10 +135,7 @@ export async function DELETE(
     })
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'التقييم غير موجود' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'التقييم غير موجود' }, { status: 404 })
     }
 
     await db.modRating.delete({ where: { id: existing.id } })

@@ -36,11 +36,7 @@ interface TeamAchievement {
   earnedAt: string
 }
 
-export default function TeamRewardsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default function TeamRewardsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [rewards, setRewards] = useState<TeamRewards | null>(null)
   const [achievements, setAchievements] = useState<TeamAchievement[]>([])
@@ -128,14 +124,10 @@ export default function TeamRewardsPage({
               <div
                 key={ach.id}
                 className={`p-4 rounded-lg border text-center ${
-                  isEarned
-                    ? 'bg-primary/5 border-primary/20'
-                    : 'bg-muted/30 opacity-50'
+                  isEarned ? 'bg-primary/5 border-primary/20' : 'bg-muted/30 opacity-50'
                 }`}
               >
-                <div className="text-2xl mb-2">
-                  {isEarned ? '🏆' : '🔒'}
-                </div>
+                <div className="text-2xl mb-2">{isEarned ? '🏆' : '🔒'}</div>
                 <div className="font-medium text-sm">{ach.nameAr}</div>
                 <div className="text-xs text-muted-foreground mt-1">{ach.descriptionAr}</div>
                 <Badge variant="secondary" className="mt-2 text-xs">
@@ -169,7 +161,8 @@ export default function TeamRewardsPage({
                     <td className="px-4 py-3">{tx.reason}</td>
                     <td className="px-4 py-3 font-bold">
                       <span className={tx.points > 0 ? 'text-green-600' : 'text-red-600'}>
-                        {tx.points > 0 ? '+' : ''}{tx.points}
+                        {tx.points > 0 ? '+' : ''}
+                        {tx.points}
                       </span>
                     </td>
                   </tr>

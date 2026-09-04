@@ -96,8 +96,10 @@ export async function listAllSessions(opts: {
 }) {
   const where: any = { expiresAt: { gt: new Date() } }
   if (opts.time === 'hour') where.createdAt = { gte: new Date(Date.now() - 60 * 60 * 1000) }
-  else if (opts.time === 'day') where.createdAt = { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-  else if (opts.time === 'week') where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+  else if (opts.time === 'day')
+    where.createdAt = { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+  else if (opts.time === 'week')
+    where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
   if (opts.device) where.userAgent = { contains: opts.device, mode: 'insensitive' }
   if (opts.search) {
     where.user = {
@@ -112,7 +114,18 @@ export async function listAllSessions(opts: {
     db.session.count({ where }),
     db.session.findMany({
       where,
-      include: { user: { select: { id: true, username: true, displayName: true, email: true, avatarUrl: true, role: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+      },
       orderBy: { updatedAt: 'desc' },
       skip: (opts.page - 1) * opts.limit,
       take: opts.limit,

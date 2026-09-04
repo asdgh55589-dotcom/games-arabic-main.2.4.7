@@ -75,15 +75,15 @@ export class NotificationPreference {
     return new NotificationPreference(
       generateId(),
       userId,
-      true,   // emailEnabled
-      true,   // pushEnabled
-      true,   // dailySummary
-      3,      // summaryIntervalDays
-      25,     // likeThreshold
-      false,  // quietHoursEnabled
-      null,   // quietHoursStart
-      null,   // quietHoursEnd
-      {},     // typePreferences
+      true, // emailEnabled
+      true, // pushEnabled
+      true, // dailySummary
+      3, // summaryIntervalDays
+      25, // likeThreshold
+      false, // quietHoursEnabled
+      null, // quietHoursStart
+      null, // quietHoursEnd
+      {}, // typePreferences
       now,
       now,
     )

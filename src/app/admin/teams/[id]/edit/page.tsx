@@ -12,11 +12,21 @@ import { TeamContactTab } from '@/components/admin/teams/team-contact-tab'
 import { TeamMembersTab } from '@/components/admin/teams/team-members-tab'
 import { TeamModsTab } from '@/components/admin/teams/team-mods-tab'
 import { TeamTabsTab } from '@/components/admin/teams/team-tabs-tab'
-import type { TeamAdminData, TeamContactLinkInput, TeamCustomTabData } from '@/components/admin/teams/types'
+import type {
+  TeamAdminData,
+  TeamContactLinkInput,
+  TeamCustomTabData,
+} from '@/components/admin/teams/types'
 
 const emptyForm: TeamGeneralFormData = {
-  name: '', description: '', logoUrl: '', bannerUrl: '',
-  order: 0, isFeatured: false, isOfficial: false, ownerId: '',
+  name: '',
+  description: '',
+  logoUrl: '',
+  bannerUrl: '',
+  order: 0,
+  isFeatured: false,
+  isOfficial: false,
+  ownerId: '',
 }
 
 export default function TeamEditPage() {
@@ -37,7 +47,10 @@ export default function TeamEditPage() {
 
   useEffect(() => {
     fetch(`/api/admin/teams/${id}`)
-      .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed')
+        return r.json()
+      })
       .then((data) => {
         const t = data?.data ?? data?.team
         if (!t) throw new Error('الفريق غير موجود')
@@ -52,9 +65,22 @@ export default function TeamEditPage() {
           isOfficial: Boolean(t.isOfficial),
           ownerId: t.ownerId || '',
         })
-        setContactLinks((t.contactLinks || []).map((c: { type: string; label: string; url: string }) => ({ type: c.type, label: c.label, url: c.url })))
+        setContactLinks(
+          (t.contactLinks || []).map((c: { type: string; label: string; url: string }) => ({
+            type: c.type,
+            label: c.label,
+            url: c.url,
+          })),
+        )
         setHiddenTabs(t.hiddenTabs || '')
-        setCustomTabs((t.customTabs || []).map((ct: TeamCustomTabData) => ({ title: ct.title, content: ct.content, order: ct.order, visible: ct.visible })))
+        setCustomTabs(
+          (t.customTabs || []).map((ct: TeamCustomTabData) => ({
+            title: ct.title,
+            content: ct.content,
+            order: ct.order,
+            visible: ct.visible,
+          })),
+        )
       })
       .catch(() => setError('فشل تحميل بيانات الفريق'))
       .finally(() => setLoading(false))
@@ -66,28 +92,55 @@ export default function TeamEditPage() {
       const res = await fetch(`/api/admin/teams/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, ownerId: form.ownerId || null, contactLinks, hiddenTabs, customTabs }),
+        body: JSON.stringify({
+          ...form,
+          ownerId: form.ownerId || null,
+          contactLinks,
+          hiddenTabs,
+          customTabs,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ'
+        const msg =
+          data?.error?.message ||
+          (typeof data?.error === 'string' ? data.error : null) ||
+          'فشل الحفظ'
         throw new Error(msg)
       }
       toast({ title: 'تم الحفظ' })
       const updated = data?.data ?? data?.team
       if (updated) setTeam(updated)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
-    } finally { setSaving(false) }
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-  if (error || !team) return <div className="grid place-items-center py-20 text-center"><p className="text-sm text-destructive">{error || 'الفريق غير موجود'}</p></div>
+  if (loading)
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  if (error || !team)
+    return (
+      <div className="grid place-items-center py-20 text-center">
+        <p className="text-sm text-destructive">{error || 'الفريق غير موجود'}</p>
+      </div>
+    )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/admin/teams" className="hover:text-foreground">فرق التعريب</Link>
+        <Link href="/admin/teams" className="hover:text-foreground">
+          فرق التعريب
+        </Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
         <span className="text-foreground">{team.name}</span>
       </div>
@@ -100,9 +153,15 @@ export default function TeamEditPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>رجوع</Button>
+          <Button variant="outline" onClick={() => router.back()}>
+            رجوع
+          </Button>
           <Button onClick={onSave} disabled={saving}>
-            {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="ml-2 h-4 w-4" />
+            )}
             حفظ
           </Button>
         </div>
@@ -130,14 +189,26 @@ export default function TeamEditPage() {
           <TeamMembersTab
             teamId={id}
             memberships={team.memberships}
-            onMembersChange={(members) => setTeam((t) => t ? { ...t, memberships: members, _count: { ...t._count, memberships: members.length } } : t)}
+            onMembersChange={(members) =>
+              setTeam((t) =>
+                t
+                  ? {
+                      ...t,
+                      memberships: members,
+                      _count: { ...t._count, memberships: members.length },
+                    }
+                  : t,
+              )
+            }
           />
         </TabsContent>
         <TabsContent value="mods" className="rounded-xl border border-border bg-card p-6">
           <TeamModsTab
             teamId={id}
             mods={team.mods}
-            onModsChange={(mods) => setTeam((t) => t ? { ...t, mods, _count: { ...t._count, mods: mods.length } } : t)}
+            onModsChange={(mods) =>
+              setTeam((t) => (t ? { ...t, mods, _count: { ...t._count, mods: mods.length } } : t))
+            }
           />
         </TabsContent>
         <TabsContent value="tabs" className="rounded-xl border border-border bg-card p-6">

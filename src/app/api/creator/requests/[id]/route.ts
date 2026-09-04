@@ -58,7 +58,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return validationFail('يرجى ربط الطلب بالتعريب')
     }
 
-    const mod = await db.mod.findUnique({ where: { id: modId }, select: { id: true, authorId: true } })
+    const mod = await db.mod.findUnique({
+      where: { id: modId },
+      select: { id: true, authorId: true },
+    })
     if (!mod || mod.authorId !== user.id) {
       return validationFail('التعريب غير موجود أو ليس لك')
     }

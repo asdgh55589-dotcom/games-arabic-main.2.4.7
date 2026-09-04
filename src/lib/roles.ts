@@ -15,7 +15,7 @@ export const ROLE_ORDER = [
   'owner',
 ] as const
 
-export type UserRole = typeof ROLE_ORDER[number]
+export type UserRole = (typeof ROLE_ORDER)[number]
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   member: 'عضو',

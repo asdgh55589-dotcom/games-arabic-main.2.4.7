@@ -36,11 +36,10 @@ export async function GET(req: NextRequest) {
     const featured = searchParams.get('featured')
     const trending = searchParams.get('trending')
     const workflowStatus = searchParams.get('workflowStatus')
-    const { page, limit } = parsePagination(
-      searchParams.get('page'),
-      searchParams.get('limit'),
-      { limit: 24, maxLimit: 100 }
-    )
+    const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+      limit: 24,
+      maxLimit: 100,
+    })
 
     const where: Record<string, unknown> = {}
     if (search) {
@@ -64,7 +63,16 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          author: { select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true } },
+          author: {
+            select: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+              role: true,
+              tier: true,
+              specialRoles: true,
+            },
+          },
           game: { select: { id: true, name: true, slug: true, platform: true } },
           category: { select: { id: true, name: true, slug: true } },
           _count: {
@@ -153,12 +161,14 @@ export async function POST(req: NextRequest) {
       arabicTitle: data.arabicTitle || '',
       translationScope: data.translationScope || '',
       compatibility: data.compatibility || '',
-      tags: Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''),
+      tags: Array.isArray(data.tags) ? data.tags.join(',') : data.tags || '',
       changelog: data.changelog || '',
       installGuide: data.installGuide || '',
       thumbnailUrl: data.thumbnailUrl || '',
       imageUrl: data.imageUrl || '',
-      galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),
+      galleryUrls: Array.isArray(data.galleryUrls)
+        ? data.galleryUrls.join(',')
+        : data.galleryUrls || '',
       files: body.files || [],
       teamMembers: body.teamMembers || [],
       gameId: effectiveGameId,
@@ -191,11 +201,13 @@ export async function POST(req: NextRequest) {
           categoryId: (data.categoryId as string) || null,
           thumbnailUrl: data.thumbnailUrl,
           imageUrl: data.imageUrl,
-          galleryUrls: Array.isArray(data.galleryUrls) ? data.galleryUrls.join(',') : (data.galleryUrls || ''),
+          galleryUrls: Array.isArray(data.galleryUrls)
+            ? data.galleryUrls.join(',')
+            : data.galleryUrls || '',
           version: data.version || '1.0.0',
           fileSize: data.fileSize || 'MB 0',
           fileFormat: data.fileFormat || 'zip',
-          tags: Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''),
+          tags: Array.isArray(data.tags) ? data.tags.join(',') : data.tags || '',
           series: data.series || '',
           seriesId: data.seriesId || null,
           translationTeam: data.translationTeam || '',
@@ -215,7 +227,19 @@ export async function POST(req: NextRequest) {
 
       // ملفات التحميل — bulk
       if (Array.isArray(body.files)) {
-        const validFiles = (body.files as Array<{ title?: string; description?: string; alert?: string; version?: string; releaseDate?: string; fileSize?: string; fileFormat?: string; order?: number; links?: Array<{ url: string; label?: string }> }>).filter((f) => f.title)
+        const validFiles = (
+          body.files as Array<{
+            title?: string
+            description?: string
+            alert?: string
+            version?: string
+            releaseDate?: string
+            fileSize?: string
+            fileFormat?: string
+            order?: number
+            links?: Array<{ url: string; label?: string }>
+          }>
+        ).filter((f) => f.title)
         if (validFiles.length > 0) {
           const filesData = validFiles.map((f, i) => ({
             modId: created.id,
@@ -228,8 +252,19 @@ export async function POST(req: NextRequest) {
             fileFormat: f.fileFormat || body.fileFormat || 'zip',
             order: f.order ?? i,
           }))
-          const createdFiles = await (tx.modFile as unknown as { createManyAndReturn: (args: { data: typeof filesData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: filesData })
-          const allLinks: Array<{ fileId: string; url: string; label: string | null; order: number }> = []
+          const createdFiles = await (
+            tx.modFile as unknown as {
+              createManyAndReturn: (args: {
+                data: typeof filesData
+              }) => Promise<Array<{ id: string }>>
+            }
+          ).createManyAndReturn({ data: filesData })
+          const allLinks: Array<{
+            fileId: string
+            url: string
+            label: string | null
+            order: number
+          }> = []
           validFiles.forEach((f, idx) => {
             const fileId = createdFiles[idx]?.id
             if (!fileId || !Array.isArray(f.links)) return
@@ -245,14 +280,24 @@ export async function POST(req: NextRequest) {
 
       // أعضاء الفريق — bulk
       if (Array.isArray(body.teamMembers)) {
-        const membersData = (body.teamMembers as Array<{ name?: string; avatarUrl?: string; role?: string; contribution?: string; order?: number }>).filter((m) => m.name).map((m, i) => ({
-          modId: created.id,
-          name: m.name as string,
-          avatarUrl: m.avatarUrl || null,
-          role: m.role || 'مترجم',
-          contribution: m.contribution || null,
-          order: m.order ?? i,
-        }))
+        const membersData = (
+          body.teamMembers as Array<{
+            name?: string
+            avatarUrl?: string
+            role?: string
+            contribution?: string
+            order?: number
+          }>
+        )
+          .filter((m) => m.name)
+          .map((m, i) => ({
+            modId: created.id,
+            name: m.name as string,
+            avatarUrl: m.avatarUrl || null,
+            role: m.role || 'مترجم',
+            contribution: m.contribution || null,
+            order: m.order ?? i,
+          }))
         if (membersData.length > 0) {
           await tx.modTeamMember.createMany({ data: membersData })
         }
@@ -260,13 +305,22 @@ export async function POST(req: NextRequest) {
 
       // روابط التواصل — bulk
       if (Array.isArray(body.contactLinks)) {
-        const linksData = (body.contactLinks as Array<{ url?: string; type?: string; label?: string; order?: number }>).filter((c) => c.url).map((c, i) => ({
-          modId: created.id,
-          type: c.type || 'website',
-          label: c.label || '',
-          url: c.url as string,
-          order: c.order ?? i,
-        }))
+        const linksData = (
+          body.contactLinks as Array<{
+            url?: string
+            type?: string
+            label?: string
+            order?: number
+          }>
+        )
+          .filter((c) => c.url)
+          .map((c, i) => ({
+            modId: created.id,
+            type: c.type || 'website',
+            label: c.label || '',
+            url: c.url as string,
+            order: c.order ?? i,
+          }))
         if (linksData.length > 0) {
           await tx.modContactLink.createMany({ data: linksData })
         }
@@ -274,15 +328,52 @@ export async function POST(req: NextRequest) {
 
       // أقسام الفيديوهات — bulk
       if (Array.isArray(body.videoGroups)) {
-        const validGroups = (body.videoGroups as Array<{ name?: string; order?: number; videos?: Array<{ title?: string; url?: string; thumbnail?: string; duration?: string; description?: string; views?: number; likes?: number; commentsCount?: number; channel?: string; publishedAt?: string; order?: number }> }>).filter((g) => g.name)
+        const validGroups = (
+          body.videoGroups as Array<{
+            name?: string
+            order?: number
+            videos?: Array<{
+              title?: string
+              url?: string
+              thumbnail?: string
+              duration?: string
+              description?: string
+              views?: number
+              likes?: number
+              commentsCount?: number
+              channel?: string
+              publishedAt?: string
+              order?: number
+            }>
+          }>
+        ).filter((g) => g.name)
         if (validGroups.length > 0) {
           const groupsData = validGroups.map((g, i) => ({
             modId: created.id,
             name: g.name as string,
             order: g.order ?? i,
           }))
-          const createdGroups = await (tx.modVideoGroup as unknown as { createManyAndReturn: (args: { data: typeof groupsData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: groupsData })
-          const allVideos: Array<{ groupId: string; title: string; url: string; thumbnail: string | null; duration: string | null; description: string | null; views: number; likes: number; commentsCount: number; channel: string | null; publishedAt: Date | null; order: number }> = []
+          const createdGroups = await (
+            tx.modVideoGroup as unknown as {
+              createManyAndReturn: (args: {
+                data: typeof groupsData
+              }) => Promise<Array<{ id: string }>>
+            }
+          ).createManyAndReturn({ data: groupsData })
+          const allVideos: Array<{
+            groupId: string
+            title: string
+            url: string
+            thumbnail: string | null
+            duration: string | null
+            description: string | null
+            views: number
+            likes: number
+            commentsCount: number
+            channel: string | null
+            publishedAt: Date | null
+            order: number
+          }> = []
           validGroups.forEach((g, idx) => {
             const groupId = createdGroups[idx]?.id
             if (!groupId || !Array.isArray(g.videos)) return
@@ -312,14 +403,24 @@ export async function POST(req: NextRequest) {
 
       // التبويبات المخصصة — bulk
       if (Array.isArray(body.customTabs)) {
-        const tabsData = (body.customTabs as Array<{ name?: string; slug?: string; content?: string; order?: number; visible?: boolean }>).filter((t) => t.name).map((t, i) => ({
-          modId: created.id,
-          name: t.name as string,
-          slug: t.slug || slugify(t.name as string),
-          content: t.content || '',
-          order: t.order ?? i,
-          visible: t.visible !== undefined ? Boolean(t.visible) : true,
-        }))
+        const tabsData = (
+          body.customTabs as Array<{
+            name?: string
+            slug?: string
+            content?: string
+            order?: number
+            visible?: boolean
+          }>
+        )
+          .filter((t) => t.name)
+          .map((t, i) => ({
+            modId: created.id,
+            name: t.name as string,
+            slug: t.slug || slugify(t.name as string),
+            content: t.content || '',
+            order: t.order ?? i,
+            visible: t.visible !== undefined ? Boolean(t.visible) : true,
+          }))
         if (tabsData.length > 0) {
           await tx.modCustomTab.createMany({ data: tabsData })
         }
@@ -345,10 +446,14 @@ export async function POST(req: NextRequest) {
 
     // تحديث عدّادات اللعبة والسلسلة — increment ذري (Issue 3.4/3.5)
     if (mod.gameId) {
-      await db.game.update({ where: { id: mod.gameId }, data: { modCount: { increment: 1 } } }).catch(() => {})
+      await db.game
+        .update({ where: { id: mod.gameId }, data: { modCount: { increment: 1 } } })
+        .catch(() => {})
     }
     if (mod.seriesId) {
-      await db.series.update({ where: { id: mod.seriesId }, data: { modCount: { increment: 1 } } }).catch(() => {})
+      await db.series
+        .update({ where: { id: mod.seriesId }, data: { modCount: { increment: 1 } } })
+        .catch(() => {})
     }
     // تحديث عدّادات السلسلة/الفريق بعد الإنشاء (re-sync للتأكد)
     if (mod.seriesId) await syncSeriesCounts(mod.seriesId).catch(() => {})
@@ -358,7 +463,10 @@ export async function POST(req: NextRequest) {
     try {
       revalidatePath('/')
       if (mod.gameId) {
-        const game = await db.game.findUnique({ where: { id: mod.gameId }, select: { slug: true, platform: true } })
+        const game = await db.game.findUnique({
+          where: { id: mod.gameId },
+          select: { slug: true, platform: true },
+        })
         if (game) {
           revalidatePath('/platform/' + game.platform)
           revalidatePath('/games/' + game.slug)

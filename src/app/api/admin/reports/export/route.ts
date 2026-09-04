@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
     if (dateFrom || dateTo) {
       where.createdAt = {}
       if (dateFrom) (where.createdAt as Record<string, Date>).gte = new Date(dateFrom)
-      if (dateTo) (where.createdAt as Record<string, Date>).lte = new Date(dateTo + 'T23:59:59.999Z')
+      if (dateTo)
+        (where.createdAt as Record<string, Date>).lte = new Date(dateTo + 'T23:59:59.999Z')
     }
 
     const reports = await db.report.findMany({
@@ -53,27 +54,40 @@ export async function GET(req: NextRequest) {
     })
 
     const reasonLabels: Record<string, string> = {
-      spam: 'محتوى مزعج', inappropriate: 'محتوى غير لائق', copyright: 'انتهاك حقوق',
-      offensive: 'محتوى مسيء', false_info: 'معلومات كاذبة', technical: 'مشكلة تقنية', other: 'سبب آخر',
+      spam: 'محتوى مزعج',
+      inappropriate: 'محتوى غير لائق',
+      copyright: 'انتهاك حقوق',
+      offensive: 'محتوى مسيء',
+      false_info: 'معلومات كاذبة',
+      technical: 'مشكلة تقنية',
+      other: 'سبب آخر',
     }
     const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
     const actionLabels: Record<string, string> = {
-      warned: 'تحذير', content_hidden: 'إخفاء', content_deleted: 'حذف', temp_ban: 'حظر مؤقت', perm_ban: 'حظر دائم',
+      warned: 'تحذير',
+      content_hidden: 'إخفاء',
+      content_deleted: 'حذف',
+      temp_ban: 'حظر مؤقت',
+      perm_ban: 'حظر دائم',
     }
 
     const header = 'ID,النوع,السبب,الأولوية,الحالة,المبلّغ,الهدف,تاريخ الإنشاء,تاريخ الحل,الإجراء'
-    const rows = reports.map(r => [
-      r.id,
-      targetLabels[r.targetType] || r.targetType,
-      reasonLabels[r.reason] || r.reason,
-      r.priority,
-      r.status,
-      r.reporter?.username || 'مجهول',
-      r.targetMod?.name || r.targetComment?.text?.slice(0, 50) || r.targetUser?.username || '-',
-      r.createdAt.toISOString(),
-      r.resolvedAt?.toISOString() || '-',
-      actionLabels[r.actionTaken || ''] || r.actionTaken || '-',
-    ].map(escapeCSV).join(','))
+    const rows = reports.map((r) =>
+      [
+        r.id,
+        targetLabels[r.targetType] || r.targetType,
+        reasonLabels[r.reason] || r.reason,
+        r.priority,
+        r.status,
+        r.reporter?.username || 'مجهول',
+        r.targetMod?.name || r.targetComment?.text?.slice(0, 50) || r.targetUser?.username || '-',
+        r.createdAt.toISOString(),
+        r.resolvedAt?.toISOString() || '-',
+        actionLabels[r.actionTaken || ''] || r.actionTaken || '-',
+      ]
+        .map(escapeCSV)
+        .join(','),
+    )
 
     const csv = '\uFEFF' + header + '\n' + rows.join('\n')
 

@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     const parsed = LinkAccountSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid data', details: parsed.error.flatten() }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Invalid data', details: parsed.error.flatten() },
+        { status: 400 },
+      )
     }
 
     const { provider, providerAccountId, providerEmail, providerUsername, avatarUrl } = parsed.data
@@ -34,9 +37,15 @@ export async function POST(req: NextRequest) {
 
     if (existingAccount) {
       if (existingAccount.userId === user.id) {
-        return NextResponse.json({ error: 'You already have this provider linked.' }, { status: 409 })
+        return NextResponse.json(
+          { error: 'You already have this provider linked.' },
+          { status: 409 },
+        )
       }
-      return NextResponse.json({ error: 'This account is already linked to another user.' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'This account is already linked to another user.' },
+        { status: 409 },
+      )
     }
 
     const userProvider = await db.oAuthAccount.findFirst({
@@ -71,7 +80,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ account }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    const status = err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
+    const status =
+      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

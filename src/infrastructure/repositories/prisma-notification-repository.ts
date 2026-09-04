@@ -3,11 +3,7 @@
  */
 
 import { PrismaClient, Prisma } from '@prisma/client'
-import {
-  Notification,
-  NotificationType,
-  NotificationRepository,
-} from '@/domain'
+import { Notification, NotificationType, NotificationRepository } from '@/domain'
 import type { PaginationOptions } from '@/domain'
 
 export class PrismaNotificationRepository implements NotificationRepository {
@@ -42,7 +38,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
       skip: (page - 1) * limit,
       take: limit,
     })
-    return records.map(r => Notification.reconstruct(r as any))
+    return records.map((r) => Notification.reconstruct(r as any))
   }
 
   async findUnreadCount(userId: string): Promise<number> {

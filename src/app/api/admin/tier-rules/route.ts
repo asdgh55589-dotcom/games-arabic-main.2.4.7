@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
         requiredQualityScore: body.requiredQualityScore || 0,
         badge: body.badge || '',
         badgeColor: body.badgeColor || '#6b7280',
-        features: JSON.stringify(body.features || [])
-      }
+        features: JSON.stringify(body.features || []),
+      },
     })
 
     return ok({ rule })

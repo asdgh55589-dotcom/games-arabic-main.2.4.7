@@ -37,9 +37,7 @@ export function PeakActivity({ data, loading }: PeakActivityProps) {
             <span className="text-sm font-bold">
               {peak ? `${DAY_LABELS[peak.day]} ${formatHour(peak.hour)}` : '—'}
             </span>
-            <div className="text-xs text-muted-foreground">
-              {peak ? `${peak.count} نشاط` : ''}
-            </div>
+            <div className="text-xs text-muted-foreground">{peak ? `${peak.count} نشاط` : ''}</div>
           </div>
         </div>
       </CardContent>

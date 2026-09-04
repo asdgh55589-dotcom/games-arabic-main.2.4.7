@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
       return unauthorized()
     }
 
-    const webauthnEnabled = !!(user.webauthnCredentials && Array.isArray(user.webauthnCredentials) && (user.webauthnCredentials as unknown[]).length > 0)
+    const webauthnEnabled = !!(
+      user.webauthnCredentials &&
+      Array.isArray(user.webauthnCredentials) &&
+      (user.webauthnCredentials as unknown[]).length > 0
+    )
 
     const recoveryCodesRemaining = user.recoveryCodes
       ? 10 - ((user.recoveryCodesUsed as number[])?.length || 0)

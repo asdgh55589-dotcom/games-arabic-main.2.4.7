@@ -78,7 +78,12 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ role: newRole }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل التحديث')
+      if (!res.ok)
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل التحديث',
+        )
       toast({ title: 'تم التحديث', description: `تم تغيير دور ${user.username}` })
       setUsers((p) => p.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)))
     } catch (err) {
@@ -106,7 +111,12 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ password }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل التحديث')
+      if (!res.ok)
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل التحديث',
+        )
       toast({ title: 'تم التحديث', description: 'تم تغيير كلمة المرور بنجاح' })
       setChangePwUserId(null)
     } catch (err) {
@@ -141,9 +151,7 @@ export default function AdminUsersPage() {
       toast({
         title: 'تم الحظر',
         description:
-          data.banIp && result.ipBanned
-            ? 'تم حظر المستخدم وعنوان IP'
-            : 'تم حظر المستخدم',
+          data.banIp && result.ipBanned ? 'تم حظر المستخدم وعنوان IP' : 'تم حظر المستخدم',
       })
       setUsers((p) =>
         p.map((u) =>
@@ -176,7 +184,12 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ clearIp: true }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل إلغاء الحظر')
+      if (!res.ok)
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل إلغاء الحظر',
+        )
       toast({
         title: 'تم إلغاء الحظر',
         description: data.ipCleared ? 'تم إزالة حظر IP المرتبط أيضاً' : undefined,
@@ -214,7 +227,11 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحذف')
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل الحذف',
+        )
       }
       toast({ title: 'تم الحذف' })
       setUsers((p) => p.filter((u) => u.id !== user.id))
@@ -272,10 +289,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (loading)
-    return (
-      <DataTableSkeleton rows={5} cols={7} />
-    )
+  if (loading) return <DataTableSkeleton rows={5} cols={7} />
   if (error)
     return (
       <div className="grid place-items-center py-20 text-center">
@@ -299,9 +313,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-2xl font-black text-white">إدارة المجتمع</h2>
-          <p className="mt-2 text-sm text-white/65">
-            مراقبة الحسابات وإدارة الصلاحيات والنشاط.
-          </p>
+          <p className="mt-2 text-sm text-white/65">مراقبة الحسابات وإدارة الصلاحيات والنشاط.</p>
         </div>
 
         <Button
@@ -337,9 +349,7 @@ export default function AdminUsersPage() {
         }}
       />
 
-      {showAddForm && (
-        <AddUserModal onClose={() => setShowAddForm(false)} onSubmit={onAddUser} />
-      )}
+      {showAddForm && <AddUserModal onClose={() => setShowAddForm(false)} onSubmit={onAddUser} />}
 
       {/* Desktop table - visible from md and up */}
       <div className="hidden md:block overflow-hidden rounded-lg border border-border bg-card">
@@ -362,7 +372,8 @@ export default function AdminUsersPage() {
         {users.map((u) => {
           const role = ROLE_BADGE[u.role] || ROLE_BADGE.member
           const isPermBanned = u.banStatus === 'banned_perm'
-          const isTempBanned = u.banStatus === 'banned_temp' && u.bannedUntil && new Date(u.bannedUntil) > new Date()
+          const isTempBanned =
+            u.banStatus === 'banned_temp' && u.bannedUntil && new Date(u.bannedUntil) > new Date()
           const isBanned = Boolean(isPermBanned || isTempBanned)
           return (
             <Card key={u.id} className="overflow-hidden">
@@ -370,7 +381,11 @@ export default function AdminUsersPage() {
                 {/* avatar + username + role Badge */}
                 <div className="flex items-start gap-3">
                   {u.avatarUrl ? (
-                    <img src={u.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl object-cover" />
+                    <img
+                      src={u.avatarUrl}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+                    />
                   ) : (
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 text-sm font-black text-primary">
                       {u.username.charAt(0).toUpperCase()}
@@ -379,7 +394,9 @@ export default function AdminUsersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="truncate text-base font-black text-white">{u.username}</h3>
-                      <Badge className={`gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${role.className}`}>
+                      <Badge
+                        className={`gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${role.className}`}
+                      >
                         {role.icon}
                         {role.label}
                       </Badge>
@@ -491,7 +508,8 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -502,7 +520,8 @@ export default function AdminUsersPage() {
           </span>
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -520,11 +539,7 @@ export default function AdminUsersPage() {
       )}
 
       {banUserId && (
-        <BanModal
-          userId={banUserId}
-          onClose={() => setBanUserId(null)}
-          onSubmit={onBan}
-        />
+        <BanModal userId={banUserId} onClose={() => setBanUserId(null)} onSubmit={onBan} />
       )}
 
       {warningUser && (

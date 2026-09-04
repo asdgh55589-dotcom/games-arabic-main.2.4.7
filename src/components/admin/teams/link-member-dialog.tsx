@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -23,12 +29,25 @@ interface LinkMemberDialogProps {
   onSuccess: () => void
 }
 
-export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: LinkMemberDialogProps) {
+export function LinkMemberDialog({
+  open,
+  onClose,
+  member,
+  teamId,
+  onSuccess,
+}: LinkMemberDialogProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [usernameInput, setUsernameInput] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; username: string; avatar?: string | null; avatarUrl?: string | null }>>([])
+  const [searchResults, setSearchResults] = useState<
+    Array<{ id: string; username: string; avatar?: string | null; avatarUrl?: string | null }>
+  >([])
   const [isSearching, setIsSearching] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string; avatar?: string | null; avatarUrl?: string | null } | null>(null)
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string
+    username: string
+    avatar?: string | null
+    avatarUrl?: string | null
+  } | null>(null)
   const [isLinking, setIsLinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
@@ -54,7 +73,9 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true)
       try {
-        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(searchQuery)}&teamId=${teamId}`)
+        const res = await fetch(
+          `/api/admin/users/search?q=${encodeURIComponent(searchQuery)}&teamId=${teamId}`,
+        )
         const data = await res.json()
         const users = data?.data?.users || data?.users || []
         setSearchResults(users)
@@ -75,7 +96,9 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
     setIsSearching(true)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/users/search?username=${encodeURIComponent(usernameInput.trim())}&teamId=${teamId}`)
+      const res = await fetch(
+        `/api/admin/users/search?username=${encodeURIComponent(usernameInput.trim())}&teamId=${teamId}`,
+      )
       const data = await res.json()
       const users = data?.data?.users || data?.users || []
       if (users.length === 1) {
@@ -155,7 +178,13 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
           <Label>البحث بالاسم</Label>
           <div className="relative mt-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="اكتب اسم المستخدم..." className="pr-9" dir="ltr" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="اكتب اسم المستخدم..."
+              className="pr-9"
+              dir="ltr"
+            />
           </div>
 
           {isSearching && (
@@ -168,7 +197,11 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
           {searchResults.length > 0 && (
             <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
               {searchResults.map((user) => {
-                const avatar = (user as unknown as { avatarUrl?: string | null; avatar?: string | null }).avatarUrl || (user as unknown as { avatar?: string | null }).avatar || null
+                const avatar =
+                  (user as unknown as { avatarUrl?: string | null; avatar?: string | null })
+                    .avatarUrl ||
+                  (user as unknown as { avatar?: string | null }).avatar ||
+                  null
                 return (
                   <button
                     key={user.id}
@@ -194,7 +227,13 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
         <div>
           <Label>أو أدخل اسم المستخدم مباشرة</Label>
           <div className="flex gap-2 mt-1">
-            <Input value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleUsernameLookup()} placeholder="username" dir="ltr" />
+            <Input
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleUsernameLookup()}
+              placeholder="username"
+              dir="ltr"
+            />
             <Button variant="outline" onClick={handleUsernameLookup} disabled={isSearching}>
               بحث
             </Button>
@@ -206,12 +245,25 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
             <p className="text-sm font-medium mb-2">سيتم الربط بالحساب:</p>
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarImage src={((selectedUser as unknown as { avatarUrl?: string | null; avatar?: string | null }).avatarUrl || (selectedUser as unknown as { avatar?: string | null }).avatar) || undefined} />
+                <AvatarImage
+                  src={
+                    (
+                      selectedUser as unknown as {
+                        avatarUrl?: string | null
+                        avatar?: string | null
+                      }
+                    ).avatarUrl ||
+                    (selectedUser as unknown as { avatar?: string | null }).avatar ||
+                    undefined
+                  }
+                />
                 <AvatarFallback>{selectedUser.username[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="font-medium">{selectedUser.username}</div>
-                <div className="text-xs text-muted-foreground">سيتم تحديث الاسم والصورة تلقائياً</div>
+                <div className="text-xs text-muted-foreground">
+                  سيتم تحديث الاسم والصورة تلقائياً
+                </div>
               </div>
             </div>
           </div>
@@ -219,7 +271,10 @@ export function LinkMemberDialog({ open, onClose, member, teamId, onSuccess }: L
 
         <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-500/10 p-3 rounded-lg">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <p>بعد الربط، سيظهر الاسم والصورة من الحساب الحقيقي في كل مكان. الربط خاص بهذا الفريق فقط ولا ينتقل لفرق أخرى. يمكن للعضو مغادرة الفريق في أي وقت من إعداداته.</p>
+          <p>
+            بعد الربط، سيظهر الاسم والصورة من الحساب الحقيقي في كل مكان. الربط خاص بهذا الفريق فقط
+            ولا ينتقل لفرق أخرى. يمكن للعضو مغادرة الفريق في أي وقت من إعداداته.
+          </p>
         </div>
 
         <div className="flex gap-2">

@@ -43,12 +43,14 @@ export class ResendEmailSender implements EmailSender {
       baseDelayMs: options?.retryOptions?.baseDelayMs ?? NOTIFICATION_CONFIG.retry.baseDelayMs,
       maxDelayMs: options?.retryOptions?.maxDelayMs ?? NOTIFICATION_CONFIG.retry.maxDelayMs,
       jitterMs: options?.retryOptions?.jitterMs ?? NOTIFICATION_CONFIG.retry.jitterMs,
-      shouldRetry: options?.retryOptions?.shouldRetry ?? ((error) => {
-        if (error instanceof Error && error.message.includes('invalid')) {
-          return false
-        }
-        return true
-      }),
+      shouldRetry:
+        options?.retryOptions?.shouldRetry ??
+        ((error) => {
+          if (error instanceof Error && error.message.includes('invalid')) {
+            return false
+          }
+          return true
+        }),
     })
   }
 

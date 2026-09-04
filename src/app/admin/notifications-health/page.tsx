@@ -1,7 +1,16 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Loader2, Activity, AlertTriangle, CheckCircle, XCircle, Clock, Mail, RotateCcw } from 'lucide-react'
+import {
+  Loader2,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Mail,
+  RotateCcw,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 
@@ -102,12 +111,10 @@ export default function NotificationsHealthPage() {
   if (!data) return null
 
   const { metrics, database } = data
-  const deliveryRate = metrics.created > 0
-    ? ((metrics.delivered / metrics.created) * 100).toFixed(1)
-    : '0'
-  const failureRate = metrics.created > 0
-    ? ((metrics.failed / metrics.created) * 100).toFixed(1)
-    : '0'
+  const deliveryRate =
+    metrics.created > 0 ? ((metrics.delivered / metrics.created) * 100).toFixed(1) : '0'
+  const failureRate =
+    metrics.created > 0 ? ((metrics.failed / metrics.created) * 100).toFixed(1) : '0'
 
   return (
     <div className="space-y-8" dir="rtl">
@@ -182,7 +189,9 @@ export default function NotificationsHealthPage() {
                 <tr className="border-b border-border">
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعرف</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">القناة</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">المحاولات</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                    المحاولات
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الخطأ</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">إجراء</th>
@@ -191,7 +200,9 @@ export default function NotificationsHealthPage() {
               <tbody className="divide-y divide-border-light">
                 {database.recentFailures.map((failure) => (
                   <tr key={failure.id} className="hover:bg-background-secondary">
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{failure.id.substring(0, 12)}...</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {failure.id.substring(0, 12)}...
+                    </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 rounded-full bg-background-secondary px-2 py-1 text-xs font-medium text-muted-foreground">
                         <Mail className="h-3 w-3" />
@@ -199,8 +210,12 @@ export default function NotificationsHealthPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{failure.attempts}</td>
-                    <td className="max-w-[200px] truncate px-4 py-3 text-xs text-red-400">{failure.lastError}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(failure.updatedAt).toLocaleString('ar')}</td>
+                    <td className="max-w-[200px] truncate px-4 py-3 text-xs text-red-400">
+                      {failure.lastError}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {new Date(failure.updatedAt).toLocaleString('ar')}
+                    </td>
                     <td className="px-4 py-3">
                       <Button
                         variant="ghost"
@@ -210,7 +225,11 @@ export default function NotificationsHealthPage() {
                         disabled={retryId === failure.id}
                         aria-label="إعادة الإرسال"
                       >
-                        {retryId === failure.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                        {retryId === failure.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-4 w-4" />
+                        )}
                       </Button>
                     </td>
                   </tr>
@@ -224,7 +243,12 @@ export default function NotificationsHealthPage() {
   )
 }
 
-function StatCard({ icon, label, value, color }: {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
   icon: React.ReactNode
   label: string
   value: string
@@ -233,23 +257,37 @@ function StatCard({ icon, label, value, color }: {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-3">
-        <div className={`grid h-10 w-10 place-items-center rounded-lg bg-background-secondary ${color}`}>
+        <div
+          className={`grid h-10 w-10 place-items-center rounded-lg bg-background-secondary ${color}`}
+        >
           {icon}
         </div>
         <div>
           <div className="text-xl font-semibold text-foreground">{value}</div>
-          <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+          <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function MetricRow({ label, value, isText }: { label: string; value: number | string; isText?: boolean }) {
+function MetricRow({
+  label,
+  value,
+  isText,
+}: {
+  label: string
+  value: number | string
+  isText?: boolean
+}) {
   return (
     <tr className="hover:bg-background-secondary">
       <td className="px-4 py-3 font-medium text-muted-foreground">{label}</td>
-      <td className={`px-4 py-3 ${isText ? 'font-mono text-sm' : 'text-lg font-semibold'} text-foreground`}>
+      <td
+        className={`px-4 py-3 ${isText ? 'font-mono text-sm' : 'text-lg font-semibold'} text-foreground`}
+      >
         {isText ? value : (value as number).toLocaleString()}
       </td>
     </tr>

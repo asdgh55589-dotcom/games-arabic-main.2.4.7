@@ -56,13 +56,11 @@ export class MetricsService {
 
   private calculateAverageLatency(): number {
     if (this.latencies.length === 0) return 0
-    return Math.round(
-      this.latencies.reduce((sum, l) => sum + l, 0) / this.latencies.length,
-    )
+    return Math.round(this.latencies.reduce((sum, l) => sum + l, 0) / this.latencies.length)
   }
 
   reset(): void {
-    Object.keys(this.metrics).forEach(key => {
+    Object.keys(this.metrics).forEach((key) => {
       this.metrics[key] = 0
     })
     this.latencies = []

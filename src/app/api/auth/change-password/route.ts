@@ -10,15 +10,17 @@ export async function POST(req: NextRequest) {
   // Rate limiting: 5 attempts per 60 seconds
   const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:change-password' })
   if (!rl.success) {
-    return new Response(
-      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
-      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
-    )
+    return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
+    })
   }
 
   try {
     const supabase = await createClient()
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser()
     if (!supabaseUser) {
       return unauthorized()
     }
@@ -53,14 +55,17 @@ export async function POST(req: NextRequest) {
     // CRITICAL: إبطال كل الجلسات الأخرى — يجبر كل الأجهزة الأخرى على إعادة التسجيل
     try {
       // البحث عن المستخدم في Neon عبر Supabase ID أو البريد
-      let neonUser = null as { id: string; username: string; role: string; tokenVersion: number; email: string } | null
+      let neonUser = null as {
+        id: string
+        username: string
+        role: string
+        tokenVersion: number
+        email: string
+      } | null
       try {
         neonUser = await db.user.findFirst({
           where: {
-            OR: [
-              { supabaseId: supabaseUser.id },
-              { email: supabaseUser.email || '' },
-            ],
+            OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
           },
           select: { id: true, username: true, role: true, tokenVersion: true, email: true },
         })
@@ -92,7 +97,10 @@ export async function POST(req: NextRequest) {
             action: 'password_changed',
             entity: 'user',
             entityId: neonUser.id,
-            details: JSON.stringify({ username: neonUser.username, allOtherSessionsInvalidated: true }),
+            details: JSON.stringify({
+              username: neonUser.username,
+              allOtherSessionsInvalidated: true,
+            }),
           })
         } catch {}
       }

@@ -13,7 +13,12 @@ interface LeaveTeamButtonProps {
   size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
-export function LeaveTeamButton({ teamId, teamName, isOwner, size = 'default' }: LeaveTeamButtonProps) {
+export function LeaveTeamButton({
+  teamId,
+  teamName,
+  isOwner,
+  size = 'default',
+}: LeaveTeamButtonProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -24,7 +29,9 @@ export function LeaveTeamButton({ teamId, teamName, isOwner, size = 'default' }:
     }
 
     if (
-      !confirm(`هل أنت متأكد من مغادرة فريق "${teamName}"؟\n\nسيبقى اسمك وصورتك محفوظين كعضو وهمي في الفريق.`)
+      !confirm(
+        `هل أنت متأكد من مغادرة فريق "${teamName}"؟\n\nسيبقى اسمك وصورتك محفوظين كعضو وهمي في الفريق.`,
+      )
     ) {
       return
     }
@@ -38,7 +45,8 @@ export function LeaveTeamButton({ teamId, teamName, isOwner, size = 'default' }:
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
-        const msg = data?.error?.message || data?.error?.details || data?.error || 'فشل مغادرة الفريق'
+        const msg =
+          data?.error?.message || data?.error?.details || data?.error || 'فشل مغادرة الفريق'
         throw new Error(typeof msg === 'string' ? msg : 'فشل مغادرة الفريق')
       }
 

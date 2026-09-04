@@ -3,13 +3,30 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Shield, UserCog, Crown, Activity, Ban, Users, Key, Clock, History } from 'lucide-react'
+import {
+  Plus,
+  Shield,
+  UserCog,
+  Crown,
+  Activity,
+  Ban,
+  Users,
+  Key,
+  Clock,
+  History,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
-import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
+import {
+  AdminDataTable,
+  type Column,
+  type FilterConfig,
+  type BulkAction,
+  type StatItem,
+} from '@/components/admin/shared/AdminDataTable'
 import { UserActions } from '@/components/admin/shared/UserActions'
 import { formatNumber, timeAgo } from '@/lib/format'
 import { CreateStaffDialog } from '@/components/admin/create-staff-dialog'
@@ -77,9 +94,13 @@ export function AdminsClient({
   const [pageSize, setPageSize] = useState(initialPageSize)
   const [search, setSearch] = useState(initialSearch)
   const [roleFilter, setRoleFilter] = useState<string[]>(initialRole === 'all' ? [] : [initialRole])
-  const [statusFilter, setStatusFilter] = useState<string[]>(initialStatus === 'all' ? [] : [initialStatus])
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    initialStatus === 'all' ? [] : [initialStatus],
+  )
   const [sortField, setSortField] = useState(initialSort)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialDirection as 'asc' | 'desc')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
+    initialDirection as 'asc' | 'desc',
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [credUser, setCredUser] = useState<AdminUser | null>(null)
@@ -144,10 +165,30 @@ export function AdminsClient({
   }, [initialData, roleFilter, statusFilter, search])
 
   const statsItems: StatItem[] = [
-    { label: 'إجمالي المشرفين', value: stats.moderators, icon: Shield, color: 'bg-blue-500/10 text-blue-500' },
-    { label: 'إجمالي المسؤولين', value: stats.admins, icon: UserCog, color: 'bg-purple-500/10 text-purple-500' },
-    { label: 'إجمالي المديرين', value: stats.managers, icon: Crown, color: 'bg-amber-500/10 text-amber-500' },
-    { label: 'نشط (آخر 24 ساعة)', value: stats.active24h, icon: Activity, color: 'bg-green-500/10 text-green-500' },
+    {
+      label: 'إجمالي المشرفين',
+      value: stats.moderators,
+      icon: Shield,
+      color: 'bg-blue-500/10 text-blue-500',
+    },
+    {
+      label: 'إجمالي المسؤولين',
+      value: stats.admins,
+      icon: UserCog,
+      color: 'bg-purple-500/10 text-purple-500',
+    },
+    {
+      label: 'إجمالي المديرين',
+      value: stats.managers,
+      icon: Crown,
+      color: 'bg-amber-500/10 text-amber-500',
+    },
+    {
+      label: 'نشط (آخر 24 ساعة)',
+      value: stats.active24h,
+      icon: Activity,
+      color: 'bg-green-500/10 text-green-500',
+    },
     { label: 'محظور', value: stats.banned, icon: Ban, color: 'bg-red-500/10 text-red-500' },
   ]
 
@@ -234,7 +275,9 @@ export function AdminsClient({
             <Ban className="h-3 w-3" /> محظور
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-bold text-green-500">نشط</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-bold text-green-500">
+            نشط
+          </span>
         )
       },
     },
@@ -244,10 +287,20 @@ export function AdminsClient({
       sortable: false,
       render: (u) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCredUser(u)} title="تعديل بيانات الاعتماد">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setCredUser(u)}
+            title="تعديل بيانات الاعتماد"
+          >
             <Key className="h-4 w-4" />
           </Button>
-          <UserActions user={u as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+          <UserActions
+            user={u as never}
+            currentUser={currentUser as never}
+            onActionComplete={() => router.refresh()}
+          />
         </div>
       ),
       width: '120px',
@@ -341,7 +394,10 @@ export function AdminsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">إدارة الفريق</h1>
-          <p className="mt-1 text-sm text-muted-foreground">إدارة المشرفين والمسؤولين والمديرين — {totalCount} مسؤول — شامل 4 بيانات اعتماد ومفتاح الأمان</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            إدارة المشرفين والمسؤولين والمديرين — {totalCount} مسؤول — شامل 4 بيانات اعتماد ومفتاح
+            الأمان
+          </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="min-h-[44px]">
           <Plus className="h-4 w-4 ml-2" />
@@ -392,10 +448,19 @@ export function AdminsClient({
                   <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCredUser(user)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setCredUser(user)}
+                  >
                     <Key className="h-4 w-4" />
                   </Button>
-                  <UserActions user={user as never} currentUser={currentUser as never} onActionComplete={() => router.refresh()} />
+                  <UserActions
+                    user={user as never}
+                    currentUser={currentUser as never}
+                    onActionComplete={() => router.refresh()}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -408,7 +473,12 @@ export function AdminsClient({
                     new Date(user.securityKeyExpiresAt) < new Date() ? (
                       <span className="text-red-500 font-bold">منتهي</span>
                     ) : (
-                      <span className="text-blue-500 font-bold">{Math.ceil((new Date(user.securityKeyExpiresAt).getTime() - Date.now()) / 86400000)} يوم</span>
+                      <span className="text-blue-500 font-bold">
+                        {Math.ceil(
+                          (new Date(user.securityKeyExpiresAt).getTime() - Date.now()) / 86400000,
+                        )}{' '}
+                        يوم
+                      </span>
                     )
                   ) : (
                     <span className="text-green-600 font-bold">بدون انتهاء</span>
@@ -451,7 +521,9 @@ export function AdminsClient({
         </CardHeader>
         <CardContent>
           {auditLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سجل بعد — ستظهر إجراءات التعيين والترقية وتغيير المفتاح هنا.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              لا يوجد سجل بعد — ستظهر إجراءات التعيين والترقية وتغيير المفتاح هنا.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -468,8 +540,16 @@ export function AdminsClient({
                     <tr key={log.id} className="border-b last:border-0">
                       <td className="py-2 font-medium">{log.action}</td>
                       <td className="py-2">{log.username}</td>
-                      <td className="py-2 text-xs text-muted-foreground max-w-xs truncate">{log.details || '—'}</td>
-                      <td className="py-2 text-xs">{new Date(log.createdAt).toLocaleDateString('ar-EG')} {new Date(log.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="py-2 text-xs text-muted-foreground max-w-xs truncate">
+                        {log.details || '—'}
+                      </td>
+                      <td className="py-2 text-xs">
+                        {new Date(log.createdAt).toLocaleDateString('ar-EG')}{' '}
+                        {new Date(log.createdAt).toLocaleTimeString('ar-EG', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -479,7 +559,11 @@ export function AdminsClient({
         </CardContent>
       </Card>
 
-      <CreateStaffDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => router.refresh()} />
+      <CreateStaffDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => router.refresh()}
+      />
       {credUser && (
         <EditCredentialsDialog
           open={!!credUser}

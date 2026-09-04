@@ -63,8 +63,8 @@ export class NotificationService {
     }
 
     return {
-      success: results.some(r => r.success),
-      notificationId: results.find(r => r.notificationId)?.notificationId,
+      success: results.some((r) => r.success),
+      notificationId: results.find((r) => r.notificationId)?.notificationId,
       channelResults: results,
     }
   }
@@ -75,7 +75,9 @@ export class NotificationService {
   ): Promise<ChannelResult> {
     // Step 1: Check preferences
     const canDeliver = await this.deps.preferencePolicy.canDeliver(
-      input.userId, input.type, channel,
+      input.userId,
+      input.type,
+      channel,
     )
     if (!canDeliver) {
       return { channel, success: false, reason: 'preference_disabled' }
@@ -83,7 +85,9 @@ export class NotificationService {
 
     // Step 2: Render template first (to get title/message for dedup check)
     const rendered = await this.deps.templateRenderer.render(
-      input.type, channel, input.templateVariables ?? {},
+      input.type,
+      channel,
+      input.templateVariables ?? {},
     )
 
     const title = input.title ?? rendered.title

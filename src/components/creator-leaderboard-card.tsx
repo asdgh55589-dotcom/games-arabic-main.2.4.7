@@ -23,11 +23,19 @@ export function CreatorLeaderboardCard() {
         const list = json?.data || json || []
         if (Array.isArray(list) && list.length > 0) {
           setEntries(
-            list.slice(0, 5).map((item: { user: LeaderEntry['user']; publishedCount: number; totalDownloads: number }) => ({
-              user: item.user,
-              publishedCount: item.publishedCount,
-              totalDownloads: item.totalDownloads,
-            }))
+            list
+              .slice(0, 5)
+              .map(
+                (item: {
+                  user: LeaderEntry['user']
+                  publishedCount: number
+                  totalDownloads: number
+                }) => ({
+                  user: item.user,
+                  publishedCount: item.publishedCount,
+                  totalDownloads: item.totalDownloads,
+                }),
+              ),
           )
         }
       })
@@ -36,14 +44,19 @@ export function CreatorLeaderboardCard() {
   }, [])
 
   return (
-    <div className="border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)]" dir="rtl">
+    <div
+      className="border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)]"
+      dir="rtl"
+    >
       <div className="border-b-[3px] border-border bg-yellow-500/10 px-4 py-3">
         <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-foreground">
           <Trophy className="h-4 w-4 text-yellow-500" />
           الصدارة
           <span className="text-[10px] font-bold text-muted-foreground">— المُعَرِّبون فقط</span>
         </h3>
-        <p className="mt-1 text-[11px] font-semibold text-muted-foreground">أفضل المُعَرِّبين حسب المستوى والإنجاز</p>
+        <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
+          أفضل المُعَرِّبين حسب المستوى والإنجاز
+        </p>
       </div>
       <div className="divide-y divide-border/50">
         {loading ? (
@@ -56,7 +69,10 @@ export function CreatorLeaderboardCard() {
           <div className="py-8 text-center">
             <Trophy className="mx-auto h-8 w-8 text-muted-foreground/30" />
             <p className="mt-2 text-xs font-semibold text-muted-foreground">لا يوجد مُعَرِّبون بعد</p>
-            <Link href="/become-creator" className="mt-2 inline-block text-xs text-primary hover:underline">
+            <Link
+              href="/become-creator"
+              className="mt-2 inline-block text-xs text-primary hover:underline"
+            >
               كن أول مُعَرِّب
             </Link>
           </div>
@@ -94,7 +110,10 @@ export function CreatorLeaderboardCard() {
         )}
       </div>
       <div className="border-t-[3px] border-border p-2 text-center">
-        <Link href="/leaderboard/creators" className="text-xs font-bold text-primary hover:underline">
+        <Link
+          href="/leaderboard/creators"
+          className="text-xs font-bold text-primary hover:underline"
+        >
           عرض كل المتصدرين →
         </Link>
       </div>

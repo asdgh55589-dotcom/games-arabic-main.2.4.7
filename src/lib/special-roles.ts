@@ -89,11 +89,22 @@ export function formatSpecialRoles(roles: SpecialRole[]): string {
 export function canHaveSpecialRole(mainRole: UserRole, specialRole: SpecialRole): boolean {
   const config = SPECIAL_ROLES[specialRole]
   if (!config) return false
-  const hierarchy: UserRole[] = ['member', 'creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+  const hierarchy: UserRole[] = [
+    'member',
+    'creator',
+    'publisher',
+    'moderator',
+    'admin',
+    'manager',
+    'owner',
+  ]
   return hierarchy.indexOf(mainRole) >= hierarchy.indexOf(config.minMainRole)
 }
 
-export function hasSpecialRole(specialRoles: string | null | undefined, role: SpecialRole): boolean {
+export function hasSpecialRole(
+  specialRoles: string | null | undefined,
+  role: SpecialRole,
+): boolean {
   return parseSpecialRoles(specialRoles).includes(role)
 }
 

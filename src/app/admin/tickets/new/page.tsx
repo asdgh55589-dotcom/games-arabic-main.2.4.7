@@ -124,7 +124,9 @@ export default function NewTicketPage() {
             إنشاء التذكرة
           </Button>
           <Link href="/admin/tickets">
-            <Button variant="outline" type="button">إلغاء</Button>
+            <Button variant="outline" type="button">
+              إلغاء
+            </Button>
           </Link>
         </div>
       </form>

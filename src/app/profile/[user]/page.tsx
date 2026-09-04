@@ -28,7 +28,9 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
       type: 'profile',
       siteName: 'Games Arabic',
       locale: 'ar_AR',
-      images: [{ url: 'https://games-arabic.com/og-default.jpg', width: 1200, height: 630, alt: username }],
+      images: [
+        { url: 'https://games-arabic.com/og-default.jpg', width: 1200, height: 630, alt: username },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
@@ -45,16 +47,23 @@ export default async function ProfileRoutePage({ params }: ProfilePageProps) {
   const username = decodeURIComponent(user)
   let userData: any = null
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/users/${encodeURIComponent(username)}/profile`, {
-      cache: 'no-store',
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/users/${encodeURIComponent(username)}/profile`,
+      {
+        cache: 'no-store',
+      },
+    )
     if (res.ok) {
       const json = await res.json()
       userData = json.data?.user || json.data
     }
   } catch {}
   // Fallback to minimal data if API fails — still generate valid Person schema in Arabic
-  const personData = userData || { username, bio: `ملف ${username} على Games Arabic`, avatarUrl: 'https://games-arabic.com/og-default.jpg' }
+  const personData = userData || {
+    username,
+    bio: `ملف ${username} على Games Arabic`,
+    avatarUrl: 'https://games-arabic.com/og-default.jpg',
+  }
   return (
     <>
       <script

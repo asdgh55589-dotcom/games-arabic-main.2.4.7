@@ -93,12 +93,7 @@ export function PostGenerator({ modId, modName }: PostGeneratorProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-sm font-semibold">منشور Telegram</CardTitle>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-            className="gap-1.5 min-h-[44px]"
-          >
+          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 min-h-[44px]">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'تم النسخ' : 'نسخ'}
           </Button>
@@ -108,7 +103,11 @@ export function PostGenerator({ modId, modName }: PostGeneratorProps) {
             disabled={sending || !post?.validation.valid}
             className="gap-1.5 min-h-[44px]"
           >
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            {sending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
             إرسال
           </Button>
         </div>
@@ -116,18 +115,14 @@ export function PostGenerator({ modId, modName }: PostGeneratorProps) {
       <CardContent className="space-y-3">
         {/* Character counter */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {post?.validation.length || 0} / 4096 حرف
-          </span>
+          <span className="text-muted-foreground">{post?.validation.length || 0} / 4096 حرف</span>
           {post?.validation.warning && (
             <span className="flex items-center gap-1 text-yellow-600">
               <AlertTriangle className="h-3 w-3" />
               يقترب من الحد
             </span>
           )}
-          {!post?.validation.valid && (
-            <span className="text-red-600">تجاوز الحد المسموح</span>
-          )}
+          {!post?.validation.valid && <span className="text-red-600">تجاوز الحد المسموح</span>}
         </div>
 
         {/* Telegram-style preview */}
@@ -148,18 +143,25 @@ export function PostGenerator({ modId, modName }: PostGeneratorProps) {
         {post?.variables && (
           <div className="rounded-lg border bg-muted/30 p-3 text-xs space-y-1">
             <div className="font-medium text-muted-foreground mb-2">المتغيرات:</div>
-            {Object.entries(post.variables).slice(0, 6).map(([key, value]) => (
-              <div key={key} className="flex gap-2">
-                <span className="text-primary font-mono">{`{${key}}`}</span>
-                <span className="text-muted-foreground truncate">{value}</span>
-              </div>
-            ))}
+            {Object.entries(post.variables)
+              .slice(0, 6)
+              .map(([key, value]) => (
+                <div key={key} className="flex gap-2">
+                  <span className="text-primary font-mono">{`{${key}}`}</span>
+                  <span className="text-muted-foreground truncate">{value}</span>
+                </div>
+              ))}
           </div>
         )}
 
         {/* Actions */}
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => setIsEditing(!isEditing)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setIsEditing(!isEditing)}
+          >
             {isEditing ? 'معاينة' : 'تعديل'}
           </Button>
           <Button variant="outline" size="sm" className="min-h-[44px]" onClick={generatePost}>

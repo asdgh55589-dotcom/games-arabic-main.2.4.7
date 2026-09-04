@@ -2,7 +2,12 @@
  * target-helper — مساعد بناء بيانات target للإشعارات التفاعلية
  */
 
-export function modTarget(mod: { id: string; slug: string; name: string; arabicTitle?: string | null }) {
+export function modTarget(mod: {
+  id: string
+  slug: string
+  name: string
+  arabicTitle?: string | null
+}) {
   return {
     targetType: 'mod' as const,
     targetId: mod.id,
@@ -32,7 +37,12 @@ export function teamTarget(team: { id: string; slug: string; name: string }) {
   }
 }
 
-export function commentTarget(mod: { id: string; slug: string; name: string; arabicTitle?: string | null }) {
+export function commentTarget(mod: {
+  id: string
+  slug: string
+  name: string
+  arabicTitle?: string | null
+}) {
   return {
     targetType: 'comment' as const,
     targetId: mod.id,

@@ -22,7 +22,8 @@ export function CommunityPage() {
         </div>
         <h2 className="text-2xl font-bold">جروب GAMES ARABIC</h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-          جروب المجتمع الرئيسي للنقاش حول التعريبات والمشاكل والحلول. يضم الجروب مواضيع منفصلة لمناقشة كل قسم من أقسام الموقع الستة، بالإضافة إلى تبادل الخبرات بين المستخدمين والمعربين.
+          جروب المجتمع الرئيسي للنقاش حول التعريبات والمشاكل والحلول. يضم الجروب مواضيع منفصلة
+          لمناقشة كل قسم من أقسام الموقع الستة، بالإضافة إلى تبادل الخبرات بين المستخدمين والمعربين.
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

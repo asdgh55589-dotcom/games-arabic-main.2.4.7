@@ -39,9 +39,7 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     })
 
-    const statusCounts = Object.fromEntries(
-      stats.map((s) => [s.status, s._count.id])
-    )
+    const statusCounts = Object.fromEntries(stats.map((s) => [s.status, s._count.id]))
 
     return ok({
       jobs,

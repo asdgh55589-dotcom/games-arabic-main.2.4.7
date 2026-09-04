@@ -59,7 +59,11 @@ export async function GET() {
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
-      return fail(err instanceof Error ? err.message : 'Unauthorized', err instanceof Error ? err.message : 'Unauthorized', status)
+      return fail(
+        err instanceof Error ? err.message : 'Unauthorized',
+        err instanceof Error ? err.message : 'Unauthorized',
+        status,
+      )
     }
     console.error('[admin/api-keys GET] failed:', err)
     return internalError('Failed to fetch API keys')
@@ -92,11 +96,7 @@ export async function POST(req: NextRequest) {
     const requestedLevel = ROLE_HIERARCHY[role] || 0
 
     if (requestedLevel > userLevel) {
-      return fail(
-        'FORBIDDEN',
-        `لا يمكنك منح دور أعلى من دورك (${user.role})`,
-        403
-      )
+      return fail('FORBIDDEN', `لا يمكنك منح دور أعلى من دورك (${user.role})`, 403)
     }
 
     // حساب تاريخ الانتهاء
@@ -134,7 +134,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
-      return fail(err instanceof Error ? err.message : 'Unauthorized', err instanceof Error ? err.message : 'Unauthorized', status)
+      return fail(
+        err instanceof Error ? err.message : 'Unauthorized',
+        err instanceof Error ? err.message : 'Unauthorized',
+        status,
+      )
     }
     console.error('[admin/api-keys POST] failed:', err)
     return internalError('Failed to create API key')

@@ -83,7 +83,8 @@ function AdminLoginContent() {
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تسجيل الدخول'
+        const msg =
+          typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تسجيل الدخول'
         const field = data?.field || data?.error?.details?.field
         setError({ message: msg, field })
         return
@@ -151,7 +152,10 @@ function AdminLoginContent() {
   }
 
   return (
-    <div dir="rtl" className="relative grid min-h-screen place-items-center overflow-hidden bg-background p-4">
+    <div
+      dir="rtl"
+      className="relative grid min-h-screen place-items-center overflow-hidden bg-background p-4"
+    >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black" />
       <div className="pointer-events-none absolute -top-40 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 left-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
@@ -159,19 +163,31 @@ function AdminLoginContent() {
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="ألعاب عربية" className="mx-auto mb-3 h-10 w-auto object-contain" />
+          <img
+            src="/logo.png"
+            alt="ألعاب عربية"
+            className="mx-auto mb-3 h-10 w-auto object-contain"
+          />
           <p className="mt-1 text-sm text-muted-foreground">لوحة تحكم نشر التعريبات</p>
         </div>
 
         {tokenCheckFailed && (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm mb-4" dir="rtl">
+          <div
+            className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm mb-4"
+            dir="rtl"
+          >
             ⚠️ تعذر التحقق من الجلسة. تم تسجيل دخولك — اضغط زر الدخول للمتابعة.
-            <Link href="/admin" className="block mt-2 text-center font-bold underline">دخول لوحة التحكم</Link>
+            <Link href="/admin" className="block mt-2 text-center font-bold underline">
+              دخول لوحة التحكم
+            </Link>
           </div>
         )}
 
         {!mfaRequired ? (
-          <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur">
+          <form
+            onSubmit={onSubmit}
+            className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur"
+          >
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-medium text-foreground">
                 اسم المستخدم
@@ -181,8 +197,14 @@ function AdminLoginContent() {
                 <Input
                   id="username"
                   value={username}
-                  onChange={(e) => { setUsername(e.target.value); if (error?.field === 'username') setError(null) }}
-                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'username' }) }}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                    if (error?.field === 'username') setError(null)
+                  }}
+                  onBlur={(e) => {
+                    if (!e.target.value.trim())
+                      setError({ message: 'هذا الحقل مطلوب', field: 'username' })
+                  }}
                   placeholder="L0L0Y8"
                   className={`h-11 pr-10 ${error?.field === 'username' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="username"
@@ -206,8 +228,14 @@ function AdminLoginContent() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (error?.field === 'email') setError(null) }}
-                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'email' }) }}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (error?.field === 'email') setError(null)
+                  }}
+                  onBlur={(e) => {
+                    if (!e.target.value.trim())
+                      setError({ message: 'هذا الحقل مطلوب', field: 'email' })
+                  }}
                   placeholder="Arabic_games@gmail.com"
                   className={`h-11 pr-10 ${error?.field === 'email' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="email"
@@ -230,8 +258,14 @@ function AdminLoginContent() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); if (error?.field === 'password') setError(null) }}
-                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'password' }) }}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (error?.field === 'password') setError(null)
+                  }}
+                  onBlur={(e) => {
+                    if (!e.target.value.trim())
+                      setError({ message: 'هذا الحقل مطلوب', field: 'password' })
+                  }}
                   placeholder="••••••••"
                   className={`h-11 pr-10 ${error?.field === 'password' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="current-password"
@@ -254,8 +288,14 @@ function AdminLoginContent() {
                   id="securityKey"
                   type="password"
                   value={securityKey}
-                  onChange={(e) => { setSecurityKey(e.target.value); if (error?.field === 'securityKey') setError(null) }}
-                  onBlur={(e) => { if (!e.target.value.trim()) setError({ message: 'هذا الحقل مطلوب', field: 'securityKey' }) }}
+                  onChange={(e) => {
+                    setSecurityKey(e.target.value)
+                    if (error?.field === 'securityKey') setError(null)
+                  }}
+                  onBlur={(e) => {
+                    if (!e.target.value.trim())
+                      setError({ message: 'هذا الحقل مطلوب', field: 'securityKey' })
+                  }}
                   placeholder="••••••••"
                   className={`h-11 pr-10 ${error?.field === 'securityKey' ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   autoComplete="off"
@@ -287,11 +327,16 @@ function AdminLoginContent() {
             </Button>
           </form>
         ) : (
-          <form onSubmit={onMfaSubmit} className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur">
+          <form
+            onSubmit={onMfaSubmit}
+            className="space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-2xl backdrop-blur"
+          >
             <div className="text-center mb-2">
               <ShieldCheck className="mx-auto h-10 w-10 text-primary mb-2" />
               <h2 className="text-lg font-bold">المصادقة الثنائية</h2>
-              <p className="text-xs text-muted-foreground mt-1">أدخل رمز التحقق من تطبيق المصادقة (Google Authenticator) أو أحد رموز الاسترداد</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                أدخل رمز التحقق من تطبيق المصادقة (Google Authenticator) أو أحد رموز الاسترداد
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -348,7 +393,10 @@ function AdminLoginContent() {
         )}
 
         <div className="mt-4 text-center">
-          <Link href="/" className="text-xs text-muted-foreground transition-colors hover:text-primary">
+          <Link
+            href="/"
+            className="text-xs text-muted-foreground transition-colors hover:text-primary"
+          >
             ← العودة للموقع
           </Link>
         </div>

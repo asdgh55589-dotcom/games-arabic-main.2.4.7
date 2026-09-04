@@ -111,7 +111,15 @@ export function CommentsManager() {
           { value: 'visible', label: 'ظاهر' },
           { value: 'hidden', label: 'مخفي' },
         ].map((f) => (
-          <Button key={f.value} variant={filter === f.value ? 'default' : 'outline'} size="sm" onClick={() => { setFilter(f.value as never); setPage(1) }}>
+          <Button
+            key={f.value}
+            variant={filter === f.value ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setFilter(f.value as never)
+              setPage(1)
+            }}
+          >
             {f.label}
           </Button>
         ))}
@@ -122,7 +130,11 @@ export function CommentsManager() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : comments.length === 0 ? (
-        <EmptyState icon="file" title="لا توجد تعليقات" description="ستظهر تعليقات المستخدمين على تعريباتك هنا" />
+        <EmptyState
+          icon="file"
+          title="لا توجد تعليقات"
+          description="ستظهر تعليقات المستخدمين على تعريباتك هنا"
+        />
       ) : (
         <div className="space-y-3">
           {comments.map((c) => (
@@ -139,12 +151,20 @@ export function CommentsManager() {
                       <Badge variant="outline" className="text-xs">
                         {c.mod.name}
                       </Badge>
-                      {c.isHidden && <Badge variant="destructive" className="text-xs">مخفي</Badge>}
+                      {c.isHidden && (
+                        <Badge variant="destructive" className="text-xs">
+                          مخفي
+                        </Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
                     </div>
                     <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <Link href={`/mod/${c.mod.slug}`} target="_blank" className="text-xs text-primary hover:underline">
+                      <Link
+                        href={`/mod/${c.mod.slug}`}
+                        target="_blank"
+                        className="text-xs text-primary hover:underline"
+                      >
                         عرض التعريب
                       </Link>
                       <span className="text-muted-foreground">•</span>
@@ -157,29 +177,58 @@ export function CommentsManager() {
                     </div>
                     {replyTo === c.id && (
                       <div className="mt-3 flex gap-2">
-                        <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="اكتب ردك..." rows={2} className="flex-1" />
+                        <Textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="اكتب ردك..."
+                          rows={2}
+                          className="flex-1"
+                        />
                         <Button
                           size="sm"
                           onClick={() => handleReply(c)}
                           disabled={actionLoading === c.id || !replyText.trim()}
                           className="shrink-0"
                         >
-                          {actionLoading === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                          {actionLoading === c.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {c.isHidden ? (
-                      <Button variant="ghost" size="icon" onClick={() => handleAction(c.id, 'unhide')} disabled={actionLoading === c.id} aria-label="إظهار">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleAction(c.id, 'unhide')}
+                        disabled={actionLoading === c.id}
+                        aria-label="إظهار"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="icon" onClick={() => handleAction(c.id, 'hide')} disabled={actionLoading === c.id} aria-label="إخفاء">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleAction(c.id, 'hide')}
+                        disabled={actionLoading === c.id}
+                        aria-label="إخفاء"
+                      >
                         <EyeOff className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => handleAction(c.id, 'delete')} disabled={actionLoading === c.id} aria-label="حذف" className="text-destructive hover:text-destructive">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleAction(c.id, 'delete')}
+                      disabled={actionLoading === c.id}
+                      aria-label="حذف"
+                      className="text-destructive hover:text-destructive"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -192,13 +241,23 @@ export function CommentsManager() {
 
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
             السابق
           </Button>
           <span className="flex items-center px-3 text-sm text-muted-foreground">
             صفحة {page} من {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
             التالي
           </Button>
         </div>

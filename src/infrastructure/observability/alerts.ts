@@ -69,7 +69,7 @@ export class AlertService {
   }
 
   getRegisteredConditions(): string[] {
-    return this.conditions.map(c => c.name)
+    return this.conditions.map((c) => c.name)
   }
 }
 

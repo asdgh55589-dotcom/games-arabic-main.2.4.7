@@ -5,10 +5,7 @@ import { slugify, syncSeriesCounts } from '@/lib/series-helpers'
 import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/admin/series/[id] — تفاصيل السلسلة
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -16,7 +13,14 @@ export async function GET(
       where: { id },
       include: {
         mods: {
-          select: { id: true, name: true, slug: true, downloads: true, endorsements: true, thumbnailUrl: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            downloads: true,
+            endorsements: true,
+            thumbnailUrl: true,
+          },
           orderBy: { downloads: 'desc' },
         },
         _count: { select: { mods: true } },
@@ -35,10 +39,7 @@ export async function GET(
 }
 
 // PUT /api/admin/series/[id] — تعديل السلسلة
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -71,10 +72,7 @@ export async function PUT(
 }
 
 // DELETE /api/admin/series/[id] — حذف السلسلة (يلغي الربط فقط)
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireModerator()
     if (!canDelete(user)) {

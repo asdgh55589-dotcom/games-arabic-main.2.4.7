@@ -21,7 +21,16 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const mod = await db.mod.findUnique({
       where: { id },
       include: {
-        author: { select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true } },
+        author: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+            role: true,
+            tier: true,
+            specialRoles: true,
+          },
+        },
         reviewer: { select: { id: true, username: true, avatarUrl: true, role: true } },
         game: true,
         category: true,
@@ -78,7 +87,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const body = await req.json()
 
     // التأكد إن التعريب موجود
-    const existing = await db.mod.findUnique({ where: { id }, select: { authorId: true, seriesId: true, teamId: true, slug: true, name: true } })
+    const existing = await db.mod.findUnique({
+      where: { id },
+      select: { authorId: true, seriesId: true, teamId: true, slug: true, name: true },
+    })
     if (!existing) {
       return notFound()
     }
@@ -95,10 +107,32 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // تحديث الحقول الأساسية
     const updateData: Record<string, unknown> = {}
     const allowedFields = [
-      'name', 'summary', 'description', 'changelog', 'installGuide', 'arabicTitle', 'translationScope', 'compatibility',
-      'categoryId', 'thumbnailUrl', 'imageUrl', 'galleryUrls', 'version', 'fileSize', 'fileFormat',
-      'tags', 'series', 'seriesId', 'translationTeam', 'teamId', 'sectionId', 'translationType',
-      'isFeatured', 'isTrending', 'isLatest', 'releaseDate',
+      'name',
+      'summary',
+      'description',
+      'changelog',
+      'installGuide',
+      'arabicTitle',
+      'translationScope',
+      'compatibility',
+      'categoryId',
+      'thumbnailUrl',
+      'imageUrl',
+      'galleryUrls',
+      'version',
+      'fileSize',
+      'fileFormat',
+      'tags',
+      'series',
+      'seriesId',
+      'translationTeam',
+      'teamId',
+      'sectionId',
+      'translationType',
+      'isFeatured',
+      'isTrending',
+      'isLatest',
+      'releaseDate',
     ]
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -109,7 +143,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         } else if (field === 'tags' && Array.isArray(body.tags)) {
           updateData[field] = body.tags.join(',')
         } else if (field === 'galleryUrls') {
-          updateData[field] = Array.isArray(body.galleryUrls) ? body.galleryUrls.join(',') : body.galleryUrls
+          updateData[field] = Array.isArray(body.galleryUrls)
+            ? body.galleryUrls.join(',')
+            : body.galleryUrls
         } else {
           updateData[field] = body[field]
         }
@@ -129,12 +165,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       arabicTitle: body.arabicTitle || '',
       translationScope: body.translationScope || '',
       compatibility: body.compatibility || '',
-      tags: Array.isArray(body.tags) ? body.tags.join(',') : (body.tags || ''),
+      tags: Array.isArray(body.tags) ? body.tags.join(',') : body.tags || '',
       changelog: body.changelog || '',
       installGuide: body.installGuide || '',
       thumbnailUrl: body.thumbnailUrl || '',
       imageUrl: body.imageUrl || '',
-      galleryUrls: Array.isArray(body.galleryUrls) ? body.galleryUrls.join(',') : (body.galleryUrls || ''),
+      galleryUrls: Array.isArray(body.galleryUrls)
+        ? body.galleryUrls.join(',')
+        : body.galleryUrls || '',
       files: body.files || [],
       teamMembers: body.teamMembers || [],
       gameId: body.gameId || '',
@@ -150,7 +188,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       // ملفات التحميل — bulk insert via createMany
       if (Array.isArray(body.files)) {
         await tx.modFile.deleteMany({ where: { modId: id } })
-        const validFiles = (body.files as Array<{ title?: string; description?: string; alert?: string; version?: string; releaseDate?: string; fileSize?: string; fileFormat?: string; order?: number; links?: Array<{ url: string; label?: string }> }>).filter((f) => f.title)
+        const validFiles = (
+          body.files as Array<{
+            title?: string
+            description?: string
+            alert?: string
+            version?: string
+            releaseDate?: string
+            fileSize?: string
+            fileFormat?: string
+            order?: number
+            links?: Array<{ url: string; label?: string }>
+          }>
+        ).filter((f) => f.title)
         if (validFiles.length > 0) {
           const filesData = validFiles.map((f, i) => ({
             modId: id,
@@ -164,8 +214,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
             order: f.order ?? i,
           }))
           // Use createManyAndReturn to get IDs for nested links
-          const createdFiles = await (tx.modFile as unknown as { createManyAndReturn: (args: { data: typeof filesData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: filesData })
-          const allLinks: Array<{ fileId: string; url: string; label: string | null; order: number }> = []
+          const createdFiles = await (
+            tx.modFile as unknown as {
+              createManyAndReturn: (args: {
+                data: typeof filesData
+              }) => Promise<Array<{ id: string }>>
+            }
+          ).createManyAndReturn({ data: filesData })
+          const allLinks: Array<{
+            fileId: string
+            url: string
+            label: string | null
+            order: number
+          }> = []
           validFiles.forEach((f, idx) => {
             const fileId = createdFiles[idx]?.id
             if (!fileId || !Array.isArray(f.links)) return
@@ -183,15 +244,36 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (Array.isArray(body.teamMembers)) {
         await tx.modTeamMember.deleteMany({ where: { modId: id } })
         const membersData = body.teamMembers
-          .map((m: { name: string; avatarUrl?: string; role?: string; contribution?: string; order?: number }, i: number) => m.name ? {
-            modId: id,
-            name: m.name,
-            avatarUrl: m.avatarUrl || null,
-            role: m.role || 'مترجم',
-            contribution: m.contribution || null,
-            order: m.order ?? i,
-          } : null)
-          .filter(Boolean) as { modId: string; name: string; avatarUrl: string | null; role: string; contribution: string | null; order: number }[]
+          .map(
+            (
+              m: {
+                name: string
+                avatarUrl?: string
+                role?: string
+                contribution?: string
+                order?: number
+              },
+              i: number,
+            ) =>
+              m.name
+                ? {
+                    modId: id,
+                    name: m.name,
+                    avatarUrl: m.avatarUrl || null,
+                    role: m.role || 'مترجم',
+                    contribution: m.contribution || null,
+                    order: m.order ?? i,
+                  }
+                : null,
+          )
+          .filter(Boolean) as {
+          modId: string
+          name: string
+          avatarUrl: string | null
+          role: string
+          contribution: string | null
+          order: number
+        }[]
         if (membersData.length > 0) {
           await tx.modTeamMember.createMany({ data: membersData })
         }
@@ -201,14 +283,24 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (Array.isArray(body.contactLinks)) {
         await tx.modContactLink.deleteMany({ where: { modId: id } })
         const linksData = body.contactLinks
-          .map((c: { url: string; type?: string; label?: string; order?: number }, i: number) => c.url ? {
-            modId: id,
-            type: c.type || 'website',
-            label: c.label || '',
-            url: c.url,
-            order: c.order ?? i,
-          } : null)
-          .filter(Boolean) as { modId: string; type: string; label: string; url: string; order: number }[]
+          .map((c: { url: string; type?: string; label?: string; order?: number }, i: number) =>
+            c.url
+              ? {
+                  modId: id,
+                  type: c.type || 'website',
+                  label: c.label || '',
+                  url: c.url,
+                  order: c.order ?? i,
+                }
+              : null,
+          )
+          .filter(Boolean) as {
+          modId: string
+          type: string
+          label: string
+          url: string
+          order: number
+        }[]
         if (linksData.length > 0) {
           await tx.modContactLink.createMany({ data: linksData })
         }
@@ -217,15 +309,52 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       // أقسام الفيديوهات — bulk insert
       if (Array.isArray(body.videoGroups)) {
         await tx.modVideoGroup.deleteMany({ where: { modId: id } })
-        const validGroups = (body.videoGroups as Array<{ name?: string; order?: number; videos?: Array<{ title?: string; url?: string; thumbnail?: string; duration?: string; description?: string; views?: number; likes?: number; commentsCount?: number; channel?: string; publishedAt?: string; order?: number }> }>).filter((g) => g.name)
+        const validGroups = (
+          body.videoGroups as Array<{
+            name?: string
+            order?: number
+            videos?: Array<{
+              title?: string
+              url?: string
+              thumbnail?: string
+              duration?: string
+              description?: string
+              views?: number
+              likes?: number
+              commentsCount?: number
+              channel?: string
+              publishedAt?: string
+              order?: number
+            }>
+          }>
+        ).filter((g) => g.name)
         if (validGroups.length > 0) {
           const groupsData = validGroups.map((g, i) => ({
             modId: id,
             name: g.name as string,
             order: g.order ?? i,
           }))
-          const createdGroups = await (tx.modVideoGroup as unknown as { createManyAndReturn: (args: { data: typeof groupsData }) => Promise<Array<{ id: string }>> }).createManyAndReturn({ data: groupsData })
-          const allVideos: Array<{ groupId: string; title: string; url: string; thumbnail: string | null; duration: string | null; description: string | null; views: number; likes: number; commentsCount: number; channel: string | null; publishedAt: Date | null; order: number }> = []
+          const createdGroups = await (
+            tx.modVideoGroup as unknown as {
+              createManyAndReturn: (args: {
+                data: typeof groupsData
+              }) => Promise<Array<{ id: string }>>
+            }
+          ).createManyAndReturn({ data: groupsData })
+          const allVideos: Array<{
+            groupId: string
+            title: string
+            url: string
+            thumbnail: string | null
+            duration: string | null
+            description: string | null
+            views: number
+            likes: number
+            commentsCount: number
+            channel: string | null
+            publishedAt: Date | null
+            order: number
+          }> = []
           validGroups.forEach((g, idx) => {
             const groupId = createdGroups[idx]?.id
             if (!groupId || !Array.isArray(g.videos)) return
@@ -257,15 +386,36 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (Array.isArray(body.customTabs)) {
         await tx.modCustomTab.deleteMany({ where: { modId: id } })
         const tabsData = body.customTabs
-          .map((t: { name: string; slug?: string; content?: string; order?: number; visible?: boolean }, i: number) => t.name ? {
-            modId: id,
-            name: t.name,
-            slug: t.slug || slugify(t.name),
-            content: t.content || '',
-            order: t.order ?? i,
-            visible: t.visible !== undefined ? Boolean(t.visible) : true,
-          } : null)
-          .filter(Boolean) as { modId: string; name: string; slug: string; content: string; order: number; visible: boolean }[]
+          .map(
+            (
+              t: {
+                name: string
+                slug?: string
+                content?: string
+                order?: number
+                visible?: boolean
+              },
+              i: number,
+            ) =>
+              t.name
+                ? {
+                    modId: id,
+                    name: t.name,
+                    slug: t.slug || slugify(t.name),
+                    content: t.content || '',
+                    order: t.order ?? i,
+                    visible: t.visible !== undefined ? Boolean(t.visible) : true,
+                  }
+                : null,
+          )
+          .filter(Boolean) as {
+          modId: string
+          name: string
+          slug: string
+          content: string
+          order: number
+          visible: boolean
+        }[]
         if (tabsData.length > 0) {
           await tx.modCustomTab.createMany({ data: tabsData })
         }
@@ -273,8 +423,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     })
 
     // مزامنة عدّادات السلسلة/الفريق لو تغيّرت
-    const newSeriesId = body.seriesId !== undefined ? (body.seriesId || null) : oldSeriesId
-    const newTeamId = body.teamId !== undefined ? (body.teamId || null) : oldTeamId
+    const newSeriesId = body.seriesId !== undefined ? body.seriesId || null : oldSeriesId
+    const newTeamId = body.teamId !== undefined ? body.teamId || null : oldTeamId
     if (newSeriesId !== oldSeriesId) {
       if (oldSeriesId) await syncSeriesCounts(oldSeriesId).catch(() => {})
       if (newSeriesId) await syncSeriesCounts(newSeriesId).catch(() => {})
@@ -287,10 +437,16 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // ISR: revalidate public pages after mod update
     try {
       revalidatePath('/')
-      const updatedMod = await db.mod.findUnique({ where: { id }, select: { slug: true, gameId: true } })
+      const updatedMod = await db.mod.findUnique({
+        where: { id },
+        select: { slug: true, gameId: true },
+      })
       if (updatedMod) {
         if (updatedMod.gameId) {
-          const game = await db.game.findUnique({ where: { id: updatedMod.gameId }, select: { slug: true, platform: true } })
+          const game = await db.game.findUnique({
+            where: { id: updatedMod.gameId },
+            select: { slug: true, platform: true },
+          })
           if (game) {
             revalidatePath('/platform/' + game.platform)
             revalidatePath('/games/' + game.slug)
@@ -321,7 +477,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       return forbidden('Only admins can delete mods')
     }
 
-    const existing = await db.mod.findUnique({ where: { id }, select: { id: true, seriesId: true, teamId: true } })
+    const existing = await db.mod.findUnique({
+      where: { id },
+      select: { id: true, seriesId: true, teamId: true },
+    })
     if (!existing) {
       return notFound()
     }

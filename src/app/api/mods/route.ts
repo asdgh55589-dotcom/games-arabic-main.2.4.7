@@ -30,11 +30,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search')?.trim() || null
   const sort = pickSort(searchParams.get('sort'), SORTS, 'downloads')
-  const { page, limit } = parsePagination(
-    searchParams.get('page'),
-    searchParams.get('limit'),
-    { limit: 24, maxLimit: 100 }
-  )
+  const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+    limit: 24,
+    maxLimit: 100,
+  })
 
   const featured = searchParams.get('featured')
   const trending = searchParams.get('trending')
@@ -56,7 +55,10 @@ export async function GET(req: NextRequest) {
   if (latest === 'true') where.isLatest = true
   // Whitelist platform — case-insensitive, prevents arbitrary string injection
   const normalizedPlatform = platform ? platform.toUpperCase() : null
-  if (normalizedPlatform && (PLATFORM_KEYS as readonly string[]).includes(normalizedPlatform as never)) {
+  if (
+    normalizedPlatform &&
+    (PLATFORM_KEYS as readonly string[]).includes(normalizedPlatform as never)
+  ) {
     where.game = { platform: normalizedPlatform }
   }
   // Whitelist translationType — only "official" and "unofficial" are valid.
@@ -70,10 +72,11 @@ export async function GET(req: NextRequest) {
   const minTierParam = searchParams.get('minTier')
   const minTier = minTierParam ? parseInt(minTierParam, 10) : 0
   if (minTier && minTier >= 1 && minTier <= 5) {
-    (where as Record<string, unknown>).author = { tier: { gte: minTier } }
+    ;(where as Record<string, unknown>).author = { tier: { gte: minTier } }
   }
 
-  const orderBy = sort === 'tier' ? { author: { tier: 'desc' } } : ORDER_BY[sort as Exclude<Sort, 'tier'>]
+  const orderBy =
+    sort === 'tier' ? { author: { tier: 'desc' } } : ORDER_BY[sort as Exclude<Sort, 'tier'>]
 
   const [total, mods] = await Promise.all([
     db.mod.count({ where }),
@@ -90,14 +93,18 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return okPaginated(serialize(mods), {
-    page,
-    limit,
-    total,
-    totalPages: Math.ceil(total / limit) || 1,
-  }, {
-    headers: {
-      'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
+  return okPaginated(
+    serialize(mods),
+    {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
     },
-  })
+    {
+      headers: {
+        'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
+      },
+    },
+  )
 }

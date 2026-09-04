@@ -85,7 +85,9 @@ function parseTypePreferences(raw: unknown): Record<string, TypePreference> {
     try {
       const parsed = JSON.parse(raw)
       if (typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
   return {}
 }

@@ -22,7 +22,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { experience, preferredGames, portfolioLinks, reason, twitterUrl, youtubeUrl, discordHandle, websiteUrl } = body as {
+    const {
+      experience,
+      preferredGames,
+      portfolioLinks,
+      reason,
+      twitterUrl,
+      youtubeUrl,
+      discordHandle,
+      websiteUrl,
+    } = body as {
       experience?: string
       preferredGames?: string
       portfolioLinks?: string

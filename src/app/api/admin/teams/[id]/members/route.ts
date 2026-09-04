@@ -1,13 +1,17 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator, AuthError } from '@/lib/auth'
-import { ok, validationFail, notFound, internalError, unauthorized, forbidden } from '@/lib/api-response'
+import {
+  ok,
+  validationFail,
+  notFound,
+  internalError,
+  unauthorized,
+  forbidden,
+} from '@/lib/api-response'
 
 // POST /api/admin/teams/[id]/members — إضافة عضو
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
   } catch (err) {
@@ -30,11 +34,20 @@ export async function POST(
       if (typeof body.userId !== 'string') {
         return validationFail({ field: 'userId', message: 'userId غير صالح' })
       }
-      const targetUser = await db.user.findUnique({ where: { id: body.userId }, select: { id: true } })
+      const targetUser = await db.user.findUnique({
+        where: { id: body.userId },
+        select: { id: true },
+      })
       if (!targetUser) return notFound('المستخدم المستهدف غير موجود')
       // منع التكرار في نفس الفريق
-      const existing = await db.teamMembership.findFirst({ where: { teamId: id, userId: body.userId } })
-      if (existing) return validationFail({ field: 'userId', message: 'هذا الحساب مرتبط بالفعل بعضو آخر في نفس الفريق' })
+      const existing = await db.teamMembership.findFirst({
+        where: { teamId: id, userId: body.userId },
+      })
+      if (existing)
+        return validationFail({
+          field: 'userId',
+          message: 'هذا الحساب مرتبط بالفعل بعضو آخر في نفس الفريق',
+        })
     }
 
     const team = await db.team.findUnique({ where: { id } })
@@ -61,10 +74,7 @@ export async function POST(
 }
 
 // PUT /api/admin/teams/[id]/members — تعديل عضو
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
   } catch (err) {
@@ -108,10 +118,7 @@ export async function PUT(
 }
 
 // DELETE /api/admin/teams/[id]/members — حذف عضو
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
   } catch (err) {

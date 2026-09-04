@@ -66,7 +66,11 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-destructive min-h-[44px]">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground hover:text-destructive min-h-[44px]"
+          >
             <Flag className="h-4 w-4" />
             إبلاغ
           </Button>
@@ -93,7 +97,9 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
             >
               <option value="">اختر سبب البلاغ...</option>
               {Object.entries(REPORT_REASONS).map(([key, config]) => (
-                <option key={key} value={key}>{config.label}</option>
+                <option key={key} value={key}>
+                  {config.label}
+                </option>
               ))}
             </select>
           </div>
@@ -111,7 +117,9 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            إلغاء
+          </Button>
           <Button onClick={handleSubmit} disabled={loading || !reason}>
             {loading ? 'جاري الإرسال...' : 'إرسال البلاغ'}
           </Button>

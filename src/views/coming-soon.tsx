@@ -15,8 +15,8 @@ export function ComingSoonPage({ title }: { title: string }) {
       </div>
       <h1 className="text-3xl font-bold tracking-tight">{display}</h1>
       <p className="mt-3 text-muted-foreground">
-        This section is coming soon. We&apos;re working hard to bring you new features for the community.
-        In the meantime, browse mods or explore games.
+        This section is coming soon. We&apos;re working hard to bring you new features for the
+        community. In the meantime, browse mods or explore games.
       </p>
       <div className="mt-8 flex justify-center gap-3">
         <Button asChild>

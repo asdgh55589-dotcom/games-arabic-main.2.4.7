@@ -3,7 +3,30 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronRight, ChevronDown, ChevronLeft, Download, Eye, ThumbsUp, MessageSquare, Users, Calendar, FileText, Image as ImageIcon, Gamepad2, Languages, Shield, CheckCircle, Tag, FileArchive, Globe, Layers, Flag, Clock, Youtube } from 'lucide-react'
+import {
+  ChevronRight,
+  ChevronDown,
+  ChevronLeft,
+  Download,
+  Eye,
+  ThumbsUp,
+  MessageSquare,
+  Users,
+  Calendar,
+  FileText,
+  Image as ImageIcon,
+  Gamepad2,
+  Languages,
+  Shield,
+  CheckCircle,
+  Tag,
+  FileArchive,
+  Globe,
+  Layers,
+  Flag,
+  Clock,
+  Youtube,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ModGallery } from '@/components/mod-gallery'
@@ -42,7 +65,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
     if (!mod?.game?.slug) return null
     return `/api/games/${mod.game.slug}/mods?sort=downloads&limit=6`
   }, [mod?.game?.slug])
-  const { data: relatedData, loading: relatedLoading } = useFetch<PaginatedModsResponse>(relatedUrl, [relatedUrl])
+  const { data: relatedData, loading: relatedLoading } = useFetch<PaginatedModsResponse>(
+    relatedUrl,
+    [relatedUrl],
+  )
   const filteredRelated = relatedData?.data?.filter((m) => m.id !== mod.id).slice(0, 4) || []
 
   const navUrl = useMemo(() => {
@@ -51,7 +77,8 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   }, [mod?.game?.slug])
   const { data: navData } = useFetch<PaginatedModsResponse>(navUrl, [navUrl])
   const { prevMod, nextMod } = useMemo(() => {
-    if (!navData?.data || !mod) return { prevMod: null as ModSummary | null, nextMod: null as ModSummary | null }
+    if (!navData?.data || !mod)
+      return { prevMod: null as ModSummary | null, nextMod: null as ModSummary | null }
     const idx = navData.data.findIndex((m) => m.id === mod.id)
     if (idx === -1) return { prevMod: null, nextMod: null }
     const len = navData.data.length
@@ -73,7 +100,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       .then((j) => {
         if (j?.data?.endorsed) {
           setEndorsed(true)
-          try { localStorage.setItem(`ga_endorsed_${mod.slug}`, '1') } catch {}
+          try {
+            localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
+          } catch {}
         }
       })
       .catch(() => {})
@@ -81,15 +110,22 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
 
   const onEndorse = async () => {
     if (endorsed) {
-      toast({ title: 'لقد قمت بالإعجاب بهذا التعريب مسبقاً', description: 'لا يمكنك الإعجاب مرة أخرى' })
+      toast({
+        title: 'لقد قمت بالإعجاب بهذا التعريب مسبقاً',
+        description: 'لا يمكنك الإعجاب مرة أخرى',
+      })
       return
     }
     try {
-      const result = await apiFetch<EndorseResponse>(`/api/mods/${mod.slug}/endorse`, { method: 'POST' })
+      const result = await apiFetch<EndorseResponse>(`/api/mods/${mod.slug}/endorse`, {
+        method: 'POST',
+      })
       setEndorsed(result.data.endorsed)
       setEndorsementCount(result.data.endorsements)
       if (result.data.endorsed) {
-        try { localStorage.setItem(`ga_endorsed_${mod.slug}`, '1') } catch {}
+        try {
+          localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
+        } catch {}
         toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
@@ -109,7 +145,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 src={bannerImage}
                 alt={mod.name}
                 className="h-full w-full object-cover"
-                onError={(e) => { e.currentTarget.src = FALLBACK_GAME_IMAGE }}
+                onError={(e) => {
+                  e.currentTarget.src = FALLBACK_GAME_IMAGE
+                }}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
@@ -119,7 +157,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </div>
         </div>
         {/* Breadcrumb over image — single line, truncated, never wraps */}
-        <nav className="absolute inset-x-2 top-2 flex flex-nowrap items-center gap-1 overflow-hidden text-[10px] sm:text-xs text-muted-foreground/80" aria-label="مسار التنقل">
+        <nav
+          className="absolute inset-x-2 top-2 flex flex-nowrap items-center gap-1 overflow-hidden text-[10px] sm:text-xs text-muted-foreground/80"
+          aria-label="مسار التنقل"
+        >
           <button
             onClick={() => router.back()}
             className="inline-flex shrink-0 items-center justify-center h-7 w-7 min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20 cursor-pointer"
@@ -127,7 +168,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           >
             <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
-          <Link href="/" className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20">
+          <Link
+            href="/"
+            className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20"
+          >
             <span className="text-[8px] sm:text-[10px] opacity-60">«</span>
             الرئيسية
           </Link>
@@ -157,7 +201,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               </span>
               اسم اللعبه:
             </span>
-            <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.game.name}</span>
+            <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
+              {mod.game.name}
+            </span>
           </div>
           {/* الاسم بالعربي */}
           {mod.arabicTitle && mod.arabicTitle.trim() !== '' && (
@@ -168,7 +214,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 الاسم بالعربي:
               </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.arabicTitle}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
+                {mod.arabicTitle}
+              </span>
             </div>
           )}
           {/* نوع التعريب */}
@@ -179,7 +227,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               </span>
               نوع التعريب:
             </span>
-            <span className="text-xs font-black text-foreground">{mod.translationType || 'غير محدد'}</span>
+            <span className="text-xs font-black text-foreground">
+              {mod.translationType || 'غير محدد'}
+            </span>
           </div>
           {/* نطاق التعريب */}
           {mod.translationScope && mod.translationScope.trim() !== '' && (
@@ -190,7 +240,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 نطاق التعريب:
               </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.translationScope}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
+                {mod.translationScope}
+              </span>
             </div>
           )}
           {/* توافق التعريب */}
@@ -202,7 +254,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 توافق التعريب:
               </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">{mod.compatibility}</span>
+              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
+                {mod.compatibility}
+              </span>
             </div>
           )}
           {/* تاريخ الاصدار */}
@@ -213,7 +267,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               </span>
               تاريخ الاصدار:
             </span>
-            <span className="text-xs font-black text-foreground">{formatArabicDate(mod.releaseDate)}</span>
+            <span className="text-xs font-black text-foreground">
+              {formatArabicDate(mod.releaseDate)}
+            </span>
           </div>
           {/* اصدار التعريب */}
           {mod.version && (
@@ -224,7 +280,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 اصدار التعريب:
               </span>
-              <span className="text-xs font-black tabular-nums text-foreground">v{mod.version}</span>
+              <span className="text-xs font-black tabular-nums text-foreground">
+                v{mod.version}
+              </span>
             </div>
           )}
           {/* حجم التعريب */}
@@ -236,7 +294,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 </span>
                 حجم التعريب:
               </span>
-              <span className="text-xs font-black text-foreground">{mod.fileSize} .{mod.fileFormat}</span>
+              <span className="text-xs font-black text-foreground">
+                {mod.fileSize} .{mod.fileFormat}
+              </span>
             </div>
           )}
         </div>
@@ -250,7 +310,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">النشر</div>
-            <div className="truncate text-[11px] font-black leading-none text-foreground">{formatArabicDate(mod.releaseDate)}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">
+              {formatArabicDate(mod.releaseDate)}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
@@ -259,7 +321,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">مشاهدات</div>
-            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.views ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">
+              {formatNumber(mod.views ?? 0)}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
@@ -268,7 +332,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">تحميلات</div>
-            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.downloads ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">
+              {formatNumber(mod.downloads ?? 0)}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
@@ -277,7 +343,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">لايكات</div>
-            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">{formatNumber(mod.endorsements ?? 0)}</div>
+            <div className="text-[11px] font-black tabular-nums leading-none text-foreground">
+              {formatNumber(mod.endorsements ?? 0)}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
@@ -286,7 +354,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">الفريق</div>
-            <div className="truncate text-[11px] font-black leading-none text-foreground">{mod.translationTeam && mod.translationTeam.trim() !== '' ? mod.translationTeam : '—'}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">
+              {mod.translationTeam && mod.translationTeam.trim() !== '' ? mod.translationTeam : '—'}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
@@ -295,7 +365,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">سلسلة</div>
-            <div className="truncate text-[11px] font-black leading-none text-foreground">{mod.series && mod.series.trim() !== '' ? mod.series : '—'}</div>
+            <div className="truncate text-[11px] font-black leading-none text-foreground">
+              {mod.series && mod.series.trim() !== '' ? mod.series : '—'}
+            </div>
           </div>
         </div>
       </div>
@@ -346,32 +418,72 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       {/* ===== OPEN stacked sections — نفس تبويبات الكمبيوتر بنفس الترتيب — مدمجة وقابلة للطي ===== */}
       <div id="mobile-details" className="mt-4 space-y-2.5 px-2 pb-6">
         {/* الوصف */}
-        <CollapsibleCard id="desc" title="الوصف" icon={<FileText className="h-3.5 w-3.5" />} iconBg="bg-emerald-500/10 text-emerald-500" defaultOpen>
-          {mod.summary && <p className="mb-3 text-sm font-bold leading-relaxed text-foreground">{mod.summary}</p>}
-          {mod.description ? <MarkdownRenderer content={mod.description} /> : <p className="text-xs text-muted-foreground">لا يوجد وصف متاح.</p>}
+        <CollapsibleCard
+          id="desc"
+          title="الوصف"
+          icon={<FileText className="h-3.5 w-3.5" />}
+          iconBg="bg-emerald-500/10 text-emerald-500"
+          defaultOpen
+        >
+          {mod.summary && (
+            <p className="mb-3 text-sm font-bold leading-relaxed text-foreground">{mod.summary}</p>
+          )}
+          {mod.description ? (
+            <MarkdownRenderer content={mod.description} />
+          ) : (
+            <p className="text-xs text-muted-foreground">لا يوجد وصف متاح.</p>
+          )}
         </CollapsibleCard>
 
         {/* سجل التغييرات */}
-        <CollapsibleCard id="changelog" title="سجل التغييرات" icon={<Clock className="h-3.5 w-3.5" />} iconBg="bg-amber-500/10 text-amber-500">
+        <CollapsibleCard
+          id="changelog"
+          title="سجل التغييرات"
+          icon={<Clock className="h-3.5 w-3.5" />}
+          iconBg="bg-amber-500/10 text-amber-500"
+        >
           <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-card/40 px-3 py-1.5">
             <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
             <span className="text-sm font-bold tabular-nums text-foreground">v{mod.version}</span>
           </div>
-          {mod.changelog ? <MarkdownRenderer content={mod.changelog} /> : (
+          {mod.changelog ? (
+            <MarkdownRenderer content={mod.changelog} />
+          ) : (
             <ul className="space-y-2 text-sm font-bold text-foreground">
-              <li className="flex gap-2"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> الإصدار الأول العام</li>
-              <li className="flex gap-2"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاحات توافق مع التعديلات الشائعة</li>
-              <li className="flex gap-2"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> تحسينات في الأداء للأجهزة الضعيفة</li>
-              <li className="flex gap-2"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاح أخطاء أبلغ عنها المجتمع</li>
+              <li className="flex gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> الإصدار الأول
+                العام
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاحات توافق
+                مع التعديلات الشائعة
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> تحسينات في
+                الأداء للأجهزة الضعيفة
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاح أخطاء
+                أبلغ عنها المجتمع
+              </li>
             </ul>
           )}
         </CollapsibleCard>
 
         {/* طريقة التركيب */}
-        <CollapsibleCard id="install" title="طريقة التركيب" icon={<Shield className="h-3.5 w-3.5" />} iconBg="bg-purple-500/10 text-purple-500">
-          {(mod as any).installGuide && (mod as any).installGuide.trim() !== '' ? <MarkdownRenderer content={(mod as any).installGuide} /> : (
+        <CollapsibleCard
+          id="install"
+          title="طريقة التركيب"
+          icon={<Shield className="h-3.5 w-3.5" />}
+          iconBg="bg-purple-500/10 text-purple-500"
+        >
+          {(mod as any).installGuide && (mod as any).installGuide.trim() !== '' ? (
+            <MarkdownRenderer content={(mod as any).installGuide} />
+          ) : (
             <div className="space-y-2 text-xs leading-relaxed">
-              <p className="font-bold">1. حمّل ملف التعريب بصيغة .{mod.fileFormat} بحجم {mod.fileSize}</p>
+              <p className="font-bold">
+                1. حمّل ملف التعريب بصيغة .{mod.fileFormat} بحجم {mod.fileSize}
+              </p>
               <p>2. استخدم WinRAR / 7-Zip لاستخراج الملفات في مجلد مؤقت.</p>
               <p>3. انسخ الملفات إلى مجلد اللعبة الرئيسي.</p>
               <p>4. فعّل العربية من إعدادات اللغة وأعد تشغيل اللعبة.</p>
@@ -380,34 +492,71 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         </CollapsibleCard>
 
         {/* فريق التعريب */}
-        <CollapsibleCard id="team" title="فريق التعريب" icon={<Users className="h-3.5 w-3.5" />} iconBg="bg-indigo-500/10 text-indigo-500">
-          <ModTranslationTeam teamMembers={mod.teamMembers || []} contactLinks={mod.contactLinks || []} />
+        <CollapsibleCard
+          id="team"
+          title="فريق التعريب"
+          icon={<Users className="h-3.5 w-3.5" />}
+          iconBg="bg-indigo-500/10 text-indigo-500"
+        >
+          <ModTranslationTeam
+            teamMembers={mod.teamMembers || []}
+            contactLinks={mod.contactLinks || []}
+          />
         </CollapsibleCard>
 
         {/* معرض الصور */}
-        <CollapsibleCard id="images" title={`معرض الصور (${gallery.length})`} icon={<ImageIcon className="h-3.5 w-3.5" />} iconBg="bg-primary/10 text-primary" defaultOpen>
+        <CollapsibleCard
+          id="images"
+          title={`معرض الصور (${gallery.length})`}
+          icon={<ImageIcon className="h-3.5 w-3.5" />}
+          iconBg="bg-primary/10 text-primary"
+          defaultOpen
+        >
           <ModGallery images={gallery.length > 0 ? gallery : [mod.imageUrl]} modName={mod.name} />
         </CollapsibleCard>
 
         {/* فيديوهات */}
-        <CollapsibleCard id="videos" title="فيديوهات" icon={<Youtube className="h-3.5 w-3.5" />} iconBg="bg-red-500/10 text-red-500">
+        <CollapsibleCard
+          id="videos"
+          title="فيديوهات"
+          icon={<Youtube className="h-3.5 w-3.5" />}
+          iconBg="bg-red-500/10 text-red-500"
+        >
           <ModVideos videoGroups={mod.videoGroups || []} />
         </CollapsibleCard>
 
         {/* التحميل */}
-        <CollapsibleCard id="files" title="التحميل" icon={<Download className="h-3.5 w-3.5" />} iconBg="bg-sky-500/10 text-sky-500" defaultOpen>
+        <CollapsibleCard
+          id="files"
+          title="التحميل"
+          icon={<Download className="h-3.5 w-3.5" />}
+          iconBg="bg-sky-500/10 text-sky-500"
+          defaultOpen
+        >
           <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
         </CollapsibleCard>
 
         {/* تبويبات مخصصة */}
         {mod.customTabs?.map((ct) => (
-          <CollapsibleCard key={ct.id} id={`custom-${ct.slug}`} title={ct.name} icon={<Layers className="h-3.5 w-3.5" />} iconBg="bg-teal-500/10 text-teal-500">
+          <CollapsibleCard
+            key={ct.id}
+            id={`custom-${ct.slug}`}
+            title={ct.name}
+            icon={<Layers className="h-3.5 w-3.5" />}
+            iconBg="bg-teal-500/10 text-teal-500"
+          >
             <MarkdownRenderer content={ct.content} />
           </CollapsibleCard>
         ))}
 
         {/* التعليقات — مصغرة */}
-        <CollapsibleCard id="comments" title={`التعليقات (${formatNumber(mod.comments ?? 0)})`} icon={<MessageSquare className="h-3.5 w-3.5" />} iconBg="bg-orange-500/10 text-orange-500" defaultOpen>
+        <CollapsibleCard
+          id="comments"
+          title={`التعليقات (${formatNumber(mod.comments ?? 0)})`}
+          icon={<MessageSquare className="h-3.5 w-3.5" />}
+          iconBg="bg-orange-500/10 text-orange-500"
+          defaultOpen
+        >
           <div className="scale-[0.60] origin-top -mx-12 -mb-8 -mt-3 text-[10px] [&_p]:!text-[10px] [&_p]:!leading-normal [&_span]:!text-[10px] [&_div.text-sm]:!text-[11px] [&_textarea]:!text-[11px] [&_textarea]:!p-2 [&_textarea]:!leading-normal [&_textarea]:!placeholder:text-[10px] [&_textarea]:!min-h-[60px] [&_button]:!text-[11px] [&_button]:!min-h-[30px] [&_button]:!py-1 [&_button]:!px-2.5 [&_button]:!gap-1 [&_input]:!text-[10px] [&_div.mb-6]:!mb-2 [&_div.mb-6]:!gap-1.5 [&_div.space-y-4]:!space-y-2 [&_div.rounded-lg]:!p-2 [&_h2]:!text-xs [&_.h-10]:!h-7 [&_.w-10]:!w-7 [&_.h-8]:!h-6 [&_.w-8]:!w-6">
             <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
           </div>
@@ -423,8 +572,12 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               >
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 text-right">
-                  <div className="text-[8px] font-black tracking-widest text-muted-foreground leading-none">السابق</div>
-                  <div className="truncate text-[11px] font-black leading-tight text-foreground">{prevMod.name}</div>
+                  <div className="text-[8px] font-black tracking-widest text-muted-foreground leading-none">
+                    السابق
+                  </div>
+                  <div className="truncate text-[11px] font-black leading-tight text-foreground">
+                    {prevMod.name}
+                  </div>
                 </div>
               </Link>
             ) : (
@@ -436,8 +589,12 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 className="flex items-center justify-end gap-1.5 rounded-none border border-border bg-card px-2 py-1.5 shadow-[1.5px_1.5px_0_0_var(--border)] transition-all active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--border)]"
               >
                 <div className="min-w-0 text-left">
-                  <div className="text-[8px] font-black tracking-widest text-muted-foreground leading-none">التالي</div>
-                  <div className="truncate text-[11px] font-black leading-tight text-foreground">{nextMod.name}</div>
+                  <div className="text-[8px] font-black tracking-widest text-muted-foreground leading-none">
+                    التالي
+                  </div>
+                  <div className="truncate text-[11px] font-black leading-tight text-foreground">
+                    {nextMod.name}
+                  </div>
                 </div>
                 <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </Link>
@@ -471,7 +628,20 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   )
 }
 
-function CollapsibleCard({ title, icon, iconBg, children, defaultOpen = false }: { id: string; title: string; icon: React.ReactNode; iconBg: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function CollapsibleCard({
+  title,
+  icon,
+  iconBg,
+  children,
+  defaultOpen = false,
+}: {
+  id: string
+  title: string
+  icon: React.ReactNode
+  iconBg: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Card className="overflow-hidden border-border bg-card p-0">
@@ -479,9 +649,15 @@ function CollapsibleCard({ title, icon, iconBg, children, defaultOpen = false }:
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-3 py-2.5 text-right transition-colors hover:bg-muted/20 cursor-pointer"
       >
-        <span className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md ${iconBg}`}>{icon}</span>
+        <span
+          className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md ${iconBg}`}
+        >
+          {icon}
+        </span>
         <span className="flex-1 text-sm font-bold text-foreground text-right">{title}</span>
-        <span className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md border border-border bg-card transition-transform ${open ? 'rotate-180' : ''}`}>
+        <span
+          className={`grid h-7 w-7 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md border border-border bg-card transition-transform ${open ? 'rotate-180' : ''}`}
+        >
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </span>
       </button>

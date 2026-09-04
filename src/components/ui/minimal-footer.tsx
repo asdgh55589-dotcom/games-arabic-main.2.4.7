@@ -70,7 +70,10 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <li>
-      <Link href={href} className="text-xs text-muted-foreground transition-colors hover:text-primary">
+      <Link
+        href={href}
+        className="text-xs text-muted-foreground transition-colors hover:text-primary"
+      >
         {children}
       </Link>
     </li>

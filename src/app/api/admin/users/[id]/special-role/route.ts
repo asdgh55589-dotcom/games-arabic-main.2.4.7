@@ -2,7 +2,13 @@ import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ok, internalError, notFound, validationFail, forbidden } from '@/lib/api-response'
-import { parseSpecialRoles, formatSpecialRoles, canHaveSpecialRole, SPECIAL_ROLES, type SpecialRole } from '@/lib/special-roles'
+import {
+  parseSpecialRoles,
+  formatSpecialRoles,
+  canHaveSpecialRole,
+  SPECIAL_ROLES,
+  type SpecialRole,
+} from '@/lib/special-roles'
 import type { UserRole } from '@/lib/roles'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +29,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Check eligibility
     if (!canHaveSpecialRole(user.role as UserRole, role)) {
-      return forbidden(`هذا الدور الخاص يتطلب دور أساسي "${SPECIAL_ROLES[role].minMainRole}" أو أعلى`)
+      return forbidden(
+        `هذا الدور الخاص يتطلب دور أساسي "${SPECIAL_ROLES[role].minMainRole}" أو أعلى`,
+      )
     }
 
     const currentRoles = parseSpecialRoles(user.specialRoles)
@@ -43,7 +51,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
       if (exclusiveHolders.length > 0) {
         // Allow but warn — not blocking, just log
-        console.warn(`[special-role] exclusive role ${role} already held by ${exclusiveHolders.map((u) => u.username).join(', ')}`)
+        console.warn(
+          `[special-role] exclusive role ${role} already held by ${exclusiveHolders.map((u) => u.username).join(', ')}`,
+        )
       }
     }
 
@@ -56,7 +66,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     try {
       const { logUserAction } = await import('@/lib/audit')
-      await logUserAction({ userId: id, actorId: admin.id, action: 'SPECIAL_ROLE_ADDED', details: JSON.stringify({ role, roleNameAr: SPECIAL_ROLES[role].nameAr }) } as unknown as Parameters<typeof logUserAction>[0])
+      await logUserAction({
+        userId: id,
+        actorId: admin.id,
+        action: 'SPECIAL_ROLE_ADDED',
+        details: JSON.stringify({ role, roleNameAr: SPECIAL_ROLES[role].nameAr }),
+      } as unknown as Parameters<typeof logUserAction>[0])
     } catch {}
 
     // Notify user
@@ -82,7 +97,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const admin = await requireAdmin()
     const { id } = await params
@@ -121,7 +139,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     try {
       const { logUserAction } = await import('@/lib/audit')
-      await logUserAction({ userId: id, actorId: admin.id, action: 'SPECIAL_ROLE_REMOVED', details: JSON.stringify({ role: specialRole }) } as unknown as Parameters<typeof logUserAction>[0])
+      await logUserAction({
+        userId: id,
+        actorId: admin.id,
+        action: 'SPECIAL_ROLE_REMOVED',
+        details: JSON.stringify({ role: specialRole }),
+      } as unknown as Parameters<typeof logUserAction>[0])
     } catch {}
 
     // Optional notification on removal

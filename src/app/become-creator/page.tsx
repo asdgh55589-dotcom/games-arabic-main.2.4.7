@@ -69,7 +69,9 @@ export default function BecomeCreatorPage() {
             قدّم طلبك الآن
           </Button>
         </Link>
-        <p className="text-xs text-muted-foreground mt-3">يستغرق التقديم دقيقتين فقط — سيتم مراجعة طلبك خلال 48 ساعة</p>
+        <p className="text-xs text-muted-foreground mt-3">
+          يستغرق التقديم دقيقتين فقط — سيتم مراجعة طلبك خلال 48 ساعة
+        </p>
       </div>
     </div>
   )

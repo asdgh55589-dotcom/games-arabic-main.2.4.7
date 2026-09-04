@@ -13,7 +13,14 @@ interface ChartWrapperProps {
   children: ReactNode
 }
 
-export function ChartWrapper({ title, subtitle, loading, error, action, children }: ChartWrapperProps) {
+export function ChartWrapper({
+  title,
+  subtitle,
+  loading,
+  error,
+  action,
+  children,
+}: ChartWrapperProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -1,7 +1,12 @@
-import { HandlebarsTemplateRenderer, type TemplateStore } from '../../adapters/handlebars-template-renderer'
+import {
+  HandlebarsTemplateRenderer,
+  type TemplateStore,
+} from '../../adapters/handlebars-template-renderer'
 import { NotificationType, NotificationChannel } from '@/domain'
 
-function makeMockStore(templates?: Record<string, { titleTemplate: string; bodyTemplate: string }>): TemplateStore {
+function makeMockStore(
+  templates?: Record<string, { titleTemplate: string; bodyTemplate: string }>,
+): TemplateStore {
   return {
     getTemplate: async (type: string, _channel: string) => templates?.[type] ?? null,
   }
@@ -18,11 +23,15 @@ describe('HandlebarsTemplateRenderer — Email Channel HTML Wrapping', () => {
       })
       const renderer = new HandlebarsTemplateRenderer(store)
 
-      const result = await renderer.render(NotificationType.CommentReply, NotificationChannel.Email, {
-        actorName: 'أحمد',
-        modTitle: 'لعبة زيد',
-        recipientName: 'محمد',
-      })
+      const result = await renderer.render(
+        NotificationType.CommentReply,
+        NotificationChannel.Email,
+        {
+          actorName: 'أحمد',
+          modTitle: 'لعبة زيد',
+          recipientName: 'محمد',
+        },
+      )
 
       expect(result.title).toBe('أحمد رد على تعليقك')
       expect(result.body).toContain('أحمد')
@@ -42,13 +51,17 @@ describe('HandlebarsTemplateRenderer — Email Channel HTML Wrapping', () => {
       })
       const renderer = new HandlebarsTemplateRenderer(store)
 
-      const result = await renderer.render(NotificationType.TierUpgrade, NotificationChannel.Email, {
-        fromTier: 'مبتدئ',
-        toTier: 'مترجم',
-        recipientName: 'أحمد',
-        actionUrl: 'https://example.com/profile',
-        actionLabel: 'عرض الملف',
-      })
+      const result = await renderer.render(
+        NotificationType.TierUpgrade,
+        NotificationChannel.Email,
+        {
+          fromTier: 'مبتدئ',
+          toTier: 'مترجم',
+          recipientName: 'أحمد',
+          actionUrl: 'https://example.com/profile',
+          actionLabel: 'عرض الملف',
+        },
+      )
 
       expect(result.html).toContain('https://example.com/profile')
       expect(result.html).toContain('عرض الملف')
@@ -82,9 +95,13 @@ describe('HandlebarsTemplateRenderer — Email Channel HTML Wrapping', () => {
       })
       const renderer = new HandlebarsTemplateRenderer(store)
 
-      const result = await renderer.render(NotificationType.CommentReply, NotificationChannel.InApp, {
-        actorName: 'أحمد',
-      })
+      const result = await renderer.render(
+        NotificationType.CommentReply,
+        NotificationChannel.InApp,
+        {
+          actorName: 'أحمد',
+        },
+      )
 
       expect(result.title).toBe('أحمد رد')
       expect(result.html).toBeUndefined()

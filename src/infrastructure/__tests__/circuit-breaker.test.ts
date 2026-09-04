@@ -28,7 +28,7 @@ describe('CircuitBreaker', () => {
       await expect(
         circuit.execute(async () => {
           throw new Error('fail')
-        })
+        }),
       ).rejects.toThrow('fail')
 
       expect(circuit.currentState).toBe('CLOSED')
@@ -39,7 +39,7 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
@@ -54,7 +54,7 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
@@ -66,11 +66,11 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       const result = await circuit.execute(async () => 'ok')
       expect(result).toBe('ok')
@@ -85,11 +85,11 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       await circuit.execute(async () => 'ok1')
       await circuit.execute(async () => 'ok2')
@@ -103,16 +103,16 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       await expect(
         circuit.execute(async () => {
           throw new Error('fail again')
-        })
+        }),
       ).rejects.toThrow()
 
       expect(circuit.currentState).toBe('OPEN')
@@ -125,7 +125,7 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 
@@ -144,7 +144,7 @@ describe('CircuitBreaker', () => {
         await expect(
           circuit.execute(async () => {
             throw new Error('fail')
-          })
+          }),
         ).rejects.toThrow()
       }
 

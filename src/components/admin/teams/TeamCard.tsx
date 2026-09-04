@@ -27,7 +27,13 @@ export function TeamCard({ team, onRefresh }: TeamCardProps) {
       <CardContent className="p-4">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={team.logoUrl || FALLBACK_GAME_IMAGE} onError={(e: unknown) => { const t = (e as { currentTarget: HTMLImageElement }).currentTarget; if (t) t.src = FALLBACK_GAME_IMAGE }} />
+            <AvatarImage
+              src={team.logoUrl || FALLBACK_GAME_IMAGE}
+              onError={(e: unknown) => {
+                const t = (e as { currentTarget: HTMLImageElement }).currentTarget
+                if (t) t.src = FALLBACK_GAME_IMAGE
+              }}
+            />
             <AvatarFallback>{team.name[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">

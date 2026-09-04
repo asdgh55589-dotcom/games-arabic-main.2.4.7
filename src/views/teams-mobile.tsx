@@ -151,8 +151,15 @@ export function TeamsMobile({ data, loading }: TeamsMobileProps) {
                     <h3 className="line-clamp-1 min-w-0 flex-1 break-words text-sm font-bold leading-tight group-hover:text-primary">
                       {t.name}
                     </h3>
-                    {t.isFeatured ? <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden /> : null}
-                    {t.isOfficial ? <Shield className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden /> : null}
+                    {t.isFeatured ? (
+                      <Star
+                        className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400"
+                        aria-hidden
+                      />
+                    ) : null}
+                    {t.isOfficial ? (
+                      <Shield className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                    ) : null}
                   </div>
                   <p className="mt-1 line-clamp-1 break-words text-xs leading-none text-muted-foreground">
                     {formatNumber(t.modCount)} تعريب

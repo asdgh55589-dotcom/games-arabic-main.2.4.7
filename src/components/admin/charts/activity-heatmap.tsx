@@ -28,7 +28,13 @@ function getColorIntensity(count: number, max: number): string {
 }
 
 export function ActivityHeatmap({ data, maxCount = 1, loading, error }: ActivityHeatmapProps) {
-  const [tooltip, setTooltip] = useState<{ day: number; hour: number; count: number; x: number; y: number } | null>(null)
+  const [tooltip, setTooltip] = useState<{
+    day: number
+    hour: number
+    count: number
+    x: number
+    y: number
+  } | null>(null)
 
   const grid = useMemo(() => {
     if (!data) return []
@@ -39,7 +45,7 @@ export function ActivityHeatmap({ data, maxCount = 1, loading, error }: Activity
         day: dayIdx,
         hour,
         count: map.get(`${dayIdx}-${hour}`) || 0,
-      }))
+      })),
     )
   }, [data])
 
@@ -103,7 +109,8 @@ export function ActivityHeatmap({ data, maxCount = 1, loading, error }: Activity
           className="pointer-events-none fixed z-50 rounded-md border bg-background px-2 py-1 text-xs shadow-md"
           style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
         >
-          {DAY_LABELS[tooltip.day]} {String(tooltip.hour).padStart(2, '0')}:00 — {tooltip.count} نشاط
+          {DAY_LABELS[tooltip.day]} {String(tooltip.hour).padStart(2, '0')}:00 — {tooltip.count}{' '}
+          نشاط
         </div>
       )}
     </ChartWrapper>

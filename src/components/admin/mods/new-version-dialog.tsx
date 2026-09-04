@@ -42,7 +42,13 @@ function incrementVersion(version: string, type: 'patch' | 'minor' | 'major' = '
   return parts.join('.')
 }
 
-export function NewVersionDialog({ modId, currentVersion, open, onOpenChange, onCreated }: NewVersionDialogProps) {
+export function NewVersionDialog({
+  modId,
+  currentVersion,
+  open,
+  onOpenChange,
+  onCreated,
+}: NewVersionDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [version, setVersion] = useState(incrementVersion(currentVersion))
@@ -87,9 +93,7 @@ export function NewVersionDialog({ modId, currentVersion, open, onOpenChange, on
       <DialogContent>
         <DialogHeader>
           <DialogTitle>إصدار جديد</DialogTitle>
-          <DialogDescription>
-            الإصدار الحالي: {currentVersion}
-          </DialogDescription>
+          <DialogDescription>الإصدار الحالي: {currentVersion}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -98,10 +102,15 @@ export function NewVersionDialog({ modId, currentVersion, open, onOpenChange, on
               <Button
                 key={type}
                 variant={bumpType === type ? 'default' : 'outline'}
-                size="sm" className="min-h-[44px]"
+                size="sm"
+                className="min-h-[44px]"
                 onClick={() => handleBumpTypeChange(type)}
               >
-                {type === 'patch' ? 'تصحيح (patch)' : type === 'minor' ? 'ميزات (minor)' : 'رئيسي (major)'}
+                {type === 'patch'
+                  ? 'تصحيح (patch)'
+                  : type === 'minor'
+                    ? 'ميزات (minor)'
+                    : 'رئيسي (major)'}
               </Button>
             ))}
           </div>
@@ -133,7 +142,11 @@ export function NewVersionDialog({ modId, currentVersion, open, onOpenChange, on
             إلغاء
           </Button>
           <Button onClick={handleCreate} disabled={loading || !version.trim()}>
-            {loading ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Plus className="ml-1 h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="ml-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="ml-1 h-4 w-4" />
+            )}
             إنشاء الإصدار
           </Button>
         </DialogFooter>

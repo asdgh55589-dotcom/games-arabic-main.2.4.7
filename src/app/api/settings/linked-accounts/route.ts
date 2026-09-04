@@ -22,7 +22,8 @@ export async function GET() {
     return NextResponse.json({ accounts })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    const status = err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
+    const status =
+      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

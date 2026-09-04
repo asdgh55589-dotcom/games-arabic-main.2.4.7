@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Filter, MessageSquare, Clock, AlertTriangle, CheckCircle2, Eye } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Filter,
+  MessageSquare,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  Eye,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -128,9 +137,7 @@ export default function TicketsPage() {
           <div
             key={key}
             className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-              statusFilter === key
-                ? 'bg-primary/10 border-primary'
-                : 'hover:bg-muted'
+              statusFilter === key ? 'bg-primary/10 border-primary' : 'hover:bg-muted'
             }`}
             onClick={() => setStatusFilter(statusFilter === key ? '' : key)}
           >
@@ -225,12 +232,8 @@ export default function TicketsPage() {
                     {CATEGORY_LABELS[ticket.category]}
                   </td>
                   <td className="px-4 py-3">{ticket.user.username}</td>
-                  <td className="px-4 py-3">
-                    {ticket.assignedUser?.username || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {ticket._count.messages}
-                  </td>
+                  <td className="px-4 py-3">{ticket.assignedUser?.username || '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{ticket._count.messages}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
                     {new Date(ticket.createdAt).toLocaleDateString('ar-SA')}
                   </td>
@@ -256,7 +259,9 @@ export default function TicketsPage() {
                     <h3 className="truncate text-sm font-semibold hover:text-primary transition-colors">
                       {ticket.subject}
                     </h3>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">#{ticket.id.slice(-6)}</p>
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">
+                      #{ticket.id.slice(-6)}
+                    </p>
                   </Link>
                   <Badge className={`${STATUS_COLORS[ticket.status]} shrink-0`}>
                     {STATUS_LABELS[ticket.status]}
@@ -269,7 +274,9 @@ export default function TicketsPage() {
                   <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
                     {CATEGORY_LABELS[ticket.category]}
                   </span>
-                  <span className="text-xs text-muted-foreground">{ticket._count.messages} رسائل</span>
+                  <span className="text-xs text-muted-foreground">
+                    {ticket._count.messages} رسائل
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-md bg-muted p-2.5">
@@ -278,15 +285,23 @@ export default function TicketsPage() {
                   </div>
                   <div className="rounded-md bg-muted p-2.5">
                     <div className="font-semibold text-muted-foreground">المسند إليه</div>
-                    <div className="mt-1 truncate font-medium">{ticket.assignedUser?.username || '—'}</div>
+                    <div className="mt-1 truncate font-medium">
+                      {ticket.assignedUser?.username || '—'}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{new Date(ticket.createdAt).toLocaleDateString('ar-SA')}</span>
-                  <span>{CATEGORY_LABELS[ticket.category]} • {PRIORITY_LABELS[ticket.priority]}</span>
+                  <span>
+                    {CATEGORY_LABELS[ticket.category]} • {PRIORITY_LABELS[ticket.priority]}
+                  </span>
                 </div>
                 <Link href={`/admin/tickets/${ticket.id}`} className="block">
-                  <Button variant="outline" size="sm" className="min-h-[44px] w-full justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[44px] w-full justify-center gap-2"
+                  >
                     <Eye className="h-4 w-4" />
                     عرض التفاصيل
                   </Button>
@@ -302,7 +317,8 @@ export default function TicketsPage() {
         <div className="flex justify-center gap-2">
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
@@ -313,7 +329,8 @@ export default function TicketsPage() {
           </span>
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page * 20 >= total}
             onClick={() => setPage((p) => p + 1)}
           >

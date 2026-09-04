@@ -11,12 +11,8 @@ export default function NotFound() {
           <Gamepad2 className="h-10 w-10 text-primary" />
         </div>
       </div>
-      <div className="mb-2 text-6xl font-black tracking-tighter text-muted/30">
-        404
-      </div>
-      <h2 className="text-xl font-bold text-foreground">
-        الصفحة غير موجودة
-      </h2>
+      <div className="mb-2 text-6xl font-black tracking-tighter text-muted/30">404</div>
+      <h2 className="text-xl font-bold text-foreground">الصفحة غير موجودة</h2>
       <p className="mt-2 max-w-sm break-words text-sm text-muted-foreground">
         يبدو أن هذه الصفحة لم تكن موجودة في ألعابنا. ربما تم حذفها أو أن الرابط غير صحيح.
       </p>

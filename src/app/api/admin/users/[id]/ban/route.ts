@@ -114,7 +114,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       action: 'ban',
       reason,
       expiresAt: bannedUntil,
-      metadata: JSON.stringify({ type, days: type === 'temp' ? Number(body.days) || 7 : null, banIp: ipBanned }),
+      metadata: JSON.stringify({
+        type,
+        days: type === 'temp' ? Number(body.days) || 7 : null,
+        banIp: ipBanned,
+      }),
       request: req,
     })
 

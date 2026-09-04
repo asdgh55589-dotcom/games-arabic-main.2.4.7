@@ -56,20 +56,14 @@ const DEFAULT_TEMPLATE = `🎮 {game_name}
 /**
  * توليد الهاشتاغات تلقائياً بناءً على بيانات التعريب
  */
-export function generateHashtags(
-  gameNameAr: string,
-  platform: string,
-  teamName: string
-): string {
+export function generateHashtags(gameNameAr: string, platform: string, teamName: string): string {
   const platformTag = PLATFORM_HASHTAGS[platform] || `#${platform}`
   const gameTag = `#${gameNameAr.replace(/\s+/g, '_')}`
   const modTag = `#تعريب_${gameNameAr.replace(/\s+/g, '_')}`
   const teamTag = teamName ? `#${teamName.replace(/\s+/g, '_')}` : ''
   const generalTag = '#تعريبات_العاب'
 
-  return [gameTag, modTag, platformTag, teamTag, generalTag]
-    .filter(Boolean)
-    .join(' ')
+  return [gameTag, modTag, platformTag, teamTag, generalTag].filter(Boolean).join(' ')
 }
 
 /**
@@ -85,10 +79,7 @@ export function truncateStory(story: string, maxLines = 4): string {
 /**
  * استبدال المتغيرات في القالب
  */
-export function renderTemplate(
-  template: string,
-  variables: TemplateVariables
-): string {
+export function renderTemplate(template: string, variables: TemplateVariables): string {
   let result = template
   for (const [key, value] of Object.entries(variables)) {
     result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '')
@@ -140,7 +131,7 @@ export function formatPost(
     files?: { downloadUrl: string }[]
   },
   template?: string,
-  overrides?: Partial<TemplateVariables>
+  overrides?: Partial<TemplateVariables>,
 ): { content: string; variables: TemplateVariables } {
   const story = truncateStory(mod.summary || mod.description || '')
 
@@ -153,11 +144,7 @@ export function formatPost(
     description: mod.description || '',
     story,
     download_link: mod.files?.[0]?.downloadUrl || '',
-    hashtags: generateHashtags(
-      mod.game.name,
-      mod.game.platform,
-      mod.teamRelation?.name || ''
-    ),
+    hashtags: generateHashtags(mod.game.name, mod.game.platform, mod.teamRelation?.name || ''),
     publish_date: new Date().toLocaleDateString('ar-SA'),
     mod_name: mod.arabicTitle || mod.name,
     file_size: mod.fileSize || '',

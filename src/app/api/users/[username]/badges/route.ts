@@ -95,7 +95,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     ]
 
-    return ok({ badges }, { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } })
+    return ok(
+      { badges },
+      { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } },
+    )
   } catch (err) {
     console.error('[badges GET] failed:', err)
     return internalError('Failed')

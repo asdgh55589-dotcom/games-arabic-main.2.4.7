@@ -35,7 +35,11 @@ export function DocsPage() {
 
   const [cat, setCat] = useState(VALID_CATS.includes(urlCatRaw) ? urlCatRaw : 'support')
   const [p, setP] = useState(PLATFORMS.some((x) => x.key === urlP) ? urlP : 'PC')
-  const [open, setOpen] = useState<Record<string, boolean>>({ support: true, problems: true, general: true })
+  const [open, setOpen] = useState<Record<string, boolean>>({
+    support: true,
+    problems: true,
+    general: true,
+  })
 
   const platformLabel = PLATFORMS.find((x) => x.key === p)?.label || p
 
@@ -69,75 +73,105 @@ export function DocsPage() {
         <span>/</span>
         <span>{CAT_PARENTS[cat] || 'دعم الأقسام'}</span>
         <span>/</span>
-        <span className="text-foreground">
-          {CAT_LABELS[cat] || `دعم ${platformLabel}`}
-        </span>
+        <span className="text-foreground">{CAT_LABELS[cat] || `دعم ${platformLabel}`}</span>
       </div>
       <div className="flex flex-col gap-6 lg:flex-row">
-      <aside className="w-full shrink-0 lg:w-64">
-        <div className="rounded-lg border border-border bg-card/30 p-4 lg:sticky lg:top-20">
-          <h1 className="mb-4 flex items-center gap-2 text-sm font-bold">
-            <BookOpen className="h-4 w-4 text-primary" />
-            الوثائق
-          </h1>
+        <aside className="w-full shrink-0 lg:w-64">
+          <div className="rounded-lg border border-border bg-card/30 p-4 lg:sticky lg:top-20">
+            <h1 className="mb-4 flex items-center gap-2 text-sm font-bold">
+              <BookOpen className="h-4 w-4 text-primary" />
+              الوثائق
+            </h1>
 
-          <SidebarGroup
-            icon={<BookOpen className="h-4 w-4" />}
-            title="دعم الأقسام"
-            open={open.support}
-            onToggle={() => setOpen((o) => ({ ...o, support: !o.support }))}
-          >
-            {PLATFORMS.map((x) => (
-              <SidebarItem
-                key={`support-${x.key}`}
-                active={cat === 'support' && p === x.key}
-                onClick={() => select('support', x.key)}
-              >
-                دعم {x.label}
+            <SidebarGroup
+              icon={<BookOpen className="h-4 w-4" />}
+              title="دعم الأقسام"
+              open={open.support}
+              onToggle={() => setOpen((o) => ({ ...o, support: !o.support }))}
+            >
+              {PLATFORMS.map((x) => (
+                <SidebarItem
+                  key={`support-${x.key}`}
+                  active={cat === 'support' && p === x.key}
+                  onClick={() => select('support', x.key)}
+                >
+                  دعم {x.label}
+                </SidebarItem>
+              ))}
+            </SidebarGroup>
+
+            <SidebarGroup
+              icon={<Wrench className="h-4 w-4" />}
+              title="مشاكل وحلول"
+              open={open.problems}
+              onToggle={() => setOpen((o) => ({ ...o, problems: !o.problems }))}
+            >
+              {PLATFORMS.map((x) => (
+                <SidebarItem
+                  key={`problems-${x.key}`}
+                  active={cat === 'problems' && p === x.key}
+                  onClick={() => select('problems', x.key)}
+                >
+                  مشاكل وحلول {x.label}
+                </SidebarItem>
+              ))}
+            </SidebarGroup>
+
+            <SidebarGroup
+              icon={<Info className="h-4 w-4" />}
+              title="عام"
+              open={open.general}
+              onToggle={() => setOpen((o) => ({ ...o, general: !o.general }))}
+            >
+              <SidebarItem active={cat === 'explore'} onClick={() => select('explore', 'PC')}>
+                الأقسام
               </SidebarItem>
-            ))}
-          </SidebarGroup>
-
-          <SidebarGroup
-            icon={<Wrench className="h-4 w-4" />}
-            title="مشاكل وحلول"
-            open={open.problems}
-            onToggle={() => setOpen((o) => ({ ...o, problems: !o.problems }))}
-          >
-            {PLATFORMS.map((x) => (
-              <SidebarItem
-                key={`problems-${x.key}`}
-                active={cat === 'problems' && p === x.key}
-                onClick={() => select('problems', x.key)}
-              >
-                مشاكل وحلول {x.label}
+              <SidebarItem active={cat === 'about'} onClick={() => select('about', 'PC')}>
+                من نحن
               </SidebarItem>
-            ))}
-          </SidebarGroup>
+              <SidebarItem active={cat === 'terms'} onClick={() => select('terms', 'PC')}>
+                شروط الخدمة
+              </SidebarItem>
+              <SidebarItem active={cat === 'privacy'} onClick={() => select('privacy', 'PC')}>
+                سياسة الخصوصية
+              </SidebarItem>
+            </SidebarGroup>
+          </div>
+        </aside>
 
-          <SidebarGroup
-            icon={<Info className="h-4 w-4" />}
-            title="عام"
-            open={open.general}
-            onToggle={() => setOpen((o) => ({ ...o, general: !o.general }))}
-          >
-            <SidebarItem active={cat === 'explore'} onClick={() => select('explore', 'PC')}>الأقسام</SidebarItem>
-            <SidebarItem active={cat === 'about'} onClick={() => select('about', 'PC')}>من نحن</SidebarItem>
-            <SidebarItem active={cat === 'terms'} onClick={() => select('terms', 'PC')}>شروط الخدمة</SidebarItem>
-            <SidebarItem active={cat === 'privacy'} onClick={() => select('privacy', 'PC')}>سياسة الخصوصية</SidebarItem>
-          </SidebarGroup>
+        <div className="min-w-0 flex-1">
+          {cat === 'problems' ? (
+            <ProblemsPage />
+          ) : cat === 'support' ? (
+            <SupportPage />
+          ) : cat === 'explore' ? (
+            <ExplorePage />
+          ) : cat === 'about' ? (
+            <AboutPage />
+          ) : cat === 'terms' ? (
+            <TermsPage />
+          ) : (
+            <PrivacyPage />
+          )}
         </div>
-      </aside>
-
-      <div className="min-w-0 flex-1">
-        {cat === 'problems' ? <ProblemsPage /> : cat === 'support' ? <SupportPage /> : cat === 'explore' ? <ExplorePage /> : cat === 'about' ? <AboutPage /> : cat === 'terms' ? <TermsPage /> : <PrivacyPage />}
-      </div>
       </div>
     </div>
   )
 }
 
-function SidebarGroup({ icon, title, open, onToggle, children }: { icon: React.ReactNode; title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+function SidebarGroup({
+  icon,
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
   return (
     <div className="mb-2">
       <button
@@ -156,14 +190,24 @@ function SidebarGroup({ icon, title, open, onToggle, children }: { icon: React.R
   )
 }
 
-function SidebarItem({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function SidebarItem({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
   return (
     <li>
       <button
         type="button"
         onClick={onClick}
         className={`w-full rounded-md px-2 py-1.5 text-right text-xs transition-colors ${
-          active ? 'bg-primary/15 font-bold text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          active
+            ? 'bg-primary/15 font-bold text-primary'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         }`}
       >
         {children}

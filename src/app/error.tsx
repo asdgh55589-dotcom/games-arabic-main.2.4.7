@@ -19,9 +19,7 @@ export default function Error({
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
       <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
       <h2 className="text-2xl font-bold">حدث خطأ ما</h2>
-      <p className="mt-2 text-muted-foreground">
-        نعتذر، حدث خطأ غير متوقع. حاول مرة أخرى.
-      </p>
+      <p className="mt-2 text-muted-foreground">نعتذر، حدث خطأ غير متوقع. حاول مرة أخرى.</p>
       <Button onClick={reset} className="mt-4">
         إعادة المحاولة
       </Button>

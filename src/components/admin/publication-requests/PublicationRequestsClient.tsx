@@ -11,7 +11,13 @@ import { Button } from '@/components/ui/button'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { CreatorBadge } from '@/components/creator-badge'
-import { AdminDataTable, type Column, type FilterConfig, type BulkAction, type StatItem } from '@/components/admin/shared/AdminDataTable'
+import {
+  AdminDataTable,
+  type Column,
+  type FilterConfig,
+  type BulkAction,
+  type StatItem,
+} from '@/components/admin/shared/AdminDataTable'
 import { ModWorkflowActions } from '@/components/admin/shared/ModWorkflowActions'
 import { timeAgo } from '@/lib/format'
 
@@ -27,7 +33,14 @@ interface PublicationMod {
   qualityScore: number | null
   reviewerId: string | null
   teamId: string | null
-  author: { id: string; username: string; avatarUrl: string | null; role: string; tier: number; specialRoles: string | null }
+  author: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    role: string
+    tier: number
+    specialRoles: string | null
+  }
   teamRelation: { id: string; name: string; logoUrl: string | null } | null
   game: { id: string; name: string } | null
   reviewer: { id: string; username: string; avatarUrl: string | null } | null
@@ -75,12 +88,20 @@ export function PublicationRequestsClient({
   const [page, setPage] = useState(initialPage)
   const [pageSize, setPageSize] = useState(initialPageSize)
   const [search, setSearch] = useState(initialSearch)
-  const [sourceFilter, setSourceFilter] = useState<string[]>(initialSource === 'all' ? [] : [initialSource])
+  const [sourceFilter, setSourceFilter] = useState<string[]>(
+    initialSource === 'all' ? [] : [initialSource],
+  )
   const [gameFilter, setGameFilter] = useState<string[]>(initialGame === 'all' ? [] : [initialGame])
-  const [reviewerFilter, setReviewerFilter] = useState<string[]>(initialReviewer === 'all' ? [] : [initialReviewer])
-  const [overdueFilter, setOverdueFilter] = useState<string[]>(initialOverdue === 'all' ? [] : [initialOverdue])
+  const [reviewerFilter, setReviewerFilter] = useState<string[]>(
+    initialReviewer === 'all' ? [] : [initialReviewer],
+  )
+  const [overdueFilter, setOverdueFilter] = useState<string[]>(
+    initialOverdue === 'all' ? [] : [initialOverdue],
+  )
   const [sortField, setSortField] = useState(initialSort)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialDirection as 'asc' | 'desc')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
+    initialDirection as 'asc' | 'desc',
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const updateUrl = (patch: Record<string, string>) => {
@@ -131,7 +152,8 @@ export function PublicationRequestsClient({
       if (v === 'team') d = d.filter((m) => !!m.teamId)
       else if (v === 'creator') d = d.filter((m) => m.author.role === 'creator' && !m.teamId)
       else if (v === 'publisher') d = d.filter((m) => m.author.role === 'publisher' && !m.teamId)
-      else if (v === 'admin') d = d.filter((m) => ['admin', 'manager', 'owner'].includes(m.author.role))
+      else if (v === 'admin')
+        d = d.filter((m) => ['admin', 'manager', 'owner'].includes(m.author.role))
     }
     if (gameFilter.length > 0) d = d.filter((m) => gameFilter.includes(m.game?.id || ''))
     if (reviewerFilter.length > 0) {
@@ -141,7 +163,12 @@ export function PublicationRequestsClient({
     if (overdueFilter.length > 0 && overdueFilter[0] === 'overdue') d = d.filter((m) => m.isOverdue)
     if (search) {
       const q = search.toLowerCase()
-      d = d.filter((m) => m.name.toLowerCase().includes(q) || m.author.username.toLowerCase().includes(q) || (m.game?.name || '').toLowerCase().includes(q))
+      d = d.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) ||
+          m.author.username.toLowerCase().includes(q) ||
+          (m.game?.name || '').toLowerCase().includes(q),
+      )
     }
     return d
   }, [initialData, sourceFilter, gameFilter, reviewerFilter, overdueFilter, search])
@@ -191,13 +218,19 @@ export function PublicationRequestsClient({
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarImage src={mod.author.avatarUrl || undefined} />
-            <AvatarFallback className="text-[10px]">{mod.author.username[0]?.toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="text-[10px]">
+              {mod.author.username[0]?.toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="text-sm flex items-center gap-1 truncate">
               {mod.author.username}
               <RoleBadge role={mod.author.role} size="sm" />
-              <CreatorBadge role={mod.author.role} specialRoles={mod.author.specialRoles} size="sm" />
+              <CreatorBadge
+                role={mod.author.role}
+                specialRoles={mod.author.specialRoles}
+                size="sm"
+              />
             </div>
             <div className="text-xs text-muted-foreground">
               <TierBadge role={mod.author.role} tier={mod.author.tier} size="sm" />
@@ -214,7 +247,9 @@ export function PublicationRequestsClient({
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={mod.teamRelation.logoUrl || undefined} />
-              <AvatarFallback className="text-[10px]">{mod.teamRelation.name[0]?.toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {mod.teamRelation.name[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm truncate max-w-[120px]">{mod.teamRelation.name}</span>
           </div>
@@ -226,7 +261,11 @@ export function PublicationRequestsClient({
       key: 'source',
       label: 'المصدر',
       sortable: true,
-      render: (mod) => <Badge variant="outline" className={`text-xs ${mod.source.color}`}>{mod.source.label}</Badge>,
+      render: (mod) => (
+        <Badge variant="outline" className={`text-xs ${mod.source.color}`}>
+          {mod.source.label}
+        </Badge>
+      ),
     },
     {
       key: 'submittedAt',
@@ -258,7 +297,9 @@ export function PublicationRequestsClient({
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={mod.reviewer.avatarUrl || undefined} />
-              <AvatarFallback className="text-[10px]">{mod.reviewer.username[0]?.toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {mod.reviewer.username[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm truncate max-w-[100px]">{mod.reviewer.username}</span>
           </div>
@@ -305,7 +346,10 @@ export function PublicationRequestsClient({
       key: 'game',
       label: 'اللعبة',
       type: 'select',
-      options: [{ label: 'الكل', value: 'all' }, ...games.map((g) => ({ label: g.name, value: g.id }))],
+      options: [
+        { label: 'الكل', value: 'all' },
+        ...games.map((g) => ({ label: g.name, value: g.id })),
+      ],
     },
     {
       key: 'reviewer',
@@ -403,7 +447,14 @@ export function PublicationRequestsClient({
       onAction: async (ids) => {
         const selected = filteredData.filter((r) => ids.includes(r.id))
         const headers = ['التعريب', 'المؤلف', 'المصدر', 'اللعبة', 'تاريخ الإرسال', 'الجودة']
-        const rows = selected.map((m) => [m.name, m.author.username, m.source.label, m.game?.name || '', new Date(m.updatedAt).toLocaleDateString('ar-EG'), String(m.qualityScore || '')])
+        const rows = selected.map((m) => [
+          m.name,
+          m.author.username,
+          m.source.label,
+          m.game?.name || '',
+          new Date(m.updatedAt).toLocaleDateString('ar-EG'),
+          String(m.qualityScore || ''),
+        ])
         const csv = `\uFEFF${headers.join(',')}\n${rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')}`
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
@@ -420,7 +471,10 @@ export function PublicationRequestsClient({
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">طلبات نشر التعريبات</h1>
-        <p className="text-sm text-muted-foreground">طابور موحد لكل التعريبات بانتظار المراجعة — حسب المصدر (فرق/مُعَرِّبين/ناشرين/إداريين) — الأقدم أولاً (FIFO)</p>
+        <p className="text-sm text-muted-foreground">
+          طابور موحد لكل التعريبات بانتظار المراجعة — حسب المصدر (فرق/مُعَرِّبين/ناشرين/إداريين) —
+          الأقدم أولاً (FIFO)
+        </p>
       </div>
 
       <AdminDataTable
@@ -453,7 +507,15 @@ export function PublicationRequestsClient({
         exportable
         exportFilename="publication-requests.csv"
         mobileCardView={(mod, isSelected, onToggle) => (
-          <Card className={mod.isOverdue ? 'border-red-500/50 bg-red-500/5' : isSelected ? 'ring-1 ring-primary/30 bg-primary/5' : ''}>
+          <Card
+            className={
+              mod.isOverdue
+                ? 'border-red-500/50 bg-red-500/5'
+                : isSelected
+                  ? 'ring-1 ring-primary/30 bg-primary/5'
+                  : ''
+            }
+          >
             <CardContent className="p-4">
               <div className="flex items-start gap-3 mb-3">
                 <Avatar className="h-10 w-10 rounded-md">
@@ -472,7 +534,10 @@ export function PublicationRequestsClient({
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {mod.game?.name || 'بدون لعبة'} · {mod.author.username} · <span className={mod.source.color + ' rounded px-1.5 py-0.5 text-[11px]'}>{mod.source.label}</span>
+                    {mod.game?.name || 'بدون لعبة'} · {mod.author.username} ·{' '}
+                    <span className={mod.source.color + ' rounded px-1.5 py-0.5 text-[11px]'}>
+                      {mod.source.label}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -483,7 +548,12 @@ export function PublicationRequestsClient({
                 <span>{mod.reviewer ? `مُسند: ${mod.reviewer.username}` : 'غير مُسند'}</span>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 min-h-[44px] text-xs" onClick={onToggle}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-h-[44px] text-xs"
+                  onClick={onToggle}
+                >
                   {isSelected ? 'إلغاء' : 'تحديد'}
                 </Button>
                 <div className="flex-1">

@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
     })
 
     if (accountCount <= 1) {
-      return NextResponse.json({ error: 'Cannot unlink your last login method. Link another provider first.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Cannot unlink your last login method. Link another provider first.' },
+        { status: 400 },
+      )
     }
 
     await db.oAuthAccount.delete({
@@ -46,7 +49,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    const status = err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
+    const status =
+      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

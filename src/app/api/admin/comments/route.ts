@@ -60,7 +60,10 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id')
     if (!id) return validationFail({ id: 'id required' })
 
-    const comment = await db.modComment.findUnique({ where: { id }, select: { id: true, modId: true } })
+    const comment = await db.modComment.findUnique({
+      where: { id },
+      select: { id: true, modId: true },
+    })
     if (!comment) return notFound()
 
     // Wrap delete + count update in a transaction for atomicity

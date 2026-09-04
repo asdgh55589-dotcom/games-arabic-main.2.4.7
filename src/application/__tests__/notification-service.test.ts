@@ -1,11 +1,6 @@
 import { NotificationService } from '../services/notification-service'
 import { NotificationType, NotificationChannel } from '@/domain'
-import type {
-  NotificationRepository,
-  TemplateRenderer,
-  EventPublisher,
-  JobQueue,
-} from '@/domain'
+import type { NotificationRepository, TemplateRenderer, EventPublisher, JobQueue } from '@/domain'
 
 describe('NotificationService', () => {
   let service: NotificationService

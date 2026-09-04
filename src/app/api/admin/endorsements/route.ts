@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         stats: { up: upCount, down: downCount, total: upCount + downCount },
         topMods,
       },
-      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
     )
   } catch (err) {
     console.error('[admin/endorsements GET] failed:', err)

@@ -27,9 +27,10 @@ interface LogUserActionParams {
 /** يكتب سجل نشاط في AuditLog */
 export async function logAction(params: LogActionParams) {
   try {
-    const ipAddress = params.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || params.request?.headers.get('x-real-ip')
-      || null
+    const ipAddress =
+      params.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      params.request?.headers.get('x-real-ip') ||
+      null
 
     const detailsParts: string[] = []
     if (params.details) detailsParts.push(params.details)
@@ -56,9 +57,10 @@ export async function logAction(params: LogActionParams) {
 /** يكتب إجراء مستخدم في UserAction + AuditLog في transaction */
 export async function logUserAction(params: LogUserActionParams) {
   try {
-    const ipAddress = params.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || params.request?.headers.get('x-real-ip')
-      || null
+    const ipAddress =
+      params.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      params.request?.headers.get('x-real-ip') ||
+      null
 
     await db.$transaction([
       db.userAction.create({
@@ -125,7 +127,7 @@ export async function exportAuditToCSV(filters: {
       `"${(log.details || '').replace(/"/g, '""')}"`,
       log.ipAddress || '',
       log.createdAt.toISOString(),
-    ].join(',')
+    ].join(','),
   )
 
   return '\uFEFF' + header + '\n' + rows.join('\n')

@@ -48,7 +48,9 @@ export default function RewardsPage() {
     }
   }
 
-  useEffect(() => { fetchLeaderboard() }, [timeRange])
+  useEffect(() => {
+    fetchLeaderboard()
+  }, [timeRange])
 
   return (
     <div className="space-y-6">
@@ -63,7 +65,8 @@ export default function RewardsPage() {
             <Button
               key={key}
               variant={timeRange === key ? 'default' : 'outline'}
-              size="sm" className="min-h-[44px]"
+              size="sm"
+              className="min-h-[44px]"
               onClick={() => setTimeRange(key)}
             >
               {label}
@@ -82,13 +85,11 @@ export default function RewardsPage() {
                 idx === 0
                   ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
                   : idx === 1
-                  ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
-                  : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
+                    ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
+                    : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
               }`}
             >
-              <div className="flex justify-center mb-2">
-                {RANK_ICONS[entry.rank]}
-              </div>
+              <div className="flex justify-center mb-2">{RANK_ICONS[entry.rank]}</div>
               <div className="font-medium">{entry.team?.name}</div>
               <div className="text-2xl font-bold mt-1">{entry.points.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">نقطة</div>

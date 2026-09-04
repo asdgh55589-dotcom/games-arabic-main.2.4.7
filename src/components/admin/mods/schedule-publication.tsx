@@ -131,12 +131,12 @@ export function SchedulePublication({
             />
           </div>
         </div>
-        <Button
-          onClick={handleSchedule}
-          disabled={!date || loading}
-          className="w-full"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Calendar className="h-4 w-4 ml-2" />}
+        <Button onClick={handleSchedule} disabled={!date || loading} className="w-full">
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+          ) : (
+            <Calendar className="h-4 w-4 ml-2" />
+          )}
           جدولة النشر
         </Button>
       </CardContent>

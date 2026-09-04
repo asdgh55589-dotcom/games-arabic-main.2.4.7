@@ -12,7 +12,9 @@ import type {
 
 const rpName = 'GamesArabic'
 const rpID = process.env.NEXT_PUBLIC_APP_DOMAIN || process.env.VERCEL_URL || 'localhost'
-const origin = process.env.NEXT_PUBLIC_SITE_URL || (rpID === 'localhost' ? 'http://localhost:3000' : `https://${rpID}`)
+const origin =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (rpID === 'localhost' ? 'http://localhost:3000' : `https://${rpID}`)
 
 export interface WebAuthnCredential {
   id: string
@@ -29,7 +31,7 @@ export interface WebAuthnCredential {
 export async function generateRegistration(
   userId: string,
   username: string,
-  existingCredentials: WebAuthnCredential[] = []
+  existingCredentials: WebAuthnCredential[] = [],
 ) {
   const options = await generateRegistrationOptions({
     rpName,
@@ -56,7 +58,7 @@ export async function generateRegistration(
  */
 export async function verifyRegistration(
   response: RegistrationResponseJSON,
-  expectedChallenge: string
+  expectedChallenge: string,
 ) {
   const verification = await verifyRegistrationResponse({
     response: response as unknown as RegistrationResponseJSON,
@@ -91,7 +93,7 @@ export async function generateAuthentication(credentials: WebAuthnCredential[]) 
 export async function verifyAuthentication(
   response: AuthenticationResponseJSON,
   credential: WebAuthnCredential,
-  expectedChallenge: string
+  expectedChallenge: string,
 ) {
   const verification = await verifyAuthenticationResponse({
     response: response as unknown as AuthenticationResponseJSON,

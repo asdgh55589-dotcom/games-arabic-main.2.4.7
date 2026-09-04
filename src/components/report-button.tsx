@@ -13,10 +13,20 @@ interface ReportButtonProps {
   onReported?: () => void
 }
 
-export function ReportButton({ targetType, targetId, variant = 'ghost', size = 'sm', onReported }: ReportButtonProps) {
+export function ReportButton({
+  targetType,
+  targetId,
+  variant = 'ghost',
+  size = 'sm',
+  onReported,
+}: ReportButtonProps) {
   return (
     <ReportDialog targetType={targetType} targetId={targetId} onSuccess={onReported}>
-      <Button variant={variant} size={size} className="gap-2 text-muted-foreground hover:text-destructive">
+      <Button
+        variant={variant}
+        size={size}
+        className="gap-2 text-muted-foreground hover:text-destructive"
+      >
         <Flag className="h-4 w-4" />
         إبلاغ
       </Button>

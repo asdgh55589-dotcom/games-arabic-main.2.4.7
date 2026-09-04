@@ -16,8 +16,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         icon: body.icon,
         color: body.color,
         description: body.description,
-        isActive: body.isActive
-      }
+        isActive: body.isActive,
+      },
     })
     return ok({ role })
   } catch (err) {
@@ -25,7 +25,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ key: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ key: string }> },
+) {
   try {
     await requireAdmin()
     const { key } = await params

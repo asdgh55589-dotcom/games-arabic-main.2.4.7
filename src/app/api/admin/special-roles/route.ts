@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
         nameEn: body.nameEn,
         icon: body.icon || 'Star',
         color: body.color || '#6b7280',
-        description: body.description || ''
-      }
+        description: body.description || '',
+      },
     })
     return ok({ role })
   } catch (err) {

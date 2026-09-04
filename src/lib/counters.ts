@@ -20,7 +20,8 @@ const HOUR = 3600
 const DAY = 86400
 
 /** أنماط bots — لا نرفض privacy browsers بدون UA */
-const BOT_PATTERN = /bot|crawler|spider|crawling|headless|phantom|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|python-requests|curl\/|wget|axios\/|node-fetch/i
+const BOT_PATTERN =
+  /bot|crawler|spider|crawling|headless|phantom|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|python-requests|curl\/|wget|axios\/|node-fetch/i
 
 export function isBot(userAgent: string | null | undefined): boolean {
   if (!userAgent) return false // Privacy browsers (Brave, Firefox Focus) — لا نرفض، نستخدم dedup أشد
@@ -72,7 +73,10 @@ async function resolveIdentity(req: Request): Promise<CounterIdentity> {
  * فحص dedup موحّد — يرجع true إذا كان الحدث جديداً (يُحتسب).
  * fail-open عند فشل Redis كلياً: يُرجع false لمنع التضخم (الذاكرة المحلية تغطي الحالة الشائعة).
  */
-async function shouldCount(scope: string, req: Request): Promise<{ fresh: boolean; identity: CounterIdentity }> {
+async function shouldCount(
+  scope: string,
+  req: Request,
+): Promise<{ fresh: boolean; identity: CounterIdentity }> {
   const identity = await resolveIdentity(req)
   const fresh = await redisSetNX(`count:${scope}:${identity.identity}`, identity.ttl)
   return { fresh, identity }
@@ -86,11 +90,7 @@ export interface RecordResult {
  * تسجيل مشاهدة تعريب — تكتب صف ModView وتزيد العداد فقط للمشاهدة الفريدة.
  * يُرجع counted=false للمكرر أو الـ bots.
  */
-export async function recordModView(
-  modId: string,
-  req: Request,
-  db: any
-): Promise<RecordResult> {
+export async function recordModView(modId: string, req: Request, db: any): Promise<RecordResult> {
   const userAgent = req.headers.get('user-agent')
   if (isBot(userAgent)) return { counted: false }
 
@@ -131,18 +131,16 @@ export async function recordModView(
       }),
     ])
   }
-  try { clearHomeCache() } catch {}
+  try {
+    clearHomeCache()
+  } catch {}
   return { counted: true }
 }
 
 /**
  * تسجيل مشاهدة صفحة فريق — عداد Team.views مع dedup بنفس سياسة المشاهدات.
  */
-export async function recordTeamView(
-  teamId: string,
-  req: Request,
-  db: any
-): Promise<RecordResult> {
+export async function recordTeamView(teamId: string, req: Request, db: any): Promise<RecordResult> {
   const userAgent = req.headers.get('user-agent')
   if (isBot(userAgent)) return { counted: false }
 
@@ -169,7 +167,7 @@ export async function recordDownload(
     userId?: string | null
   },
   req: Request,
-  db: any
+  db: any,
 ): Promise<RecordResult> {
   const userAgent = req.headers.get('user-agent')
   if (isBot(userAgent)) return { counted: false }
@@ -243,13 +241,26 @@ export async function recordDownload(
     // Best-effort cascade for non-transactional mocks
     try {
       if (db.game && db.mod?.findUnique) {
-        const mod = await db.mod.findUnique({ where: { id: opts.modId }, select: { gameId: true, seriesId: true } })
-        if (mod?.gameId && db.game?.update) await db.game.update({ where: { id: mod.gameId }, data: { totalDownloads: { increment: 1 } } })
-        if (mod?.seriesId && db.series?.update) await db.series.update({ where: { id: mod.seriesId }, data: { totalDownloads: { increment: 1 } } })
+        const mod = await db.mod.findUnique({
+          where: { id: opts.modId },
+          select: { gameId: true, seriesId: true },
+        })
+        if (mod?.gameId && db.game?.update)
+          await db.game.update({
+            where: { id: mod.gameId },
+            data: { totalDownloads: { increment: 1 } },
+          })
+        if (mod?.seriesId && db.series?.update)
+          await db.series.update({
+            where: { id: mod.seriesId },
+            data: { totalDownloads: { increment: 1 } },
+          })
       }
     } catch {}
   }
-  try { clearHomeCache() } catch {}
+  try {
+    clearHomeCache()
+  } catch {}
   return { counted: true }
 }
 
@@ -316,7 +327,11 @@ export async function recordNewsView(newsId: string, req: Request, db: any): Pro
 /**
  * تسجيل نقرة خبر — يزيد News.clicksCount ويسجل NewsClick فقط للنقرات الفريدة.
  */
-export async function recordNewsClick(newsId: string, req: Request, db: any): Promise<RecordResult> {
+export async function recordNewsClick(
+  newsId: string,
+  req: Request,
+  db: any,
+): Promise<RecordResult> {
   const userAgent = req.headers.get('user-agent')
   if (isBot(userAgent)) return { counted: false }
 

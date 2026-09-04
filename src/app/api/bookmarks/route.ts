@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getOptionalSession } from '@/lib/auth'
-import { ok, unauthorized, notFound, conflict, validationFail, internalError } from '@/lib/api-response'
+import {
+  ok,
+  unauthorized,
+  notFound,
+  conflict,
+  validationFail,
+  internalError,
+} from '@/lib/api-response'
 import { BookmarkSchema } from '@/lib/schemas'
 
 // POST /api/bookmarks — حفظ تعريب في المفضلة

@@ -23,7 +23,14 @@ interface SeriesData {
   isOfficial: boolean
   order: number
   modCount: number
-  mods: Array<{ id: string; name: string; slug: string; downloads: number; endorsements: number; thumbnailUrl: string }>
+  mods: Array<{
+    id: string
+    name: string
+    slug: string
+    downloads: number
+    endorsements: number
+    thumbnailUrl: string
+  }>
 }
 
 export default function SeriesEditPage() {
@@ -76,23 +83,42 @@ export default function SeriesEditPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, description, bannerUrl, logoUrl, color,
-          isFeatured, isOfficial, order,
+          name,
+          description,
+          bannerUrl,
+          logoUrl,
+          color,
+          isFeatured,
+          isOfficial,
+          order,
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحفظ')
+      if (!res.ok)
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل الحفظ',
+        )
       toast({ title: 'تم الحفظ', description: 'تم تحديث السلسلة بنجاح' })
       setSeries(data.data)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
   }
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error || !series) {
@@ -107,7 +133,9 @@ export default function SeriesEditPage() {
     <div className="space-y-6">
       {/* مسار التنقل */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/admin/series" className="hover:text-foreground">السلاسل</Link>
+        <Link href="/admin/series" className="hover:text-foreground">
+          السلاسل
+        </Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
         <span className="text-foreground">{series.name}</span>
       </div>
@@ -118,9 +146,15 @@ export default function SeriesEditPage() {
           <p className="mt-1 text-sm text-muted-foreground">{series.modCount} تعريب مرتبط</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>رجوع</Button>
+          <Button variant="outline" onClick={() => router.back()}>
+            رجوع
+          </Button>
           <Button onClick={onSave} disabled={saving}>
-            {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="ml-2 h-4 w-4" />
+            )}
             حفظ
           </Button>
         </div>
@@ -136,8 +170,14 @@ export default function SeriesEditPage() {
           <div>
             <Label>اللون</Label>
             <div className="flex gap-2">
-              <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#ff0000" />
-              {color && <div className="h-10 w-10 rounded border" style={{ backgroundColor: color }} />}
+              <Input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="#ff0000"
+              />
+              {color && (
+                <div className="h-10 w-10 rounded border" style={{ backgroundColor: color }} />
+              )}
             </div>
           </div>
           <div className="sm:col-span-2">
@@ -150,10 +190,24 @@ export default function SeriesEditPage() {
             />
           </div>
           <div>
-            <ImageUpload bucket="series" value={bannerUrl} onChange={setBannerUrl} label="صورة البانر" hint="سحب وإفلات — أعلى جودة" folder="banners" />
+            <ImageUpload
+              bucket="series"
+              value={bannerUrl}
+              onChange={setBannerUrl}
+              label="صورة البانر"
+              hint="سحب وإفلات — أعلى جودة"
+              folder="banners"
+            />
           </div>
           <div>
-            <ImageUpload bucket="series" value={logoUrl} onChange={setLogoUrl} label="الشعار" hint="سحب وإفلات — أعلى جودة" folder="logos" />
+            <ImageUpload
+              bucket="series"
+              value={logoUrl}
+              onChange={setLogoUrl}
+              label="الشعار"
+              hint="سحب وإفلات — أعلى جودة"
+              folder="logos"
+            />
           </div>
           <div>
             <Label>الترتيب</Label>
@@ -161,11 +215,21 @@ export default function SeriesEditPage() {
           </div>
           <div className="flex items-end gap-4">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="rounded" />
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="rounded"
+              />
               مميّزة
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isOfficial} onChange={(e) => setIsOfficial(e.target.checked)} className="rounded" />
+              <input
+                type="checkbox"
+                checked={isOfficial}
+                onChange={(e) => setIsOfficial(e.target.checked)}
+                className="rounded"
+              />
               رسمية
             </label>
           </div>

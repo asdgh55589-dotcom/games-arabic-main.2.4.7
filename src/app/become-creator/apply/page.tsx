@@ -54,7 +54,11 @@ export default function BecomeCreatorApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!experience.trim() || !reason.trim()) {
-      toast({ title: 'الحقول المطلوبة', description: 'الخبرة وسبب الرغبة مطلوبان', variant: 'destructive' })
+      toast({
+        title: 'الحقول المطلوبة',
+        description: 'الخبرة وسبب الرغبة مطلوبان',
+        variant: 'destructive',
+      })
       return
     }
     setSubmitting(true)
@@ -76,7 +80,11 @@ export default function BecomeCreatorApplyPage() {
       const json = await res.json()
       if (res.ok) {
         toast({ title: 'تم إرسال طلبك بنجاح، سيتم مراجعته قريباً' })
-        setExisting({ id: json.data?.id || '', status: 'pending', createdAt: new Date().toISOString() })
+        setExisting({
+          id: json.data?.id || '',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        })
         setExperience('')
         setPreferredGames('')
         setPortfolioLinks('')
@@ -86,7 +94,11 @@ export default function BecomeCreatorApplyPage() {
         setDiscordHandle('')
         setWebsiteUrl('')
       } else {
-        const msg = (typeof json?.error?.details === 'string' ? json.error.details : null) || json?.error?.message || json?.error || 'فشل الإرسال'
+        const msg =
+          (typeof json?.error?.details === 'string' ? json.error.details : null) ||
+          json?.error?.message ||
+          json?.error ||
+          'فشل الإرسال'
         toast({ title: msg, variant: 'destructive' })
       }
     } catch {
@@ -97,7 +109,10 @@ export default function BecomeCreatorApplyPage() {
 
   if (authLoading || loadingStatus) {
     return (
-      <div className="container mx-auto py-12 max-w-2xl px-4 flex items-center justify-center min-h-[50vh]" dir="rtl">
+      <div
+        className="container mx-auto py-12 max-w-2xl px-4 flex items-center justify-center min-h-[50vh]"
+        dir="rtl"
+      >
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -111,7 +126,9 @@ export default function BecomeCreatorApplyPage() {
             <h2 className="text-xl font-bold mb-2">يجب تسجيل الدخول أولاً</h2>
             <p className="text-sm text-muted-foreground mb-6">سجّل دخولك لتقديم طلب أن تصبح معرّباً</p>
             <Link href="/login">
-              <Button size="lg" className="min-h-[44px]">تسجيل الدخول</Button>
+              <Button size="lg" className="min-h-[44px]">
+                تسجيل الدخول
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -126,10 +143,16 @@ export default function BecomeCreatorApplyPage() {
           <CardContent className="p-8">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">أنت بالفعل معرّب أو لديك صلاحيات أعلى</h2>
-            <p className="text-sm text-muted-foreground mb-6">لديك صلاحيات تفوق العضو العادي — لا حاجة لتقديم الطلب</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              لديك صلاحيات تفوق العضو العادي — لا حاجة لتقديم الطلب
+            </p>
             <div className="flex justify-center gap-3">
-              <Link href="/upload"><Button>رفع تعريب</Button></Link>
-              <Link href="/settings"><Button variant="outline">الإعدادات</Button></Link>
+              <Link href="/upload">
+                <Button>رفع تعريب</Button>
+              </Link>
+              <Link href="/settings">
+                <Button variant="outline">الإعدادات</Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -145,9 +168,15 @@ export default function BecomeCreatorApplyPage() {
             <CardContent className="p-8">
               <Clock className="h-12 w-12 text-amber-500 mx-auto mb-4" />
               <h2 className="text-xl font-bold mb-2">لديك طلب قيد المراجعة بالفعل</h2>
-              <p className="text-sm text-muted-foreground mb-2">تم إرسال طلبك بتاريخ {new Date(existing.createdAt).toLocaleDateString('ar-EG')}</p>
-              <p className="text-sm text-muted-foreground mb-6">سيتم مراجعته خلال 48 ساعة وستصلك إشعار بالنتيجة</p>
-              <Link href="/become-creator"><Button variant="outline">العودة</Button></Link>
+              <p className="text-sm text-muted-foreground mb-2">
+                تم إرسال طلبك بتاريخ {new Date(existing.createdAt).toLocaleDateString('ar-EG')}
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                سيتم مراجعته خلال 48 ساعة وستصلك إشعار بالنتيجة
+              </p>
+              <Link href="/become-creator">
+                <Button variant="outline">العودة</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -160,8 +189,12 @@ export default function BecomeCreatorApplyPage() {
             <CardContent className="p-8">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
               <h2 className="text-xl font-bold mb-2">مبروك! تم قبول طلبك</h2>
-              <p className="text-sm text-muted-foreground mb-6">أنت الآن معرّب رسمي — يمكنك رفع تعريباتك</p>
-              <Link href="/upload"><Button>ابدأ رفع تعريب</Button></Link>
+              <p className="text-sm text-muted-foreground mb-6">
+                أنت الآن معرّب رسمي — يمكنك رفع تعريباتك
+              </p>
+              <Link href="/upload">
+                <Button>ابدأ رفع تعريب</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -177,7 +210,10 @@ export default function BecomeCreatorApplyPage() {
   return (
     <div className="container mx-auto py-12 max-w-2xl px-4" dir="rtl">
       <div className="mb-6">
-        <Link href="/become-creator" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          href="/become-creator"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowRight className="h-4 w-4" /> العودة
         </Link>
       </div>
@@ -188,8 +224,14 @@ export default function BecomeCreatorApplyPage() {
               <XCircle className="h-6 w-6 text-destructive shrink-0" />
               <div>
                 <h3 className="font-bold text-sm">تم رفض طلبك السابق</h3>
-                {existing?.rejectReason && <p className="text-sm text-muted-foreground mt-1">السبب: {existing.rejectReason}</p>}
-                <p className="text-xs text-muted-foreground mt-2">يمكنك تقديم طلب جديد بعد معالجة الملاحظات</p>
+                {existing?.rejectReason && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    السبب: {existing.rejectReason}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  يمكنك تقديم طلب جديد بعد معالجة الملاحظات
+                </p>
               </div>
             </div>
           </CardContent>
@@ -235,7 +277,9 @@ export default function BecomeCreatorApplyPage() {
                 rows={3}
                 className="resize-none"
               />
-              <p className="text-xs text-muted-foreground">اختياري — لكن وجود أعمال سابقة يزيد فرصة القبول</p>
+              <p className="text-xs text-muted-foreground">
+                اختياري — لكن وجود أعمال سابقة يزيد فرصة القبول
+              </p>
             </div>
 
             <div className="space-y-2">

@@ -7,7 +7,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { Settings, Crown, Shield, Star, User as UserIcon, Save, Globe, Palette, Search, Share2, Loader2 } from 'lucide-react'
+import {
+  Settings,
+  Crown,
+  Shield,
+  Star,
+  User as UserIcon,
+  Save,
+  Globe,
+  Palette,
+  Search,
+  Share2,
+  Loader2,
+} from 'lucide-react'
 
 interface SettingsData {
   [group: string]: {
@@ -22,7 +34,12 @@ const SETTING_GROUPS = [
     icon: Globe,
     fields: [
       { key: 'site_name', label: 'اسم الموقع', type: 'text', placeholder: 'GAMES ARABIC' },
-      { key: 'site_description', label: 'وصف الموقع', type: 'textarea', placeholder: 'منصة تعريب الألعاب' },
+      {
+        key: 'site_description',
+        label: 'وصف الموقع',
+        type: 'textarea',
+        placeholder: 'منصة تعريب الألعاب',
+      },
       { key: 'site_logo', label: 'رابط الشعار', type: 'text', placeholder: 'https://...' },
       { key: 'site_favicon', label: 'رابط Favicon', type: 'text', placeholder: 'https://...' },
     ],
@@ -33,7 +50,12 @@ const SETTING_GROUPS = [
     icon: Palette,
     fields: [
       { key: 'primary_color', label: 'اللون الأساسي', type: 'text', placeholder: '#3b82f6' },
-      { key: 'dark_mode_default', label: 'الوضع الداكن افتراضي', type: 'select', options: ['true', 'false'] },
+      {
+        key: 'dark_mode_default',
+        label: 'الوضع الداكن افتراضي',
+        type: 'select',
+        options: ['true', 'false'],
+      },
     ],
   },
   {
@@ -41,16 +63,51 @@ const SETTING_GROUPS = [
     label: 'تحسين محركات البحث (SEO)',
     icon: Search,
     fields: [
-      { key: 'site_url', label: 'رابط الموقع الرئيسي', type: 'text', placeholder: 'https://games-arabic.vercel.app' },
-      { key: 'meta_title', label: 'عنوان Meta', type: 'text', placeholder: 'GAMES ARABIC - تعريب ألعاب' },
-      { key: 'meta_description', label: 'وصف Meta', type: 'textarea', placeholder: 'منصة تعريب الألعاب...' },
+      {
+        key: 'site_url',
+        label: 'رابط الموقع الرئيسي',
+        type: 'text',
+        placeholder: 'https://games-arabic.vercel.app',
+      },
+      {
+        key: 'meta_title',
+        label: 'عنوان Meta',
+        type: 'text',
+        placeholder: 'GAMES ARABIC - تعريب ألعاب',
+      },
+      {
+        key: 'meta_description',
+        label: 'وصف Meta',
+        type: 'textarea',
+        placeholder: 'منصة تعريب الألعاب...',
+      },
       { key: 'og_image', label: 'صورة OG (Open Graph)', type: 'text', placeholder: 'https://...' },
       { key: 'og_locale', label: 'لغة OG', type: 'text', placeholder: 'ar_SA' },
       { key: 'og_type', label: 'نوع المحتوى OG', type: 'select', options: ['website', 'article'] },
-      { key: 'theme_color', label: 'لون الثيم (theme-color)', type: 'text', placeholder: '#eab308' },
-      { key: 'robots_txt', label: 'قواعد الم crawler', type: 'textarea', placeholder: 'User-agent: *\nAllow: /' },
-      { key: 'google_analytics_id', label: 'معرّف Google Analytics', type: 'text', placeholder: 'G-XXXXXXXXXX' },
-      { key: 'google_search_console', label: 'معرّف Google Search Console', type: 'text', placeholder: 'verification code' },
+      {
+        key: 'theme_color',
+        label: 'لون الثيم (theme-color)',
+        type: 'text',
+        placeholder: '#eab308',
+      },
+      {
+        key: 'robots_txt',
+        label: 'قواعد الم crawler',
+        type: 'textarea',
+        placeholder: 'User-agent: *\nAllow: /',
+      },
+      {
+        key: 'google_analytics_id',
+        label: 'معرّف Google Analytics',
+        type: 'text',
+        placeholder: 'G-XXXXXXXXXX',
+      },
+      {
+        key: 'google_search_console',
+        label: 'معرّف Google Search Console',
+        type: 'text',
+        placeholder: 'verification code',
+      },
     ],
   },
   {
@@ -115,9 +172,15 @@ export default function AdminSettingsPage() {
 
   const onSave = async () => {
     // حماية من حفظ نموذج فارغ
-    const isFormEmpty = Object.values(settings).every((group) => !group || Object.values(group).every((v) => !v || v === ''))
+    const isFormEmpty = Object.values(settings).every(
+      (group) => !group || Object.values(group).every((v) => !v || v === ''),
+    )
     if (isFormEmpty) {
-      toast({ title: 'تنبيه', description: 'لا يمكن حفظ نموذج فارغ — تحقق من تحميل البيانات', variant: 'destructive' })
+      toast({
+        title: 'تنبيه',
+        description: 'لا يمكن حفظ نموذج فارغ — تحقق من تحميل البيانات',
+        variant: 'destructive',
+      })
       return
     }
     setSaving(true)
@@ -130,7 +193,11 @@ export default function AdminSettingsPage() {
       if (!res.ok) throw new Error('فشل الحفظ')
       toast({ title: 'تم الحفظ', description: 'تم حفظ الإعدادات بنجاح' })
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
@@ -157,11 +224,17 @@ export default function AdminSettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">الإعدادات</h1>
-          <p className="mt-1 text-sm text-muted-foreground">إعدادات الموقع العامة — متاحة للمالك فقط</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            إعدادات الموقع العامة — متاحة للمالك فقط
+          </p>
         </div>
         {userRole === 'owner' && (
           <Button onClick={onSave} disabled={saving}>
-            {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="ml-2 h-4 w-4" />
+            )}
             حفظ الإعدادات
           </Button>
         )}
@@ -192,10 +265,18 @@ export default function AdminSettingsPage() {
           <div className="mt-4 rounded-xl border border-border bg-card/30 p-3">
             <h3 className="mb-2 text-xs font-bold text-muted-foreground">الأدوار والصلاحيات</h3>
             <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-1.5"><Crown className="h-3 w-3 text-amber-500" /> المالك: كل شيء</div>
-              <div className="flex items-center gap-1.5"><Shield className="h-3 w-3 text-red-500" /> المدير: إدارة المحتوى والمستخدمين</div>
-              <div className="flex items-center gap-1.5"><Star className="h-3 w-3 text-purple-500" /> المشرف: نشر/تعديل تعريباته</div>
-              <div className="flex items-center gap-1.5"><UserIcon className="h-3 w-3 text-blue-500" /> العضو: لا لوحة تحكم</div>
+              <div className="flex items-center gap-1.5">
+                <Crown className="h-3 w-3 text-amber-500" /> المالك: كل شيء
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-3 w-3 text-red-500" /> المدير: إدارة المحتوى والمستخدمين
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Star className="h-3 w-3 text-purple-500" /> المشرف: نشر/تعديل تعريباته
+              </div>
+              <div className="flex items-center gap-1.5">
+                <UserIcon className="h-3 w-3 text-blue-500" /> العضو: لا لوحة تحكم
+              </div>
             </div>
           </div>
         </div>
@@ -226,7 +307,9 @@ export default function AdminSettingsPage() {
                         className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
                       >
                         {field.options?.map((opt) => (
-                          <option key={opt} value={opt}>{opt === 'true' ? 'نعم' : 'لا'}</option>
+                          <option key={opt} value={opt}>
+                            {opt === 'true' ? 'نعم' : 'لا'}
+                          </option>
                         ))}
                       </select>
                     ) : (

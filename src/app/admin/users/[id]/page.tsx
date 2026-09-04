@@ -3,7 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Loader2, Crown, Shield, Star, User as UserIcon, Ban, Clock } from 'lucide-react'
+import {
+  ArrowRight,
+  Loader2,
+  Crown,
+  Shield,
+  Star,
+  User as UserIcon,
+  Ban,
+  Clock,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo, formatNumber } from '@/lib/format'
@@ -51,10 +60,26 @@ interface UserComment {
 }
 
 const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-  owner:     { label: 'مالك', icon: <Crown className="h-3 w-3" />, className: 'bg-amber-500 text-white' },
-  admin:     { label: 'مدير',  icon: <Shield className="h-3 w-3" />, className: 'bg-red-500 text-white' },
-  moderator: { label: 'مشرف',  icon: <Star className="h-3 w-3" />,  className: 'bg-purple-500 text-white' },
-  member:    { label: 'عضو',   icon: <UserIcon className="h-3 w-3" />, className: 'bg-blue-500 text-white' },
+  owner: {
+    label: 'مالك',
+    icon: <Crown className="h-3 w-3" />,
+    className: 'bg-amber-500 text-white',
+  },
+  admin: {
+    label: 'مدير',
+    icon: <Shield className="h-3 w-3" />,
+    className: 'bg-red-500 text-white',
+  },
+  moderator: {
+    label: 'مشرف',
+    icon: <Star className="h-3 w-3" />,
+    className: 'bg-purple-500 text-white',
+  },
+  member: {
+    label: 'عضو',
+    icon: <UserIcon className="h-3 w-3" />,
+    className: 'bg-blue-500 text-white',
+  },
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
@@ -108,15 +133,15 @@ export default function UserDetailPage() {
   useEffect(() => {
     if (user) {
       fetch(`/api/admin/users/${user.id}/tier-history`)
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           const payload = data?.data ?? data
           setTierHistory(payload?.history ?? payload ?? [])
         })
 
       fetch('/api/admin/special-roles')
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           const payload = data?.data ?? data
           const roles = payload?.roles ?? payload ?? []
           const userRoleKeys = (user.specialRoles || '').split(',').filter(Boolean)
@@ -135,19 +160,30 @@ export default function UserDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحظر'
+        const msg =
+          data?.error?.message ||
+          (typeof data?.error === 'string' ? data.error : null) ||
+          'فشل الحظر'
         throw new Error(msg)
       }
       toast({ title: 'تم الحظر' })
-      setUser((u) => u ? {
-        ...u,
-        bannedUntil: data.bannedUntil,
-        banStatus: data.banStatus,
-        banReason: data.banReason,
-        bannedAt: new Date().toISOString(),
-      } : u)
+      setUser((u) =>
+        u
+          ? {
+              ...u,
+              bannedUntil: data.bannedUntil,
+              banStatus: data.banStatus,
+              banReason: data.banReason,
+              bannedAt: new Date().toISOString(),
+            }
+          : u,
+      )
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -160,40 +196,55 @@ export default function UserDetailPage() {
       })
       if (!res.ok) throw new Error('فشل إلغاء الحظر')
       toast({ title: 'تم إلغاء الحظر' })
-      setUser((u) => u ? {
-        ...u,
-        bannedUntil: null,
-        banStatus: 'active',
-        banReason: null,
-        bannedAt: null,
-      } : u)
+      setUser((u) =>
+        u
+          ? {
+              ...u,
+              bannedUntil: null,
+              banStatus: 'active',
+              banReason: null,
+              bannedAt: null,
+            }
+          : u,
+      )
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
-  if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-  if (error || !user) return (
-    <div className="grid place-items-center py-20 text-center" dir="rtl">
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg max-w-md">
-        <h2 className="text-red-700 font-bold mb-2">⚠️ فشل تحميل البيانات</h2>
-        <p className="text-red-600 mb-4 text-sm">{error || 'المستخدم غير موجود'}</p>
-        <Button onClick={fetchUser}>إعادة المحاولة</Button>
+  if (loading)
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    </div>
-  )
+    )
+  if (error || !user)
+    return (
+      <div className="grid place-items-center py-20 text-center" dir="rtl">
+        <div className="p-6 bg-red-50 border border-red-200 rounded-lg max-w-md">
+          <h2 className="text-red-700 font-bold mb-2">⚠️ فشل تحميل البيانات</h2>
+          <p className="text-red-600 mb-4 text-sm">{error || 'المستخدم غير موجود'}</p>
+          <Button onClick={fetchUser}>إعادة المحاولة</Button>
+        </div>
+      </div>
+    )
 
   const role = ROLE_BADGE[user.role] || ROLE_BADGE.member
   const isPermBanned = user.banStatus === 'banned_perm'
-  const isTempBanned = user.banStatus === 'banned_temp'
-    && user.bannedUntil
-    && new Date(user.bannedUntil) > new Date()
+  const isTempBanned =
+    user.banStatus === 'banned_temp' && user.bannedUntil && new Date(user.bannedUntil) > new Date()
   const isBanned = isPermBanned || isTempBanned
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/admin/users" className="hover:text-foreground">المستخدمون</Link>
+        <Link href="/admin/users" className="hover:text-foreground">
+          المستخدمون
+        </Link>
         <ArrowRight className="h-4 w-4 rotate-180" />
         <span className="text-foreground">{user.username}</span>
       </div>
@@ -203,12 +254,16 @@ export default function UserDetailPage() {
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold">{user.username.charAt(0)}</div>
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold">
+            {user.username.charAt(0)}
+          </div>
         )}
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">{user.username}</h1>
-            <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold ${role.className}`}>
+            <span
+              className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold ${role.className}`}
+            >
               {role.icon} {role.label}
             </span>
             {isPermBanned && (
@@ -227,9 +282,13 @@ export default function UserDetailPage() {
         </div>
         <div className="flex gap-2">
           {isBanned ? (
-            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onUnban}>إلغاء الحظر</Button>
+            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onUnban}>
+              إلغاء الحظر
+            </Button>
           ) : (
-            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onBan}>حظر</Button>
+            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={onBan}>
+              حظر
+            </Button>
           )}
         </div>
       </div>
@@ -255,7 +314,11 @@ export default function UserDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div role="tablist" aria-label="تبويبات المستخدم" className="flex gap-1 border-b border-border">
+      <div
+        role="tablist"
+        aria-label="تبويبات المستخدم"
+        className="flex gap-1 border-b border-border"
+      >
         {(['overview', 'activity', 'comments', 'tier'] as const).map((t) => (
           <button
             key={t}
@@ -266,20 +329,48 @@ export default function UserDetailPage() {
             onClick={() => setTab(t)}
             className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === t ? 'border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            {t === 'overview' ? 'البيانات' : t === 'activity' ? 'النشاط' : t === 'comments' ? 'التعليقات' : 'المستوى والأدوار'}
+            {t === 'overview'
+              ? 'البيانات'
+              : t === 'activity'
+                ? 'النشاط'
+                : t === 'comments'
+                  ? 'التعليقات'
+                  : 'المستوى والأدوار'}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      <div id="overview-panel" role="tabpanel" aria-labelledby="overview-tab" hidden={tab !== 'overview'}>
+      <div
+        id="overview-panel"
+        role="tabpanel"
+        aria-labelledby="overview-tab"
+        hidden={tab !== 'overview'}
+      >
         <div className="rounded-xl border border-border bg-card p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div><span className="text-xs text-muted-foreground">تاريخ الانضمام</span><div className="text-sm">{new Date(user.joinedAt).toLocaleDateString('ar')}</div></div>
-            <div><span className="text-xs text-muted-foreground">آخر دخول</span><div className="text-sm">{user.lastLoginAt ? timeAgo(user.lastLoginAt) : 'لم يدخل بعد'}</div></div>
-            <div><span className="text-xs text-muted-foreground">عدد الدخولات</span><div className="text-sm">{user.loginCount}</div></div>
-            <div><span className="text-xs text-muted-foreground">البريد موثّق</span><div className="text-sm">{user.emailVerified ? 'نعم' : 'لا'}</div></div>
-            <div><span className="text-xs text-muted-foreground">تاريخ الإنشاء</span><div className="text-sm">{new Date(user.createdAt).toLocaleDateString('ar')}</div></div>
+            <div>
+              <span className="text-xs text-muted-foreground">تاريخ الانضمام</span>
+              <div className="text-sm">{new Date(user.joinedAt).toLocaleDateString('ar')}</div>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">آخر دخول</span>
+              <div className="text-sm">
+                {user.lastLoginAt ? timeAgo(user.lastLoginAt) : 'لم يدخل بعد'}
+              </div>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">عدد الدخولات</span>
+              <div className="text-sm">{user.loginCount}</div>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">البريد موثّق</span>
+              <div className="text-sm">{user.emailVerified ? 'نعم' : 'لا'}</div>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">تاريخ الإنشاء</span>
+              <div className="text-sm">{new Date(user.createdAt).toLocaleDateString('ar')}</div>
+            </div>
           </div>
 
           {isBanned && (
@@ -289,35 +380,66 @@ export default function UserDetailPage() {
                 {isPermBanned ? 'محظور بشكل دائم' : 'محظور مؤقتاً'}
               </div>
               {user.banReason && (
-                <div className="text-sm"><span className="text-muted-foreground">السبب: </span>{user.banReason}</div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">السبب: </span>
+                  {user.banReason}
+                </div>
               )}
               {isTempBanned && user.bannedUntil && (
-                <div className="text-sm"><span className="text-muted-foreground">ينتهي في: </span>{new Date(user.bannedUntil).toLocaleDateString('ar')}</div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">ينتهي في: </span>
+                  {new Date(user.bannedUntil).toLocaleDateString('ar')}
+                </div>
               )}
               {user.bannedAt && (
-                <div className="text-sm"><span className="text-muted-foreground">تاريخ الحظر: </span>{timeAgo(user.bannedAt)}</div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">تاريخ الحظر: </span>
+                  {timeAgo(user.bannedAt)}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <div id="activity-panel" role="tabpanel" aria-labelledby="activity-tab" hidden={tab !== 'activity'}>
+      <div
+        id="activity-panel"
+        role="tabpanel"
+        aria-labelledby="activity-tab"
+        hidden={tab !== 'activity'}
+      >
         <div className="rounded-xl border border-border bg-card p-6">
           {actions.length === 0 ? (
             <p className="text-sm text-muted-foreground">لا يوجد نشاط</p>
           ) : (
             <div className="space-y-3">
               {actions.map((a) => {
-                const info = ACTION_LABELS[a.action] || { label: a.action, color: 'text-muted-foreground' }
+                const info = ACTION_LABELS[a.action] || {
+                  label: a.action,
+                  color: 'text-muted-foreground',
+                }
                 return (
                   <div key={a.id} className="flex items-start gap-3 text-sm">
                     <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="flex-1">
                       <span className={`font-medium ${info.color}`}>{info.label}</span>
-                      {a.byUsername && <span className="text-muted-foreground"> بواسطة {a.byUsername}</span>}
+                      {a.byUsername && (
+                        <span className="text-muted-foreground"> بواسطة {a.byUsername}</span>
+                      )}
                       {a.reason && <span className="text-muted-foreground"> — {a.reason}</span>}
-                      <div className="text-xs text-muted-foreground">{timeAgo(a.createdAt)}{a.ipAddress ? <><span> · </span><span dir="ltr" className="inline-block">{a.ipAddress}</span></> : ''}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {timeAgo(a.createdAt)}
+                        {a.ipAddress ? (
+                          <>
+                            <span> · </span>
+                            <span dir="ltr" className="inline-block">
+                              {a.ipAddress}
+                            </span>
+                          </>
+                        ) : (
+                          ''
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
@@ -327,16 +449,28 @@ export default function UserDetailPage() {
         </div>
       </div>
 
-      <div id="comments-panel" role="tabpanel" aria-labelledby="comments-tab" hidden={tab !== 'comments'}>
+      <div
+        id="comments-panel"
+        role="tabpanel"
+        aria-labelledby="comments-tab"
+        hidden={tab !== 'comments'}
+      >
         <div className="rounded-xl border border-border bg-card p-6">
           {comments.length === 0 ? (
             <p className="text-sm text-muted-foreground">لا يوجد تعليقات</p>
           ) : (
             <div className="space-y-3">
               {comments.map((c) => (
-                <Link key={c.id} href={`/mod/${c.mod.slug}`} target="_blank" className="block rounded-md p-2 transition-colors hover:bg-accent/50">
+                <Link
+                  key={c.id}
+                  href={`/mod/${c.mod.slug}`}
+                  target="_blank"
+                  className="block rounded-md p-2 transition-colors hover:bg-accent/50"
+                >
                   <p className="line-clamp-2 text-sm">{c.text}</p>
-                  <div className="mt-1 text-xs text-muted-foreground">على {c.mod.name} · {timeAgo(c.createdAt)}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    على {c.mod.name} · {timeAgo(c.createdAt)}
+                  </div>
                 </Link>
               ))}
             </div>
@@ -359,7 +493,13 @@ export default function UserDetailPage() {
                   <span className="text-sm text-muted-foreground">لا توجد أدوار خاصة</span>
                 ) : (
                   specialRoles.map((role: any) => (
-                    <SpecialRoleBadge key={role.key} roleKey={role.key} roleName={role.name} icon={role.icon} color={role.color} />
+                    <SpecialRoleBadge
+                      key={role.key}
+                      roleKey={role.key}
+                      roleName={role.name}
+                      icon={role.icon}
+                      color={role.color}
+                    />
                   ))
                 )}
               </div>

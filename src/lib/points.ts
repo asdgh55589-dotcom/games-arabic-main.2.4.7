@@ -6,7 +6,7 @@ export async function awardPoints(
   points: number,
   reason: string,
   referenceType?: string,
-  referenceId?: string
+  referenceId?: string,
 ): Promise<{ newTotal: number; newLevel: number; leveledUp: boolean }> {
   const existing = await db.teamPoints.findUnique({ where: { teamId } })
 
@@ -44,7 +44,7 @@ export async function deductPoints(
   points: number,
   reason: string,
   referenceType?: string,
-  referenceId?: string
+  referenceId?: string,
 ): Promise<{ newTotal: number; newLevel: number }> {
   const existing = await db.teamPoints.findUnique({ where: { teamId } })
   const newTotal = Math.max(0, (existing?.points || 0) - points)
@@ -113,9 +113,10 @@ export async function getTeamPoints(teamId: string) {
   }
 
   const levelInfo = getLevelInfo(points.level)
-  const progress = levelInfo.nextPoints > levelInfo.minPoints
-    ? ((points.points - levelInfo.minPoints) / (levelInfo.nextPoints - levelInfo.minPoints)) * 100
-    : 100
+  const progress =
+    levelInfo.nextPoints > levelInfo.minPoints
+      ? ((points.points - levelInfo.minPoints) / (levelInfo.nextPoints - levelInfo.minPoints)) * 100
+      : 100
 
   const transactions = await db.pointsTransaction.findMany({
     where: { teamId },

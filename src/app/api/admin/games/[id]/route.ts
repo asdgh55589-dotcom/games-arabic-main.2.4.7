@@ -44,7 +44,18 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const updateData: Record<string, unknown> = {}
-    const allowed = ['name', 'tagline', 'description', 'bannerUrl', 'logoUrl', 'thumbnailUrl', 'category', 'platform', 'releaseYear', 'featured']
+    const allowed = [
+      'name',
+      'tagline',
+      'description',
+      'bannerUrl',
+      'logoUrl',
+      'thumbnailUrl',
+      'category',
+      'platform',
+      'releaseYear',
+      'featured',
+    ]
     for (const field of allowed) {
       if (body[field] !== undefined) {
         if (field === 'releaseYear') {

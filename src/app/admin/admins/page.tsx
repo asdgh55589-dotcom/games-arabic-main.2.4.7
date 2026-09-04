@@ -97,10 +97,22 @@ export default async function AdminsPage({ searchParams }: PageProps) {
       select: { role: true, banStatus: true, lastLoginAt: true },
     }),
     db.auditLog.findMany({
-      where: { entity: 'user', action: { in: ['STAFF_CREATED', 'PROMOTED', 'DEMOTED', 'ROLE_CHANGED', 'CREDENTIALS_UPDATED'] } },
+      where: {
+        entity: 'user',
+        action: {
+          in: ['STAFF_CREATED', 'PROMOTED', 'DEMOTED', 'ROLE_CHANGED', 'CREDENTIALS_UPDATED'],
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take: 20,
-      select: { id: true, username: true, action: true, entityId: true, details: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        action: true,
+        entityId: true,
+        details: true,
+        createdAt: true,
+      },
     }),
   ])
 
@@ -108,7 +120,9 @@ export default async function AdminsPage({ searchParams }: PageProps) {
     moderators: allForStats.filter((u) => u.role === 'moderator').length,
     admins: allForStats.filter((u) => u.role === 'admin').length,
     managers: allForStats.filter((u) => u.role === 'manager').length,
-    active24h: allForStats.filter((u) => u.lastLoginAt && Date.now() - new Date(u.lastLoginAt).getTime() < 24 * 60 * 60 * 1000).length,
+    active24h: allForStats.filter(
+      (u) => u.lastLoginAt && Date.now() - new Date(u.lastLoginAt).getTime() < 24 * 60 * 60 * 1000,
+    ).length,
     banned: allForStats.filter((u) => u.banStatus?.startsWith('banned')).length,
   }
 

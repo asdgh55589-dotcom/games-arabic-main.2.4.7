@@ -128,7 +128,8 @@ export function canAssignRole(actorRole: string, targetRole: string): boolean {
   // لا يمكن تعيين دور مساوٍ أو أعلى من دورك (إلا المالك)
   if (actorLevel <= targetLevel) return false
   // Manager لا يستطيع تعيين manager أو owner
-  if (actorRole === 'manager' && targetLevel >= ROLE_ORDER.indexOf('manager' as UserRole)) return false
+  if (actorRole === 'manager' && targetLevel >= ROLE_ORDER.indexOf('manager' as UserRole))
+    return false
   // Admin لا يستطيع تعيين admin أو أعلى
   if (actorRole === 'admin' && targetLevel >= ROLE_ORDER.indexOf('admin' as UserRole)) return false
   return true

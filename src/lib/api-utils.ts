@@ -33,7 +33,7 @@ export function serialize<T>(data: T): T {
 export function parsePagination(
   pageStr: string | null,
   limitStr: string | null,
-  defaults: { page?: number; limit?: number; maxLimit?: number } = {}
+  defaults: { page?: number; limit?: number; maxLimit?: number } = {},
 ): { page: number; limit: number } {
   const page = parseIntParam(pageStr, defaults.page ?? 1)
   const limit = parseIntParam(limitStr, defaults.limit ?? 24)
@@ -45,7 +45,11 @@ export function parsePagination(
 }
 
 /** Whitelist of valid sort values for a given endpoint. Returns the first allowed value if invalid. */
-export function pickSort<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+export function pickSort<T extends string>(
+  value: string | null,
+  allowed: readonly T[],
+  fallback: T,
+): T {
   if (value && (allowed as readonly string[]).includes(value)) {
     return value as T
   }

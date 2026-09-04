@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
       page: parseInt(searchParams.get('page') || '1', 10),
-      limit: parseInt(searchParams.get('limit') || '50', 10)
+      limit: parseInt(searchParams.get('limit') || '50', 10),
     }
 
     const result = await getActivityLog(filters)

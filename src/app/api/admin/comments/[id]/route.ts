@@ -4,10 +4,7 @@ import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 
 // PUT /api/admin/comments/[id] — تثبيت/إلغاء تثبيت تعليق
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -35,15 +32,15 @@ export async function PUT(
 }
 
 // DELETE /api/admin/comments/[id] — حذف تعليق واحد
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
 
-    const comment = await db.modComment.findUnique({ where: { id }, select: { id: true, modId: true } })
+    const comment = await db.modComment.findUnique({
+      where: { id },
+      select: { id: true, modId: true },
+    })
     if (!comment) return notFound()
 
     // Wrap delete + count update in a transaction for atomicity

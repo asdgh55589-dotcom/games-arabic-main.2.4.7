@@ -4,10 +4,7 @@ import { ok, notFound, internalError } from '@/lib/api-response'
 import { recordTeamView } from '@/lib/counters'
 
 // GET /api/teams/[slug] — تفاصيل فريق
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params
     const team = await db.team.findFirst({
@@ -15,14 +12,21 @@ export async function GET(
       include: {
         memberships: {
           orderBy: { joinedAt: 'desc' },
-          include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+          include: {
+            user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+          },
         },
         contactLinks: { orderBy: { order: 'asc' } },
         customTabs: { where: { visible: true }, orderBy: { order: 'asc' } },
         mods: {
           select: {
-            id: true, name: true, slug: true, thumbnailUrl: true,
-            downloads: true, endorsements: true, views: true,
+            id: true,
+            name: true,
+            slug: true,
+            thumbnailUrl: true,
+            downloads: true,
+            endorsements: true,
+            views: true,
             game: { select: { platform: true, name: true } },
           },
           orderBy: { downloads: 'desc' },
@@ -78,7 +82,7 @@ export async function GET(
         headers: {
           'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
         },
-      }
+      },
     )
   } catch (err) {
     console.error('[api/teams/[slug]] failed:', err)

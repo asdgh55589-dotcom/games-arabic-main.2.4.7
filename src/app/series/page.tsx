@@ -21,5 +21,16 @@ export const metadata: Metadata = {
   },
 }
 
-const SeriesPage = dynamic(() => import('@/views/series').then(m => ({ default: m.SeriesPage })), { loading: () => <div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> })
-export default function SeriesRoutePage() { return <SeriesPage /> }
+const SeriesPage = dynamic(
+  () => import('@/views/series').then((m) => ({ default: m.SeriesPage })),
+  {
+    loading: () => (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  },
+)
+export default function SeriesRoutePage() {
+  return <SeriesPage />
+}

@@ -9,10 +9,7 @@ import { recordModView } from '@/lib/counters'
 // View count increment: we skip the increment for prefetch requests (identified
 // by the `Purpose: prefetch` header). This prevents browser link-prefetching
 // from inflating view counts before a human actually visits the page.
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   // Detect prefetch requests. Browsers send `Purpose: prefetch` when

@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function MyModsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+export default async function MyModsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/mods')
 

@@ -87,7 +87,7 @@ export class PrismaJobQueue implements JobQueue {
       orderBy: { updatedAt: 'desc' },
       take: 100,
     })
-    return records.map(r =>
+    return records.map((r) =>
       NotificationJob.reconstruct({
         id: r.id,
         notificationId: r.notificationId,

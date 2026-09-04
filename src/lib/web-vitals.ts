@@ -10,10 +10,11 @@ type Metric = {
 
 function sendToAnalytics(metric: Metric) {
   if (process.env.NODE_ENV === 'development') {
-    const color = metric.rating === 'good' ? 'green' : metric.rating === 'needs-improvement' ? 'orange' : 'red'
+    const color =
+      metric.rating === 'good' ? 'green' : metric.rating === 'needs-improvement' ? 'orange' : 'red'
     console.log(
       `%c[Web Vitals] ${metric.name}: ${metric.value.toFixed(2)}ms (${metric.rating})`,
-      `color: ${color}; font-weight: bold;`
+      `color: ${color}; font-weight: bold;`,
     )
   }
   if (process.env.NODE_ENV === 'production') {

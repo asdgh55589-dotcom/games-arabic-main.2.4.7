@@ -189,7 +189,8 @@ export default function AdminApiKeysPage() {
   // ===== Delete Key =====
 
   const handleDelete = async (id: string, currentName: string) => {
-    if (!confirm(`هل أنت متأكد من حذف مفتاح "${currentName}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return
+    if (!confirm(`هل أنت متأكد من حذف مفتاح "${currentName}"؟ هذا الإجراء لا يمكن التراجع عنه.`))
+      return
 
     try {
       const res = await fetch(`/api/admin/api-keys/${id}`, {
@@ -263,8 +264,8 @@ export default function AdminApiKeysPage() {
           <div className="text-sm">
             <p className="font-medium text-amber-400">تنبيه أمني</p>
             <p className="text-muted-foreground mt-1">
-              المفاتيح توفر وصولاً كاملاً للـ API. لا تشاركها مع أي شخص.
-              المفتاح يُعرض مرة واحدة فقط عند الإنشاء.
+              المفاتيح توفر وصولاً كاملاً للـ API. لا تشاركها مع أي شخص. المفتاح يُعرض مرة واحدة فقط
+              عند الإنشاء.
             </p>
           </div>
         </div>
@@ -287,18 +288,29 @@ export default function AdminApiKeysPage() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الاسم</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدور</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">تاريخ الإنشاء</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">تاريخ الانتهاء</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">آخر استخدام</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                    تاريخ الإنشاء
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                    تاريخ الانتهاء
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                    آخر استخدام
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الحالة</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">إجراءات</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                    إجراءات
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {keys.map((key) => {
                   const roleInfo = ROLE_BADGE[key.role] || ROLE_BADGE.moderator
                   return (
-                    <tr key={key.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <tr
+                      key={key.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Key className="h-4 w-4 text-muted-foreground" />
@@ -306,11 +318,15 @@ export default function AdminApiKeysPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${roleInfo.className}`}>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${roleInfo.className}`}
+                        >
                           {roleInfo.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDate(key.createdAt)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {formatDate(key.createdAt)}
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {key.expiresAt ? (
                           <span className="flex items-center gap-1">
@@ -491,16 +507,25 @@ export default function AdminApiKeysPage() {
 
               {/* Key Info */}
               <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm space-y-1">
-                <p><strong>الاسم:</strong> {createdKey.name}</p>
-                <p><strong>الدور:</strong> {ROLE_BADGE[createdKey.role]?.label || createdKey.role}</p>
-                <p><strong>الانتهاء:</strong> {createdKey.expiresAt ? formatDate(createdKey.expiresAt) : 'أبداً'}</p>
+                <p>
+                  <strong>الاسم:</strong> {createdKey.name}
+                </p>
+                <p>
+                  <strong>الدور:</strong> {ROLE_BADGE[createdKey.role]?.label || createdKey.role}
+                </p>
+                <p>
+                  <strong>الانتهاء:</strong>{' '}
+                  {createdKey.expiresAt ? formatDate(createdKey.expiresAt) : 'أبداً'}
+                </p>
               </div>
 
               {/* Usage Example */}
               <div className="space-y-2">
                 <Label>مثال الاستخدام</Label>
                 <div className="rounded-md border border-border bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
-                  <p>curl -H &quot;Authorization: Bearer {createdKey.key.substring(0, 20)}...&quot; \</p>
+                  <p>
+                    curl -H &quot;Authorization: Bearer {createdKey.key.substring(0, 20)}...&quot; \
+                  </p>
                   <p className="ml-4">http://localhost:3000/api/admin/mods</p>
                 </div>
               </div>
@@ -508,7 +533,12 @@ export default function AdminApiKeysPage() {
           )}
 
           <DialogFooter>
-            <Button onClick={() => { setShowKeyDialog(false); setCreatedKey(null) }}>
+            <Button
+              onClick={() => {
+                setShowKeyDialog(false)
+                setCreatedKey(null)
+              }}
+            >
               فهمت، احفظه في مكان آمن
             </Button>
           </DialogFooter>

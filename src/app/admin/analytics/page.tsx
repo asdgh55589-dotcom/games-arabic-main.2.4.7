@@ -7,20 +7,76 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load chart components (no SSR)
-const GrowthChart = dynamic(() => import('@/components/admin/charts/growth-chart').then(m => ({ default: m.GrowthChart })), { ssr: false, loading: () => <Skeleton className="h-[350px] w-full rounded-lg" /> })
-const PlatformDonut = dynamic(() => import('@/components/admin/charts/platform-donut').then(m => ({ default: m.PlatformDonut })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
-const TopTeamsBar = dynamic(() => import('@/components/admin/charts/top-teams-bar').then(m => ({ default: m.TopTeamsBar })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
-const ActivityHeatmap = dynamic(() => import('@/components/admin/charts/activity-heatmap').then(m => ({ default: m.ActivityHeatmap })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
-const DownloadsTrend = dynamic(() => import('@/components/admin/charts/downloads-trend').then(m => ({ default: m.DownloadsTrend })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
-const EngagementChart = dynamic(() => import('@/components/admin/charts/engagement-chart').then(m => ({ default: m.EngagementChart })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
-const TeamQualityRadar = dynamic(() => import('@/components/admin/charts/team-quality-radar').then(m => ({ default: m.TeamQualityRadar })), { ssr: false, loading: () => <Skeleton className="h-[350px] w-full rounded-lg" /> })
-const WorkflowFunnel = dynamic(() => import('@/components/admin/charts/workflow-funnel').then(m => ({ default: m.WorkflowFunnel })), { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> })
+const GrowthChart = dynamic(
+  () => import('@/components/admin/charts/growth-chart').then((m) => ({ default: m.GrowthChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full rounded-lg" /> },
+)
+const PlatformDonut = dynamic(
+  () =>
+    import('@/components/admin/charts/platform-donut').then((m) => ({ default: m.PlatformDonut })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const TopTeamsBar = dynamic(
+  () => import('@/components/admin/charts/top-teams-bar').then((m) => ({ default: m.TopTeamsBar })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const ActivityHeatmap = dynamic(
+  () =>
+    import('@/components/admin/charts/activity-heatmap').then((m) => ({
+      default: m.ActivityHeatmap,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const DownloadsTrend = dynamic(
+  () =>
+    import('@/components/admin/charts/downloads-trend').then((m) => ({
+      default: m.DownloadsTrend,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const EngagementChart = dynamic(
+  () =>
+    import('@/components/admin/charts/engagement-chart').then((m) => ({
+      default: m.EngagementChart,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const TeamQualityRadar = dynamic(
+  () =>
+    import('@/components/admin/charts/team-quality-radar').then((m) => ({
+      default: m.TeamQualityRadar,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full rounded-lg" /> },
+)
+const WorkflowFunnel = dynamic(
+  () =>
+    import('@/components/admin/charts/workflow-funnel').then((m) => ({
+      default: m.WorkflowFunnel,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
 
 // Mini widgets
-const MiniGrowth = dynamic(() => import('@/components/admin/widgets/mini-growth').then(m => ({ default: m.MiniGrowth })), { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> })
-const TopPlatform = dynamic(() => import('@/components/admin/widgets/top-platform').then(m => ({ default: m.TopPlatform })), { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> })
-const PeakActivity = dynamic(() => import('@/components/admin/widgets/peak-activity').then(m => ({ default: m.PeakActivity })), { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> })
-const WorkflowBottleneck = dynamic(() => import('@/components/admin/widgets/workflow-bottleneck').then(m => ({ default: m.WorkflowBottleneck })), { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> })
+const MiniGrowth = dynamic(
+  () => import('@/components/admin/widgets/mini-growth').then((m) => ({ default: m.MiniGrowth })),
+  { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> },
+)
+const TopPlatform = dynamic(
+  () => import('@/components/admin/widgets/top-platform').then((m) => ({ default: m.TopPlatform })),
+  { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> },
+)
+const PeakActivity = dynamic(
+  () =>
+    import('@/components/admin/widgets/peak-activity').then((m) => ({ default: m.PeakActivity })),
+  { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> },
+)
+const WorkflowBottleneck = dynamic(
+  () =>
+    import('@/components/admin/widgets/workflow-bottleneck').then((m) => ({
+      default: m.WorkflowBottleneck,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[100px] w-full rounded-lg" /> },
+)
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -140,11 +196,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Activity Heatmap - Full Width */}
-      <ActivityHeatmap
-        data={heatmap?.data}
-        maxCount={heatmap?.maxCount}
-        loading={loading}
-      />
+      <ActivityHeatmap data={heatmap?.data} maxCount={heatmap?.maxCount} loading={loading} />
 
       {/* Downloads Trend + Engagement Chart */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

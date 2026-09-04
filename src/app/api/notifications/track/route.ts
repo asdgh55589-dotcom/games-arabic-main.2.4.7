@@ -27,10 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (event === 'open') {
-    const pixel = Buffer.from(
-      'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-      'base64'
-    )
+    const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64')
     return new NextResponse(pixel, {
       headers: {
         'Content-Type': 'image/gif',

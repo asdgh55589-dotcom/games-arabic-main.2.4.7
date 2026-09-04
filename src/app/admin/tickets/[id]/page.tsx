@@ -9,18 +9,26 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 
 const STATUS_LABELS: Record<string, string> = {
-  open: 'مفتوحة', in_progress: 'قيد المعالجة', waiting: 'بانتظار الرد',
-  resolved: 'محلولة', closed: 'مغلقة',
+  open: 'مفتوحة',
+  in_progress: 'قيد المعالجة',
+  waiting: 'بانتظار الرد',
+  resolved: 'محلولة',
+  closed: 'مغلقة',
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-800', in_progress: 'bg-yellow-100 text-yellow-800',
-  waiting: 'bg-orange-100 text-orange-800', resolved: 'bg-green-100 text-green-800',
+  open: 'bg-blue-100 text-blue-800',
+  in_progress: 'bg-yellow-100 text-yellow-800',
+  waiting: 'bg-orange-100 text-orange-800',
+  resolved: 'bg-green-100 text-green-800',
   closed: 'bg-gray-100 text-gray-800',
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
-  low: 'منخفضة', medium: 'متوسطة', high: 'عالية', urgent: 'عاجلة',
+  low: 'منخفضة',
+  medium: 'متوسطة',
+  high: 'عالية',
+  urgent: 'عاجلة',
 }
 
 interface TicketMessage {
@@ -66,7 +74,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  useEffect(() => { fetchTicket() }, [id])
+  useEffect(() => {
+    fetchTicket()
+  }, [id])
 
   const handleReply = async () => {
     if (!replyContent.trim()) return
@@ -106,7 +116,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   }
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>
-  if (!ticket) return <div className="p-8 text-center text-muted-foreground">التذكرة غير موجودة</div>
+  if (!ticket)
+    return <div className="p-8 text-center text-muted-foreground">التذكرة غير موجودة</div>
 
   return (
     <div className="space-y-6">
@@ -142,7 +153,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </div>
                 <span className="font-medium text-sm">{msg.user.username}</span>
                 {msg.isInternal && (
-                  <Badge variant="outline" className="text-xs">ملاحظة داخلية</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    ملاحظة داخلية
+                  </Badge>
                 )}
                 <span className="text-xs text-muted-foreground mr-auto">
                   {new Date(msg.createdAt).toLocaleString('ar-SA')}
@@ -183,8 +196,16 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 <option value="resolved">محلولة</option>
                 <option value="closed">مغلقة</option>
               </select>
-              <Button onClick={handleReply} disabled={!replyContent.trim() || sending} className="mr-auto">
-                {sending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Send className="h-4 w-4 ml-2" />}
+              <Button
+                onClick={handleReply}
+                disabled={!replyContent.trim() || sending}
+                className="mr-auto"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 ml-2" />
+                )}
                 إرسال
               </Button>
             </div>
@@ -198,7 +219,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الحالة</span>
-                <Badge className={STATUS_COLORS[ticket.status]}>{STATUS_LABELS[ticket.status]}</Badge>
+                <Badge className={STATUS_COLORS[ticket.status]}>
+                  {STATUS_LABELS[ticket.status]}
+                </Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الأولوية</span>
@@ -226,7 +249,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 <Button
                   key={key}
                   variant={ticket.status === key ? 'default' : 'outline'}
-                  size="sm" className="min-h-[44px]"
+                  size="sm"
+                  className="min-h-[44px]"
                   onClick={() => handleStatusChange(key)}
                 >
                   {label}
@@ -240,7 +264,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <h3 className="font-medium">الوسوم</h3>
               <div className="flex flex-wrap gap-1">
                 {ticket.tags.map((t) => (
-                  <Badge key={t.tag} variant="secondary">{t.tag}</Badge>
+                  <Badge key={t.tag} variant="secondary">
+                    {t.tag}
+                  </Badge>
                 ))}
               </div>
             </div>

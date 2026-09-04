@@ -154,7 +154,12 @@ export function SeriesMobile({ data, loading }: SeriesMobileProps) {
                     <h3 className="line-clamp-1 min-w-0 flex-1 break-words text-sm font-bold leading-tight group-hover:text-primary">
                       {s.name}
                     </h3>
-                    {s.isFeatured ? <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden /> : null}
+                    {s.isFeatured ? (
+                      <Star
+                        className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400"
+                        aria-hidden
+                      />
+                    ) : null}
                     {s.isOfficial ? (
                       <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary">
                         رسمي

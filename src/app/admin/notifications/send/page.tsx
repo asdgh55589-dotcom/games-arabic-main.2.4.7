@@ -122,7 +122,12 @@ export default function SendNotificationPage() {
             <div className="mt-1 flex gap-2">
               {(['in_app', 'email', 'telegram'] as const).map((c) => (
                 <label key={c} className="flex items-center gap-1.5 text-sm">
-                  <input type="checkbox" checked={channels.includes(c)} onChange={() => toggleChannel(c)} className="rounded" />
+                  <input
+                    type="checkbox"
+                    checked={channels.includes(c)}
+                    onChange={() => toggleChannel(c)}
+                    className="rounded"
+                  />
                   {c === 'in_app' ? 'داخل التطبيق' : c === 'email' ? 'بريد' : 'Telegram'}
                 </label>
               ))}
@@ -131,12 +136,23 @@ export default function SendNotificationPage() {
 
           <div>
             <Label>العنوان</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان الإشعار" className="mt-1" />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="عنوان الإشعار"
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>الرسالة</Label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="نص الإشعار..." className="mt-1" />
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              placeholder="نص الإشعار..."
+              className="mt-1"
+            />
           </div>
 
           <Button onClick={handleSend} disabled={isLoading} className="w-full min-h-[44px]">

@@ -127,7 +127,7 @@ describe('RetryPolicy', () => {
       await expect(
         policy.execute(async () => {
           throw new Error('always fail')
-        })
+        }),
       ).rejects.toThrow('always fail')
     })
   })

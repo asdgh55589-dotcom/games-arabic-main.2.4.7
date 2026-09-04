@@ -17,7 +17,11 @@ export function generateTOTPSecret(): string {
 /**
  * توليد رابط TOTP لـ QR code
  */
-export function generateTOTPUri(secret: string, email: string, issuer: string = 'GamesArabic'): string {
+export function generateTOTPUri(
+  secret: string,
+  email: string,
+  issuer: string = 'GamesArabic',
+): string {
   return authenticator.keyuri(email, issuer, secret)
 }
 

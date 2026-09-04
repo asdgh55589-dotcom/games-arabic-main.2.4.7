@@ -47,7 +47,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
-      return fail(err instanceof Error ? err.message : 'Unauthorized', err instanceof Error ? err.message : 'Unauthorized', status)
+      return fail(
+        err instanceof Error ? err.message : 'Unauthorized',
+        err instanceof Error ? err.message : 'Unauthorized',
+        status,
+      )
     }
     console.error('[admin/api-keys/[id] PATCH] failed:', err)
     return internalError('Failed to update API key')
@@ -77,7 +81,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
-      return fail(err instanceof Error ? err.message : 'Unauthorized', err instanceof Error ? err.message : 'Unauthorized', status)
+      return fail(
+        err instanceof Error ? err.message : 'Unauthorized',
+        err instanceof Error ? err.message : 'Unauthorized',
+        status,
+      )
     }
     console.error('[admin/api-keys/[id] DELETE] failed:', err)
     return internalError('Failed to delete API key')

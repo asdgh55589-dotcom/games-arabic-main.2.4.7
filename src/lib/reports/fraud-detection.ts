@@ -21,7 +21,13 @@ async function checkLowTrustReporter(reporterId: string): Promise<FraudSignal | 
   }
 }
 
-async function checkDuplicatePattern(reporterId: string, targetType: string, targetModId: string | null, targetCommentId: string | null, targetUserId: string | null): Promise<FraudSignal | null> {
+async function checkDuplicatePattern(
+  reporterId: string,
+  targetType: string,
+  targetModId: string | null,
+  targetCommentId: string | null,
+  targetUserId: string | null,
+): Promise<FraudSignal | null> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
   const where: Record<string, unknown> = {
@@ -44,7 +50,11 @@ async function checkDuplicatePattern(reporterId: string, targetType: string, tar
   }
 }
 
-async function checkTargetHarassment(targetModId: string | null, targetCommentId: string | null, targetUserId: string | null): Promise<FraudSignal | null> {
+async function checkTargetHarassment(
+  targetModId: string | null,
+  targetCommentId: string | null,
+  targetUserId: string | null,
+): Promise<FraudSignal | null> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
   const where: Record<string, unknown> = {
@@ -89,7 +99,11 @@ async function checkTimingAnomaly(ipAddress: string | null): Promise<FraudSignal
   }
 }
 
-async function checkSameTargetSwarm(targetModId: string | null, targetCommentId: string | null, targetUserId: string | null): Promise<FraudSignal | null> {
+async function checkSameTargetSwarm(
+  targetModId: string | null,
+  targetCommentId: string | null,
+  targetUserId: string | null,
+): Promise<FraudSignal | null> {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
   const where: Record<string, unknown> = {
@@ -133,15 +147,15 @@ export async function analyzeReportFraud(reportId: string): Promise<void> {
 
   const signals: FraudSignal[] = []
 
-  const [
-    lowTrust,
-    duplicate,
-    harassment,
-    timing,
-    swarm,
-  ] = await Promise.all([
+  const [lowTrust, duplicate, harassment, timing, swarm] = await Promise.all([
     checkLowTrustReporter(report.reporterId),
-    checkDuplicatePattern(report.reporterId, report.targetType, report.targetModId, report.targetCommentId, report.targetUserId),
+    checkDuplicatePattern(
+      report.reporterId,
+      report.targetType,
+      report.targetModId,
+      report.targetCommentId,
+      report.targetUserId,
+    ),
     checkTargetHarassment(report.targetModId, report.targetCommentId, report.targetUserId),
     checkTimingAnomaly(report.ipAddress),
     checkSameTargetSwarm(report.targetModId, report.targetCommentId, report.targetUserId),
@@ -166,9 +180,8 @@ export async function analyzeReportFraud(reportId: string): Promise<void> {
   }
 
   // Calculate average fraud score
-  const fraudScore = signals.length > 0
-    ? signals.reduce((sum, s) => sum + s.score, 0) / signals.length
-    : 0
+  const fraudScore =
+    signals.length > 0 ? signals.reduce((sum, s) => sum + s.score, 0) / signals.length : 0
 
   await db.report.update({
     where: { id: reportId },

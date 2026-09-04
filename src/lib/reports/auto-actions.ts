@@ -11,7 +11,9 @@ interface AutoActionInput {
   targetUserId?: string
 }
 
-export async function executeAutoAction(input: AutoActionInput & { actorId?: string; actorRole?: string }) {
+export async function executeAutoAction(
+  input: AutoActionInput & { actorId?: string; actorRole?: string },
+) {
   const { reportId, action, resolution, banDuration, targetUserId, actorId, actorRole } = input
 
   // 🔒 شبكة أمان إضافية للحظر الدائم — حتى لو تم استدعاء الدالة مباشرة
@@ -32,7 +34,13 @@ export async function executeAutoAction(input: AutoActionInput & { actorId?: str
 
   const report = await db.report.findUnique({
     where: { id: reportId },
-    select: { id: true, targetUserId: true, assignedToId: true, targetModId: true, targetCommentId: true },
+    select: {
+      id: true,
+      targetUserId: true,
+      assignedToId: true,
+      targetModId: true,
+      targetCommentId: true,
+    },
   })
   if (!report) return
 
@@ -74,9 +82,8 @@ export async function executeAutoAction(input: AutoActionInput & { actorId?: str
   }
 
   if ((action === 'temp_ban' || action === 'perm_ban') && userId) {
-    const bannedUntil = action === 'temp_ban'
-      ? new Date(Date.now() + (banDuration || 7) * 24 * 60 * 60 * 1000)
-      : null
+    const bannedUntil =
+      action === 'temp_ban' ? new Date(Date.now() + (banDuration || 7) * 24 * 60 * 60 * 1000) : null
 
     const updatedUser = await db.user.update({
       where: { id: userId },

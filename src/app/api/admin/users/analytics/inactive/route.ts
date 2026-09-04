@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const inactiveUsers = await getInactiveUsers({
       daysThreshold,
-      includeWithNoActivity: false
+      includeWithNoActivity: false,
     })
 
     return ok({ inactiveUsers })

@@ -54,7 +54,11 @@ export default function AdminEndorsementsPage() {
   }, [page])
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error) {
@@ -100,13 +104,20 @@ export default function AdminEndorsementsPage() {
           </h2>
           <div className="space-y-2">
             {topMods.map((mod, i) => (
-              <div key={mod.id} className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-accent/30">
-                <span className="w-5 text-center text-xs font-bold text-muted-foreground">{i + 1}</span>
+              <div
+                key={mod.id}
+                className="flex items-center gap-2 rounded-md p-2 text-sm hover:bg-accent/30"
+              >
+                <span className="w-5 text-center text-xs font-bold text-muted-foreground">
+                  {i + 1}
+                </span>
                 <span className="min-w-0 flex-1 truncate">{mod.name}</span>
                 <span className="text-xs text-primary">{formatNumber(mod.endorsements)}</span>
               </div>
             ))}
-            {topMods.length === 0 && <p className="text-sm text-muted-foreground">لا توجد تأييدات</p>}
+            {topMods.length === 0 && (
+              <p className="text-sm text-muted-foreground">لا توجد تأييدات</p>
+            )}
           </div>
         </div>
 
@@ -115,7 +126,10 @@ export default function AdminEndorsementsPage() {
           <h2 className="mb-3 text-sm font-bold">آخر التأييدات</h2>
           <div className="space-y-2">
             {endorsements.map((e) => (
-              <div key={e.id} className="flex items-center gap-3 rounded-md p-2 text-sm hover:bg-accent/30">
+              <div
+                key={e.id}
+                className="flex items-center gap-3 rounded-md p-2 text-sm hover:bg-accent/30"
+              >
                 {e.value === 'up' ? (
                   <ThumbsUp className="h-4 w-4 shrink-0 text-green-500" />
                 ) : (
@@ -124,10 +138,14 @@ export default function AdminEndorsementsPage() {
                 <span className="font-medium">{e.user.username}</span>
                 <span className="text-muted-foreground">أيّد</span>
                 <span className="font-medium text-primary">{e.mod.name}</span>
-                <span className="mr-auto text-xs text-muted-foreground">{timeAgo(e.createdAt)}</span>
+                <span className="mr-auto text-xs text-muted-foreground">
+                  {timeAgo(e.createdAt)}
+                </span>
               </div>
             ))}
-            {endorsements.length === 0 && <p className="text-sm text-muted-foreground">لا توجد تأييدات</p>}
+            {endorsements.length === 0 && (
+              <p className="text-sm text-muted-foreground">لا توجد تأييدات</p>
+            )}
           </div>
         </div>
       </div>
@@ -137,16 +155,20 @@ export default function AdminEndorsementsPage() {
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
             السابق
           </Button>
-          <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <span className="text-sm text-muted-foreground">
+            صفحة {page} من {totalPages}
+          </span>
           <Button
             variant="outline"
-            size="sm" className="min-h-[44px]"
+            size="sm"
+            className="min-h-[44px]"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >

@@ -21,7 +21,13 @@ interface WarningDialogProps {
   onSuccess: () => void
 }
 
-export function WarningDialog({ open, onOpenChange, userId, username, onSuccess }: WarningDialogProps) {
+export function WarningDialog({
+  open,
+  onOpenChange,
+  userId,
+  username,
+  onSuccess,
+}: WarningDialogProps) {
   const [reason, setReason] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -44,7 +50,11 @@ export function WarningDialog({ open, onOpenChange, userId, username, onSuccess 
         onOpenChange(false)
         onSuccess()
       } else {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || data?.message || 'فشل إرسال التحذير'
+        const msg =
+          data?.error?.message ||
+          (typeof data?.error === 'string' ? data.error : null) ||
+          data?.message ||
+          'فشل إرسال التحذير'
         toast.error(msg)
       }
     } catch {
@@ -59,7 +69,9 @@ export function WarningDialog({ open, onOpenChange, userId, username, onSuccess 
       <DialogContent dir="rtl">
         <DialogHeader>
           <DialogTitle>تحذير {username}</DialogTitle>
-          <DialogDescription>سيتم إرسال إشعار للمستخدم مع تسجيل التحذير في سجل الإجراءات</DialogDescription>
+          <DialogDescription>
+            سيتم إرسال إشعار للمستخدم مع تسجيل التحذير في سجل الإجراءات
+          </DialogDescription>
         </DialogHeader>
         <Textarea
           value={reason}

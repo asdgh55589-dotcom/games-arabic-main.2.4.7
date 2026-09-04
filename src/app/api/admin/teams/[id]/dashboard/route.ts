@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
 
@@ -39,14 +36,15 @@ export async function GET(
     const inReviewMods = mods.filter((m) => m.workflowStatus === 'IN_REVIEW').length
     const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
     const totalEndorsements = mods.reduce((sum, m) => sum + (m.endorsements || 0), 0)
-    const avgRating = mods.length > 0
-      ? mods.filter((m) => m.qualityRating && m.qualityRating > 0)
-          .reduce((sum, m) => sum + (m.qualityRating || 0), 0) /
-        Math.max(mods.filter((m) => m.qualityRating && m.qualityRating > 0).length, 1)
-      : 0
-    const avgQuality = totalMods > 0
-      ? mods.reduce((sum, m) => sum + (m.qualityScore || 0), 0) / totalMods
-      : 0
+    const avgRating =
+      mods.length > 0
+        ? mods
+            .filter((m) => m.qualityRating && m.qualityRating > 0)
+            .reduce((sum, m) => sum + (m.qualityRating || 0), 0) /
+          Math.max(mods.filter((m) => m.qualityRating && m.qualityRating > 0).length, 1)
+        : 0
+    const avgQuality =
+      totalMods > 0 ? mods.reduce((sum, m) => sum + (m.qualityScore || 0), 0) / totalMods : 0
 
     // Recent activity (last 10 updated mods)
     const recentActivity = mods.slice(0, 10).map((m) => ({

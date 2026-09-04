@@ -62,10 +62,7 @@ function highlightText(text: string, query: string): string {
   return snippet
 }
 
-export async function search(
-  query: string,
-  filters: SearchFilters = {}
-): Promise<SearchResponse> {
+export async function search(query: string, filters: SearchFilters = {}): Promise<SearchResponse> {
   const results: SearchResult[] = []
   const counts: Record<string, number> = { mod: 0, game: 0, team: 0, user: 0 }
 
@@ -88,9 +85,7 @@ export async function search(
           { tags: { contains: query, mode: 'insensitive' } },
         ],
         ...(filters.status ? { workflowStatus: filters.status } : {}),
-        ...(filters.platform
-          ? { game: { platform: filters.platform } }
-          : {}),
+        ...(filters.platform ? { game: { platform: filters.platform } } : {}),
       },
       include: {
         game: { select: { name: true, platform: true } },

@@ -27,13 +27,19 @@ export function ProfileModsFilter({ mods, loading }: ProfileModsFilterProps) {
   const filteredMods = (() => {
     switch (filter) {
       case 'newest':
-        return [...mods].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        return [...mods].sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
       case 'downloads':
         return [...mods].sort((a, b) => b.downloads - a.downloads)
       case 'review':
-        return mods.filter(m => (m as any).workflowStatus === 'IN_REVIEW' || (m as any).status === 'under_review')
+        return mods.filter(
+          (m) => (m as any).workflowStatus === 'IN_REVIEW' || (m as any).status === 'under_review',
+        )
       case 'draft':
-        return mods.filter(m => (m as any).workflowStatus === 'DRAFT' || (m as any).status === 'draft')
+        return mods.filter(
+          (m) => (m as any).workflowStatus === 'DRAFT' || (m as any).status === 'draft',
+        )
       default:
         return mods
     }
@@ -96,7 +102,9 @@ export function ProfileModsFilter({ mods, loading }: ProfileModsFilterProps) {
       {/* Mods grid */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <ModCardSkeleton key={i} />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ModCardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredMods.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
@@ -105,7 +113,9 @@ export function ProfileModsFilter({ mods, loading }: ProfileModsFilterProps) {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filteredMods.map((m) => <ModCard key={m.id} mod={m} />)}
+          {filteredMods.map((m) => (
+            <ModCard key={m.id} mod={m} />
+          ))}
         </div>
       )}
     </div>

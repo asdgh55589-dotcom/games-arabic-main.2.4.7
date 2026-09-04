@@ -3,15 +3,7 @@
 import Image from 'next/image'
 
 import { useState, useEffect, useCallback } from 'react'
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  ImageOff,
-} from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, ImageOff } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
@@ -62,8 +54,10 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
     if (!isOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeLightbox()
-      else if (e.key === 'ArrowLeft') goNext() // RTL: left = next
-      else if (e.key === 'ArrowRight') goPrev() // RTL: right = prev
+      else if (e.key === 'ArrowLeft')
+        goNext() // RTL: left = next
+      else if (e.key === 'ArrowRight')
+        goPrev() // RTL: right = prev
       else if (e.key === '+' || e.key === '=') setZoom((z) => Math.min(3, z + 0.25))
       else if (e.key === '-') setZoom((z) => Math.max(0.5, z - 0.25))
     }
@@ -120,10 +114,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
 
       {/* Lightbox modal — full screen */}
       {isOpen && lightboxIndex !== null && (
-        <div
-          className="fixed inset-0 z-[200] flex flex-col bg-black"
-          onClick={closeLightbox}
-        >
+        <div className="fixed inset-0 z-[200] flex flex-col bg-black" onClick={closeLightbox}>
           {/* شريط علوي ثابت — عدّاد الصور + أزرار التحكم */}
           <div
             className="flex items-center justify-between bg-black/80 px-4 py-3 backdrop-blur"

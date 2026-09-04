@@ -21,7 +21,9 @@ export default async function CreatorRequestsPage() {
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold">📥 طلبات التعريب</h1>
-        <p className="text-sm text-muted-foreground mt-1">تصفح طلبات المجتمع وقبول ما يناسبك، ثم اربطه بتعريبك عند الإكمال</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          تصفح طلبات المجتمع وقبول ما يناسبك، ثم اربطه بتعريبك عند الإكمال
+        </p>
       </div>
       <RequestsManager />
     </div>

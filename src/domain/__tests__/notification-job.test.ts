@@ -17,9 +17,9 @@ describe('NotificationJob Entity', () => {
     })
 
     it('should throw if notificationId is empty', () => {
-      expect(() =>
-        NotificationJob.create('', NotificationChannel.Email),
-      ).toThrow('NotificationJob.notificationId is required')
+      expect(() => NotificationJob.create('', NotificationChannel.Email)).toThrow(
+        'NotificationJob.notificationId is required',
+      )
     })
   })
 

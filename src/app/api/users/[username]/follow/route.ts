@@ -3,7 +3,15 @@ import { db } from '@/lib/db'
 import { getOptionalSession } from '@/lib/auth'
 import { getUseCases } from '@/application/use-cases/factory'
 import { rateLimit } from '@/lib/rate-limit'
-import { ok, notFound, unauthorized, conflict, internalError, validationFail, rateLimited } from '@/lib/api-response'
+import {
+  ok,
+  notFound,
+  unauthorized,
+  conflict,
+  internalError,
+  validationFail,
+  rateLimited,
+} from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -31,7 +39,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const isFollowing = currentUser
       ? !!(await db.follow.findUnique({
-          where: { followerId_followingId: { followerId: currentUser.id, followingId: targetUser.id } },
+          where: {
+            followerId_followingId: { followerId: currentUser.id, followingId: targetUser.id },
+          },
         }))
       : false
 

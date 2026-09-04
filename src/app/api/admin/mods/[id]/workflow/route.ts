@@ -52,9 +52,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // التحقق من الصلاحية — مع دعم الدور الخاص reviewer
     if (!canTransition(user.role, fromStatus, targetStatus)) {
       // reviewer يمكنه الموافقة/الرفض حتى لو ليس admin
-      const freshUser = await db.user.findUnique({ where: { id: user.id }, select: { specialRoles: true } })
+      const freshUser = await db.user.findUnique({
+        where: { id: user.id },
+        select: { specialRoles: true },
+      })
       const specialRoles = freshUser?.specialRoles || null
-      const isReviewerApprove = (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') && canApproveMods(user.role, specialRoles)
+      const isReviewerApprove =
+        (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') &&
+        canApproveMods(user.role, specialRoles)
       if (!isReviewerApprove) {
         return forbidden(`Your role (${user.role}) cannot perform this transition`)
       }
@@ -122,7 +127,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         action: actionMap[targetStatus] || 'MOD_WORKFLOW_CHANGED',
         entity: 'Mod',
         entityId: id,
-        details: JSON.stringify({ oldStatus: fromStatus, newStatus: targetStatus, modName: modNameForLog || id, reason: reason || '' }),
+        details: JSON.stringify({
+          oldStatus: fromStatus,
+          newStatus: targetStatus,
+          modName: modNameForLog || id,
+          reason: reason || '',
+        }),
         request: req,
       })
     } catch {}

@@ -38,9 +38,7 @@ export function ExportDialog({
   const [open, setOpen] = useState(false)
   const [format, setFormat] = useState<ExportFormat>('csv')
   const [loading, setLoading] = useState(false)
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(
-    columns.map((c) => c.key)
-  )
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map((c) => c.key))
 
   const handleExport = async () => {
     setLoading(true)
@@ -74,7 +72,7 @@ export function ExportDialog({
 
   const toggleColumn = (key: string) => {
     setSelectedColumns((prev) =>
-      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key],
     )
   }
 
@@ -89,7 +87,9 @@ export function ExportDialog({
       <DialogContent className="max-w-md" dir="rtl" aria-describedby="export-description">
         <DialogHeader>
           <DialogTitle>تصدير {title}</DialogTitle>
-          <DialogDescription id="export-description">اختر الصيغة والأعمدة لتصدير البيانات.</DialogDescription>
+          <DialogDescription id="export-description">
+            اختر الصيغة والأعمدة لتصدير البيانات.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -144,10 +144,7 @@ export function ExportDialog({
             <Button variant="outline" onClick={() => setOpen(false)}>
               إلغاء
             </Button>
-            <Button
-              onClick={handleExport}
-              disabled={loading || selectedColumns.length === 0}
-            >
+            <Button onClick={handleExport} disabled={loading || selectedColumns.length === 0}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
               ) : (

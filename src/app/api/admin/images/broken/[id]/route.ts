@@ -4,10 +4,7 @@ import { db } from '@/lib/db'
 import { ok, internalError, notFound } from '@/lib/api-response'
 
 // PATCH: تمييز الصورة المكسورة كمُصلحة أو مُتجاهلة
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params

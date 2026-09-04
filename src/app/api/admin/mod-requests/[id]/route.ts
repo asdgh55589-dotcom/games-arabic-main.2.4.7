@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
-import { ok, validationFail, notFound, unauthorized, forbidden, internalError } from '@/lib/api-response'
+import {
+  ok,
+  validationFail,
+  notFound,
+  unauthorized,
+  forbidden,
+  internalError,
+} from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -58,7 +65,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           userId: request.userId,
           actorId: admin.id,
           type: 'system_announcement',
-          title: status === 'cancelled' ? '❌ تم إغلاق طلبك' : status === 'completed' ? '✅ تم إكمال طلبك' : 'ℹ️ تحديث حالة طلبك',
+          title:
+            status === 'cancelled'
+              ? '❌ تم إغلاق طلبك'
+              : status === 'completed'
+                ? '✅ تم إكمال طلبك'
+                : 'ℹ️ تحديث حالة طلبك',
           message: `تم تحديث حالة طلب تعريب "${request.gameName}" إلى: ${getStatusAr(status)}${reason ? ` — السبب: ${reason}` : ''}`,
           data: { requestId: id, from: request.status, to: status } as never,
         },

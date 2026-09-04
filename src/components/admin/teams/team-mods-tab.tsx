@@ -2,7 +2,17 @@ import Image from 'next/image'
 // Updated for new API response format
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Download, ExternalLink, Link2, Unlink, Search, ChevronLeft, Gamepad2, FolderOpen, X } from 'lucide-react'
+import {
+  Download,
+  ExternalLink,
+  Link2,
+  Unlink,
+  Search,
+  ChevronLeft,
+  Gamepad2,
+  FolderOpen,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
@@ -43,7 +53,10 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
   useEffect(() => {
     setLoadingMods(true)
     fetch('/api/admin/mods?limit=500')
-      .then((r) => { if (!r.ok) throw new Error('Failed'); return r.json() })
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed')
+        return r.json()
+      })
       .then((data) => setAllMods(data?.data || []))
       .catch(() => {})
       .finally(() => setLoadingMods(false))
@@ -60,7 +73,12 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
       if (existing) {
         existing.count++
       } else {
-        map.set(m.game.id, { id: m.game.id, name: m.game.name, platform: m.game.platform, count: 1 })
+        map.set(m.game.id, {
+          id: m.game.id,
+          name: m.game.name,
+          platform: m.game.platform,
+          count: 1,
+        })
       }
     }
     return Array.from(map.values()).sort((a, b) => b.count - a.count)
@@ -113,14 +131,30 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
       if (!res.ok) throw new Error('فشل الربط')
       const mod = unlinked.find((m) => m.id === selectedModId)
       if (mod) {
-        onModsChange([...mods, { id: mod.id, name: mod.name, slug: mod.slug, downloads: mod.downloads, endorsements: mod.endorsements, thumbnailUrl: mod.thumbnailUrl }])
-        setAllMods((p) => p.map((m) => m.id === selectedModId ? { ...m, teamId } : m))
+        onModsChange([
+          ...mods,
+          {
+            id: mod.id,
+            name: mod.name,
+            slug: mod.slug,
+            downloads: mod.downloads,
+            endorsements: mod.endorsements,
+            thumbnailUrl: mod.thumbnailUrl,
+          },
+        ])
+        setAllMods((p) => p.map((m) => (m.id === selectedModId ? { ...m, teamId } : m)))
       }
       setSelectedModId('')
       toast({ title: 'تم الربط' })
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
-    } finally { setBusy(false) }
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
+    } finally {
+      setBusy(false)
+    }
   }
 
   const onUnlink = async (modId: string) => {
@@ -136,12 +170,31 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
       const mod = mods.find((m) => m.id === modId)
       onModsChange(mods.filter((m) => m.id !== modId))
       if (mod) {
-        setAllMods((p) => [{ id: mod.id, name: mod.name, slug: mod.slug, teamId: null, downloads: mod.downloads, endorsements: mod.endorsements, thumbnailUrl: mod.thumbnailUrl, game: null, category: null }, ...p])
+        setAllMods((p) => [
+          {
+            id: mod.id,
+            name: mod.name,
+            slug: mod.slug,
+            teamId: null,
+            downloads: mod.downloads,
+            endorsements: mod.endorsements,
+            thumbnailUrl: mod.thumbnailUrl,
+            game: null,
+            category: null,
+          },
+          ...p,
+        ])
       }
       toast({ title: 'تم الفصل' })
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
-    } finally { setBusy(false) }
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
+    } finally {
+      setBusy(false)
+    }
   }
 
   const resetFilters = () => {
@@ -161,25 +214,54 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
         ) : (
           <div className="space-y-2">
             {mods.map((mod) => (
-              <div key={mod.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/30 p-3">
+              <div
+                key={mod.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/30 p-3"
+              >
                 <div className="flex items-center gap-3">
                   {mod.thumbnailUrl ? (
-                    <Image loading="lazy" width={40} height={40} src={mod.thumbnailUrl} alt="" className="h-10 w-16 rounded object-cover" />
+                    <Image
+                      loading="lazy"
+                      width={40}
+                      height={40}
+                      src={mod.thumbnailUrl}
+                      alt=""
+                      className="h-10 w-16 rounded object-cover"
+                    />
                   ) : (
-                    <span className="grid h-10 w-16 place-items-center rounded bg-muted text-xs text-muted-foreground">—</span>
+                    <span className="grid h-10 w-16 place-items-center rounded bg-muted text-xs text-muted-foreground">
+                      —
+                    </span>
                   )}
                   <div>
-                    <Link href={`/admin/mods/${mod.id}/edit`} className="text-sm font-medium hover:underline">{mod.name}</Link>
+                    <Link
+                      href={`/admin/mods/${mod.id}/edit`}
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {mod.name}
+                    </Link>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                       <Download className="h-3 w-3" /> {formatNumber(mod.downloads)}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Link href={`/admin/mods/${mod.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" title="فتح في الأدمن">
+                  <Link
+                    href={`/admin/mods/${mod.id}/edit`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title="فتح في الأدمن"
+                  >
                     <ExternalLink className="h-4 w-4" />
                   </Link>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onUnlink(mod.id)} disabled={busy} title="فصل" aria-label="فصل">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
+                    onClick={() => onUnlink(mod.id)}
+                    disabled={busy}
+                    title="فصل"
+                    aria-label="فصل"
+                  >
                     <Unlink className="h-4 w-4" />
                   </Button>
                 </div>
@@ -194,7 +276,12 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold">ربط تعريبة جديدة</h2>
           {(selectedPlatform || selectedCategoryId || searchQuery) && (
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 text-xs min-h-[44px]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="h-7 text-xs min-h-[44px]"
+            >
               <X className="ml-1 h-3 w-3" /> مسح الفلتر
             </Button>
           )}
@@ -202,15 +289,21 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
 
         {/* Step indicators */}
         <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-          <span className={`flex items-center gap-1 ${step >= 1 ? 'text-primary font-medium' : ''}`}>
+          <span
+            className={`flex items-center gap-1 ${step >= 1 ? 'text-primary font-medium' : ''}`}
+          >
             <Gamepad2 className="h-3 w-3" /> المنصة
           </span>
           <ChevronLeft className="h-3 w-3 rotate-180" />
-          <span className={`flex items-center gap-1 ${step >= 2 ? 'text-primary font-medium' : ''}`}>
+          <span
+            className={`flex items-center gap-1 ${step >= 2 ? 'text-primary font-medium' : ''}`}
+          >
             <FolderOpen className="h-3 w-3" /> القسم
           </span>
           <ChevronLeft className="h-3 w-3 rotate-180" />
-          <span className={`flex items-center gap-1 ${step >= 3 ? 'text-primary font-medium' : ''}`}>
+          <span
+            className={`flex items-center gap-1 ${step >= 3 ? 'text-primary font-medium' : ''}`}
+          >
             <Search className="h-3 w-3" /> بحث
           </span>
         </div>
@@ -221,7 +314,9 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
           <>
             {/* Step 1: Platform */}
             <div className="mb-3">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">اختر المنصة</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                اختر المنصة
+              </label>
               <div className="flex flex-wrap gap-1.5">
                 {PLATFORMS.map((p) => {
                   const count = unlinked.filter((m) => m.game?.platform === p.key).length
@@ -251,7 +346,9 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
             {/* Step 2: Category */}
             {selectedPlatform && availableCategories.length > 0 && (
               <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">اختر القسم</label>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  اختر القسم
+                </label>
                 <div className="flex flex-wrap gap-1.5">
                   {availableCategories.map((cat) => (
                     <button
@@ -283,7 +380,10 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setSelectedModId('') }}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setSelectedModId('')
+                    }}
                     placeholder="ابحث عن تعريبة..."
                     className="w-full rounded-md border border-border bg-background pr-9 pl-3 py-2 text-sm"
                   />
@@ -316,9 +416,18 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
                             className="h-4 w-4 accent-primary"
                           />
                           {mod.thumbnailUrl ? (
-                            <Image loading="lazy" width={40} height={40} src={mod.thumbnailUrl} alt="" className="h-8 w-12 rounded object-cover" />
+                            <Image
+                              loading="lazy"
+                              width={40}
+                              height={40}
+                              src={mod.thumbnailUrl}
+                              alt=""
+                              className="h-8 w-12 rounded object-cover"
+                            />
                           ) : (
-                            <span className="grid h-8 w-12 place-items-center rounded bg-muted text-[10px] text-muted-foreground">—</span>
+                            <span className="grid h-8 w-12 place-items-center rounded bg-muted text-[10px] text-muted-foreground">
+                              —
+                            </span>
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">{mod.name}</div>
@@ -328,13 +437,19 @@ export function TeamModsTab({ teamId, mods, onModsChange }: TeamModsTabProps) {
                             </div>
                           </div>
                           <div className="shrink-0 text-[10px] text-muted-foreground">
-                            <Download className="ml-0.5 inline h-3 w-3" /> {formatNumber(mod.downloads)}
+                            <Download className="ml-0.5 inline h-3 w-3" />{' '}
+                            {formatNumber(mod.downloads)}
                           </div>
                         </label>
                       ))}
                     </div>
                     <div className="mt-3 flex justify-end">
-                      <Button size="sm" className="min-h-[44px]" onClick={onLink} disabled={!selectedModId || busy}>
+                      <Button
+                        size="sm"
+                        className="min-h-[44px]"
+                        onClick={onLink}
+                        disabled={!selectedModId || busy}
+                      >
                         <Link2 className="ml-1 h-3 w-3" /> ربط التعريبة
                       </Button>
                     </div>

@@ -21,7 +21,14 @@ const ICON_MAP: Record<SpecialRole, typeof BadgeCheck> = {
   top_publisher: Gem,
 }
 
-export function CreatorBadge({ role, specialRoles, showLabels = false, showLabel = false, size = 'md', className }: Props) {
+export function CreatorBadge({
+  role,
+  specialRoles,
+  showLabels = false,
+  showLabel = false,
+  size = 'md',
+  className,
+}: Props) {
   const shouldShowLabel = showLabels || showLabel
   const badges = parseSpecialRoles(specialRoles)
   const isNumberSize = typeof size === 'number'
@@ -44,7 +51,10 @@ export function CreatorBadge({ role, specialRoles, showLabels = false, showLabel
             title={config.descriptionAr}
           >
             {isNumberSize ? (
-              <Icon style={{ width: size as number, height: size as number }} className="shrink-0" />
+              <Icon
+                style={{ width: size as number, height: size as number }}
+                className="shrink-0"
+              />
             ) : (
               <Icon className={iconClass} />
             )}
@@ -54,9 +64,15 @@ export function CreatorBadge({ role, specialRoles, showLabels = false, showLabel
       })}
 
       {badges.length === 0 && isCreatorRole && (
-        <span className="inline-flex items-center gap-1 text-primary" title="مُعَرِّب معتمد من Games Arabic">
+        <span
+          className="inline-flex items-center gap-1 text-primary"
+          title="مُعَرِّب معتمد من Games Arabic"
+        >
           {isNumberSize ? (
-            <BadgeCheck style={{ width: size as number, height: size as number }} className="shrink-0" />
+            <BadgeCheck
+              style={{ width: size as number, height: size as number }}
+              className="shrink-0"
+            />
           ) : (
             <BadgeCheck className={iconClass} />
           )}

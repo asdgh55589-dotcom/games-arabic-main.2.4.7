@@ -17,15 +17,28 @@ export function GameCard({ game }: { game: GameCardData }) {
   const badgeStatus = getModBadgeStatus(game.createdAt, game.updatedAt)
 
   return (
-    <Card className="mod-card group relative flex min-h-[280px] flex-col overflow-hidden border-border bg-card p-0 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5" dir="rtl">
+    <Card
+      className="mod-card group relative flex min-h-[280px] flex-col overflow-hidden border-border bg-card p-0 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+      dir="rtl"
+    >
       {/* صورة landscape — مقاس 1920×1080 (16:9) */}
       <Link href={`/platform/${game.platform}`} className="relative block">
         <div className="relative z-0 flex aspect-video items-center justify-center overflow-hidden rounded-t bg-secondary">
-          <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={game.thumbnailUrl} alt={game.name} className="mod-card-image absolute z-2 max-h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <Image
+            unoptimized
+            sizes="(max-width: 768px) 100vw, 50vw"
+            fill
+            src={game.thumbnailUrl}
+            alt={game.name}
+            className="mod-card-image absolute z-2 max-h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
         </div>
         {/* شارة المنصة — يسار */}
-        <Badge variant="outline" className="absolute left-2 top-2 border-border bg-background/80 backdrop-blur">
+        <Badge
+          variant="outline"
+          className="absolute left-2 top-2 border-border bg-background/80 backdrop-blur"
+        >
           {game.platform}
         </Badge>
         {/* شارة جديد/محدّث — يمين (بدون شارة مميز) */}

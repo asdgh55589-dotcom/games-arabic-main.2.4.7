@@ -154,40 +154,57 @@ export default function AdminModsPage() {
         toast({ title: `تم تحديث ${ids.length} تعريب` })
         if (action === 'workflowStatus') {
           // تحديث الحالة في القائمة
-          setMods((prev) => prev.map((m) => {
-            if (!selected.has(m.id)) return m
-            return { ...m, workflowStatus: value as string }
-          }))
+          setMods((prev) =>
+            prev.map((m) => {
+              if (!selected.has(m.id)) return m
+              return { ...m, workflowStatus: value as string }
+            }),
+          )
         } else {
-          setMods((prev) => prev.map((m) => {
-            if (!selected.has(m.id)) return m
-            if (action === 'featured') return { ...m, isFeatured: Boolean(value) }
-            if (action === 'trending') return { ...m, isTrending: Boolean(value) }
-            return m
-          }))
+          setMods((prev) =>
+            prev.map((m) => {
+              if (!selected.has(m.id)) return m
+              if (action === 'featured') return { ...m, isFeatured: Boolean(value) }
+              if (action === 'trending') return { ...m, isTrending: Boolean(value) }
+              return m
+            }),
+          )
         }
         setSelected(new Set())
       }
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setBulkLoading(false)
     }
   }
 
   const onDelete = async (mod: ModListItem) => {
-    if (!confirm(`هل أنت متأكد من حذف التعريب "${mod.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return
+    if (!confirm(`هل أنت متأكد من حذف التعريب "${mod.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`))
+      return
     try {
       const res = await fetch(`/api/admin/mods/${mod.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحذف')
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل الحذف',
+        )
       }
       toast({ title: 'تم الحذف', description: `تم حذف "${mod.name}" بنجاح` })
       setMods((prev) => prev.filter((m) => m.id !== mod.id))
       setTotal((t) => t - 1)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل الحذف', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل الحذف',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -201,13 +218,21 @@ export default function AdminModsPage() {
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل النسخ')
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل النسخ',
+        )
       }
       const data = await res.json()
       toast({ title: 'تم النسخ', description: `تم إنشاء نسخة من "${mod.name}"` })
       router.push(`/admin/mods/${data.data.id}/edit`)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل النسخ', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل النسخ',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -219,9 +244,7 @@ export default function AdminModsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">التعريبات</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total} تعريب إجمالي
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{total} تعريب إجمالي</p>
         </div>
         <Button onClick={() => router.push('/admin/mods/new')}>
           <Plus className="ml-2 h-4 w-4" />
@@ -234,29 +257,78 @@ export default function AdminModsPage() {
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
           <span className="text-sm font-medium text-primary">{selected.size} محدد</span>
           <div className="mr-auto flex flex-wrap gap-2">
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('featured', true)} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('featured', true)}
+              disabled={bulkLoading}
+            >
               <Star className="ml-1 h-3 w-3" /> تمييز
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('featured', false)} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('featured', false)}
+              disabled={bulkLoading}
+            >
               <Star className="ml-1 h-3 w-3" /> إلغاء التمييز
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('trending', true)} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('trending', true)}
+              disabled={bulkLoading}
+            >
               <Flame className="ml-1 h-3 w-3" /> إجراء رائج
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('trending', false)} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('trending', false)}
+              disabled={bulkLoading}
+            >
               <Flame className="ml-1 h-3 w-3" /> إلغاء الرائج
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('workflowStatus', 'ARCHIVED')} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('workflowStatus', 'ARCHIVED')}
+              disabled={bulkLoading}
+            >
               <Globe className="ml-1 h-3 w-3" /> أرشفة
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => onBulkAction('export')} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="outline"
+              onClick={() => onBulkAction('export')}
+              disabled={bulkLoading}
+            >
               <Download className="ml-1 h-3 w-3" /> تصدير CSV
             </Button>
-            <Button size="sm" className="min-h-[44px]" variant="destructive" onClick={() => onBulkAction('delete')} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              className="min-h-[44px]"
+              variant="destructive"
+              onClick={() => onBulkAction('delete')}
+              disabled={bulkLoading}
+            >
               <Trash2 className="ml-1 h-3 w-3" /> حذف {selected.size}
             </Button>
           </div>
-          <Button size="sm" className="min-h-[44px]" variant="ghost" onClick={() => setSelected(new Set())}>إلغاء التحديد</Button>
+          <Button
+            size="sm"
+            className="min-h-[44px]"
+            variant="ghost"
+            onClick={() => setSelected(new Set())}
+          >
+            إلغاء التحديد
+          </Button>
         </div>
       )}
 
@@ -266,7 +338,10 @@ export default function AdminModsPage() {
           <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
             placeholder="ابحث عن تعريب بالاسم أو الوسوم أو السلسلة…"
             className="h-10 pr-10"
           />
@@ -274,7 +349,10 @@ export default function AdminModsPage() {
 
         <select
           value={platform}
-          onChange={(e) => { setPlatform(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setPlatform(e.target.value)
+            setPage(1)
+          }}
           className="h-10 rounded-md border border-border bg-background px-3 text-sm"
         >
           {PLATFORMS.map((p) => (
@@ -286,22 +364,32 @@ export default function AdminModsPage() {
 
         <select
           value={workflowFilter}
-          onChange={(e) => { setWorkflowFilter(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setWorkflowFilter(e.target.value)
+            setPage(1)
+          }}
           className="h-10 rounded-md border border-border bg-background px-3 text-sm"
         >
           <option value="all">كل الحالات</option>
           {WORKFLOW_STATUSES.map((s) => (
-            <option key={s} value={s}>{WORKFLOW_LABELS[s]}</option>
+            <option key={s} value={s}>
+              {WORKFLOW_LABELS[s]}
+            </option>
           ))}
         </select>
 
         <select
           value={sort}
-          onChange={(e) => { setSort(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setSort(e.target.value)
+            setPage(1)
+          }}
           className="h-10 rounded-md border border-border bg-background px-3 text-sm"
         >
           {SORTS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
           ))}
         </select>
       </div>
@@ -319,7 +407,9 @@ export default function AdminModsPage() {
         <div className="grid place-items-center py-20 text-center">
           <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold">لا توجد تعريبات</h3>
-          <p className="mt-1 text-sm text-muted-foreground">جرّب تغيير الفلاتر أو أنشئ تعريباً جديداً</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            جرّب تغيير الفلاتر أو أنشئ تعريباً جديداً
+          </p>
         </div>
       ) : (
         <>
@@ -330,7 +420,10 @@ export default function AdminModsPage() {
                 <thead className="border-b border-border bg-card/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="w-10 px-4 py-3">
-                      <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground">
+                      <button
+                        onClick={toggleSelectAll}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
                         {selected.size === mods.length && mods.length > 0 ? (
                           <Check className="h-4 w-4" />
                         ) : (
@@ -349,9 +442,15 @@ export default function AdminModsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {mods.map((mod) => (
-                    <tr key={mod.id} className={`text-sm transition-colors hover:bg-accent/30 ${selected.has(mod.id) ? 'bg-primary/5' : ''}`}>
+                    <tr
+                      key={mod.id}
+                      className={`text-sm transition-colors hover:bg-accent/30 ${selected.has(mod.id) ? 'bg-primary/5' : ''}`}
+                    >
                       <td className="px-4 py-3">
-                        <button onClick={() => toggleSelect(mod.id)} className="text-muted-foreground hover:text-foreground">
+                        <button
+                          onClick={() => toggleSelect(mod.id)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
                           {selected.has(mod.id) ? (
                             <Check className="h-4 w-4 text-primary" />
                           ) : (
@@ -370,8 +469,12 @@ export default function AdminModsPage() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1">
                               <span className="truncate font-medium">{mod.name}</span>
-                              {mod.isFeatured && <Star className="h-3 w-3 shrink-0 text-amber-500" />}
-                              {mod.isTrending && <Flame className="h-3 w-3 shrink-0 text-primary" />}
+                              {mod.isFeatured && (
+                                <Star className="h-3 w-3 shrink-0 text-amber-500" />
+                              )}
+                              {mod.isTrending && (
+                                <Flame className="h-3 w-3 shrink-0 text-primary" />
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               v{mod.version} · {mod.author.username}
@@ -382,20 +485,36 @@ export default function AdminModsPage() {
                       <td className="hidden px-4 py-3 md:table-cell">
                         <div className="text-xs">
                           <div className="font-medium">{mod.game.name}</div>
-                          <Badge variant="outline" className="mt-1 text-[10px]">{mod.game.platform}</Badge>
+                          <Badge variant="outline" className="mt-1 text-[10px]">
+                            {mod.game.platform}
+                          </Badge>
                         </div>
                       </td>
                       <td className="hidden px-4 py-3 sm:table-cell">
-                        <WorkflowStatusBadge status={mod.workflowStatus} showIcon={false} className="text-[10px]" />
+                        <WorkflowStatusBadge
+                          status={mod.workflowStatus}
+                          showIcon={false}
+                          className="text-[10px]"
+                        />
                       </td>
-                      <td className="hidden px-4 py-3 text-xs sm:table-cell">{formatNumber(mod.downloads)}</td>
-                      <td className="hidden px-4 py-3 text-xs lg:table-cell">{formatNumber(mod.endorsements)}</td>
+                      <td className="hidden px-4 py-3 text-xs sm:table-cell">
+                        {formatNumber(mod.downloads)}
+                      </td>
+                      <td className="hidden px-4 py-3 text-xs lg:table-cell">
+                        {formatNumber(mod.endorsements)}
+                      </td>
                       <td className="hidden px-4 py-3 text-xs text-muted-foreground lg:table-cell">
                         {timeAgo(mod.createdAt)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                            aria-label="إجراء"
+                          >
                             <Link href={`/admin/mods/${mod.id}/edit`} title="تعديل">
                               <Edit2 className="h-4 w-4" />
                             </Link>
@@ -405,11 +524,18 @@ export default function AdminModsPage() {
                             variant="ghost"
                             className="h-8 w-8 min-h-[44px] min-w-[44px]"
                             onClick={() => onDuplicate(mod)}
-                            title="نسخ" aria-label="نسخ"
+                            title="نسخ"
+                            aria-label="نسخ"
                           >
                             <Package className="h-4 w-4" />
                           </Button>
-                          <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                            aria-label="إجراء"
+                          >
                             <a
                               href={`/mod/${encodeURIComponent(mod.slug)}`}
                               target="_blank"
@@ -424,7 +550,8 @@ export default function AdminModsPage() {
                             variant="ghost"
                             className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-500 min-h-[44px] min-w-[44px]"
                             onClick={() => onDelete(mod)}
-                            title="حذف" aria-label="حذف"
+                            title="حذف"
+                            aria-label="حذف"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -440,7 +567,10 @@ export default function AdminModsPage() {
           {/* بطاقات الجوال */}
           <div className="md:hidden space-y-3">
             {mods.map((mod) => (
-              <Card key={mod.id} className={`p-4 ${selected.has(mod.id) ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}>
+              <Card
+                key={mod.id}
+                className={`p-4 ${selected.has(mod.id) ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}
+              >
                 {/* الصف العلوي: اختيار + صورة + اسم */}
                 <div className="flex items-start gap-3">
                   <button
@@ -456,7 +586,10 @@ export default function AdminModsPage() {
                   </button>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={mod.author.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(mod.author.username)}`}
+                    src={
+                      mod.author.avatarUrl ||
+                      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(mod.author.username)}`
+                    }
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-lg object-cover"
                   />
@@ -471,10 +604,16 @@ export default function AdminModsPage() {
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <span className="text-xs font-medium">{mod.game.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{mod.game.platform}</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {mod.game.platform}
+                      </Badge>
                     </div>
                   </div>
-                  <WorkflowStatusBadge status={mod.workflowStatus} showIcon={false} className="shrink-0 text-[10px]" />
+                  <WorkflowStatusBadge
+                    status={mod.workflowStatus}
+                    showIcon={false}
+                    className="shrink-0 text-[10px]"
+                  />
                 </div>
 
                 {/* الإحصائيات */}
@@ -490,13 +629,23 @@ export default function AdminModsPage() {
                     {formatNumber(mod.endorsements)} تأييد
                   </span>
                   <span className="text-muted-foreground">{timeAgo(mod.createdAt)}</span>
-                  <span className="text-muted-foreground">· {mod._count.files} ملفات · {mod._count.commentsRecords} تعليقات</span>
+                  <span className="text-muted-foreground">
+                    · {mod._count.files} ملفات · {mod._count.commentsRecords} تعليقات
+                  </span>
                 </div>
 
                 {/* الإجراءات */}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button asChild variant="outline" size="sm" className="min-h-[44px] flex-1 text-xs">
-                    <Link href={`/admin/mods/${mod.id}/edit`} className="inline-flex items-center justify-center gap-1.5">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[44px] flex-1 text-xs"
+                  >
+                    <Link
+                      href={`/admin/mods/${mod.id}/edit`}
+                      className="inline-flex items-center justify-center gap-1.5"
+                    >
                       <Edit2 className="h-3.5 w-3.5" />
                       تعديل
                     </Link>
@@ -510,7 +659,12 @@ export default function AdminModsPage() {
                     <Package className="h-3.5 w-3.5" />
                     نسخ
                   </Button>
-                  <Button asChild variant="outline" size="sm" className="min-h-[44px] flex-1 text-xs">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="min-h-[44px] flex-1 text-xs"
+                  >
                     <a
                       href={`/mod/${encodeURIComponent(mod.slug)}`}
                       target="_blank"
@@ -540,7 +694,8 @@ export default function AdminModsPage() {
             <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm"
+                className="min-h-[44px]"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
@@ -551,7 +706,8 @@ export default function AdminModsPage() {
               </span>
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm"
+                className="min-h-[44px]"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >

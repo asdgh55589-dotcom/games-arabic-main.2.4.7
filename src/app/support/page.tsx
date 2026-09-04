@@ -5,7 +5,8 @@ export const revalidate = 3600 // ISR: 1h — صفحة شبه ثابتة
 
 export const metadata: Metadata = {
   title: 'الدعم والمساعدة - Games Arabic',
-  description: 'مركز المساعدة والدعم الفني لمنصة Games Arabic - إجابات لأسئلتك واستفساراتك ودليل الاستخدام.',
+  description:
+    'مركز المساعدة والدعم الفني لمنصة Games Arabic - إجابات لأسئلتك واستفساراتك ودليل الاستخدام.',
   keywords: ['الدعم', 'المساعدة', 'Games Arabic', 'دليل الاستخدام', 'مركز المساعدة'],
   alternates: { canonical: 'https://games-arabic.com/support' },
   openGraph: {

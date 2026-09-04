@@ -72,7 +72,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -91,7 +95,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -118,7 +126,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -137,7 +149,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -160,7 +176,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
-      toast({ title: 'خطأ', description: e instanceof Error ? e.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -170,12 +190,19 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراءات الفريق">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 min-h-[44px] min-w-[44px]"
+            aria-label="إجراءات الفريق"
+          >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">إجراءات — {team.name}</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">
+            إجراءات — {team.name}
+          </DropdownMenuLabel>
 
           <DropdownMenuItem asChild>
             <Link href={`/admin/teams/${team.id}/dashboard`} className="flex items-center gap-2">
@@ -189,7 +216,10 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
             <Link2 className="h-4 w-4" /> تعديل روابط التواصل
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/admin/teams/${team.id}/edit?tab=tabs`} className="flex items-center gap-2">
+            <Link
+              href={`/admin/teams/${team.id}/edit?tab=tabs`}
+              className="flex items-center gap-2"
+            >
               <Layout className="h-4 w-4" /> إدارة التبويبات
             </Link>
           </DropdownMenuItem>
@@ -214,14 +244,19 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
             <Star className="h-4 w-4" /> {team.isFeatured ? 'إلغاء التمييز' : 'تمييز الفريق'}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpenDialog('official')}>
-            <BadgeCheck className="h-4 w-4" /> {team.isOfficial ? 'إلغاء الرسمية' : 'جعل الفريق رسمياً'}
+            <BadgeCheck className="h-4 w-4" />{' '}
+            {team.isOfficial ? 'إلغاء الرسمية' : 'جعل الفريق رسمياً'}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setOpenDialog('archive')} className="text-amber-600">
             <Archive className="h-4 w-4" /> أرشفة الفريق
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={() => setOpenDialog('delete')} className="text-destructive">
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setOpenDialog('delete')}
+            className="text-destructive"
+          >
             <Trash2 className="h-4 w-4" /> حذف نهائي
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -237,15 +272,32 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
           <div className="space-y-4">
             <div>
               <Label>اسم الفريق *</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="اسم الفريق" className="mt-1" />
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="اسم الفريق"
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>الوصف</Label>
-              <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="وصف الفريق..." rows={3} className="mt-1" />
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="وصف الفريق..."
+                rows={3}
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>رابط الشعار</Label>
-              <Input value={editLogo} onChange={(e) => setEditLogo(e.target.value)} placeholder="https://..." className="mt-1" dir="ltr" />
+              <Input
+                value={editLogo}
+                onChange={(e) => setEditLogo(e.target.value)}
+                placeholder="https://..."
+                className="mt-1"
+                dir="ltr"
+              />
             </div>
           </div>
           <DialogFooter>
@@ -264,7 +316,9 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>تعديل روابط التواصل</DialogTitle>
-            <DialogDescription>إدارة روابط التواصل للفريق (موقع، تيليجرام، ديسكورد...)</DialogDescription>
+            <DialogDescription>
+              إدارة روابط التواصل للفريق (موقع، تيليجرام، ديسكورد...)
+            </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
             <p>إدارة الروابط تتم من صفحة التعديل الكاملة.</p>
@@ -285,7 +339,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>{team.isFeatured ? 'إلغاء تمييز الفريق' : 'تمييز الفريق'}</DialogTitle>
-            <DialogDescription>{team.isFeatured ? 'سيتم إلغاء تمييز الفريق من الصفحة الرئيسية.' : 'سيتم تمييز الفريق في الصفحة الرئيسية.'}</DialogDescription>
+            <DialogDescription>
+              {team.isFeatured
+                ? 'سيتم إلغاء تمييز الفريق من الصفحة الرئيسية.'
+                : 'سيتم تمييز الفريق في الصفحة الرئيسية.'}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
@@ -303,7 +361,11 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>{team.isOfficial ? 'إلغاء الرسمية' : 'جعل الفريق رسمياً'}</DialogTitle>
-            <DialogDescription>{team.isOfficial ? 'سيتم إلغاء صفة الرسمية عن الفريق.' : 'سيتم جعل الفريق رسمياً وسيظهر بشارة رسمية.'}</DialogDescription>
+            <DialogDescription>
+              {team.isOfficial
+                ? 'سيتم إلغاء صفة الرسمية عن الفريق.'
+                : 'سيتم جعل الفريق رسمياً وسيظهر بشارة رسمية.'}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
@@ -321,7 +383,9 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>أرشفة الفريق</DialogTitle>
-            <DialogDescription>هل تريد أرشفة هذا الفريق؟ لن يظهر للعامة لكن بياناته ستبقى.</DialogDescription>
+            <DialogDescription>
+              هل تريد أرشفة هذا الفريق؟ لن يظهر للعامة لكن بياناته ستبقى.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
@@ -340,18 +404,28 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
           <DialogHeader>
             <DialogTitle className="text-destructive">حذف الفريق نهائياً</DialogTitle>
             <DialogDescription>
-              سيتم حذف الفريق <span className="font-bold text-foreground">"{team.name}"</span> نهائياً مع جميع بياناته. اكتب اسم الفريق للتأكيد.
+              سيتم حذف الفريق <span className="font-bold text-foreground">"{team.name}"</span>{' '}
+              نهائياً مع جميع بياناته. اكتب اسم الفريق للتأكيد.
             </DialogDescription>
           </DialogHeader>
           <div>
             <Label>اكتب اسم الفريق للحذف *</Label>
-            <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder={team.name} className="mt-1" />
+            <Input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder={team.name}
+              className="mt-1"
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
               إلغاء
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={loading || deleteConfirm !== team.name}>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading || deleteConfirm !== team.name}
+            >
               تأكيد الحذف النهائي
             </Button>
           </DialogFooter>
@@ -363,9 +437,13 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>إدارة الأعضاء</DialogTitle>
-            <DialogDescription>استخدم الصف القابل للتوسيع في الجدول لإدارة الأعضاء مباشرة.</DialogDescription>
+            <DialogDescription>
+              استخدم الصف القابل للتوسيع في الجدول لإدارة الأعضاء مباشرة.
+            </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg border bg-muted/20 p-4 text-center text-sm text-muted-foreground">اضغط على زر التوسيع (▼) في صف الفريق لعرض الأعضاء.</div>
+          <div className="rounded-lg border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+            اضغط على زر التوسيع (▼) في صف الفريق لعرض الأعضاء.
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
               فهمت

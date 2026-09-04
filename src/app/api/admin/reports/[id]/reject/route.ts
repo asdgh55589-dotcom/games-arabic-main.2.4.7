@@ -56,7 +56,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       action: 'report_rejected',
       entity: 'report',
       entityId: id,
-      details: JSON.stringify({ resolution: resolution || 'البلاغ غير مبرر', fromStatus: previousStatus }),
+      details: JSON.stringify({
+        resolution: resolution || 'البلاغ غير مبرر',
+        fromStatus: previousStatus,
+      }),
       request: req,
     })
 
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (report.reporterId) {
       await recalculateTrustScore(report.reporterId)
       await checkReporterStrikes(report.reporterId).catch((err) =>
-        console.error('[reject] checkReporterStrikes failed:', err)
+        console.error('[reject] checkReporterStrikes failed:', err),
       )
     }
 

@@ -164,7 +164,8 @@ export default async function CreatorsPage({ searchParams }: PageProps) {
     const totalDownloads = published.reduce((sum, m) => sum + (m.downloads || 0), 0)
     const totalViews = published.reduce((sum, m) => sum + (m.views || 0), 0)
     const rated = published.filter((m) => (m.ratingCount || 0) > 0)
-    const avgRating = rated.length > 0 ? rated.reduce((sum, m) => sum + (m.rating || 0), 0) / rated.length : 0
+    const avgRating =
+      rated.length > 0 ? rated.reduce((sum, m) => sum + (m.rating || 0), 0) / rated.length : 0
     const teams = u.teamMemberships.map((tm) => tm.team).filter(Boolean)
     return {
       ...u,
@@ -192,7 +193,9 @@ export default async function CreatorsPage({ searchParams }: PageProps) {
     creators: allCreators.filter((u) => u.role === 'creator').length,
     publishers: allCreators.filter((u) => u.role === 'publisher').length,
     publishedMods: allCreators.reduce((sum, u) => sum + u.mods.length, 0),
-    downloads: allCreators.reduce((sum, u) => sum + u.mods.reduce((s, m) => s + (m.downloads || 0), 0), 0).toLocaleString('ar-EG'),
+    downloads: allCreators
+      .reduce((sum, u) => sum + u.mods.reduce((s, m) => s + (m.downloads || 0), 0), 0)
+      .toLocaleString('ar-EG'),
     banned: allCreators.filter((u) => u.banStatus?.startsWith('banned')).length,
   }
 

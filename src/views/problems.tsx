@@ -11,28 +11,52 @@ export function ProblemsPage() {
     <div className="mx-auto max-w-[900px] px-4 py-8 lg:px-6" dir="rtl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">مشاكل وحلول</h1>
-        <p className="mt-2 text-muted-foreground">دليل شامل لملاحظات التركيب، الأدلة الكاملة، والأسئلة الشائعة</p>
+        <p className="mt-2 text-muted-foreground">
+          دليل شامل لملاحظات التركيب، الأدلة الكاملة، والأسئلة الشائعة
+        </p>
       </div>
 
       {/* ملاحظات عامة لتركيب التعريبات */}
       <Section icon={<Wrench className="h-5 w-5" />} title="ملاحظات عامة لتركيب التعريبات">
         <p>
-          قبل البدء في تركيب أي تعريب، يُرجى الاطّلاع على الملاحظات التالية لضمان عملية تركيب صحيحة وخالية من المشاكل:
+          قبل البدء في تركيب أي تعريب، يُرجى الاطّلاع على الملاحظات التالية لضمان عملية تركيب صحيحة
+          وخالية من المشاكل:
         </p>
         <ul className="mr-6 list-disc space-y-2">
-          <li><strong>النسخ الاحتياطي:</strong> قبل تركيب أي تعريب، يُنصح دائماً بأخذ نسخة احتياطية من ملفات اللعبة الأصلية. هذا الإجراء احترازي يضمن إمكانية استعادة اللعبة لحالتها الأصلية في حال وجود أي مشكلة.</li>
-          <li><strong>مطابقة الإصدار:</strong> تأكد من أن إصدار اللعبة لديك متوافق مع إصدار التعريب المذكور في خانة "التوافق" ببطاقة البيانات. التعريب المصمم لإصدار معيّن قد لا يعمل بشكل صحيح على إصدار آخر.</li>
-          <li><strong>برامج فك الضغط:</strong> معظم ملفات التعريب تأتي بصيغة مضغوطة (zip, 7z, rar). تأكد من تثبيت برنامج لفك الضغط مثل 7-Zip أو WinRAR قبل البدء.</li>
-          <li><strong>الكسر الحماية (للأجهزة):</strong> تعريبات أجهزة PlayStation و Nintendo Switch تتطلب أجهزة مكسورة الحماية (CFW). تأكد من أن جهازك مهيّأ لاستقبال الملفات قبل التركيب.</li>
-          <li><strong>ترتيب التركيب:</strong> إذا كان التعريب يحتوي على أكثر من ملف (ملف رئيسي + ملف تصحيحي)، يُركّب الملف الرئيسي أولاً ثم الملف التصحيحي بعده. لا تعكس الترتيب.</li>
-          <li><strong>إعادة التشغيل:</strong> بعد تركيب التعريب، أعد تشغيل اللعبة بالكامل لتطبيق التغييرات. بعض الألعاب تتطلب حذف ملفات الـ Cache من مجلد اللعبة.</li>
+          <li>
+            <strong>النسخ الاحتياطي:</strong> قبل تركيب أي تعريب، يُنصح دائماً بأخذ نسخة احتياطية من
+            ملفات اللعبة الأصلية. هذا الإجراء احترازي يضمن إمكانية استعادة اللعبة لحالتها الأصلية في
+            حال وجود أي مشكلة.
+          </li>
+          <li>
+            <strong>مطابقة الإصدار:</strong> تأكد من أن إصدار اللعبة لديك متوافق مع إصدار التعريب
+            المذكور في خانة "التوافق" ببطاقة البيانات. التعريب المصمم لإصدار معيّن قد لا يعمل بشكل
+            صحيح على إصدار آخر.
+          </li>
+          <li>
+            <strong>برامج فك الضغط:</strong> معظم ملفات التعريب تأتي بصيغة مضغوطة (zip, 7z, rar).
+            تأكد من تثبيت برنامج لفك الضغط مثل 7-Zip أو WinRAR قبل البدء.
+          </li>
+          <li>
+            <strong>الكسر الحماية (للأجهزة):</strong> تعريبات أجهزة PlayStation و Nintendo Switch
+            تتطلب أجهزة مكسورة الحماية (CFW). تأكد من أن جهازك مهيّأ لاستقبال الملفات قبل التركيب.
+          </li>
+          <li>
+            <strong>ترتيب التركيب:</strong> إذا كان التعريب يحتوي على أكثر من ملف (ملف رئيسي + ملف
+            تصحيحي)، يُركّب الملف الرئيسي أولاً ثم الملف التصحيحي بعده. لا تعكس الترتيب.
+          </li>
+          <li>
+            <strong>إعادة التشغيل:</strong> بعد تركيب التعريب، أعد تشغيل اللعبة بالكامل لتطبيق
+            التغييرات. بعض الألعاب تتطلب حذف ملفات الـ Cache من مجلد اللعبة.
+          </li>
         </ul>
       </Section>
 
       {/* دليل GAMES ARABIC الشامل */}
       <Section icon={<BookOpen className="h-5 w-5" />} title="دليل GAMES ARABIC الشامل">
         <p>
-          ينقسم الدليل الشامل إلى ثلاثة أقسام رئيسية، يتناول كل منها جانباً مختلفاً من استخدام الموقع والتعريبات:
+          ينقسم الدليل الشامل إلى ثلاثة أقسام رئيسية، يتناول كل منها جانباً مختلفاً من استخدام الموقع
+          والتعريبات:
         </p>
 
         <div className="mt-4 space-y-3">
@@ -73,7 +97,10 @@ export function ProblemsPage() {
       </Section>
 
       {/* الأسئلة الشائعة */}
-      <Section icon={<HelpCircle className="h-5 w-5" />} title="الأسئلة الشائعة وحلول المشاكل التقنية (FAQ)">
+      <Section
+        icon={<HelpCircle className="h-5 w-5" />}
+        title="الأسئلة الشائعة وحلول المشاكل التقنية (FAQ)"
+      >
         <div className="space-y-4">
           <FAQItem
             q="التعريب لا يعمل بعد التركيب — ماذا أفعل؟"
@@ -113,16 +140,22 @@ export function ProblemsPage() {
   )
 }
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <section className="mb-8">
       <h2 className="mb-4 flex items-center gap-2 text-xl font-bold">
         <span className="text-primary">{icon}</span>
         {title}
       </h2>
-      <div className="space-y-3 text-sm leading-relaxed text-foreground/80">
-        {children}
-      </div>
+      <div className="space-y-3 text-sm leading-relaxed text-foreground/80">{children}</div>
     </section>
   )
 }
@@ -131,11 +164,15 @@ function GuideCard({ number, title, items }: { number: string; title: string; it
   return (
     <Card className="p-4">
       <div className="mb-2 flex items-center gap-2">
-        <span className="rounded bg-primary/15 px-2 py-1 text-xs font-bold text-primary">{number}</span>
+        <span className="rounded bg-primary/15 px-2 py-1 text-xs font-bold text-primary">
+          {number}
+        </span>
         <h3 className="text-sm font-bold">{title}</h3>
       </div>
       <ul className="mr-4 list-disc space-y-1 text-xs text-muted-foreground">
-        {items.map((item, i) => <li key={i}>{item}</li>)}
+        {items.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
       </ul>
     </Card>
   )

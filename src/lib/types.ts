@@ -7,7 +7,7 @@
  * - Paginated list:   { data: T[], pagination: { page, limit, total, totalPages } }
  * - Paginated object: { data: { ...fields }, pagination: { page, limit, total, totalPages } }
  * - Error:            { error: { code: string, message: string, details?: unknown } }
- * 
+ *
  * Note: ok(value) wraps ANY value in { data: value }.
  * okPaginated(data, pagination) wraps data + adds pagination.
  * The shape of 'data' depends on what the route returns (array vs object).
@@ -20,7 +20,7 @@ export interface Author {
   avatarUrl: string | null
   bannerUrl: string | null
   bio: string | null
-  role: string  // member | creator | publisher | moderator | admin | manager | owner
+  role: string // member | creator | publisher | moderator | admin | manager | owner
   tier: number
   specialRoles: string
   qualityScore: number
@@ -36,7 +36,7 @@ export interface GameSummary {
   bannerUrl: string
   logoUrl: string | null
   category: string
-  platform: string  // PC | PS1 | PS2 | PS3 | PS4
+  platform: string // PC | PS1 | PS2 | PS3 | PS4
   releaseYear: number
   modCount: number
   totalDownloads: number
@@ -75,9 +75,9 @@ export interface ModSummary {
   rating: number
   ratingCount: number
   tags: string
-  series: string  // اسم السلسلة (مثل God of War)
-  translationTeam: string  // فريق التعريب أو المترجم المستقل
-  translationType: string  // official | unofficial
+  series: string // اسم السلسلة (مثل God of War)
+  translationTeam: string // فريق التعريب أو المترجم المستقل
+  translationType: string // official | unofficial
   isOriginalWork?: boolean
   originalSource?: string | null
   originalAuthor?: string | null
@@ -182,7 +182,14 @@ export interface ModCommentType {
   isEdited: boolean
   createdAt: string | Date
   updatedAt: string | Date
-  user?: { id: string; username: string; avatarUrl: string | null; role?: string | null; tier?: number | null; specialRoles?: string | null } | null
+  user?: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    role?: string | null
+    tier?: number | null
+    specialRoles?: string | null
+  } | null
   replies?: ModCommentType[]
 }
 

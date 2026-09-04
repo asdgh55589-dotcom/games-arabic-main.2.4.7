@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Search, ChevronUp, ChevronDown, Download, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  Search,
+  ChevronUp,
+  ChevronDown,
+  Download,
+  X,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -209,10 +218,13 @@ export function AdminDataTable<T extends { id: string }>({
         .map((col) => {
           const val = col.render(item)
           // crude text extraction
-          const text = typeof val === 'string' ? val : (item as Record<string, unknown>)[col.key]?.toString() || ''
+          const text =
+            typeof val === 'string'
+              ? val
+              : (item as Record<string, unknown>)[col.key]?.toString() || ''
           return `"${String(text).replace(/"/g, '""')}"`
         })
-        .join(',')
+        .join(','),
     )
     const csv = `\uFEFF${headers}\n${rows.join('\n')}`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -224,7 +236,10 @@ export function AdminDataTable<T extends { id: string }>({
     URL.revokeObjectURL(url)
   }
 
-  const activeFilterCount = useMemo(() => Object.values(activeFilters).flat().length, [activeFilters])
+  const activeFilterCount = useMemo(
+    () => Object.values(activeFilters).flat().length,
+    [activeFilters],
+  )
 
   if (loading) {
     return <DataTableSkeleton rows={5} cols={columns.length + (selectable ? 1 : 0)} />
@@ -254,13 +269,22 @@ export function AdminDataTable<T extends { id: string }>({
               <Card key={stat.label} className="p-4">
                 <div className="flex items-center gap-3">
                   {Icon && (
-                    <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', stat.color || 'bg-primary/10')}>
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+                        stat.color || 'bg-primary/10',
+                      )}
+                    >
                       <Icon className="h-5 w-5 text-primary" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</div>
-                    <div className="mt-1 text-[22px] font-semibold leading-tight tracking-tight text-foreground">{stat.value}</div>
+                    <div className="text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {stat.label}
+                    </div>
+                    <div className="mt-1 text-[22px] font-semibold leading-tight tracking-tight text-foreground">
+                      {stat.value}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -296,15 +320,31 @@ export function AdminDataTable<T extends { id: string }>({
 
         <div className="flex items-center gap-2">
           {filters && filters.length > 0 && (
-            <Button variant="outline" size="sm" className="min-h-[44px] gap-2" onClick={() => setShowFilters((s) => !s)} aria-label="فلترة">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-[44px] gap-2"
+              onClick={() => setShowFilters((s) => !s)}
+              aria-label="فلترة"
+            >
               <Filter className="h-4 w-4" />
               فلترة
-              {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground">{activeFilterCount}</span>}
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground">
+                  {activeFilterCount}
+                </span>
+              )}
             </Button>
           )}
 
           {exportable && (
-            <Button variant="outline" size="sm" className="min-h-[44px] gap-2" onClick={handleExport} aria-label="تصدير CSV">
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-[44px] gap-2"
+              onClick={handleExport}
+              aria-label="تصدير CSV"
+            >
               <Download className="h-4 w-4" />
               تصدير CSV
             </Button>
@@ -339,12 +379,22 @@ export function AdminDataTable<T extends { id: string }>({
                       if (filter.type === 'radio') {
                         onFilterChange(filter.key, next ? [opt.value] : [])
                       } else {
-                        onFilterChange(filter.key, next ? [...cur, opt.value] : cur.filter((v) => v !== opt.value))
+                        onFilterChange(
+                          filter.key,
+                          next ? [...cur, opt.value] : cur.filter((v) => v !== opt.value),
+                        )
                       }
                     }
                     return (
-                      <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox checked={checked} onCheckedChange={handleChange} aria-label={opt.label} />
+                      <label
+                        key={opt.value}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={handleChange}
+                          aria-label={opt.label}
+                        />
                         <span>{opt.label}</span>
                       </label>
                     )
@@ -358,7 +408,11 @@ export function AdminDataTable<T extends { id: string }>({
 
       {/* ===== Bulk Action Bar ===== */}
       {selectable && selectedIds.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3" role="region" aria-label="إجراءات جماعية">
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3"
+          role="region"
+          aria-label="إجراءات جماعية"
+        >
           <span className="text-sm font-medium text-primary">{selectedIds.length} عنصر محدد</span>
           <div className="mr-auto flex flex-wrap gap-2">
             {bulkActions.map((action) => (
@@ -375,7 +429,13 @@ export function AdminDataTable<T extends { id: string }>({
               </Button>
             ))}
           </div>
-          <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => onSelectionChange?.([])} aria-label="إلغاء التحديد">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="min-h-[44px]"
+            onClick={() => onSelectionChange?.([])}
+            aria-label="إلغاء التحديد"
+          >
             إلغاء التحديد
           </Button>
         </div>
@@ -435,30 +495,57 @@ export function AdminDataTable<T extends { id: string }>({
                     {columns.map((col) => (
                       <th
                         key={col.key}
-                        className={cn('px-4 py-3 font-semibold whitespace-nowrap', col.sortable && 'cursor-pointer select-none hover:text-foreground')}
+                        className={cn(
+                          'px-4 py-3 font-semibold whitespace-nowrap',
+                          col.sortable && 'cursor-pointer select-none hover:text-foreground',
+                        )}
                         style={{ width: col.width }}
                         onClick={() => col.sortable && handleSort(col.key)}
-                        aria-sort={sortField === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                        aria-sort={
+                          sortField === col.key
+                            ? sortDirection === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : undefined
+                        }
                       >
                         <span className="inline-flex items-center gap-1">
                           {col.label}
                           {col.sortable && sortField === col.key && (
-                            <span className="text-primary">{sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}</span>
+                            <span className="text-primary">
+                              {sortDirection === 'asc' ? (
+                                <ChevronUp className="h-3 w-3" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3" />
+                              )}
+                            </span>
                           )}
                         </span>
                       </th>
                     ))}
-                    {actions && actions.length > 0 && <th className="px-4 py-3 font-semibold whitespace-nowrap">إجراءات</th>}
+                    {actions && actions.length > 0 && (
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">إجراءات</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.map((item) => {
                     const isSelected = selectedIds.includes(item.id)
                     return (
-                      <tr key={item.id} className={cn('text-sm transition-colors hover:bg-accent/30', isSelected && 'bg-primary/5')}>
+                      <tr
+                        key={item.id}
+                        className={cn(
+                          'text-sm transition-colors hover:bg-accent/30',
+                          isSelected && 'bg-primary/5',
+                        )}
+                      >
                         {selectable && (
                           <td className="px-4 py-3">
-                            <Checkbox checked={isSelected} onCheckedChange={(c) => handleSelectOne(item.id, Boolean(c))} aria-label={`تحديد ${item.id}`} />
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(c) => handleSelectOne(item.id, Boolean(c))}
+                              aria-label={`تحديد ${item.id}`}
+                            />
                           </td>
                         )}
                         {columns.map((col) => (
@@ -475,7 +562,13 @@ export function AdminDataTable<T extends { id: string }>({
                                   <Button
                                     key={action.label}
                                     size="sm"
-                                    variant={action.variant === 'destructive' ? 'destructive' : action.variant === 'outline' ? 'outline' : 'default'}
+                                    variant={
+                                      action.variant === 'destructive'
+                                        ? 'destructive'
+                                        : action.variant === 'outline'
+                                          ? 'outline'
+                                          : 'default'
+                                    }
                                     className="min-h-[36px] text-xs"
                                     disabled={disabled}
                                     title={disabled ? action.disabledReason : action.label}
@@ -503,15 +596,26 @@ export function AdminDataTable<T extends { id: string }>({
               const isSelected = selectedIds.includes(item.id)
               if (mobileCardView) {
                 return (
-                  <div key={item.id} className={cn(isSelected && 'ring-1 ring-primary/30 rounded-xl')}>
+                  <div
+                    key={item.id}
+                    className={cn(isSelected && 'ring-1 ring-primary/30 rounded-xl')}
+                  >
                     {mobileCardView(item, isSelected, () => handleSelectOne(item.id, !isSelected))}
                   </div>
                 )
               }
               return (
-                <Card key={item.id} className={cn('p-4', isSelected && 'ring-1 ring-primary/30 bg-primary/5')}>
+                <Card
+                  key={item.id}
+                  className={cn('p-4', isSelected && 'ring-1 ring-primary/30 bg-primary/5')}
+                >
                   <div className="flex items-start gap-3">
-                    {selectable && <Checkbox checked={isSelected} onCheckedChange={(c) => handleSelectOne(item.id, Boolean(c))} />}
+                    {selectable && (
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(c) => handleSelectOne(item.id, Boolean(c))}
+                      />
+                    )}
                     <div className="flex-1 space-y-2">
                       {columns.slice(0, 3).map((col) => (
                         <div key={col.key} className="text-sm">
@@ -527,7 +631,9 @@ export function AdminDataTable<T extends { id: string }>({
                               <Button
                                 key={action.label}
                                 size="sm"
-                                variant={action.variant === 'destructive' ? 'destructive' : 'outline'}
+                                variant={
+                                  action.variant === 'destructive' ? 'destructive' : 'outline'
+                                }
                                 className="min-h-[44px] text-xs flex-1"
                                 disabled={disabled}
                                 title={disabled ? action.disabledReason : action.label}
@@ -549,12 +655,28 @@ export function AdminDataTable<T extends { id: string }>({
           {/* ===== Pagination ===== */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" className="min-h-[44px] gap-2" disabled={page <= 1} onClick={() => onPageChange(Math.max(1, page - 1))} aria-label="السابق">
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-[44px] gap-2"
+                disabled={page <= 1}
+                onClick={() => onPageChange(Math.max(1, page - 1))}
+                aria-label="السابق"
+              >
                 <ChevronRight className="h-4 w-4" />
                 السابق
               </Button>
-              <span className="text-sm text-muted-foreground">الصفحة {page} من {totalPages}</span>
-              <Button variant="outline" size="sm" className="min-h-[44px] gap-2" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} aria-label="التالي">
+              <span className="text-sm text-muted-foreground">
+                الصفحة {page} من {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-[44px] gap-2"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+                aria-label="التالي"
+              >
                 التالي
                 <ChevronLeft className="h-4 w-4" />
               </Button>

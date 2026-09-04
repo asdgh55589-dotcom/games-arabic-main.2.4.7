@@ -98,7 +98,8 @@ export function ImageUpload({
           })
           const data = await res.json().catch(() => null)
           if (!res.ok) {
-            const msg = data?.error?.message || data?.error?.details || 'فشل رفع الصورة إلى Cloudinary'
+            const msg =
+              data?.error?.message || data?.error?.details || 'فشل رفع الصورة إلى Cloudinary'
             throw new Error(msg)
           }
           const publicUrl = data?.data?.url
@@ -127,8 +128,13 @@ export function ImageUpload({
 
         if (uploadError) {
           // Bucket might not exist
-          if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
-            throw new Error(`Bucket "${bucket}" غير موجود — أنشئه في Supabase Dashboard → Storage → New Bucket (Public)`)
+          if (
+            uploadError.message.includes('Bucket not found') ||
+            uploadError.message.includes('not found')
+          ) {
+            throw new Error(
+              `Bucket "${bucket}" غير موجود — أنشئه في Supabase Dashboard → Storage → New Bucket (Public)`,
+            )
           }
           throw uploadError
         }
@@ -149,7 +155,7 @@ export function ImageUpload({
         setUploading(false)
       }
     },
-    [bucket, folder, isMultiple, maxSizeMB, modId, onChange, onValuesChange, values]
+    [bucket, folder, isMultiple, maxSizeMB, modId, onChange, onValuesChange, values],
   )
 
   const handleDrop = useCallback(
@@ -163,7 +169,7 @@ export function ImageUpload({
         uploadFile(files[0])
       }
     },
-    [isMultiple, uploadFile]
+    [isMultiple, uploadFile],
   )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,13 +213,22 @@ export function ImageUpload({
             onDrop={handleDrop}
             onClick={() => !displayValue && !uploading && inputRef.current?.click()}
             className={`group relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-              dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/30'
+              dragOver
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/50 hover:bg-accent/30'
             } ${uploading ? 'pointer-events-none opacity-60' : ''} ${!displayValue ? 'cursor-pointer' : ''}`}
           >
             {displayValue ? (
               <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={displayValue} alt={label || 'صورة'} className="h-full w-full object-cover" />
+                <Image
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  fill
+                  src={displayValue}
+                  alt={label || 'صورة'}
+                  className="h-full w-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -249,16 +264,27 @@ export function ImageUpload({
                 >
                   <X className="h-4 w-4" />
                 </button>
-                <span className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-0.5 text-[10px] text-white">اضغط للمعاينة</span>
+                <span className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-0.5 text-[10px] text-white">
+                  اضغط للمعاينة
+                </span>
               </div>
             ) : (
-              <div onClick={() => !uploading && inputRef.current?.click()} className="flex w-full cursor-pointer flex-col items-center gap-2">
+              <div
+                onClick={() => !uploading && inputRef.current?.click()}
+                className="flex w-full cursor-pointer flex-col items-center gap-2"
+              >
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-muted">
-                  {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
+                  {uploading ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium">اسحب الصورة هنا أو اضغط للاختيار</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG, WebP — حتى {maxSizeMB}MB — أعلى جودة</p>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG, WebP — حتى {maxSizeMB}MB — أعلى جودة
+                  </p>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Upload className="h-3 w-3" /> سحب وإفلات مدعوم
@@ -307,10 +333,21 @@ export function ImageUpload({
               dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
             }`}
           >
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 text-muted-foreground" />}
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Upload className="h-5 w-5 text-muted-foreground" />
+            )}
             <span className="text-sm">اسحب الصور هنا أو اضغط للرفع (متعدد)</span>
           </div>
-          <Input ref={inputRef} type="file" accept={accept} multiple className="hidden" onChange={handleFileSelect} />
+          <Input
+            ref={inputRef}
+            type="file"
+            accept={accept}
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+          />
 
           {values && values.length > 0 && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -321,7 +358,14 @@ export function ImageUpload({
                   onClick={() => setPreviewModal(url)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={url} alt={`gallery-${idx}`} className="h-full w-full object-cover" />
+                  <Image
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    fill
+                    src={url}
+                    alt={`gallery-${idx}`}
+                    className="h-full w-full object-cover"
+                  />
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
                   <button
                     type="button"
@@ -346,7 +390,14 @@ export function ImageUpload({
             <Label className="text-xs text-muted-foreground">أو روابط المعرض (سطر لكل رابط)</Label>
             <textarea
               value={(values || []).join('\n')}
-              onChange={(e) => onValuesChange?.(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+              onChange={(e) =>
+                onValuesChange?.(
+                  e.target.value
+                    .split('\n')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                )
+              }
               rows={3}
               placeholder="https://..."
               className="w-full rounded-md border border-border bg-background p-2 text-xs"
@@ -365,15 +416,32 @@ export function ImageUpload({
 
       {/* Preview Modal */}
       {previewModal && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setPreviewModal(null)}>
-          <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-xl border-2 border-white/20 bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setPreviewModal(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-xl border-2 border-white/20 bg-card shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <Image width={800} height={600} src={previewModal} alt="معاينة" className="max-h-[80vh] w-auto max-w-full object-contain" />
+            <Image
+              width={800}
+              height={600}
+              src={previewModal}
+              alt="معاينة"
+              className="max-h-[80vh] w-auto max-w-full object-contain"
+            />
             <div className="flex items-center justify-between border-t border-border bg-card p-3">
               <p className="truncate text-xs text-muted-foreground" dir="ltr">
                 {previewModal}
               </p>
-              <Button size="sm" className="min-h-[44px]" variant="outline" onClick={() => setPreviewModal(null)}>
+              <Button
+                size="sm"
+                className="min-h-[44px]"
+                variant="outline"
+                onClick={() => setPreviewModal(null)}
+              >
                 إغلاق
               </Button>
             </div>

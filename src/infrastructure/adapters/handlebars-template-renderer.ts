@@ -19,7 +19,10 @@ import { NOTIFICATION_CONFIG } from '../config/notification-config'
 import { generateEmailWrapper } from '../templates/email-base'
 
 export interface TemplateStore {
-  getTemplate(type: string, channel: string): Promise<{
+  getTemplate(
+    type: string,
+    channel: string,
+  ): Promise<{
     titleTemplate: string
     bodyTemplate: string
   } | null>

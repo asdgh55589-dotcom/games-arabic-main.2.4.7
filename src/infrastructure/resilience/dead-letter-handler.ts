@@ -46,7 +46,7 @@ export class DeadLetterHandler {
   }
 
   retry(jobId: string): DeadLetterEntry | null {
-    const index = this.deadLetters.findIndex(e => e.job.id === jobId)
+    const index = this.deadLetters.findIndex((e) => e.job.id === jobId)
     if (index === -1) return null
     const entry = this.deadLetters[index]
     this.deadLetters.splice(index, 1)

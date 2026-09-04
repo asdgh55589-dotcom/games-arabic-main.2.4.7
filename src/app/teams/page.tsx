@@ -21,5 +21,16 @@ export const metadata: Metadata = {
   },
 }
 
-const TranslationTeamsPage = dynamic(() => import('@/views/translation-teams').then(m => ({ default: m.TranslationTeamsPage })), { loading: () => <div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> })
-export default function TeamsRoutePage() { return <TranslationTeamsPage /> }
+const TranslationTeamsPage = dynamic(
+  () => import('@/views/translation-teams').then((m) => ({ default: m.TranslationTeamsPage })),
+  {
+    loading: () => (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  },
+)
+export default function TeamsRoutePage() {
+  return <TranslationTeamsPage />
+}

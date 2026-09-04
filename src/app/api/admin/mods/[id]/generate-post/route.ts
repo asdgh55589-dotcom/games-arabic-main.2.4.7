@@ -4,10 +4,7 @@ import { ok, notFound, internalError } from '@/lib/api-response'
 import { NextRequest } from 'next/server'
 import { formatPost, validatePostLength, getDefaultTemplate } from '@/lib/telegram-templates'
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -47,7 +44,7 @@ export async function POST(
         files: [{ downloadUrl }],
       },
       getDefaultTemplate(),
-      customOverrides
+      customOverrides,
     )
 
     const validation = validatePostLength(content)

@@ -10,8 +10,16 @@ interface RouteParams {
 }
 
 const SAMPLE_DATA: Record<string, Record<string, unknown>> = {
-  comment_reply: { actorName: 'أحمد', modTitle: 'لعبة زيد', replyPreview: 'شكراً على المجهود الرائع!' },
-  top_level_comment: { actorName: 'محمد', modTitle: 'لعبة زيد', commentPreview: 'عمل ممتاز، شكراً لكم!' },
+  comment_reply: {
+    actorName: 'أحمد',
+    modTitle: 'لعبة زيد',
+    replyPreview: 'شكراً على المجهود الرائع!',
+  },
+  top_level_comment: {
+    actorName: 'محمد',
+    modTitle: 'لعبة زيد',
+    commentPreview: 'عمل ممتاز، شكراً لكم!',
+  },
   like: { modTitle: 'لعبة زيد' },
   follow: { followerName: 'سارة' },
   mod_endorse: { modTitle: 'لعبة زيد' },
@@ -43,9 +51,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const sampleVars = body.variables && typeof body.variables === 'object'
-      ? body.variables
-      : SAMPLE_DATA[template.type] || {}
+    const sampleVars =
+      body.variables && typeof body.variables === 'object'
+        ? body.variables
+        : SAMPLE_DATA[template.type] || {}
 
     const compiledTitle = Handlebars.compile(template.titleTemplate)
     const compiledBody = Handlebars.compile(template.bodyTemplate)

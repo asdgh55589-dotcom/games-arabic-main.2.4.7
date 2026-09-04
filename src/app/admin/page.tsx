@@ -65,19 +65,19 @@ interface DashboardData {
 }
 
 const ROLE_BADGE: Record<string, { label: string; className: string }> = {
-  owner:     { label: 'مالك',  className: 'text-amber-400' },
-  admin:     { label: 'مدير',   className: 'text-red-400' },
-  moderator: { label: 'مشرف',   className: 'text-purple-400' },
-  member:    { label: 'عضو',    className: 'text-blue-400' },
+  owner: { label: 'مالك', className: 'text-amber-400' },
+  admin: { label: 'مدير', className: 'text-red-400' },
+  moderator: { label: 'مشرف', className: 'text-purple-400' },
+  member: { label: 'عضو', className: 'text-blue-400' },
 }
 
 const STAT_COLORS: Record<string, { bg: string; text: string }> = {
   primary: { bg: 'bg-primary/10', text: 'text-primary' },
-  blue:    { bg: 'bg-blue-lt', text: 'text-blue' },
-  green:   { bg: 'bg-green-lt', text: 'text-green' },
-  yellow:  { bg: 'bg-yellow-lt', text: 'text-yellow' },
-  purple:  { bg: 'bg-purple-lt', text: 'text-purple' },
-  red:     { bg: 'bg-red-lt', text: 'text-red' },
+  blue: { bg: 'bg-blue-lt', text: 'text-blue' },
+  green: { bg: 'bg-green-lt', text: 'text-green' },
+  yellow: { bg: 'bg-yellow-lt', text: 'text-yellow' },
+  purple: { bg: 'bg-purple-lt', text: 'text-purple' },
+  red: { bg: 'bg-red-lt', text: 'text-red' },
 }
 
 export default function AdminDashboard() {
@@ -87,7 +87,9 @@ export default function AdminDashboard() {
   const [growthData, setGrowthData] = useState<any>(null)
   const [platformData, setPlatformData] = useState<any>(null)
   const [activeSessions, setActiveSessions] = useState<number>(0)
-  const [audit, setAudit] = useState<Array<{ id: string; action: string; entity: string; username: string; createdAt: string }>>([])
+  const [audit, setAudit] = useState<
+    Array<{ id: string; action: string; entity: string; username: string; createdAt: string }>
+  >([])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -112,10 +114,31 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // charts + sessions + audit — non-blocking, fail silent
-    fetch('/api/admin/analytics/growth?range=12').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data) setGrowthData(j.data) }).catch(()=>{})
-    fetch('/api/admin/analytics/platforms').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data) setPlatformData(j.data.platforms || j.data) }).catch(()=>{})
-    fetch('/api/admin/sessions?limit=1').then(r=>r.ok?r.json():null).then(j=>{ if(j?.data?.stats) setActiveSessions(j.data.stats.totalActive || 0) }).catch(()=>{})
-    fetch('/api/admin/audit?limit=10').then(r=>r.ok?r.json():null).then(j=>{ const list=j?.data || j?.logs || []; if(Array.isArray(list)) setAudit(list.slice(0,10)) }).catch(()=>{})
+    fetch('/api/admin/analytics/growth?range=12')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.data) setGrowthData(j.data)
+      })
+      .catch(() => {})
+    fetch('/api/admin/analytics/platforms')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.data) setPlatformData(j.data.platforms || j.data)
+      })
+      .catch(() => {})
+    fetch('/api/admin/sessions?limit=1')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.data?.stats) setActiveSessions(j.data.stats.totalActive || 0)
+      })
+      .catch(() => {})
+    fetch('/api/admin/audit?limit=10')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const list = j?.data || j?.logs || []
+        if (Array.isArray(list)) setAudit(list.slice(0, 10))
+      })
+      .catch(() => {})
   }, [])
 
   if (loading) {
@@ -133,10 +156,34 @@ export default function AdminDashboard() {
   if (!data) return null
 
   const statsCards = [
-    { label: 'المستخدمون', value: data.stats.users, icon: Users, color: 'blue', href: '/admin/users' },
-    { label: 'التعريبات', value: data.stats.mods, icon: Package, color: 'primary', href: '/admin/mods' },
-    { label: 'التحميلات', value: data.stats.downloads, icon: Download, color: 'green', href: '/admin/mods' },
-    { label: 'الجلسات النشطة', value: activeSessions, icon: TrendingUp, color: 'yellow', href: '/admin/sessions' },
+    {
+      label: 'المستخدمون',
+      value: data.stats.users,
+      icon: Users,
+      color: 'blue',
+      href: '/admin/users',
+    },
+    {
+      label: 'التعريبات',
+      value: data.stats.mods,
+      icon: Package,
+      color: 'primary',
+      href: '/admin/mods',
+    },
+    {
+      label: 'التحميلات',
+      value: data.stats.downloads,
+      icon: Download,
+      color: 'green',
+      href: '/admin/mods',
+    },
+    {
+      label: 'الجلسات النشطة',
+      value: activeSessions,
+      icon: TrendingUp,
+      color: 'yellow',
+      href: '/admin/sessions',
+    },
   ]
 
   return (
@@ -164,7 +211,9 @@ export default function AdminDashboard() {
             <Card key={stat.label}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3.5">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${colors.bg}`}>
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${colors.bg}`}
+                  >
                     <Icon className={`h-5 w-5 ${colors.text}`} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -234,14 +283,14 @@ export default function AdminDashboard() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-[13px] font-medium text-foreground">{mod.name}</span>
+                      <span className="truncate text-[13px] font-medium text-foreground">
+                        {mod.name}
+                      </span>
                       <span className="shrink-0 rounded bg-background-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         {mod.game.platform}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[12px] text-muted-foreground">
-                      {mod.game.name}
-                    </p>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">{mod.game.name}</p>
                   </div>
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {timeAgo(mod.createdAt)}
@@ -267,17 +316,27 @@ export default function AdminDashboard() {
                     <div key={u.id} className="flex items-center gap-3 px-4 py-3">
                       {u.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={u.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        <img
+                          src={u.avatarUrl}
+                          alt=""
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-white">
                           {u.username.charAt(0)}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-medium text-foreground">{u.username}</div>
-                        <div className="text-[11px] text-muted-foreground">{timeAgo(u.joinedAt)}</div>
+                        <div className="truncate text-[13px] font-medium text-foreground">
+                          {u.username}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {timeAgo(u.joinedAt)}
+                        </div>
                       </div>
-                      <span className={`text-[11px] font-medium ${role.className}`}>{role.label}</span>
+                      <span className={`text-[11px] font-medium ${role.className}`}>
+                        {role.label}
+                      </span>
                     </div>
                   )
                 })}
@@ -301,10 +360,14 @@ export default function AdminDashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[13px] font-medium text-foreground">{c.guestName}</span>
-                      <span className="text-[11px] text-muted-foreground">{timeAgo(c.createdAt)}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {timeAgo(c.createdAt)}
+                      </span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-[12px] text-muted-foreground">{c.text}</p>
-                    <div className="mt-1.5 text-[11px] font-medium text-primary">على {c.mod.name}</div>
+                    <div className="mt-1.5 text-[11px] font-medium text-primary">
+                      على {c.mod.name}
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -316,7 +379,9 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>آخر النشاطات</CardTitle>
-                <Link href="/admin/audit" className="text-xs text-primary hover:underline">عرض الكل</Link>
+                <Link href="/admin/audit" className="text-xs text-primary hover:underline">
+                  عرض الكل
+                </Link>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-border-light">
@@ -324,8 +389,12 @@ export default function AdminDashboard() {
                     <div key={a.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] text-foreground truncate">{a.username} — {a.action} {a.entity}</div>
-                        <div className="text-[11px] text-muted-foreground">{timeAgo(a.createdAt)}</div>
+                        <div className="text-[13px] text-foreground truncate">
+                          {a.username} — {a.action} {a.entity}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {timeAgo(a.createdAt)}
+                        </div>
                       </div>
                     </div>
                   ))}

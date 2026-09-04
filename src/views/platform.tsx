@@ -7,7 +7,11 @@ import { Package, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { useFetch } from '@/hooks/use-fetch'
@@ -24,7 +28,9 @@ export function PlatformPage() {
   // Platform view tracking — fire-and-forget
   useEffect(() => {
     if (platform) {
-      fetch(`/api/platforms/${encodeURIComponent(platform)}/view`, { method: 'POST' }).catch(() => {})
+      fetch(`/api/platforms/${encodeURIComponent(platform)}/view`, { method: 'POST' }).catch(
+        () => {},
+      )
     }
   }, [platform])
 
@@ -44,7 +50,10 @@ export function PlatformPage() {
     return `/api/mods?${params.toString()}`
   }, [platform, sort, page, debouncedSearch])
 
-  const { data, loading } = useFetch<{ data: ModSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(url, [url])
+  const { data, loading } = useFetch<{
+    data: ModSummary[]
+    pagination: { page: number; limit: number; total: number; totalPages: number }
+  }>(url, [url])
 
   const filterKey = `${platform}:${debouncedSearch}:${sort}`
   const [lastFilterKey, setLastFilterKey] = useState(filterKey)
@@ -89,7 +98,9 @@ export function PlatformPage() {
       {/* الشبكة */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => <ModCardSkeleton key={i} />)}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ModCardSkeleton key={i} />
+          ))}
         </div>
       ) : (data?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
@@ -99,13 +110,33 @@ export function PlatformPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {data?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
+            {data?.data?.map((m) => (
+              <ModCard key={m.id} mod={m} />
+            ))}
           </div>
           {data && data.pagination.totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
-              <span className="text-sm text-muted-foreground" aria-live="polite">صفحة {page} من {data.pagination.totalPages}</span>
-              <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page >= data.pagination.totalPages} onClick={() => setPage((p) => p + 1)}>التالي</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-[44px]"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground" aria-live="polite">
+                صفحة {page} من {data.pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-[44px]"
+                disabled={page >= data.pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                التالي
+              </Button>
             </div>
           )}
         </>

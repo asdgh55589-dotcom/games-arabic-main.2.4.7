@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const inactiveUsers = await getInactiveUsers({
       daysThreshold,
-      includeWithNoActivity: false
+      includeWithNoActivity: false,
     })
 
     if (inactiveUsers.length === 0) {
@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
 
     await sendInactiveUserAlert({
       inactiveUsers,
-      daysThreshold
+      daysThreshold,
     })
 
     return ok({
-      message: `تم إرسال تنبيه لـ ${inactiveUsers.length} مستخدم خامل`
+      message: `تم إرسال تنبيه لـ ${inactiveUsers.length} مستخدم خامل`,
     })
   } catch (err) {
     return internalError('خطأ في الخادم')

@@ -164,7 +164,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     } else if (report.reporterId) {
       // حالة عدم وجود هدف للإشعار (مثل تعليق ضيف بدون حساب) — نبلغ المراسل فقط بنتيجة التأكيد
       try {
-        const { getNotificationService } = await import('@/infrastructure/di/notification-container')
+        const { getNotificationService } = await import(
+          '@/infrastructure/di/notification-container'
+        )
         const { NotificationType, NotificationChannel } = await import('@/domain')
         const service = getNotificationService()
         await service.send({
@@ -174,7 +176,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           channels: [NotificationChannel.InApp, NotificationChannel.Email],
           skipDeduplication: true,
           data: { reportId: id, outcome: 'confirmed' },
-          templateVariables: { targetTitle, outcome: 'تم تأكيد البلاغ', reason: report.reason, resolution },
+          templateVariables: {
+            targetTitle,
+            outcome: 'تم تأكيد البلاغ',
+            reason: report.reason,
+            resolution,
+          },
         })
       } catch {}
     }

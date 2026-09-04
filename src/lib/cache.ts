@@ -42,7 +42,12 @@ export async function getCache<T>(key: string): Promise<T | null> {
   return entry.value as T
 }
 
-export async function setCache<T>(key: string, value: T, ttlSeconds: number = DEFAULT_TTL, tags: string[] = []): Promise<void> {
+export async function setCache<T>(
+  key: string,
+  value: T,
+  ttlSeconds: number = DEFAULT_TTL,
+  tags: string[] = [],
+): Promise<void> {
   await redisSet(key, value, ttlSeconds)
 
   if (memoryStore.size >= MAX_ENTRIES) {
@@ -93,7 +98,7 @@ export function getCacheStats() {
     maxSize: MAX_ENTRIES,
     hits,
     misses,
-    hitRate: hits + misses > 0 ? (hits / (hits + misses) * 100).toFixed(1) + '%' : '0%',
+    hitRate: hits + misses > 0 ? ((hits / (hits + misses)) * 100).toFixed(1) + '%' : '0%',
   }
 }
 
@@ -101,7 +106,7 @@ export async function cached<T>(
   key: string,
   fn: () => Promise<T>,
   ttlSeconds: number = DEFAULT_TTL,
-  tags: string[] = []
+  tags: string[] = [],
 ): Promise<T> {
   const cachedValue = await getCache<T>(key)
   if (cachedValue !== null) {

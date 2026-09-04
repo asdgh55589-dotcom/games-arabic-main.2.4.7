@@ -83,7 +83,9 @@ export default function SchedulerPage() {
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[80px] rounded-lg" />)}
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[80px] rounded-lg" />
+          ))}
         </div>
         <Skeleton className="h-[400px] rounded-lg" />
       </div>
@@ -129,7 +131,9 @@ export default function SchedulerPage() {
         >
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
         <select
@@ -139,7 +143,9 @@ export default function SchedulerPage() {
         >
           <option value="">كل الأنواع</option>
           {Object.entries(TYPE_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>
+              {v}
+            </option>
           ))}
         </select>
       </div>
@@ -172,7 +178,9 @@ export default function SchedulerPage() {
                     <tr key={job.id} className="border-b hover:bg-muted/30">
                       <td className="px-4 py-3">{TYPE_LABELS[job.type] || job.type}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[job.status]}`}>
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[job.status]}`}
+                        >
                           {STATUS_LABELS[job.status]}
                         </span>
                       </td>
@@ -181,15 +189,15 @@ export default function SchedulerPage() {
                           <span className="text-primary hover:underline cursor-pointer">
                             {job.mod.name}
                           </span>
-                        ) : '—'}
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs">
                         {new Date(job.scheduledAt).toLocaleString('ar-SA')}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        {job.executedAt
-                          ? new Date(job.executedAt).toLocaleString('ar-SA')
-                          : '—'}
+                        {job.executedAt ? new Date(job.executedAt).toLocaleString('ar-SA') : '—'}
                       </td>
                       <td className="px-4 py-3">{job.retries}/3</td>
                       <td className="px-4 py-3">

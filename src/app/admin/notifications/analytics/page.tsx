@@ -12,7 +12,14 @@ interface AnalyticsData {
   byChannel: Record<string, number>
   byType: Record<string, number>
   timeSeries: { date: string; created: number; delivered: number; failed: number }[]
-  emailStats?: { sent: number; delivered: number; opened: number; clicked: number; openRate: number; clickRate: number }
+  emailStats?: {
+    sent: number
+    delivered: number
+    opened: number
+    clicked: number
+    openRate: number
+    clickRate: number
+  }
 }
 
 export default function NotificationsAnalyticsPage() {
@@ -64,7 +71,11 @@ export default function NotificationsAnalyticsPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             إحصائيات زمنية حسب النوع والقناة
-            {lastUpdated && <span className="mr-2 text-xs">— آخر تحديث: {lastUpdated.toLocaleTimeString('ar-EG')}</span>}
+            {lastUpdated && (
+              <span className="mr-2 text-xs">
+                — آخر تحديث: {lastUpdated.toLocaleTimeString('ar-EG')}
+              </span>
+            )}
           </p>
         </div>
         <select
@@ -81,12 +92,20 @@ export default function NotificationsAnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي الإشعارات</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              إجمالي الإشعارات
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.totals.created.toLocaleString('ar-EG')}</div>
-            <div className={`flex items-center gap-1 text-sm mt-1 ${data.comparison.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.comparison.growthRate >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            <div
+              className={`flex items-center gap-1 text-sm mt-1 ${data.comparison.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {data.comparison.growthRate >= 0 ? (
+                <TrendingUp className="w-4 h-4" />
+              ) : (
+                <TrendingDown className="w-4 h-4" />
+              )}
               {Math.abs(data.comparison.growthRate).toFixed(1)}% عن الفترة السابقة
             </div>
           </CardContent>
@@ -97,10 +116,20 @@ export default function NotificationsAnalyticsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">تم التوصيل</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{data.totals.delivered.toLocaleString('ar-EG')}</div>
-            <div className="text-sm text-muted-foreground mt-1">نسبة التوصيل: {data.totals.deliveryRate.toFixed(1)}%</div>
-            <div className={`flex items-center gap-1 text-xs mt-1 ${data.comparison.deliveryGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.comparison.deliveryGrowth >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            <div className="text-2xl font-bold text-green-600">
+              {data.totals.delivered.toLocaleString('ar-EG')}
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              نسبة التوصيل: {data.totals.deliveryRate.toFixed(1)}%
+            </div>
+            <div
+              className={`flex items-center gap-1 text-xs mt-1 ${data.comparison.deliveryGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {data.comparison.deliveryGrowth >= 0 ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
               {Math.abs(data.comparison.deliveryGrowth).toFixed(1)}% توصيل سابق
             </div>
           </CardContent>
@@ -111,18 +140,28 @@ export default function NotificationsAnalyticsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">فشل التوصيل</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{data.totals.failed.toLocaleString('ar-EG')}</div>
-            <div className="text-sm text-muted-foreground mt-1">من إجمالي {data.totals.created}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {data.totals.failed.toLocaleString('ar-EG')}
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              من إجمالي {data.totals.created}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">القنوات النشطة</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              القنوات النشطة
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{Object.keys(data.byChannel).length}</div>
-            <div className="text-sm text-muted-foreground mt-1">{Object.entries(data.byChannel).map(([k, v]) => `${k}:${v}`).join(' • ') || 'لا يوجد'}</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {Object.entries(data.byChannel)
+                .map(([k, v]) => `${k}:${v}`)
+                .join(' • ') || 'لا يوجد'}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -130,7 +169,9 @@ export default function NotificationsAnalyticsPage() {
       {data.emailStats && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-primary" /> تتبع البريد الإلكتروني</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> تتبع البريد الإلكتروني
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
@@ -144,15 +185,22 @@ export default function NotificationsAnalyticsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">{data.emailStats.opened}</div>
-                <div className="text-xs text-muted-foreground">مفتوح ({data.emailStats.openRate.toFixed(1)}%)</div>
+                <div className="text-xs text-muted-foreground">
+                  مفتوح ({data.emailStats.openRate.toFixed(1)}%)
+                </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-purple-600">{data.emailStats.clicked}</div>
-                <div className="text-xs text-muted-foreground">نقر ({data.emailStats.clickRate.toFixed(1)}%)</div>
+                <div className="text-xs text-muted-foreground">
+                  نقر ({data.emailStats.clickRate.toFixed(1)}%)
+                </div>
               </div>
               <div>
                 <div className="text-xl font-bold">
-                  {data.emailStats.sent > 0 ? ((data.emailStats.delivered / data.emailStats.sent) * 100).toFixed(1) : 0}%
+                  {data.emailStats.sent > 0
+                    ? ((data.emailStats.delivered / data.emailStats.sent) * 100).toFixed(1)
+                    : 0}
+                  %
                 </div>
                 <div className="text-xs text-muted-foreground">معدل التوصيل</div>
               </div>
@@ -160,16 +208,24 @@ export default function NotificationsAnalyticsPage() {
             {data.emailStats.sent > 0 && (
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span>معدل الفتح</span><span>{data.emailStats.openRate.toFixed(1)}%</span>
+                  <span>معدل الفتح</span>
+                  <span>{data.emailStats.openRate.toFixed(1)}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-green-500" style={{ width: `${Math.min(data.emailStats.openRate, 100)}%` }} />
+                  <div
+                    className="h-full bg-green-500"
+                    style={{ width: `${Math.min(data.emailStats.openRate, 100)}%` }}
+                  />
                 </div>
                 <div className="flex items-center justify-between text-xs mt-2">
-                  <span>معدل النقر</span><span>{data.emailStats.clickRate.toFixed(1)}%</span>
+                  <span>معدل النقر</span>
+                  <span>{data.emailStats.clickRate.toFixed(1)}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-purple-500" style={{ width: `${Math.min(data.emailStats.clickRate, 100)}%` }} />
+                  <div
+                    className="h-full bg-purple-500"
+                    style={{ width: `${Math.min(data.emailStats.clickRate, 100)}%` }}
+                  />
                 </div>
               </div>
             )}
@@ -183,7 +239,9 @@ export default function NotificationsAnalyticsPage() {
         </CardHeader>
         <CardContent>
           {data.timeSeries.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد بيانات في هذه الفترة</p>
+            <p className="text-center text-sm text-muted-foreground py-8">
+              لا توجد بيانات في هذه الفترة
+            </p>
           ) : (
             <div className="flex items-end gap-1 h-40">
               {data.timeSeries.map((day) => {
@@ -193,19 +251,32 @@ export default function NotificationsAnalyticsPage() {
                 return (
                   <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
                     <div className="w-full flex flex-col justify-end h-40">
-                      <div className="w-full bg-blue-500 rounded-t" style={{ height: `${height}%` }} title={`${day.date}: ${day.created} إشعار (${day.delivered} تم توصيله)`}>
-                        <div className="w-full bg-green-500/50 rounded-t" style={{ height: `${deliverHeight}%` }} />
+                      <div
+                        className="w-full bg-blue-500 rounded-t"
+                        style={{ height: `${height}%` }}
+                        title={`${day.date}: ${day.created} إشعار (${day.delivered} تم توصيله)`}
+                      >
+                        <div
+                          className="w-full bg-green-500/50 rounded-t"
+                          style={{ height: `${deliverHeight}%` }}
+                        />
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{day.date.slice(5).replace('-', '/')}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {day.date.slice(5).replace('-', '/')}
+                    </span>
                   </div>
                 )
               })}
             </div>
           )}
           <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500" /> إجمالي</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500/50" /> تم توصيله</span>
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-blue-500" /> إجمالي
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-green-500/50" /> تم توصيله
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -228,10 +299,22 @@ export default function NotificationsAnalyticsPage() {
                     <div key={channel} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="flex items-center gap-2">
-                          {channel === 'in_app' ? <Bell className="w-4 h-4" /> : channel === 'email' ? <Mail className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                          {channel === 'in_app' ? 'داخل التطبيق' : channel === 'email' ? 'البريد الإلكتروني' : 'تيليجرام'}
+                          {channel === 'in_app' ? (
+                            <Bell className="w-4 h-4" />
+                          ) : channel === 'email' ? (
+                            <Mail className="w-4 h-4" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                          {channel === 'in_app'
+                            ? 'داخل التطبيق'
+                            : channel === 'email'
+                              ? 'البريد الإلكتروني'
+                              : 'تيليجرام'}
                         </span>
-                        <span className="font-bold">{count as number} ({pct.toFixed(1)}%)</span>
+                        <span className="font-bold">
+                          {count as number} ({pct.toFixed(1)}%)
+                        </span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">
                         <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
@@ -260,7 +343,9 @@ export default function NotificationsAnalyticsPage() {
                   return (
                     <div key={type} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="truncate">{(NOTIFICATION_TYPE_LABELS as Record<string, string>)[type] || type}</span>
+                        <span className="truncate">
+                          {(NOTIFICATION_TYPE_LABELS as Record<string, string>)[type] || type}
+                        </span>
                         <span className="font-bold shrink-0">{count as number}</span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">

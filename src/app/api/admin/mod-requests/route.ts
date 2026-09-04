@@ -39,8 +39,11 @@ export async function GET(req: NextRequest) {
     ])
 
     return ok(
-      { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } } as never,
-      undefined
+      {
+        data,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+      } as never,
+      undefined,
     )
   } catch (err) {
     const status = (err as { status?: number })?.status

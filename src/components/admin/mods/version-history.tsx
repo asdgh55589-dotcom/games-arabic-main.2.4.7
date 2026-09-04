@@ -17,11 +17,7 @@ interface VersionHistoryProps {
 
 export function VersionHistory({ versions }: VersionHistoryProps) {
   if (versions.length === 0) {
-    return (
-      <div className="py-8 text-center text-sm text-muted-foreground">
-        لا يوجد إصدارات بعد
-      </div>
-    )
+    return <div className="py-8 text-center text-sm text-muted-foreground">لا يوجد إصدارات بعد</div>
   }
 
   return (
@@ -41,9 +37,7 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                الإصدار {v.version}
-              </span>
+              <span className="text-sm font-semibold text-foreground">الإصدار {v.version}</span>
               {i === 0 && (
                 <Badge variant="outline" className="text-[10px] bg-green-lt text-green">
                   الأحدث

@@ -70,7 +70,10 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
         onOpenChange(false)
         onSuccess()
       } else {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل تحديث البيانات'
+        const msg =
+          data?.error?.message ||
+          (typeof data?.error === 'string' ? data.error : null) ||
+          'فشل تحديث البيانات'
         toast.error(msg)
       }
     } catch {
@@ -127,7 +130,12 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
               إلغاء
             </Button>
             <Button type="submit" disabled={isLoading}>

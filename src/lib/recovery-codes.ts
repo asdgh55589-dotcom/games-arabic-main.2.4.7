@@ -32,7 +32,7 @@ export function decryptRecoveryCodes(encryptedCodes: string): string[] {
 export function verifyRecoveryCode(
   code: string,
   encryptedCodes: string,
-  usedIndices: number[] = []
+  usedIndices: number[] = [],
 ): { valid: boolean; index: number } {
   try {
     const codes = decryptRecoveryCodes(encryptedCodes)

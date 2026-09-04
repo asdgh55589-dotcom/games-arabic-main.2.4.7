@@ -18,40 +18,43 @@ export async function GET() {
       inactiveUsers,
       bannedUsers,
       newUsersThisMonth,
-      newUsersLastMonth
+      newUsersLastMonth,
     ] = await Promise.all([
       db.user.count(),
       db.user.count({
         where: {
-          lastLoginAt: { gte: thirtyDaysAgo }
-        }
+          lastLoginAt: { gte: thirtyDaysAgo },
+        },
       }),
       db.user.count({
         where: {
           lastLoginAt: { lt: thirtyDaysAgo },
-          loginCount: { gt: 0 }
-        }
+          loginCount: { gt: 0 },
+        },
       }),
       db.user.count({
         where: {
-          banStatus: { not: 'active' }
-        }
+          banStatus: { not: 'active' },
+        },
       }),
       db.user.count({
         where: {
-          joinedAt: { gte: startOfMonth }
-        }
+          joinedAt: { gte: startOfMonth },
+        },
       }),
       db.user.count({
         where: {
-          joinedAt: { gte: startOfLastMonth, lte: endOfLastMonth }
-        }
-      })
+          joinedAt: { gte: startOfLastMonth, lte: endOfLastMonth },
+        },
+      }),
     ])
 
-    const growthRate = newUsersLastMonth > 0
-      ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
-      : newUsersThisMonth > 0 ? 100 : 0
+    const growthRate =
+      newUsersLastMonth > 0
+        ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
+        : newUsersThisMonth > 0
+          ? 100
+          : 0
 
     return ok({
       totalUsers,
@@ -60,7 +63,7 @@ export async function GET() {
       bannedUsers,
       newUsersThisMonth,
       newUsersLastMonth,
-      growthRate: Math.round(growthRate * 10) / 10
+      growthRate: Math.round(growthRate * 10) / 10,
     })
   } catch (err) {
     return internalError('خطأ في الخادم')

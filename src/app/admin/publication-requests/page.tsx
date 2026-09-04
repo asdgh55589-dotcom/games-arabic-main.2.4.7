@@ -114,7 +114,14 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
         reviewerId: true,
         teamId: true,
         author: {
-          select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true },
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+            role: true,
+            tier: true,
+            specialRoles: true,
+          },
         },
         teamRelation: { select: { id: true, name: true, logoUrl: true } },
         game: { select: { id: true, name: true } },
@@ -132,7 +139,9 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
   // Enrich with source, waitingDays, isOverdue
   const enriched = mods.map((m) => {
     const source = getSourceBadge(m as never)
-    const waitingDays = Math.floor((Date.now() - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+    const waitingDays = Math.floor(
+      (Date.now() - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24),
+    )
     return {
       ...m,
       createdAt: m.createdAt.toISOString(),
@@ -169,7 +178,9 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
     team: allForStats.filter((m) => !!m.teamId).length,
     creator: allForStats.filter((m) => !m.teamId && m.author.role === 'creator').length,
     publisher: allForStats.filter((m) => !m.teamId && m.author.role === 'publisher').length,
-    overdue: allForStats.filter((m) => Math.floor((Date.now() - new Date(m.updatedAt).getTime()) / (86400000)) > 7).length,
+    overdue: allForStats.filter(
+      (m) => Math.floor((Date.now() - new Date(m.updatedAt).getTime()) / 86400000) > 7,
+    ).length,
   }
 
   // Sort enriched if sort is source (needs custom)
@@ -184,7 +195,9 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
   return (
     <PublicationRequestsClient
       initialData={filteredEnriched as never}
-      totalCount={sourceFilter !== 'all' || overdueFilter !== 'all' ? filteredEnriched.length : total}
+      totalCount={
+        sourceFilter !== 'all' || overdueFilter !== 'all' ? filteredEnriched.length : total
+      }
       stats={stats}
       games={games}
       reviewers={reviewers}

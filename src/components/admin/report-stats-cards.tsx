@@ -16,7 +16,12 @@ interface StatsData {
 
 const CARDS = [
   { key: 'new' as const, label: 'جديدة', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { key: 'underReview' as const, label: 'قيد المراجعة', color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+  {
+    key: 'underReview' as const,
+    label: 'قيد المراجعة',
+    color: 'text-yellow-500',
+    bg: 'bg-yellow-500/10',
+  },
   { key: 'confirmed' as const, label: 'مؤكدة', color: 'text-red-500', bg: 'bg-red-500/10' },
   { key: 'rejected' as const, label: 'مرفوضة', color: 'text-gray-500', bg: 'bg-gray-500/10' },
 ]
@@ -48,7 +53,10 @@ export function ReportStatsCards() {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="flex items-center justify-center rounded-lg border border-border bg-card/50 p-4">
+          <div
+            key={i}
+            className="flex items-center justify-center rounded-lg border border-border bg-card/50 p-4"
+          >
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ))}
@@ -70,9 +78,7 @@ export function ReportStatsCards() {
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       {CARDS.map((c) => (
         <div key={c.key} className={`rounded-lg border border-border p-4 ${c.bg}`}>
-          <div className={`text-2xl font-bold ${c.color}`}>
-            {stats[c.key] ?? 0}
-          </div>
+          <div className={`text-2xl font-bold ${c.color}`}>{stats[c.key] ?? 0}</div>
           <div className="mt-1 text-xs text-muted-foreground">{c.label}</div>
         </div>
       ))}

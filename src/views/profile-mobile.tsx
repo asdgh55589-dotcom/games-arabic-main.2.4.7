@@ -2,7 +2,20 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Settings, Mail, UserPlus, UserCheck, Loader2, Calendar, MessageSquare, Package, Users, Eye, Download, ThumbsUp } from 'lucide-react'
+import {
+  Settings,
+  Mail,
+  UserPlus,
+  UserCheck,
+  Loader2,
+  Calendar,
+  MessageSquare,
+  Package,
+  Users,
+  Eye,
+  Download,
+  ThumbsUp,
+} from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -66,7 +79,14 @@ export interface ProfileData {
 }
 
 export interface ActivityData {
-  comments: { id: string; text: string; createdAt: string; guestName?: string | null; user?: { username: string; avatarUrl: string | null } | null; mod: { name: string; slug: string } }[]
+  comments: {
+    id: string
+    text: string
+    createdAt: string
+    guestName?: string | null
+    user?: { username: string; avatarUrl: string | null } | null
+    mod: { name: string; slug: string }
+  }[]
   mods: ModSummary[]
   modEdits?: { id: string; name: string; slug: string; updatedAt: string }[]
   endorsements?: { id: string; createdAt: string; mod: { name: string; slug: string } }[]
@@ -112,17 +132,29 @@ export function ProfileMobile({
 
   if (loading) {
     return (
-      <div className="lg:hidden flex min-h-[40vh] items-center justify-center bg-[#121212] p-8" dir="rtl">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" aria-label="جاري التحميل" />
+      <div
+        className="lg:hidden flex min-h-[40vh] items-center justify-center bg-[#121212] p-8"
+        dir="rtl"
+      >
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"
+          aria-label="جاري التحميل"
+        />
       </div>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="lg:hidden flex min-h-[40vh] flex-col items-center justify-center gap-4 bg-[#121212] p-6 text-center" dir="rtl">
+      <div
+        className="lg:hidden flex min-h-[40vh] flex-col items-center justify-center gap-4 bg-[#121212] p-6 text-center"
+        dir="rtl"
+      >
         <p className="break-words text-sm text-gray-400">{error || 'المستخدم غير موجود'}</p>
-        <Link href="/" className="text-sm text-primary hover:underline min-h-[44px] touch-manipulation inline-flex items-center">
+        <Link
+          href="/"
+          className="text-sm text-primary hover:underline min-h-[44px] touch-manipulation inline-flex items-center"
+        >
           العودة للرئيسية
         </Link>
       </div>
@@ -138,11 +170,20 @@ export function ProfileMobile({
       {/* 1. Banner h-[140px] — shorter than desktop 300px */}
       <div className="relative h-[140px] overflow-hidden border-b border-[#333]">
         {profile.bannerUrl ? (
-          <Image src={profile.bannerUrl} alt="banner" fill sizes="100vw" className="object-cover" priority />
+          <Image
+            src={profile.bannerUrl}
+            alt="banner"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
         ) : (
           <div
             className="h-full w-full"
-            style={{ background: `linear-gradient(135deg, ${accentSoft} 0%, ${accentMuted} 50%, #1a1a1a 100%)` }}
+            style={{
+              background: `linear-gradient(135deg, ${accentSoft} 0%, ${accentMuted} 50%, #1a1a1a 100%)`,
+            }}
           />
         )}
         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#121212]/20 via-[#121212]/10 to-transparent pointer-events-none" />
@@ -151,9 +192,18 @@ export function ProfileMobile({
       {/* 2. Avatar centered, -mt-10, h-20 w-20, border-4 border-[#121212] */}
       <div className="flex justify-center">
         <div className="relative -mt-10 z-10">
-          <Avatar className="h-20 w-20 border-4 border-[#121212] shadow-xl" style={{ boxShadow: `0 0 18px ${accentSoft}` }}>
-            <AvatarImage src={profile.avatarUrl || undefined} alt={profile.displayName || profile.username} />
-            <AvatarFallback className="text-xl sm:text-2xl font-bold" style={{ backgroundColor: accentSoft, color: accent }}>
+          <Avatar
+            className="h-20 w-20 border-4 border-[#121212] shadow-xl"
+            style={{ boxShadow: `0 0 18px ${accentSoft}` }}
+          >
+            <AvatarImage
+              src={profile.avatarUrl || undefined}
+              alt={profile.displayName || profile.username}
+            />
+            <AvatarFallback
+              className="text-xl sm:text-2xl font-bold"
+              style={{ backgroundColor: accentSoft, color: accent }}
+            >
               {(profile.displayName || profile.username)[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -167,7 +217,9 @@ export function ProfileMobile({
 
       {/* 3. Name + @username centered */}
       <div className="mt-3 px-3 sm:px-4 text-center">
-        <h1 className="break-words text-xl font-bold text-white leading-tight">{profile.displayName || profile.username}</h1>
+        <h1 className="break-words text-xl font-bold text-white leading-tight">
+          {profile.displayName || profile.username}
+        </h1>
         <p className="mt-1 break-words text-sm text-gray-400" dir="ltr">
           @{profile.username}
         </p>
@@ -184,12 +236,29 @@ export function ProfileMobile({
       {/* 4. Badges row: flex flex-wrap justify-center gap-1 — RoleBadge, TierBadge, CreatorBadge */}
       <div className="mt-3 flex flex-wrap justify-center gap-1.5 px-3 sm:px-4">
         <RoleBadge role={profile.role} size="sm" />
-        <TierBadge tier={(profile as unknown as { tier?: number }).tier || 0} role={profile.role} size="sm" />
-        <CreatorBadge role={profile.role} specialRoles={(profile as unknown as { specialRoles?: string }).specialRoles as string | null} showLabels size="sm" />
+        <TierBadge
+          tier={(profile as unknown as { tier?: number }).tier || 0}
+          role={profile.role}
+          size="sm"
+        />
+        <CreatorBadge
+          role={profile.role}
+          specialRoles={
+            (profile as unknown as { specialRoles?: string }).specialRoles as string | null
+          }
+          showLabels
+          size="sm"
+        />
       </div>
 
       {/* Social links — compact centered */}
-      {(profile.websiteUrl || profile.twitterUrl || profile.instagramUrl || profile.tiktokUrl || profile.youtubeUrl || profile.githubUrl || profile.discordUrl) && (
+      {(profile.websiteUrl ||
+        profile.twitterUrl ||
+        profile.instagramUrl ||
+        profile.tiktokUrl ||
+        profile.youtubeUrl ||
+        profile.githubUrl ||
+        profile.discordUrl) && (
         <div className="mt-3 flex justify-center px-3 sm:px-4">
           <ProfileSocialLinks
             websiteUrl={profile.websiteUrl}
@@ -214,7 +283,11 @@ export function ProfileMobile({
       <div className="mt-4 flex flex-wrap justify-center gap-2 px-3 sm:px-4">
         {isOwner ? (
           <Link href="/settings" className="inline-flex">
-            <Button size="sm" variant="outline" className="min-h-[44px] touch-manipulation h-auto gap-1.5 border-[#333] px-3 py-2 text-xs text-gray-300 hover:bg-[#222]">
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-h-[44px] touch-manipulation h-auto gap-1.5 border-[#333] px-3 py-2 text-xs text-gray-300 hover:bg-[#222]"
+            >
               <Settings className="h-4 w-4 shrink-0" />
               إدارة الحساب والإعدادات
             </Button>
@@ -268,14 +341,38 @@ export function ProfileMobile({
       {/* 7. Stats: grid grid-cols-3 gap-1 sm:gap-2 px-3 sm:px-4 — تعريبات/تحميلات/إعجابات compact cells */}
       <div className="mt-6 px-3 sm:px-4">
         <div className="grid grid-cols-3 gap-1 sm:gap-2">
-          <CompactStat icon={<Package className="h-4 w-4" />} label="تعريبات" value={formatNumber(profile.stats.mods)} />
-          <CompactStat icon={<Download className="h-4 w-4" />} label="تحميلات" value={formatNumber(profile.stats.totalDownloads)} />
-          <CompactStat icon={<ThumbsUp className="h-4 w-4" />} label="إعجابات" value={formatNumber(profile.stats.totalEndorsements)} />
+          <CompactStat
+            icon={<Package className="h-4 w-4" />}
+            label="تعريبات"
+            value={formatNumber(profile.stats.mods)}
+          />
+          <CompactStat
+            icon={<Download className="h-4 w-4" />}
+            label="تحميلات"
+            value={formatNumber(profile.stats.totalDownloads)}
+          />
+          <CompactStat
+            icon={<ThumbsUp className="h-4 w-4" />}
+            label="إعجابات"
+            value={formatNumber(profile.stats.totalEndorsements)}
+          />
         </div>
         <div className="mt-2 grid grid-cols-3 gap-1 sm:gap-2">
-          <CompactStat icon={<Eye className="h-4 w-4" />} label="مشاهدات" value={formatNumber(profile.stats.totalViews)} />
-          <CompactStat icon={<Users className="h-4 w-4" />} label="متابعون" value={formatNumber(profile.stats.followersCount)} />
-          <CompactStat icon={<Users className="h-4 w-4" />} label="يتابع" value={formatNumber(profile.stats.followingCount)} />
+          <CompactStat
+            icon={<Eye className="h-4 w-4" />}
+            label="مشاهدات"
+            value={formatNumber(profile.stats.totalViews)}
+          />
+          <CompactStat
+            icon={<Users className="h-4 w-4" />}
+            label="متابعون"
+            value={formatNumber(profile.stats.followersCount)}
+          />
+          <CompactStat
+            icon={<Users className="h-4 w-4" />}
+            label="يتابع"
+            value={formatNumber(profile.stats.followingCount)}
+          />
         </div>
       </div>
 
@@ -355,22 +452,37 @@ export function ProfileMobile({
             {activity.comments && activity.comments.length > 0 ? (
               <div className="space-y-2">
                 {activity.comments.map((comment) => (
-                  <div key={comment.id} className="rounded-lg bg-[#1a1a1a] p-3 border border-[#333] break-words">
+                  <div
+                    key={comment.id}
+                    className="rounded-lg bg-[#1a1a1a] p-3 border border-[#333] break-words"
+                  >
                     <div className="flex items-start gap-2">
                       <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
                       <div className="flex-1 min-w-0 text-right">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="break-words text-xs font-bold text-gray-300">
-                            {(comment as unknown as { user?: { username: string } | null; guestName?: string | null }).user?.username ||
+                            {(
+                              comment as unknown as {
+                                user?: { username: string } | null
+                                guestName?: string | null
+                              }
+                            ).user?.username ||
                               (comment as unknown as { guestName?: string | null }).guestName ||
                               'زائر'}
                           </span>
-                          <span className="text-xs text-gray-600">• {new Date(comment.createdAt).toLocaleDateString('ar-EG')}</span>
+                          <span className="text-xs text-gray-600">
+                            • {new Date(comment.createdAt).toLocaleDateString('ar-EG')}
+                          </span>
                         </div>
-                        <p className="mt-1 break-words text-sm text-gray-300 line-clamp-3 whitespace-pre-wrap">{comment.text}</p>
+                        <p className="mt-1 break-words text-sm text-gray-300 line-clamp-3 whitespace-pre-wrap">
+                          {comment.text}
+                        </p>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           <span className="text-xs text-gray-500">على تعريب</span>
-                          <Link href={`/mod/${comment.mod.slug}`} className="break-words text-xs text-primary hover:underline">
+                          <Link
+                            href={`/mod/${comment.mod.slug}`}
+                            className="break-words text-xs text-primary hover:underline"
+                          >
                             {comment.mod.name}
                           </Link>
                         </div>
@@ -383,7 +495,9 @@ export function ProfileMobile({
               <div className="rounded-lg bg-[#1a1a1a] p-8 text-center border border-[#333]">
                 <MessageSquare className="mx-auto h-8 w-8 text-gray-600 mb-2" />
                 <p className="break-words text-sm text-gray-500">لا توجد تعليقات بعد</p>
-                <p className="mt-1 break-words text-xs text-gray-600">ستظهر تعليقاتك هنا عند المشاركة</p>
+                <p className="mt-1 break-words text-xs text-gray-600">
+                  ستظهر تعليقاتك هنا عند المشاركة
+                </p>
               </div>
             )}
           </TabsContent>
@@ -393,7 +507,10 @@ export function ProfileMobile({
             {activity.mods && activity.mods.length > 0 ? (
               <div className="grid grid-cols-2 gap-0.5 sm:gap-1">
                 {activity.mods.map((m) => (
-                  <div key={m.id} className="origin-top scale-[0.80] [&_h3]:!text-[10px] [&_h3]:!leading-tight [&_h3]:!h-[2em] [&_h3]:!break-words [&_div.p-2\.5]:!p-1.5">
+                  <div
+                    key={m.id}
+                    className="origin-top scale-[0.80] [&_h3]:!text-[10px] [&_h3]:!leading-tight [&_h3]:!h-[2em] [&_h3]:!break-words [&_div.p-2\.5]:!p-1.5"
+                  >
                     <ModCard mod={m} variant="compact" />
                   </div>
                 ))}
@@ -414,7 +531,15 @@ export function ProfileMobile({
   )
 }
 
-function CompactStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function CompactStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
   return (
     <div className="rounded-lg bg-[#1a1a1a] p-3 border border-[#333] text-center min-w-0 overflow-hidden">
       <div className="flex justify-center text-gray-400 mb-1">{icon}</div>

@@ -18,19 +18,30 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import type { GameSummary } from '@/lib/types'
 
-const PLATFORMS = ['الكل', 'PC', 'NS', 'PS5', 'PS4', 'PS3', 'PS2', 'PS1', 'X360', 'ANDROID'] as const
+const PLATFORMS = [
+  'الكل',
+  'PC',
+  'NS',
+  'PS5',
+  'PS4',
+  'PS3',
+  'PS2',
+  'PS1',
+  'X360',
+  'ANDROID',
+] as const
 
 const PLATFORM_LABELS: Record<string, string> = {
-  'الكل': 'الكل',
-  'PC': 'PC ARABIC',
-  'NS': 'NS ARABIC',
-  'PS5': 'PS5 ARABIC',
-  'PS4': 'PS4 ARABIC',
-  'PS3': 'PS3 ARABIC',
-  'PS2': 'PS2 ARABIC',
-  'PS1': 'PS1 ARABIC',
-  'X360': 'XBOX 360 ARABIC',
-  'ANDROID': 'ANDROID ARABIC',
+  الكل: 'الكل',
+  PC: 'PC ARABIC',
+  NS: 'NS ARABIC',
+  PS5: 'PS5 ARABIC',
+  PS4: 'PS4 ARABIC',
+  PS3: 'PS3 ARABIC',
+  PS2: 'PS2 ARABIC',
+  PS1: 'PS1 ARABIC',
+  X360: 'XBOX 360 ARABIC',
+  ANDROID: 'ANDROID ARABIC',
 }
 
 export function GamesPage() {
@@ -39,7 +50,7 @@ export function GamesPage() {
   useDocumentTitle('تصفح الألعاب')
   const [search, setSearch] = useState('')
   const [platform, setPlatform] = useState<string>(
-    (PLATFORMS as readonly string[]).includes(urlPlatform) ? urlPlatform : 'الكل'
+    (PLATFORMS as readonly string[]).includes(urlPlatform) ? urlPlatform : 'الكل',
   )
   const [sort, setSort] = useState('popular')
 
@@ -85,7 +96,11 @@ export function GamesPage() {
         </div>
 
         {/* أزرار تصفية المنصة */}
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="تصفية حسب المنصة">
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="تصفية حسب المنصة"
+        >
           {PLATFORMS.map((p) => (
             <Button
               key={p}
@@ -117,7 +132,9 @@ export function GamesPage() {
       {/* الشبكة — بطاقات أكبر، عمودين على الجوال */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, i) => <GameCardSkeleton key={i} />)}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <GameCardSkeleton key={i} />
+          ))}
         </div>
       ) : (data?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
@@ -127,7 +144,9 @@ export function GamesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {data?.data?.map((g) => <GameCard key={g.id} game={g} />)}
+          {data?.data?.map((g) => (
+            <GameCard key={g.id} game={g} />
+          ))}
         </div>
       )}
     </div>

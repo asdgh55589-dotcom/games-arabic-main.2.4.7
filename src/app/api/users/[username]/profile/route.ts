@@ -2,7 +2,15 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getOptionalSession } from '@/lib/auth'
 import { sanitizeUrl } from '@/lib/sanitize'
-import { ok, notFound, unauthorized, forbidden, conflict, internalError, validationFail } from '@/lib/api-response'
+import {
+  ok,
+  notFound,
+  unauthorized,
+  forbidden,
+  conflict,
+  internalError,
+  validationFail,
+} from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -135,9 +143,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const prevMax = levelIndex > 0 ? xpLevels[levelIndex - 1].max : 0
     const currMax = xpLevels[levelIndex].max
     const xpProgress =
-      currMax === Infinity
-        ? 100
-        : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
+      currMax === Infinity ? 100 : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
 
     return ok(
       {
@@ -160,7 +166,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
       {
         headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' },
-      }
+      },
     )
   } catch (err: any) {
     console.error('[profile GET] failed:', err?.message, err?.stack)
@@ -188,15 +194,42 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     // Handle username change separately — فحص غير حساس لحالة الأحرف
     if (body.username && body.username.toLowerCase() !== neonUser.username.toLowerCase()) {
-      const existingUser = await db.user.findFirst({ where: { username: { equals: body.username, mode: 'insensitive' } } })
+      const existingUser = await db.user.findFirst({
+        where: { username: { equals: body.username, mode: 'insensitive' } },
+      })
       if (existingUser) {
         return conflict('Username already taken')
       }
       updateData.username = body.username
     }
 
-    const allowedFields = ['displayName', 'firstName', 'lastName', 'bio', 'websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl', 'accentColor', 'avatarUrl', 'bannerUrl', 'profileVisibility', 'hideJoinDate']
-    const urlFields = ['websiteUrl', 'twitterUrl', 'instagramUrl', 'tiktokUrl', 'youtubeUrl', 'githubUrl', 'discordUrl']
+    const allowedFields = [
+      'displayName',
+      'firstName',
+      'lastName',
+      'bio',
+      'websiteUrl',
+      'twitterUrl',
+      'instagramUrl',
+      'tiktokUrl',
+      'youtubeUrl',
+      'githubUrl',
+      'discordUrl',
+      'accentColor',
+      'avatarUrl',
+      'bannerUrl',
+      'profileVisibility',
+      'hideJoinDate',
+    ]
+    const urlFields = [
+      'websiteUrl',
+      'twitterUrl',
+      'instagramUrl',
+      'tiktokUrl',
+      'youtubeUrl',
+      'githubUrl',
+      'discordUrl',
+    ]
     const booleanFields = ['hideJoinDate']
     const nullableFields = ['avatarUrl', 'bannerUrl', 'displayName', 'firstName', 'lastName']
     const allowedVisibility = ['everyone', 'followers', 'nobody']

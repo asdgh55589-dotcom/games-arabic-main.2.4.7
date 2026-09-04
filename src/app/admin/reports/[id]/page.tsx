@@ -4,8 +4,20 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Loader2, ArrowRight, Flag, Package, MessageSquare, User, UserX, UserCog,
-  AlertTriangle, Clock, Shield, CheckCircle, XCircle, Ban,
+  Loader2,
+  ArrowRight,
+  Flag,
+  Package,
+  MessageSquare,
+  User,
+  UserX,
+  UserCog,
+  AlertTriangle,
+  Clock,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Ban,
   ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,8 +49,11 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
 import {
-  REPORT_REASONS, REPORT_PRIORITIES, REPORT_STATUSES,
-  REPORT_ACTIONS, REPORT_TARGET_TYPES,
+  REPORT_REASONS,
+  REPORT_PRIORITIES,
+  REPORT_STATUSES,
+  REPORT_ACTIONS,
+  REPORT_TARGET_TYPES,
 } from '@/lib/reports/constants'
 import type { ReportReason, ReportPriority, ReportAction } from '@/lib/reports/constants'
 
@@ -59,11 +74,40 @@ interface ReportDetail {
   previousReports: number
   fraudScore?: number
   repeatOffenseLevel?: number
-  fraudSignals?: Array<{ id: string; signalType: string; score: number; description: string; createdAt: string }>
-  reporter: { id: string; username: string; avatarUrl: string | null; role: string; trustScore?: { score: number; totalReports: number; confirmedReports: number; rejectedReports: number; reportAccuracy?: number } | null } | null
+  fraudSignals?: Array<{
+    id: string
+    signalType: string
+    score: number
+    description: string
+    createdAt: string
+  }>
+  reporter: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    role: string
+    trustScore?: {
+      score: number
+      totalReports: number
+      confirmedReports: number
+      rejectedReports: number
+      reportAccuracy?: number
+    } | null
+  } | null
   targetMod: { id: string; name: string; slug: string; thumbnailUrl: string } | null
   targetComment: { id: string; text: string; createdAt: string } | null
-  targetUser: { id: string; username: string; avatarUrl: string | null; role: string; trustScore?: { score: number; totalReports: number; confirmedReports: number; rejectedReports: number } | null } | null
+  targetUser: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    role: string
+    trustScore?: {
+      score: number
+      totalReports: number
+      confirmedReports: number
+      rejectedReports: number
+    } | null
+  } | null
   assignedToId: string | null
   assignedTo: { id: string; username: string; avatarUrl: string | null } | null
 }
@@ -99,7 +143,10 @@ export default function AdminReportDetailPage() {
     isDestructive: boolean
   } | null>(null)
 
-  const ACTION_METADATA: Record<string, { title: string; description: string; isDestructive: boolean }> = {
+  const ACTION_METADATA: Record<
+    string,
+    { title: string; description: string; isDestructive: boolean }
+  > = {
     warned: {
       title: 'تأكيد التحذير',
       description: 'هل أنت متأكد من إرسال تحذير رسمي لهذا المستخدم؟ سيتم إرسال إشعار له.',
@@ -230,7 +277,9 @@ export default function AdminReportDetailPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchReport() }, [reportId])
+  useEffect(() => {
+    fetchReport()
+  }, [reportId])
 
   const handleStatusUpdate = async (newStatus: string) => {
     setActionLoading(true)
@@ -260,11 +309,17 @@ export default function AdminReportDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تأكيد البلاغ'
+        const msg =
+          typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تأكيد البلاغ'
         toast({ title: msg, variant: 'destructive' })
         return
       }
-      toast({ title: action === 'perm_ban' ? 'تم الحظر الدائم للمستخدم بنجاح' : 'تم تأكيد البلاغ واتخاذ الإجراء' })
+      toast({
+        title:
+          action === 'perm_ban'
+            ? 'تم الحظر الدائم للمستخدم بنجاح'
+            : 'تم تأكيد البلاغ واتخاذ الإجراء',
+      })
       fetchReport()
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -292,7 +347,11 @@ export default function AdminReportDetailPage() {
   }
 
   if (loading) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error || !report) {
@@ -303,21 +362,33 @@ export default function AdminReportDetailPage() {
     )
   }
 
-  const targetLabel = REPORT_TARGET_TYPES[report.targetType as keyof typeof REPORT_TARGET_TYPES]?.label || report.targetType
+  const targetLabel =
+    REPORT_TARGET_TYPES[report.targetType as keyof typeof REPORT_TARGET_TYPES]?.label ||
+    report.targetType
   const reasonConfig = REPORT_REASONS[report.reason as ReportReason]
   const priorityConfig = REPORT_PRIORITIES[report.priority as ReportPriority]
   // Json array بعد التغيير + توافق مع بيانات قديمة comma-joined
   const evidenceUrls: string[] = (() => {
     const ev = report.evidenceUrls as unknown
-    if (Array.isArray(ev)) return ev.filter((u): u is string => typeof u === 'string' && u.length > 0)
-    if (typeof ev === 'string' && ev) return ev.split(',').map((s) => s.trim()).filter(Boolean)
+    if (Array.isArray(ev))
+      return ev.filter((u): u is string => typeof u === 'string' && u.length > 0)
+    if (typeof ev === 'string' && ev)
+      return ev
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     return []
   })()
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={() => router.push('/admin/reports')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="min-h-[44px]"
+          onClick={() => router.push('/admin/reports')}
+        >
           <ArrowRight className="h-4 w-4" />
         </Button>
         <div>
@@ -333,9 +404,7 @@ export default function AdminReportDetailPage() {
             <div className="grid gap-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">النوع</span>
-                <span className="flex items-center gap-1.5">
-                  {targetLabel}
-                </span>
+                <span className="flex items-center gap-1.5">{targetLabel}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">السبب</span>
@@ -343,7 +412,9 @@ export default function AdminReportDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الأولوية</span>
-                <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${priorityConfig?.color || ''}`}>
+                <span
+                  className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${priorityConfig?.color || ''}`}
+                >
                   {priorityConfig?.label || report.priority}
                 </span>
               </div>
@@ -373,7 +444,9 @@ export default function AdminReportDetailPage() {
           {report.description && (
             <Card className="p-5">
               <h3 className="mb-2 font-semibold">تفاصيل المُبلِّغ</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{report.description}</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {report.description}
+              </p>
             </Card>
           )}
 
@@ -421,7 +494,11 @@ export default function AdminReportDetailPage() {
           {report.targetMod && (
             <Card className="p-5">
               <h3 className="mb-2 font-semibold">التعريب المُبلَّغ عنه</h3>
-              <Link href={`/mods/${report.targetMod.slug}`} className="text-primary hover:underline" target="_blank">
+              <Link
+                href={`/mods/${report.targetMod.slug}`}
+                className="text-primary hover:underline"
+                target="_blank"
+              >
                 {report.targetMod.name}
               </Link>
             </Card>
@@ -435,7 +512,11 @@ export default function AdminReportDetailPage() {
           {report.targetUser && (
             <Card className="p-5">
               <h3 className="mb-2 font-semibold">المستخدم المُبلَّغ عنه</h3>
-              <Link href={`/profile/${report.targetUser.username}`} className="text-primary hover:underline" target="_blank">
+              <Link
+                href={`/profile/${report.targetUser.username}`}
+                className="text-primary hover:underline"
+                target="_blank"
+              >
                 {report.targetUser.username}
               </Link>
             </Card>
@@ -459,7 +540,10 @@ export default function AdminReportDetailPage() {
         </div>
 
         <div className="space-y-4">
-          <ReportFraudCard fraudScore={report.fraudScore || 0} signals={report.fraudSignals || []} />
+          <ReportFraudCard
+            fraudScore={report.fraudScore || 0}
+            signals={report.fraudSignals || []}
+          />
 
           <Card className="p-5">
             <CardHeader className="p-0 pb-3">
@@ -471,7 +555,9 @@ export default function AdminReportDetailPage() {
             <CardContent className="p-0 space-y-3">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback>{report.reporter?.username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
+                  <AvatarFallback>
+                    {report.reporter?.username?.[0]?.toUpperCase() || '?'}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <Link
@@ -487,7 +573,11 @@ export default function AdminReportDetailPage() {
                   )}
                 </div>
               </div>
-              <UserTrustBadge score={report.reporter?.trustScore || null} label="ثقة المُبلِّغ" showDetails={true} />
+              <UserTrustBadge
+                score={report.reporter?.trustScore || null}
+                label="ثقة المُبلِّغ"
+                showDetails={true}
+              />
             </CardContent>
           </Card>
 
@@ -502,10 +592,15 @@ export default function AdminReportDetailPage() {
               <CardContent className="p-0 space-y-3">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback>{report.targetUser.username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
+                    <AvatarFallback>
+                      {report.targetUser.username?.[0]?.toUpperCase() || '?'}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <Link href={`/admin/users/${report.targetUser.id}`} className="font-medium hover:underline">
+                    <Link
+                      href={`/admin/users/${report.targetUser.id}`}
+                      className="font-medium hover:underline"
+                    >
                       {report.targetUser.username}
                     </Link>
                     {report.targetUser.role && report.targetUser.role !== 'member' && (
@@ -515,7 +610,11 @@ export default function AdminReportDetailPage() {
                     )}
                   </div>
                 </div>
-                <UserTrustBadge score={report.targetUser?.trustScore || null} label="ثقة المُستهدف" showDetails={true} />
+                <UserTrustBadge
+                  score={report.targetUser?.trustScore || null}
+                  label="ثقة المُستهدف"
+                  showDetails={true}
+                />
               </CardContent>
             </Card>
           )}
@@ -538,11 +637,13 @@ export default function AdminReportDetailPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">غير مُعيَّن</SelectItem>
-                  {assignable.map((m: { id: string; username: string; role: string; workload: number }) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.username} ({getRoleLabel(m.role)}) — {m.workload} بلاغ
-                    </SelectItem>
-                  ))}
+                  {assignable.map(
+                    (m: { id: string; username: string; role: string; workload: number }) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.username} ({getRoleLabel(m.role)}) — {m.workload} بلاغ
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
               {report.assignedTo && (
@@ -631,7 +732,8 @@ export default function AdminReportDetailPage() {
                   onClick={() => handleConfirmAction('perm_ban')}
                 >
                   <Ban className="h-4 w-4" />
-                  حظر دائم {!canPermBan && <span className="text-[10px] opacity-70">— للمديرين فقط</span>}
+                  حظر دائم{' '}
+                  {!canPermBan && <span className="text-[10px] opacity-70">— للمديرين فقط</span>}
                 </Button>
                 <Button
                   variant="outline"
@@ -649,7 +751,9 @@ export default function AdminReportDetailPage() {
           {report.actionTaken && (
             <Card className="p-5">
               <h3 className="mb-2 font-semibold">الإجراء المتخذ</h3>
-              <p className="text-sm">{REPORT_ACTIONS[report.actionTaken as ReportAction]?.label || report.actionTaken}</p>
+              <p className="text-sm">
+                {REPORT_ACTIONS[report.actionTaken as ReportAction]?.label || report.actionTaken}
+              </p>
               {report.actionAt && (
                 <p className="mt-1 text-xs text-muted-foreground">{timeAgo(report.actionAt)}</p>
               )}
@@ -658,7 +762,10 @@ export default function AdminReportDetailPage() {
         </div>
       </div>
 
-      <AlertDialog open={!!confirmDialog?.open} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+      <AlertDialog
+        open={!!confirmDialog?.open}
+        onOpenChange={(open) => !open && setConfirmDialog(null)}
+      >
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>{confirmDialog?.title}</AlertDialogTitle>
@@ -676,7 +783,11 @@ export default function AdminReportDetailPage() {
                 if (act === 'rejected') handleReject()
                 else handleConfirm(act as ReportAction)
               }}
-              className={confirmDialog?.isDestructive ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-600' : ''}
+              className={
+                confirmDialog?.isDestructive
+                  ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-600'
+                  : ''
+              }
             >
               تأكيد
             </AlertDialogAction>

@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
 
     // تحقق الحقول المطلوبة
     if (!username || !email || !password || !securityKey || !role) {
-      return validationFail({ message: 'جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان، الدور' })
+      return validationFail({
+        message: 'جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان، الدور',
+      })
     }
 
     if (password.length < 8) {

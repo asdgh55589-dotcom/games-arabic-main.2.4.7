@@ -21,14 +21,9 @@ interface UseNotificationPollingReturn {
 }
 
 export function useNotificationPolling(
-  options: UseNotificationPollingOptions
+  options: UseNotificationPollingOptions,
 ): UseNotificationPollingReturn {
-  const {
-    userId,
-    pollIntervalMs = 30_000,
-    maxNotifications = 20,
-    enabled = true,
-  } = options
+  const { userId, pollIntervalMs = 30_000, maxNotifications = 20, enabled = true } = options
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -121,10 +116,10 @@ export function useNotificationPolling(
   const markAsRead = useCallback(async (id: string) => {
     try {
       await fetch(`/api/notifications/${id}/read`, { method: 'POST' })
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
       )
-      setUnreadCount(prev => Math.max(0, prev - 1))
+      setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {
       // Silent — state not updated, will refresh on next poll
     }
@@ -133,7 +128,7 @@ export function useNotificationPolling(
   const markAllAsRead = useCallback(async () => {
     try {
       await fetch('/api/notifications/read-all', { method: 'POST' })
-      setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })))
+      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })))
       setUnreadCount(0)
     } catch {
       // Silent

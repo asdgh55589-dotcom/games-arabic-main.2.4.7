@@ -53,7 +53,7 @@ export function NewsTicker() {
           }
         })
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     )
 
     itemRefs.current.forEach((el) => observer.observe(el))
@@ -75,7 +75,10 @@ export function NewsTicker() {
   }
 
   return (
-    <div className="relative w-full border-y-[3px] border-border bg-card shadow-[0_3px_0_0_var(--border)] overflow-hidden" dir="rtl">
+    <div
+      className="relative w-full border-y-[3px] border-border bg-card shadow-[0_3px_0_0_var(--border)] overflow-hidden"
+      dir="rtl"
+    >
       <div className="mx-auto flex max-w-[1600px] items-stretch">
         {/* شعار الأخبار — ثابت بزاوية حادة */}
         <div className="relative shrink-0 flex items-center gap-2 bg-primary px-4 py-2.5 lg:px-5 -mr-3">
@@ -134,7 +137,9 @@ export function NewsTicker() {
                   >
                     <span className="h-1 w-1 shrink-0 rotate-45 bg-primary/60 group-hover/item:bg-primary transition-colors" />
                     <Zap className="h-3 w-3 text-primary/40 group-hover/item:text-primary transition-colors hidden lg:block" />
-                    <span className="line-clamp-1 group-hover/item:text-primary transition-colors">{item.title}</span>
+                    <span className="line-clamp-1 group-hover/item:text-primary transition-colors">
+                      {item.title}
+                    </span>
                   </Link>
                 )
               })}

@@ -28,10 +28,10 @@ export async function getActivityLog(filters: ActivityLogFilters) {
   if (filters.dateFrom || filters.dateTo) {
     where.createdAt = {}
     if (filters.dateFrom) {
-      (where.createdAt as Record<string, unknown>).gte = new Date(filters.dateFrom)
+      ;(where.createdAt as Record<string, unknown>).gte = new Date(filters.dateFrom)
     }
     if (filters.dateTo) {
-      (where.createdAt as Record<string, unknown>).lte = new Date(filters.dateTo)
+      ;(where.createdAt as Record<string, unknown>).lte = new Date(filters.dateTo)
     }
   }
 
@@ -44,13 +44,13 @@ export async function getActivityLog(filters: ActivityLogFilters) {
       where,
       orderBy: { createdAt: 'desc' },
       skip,
-      take: limit
+      take: limit,
     }),
-    db.auditLog.count({ where })
+    db.auditLog.count({ where }),
   ])
 
   return {
-    logs: logs.map(log => ({
+    logs: logs.map((log) => ({
       id: log.id,
       username: log.username,
       action: log.action,
@@ -58,7 +58,7 @@ export async function getActivityLog(filters: ActivityLogFilters) {
       entityId: log.entityId,
       details: log.details ? JSON.parse(log.details) : null,
       ipAddress: log.ipAddress,
-      createdAt: log.createdAt
+      createdAt: log.createdAt,
     })),
     total,
     page,

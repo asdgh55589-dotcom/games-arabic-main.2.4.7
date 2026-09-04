@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
     const securityKey = process.env.OWNER_SECURITY_KEY || '1234567890'
 
     if (!username || !email || !password) {
-      return internalError('يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.')
+      return internalError(
+        'يجب ضبط OWNER_USERNAME و OWNER_EMAIL و OWNER_PASSWORD في ملف .env قبل تشغيل الـ setup.',
+      )
     }
 
     const passwordHash = await hashPassword(password)

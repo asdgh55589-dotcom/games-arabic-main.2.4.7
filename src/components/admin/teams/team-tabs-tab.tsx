@@ -18,7 +18,12 @@ interface TeamTabsTabProps {
 export function TeamTabsTab({ hiddenTabs, customTabs, onChange }: TeamTabsTabProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
-  const hiddenSet = new Set(hiddenTabs.split(',').map((s) => s.trim()).filter(Boolean))
+  const hiddenSet = new Set(
+    hiddenTabs
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  )
 
   const toggleTab = (key: string) => {
     const newHidden = new Set(hiddenSet)
@@ -31,12 +36,17 @@ export function TeamTabsTab({ hiddenTabs, customTabs, onChange }: TeamTabsTabPro
   }
 
   const addCustomTab = () => {
-    onChange({ customTabs: [...customTabs, { title: '', content: '', order: customTabs.length, visible: true }] })
+    onChange({
+      customTabs: [
+        ...customTabs,
+        { title: '', content: '', order: customTabs.length, visible: true },
+      ],
+    })
     setEditingIndex(customTabs.length)
   }
 
   const updateCustomTab = (index: number, patch: Partial<TeamCustomTabData>) => {
-    const updated = customTabs.map((t, i) => i === index ? { ...t, ...patch } : t)
+    const updated = customTabs.map((t, i) => (i === index ? { ...t, ...patch } : t))
     onChange({ customTabs: updated })
   }
 
@@ -52,7 +62,9 @@ export function TeamTabsTab({ hiddenTabs, customTabs, onChange }: TeamTabsTabPro
       {/* Hide/show basic tabs */}
       <div>
         <h3 className="mb-2 text-sm font-bold">إظهار/إخفاء التبويبات الأساسية</h3>
-        <p className="mb-3 text-xs text-muted-foreground">اختر أي تبويبات تريد إخفاءها من صفحة الفريق العامة</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          اختر أي تبويبات تريد إخفاءها من صفحة الفريق العامة
+        </p>
         <div className="flex flex-wrap gap-2">
           {TEAM_TABS.map((t) => {
             const isHidden = hiddenSet.has(t.key)
@@ -97,7 +109,9 @@ export function TeamTabsTab({ hiddenTabs, customTabs, onChange }: TeamTabsTabPro
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">{tab.title || `تبويب ${i + 1}`}</span>
-                    {!tab.visible && <span className="text-[10px] text-muted-foreground">(مخفي)</span>}
+                    {!tab.visible && (
+                      <span className="text-[10px] text-muted-foreground">(مخفي)</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
@@ -119,7 +133,8 @@ export function TeamTabsTab({ hiddenTabs, customTabs, onChange }: TeamTabsTabPro
                       variant="ghost"
                       className="h-7 w-7 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
                       onClick={() => removeCustomTab(i)}
-                     aria-label="إجراء">
+                      aria-label="إجراء"
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>

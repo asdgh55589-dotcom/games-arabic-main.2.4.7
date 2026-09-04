@@ -25,7 +25,7 @@ async function batchQueries<T>(queries: (() => Promise<T>)[], batchSize: number 
   const results: T[] = []
   for (let i = 0; i < queries.length; i += batchSize) {
     const batch = queries.slice(i, i + batchSize)
-    const batchResults = await Promise.all(batch.map(q => q()))
+    const batchResults = await Promise.all(batch.map((q) => q()))
     results.push(...batchResults)
   }
   return results
@@ -68,9 +68,10 @@ export async function GET() {
       orderBy: { order: 'asc' },
       select: { key: true },
     })
-    const platformKeys = activeSections.length > 0
-      ? activeSections.map((s) => s.key)
-      : ['PC', 'X360', 'NS', 'PS5', 'PS4', 'PS3', 'PS2', 'PS1', 'ANDROID'] as string[]
+    const platformKeys =
+      activeSections.length > 0
+        ? activeSections.map((s) => s.key)
+        : (['PC', 'X360', 'NS', 'PS5', 'PS4', 'PS3', 'PS2', 'PS1', 'ANDROID'] as string[])
 
     // Define all queries as thunks (lazy — not executed until batch runs)
     const queries = [
@@ -81,35 +82,61 @@ export async function GET() {
       () => db.mod.aggregate({ _sum: { endorsements: true } }),
       () => db.user.count(),
       // Batch 2: Featured + Trending + Top Endorsed (3 queries)
-      () => db.game.findMany({
-        where: { featured: true },
-        orderBy: { totalDownloads: 'desc' },
-        take: 8,
-      }),
-      () => db.mod.findMany({
-        where: { isTrending: true },
-        orderBy: { downloads: 'desc' },
-        take: 10,
-        include: modInclude,
-      }),
-      () => db.mod.findMany({
-        orderBy: { endorsements: 'desc' },
-        take: 10,
-        include: modInclude,
-      }),
+      () =>
+        db.game.findMany({
+          where: { featured: true },
+          orderBy: { totalDownloads: 'desc' },
+          take: 8,
+        }),
+      () =>
+        db.mod.findMany({
+          where: { isTrending: true },
+          orderBy: { downloads: 'desc' },
+          take: 10,
+          include: modInclude,
+        }),
+      () =>
+        db.mod.findMany({
+          orderBy: { endorsements: 'desc' },
+          take: 10,
+          include: modInclude,
+        }),
       // Batch 3: Latest mods by platform — dynamic (2 each)
-      ...platformKeys.map((platform) => () => db.mod.findMany({ where: { game: { platform } }, orderBy: { updatedAt: 'desc' }, take: 2, include: modInclude })),
+      ...platformKeys.map(
+        (platform) => () =>
+          db.mod.findMany({
+            where: { game: { platform } },
+            orderBy: { updatedAt: 'desc' },
+            take: 2,
+            include: modInclude,
+          }),
+      ),
       // Batch 4: Platform mods by downloads — dynamic (10 each)
-      ...platformKeys.map((platform) => () => db.mod.findMany({ where: { game: { platform } }, orderBy: { downloads: 'desc' }, take: 10, include: modInclude })),
+      ...platformKeys.map(
+        (platform) => () =>
+          db.mod.findMany({
+            where: { game: { platform } },
+            orderBy: { downloads: 'desc' },
+            take: 10,
+            include: modInclude,
+          }),
+      ),
       // Batch 5: Series (1 query)
-      () => db.series.findMany({
-        orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
-        take: 6,
-        select: {
-          id: true, name: true, slug: true, bannerUrl: true, logoUrl: true,
-          modCount: true, totalDownloads: true, totalEndorsements: true,
-        },
-      }),
+      () =>
+        db.series.findMany({
+          orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
+          take: 6,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            bannerUrl: true,
+            logoUrl: true,
+            modCount: true,
+            totalDownloads: true,
+            totalEndorsements: true,
+          },
+        }),
     ]
 
     const results: any[] = await batchQueries(queries as (() => Promise<any>)[], 5)
@@ -123,11 +150,11 @@ export async function GET() {
     const [topSeriesRaw] = results.slice(8 + n * 2, 8 + n * 2 + 1)
 
     // ==== بناء latestMods — أحدث 2 من كل منصة، مختلطين بالتساوي ====
-    const latestByPlatform: Record<string, typeof latestResults[0]> = {}
+    const latestByPlatform: Record<string, (typeof latestResults)[0]> = {}
     platformKeys.forEach((key, idx) => {
-      latestByPlatform[key] = latestResults[idx] as typeof latestResults[0]
+      latestByPlatform[key] = latestResults[idx] as (typeof latestResults)[0]
     })
-    const latestMods: typeof latestResults[0] = []
+    const latestMods: (typeof latestResults)[0] = []
     for (let round = 0; round < 2; round++) {
       for (const p of platformKeys) {
         const mod = latestByPlatform[p]?.[round]

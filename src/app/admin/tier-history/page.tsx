@@ -20,8 +20,8 @@ export default function TierHistoryPage() {
 
   useEffect(() => {
     fetch('/api/admin/tier-history')
-      .then(r => r.json())
-      .then(data => setHistory(data.history || []))
+      .then((r) => r.json())
+      .then((data) => setHistory(data.history || []))
       .finally(() => setLoading(false))
   }, [])
 

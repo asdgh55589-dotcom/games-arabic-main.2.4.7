@@ -43,6 +43,10 @@ export function getVerifyEmailHtml(opts: {
 `.trim()
 }
 
-export function getVerifyEmailText(opts: { displayName: string; url: string; siteName?: string }): string {
+export function getVerifyEmailText(opts: {
+  displayName: string
+  url: string
+  siteName?: string
+}): string {
   return `أهلاً ${opts.displayName}،\nفعّل حسابك في ${opts.siteName || 'Games Arabic'} عبر الرابط (صالح 24 ساعة):\n${opts.url}\n`
 }

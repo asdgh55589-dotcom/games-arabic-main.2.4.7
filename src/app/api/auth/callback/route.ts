@@ -22,10 +22,12 @@ export async function GET(req: NextRequest) {
     // حماية من Open Redirect — السماح بالمسارات النسبية فقط
     // يرفض: //evil.com, /\evil.com, URL-encoded variants, protocol-relative URLs, path traversal
     // searchParams.get() تفك الترميز تلقائياً → %2F%2F يصبح // ويُرفض
-    const next = /^\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]*$/.test(rawNext)
-      && !rawNext.startsWith('//')
-      && !rawNext.includes('/../')
-      ? rawNext : '/'
+    const next =
+      /^\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]*$/.test(rawNext) &&
+      !rawNext.startsWith('//') &&
+      !rawNext.includes('/../')
+        ? rawNext
+        : '/'
     const baseUrl = getBaseUrl(req)
 
     // إنشاء عميل Supabase واحد فقط
@@ -40,7 +42,9 @@ export async function GET(req: NextRequest) {
     }
 
     // قراءة بيانات المستخدم من Supabase session (نفس العميل)
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser()
 
     if (!supabaseUser) {
       return NextResponse.redirect(new URL('/?error=no_session', baseUrl))
@@ -52,16 +56,14 @@ export async function GET(req: NextRequest) {
 
     // استخراج بيانات المستخدم من metadata
     const email = supabaseUser.email || ''
-    const avatarUrl = supabaseUser.user_metadata?.avatar_url
-      || supabaseUser.user_metadata?.picture
-      || null
-    const fullName = supabaseUser.user_metadata?.full_name
-      || supabaseUser.user_metadata?.name
-      || ''
-    let username = supabaseUser.user_metadata?.username
-      || supabaseUser.user_metadata?.preferred_username
-      || fullName
-      || ''
+    const avatarUrl =
+      supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || null
+    const fullName = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || ''
+    let username =
+      supabaseUser.user_metadata?.username ||
+      supabaseUser.user_metadata?.preferred_username ||
+      fullName ||
+      ''
     if (!username) {
       username = await generateUsernameFromEmail(email)
     } else {
@@ -165,18 +167,20 @@ export async function GET(req: NextRequest) {
             },
           })
 
-          await tx.notificationPreference.create({
-            data: {
-              userId: user.id,
-              emailEnabled: true,
-              pushEnabled: true,
-              dailySummary: true,
-              summaryIntervalDays: 3,
-              likeThreshold: 25,
-              quietHoursEnabled: false,
-              typePreferences: {},
-            },
-          }).catch(() => {})
+          await tx.notificationPreference
+            .create({
+              data: {
+                userId: user.id,
+                emailEnabled: true,
+                pushEnabled: true,
+                dailySummary: true,
+                summaryIntervalDays: 3,
+                likeThreshold: 25,
+                quietHoursEnabled: false,
+                typePreferences: {},
+              },
+            })
+            .catch(() => {})
 
           return user
         })
@@ -209,7 +213,10 @@ export async function GET(req: NextRequest) {
       const { randomUUID } = await import('crypto')
       ledgerToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
       ledgerExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        req.headers.get('x-real-ip') ||
+        null
       const ua = req.headers.get('user-agent') || null
       await db.session.create({
         data: {

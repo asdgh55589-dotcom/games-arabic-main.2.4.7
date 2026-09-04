@@ -21,7 +21,9 @@ export default async function CreatorCommentsPage() {
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold">💬 إدارة التعليقات</h1>
-        <p className="text-sm text-muted-foreground mt-1">إدارة التعليقات على تعريباتك — الرد، الإخفاء، الحذف</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          إدارة التعليقات على تعريباتك — الرد، الإخفاء، الحذف
+        </p>
       </div>
       <CommentsManager />
     </div>

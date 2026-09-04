@@ -36,8 +36,8 @@ export default function TiersPage() {
 
   useEffect(() => {
     fetch('/api/admin/tier-rules')
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         const payload = data?.data ?? data
         const list = payload?.rules ?? payload
         setRules(Array.isArray(list) ? list : [])
@@ -49,9 +49,9 @@ export default function TiersPage() {
     await fetch(`/api/admin/tier-rules/${rule.tier}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(rule)
+      body: JSON.stringify(rule),
     })
-    setRules(rules.map(r => r.tier === rule.tier ? rule : r))
+    setRules(rules.map((r) => (r.tier === rule.tier ? rule : r)))
     setEditingTier(null)
   }
 
@@ -60,11 +60,14 @@ export default function TiersPage() {
       const res = await fetch('/api/admin/tier-rules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...createData, features: [] })
+        body: JSON.stringify({ ...createData, features: [] }),
       })
       const data = await res.json()
       if (!res.ok) {
-        const msg = data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الإنشاء'
+        const msg =
+          data?.error?.message ||
+          (typeof data?.error === 'string' ? data.error : null) ||
+          'فشل الإنشاء'
         throw new Error(msg)
       }
       setRules([...rules, { ...createData, features: [] }].sort((a, b) => a.tier - b.tier))
@@ -90,7 +93,7 @@ export default function TiersPage() {
     try {
       const res = await fetch(`/api/admin/tier-rules/${tier}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('فشل الحذف')
-      setRules(rules.filter(r => r.tier !== tier))
+      setRules(rules.filter((r) => r.tier !== tier))
     } catch {
       alert('فشل الحذف')
     }
@@ -134,7 +137,9 @@ export default function TiersPage() {
               <input
                 type="number"
                 value={createData.tier}
-                onChange={(e) => setCreateData({ ...createData, tier: parseInt(e.target.value) || 1 })}
+                onChange={(e) =>
+                  setCreateData({ ...createData, tier: parseInt(e.target.value) || 1 })
+                }
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 min={1}
               />
@@ -175,7 +180,9 @@ export default function TiersPage() {
               <input
                 type="number"
                 value={createData.requiredMods}
-                onChange={(e) => setCreateData({ ...createData, requiredMods: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setCreateData({ ...createData, requiredMods: parseInt(e.target.value) || 0 })
+                }
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
@@ -184,14 +191,26 @@ export default function TiersPage() {
               <input
                 type="number"
                 value={createData.requiredDownloads}
-                onChange={(e) => setCreateData({ ...createData, requiredDownloads: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setCreateData({ ...createData, requiredDownloads: parseInt(e.target.value) || 0 })
+                }
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">إنشاء</button>
-            <button onClick={() => setShowCreate(false)} className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent">إلغاء</button>
+            <button
+              onClick={handleCreate}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              إنشاء
+            </button>
+            <button
+              onClick={() => setShowCreate(false)}
+              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       )}
@@ -220,19 +239,33 @@ export default function TiersPage() {
 
       {/* قائمة المستويات */}
       <div className="space-y-3">
-        {rules.map(rule => (
+        {rules.map((rule) =>
           editingTier === rule.tier ? (
-            <TierRuleForm key={rule.tier} rule={rule} onSave={handleSave} onCancel={() => setEditingTier(null)} />
+            <TierRuleForm
+              key={rule.tier}
+              rule={rule}
+              onSave={handleSave}
+              onCancel={() => setEditingTier(null)}
+            />
           ) : (
-            <div key={rule.tier} className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-card/80">
+            <div
+              key={rule.tier}
+              className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-card/80"
+            >
               <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: rule.badgeColor || '#6b7280' }}>
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ backgroundColor: rule.badgeColor || '#6b7280' }}
+                >
                   {rule.tier}
                 </div>
                 <div>
-                  <h3 className="font-semibold">{rule.name} ({rule.nameEn})</h3>
+                  <h3 className="font-semibold">
+                    {rule.name} ({rule.nameEn})
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    تعريبات: {rule.requiredMods} · تحميلات: {rule.requiredDownloads} · تقييم: {rule.requiredRating} · جودة: {rule.requiredQualityScore}
+                    تعريبات: {rule.requiredMods} · تحميلات: {rule.requiredDownloads} · تقييم:{' '}
+                    {rule.requiredRating} · جودة: {rule.requiredQualityScore}
                   </p>
                 </div>
               </div>
@@ -252,8 +285,8 @@ export default function TiersPage() {
                 </button>
               </div>
             </div>
-          )
-        ))}
+          ),
+        )}
       </div>
     </div>
   )

@@ -8,17 +8,17 @@ import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 const ALLOWED_BUCKETS = ['avatars', 'banners'] as const
 
 async function wait(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export async function POST(req: NextRequest) {
   // Rate limiting: 10 requests per 60 seconds
   const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'storage:upload' })
   if (!rl.success) {
-    return new Response(
-      JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }),
-      { status: 429, headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) } }
-    )
+    return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
+    })
   }
 
   try {
@@ -47,9 +47,7 @@ export async function POST(req: NextRequest) {
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const path = `${bucket}/${neonUser.id}-${uniqueSuffix}.${extension}`
 
-    let signedResult = await adminClient.storage
-      .from(bucket)
-      .createSignedUploadUrl(path)
+    let signedResult = await adminClient.storage.from(bucket).createSignedUploadUrl(path)
 
     if (signedResult.error) {
       const bucketResult = await adminClient.storage.getBucket(bucket)
@@ -59,19 +57,14 @@ export async function POST(req: NextRequest) {
           public: true,
         })
 
-        if (
-          createResult.error &&
-          !createResult.error.message?.includes('already exists')
-        ) {
+        if (createResult.error && !createResult.error.message?.includes('already exists')) {
           console.error('[upload-url bucket create failed]', createResult.error)
         }
       }
 
       await wait(500)
 
-      signedResult = await adminClient.storage
-        .from(bucket)
-        .createSignedUploadUrl(path)
+      signedResult = await adminClient.storage.from(bucket).createSignedUploadUrl(path)
     }
 
     if (signedResult.error) {

@@ -32,7 +32,8 @@ describe('SendReportConfirmedNotification', () => {
     expect(mockService.send).toHaveBeenCalledTimes(2)
 
     // First call: to target user
-    expect(mockService.send).toHaveBeenNthCalledWith(1,
+    expect(mockService.send).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         userId: 'target-1',
         type: NotificationType.AdminAction,
@@ -42,7 +43,8 @@ describe('SendReportConfirmedNotification', () => {
     )
 
     // Second call: to reporter
-    expect(mockService.send).toHaveBeenNthCalledWith(2,
+    expect(mockService.send).toHaveBeenNthCalledWith(
+      2,
       expect.objectContaining({
         userId: 'reporter-1',
         type: NotificationType.AdminAction,
@@ -67,7 +69,7 @@ describe('SendReportConfirmedNotification', () => {
 
     // Count notifications to target user
     const targetNotifications = mockService.send.mock.calls.filter(
-      call => call[0].userId === 'target-1',
+      (call) => call[0].userId === 'target-1',
     )
     expect(targetNotifications).toHaveLength(1)
   })

@@ -47,7 +47,14 @@ const ROLE_COOKIE_NAME = 'ga_admin_role'
 const ROLE_COOKIE_DURATION = 60 * 60 * 24 * 7 // 7 أيام بالثواني
 
 // ===== Role types =====
-export type UserRole = 'member' | 'creator' | 'publisher' | 'moderator' | 'admin' | 'manager' | 'owner'
+export type UserRole =
+  | 'member'
+  | 'creator'
+  | 'publisher'
+  | 'moderator'
+  | 'admin'
+  | 'manager'
+  | 'owner'
 
 // ===== User type returned by getSession =====
 export interface SessionUser {
@@ -90,7 +97,9 @@ export async function getSession(): Promise<SessionUser | null> {
     let supabaseUser: { id: string; email?: string } | null = null
     try {
       const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       supabaseUser = user
     } catch {
       // Supabase غير متاح — نكمل مع role cookie
@@ -100,12 +109,19 @@ export async function getSession(): Promise<SessionUser | null> {
       // يوجد Supabase session — البحث في Neon DB
       const user = await db.user.findFirst({
         where: {
-          OR: [
-            { supabaseId: supabaseUser.id },
-            { email: supabaseUser.email || '' },
-          ],
+          OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
         },
-        select: { id: true, username: true, email: true, role: true, avatarUrl: true, banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+          banStatus: true,
+          bannedUntil: true,
+          banReason: true,
+          tokenVersion: true,
+        },
       })
 
       if (!user) return null
@@ -168,7 +184,17 @@ export async function getSession(): Promise<SessionUser | null> {
     // البحث عن المستخدم في Neon DB
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, email: true, role: true, avatarUrl: true, banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        banStatus: true,
+        bannedUntil: true,
+        banReason: true,
+        tokenVersion: true,
+      },
     })
 
     if (!user) return null
@@ -197,7 +223,12 @@ export async function getSession(): Promise<SessionUser | null> {
 // ===== Role cookie helpers =====
 
 /** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa في httpOnly cookie موقّع */
-export async function setRoleCookie(userId: string, role: UserRole, tokenVersion?: number, mfaVerified: boolean = false): Promise<void> {
+export async function setRoleCookie(
+  userId: string,
+  role: UserRole,
+  tokenVersion?: number,
+  mfaVerified: boolean = false,
+): Promise<void> {
   const payload: Record<string, unknown> = { userId, role }
   if (tokenVersion !== undefined) payload.tv = tokenVersion
   if (mfaVerified) payload.mfa = true
@@ -285,7 +316,9 @@ export async function requireCreator(): Promise<SessionUser> {
 }
 
 /** حارس خاص للوحة تحكم المُعَرِّب — يعيد { user } أو { error: Response } ليتناسب مع نمط API المحدد */
-export async function requireCreatorStudio(req: NextRequest): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
+export async function requireCreatorStudio(
+  req: NextRequest,
+): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
     const CREATOR_ONLY = ['creator', 'publisher']
@@ -317,7 +350,11 @@ export async function requireManager(): Promise<SessionUser> {
  */
 export function canEditMod(user: SessionUser, mod: { authorId: string }): boolean {
   if (user.role === 'admin' || user.role === 'owner') return true
-  if ((user.role === 'moderator' || user.role === 'creator' || user.role === 'publisher') && mod.authorId === user.id) return true
+  if (
+    (user.role === 'moderator' || user.role === 'creator' || user.role === 'publisher') &&
+    mod.authorId === user.id
+  )
+    return true
   return false
 }
 
@@ -425,7 +462,7 @@ export async function createSupabaseAuthUser(
   email: string,
   password: string,
   username: string,
-  options?: { emailConfirm?: boolean }
+  options?: { emailConfirm?: boolean },
 ): Promise<string | null> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceRoleKey || serviceRoleKey === 'REPLACE_WITH_SERVICE_ROLE_KEY') return null
@@ -436,8 +473,8 @@ export async function createSupabaseAuthUser(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
       },
       body: JSON.stringify({
         email,

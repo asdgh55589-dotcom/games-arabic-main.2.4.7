@@ -104,10 +104,7 @@ export async function sendPhoto(options: SendPhotoOptions): Promise<TelegramResp
 /**
  * إرسال منشور إلى القناة
  */
-export async function sendToChannel(
-  text: string,
-  photoUrl?: string
-): Promise<TelegramResponse> {
+export async function sendToChannel(text: string, photoUrl?: string): Promise<TelegramResponse> {
   const channelId = getChannelId()
   if (!channelId) {
     return { ok: false, description: 'Channel ID not configured' }

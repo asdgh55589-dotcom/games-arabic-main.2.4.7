@@ -111,7 +111,11 @@ async function executeJob(jobId: string): Promise<void> {
 /**
  * تنفيذ منشور Telegram
  */
-async function executeTelegramPost(job: { id: string; modId: string | null; payload: any }): Promise<void> {
+async function executeTelegramPost(job: {
+  id: string
+  modId: string | null
+  payload: any
+}): Promise<void> {
   if (!job.modId) throw new Error('No modId for telegram_post job')
 
   const mod = await db.mod.findUnique({
@@ -150,8 +154,7 @@ async function executeTelegramPost(job: { id: string; modId: string | null; payl
 /**
  * تنفيذ إشعار
  */
-async function executeNotification(job: { id: string; payload: any }): Promise<void>
-{
+async function executeNotification(job: { id: string; payload: any }): Promise<void> {
   // Placeholder for notification execution
   console.log(`[scheduler] Executing notification job ${job.id}`)
 }
@@ -180,7 +183,7 @@ async function generatePostContent(mod: any, downloadUrl: string): Promise<strin
       teamRelation: mod.teamRelation,
       files: [{ downloadUrl }],
     },
-    getDefaultTemplate()
+    getDefaultTemplate(),
   )
   return content
 }

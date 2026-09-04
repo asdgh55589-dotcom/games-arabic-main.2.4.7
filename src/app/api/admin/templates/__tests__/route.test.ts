@@ -49,7 +49,16 @@ describe('GET /api/admin/templates', () => {
 
   it('should return templates list', async () => {
     mockDb.notificationTemplate.findMany.mockResolvedValue([
-      { id: '1', type: 'comment_reply', channel: 'in_app', titleTemplate: 'test', bodyTemplate: 'body', variables: [], isActive: true, version: 1 },
+      {
+        id: '1',
+        type: 'comment_reply',
+        channel: 'in_app',
+        titleTemplate: 'test',
+        bodyTemplate: 'body',
+        variables: [],
+        isActive: true,
+        version: 1,
+      },
     ])
     mockDb.notificationTemplate.count.mockResolvedValue(1)
 
@@ -96,7 +105,14 @@ describe('POST /api/admin/templates', () => {
   it('should create a new template', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue(null)
     mockDb.notificationTemplate.create.mockResolvedValue({
-      id: 'new-1', type: 'like', channel: 'email', titleTemplate: 'إعجاب', bodyTemplate: 'حصل على إعجاب', variables: ['modTitle'], isActive: true, version: 1,
+      id: 'new-1',
+      type: 'like',
+      channel: 'email',
+      titleTemplate: 'إعجاب',
+      bodyTemplate: 'حصل على إعجاب',
+      variables: ['modTitle'],
+      isActive: true,
+      version: 1,
     })
 
     const req = makeReq('http://localhost/api/admin/templates', 'POST', {
@@ -118,10 +134,16 @@ describe('POST /api/admin/templates', () => {
 
   it('should update existing template and increment version', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
-      id: 'existing-1', type: 'like', channel: 'email', version: 1,
+      id: 'existing-1',
+      type: 'like',
+      channel: 'email',
+      version: 1,
     })
     mockDb.notificationTemplate.update.mockResolvedValue({
-      id: 'existing-1', type: 'like', channel: 'email', version: 2,
+      id: 'existing-1',
+      type: 'like',
+      channel: 'email',
+      version: 2,
     })
 
     const req = makeReq('http://localhost/api/admin/templates', 'POST', {
@@ -193,10 +215,16 @@ describe('PUT /api/admin/templates/[id]', () => {
 
   it('should update a template and increment version', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
-      id: 'tpl-1', type: 'like', channel: 'email', version: 3,
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      version: 3,
     })
     mockDb.notificationTemplate.update.mockResolvedValue({
-      id: 'tpl-1', type: 'like', channel: 'email', version: 4,
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      version: 4,
     })
 
     const req = makeReq('http://localhost/api/admin/templates/tpl-1', 'PUT', {
@@ -224,7 +252,10 @@ describe('PUT /api/admin/templates/[id]', () => {
 
   it('should reject invalid Handlebars on update (non-string)', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
-      id: 'tpl-1', type: 'like', channel: 'email', version: 3,
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      version: 3,
     })
 
     const req = makeReq('http://localhost/api/admin/templates/tpl-1', 'PUT', {
@@ -243,7 +274,10 @@ describe('DELETE /api/admin/templates/[id]', () => {
 
   it('should delete a template', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
-      id: 'tpl-1', type: 'like', channel: 'email', isActive: true,
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      isActive: true,
     })
     mockDb.notificationTemplate.count.mockResolvedValue(1) // other active templates exist
     mockDb.notificationTemplate.delete.mockResolvedValue({})
@@ -258,7 +292,10 @@ describe('DELETE /api/admin/templates/[id]', () => {
 
   it('should prevent deleting last active template', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
-      id: 'tpl-1', type: 'like', channel: 'email', isActive: true,
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      isActive: true,
     })
     mockDb.notificationTemplate.count.mockResolvedValue(0) // no other active
 

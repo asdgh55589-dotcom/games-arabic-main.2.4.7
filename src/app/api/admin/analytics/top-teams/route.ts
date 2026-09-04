@@ -27,7 +27,7 @@ export async function GET() {
         publishedMods.length > 0
           ? Math.round(
               publishedMods.reduce((sum, m) => sum + (m.qualityScore || 0), 0) /
-                publishedMods.length
+                publishedMods.length,
             )
           : 0
       const totalDownloads = publishedMods.reduce((sum, m) => sum + m.downloads, 0)
@@ -42,10 +42,7 @@ export async function GET() {
       }
     })
 
-    return ok(
-      { teams: result },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
-    )
+    return ok({ teams: result }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
     console.error('[admin/analytics/top-teams] failed:', err)
     return internalError('Failed to load top teams analytics')

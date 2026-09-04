@@ -2,7 +2,13 @@ import { Search } from 'lucide-react'
 
 import { AdminSurface } from '@/components/admin/admin-surface'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
 
 interface UsersFiltersProps {
@@ -37,7 +43,10 @@ export function UsersFilters({
         </div>
 
         <Select value={roleFilter} onValueChange={onRoleChange} aria-label="فلتر الأدوار">
-          <SelectTrigger aria-label="الدور الحالي" className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+          <SelectTrigger
+            aria-label="الدور الحالي"
+            className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto"
+          >
             <SelectValue placeholder="كل الأدوار" />
           </SelectTrigger>
           <SelectContent>
@@ -51,7 +60,10 @@ export function UsersFilters({
         </Select>
 
         <Select value={bannedFilter} onValueChange={onBannedChange} aria-label="فلتر حالة الحظر">
-          <SelectTrigger aria-label="حالة الحظر الحالية" className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto">
+          <SelectTrigger
+            aria-label="حالة الحظر الحالية"
+            className="h-10 w-full rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground xl:w-auto"
+          >
             <SelectValue placeholder="الكل" />
           </SelectTrigger>
           <SelectContent>

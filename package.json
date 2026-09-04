@@ -6,7 +6,12 @@
     "dev": "NODE_OPTIONS='--max-old-space-size=1536' next dev -p 3000 --turbopack 2>&1 | tee dev.log",
     "build": "npx prisma generate && npx prisma migrate deploy && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
-    "lint": "eslint .",
+    "check": "biome check src",
+    "check:fix": "biome check src --fix",
+    "format": "biome format src --write",
+    "lint": "biome lint src",
+    "lint:fix": "biome lint src --fix",
+    "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -102,6 +107,7 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",

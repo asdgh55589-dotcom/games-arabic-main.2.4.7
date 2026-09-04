@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
 
@@ -26,9 +23,10 @@ export async function GET(
         ...e,
         achievement: {
           ...e.achievement,
-          requirement: typeof e.achievement.requirement === 'string'
-            ? JSON.parse(e.achievement.requirement)
-            : e.achievement.requirement,
+          requirement:
+            typeof e.achievement.requirement === 'string'
+              ? JSON.parse(e.achievement.requirement)
+              : e.achievement.requirement,
         },
       })),
     })

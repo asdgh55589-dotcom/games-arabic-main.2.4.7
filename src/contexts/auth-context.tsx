@@ -1,6 +1,15 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  type ReactNode,
+} from 'react'
 import { usePathname } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import type { SessionUser } from '@/lib/auth'
@@ -102,17 +111,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [fetchUser])
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    error,
-    refresh,
-    logout,
-  }), [user, loading, error, refresh, logout])
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      error,
+      refresh,
+      logout,
+    }),
+    [user, loading, error, refresh, logout],
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

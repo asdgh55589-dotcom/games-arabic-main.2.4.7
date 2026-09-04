@@ -25,7 +25,9 @@ interface DownloadSectionProps {
 }
 
 export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(files.length > 0 ? [files[0].id] : []))
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    new Set(files.length > 0 ? [files[0].id] : []),
+  )
   const [warningUrl, setWarningUrl] = useState<string | null>(null)
   const [warningLinkId, setWarningLinkId] = useState<string | null>(null)
 
@@ -73,7 +75,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
           <PackageX className="h-6 w-6 text-muted-foreground/40" />
         </div>
         <h3 className="text-sm font-bold text-foreground/80">لا توجد ملفات تحميل</h3>
-        <p className="mt-1 text-[11px] text-muted-foreground/50">لم يتم رفع أي ملفات لهذا التعريب بعد.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground/50">
+          لم يتم رفع أي ملفات لهذا التعريب بعد.
+        </p>
       </div>
     )
   }
@@ -97,11 +101,11 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                 onClick={() => toggleExpand(file.id)}
                 className="flex w-full items-center gap-3 p-3.5 text-right transition-colors hover:bg-accent/20 cursor-pointer"
               >
-                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
-                  isExpanded
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-primary/10 text-primary/70'
-                }`}>
+                <div
+                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
+                    isExpanded ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary/70'
+                  }`}
+                >
                   <FileArchive className="h-5 w-5" />
                 </div>
 
@@ -118,8 +122,7 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                   {/* بيانات مدمجة */}
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-foreground/70">
                     <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      v{file.version}
+                      <Calendar className="h-3 w-3" />v{file.version}
                     </span>
                     <span className="text-border/40">|</span>
                     <span className="flex items-center gap-1">
@@ -134,11 +137,13 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                   </div>
                 </div>
 
-                <div className={`shrink-0 rounded-lg p-1.5 transition-all duration-200 ${
-                  isExpanded
-                    ? 'rotate-180 bg-primary/10 text-primary'
-                    : 'text-muted-foreground/40'
-                }`}>
+                <div
+                  className={`shrink-0 rounded-lg p-1.5 transition-all duration-200 ${
+                    isExpanded
+                      ? 'rotate-180 bg-primary/10 text-primary'
+                      : 'text-muted-foreground/40'
+                  }`}
+                >
                   <ChevronDown className="h-4 w-4" />
                 </div>
               </button>
@@ -147,13 +152,17 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
               {isExpanded && (
                 <div className="border-t border-border/30 bg-gradient-to-b from-transparent to-card/30 px-3.5 pb-3.5 pt-3">
                   {file.description && (
-                    <p className="mb-3 text-[11px] font-medium leading-relaxed text-foreground/80">{file.description}</p>
+                    <p className="mb-3 text-[11px] font-medium leading-relaxed text-foreground/80">
+                      {file.description}
+                    </p>
                   )}
 
                   {file.alert && (
                     <div className="mb-3 flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-                      <p className="text-[11px] font-bold leading-relaxed text-amber-100">{file.alert}</p>
+                      <p className="text-[11px] font-bold leading-relaxed text-amber-100">
+                        {file.alert}
+                      </p>
                     </div>
                   )}
 
@@ -177,7 +186,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                               <div className="text-[13px] font-bold text-foreground">
                                 {link.label || info.name}
                               </div>
-                              <div className="text-[10px] font-bold text-foreground/70">اضغط للتحميل</div>
+                              <div className="text-[10px] font-bold text-foreground/70">
+                                اضغط للتحميل
+                              </div>
                             </div>
                             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-primary" />
                           </button>
@@ -185,7 +196,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                       })}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-muted-foreground/50">لا توجد روابط تحميل لهذا الملف.</p>
+                    <p className="text-[11px] text-muted-foreground/50">
+                      لا توجد روابط تحميل لهذا الملف.
+                    </p>
                   )}
                 </div>
               )}
@@ -206,7 +219,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-foreground">تحذير — موقع خارجي</h3>
-                  <p className="text-[11px] text-muted-foreground/60">أنت على وشك الانتقال لموقع خارجي</p>
+                  <p className="text-[11px] text-muted-foreground/60">
+                    أنت على وشك الانتقال لموقع خارجي
+                  </p>
                 </div>
               </div>
             </div>
@@ -218,11 +233,18 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
               </p>
 
               <div className="mb-5 rounded-lg border border-border/30 bg-background/50 p-3">
-                <p className="break-all text-[10px] font-mono leading-relaxed text-primary/80">{warningUrl}</p>
+                <p className="break-all text-[10px] font-mono leading-relaxed text-primary/80">
+                  {warningUrl}
+                </p>
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={cancelDownload} className="px-4 min-h-[44px]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cancelDownload}
+                  className="px-4 min-h-[44px]"
+                >
                   إلغاء
                 </Button>
                 <Button size="sm" onClick={confirmDownload} className="gap-1.5 px-4 min-h-[44px]">

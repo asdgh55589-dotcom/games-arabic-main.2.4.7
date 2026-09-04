@@ -56,7 +56,7 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
     if (dbUrl && dbUrl.includes('postgresql')) {
       // PostgreSQL dump
       const { stdout } = await execAsync(
-        `pg_dump "${dbUrl}" 2>/dev/null || echo "pg_dump not available"`
+        `pg_dump "${dbUrl}" 2>/dev/null || echo "pg_dump not available"`,
       )
 
       if (stdout && !stdout.includes('not available')) {
@@ -94,7 +94,9 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
 async function createJsonBackup(filepath: string): Promise<void> {
   const [mods, users, games, teams, series] = await Promise.all([
     db.mod.findMany({ include: { game: true, teamRelation: true } }),
-    db.user.findMany({ select: { id: true, username: true, email: true, role: true, joinedAt: true } }),
+    db.user.findMany({
+      select: { id: true, username: true, email: true, role: true, joinedAt: true },
+    }),
     db.game.findMany(),
     db.team.findMany(),
     db.series.findMany(),
@@ -147,7 +149,7 @@ export async function cleanupOldBackups(): Promise<number> {
 
   for (const file of files) {
     const shouldDelete =
-      (file.time < monthlyCutoff) ||
+      file.time < monthlyCutoff ||
       (file.time < weeklyCutoff && files.indexOf(file) > MAX_WEEKLY) ||
       (file.time < dailyCutoff && files.indexOf(file) > MAX_DAILY)
 

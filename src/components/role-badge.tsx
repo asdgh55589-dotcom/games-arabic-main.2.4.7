@@ -32,7 +32,9 @@ export function RoleBadge({ role, size = 'sm', className }: RoleBadgeProps) {
   if (!ROLE_LABELS[safeRole] && !role) return null
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-bold ${color} ${sizeClass} ${className || ''}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full font-bold ${color} ${sizeClass} ${className || ''}`}
+    >
       {label}
     </span>
   )

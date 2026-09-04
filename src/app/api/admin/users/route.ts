@@ -11,11 +11,10 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin()
     const { searchParams } = new URL(req.url)
-    const { page, limit } = parsePagination(
-      searchParams.get('page'),
-      searchParams.get('limit'),
-      { limit: 50, maxLimit: 100 }
-    )
+    const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+      limit: 50,
+      maxLimit: 100,
+    })
     const search = searchParams.get('search')?.trim() || null
     const role = searchParams.get('role') || null
     const banned = searchParams.get('banned') || null
@@ -129,7 +128,14 @@ export async function POST(req: NextRequest) {
         bio: body.bio || null,
         role,
       },
-      select: { id: true, username: true, displayName: true, email: true, role: true, avatarUrl: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+      },
     })
 
     // ===== إنشاء حساب Supabase (FIX #2) =====
@@ -142,15 +148,16 @@ export async function POST(req: NextRequest) {
       const adminClient = createAdminClient()
       if (adminClient) {
         try {
-          const { data: supabaseUser, error: createError } = await adminClient.auth.admin.createUser({
-            email: body.email.toLowerCase(),
-            password: rawPassword,
-            email_confirm: true,
-            user_metadata: {
-              username,
-              display_name: body.displayName || username,
-            },
-          })
+          const { data: supabaseUser, error: createError } =
+            await adminClient.auth.admin.createUser({
+              email: body.email.toLowerCase(),
+              password: rawPassword,
+              email_confirm: true,
+              user_metadata: {
+                username,
+                display_name: body.displayName || username,
+              },
+            })
           if (createError) {
             console.error('[admin/users POST] Supabase creation failed:', createError)
             await db.user.delete({ where: { id: user.id } })

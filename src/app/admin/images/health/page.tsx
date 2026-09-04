@@ -6,7 +6,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from '@/components/ui/table'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -33,7 +40,13 @@ interface HealthData {
   currentPlatform: string
   currentDay: number
   monthlyStats: { totalChecked: number; totalBroken: number; healthPercent: number }
-  weeklySchedule: Array<{ week: number; platform: string; status: string; broken: number; logsCount: number }>
+  weeklySchedule: Array<{
+    week: number
+    platform: string
+    status: string
+    broken: number
+    logsCount: number
+  }>
   brokenImages: Array<{
     id: string
     modId: string
@@ -57,7 +70,12 @@ interface HealthData {
     completedAt: string | null
   }>
   todayProgress: { checked: number; total: number; batchSize: number; currentBatch: number }
-  cloudinaryUsage: { storage: number; storagePercent: number; bandwidth?: number; transformations?: number }
+  cloudinaryUsage: {
+    storage: number
+    storagePercent: number
+    bandwidth?: number
+    transformations?: number
+  }
 }
 
 export default function ImageHealthPage() {
@@ -104,7 +122,11 @@ export default function ImageHealthPage() {
       }
       await fetchHealthData()
     } catch (err) {
-      toast({ title: 'فشل الفحص اليدوي', description: err instanceof Error ? err.message : 'حاول مرة أخرى', variant: 'destructive' })
+      toast({
+        title: 'فشل الفحص اليدوي',
+        description: err instanceof Error ? err.message : 'حاول مرة أخرى',
+        variant: 'destructive',
+      })
     } finally {
       setIsChecking(false)
     }
@@ -152,7 +174,9 @@ export default function ImageHealthPage() {
         img.status,
       ]),
     ]
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const csv = rows
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -180,7 +204,9 @@ export default function ImageHealthPage() {
           <AlertTitle>فشل التحميل</AlertTitle>
           <AlertDescription>{error} — حاول تحديث الصفحة</AlertDescription>
         </Alert>
-        <Button onClick={fetchHealthData} className="mt-4">إعادة المحاولة</Button>
+        <Button onClick={fetchHealthData} className="mt-4">
+          إعادة المحاولة
+        </Button>
       </div>
     )
   }
@@ -188,9 +214,21 @@ export default function ImageHealthPage() {
   const stats = data?.monthlyStats ?? { totalChecked: 0, totalBroken: 0, healthPercent: 100 }
   const healthyCount = Math.max(0, stats.totalChecked - stats.totalBroken)
   const healthLabel =
-    stats.healthPercent >= 95 ? 'ممتاز' : stats.healthPercent >= 90 ? 'جيد' : stats.healthPercent >= 80 ? 'مقبول' : 'يحتاج اهتمام'
+    stats.healthPercent >= 95
+      ? 'ممتاز'
+      : stats.healthPercent >= 90
+        ? 'جيد'
+        : stats.healthPercent >= 80
+          ? 'مقبول'
+          : 'يحتاج اهتمام'
   const healthColor =
-    stats.healthPercent >= 95 ? 'text-emerald-600' : stats.healthPercent >= 90 ? 'text-green-600' : stats.healthPercent >= 80 ? 'text-amber-600' : 'text-red-600'
+    stats.healthPercent >= 95
+      ? 'text-emerald-600'
+      : stats.healthPercent >= 90
+        ? 'text-green-600'
+        : stats.healthPercent >= 80
+          ? 'text-amber-600'
+          : 'text-red-600'
 
   const currentWeek = data?.currentWeek ?? 1
   const currentPlatform = data?.currentPlatform ?? 'PC'
@@ -198,11 +236,17 @@ export default function ImageHealthPage() {
   const weeklySchedule = data?.weeklySchedule ?? []
   const brokenImages = data?.brokenImages ?? []
   const healthLogs = data?.healthLogs ?? []
-  const todayProgress = data?.todayProgress ?? { checked: 0, total: 0, batchSize: 0, currentBatch: 0 }
+  const todayProgress = data?.todayProgress ?? {
+    checked: 0,
+    total: 0,
+    batchSize: 0,
+    currentBatch: 0,
+  }
   const cloudinaryUsage = data?.cloudinaryUsage ?? { storage: 0, storagePercent: 0 }
 
   const storageGB = (cloudinaryUsage.storage / (1024 * 1024 * 1024)).toFixed(2)
-  const progressPercent = todayProgress.total > 0 ? (todayProgress.checked / todayProgress.total) * 100 : 0
+  const progressPercent =
+    todayProgress.total > 0 ? (todayProgress.checked / todayProgress.total) * 100 : 0
 
   return (
     <div className="container mx-auto py-6 space-y-8" dir="rtl">
@@ -212,11 +256,17 @@ export default function ImageHealthPage() {
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <span className="text-3xl">🖼️</span> صحة الصور في الموقع
           </h1>
-          <p className="text-muted-foreground mt-2">نظام ذكي لمراقبة صحة الصور وتوزيع الحمل شهرياً — كل أسبوع منصة، كل يوم دفعة</p>
+          <p className="text-muted-foreground mt-2">
+            نظام ذكي لمراقبة صحة الصور وتوزيع الحمل شهرياً — كل أسبوع منصة، كل يوم دفعة
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleManualCheck} disabled={isChecking} className="gap-2">
-            {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {isChecking ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             فحص يدوي الآن
           </Button>
           <Button variant="outline" onClick={handleExport} className="gap-2">
@@ -301,12 +351,17 @@ export default function ImageHealthPage() {
             </div>
             <div className="rounded-lg bg-muted/50 p-4 text-center">
               <p className="text-sm text-muted-foreground">اليوم</p>
-              <p className="text-2xl font-bold mt-1">{currentDay === -1 ? 'راحة' : `${currentDay + 1} من 5`}</p>
+              <p className="text-2xl font-bold mt-1">
+                {currentDay === -1 ? 'راحة' : `${currentDay + 1} من 5`}
+              </p>
             </div>
             <div className="rounded-lg bg-muted/50 p-4 text-center">
               <p className="text-sm text-muted-foreground">الحالة</p>
               <div className="mt-2 flex justify-center">
-                <Badge variant={currentDay === -1 ? 'secondary' : 'default'} className="text-sm px-3 py-1">
+                <Badge
+                  variant={currentDay === -1 ? 'secondary' : 'default'}
+                  className="text-sm px-3 py-1"
+                >
                   {currentDay === -1 ? 'يوم راحة (الخميس/الجمعة)' : 'جاري الفحص'}
                 </Badge>
               </div>
@@ -324,7 +379,8 @@ export default function ImageHealthPage() {
               </div>
               <Progress value={progressPercent} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                {progressPercent.toFixed(0)}% مكتمل — كل يوم يتم فحص ~{todayProgress.batchSize} تعديل
+                {progressPercent.toFixed(0)}% مكتمل — كل يوم يتم فحص ~{todayProgress.batchSize}{' '}
+                تعديل
               </p>
             </div>
           )}
@@ -332,7 +388,10 @@ export default function ImageHealthPage() {
             <Alert>
               <Calendar className="h-4 w-4" />
               <AlertTitle>يوم راحة</AlertTitle>
-              <AlertDescription>اليوم الخميس أو الجمعة — لا يوجد فحص مجدول. سيتم استئناف الفحص يوم السبت للمنصة التالية.</AlertDescription>
+              <AlertDescription>
+                اليوم الخميس أو الجمعة — لا يوجد فحص مجدول. سيتم استئناف الفحص يوم السبت للمنصة
+                التالية.
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -348,7 +407,9 @@ export default function ImageHealthPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {weeklySchedule.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات بعد — سيبدأ الجدول مع أول فحص</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              لا توجد بيانات بعد — سيبدأ الجدول مع أول فحص
+            </p>
           ) : (
             weeklySchedule.map((week) => (
               <div
@@ -364,12 +425,22 @@ export default function ImageHealthPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">
-                      {week.status === 'complete' ? '✅' : week.status === 'in_progress' ? '🔄' : '⏸️'}
+                      {week.status === 'complete'
+                        ? '✅'
+                        : week.status === 'in_progress'
+                          ? '🔄'
+                          : '⏸️'}
                     </div>
                     <div>
-                      <h3 className="font-bold">الأسبوع {week.week}: {week.platform}</h3>
+                      <h3 className="font-bold">
+                        الأسبوع {week.week}: {week.platform}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {week.status === 'complete' ? `مكتمل — ${week.logsCount}/5 أيام` : week.status === 'in_progress' ? 'جاري — هذا الأسبوع' : 'في الانتظار'}
+                        {week.status === 'complete'
+                          ? `مكتمل — ${week.logsCount}/5 أيام`
+                          : week.status === 'in_progress'
+                            ? 'جاري — هذا الأسبوع'
+                            : 'في الانتظار'}
                       </p>
                     </div>
                   </div>
@@ -397,7 +468,9 @@ export default function ImageHealthPage() {
             <div className="text-center py-12">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">ممتاز! لا توجد صور مكسورة</h3>
-              <p className="text-muted-foreground">جميع الصور تعمل بشكل صحيح — نسبة الصحة {stats.healthPercent}%</p>
+              <p className="text-muted-foreground">
+                جميع الصور تعمل بشكل صحيح — نسبة الصحة {stats.healthPercent}%
+              </p>
             </div>
           ) : (
             <>
@@ -415,10 +488,15 @@ export default function ImageHealthPage() {
                     {brokenImages.map((img) => (
                       <TableRow key={img.id}>
                         <TableCell>
-                          <Link href={`/admin/mods/${img.mod.id}/edit`} className="font-medium hover:underline text-primary">
+                          <Link
+                            href={`/admin/mods/${img.mod.id}/edit`}
+                            className="font-medium hover:underline text-primary"
+                          >
                             {img.mod.name}
                           </Link>
-                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">{img.imageUrl.slice(0, 50)}...</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {img.imageUrl.slice(0, 50)}...
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
@@ -432,14 +510,27 @@ export default function ImageHealthPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {formatDistanceToNow(new Date(img.detectedAt), { addSuffix: true, locale: ar })}
+                          {formatDistanceToNow(new Date(img.detectedAt), {
+                            addSuffix: true,
+                            locale: ar,
+                          })}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleMarkFixed(img.id)} className="gap-1 min-h-[44px]">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleMarkFixed(img.id)}
+                              className="gap-1 min-h-[44px]"
+                            >
                               <Wrench className="h-3 w-3" /> إصلاح
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => handleMarkIgnored(img.id)} className="gap-1 min-h-[44px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleMarkIgnored(img.id)}
+                              className="gap-1 min-h-[44px]"
+                            >
                               <EyeOff className="h-3 w-3" /> تجاهل
                             </Button>
                           </div>
@@ -454,14 +545,27 @@ export default function ImageHealthPage() {
                   <Card key={img.id} className="overflow-hidden">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
-                        <Link href={`/admin/mods/${img.mod.id}/edit`} className="font-bold hover:underline text-primary line-clamp-2 flex-1">
+                        <Link
+                          href={`/admin/mods/${img.mod.id}/edit`}
+                          className="font-bold hover:underline text-primary line-clamp-2 flex-1"
+                        >
                           {img.mod.name}
                         </Link>
                         <Badge
-                          variant={img.status === 'fixed' ? 'default' : img.status === 'ignored' ? 'secondary' : 'destructive'}
+                          variant={
+                            img.status === 'fixed'
+                              ? 'default'
+                              : img.status === 'ignored'
+                                ? 'secondary'
+                                : 'destructive'
+                          }
                           className="shrink-0 text-xs"
                         >
-                          {img.status === 'fixed' ? 'تم الإصلاح' : img.status === 'ignored' ? 'متجاهل' : 'مكسور'}
+                          {img.status === 'fixed'
+                            ? 'تم الإصلاح'
+                            : img.status === 'ignored'
+                              ? 'متجاهل'
+                              : 'مكسور'}
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -476,12 +580,17 @@ export default function ImageHealthPage() {
                         </Badge>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(img.detectedAt), { addSuffix: true, locale: ar })}
+                          {formatDistanceToNow(new Date(img.detectedAt), {
+                            addSuffix: true,
+                            locale: ar,
+                          })}
                         </span>
                       </div>
                       <div className="rounded-md bg-muted p-2">
                         <p className="text-xs text-muted-foreground mb-1">الرابط:</p>
-                        <p className="text-xs break-all font-mono leading-relaxed">{img.imageUrl}</p>
+                        <p className="text-xs break-all font-mono leading-relaxed">
+                          {img.imageUrl}
+                        </p>
                       </div>
                       <div className="flex gap-2 pt-1">
                         <Button
@@ -531,12 +640,17 @@ export default function ImageHealthPage() {
               <Alert variant="destructive" className="mt-3">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>تحذير: التخزين يقترب من الحد الأقصى</AlertTitle>
-                <AlertDescription>استخدمت {cloudinaryUsage.storagePercent}% من المساحة المتاحة (25GB). فكّر في تنظيف الصور القديمة.</AlertDescription>
+                <AlertDescription>
+                  استخدمت {cloudinaryUsage.storagePercent}% من المساحة المتاحة (25GB). فكّر في تنظيف
+                  الصور القديمة.
+                </AlertDescription>
               </Alert>
             )}
             {cloudinaryUsage.storagePercent <= 80 && (
               <p className="text-xs text-muted-foreground mt-2">
-                {cloudinaryUsage.storagePercent < 50 ? '✅ الاستخدام ضمن الحدود الآمنة' : '⚠️ الاستخدام متوسط — راقب الاستهلاك'}
+                {cloudinaryUsage.storagePercent < 50
+                  ? '✅ الاستخدام ضمن الحدود الآمنة'
+                  : '⚠️ الاستخدام متوسط — راقب الاستهلاك'}
               </p>
             )}
           </div>
@@ -545,17 +659,23 @@ export default function ImageHealthPage() {
             <div className="rounded-lg bg-muted/50 p-3 text-center">
               <p className="text-sm text-muted-foreground">النطاق (Bandwidth)</p>
               <p className="text-lg font-bold mt-1">
-                {cloudinaryUsage.bandwidth ? (cloudinaryUsage.bandwidth / 1024 / 1024 / 1024).toFixed(2) + ' GB' : '—'}
+                {cloudinaryUsage.bandwidth
+                  ? (cloudinaryUsage.bandwidth / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+                  : '—'}
               </p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
               <p className="text-sm text-muted-foreground">التحويلات</p>
               <p className="text-lg font-bold mt-1">
-                {cloudinaryUsage.transformations ? cloudinaryUsage.transformations.toLocaleString('ar-EG') : '—'}
+                {cloudinaryUsage.transformations
+                  ? cloudinaryUsage.transformations.toLocaleString('ar-EG')
+                  : '—'}
               </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center">يتم التحديث تلقائياً عند كل فحص — الحد المجاني 25GB تخزين</p>
+          <p className="text-xs text-muted-foreground text-center">
+            يتم التحديث تلقائياً عند كل فحص — الحد المجاني 25GB تخزين
+          </p>
         </CardContent>
       </Card>
 
@@ -569,7 +689,9 @@ export default function ImageHealthPage() {
         </CardHeader>
         <CardContent>
           {healthLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">لا يوجد سجل بعد — سيظهر هنا بعد أول فحص</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              لا يوجد سجل بعد — سيظهر هنا بعد أول فحص
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -597,11 +719,29 @@ export default function ImageHealthPage() {
                       <TableCell>{log.day === -1 ? 'راحة' : log.day + 1}</TableCell>
                       <TableCell>{log.checked}</TableCell>
                       <TableCell>
-                        {log.broken > 0 ? <Badge variant="destructive">{log.broken}</Badge> : <span className="text-muted-foreground">0</span>}
+                        {log.broken > 0 ? (
+                          <Badge variant="destructive">{log.broken}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={log.status === 'completed' ? 'default' : log.status === 'failed' ? 'destructive' : 'secondary'}>
-                          {log.status === 'completed' ? '✅ مكتمل' : log.status === 'failed' ? '❌ فشل' : log.status === 'in_progress' ? '🔄 جاري' : '⏸️ متوقف'}
+                        <Badge
+                          variant={
+                            log.status === 'completed'
+                              ? 'default'
+                              : log.status === 'failed'
+                                ? 'destructive'
+                                : 'secondary'
+                          }
+                        >
+                          {log.status === 'completed'
+                            ? '✅ مكتمل'
+                            : log.status === 'failed'
+                              ? '❌ فشل'
+                              : log.status === 'in_progress'
+                                ? '🔄 جاري'
+                                : '⏸️ متوقف'}
                         </Badge>
                       </TableCell>
                     </TableRow>

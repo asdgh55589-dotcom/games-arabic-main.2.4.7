@@ -54,7 +54,7 @@ export function NewsFeatured() {
           }
         })
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     )
     itemRefs.current.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
@@ -92,17 +92,41 @@ export function NewsFeatured() {
             >
               {item.imageUrl && (
                 <div className="relative h-28 sm:h-40 overflow-hidden">
-                  <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 768px) 50vw, 33vw" quality={75} className="object-cover transition-transform group-hover:scale-105" onError={(e) => { const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }; if (!img.dataset.fallback) { img.dataset.fallback = '1'; img.src = '/hero-bg.jpg' } }} />
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    quality={75}
+                    className="object-cover transition-transform group-hover:scale-105"
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+                      if (!img.dataset.fallback) {
+                        img.dataset.fallback = '1'
+                        img.src = '/hero-bg.jpg'
+                      }
+                    }}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 </div>
               )}
               <div className="p-2.5 sm:p-4">
                 <div className="mb-1.5 flex items-center gap-1.5">
-                  <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-primary">{item.category}</span>
-                  <span className="text-[10px] sm:text-[11px] text-muted-foreground">{timeAgo(item.publishAt)}</span>
+                  <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-primary">
+                    {item.category}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] text-muted-foreground">
+                    {timeAgo(item.publishAt)}
+                  </span>
                 </div>
-                <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-foreground group-hover:text-primary">{item.title}</h3>
-                {item.summary && <p className="mt-1 line-clamp-2 text-[11px] sm:text-xs text-muted-foreground">{item.summary}</p>}
+                <h3 className="line-clamp-2 text-xs sm:text-sm font-bold text-foreground group-hover:text-primary">
+                  {item.title}
+                </h3>
+                {item.summary && (
+                  <p className="mt-1 line-clamp-2 text-[11px] sm:text-xs text-muted-foreground">
+                    {item.summary}
+                  </p>
+                )}
               </div>
             </Link>
           )

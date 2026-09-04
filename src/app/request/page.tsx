@@ -9,7 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import {
@@ -158,17 +164,25 @@ export default function RequestPage() {
     fetch('/api/sections', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        const sections = json?.data as Array<{ key: string; name: string; nameEn: string; icon: string }> | undefined
+        const sections = json?.data as
+          | Array<{ key: string; name: string; nameEn: string; icon: string }>
+          | undefined
         if (sections && sections.length > 0) {
           const mapped: SectionOption[] = sections
             .filter((s) => !EXCLUDED_PLATFORMS.has(s.key))
             .map((s) => ({
               value: s.key,
-              label: LABEL_MAP[s.key] || s.nameEn?.replace(' Arabic', '') || s.name.replace(' ARABIC', '') || s.key,
+              label:
+                LABEL_MAP[s.key] ||
+                s.nameEn?.replace(' Arabic', '') ||
+                s.name.replace(' ARABIC', '') ||
+                s.key,
               icon: resolvePlatformIcon(s.key),
             }))
           const existingKeys = new Set(mapped.map((m) => m.value))
-          const missing = FALLBACK_PLATFORMS.filter((f) => !existingKeys.has(f.value) && ['Android', 'PS5'].includes(f.value))
+          const missing = FALLBACK_PLATFORMS.filter(
+            (f) => !existingKeys.has(f.value) && ['Android', 'PS5'].includes(f.value),
+          )
           setPlatformOptions([...mapped, ...missing])
         }
       })
@@ -199,7 +213,9 @@ export default function RequestPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`/api/mod-requests/search?q=${encodeURIComponent(value.trim())}`, { cache: 'no-store' })
+        const res = await fetch(`/api/mod-requests/search?q=${encodeURIComponent(value.trim())}`, {
+          cache: 'no-store',
+        })
         const json = await res.json()
         const list: SearchResult[] = json.data?.requests || []
         if (list.length > 0) {
@@ -225,12 +241,21 @@ export default function RequestPage() {
       })
       if (res.ok) {
         toast({ title: 'تم دعم الطلب بنجاح' })
-        setSearchResults((prev) => prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)))
-        setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)))
+        setSearchResults((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)),
+        )
+        setRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)),
+        )
       } else {
         const json = await res.json().catch(() => ({}))
-        if (res.status === 401) toast({ title: 'يجب تسجيل الدخول لدعم الطلبات', variant: 'destructive' })
-        else toast({ title: json.error?.details || json.error?.message || 'فشل الدعم', variant: 'destructive' })
+        if (res.status === 401)
+          toast({ title: 'يجب تسجيل الدخول لدعم الطلبات', variant: 'destructive' })
+        else
+          toast({
+            title: json.error?.details || json.error?.message || 'فشل الدعم',
+            variant: 'destructive',
+          })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -245,7 +270,8 @@ export default function RequestPage() {
     setStoreLinks((prev) => [...prev, ''])
   }
   const removeStoreLink = (idx: number) => setStoreLinks((prev) => prev.filter((_, i) => i !== idx))
-  const updateStoreLink = (idx: number, val: string) => setStoreLinks((prev) => prev.map((v, i) => (i === idx ? val : v)))
+  const updateStoreLink = (idx: number, val: string) =>
+    setStoreLinks((prev) => prev.map((v, i) => (i === idx ? val : v)))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -290,7 +316,10 @@ export default function RequestPage() {
         setSearchResults([])
         fetchRequests()
       } else {
-        toast({ title: (json.error?.details as string) || json.error?.message || 'فشل', variant: 'destructive' })
+        toast({
+          title: (json.error?.details as string) || json.error?.message || 'فشل',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -306,12 +335,18 @@ export default function RequestPage() {
         body: JSON.stringify({ action: 'boost' }),
       })
       if (res.ok) {
-        setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)))
+        setRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, interestCount: r.interestCount + 1 } : r)),
+        )
         toast({ title: 'تم دعم الطلب' })
-      } else if (res.status === 401) toast({ title: 'يجب تسجيل الدخول لدعم الطلبات', variant: 'destructive' })
+      } else if (res.status === 401)
+        toast({ title: 'يجب تسجيل الدخول لدعم الطلبات', variant: 'destructive' })
       else {
         const json = await res.json().catch(() => ({}))
-        toast({ title: json.error?.details || json.error?.message || 'فشل الدعم', variant: 'destructive' })
+        toast({
+          title: json.error?.details || json.error?.message || 'فشل الدعم',
+          variant: 'destructive',
+        })
       }
     } catch {}
   }
@@ -323,7 +358,9 @@ export default function RequestPage() {
           <Gamepad2 className="h-7 w-7 text-primary" />
         </div>
         <h1 className="text-3xl font-bold mb-2">طلب تعريب</h1>
-        <p className="text-muted-foreground max-w-xl mx-auto">اطلب تعريب لعبة تحبها — سيقوم المُعَرِّبون بمراجعة الطلبات الأكثر دعماً</p>
+        <p className="text-muted-foreground max-w-xl mx-auto">
+          اطلب تعريب لعبة تحبها — سيقوم المُعَرِّبون بمراجعة الطلبات الأكثر دعماً
+        </p>
       </div>
 
       <div className="grid lg:grid-cols-5 gap-6">
@@ -357,7 +394,9 @@ export default function RequestPage() {
                         required
                         autoComplete="off"
                       />
-                      {searching && <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                      {searching && (
+                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
                     </div>
                     {showSuggestions && searchResults.length > 0 && (
                       <div className="border rounded-lg p-3 bg-muted/40 mt-2 space-y-2">
@@ -366,14 +405,23 @@ export default function RequestPage() {
                           هذه اللعبة مطلوبة بالفعل! ادعمها بدلاً من إنشاء طلب جديد:
                         </p>
                         {searchResults.map((req) => (
-                          <div key={req.id} className="flex items-center justify-between p-2 hover:bg-muted rounded-lg border bg-card">
+                          <div
+                            key={req.id}
+                            className="flex items-center justify-between p-2 hover:bg-muted rounded-lg border bg-card"
+                          >
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{req.gameName}</p>
                               <p className="text-xs text-muted-foreground">
                                 {req.platform} • بواسطة {req.user.username}
                               </p>
                             </div>
-                            <Button type="button" size="sm" variant="outline" onClick={() => handleLikeExisting(req.id)} className="shrink-0 mr-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleLikeExisting(req.id)}
+                              className="shrink-0 mr-2"
+                            >
                               <Heart className="h-4 w-4 ml-1" /> ادعم ({req.interestCount})
                             </Button>
                           </div>
@@ -407,7 +455,8 @@ export default function RequestPage() {
 
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5">
-                      <Link2 className="h-4 w-4 text-muted-foreground" /> روابط اللعبة على المتاجر الرسمية
+                      <Link2 className="h-4 w-4 text-muted-foreground" /> روابط اللعبة على المتاجر
+                      الرسمية
                     </Label>
                     <div className="space-y-2">
                       {storeLinks.map((link, idx) => (
@@ -418,13 +467,24 @@ export default function RequestPage() {
                               type="url"
                               value={link}
                               onChange={(e) => updateStoreLink(idx, e.target.value)}
-                              placeholder={idx === 0 ? 'https://store.steampowered.com/app/...' : 'https://store.playstation.com/...'}
+                              placeholder={
+                                idx === 0
+                                  ? 'https://store.steampowered.com/app/...'
+                                  : 'https://store.playstation.com/...'
+                              }
                               dir="ltr"
                               className="pr-10 text-left"
                             />
                           </div>
                           {storeLinks.length > 1 && (
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStoreLink(idx)} className="shrink-0" aria-label="حذف الرابط">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeStoreLink(idx)}
+                              className="shrink-0"
+                              aria-label="حذف الرابط"
+                            >
                               <X className="h-4 w-4" />
                             </Button>
                           )}
@@ -432,11 +492,19 @@ export default function RequestPage() {
                       ))}
                     </div>
                     {storeLinks.length < 5 && (
-                      <Button type="button" variant="outline" size="sm" onClick={addStoreLink} className="w-full border-dashed">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addStoreLink}
+                        className="w-full border-dashed"
+                      >
                         <Plus className="h-4 w-4 ml-1" /> إضافة رابط آخر
                       </Button>
                     )}
-                    <p className="text-[11px] text-muted-foreground">اختياري — حتى 5 روابط: Steam, PlayStation Store, Xbox, Nintendo eShop, Epic...</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      اختياري — حتى 5 روابط: Steam, PlayStation Store, Xbox, Nintendo eShop, Epic...
+                    </p>
                   </div>
 
                   <div className="space-y-1.5">
@@ -454,7 +522,11 @@ export default function RequestPage() {
                   </div>
 
                   <Button type="submit" disabled={submitting} className="w-full">
-                    {submitting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Send className="h-4 w-4 ml-2" />}
+                    {submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : (
+                      <Send className="h-4 w-4 ml-2" />
+                    )}
                     إرسال الطلب
                   </Button>
                 </form>
@@ -467,7 +539,11 @@ export default function RequestPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" /> الطلبات
-              {requests.length > 0 && <span className="text-sm font-normal text-muted-foreground">({requests.length})</span>}
+              {requests.length > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({requests.length})
+                </span>
+              )}
             </h2>
             {requests.length > 0 && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -486,7 +562,9 @@ export default function RequestPage() {
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                   <Gamepad2 className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="text-muted-foreground text-sm">لا توجد طلبات حالياً — كن أول من يطلب تعريباً</p>
+                <p className="text-muted-foreground text-sm">
+                  لا توجد طلبات حالياً — كن أول من يطلب تعريباً
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -514,18 +592,31 @@ export default function RequestPage() {
                               {links.length > 0 && (
                                 <span className="flex items-center gap-1 flex-wrap">
                                   {links.map((lnk, i) => (
-                                    <a key={i} href={lnk} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-xs bg-primary/5 px-1.5 py-0.5 rounded">
-                                      <ExternalLink className="h-3 w-3" /> متجر {links.length > 1 ? i + 1 : ''}
+                                    <a
+                                      key={i}
+                                      href={lnk}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-primary hover:underline text-xs bg-primary/5 px-1.5 py-0.5 rounded"
+                                    >
+                                      <ExternalLink className="h-3 w-3" /> متجر{' '}
+                                      {links.length > 1 ? i + 1 : ''}
                                     </a>
                                   ))}
                                 </span>
                               )}
                             </div>
-                            {r.notes && <p className="text-sm mt-2 bg-muted/50 rounded-lg p-2.5 whitespace-pre-wrap break-words">{r.notes}</p>}
+                            {r.notes && (
+                              <p className="text-sm mt-2 bg-muted/50 rounded-lg p-2.5 whitespace-pre-wrap break-words">
+                                {r.notes}
+                              </p>
+                            )}
                             <div className="flex items-center gap-2 mt-2.5 text-xs text-muted-foreground flex-wrap">
                               <Avatar className="h-5 w-5">
                                 <AvatarImage src={r.user.avatarUrl || undefined} />
-                                <AvatarFallback className="text-[10px]">{r.user.username[0]?.toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-[10px]">
+                                  {r.user.username[0]?.toUpperCase()}
+                                </AvatarFallback>
                               </Avatar>
                               <span>{r.user.username}</span>
                               <span>•</span>
@@ -534,14 +625,21 @@ export default function RequestPage() {
                             {r.acceptedUser && (
                               <div className="mt-2">
                                 <Badge variant="secondary" className="text-xs gap-1">
-                                  <User className="h-3 w-3" /> جاري العمل بواسطة {r.acceptedUser.username}
+                                  <User className="h-3 w-3" /> جاري العمل بواسطة{' '}
+                                  {r.acceptedUser.username}
                                 </Badge>
                               </div>
                             )}
                           </div>
                         </div>
                         <div className="flex flex-col items-center gap-2 shrink-0">
-                          <Button variant="outline" size="sm" onClick={() => handleBoost(r.id)} className="gap-1" disabled={r.status === 'completed'}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleBoost(r.id)}
+                            className="gap-1"
+                            disabled={r.status === 'completed'}
+                          >
                             <Heart className="h-4 w-4" /> {r.interestCount}
                           </Button>
                         </div>

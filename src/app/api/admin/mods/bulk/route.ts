@@ -9,7 +9,11 @@ export async function PUT(req: NextRequest) {
   try {
     const user = await requireModerator()
     const body = await req.json()
-    const { ids, action, value } = body as { ids: string[]; action: string; value: boolean | string }
+    const { ids, action, value } = body as {
+      ids: string[]
+      action: string
+      value: boolean | string
+    }
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return validationFail({ ids: 'ids required' })

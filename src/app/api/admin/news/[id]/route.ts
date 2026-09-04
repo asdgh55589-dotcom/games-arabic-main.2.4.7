@@ -45,7 +45,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.visible !== undefined) data.visible = body.visible
     if (body.order !== undefined) data.order = body.order
     if (body.publishAt !== undefined) data.publishAt = new Date(body.publishAt)
-    if (body.expiresAt !== undefined) data.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null
+    if (body.expiresAt !== undefined)
+      data.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null
 
     const news = await db.news.update({ where: { id }, data })
     return ok(news)

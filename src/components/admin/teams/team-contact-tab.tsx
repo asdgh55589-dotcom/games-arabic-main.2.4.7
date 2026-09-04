@@ -41,7 +41,9 @@ export function TeamContactTab({ links, onChange }: TeamContactTabProps) {
             className="w-36 shrink-0 rounded-md border border-border bg-background px-2 py-2 text-sm"
           >
             {Object.entries(TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
           <Input
@@ -60,7 +62,8 @@ export function TeamContactTab({ links, onChange }: TeamContactTabProps) {
             variant="ghost"
             className="h-8 w-8 shrink-0 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
             onClick={() => onChange(links.filter((_, idx) => idx !== i))}
-            title="حذف الرابط" aria-label="حذف الرابط"
+            title="حذف الرابط"
+            aria-label="حذف الرابط"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -68,13 +71,15 @@ export function TeamContactTab({ links, onChange }: TeamContactTabProps) {
       ))}
       <Button
         variant="outline"
-        size="sm" className="min-h-[44px]"
+        size="sm"
+        className="min-h-[44px]"
         onClick={() => onChange([...links, { type: 'website', label: '', url: '' }])}
       >
         <Plus className="ml-1 h-3 w-3" /> إضافة رابط
       </Button>
       <p className="text-xs text-muted-foreground">
-        يتم حفظ الروابط بزر «حفظ» أعلى الصفحة. روابط الموقع والديسكورد تُزامَن تلقائياً مع الحقول القديمة.
+        يتم حفظ الروابط بزر «حفظ» أعلى الصفحة. روابط الموقع والديسكورد تُزامَن تلقائياً مع الحقول
+        القديمة.
       </p>
     </div>
   )

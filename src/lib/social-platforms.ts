@@ -1,4 +1,12 @@
-import { SiDiscord, SiGithub, SiInstagram, SiTiktok, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
+import {
+  SiDiscord,
+  SiGithub,
+  SiInstagram,
+  SiTiktok,
+  SiTelegram,
+  SiX,
+  SiYoutube,
+} from 'react-icons/si'
 import { Globe } from 'lucide-react'
 import type { IconType } from 'react-icons'
 

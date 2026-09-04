@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react'
 
 interface BookmarksContextValue {
   bookmarkedIds: Set<string>
@@ -37,7 +45,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return
       const { data } = await res.json()
       if (data?.bookmarkedIds) {
-        setBookmarkedIds(prev => {
+        setBookmarkedIds((prev) => {
           const next = new Set(prev)
           for (const id of data.bookmarkedIds) next.add(id)
           return next
@@ -49,23 +57,26 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // تسجيل modIds جديدة وجلبها
-  const registerModIds = useCallback((modIds: string[]) => {
-    // Filter out already registered IDs using ref
-    const newIds = modIds.filter(id => !registeredIdsRef.current.has(id))
-    if (newIds.length === 0) return
+  const registerModIds = useCallback(
+    (modIds: string[]) => {
+      // Filter out already registered IDs using ref
+      const newIds = modIds.filter((id) => !registeredIdsRef.current.has(id))
+      if (newIds.length === 0) return
 
-    // Mark as registered immediately
-    for (const id of newIds) {
-      registeredIdsRef.current.add(id)
-    }
+      // Mark as registered immediately
+      for (const id of newIds) {
+        registeredIdsRef.current.add(id)
+      }
 
-    setPendingIds(prev => {
-      const next = new Set(prev)
-      const idsToAdd = newIds.filter(id => !bookmarkedIds.has(id) && !prev.has(id))
-      for (const id of idsToAdd) next.add(id)
-      return next
-    })
-  }, [bookmarkedIds])
+      setPendingIds((prev) => {
+        const next = new Set(prev)
+        const idsToAdd = newIds.filter((id) => !bookmarkedIds.has(id) && !prev.has(id))
+        for (const id of idsToAdd) next.add(id)
+        return next
+      })
+    },
+    [bookmarkedIds],
+  )
 
   // جلب الـ pending IDs عند تغيرها
   useEffect(() => {
@@ -77,7 +88,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
 
   // toggle bookmark محلياً
   const toggleBookmark = useCallback((modId: string) => {
-    setBookmarkedIds(prev => {
+    setBookmarkedIds((prev) => {
       const next = new Set(prev)
       if (next.has(modId)) {
         next.delete(modId)
@@ -91,7 +102,9 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
   const isBookmarked = useCallback((modId: string) => bookmarkedIds.has(modId), [bookmarkedIds])
 
   return (
-    <BookmarksContext.Provider value={{ bookmarkedIds, isBookmarked, toggleBookmark, registerModIds }}>
+    <BookmarksContext.Provider
+      value={{ bookmarkedIds, isBookmarked, toggleBookmark, registerModIds }}
+    >
       {children}
     </BookmarksContext.Provider>
   )

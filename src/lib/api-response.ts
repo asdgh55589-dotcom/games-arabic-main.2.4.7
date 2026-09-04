@@ -46,7 +46,7 @@ export function ok<T>(data: T, init?: ResponseInit): NextResponse {
 export function okPaginated<T>(
   data: T,
   pagination: { page: number; limit: number; total: number; totalPages: number },
-  init?: ResponseInit
+  init?: ResponseInit,
 ): NextResponse {
   return NextResponse.json<ApiResponsePaginated<T>>({ data, pagination }, init)
 }
@@ -56,7 +56,7 @@ export function okPaginatedWithMeta<T>(
   data: T,
   pagination: { page: number; limit: number; total: number; totalPages: number },
   meta: Record<string, unknown>,
-  init?: ResponseInit
+  init?: ResponseInit,
 ): NextResponse {
   return NextResponse.json({ data, pagination, meta }, init)
 }
@@ -68,12 +68,9 @@ export function fail(
   code: string,
   message: string,
   status: number,
-  details?: unknown
+  details?: unknown,
 ): NextResponse {
-  return NextResponse.json<ApiResponseError>(
-    { error: { code, message, details } },
-    { status }
-  )
+  return NextResponse.json<ApiResponseError>({ error: { code, message, details } }, { status })
 }
 
 /** 404 — Resource not found */
@@ -86,7 +83,8 @@ export const unauthorized = (msg = 'Unauthorized') => fail('UNAUTHORIZED', msg, 
 export const forbidden = (msg = 'Forbidden') => fail('FORBIDDEN', msg, 403)
 
 /** 422 — Validation failed */
-export const validationFail = (details?: unknown) => fail('VALIDATION_ERROR', 'Invalid input', 422, details)
+export const validationFail = (details?: unknown) =>
+  fail('VALIDATION_ERROR', 'Invalid input', 422, details)
 
 /** 429 — Rate limited */
 export const rateLimited = () => fail('RATE_LIMITED', 'Too many requests', 429)

@@ -2,9 +2,24 @@
 
 import { useMemo } from 'react'
 import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ComposedChart,
+  Line,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart'
 import { ChartWrapper } from './chart-wrapper'
 
 interface GrowthData {
@@ -28,7 +43,13 @@ const chartConfig = {
   downloads: { label: 'التحميلات', color: 'hsl(47, 100%, 50%)' },
 } satisfies ChartConfig
 
-export function GrowthChart({ data, loading, error, timeRange = '12', onTimeRangeChange }: GrowthChartProps) {
+export function GrowthChart({
+  data,
+  loading,
+  error,
+  timeRange = '12',
+  onTimeRangeChange,
+}: GrowthChartProps) {
   const chartData = useMemo(() => {
     if (!data) return []
     return data.months.map((month, i) => ({

@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
   try {
     await requireModerator()
     const { searchParams } = new URL(req.url)
-    const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), { limit: 20, maxLimit: 50 })
+    const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+      limit: 20,
+      maxLimit: 50,
+    })
     const type = searchParams.get('type')
     const visible = searchParams.get('visible')
 
@@ -22,7 +25,12 @@ export async function GET(req: NextRequest) {
 
     const [total, news] = await Promise.all([
       db.news.count({ where }),
-      db.news.findMany({ where, orderBy: [{ order: 'asc' }, { publishAt: 'desc' }], skip: (page - 1) * limit, take: limit }),
+      db.news.findMany({
+        where,
+        orderBy: [{ order: 'asc' }, { publishAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
     ])
 
     return okPaginated(news, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 })

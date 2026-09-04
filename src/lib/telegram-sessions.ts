@@ -49,7 +49,10 @@ export async function getTelegramSession(token: string): Promise<TelegramSession
 }
 
 /** تحديث session (عند اكتشاف المستخدم) */
-export async function updateTelegramSession(token: string, session: TelegramSession): Promise<void> {
+export async function updateTelegramSession(
+  token: string,
+  session: TelegramSession,
+): Promise<void> {
   const remaining = Math.max(60, Math.floor((session.expiresAt - Date.now()) / 1000))
   await redisSet(getSessionKey(token), session, remaining)
 }

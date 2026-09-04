@@ -40,9 +40,7 @@ export function FavoritesPage() {
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase()
       mods = mods.filter(
-        (m) =>
-          m.name.toLowerCase().includes(q) ||
-          m.game.name.toLowerCase().includes(q)
+        (m) => m.name.toLowerCase().includes(q) || m.game.name.toLowerCase().includes(q),
       )
     }
 
@@ -106,7 +104,9 @@ export function FavoritesPage() {
       {/* الشبكة */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <ModCardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredMods.length === 0 ? (
         <EmptyState
@@ -116,7 +116,9 @@ export function FavoritesPage() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {filteredMods.map((m) => <ModCard key={m.id} mod={m} />)}
+          {filteredMods.map((m) => (
+            <ModCard key={m.id} mod={m} />
+          ))}
         </div>
       )}
     </div>

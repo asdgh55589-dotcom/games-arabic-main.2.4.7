@@ -13,7 +13,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     await requireModerator()
     const { id } = await params
 
-    const ad = await db.homepageAd.findUnique({ where: { id }, select: { id: true, clicksCount: true, title: true } })
+    const ad = await db.homepageAd.findUnique({
+      where: { id },
+      select: { id: true, clicksCount: true, title: true },
+    })
     if (!ad) return notFound('الإعلان غير موجود')
 
     const [recentClicks, totalClicks, clicksByDateRaw] = await Promise.all([
@@ -21,14 +24,23 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         where: { adId: id },
         orderBy: { clickedAt: 'desc' },
         take: 100,
-        select: { id: true, ipAddress: true, userAgent: true, referrer: true, clickedAt: true, userId: true },
+        select: {
+          id: true,
+          ipAddress: true,
+          userAgent: true,
+          referrer: true,
+          clickedAt: true,
+          userId: true,
+        },
       }),
       db.adClick.count({ where: { adId: id } }),
-      db.adClick.groupBy({
-        by: ['clickedAt'],
-        where: { adId: id },
-        _count: true,
-      }).catch(() => []),
+      db.adClick
+        .groupBy({
+          by: ['clickedAt'],
+          where: { adId: id },
+          _count: true,
+        })
+        .catch(() => []),
     ])
 
     // Group by date string for chart

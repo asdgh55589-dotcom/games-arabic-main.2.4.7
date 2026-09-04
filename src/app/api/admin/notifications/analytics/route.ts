@@ -17,7 +17,12 @@ export async function GET(req: NextRequest) {
     const [currentLogs, prevLogs] = await Promise.all([
       db.notificationLog.findMany({
         where: { createdAt: { gte: startDate } },
-        select: { channel: true, status: true, createdAt: true, notification: { select: { type: true } } },
+        select: {
+          channel: true,
+          status: true,
+          createdAt: true,
+          notification: { select: { type: true } },
+        },
       }),
       db.notificationLog.findMany({
         where: { createdAt: { gte: prevStartDate, lt: startDate } },
@@ -33,7 +38,8 @@ export async function GET(req: NextRequest) {
     const prevDelivered = prevLogs.filter((l) => l.status === 'sent').length
 
     const growthRate = prevTotal > 0 ? ((totalCreated - prevTotal) / prevTotal) * 100 : 0
-    const deliveryGrowth = prevDelivered > 0 ? ((totalDelivered - prevDelivered) / prevDelivered) * 100 : 0
+    const deliveryGrowth =
+      prevDelivered > 0 ? ((totalDelivered - prevDelivered) / prevDelivered) * 100 : 0
 
     const byChannel: Record<string, number> = {}
     currentLogs.forEach((log) => {

@@ -63,7 +63,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
               getTokenVersionCache(userId),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
             ]),
-          async () => null
+          async () => null,
         )
 
         if (cachedTv === null) {
@@ -174,7 +174,7 @@ export async function proxy(req: NextRequest) {
     const result = await Promise.race([
       updateSession(req),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Supabase timeout')), 8000)
+        setTimeout(() => reject(new Error('Supabase timeout')), 8000),
       ),
     ])
     user = result.user
@@ -199,10 +199,13 @@ export async function proxy(req: NextRequest) {
       const active = await withRedisCircuit(
         async () =>
           await Promise.race([
-            fetch(`${req.nextUrl.origin}/api/auth/ledger-check?token=${encodeURIComponent(ledgerToken)}`, {
-              headers: { cookie: `ga_session_ledger=${ledgerToken}` },
-              cache: 'no-store',
-            })
+            fetch(
+              `${req.nextUrl.origin}/api/auth/ledger-check?token=${encodeURIComponent(ledgerToken)}`,
+              {
+                headers: { cookie: `ga_session_ledger=${ledgerToken}` },
+                cache: 'no-store',
+              },
+            )
               .then(async (r) => {
                 if (!r.ok) return true
                 const j: any = await r.json().catch(() => null)
@@ -211,12 +214,17 @@ export async function proxy(req: NextRequest) {
               .catch(() => true),
             new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 600)),
           ]),
-        async () => true
+        async () => true,
       )
       if (active === false) {
-        const isProtected = pathname.startsWith('/admin') || pathname.startsWith('/creator') || pathname.startsWith('/settings')
+        const isProtected =
+          pathname.startsWith('/admin') ||
+          pathname.startsWith('/creator') ||
+          pathname.startsWith('/settings')
         if (isProtected) {
-          const loginUrl = pathname.startsWith('/admin') ? new URL('/admin/login', req.url) : new URL('/login', req.url)
+          const loginUrl = pathname.startsWith('/admin')
+            ? new URL('/admin/login', req.url)
+            : new URL('/login', req.url)
           const res = NextResponse.redirect(loginUrl)
           res.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
           res.cookies.set('ga_admin_role', '', { path: '/', maxAge: 0 })
@@ -241,14 +249,14 @@ export async function proxy(req: NextRequest) {
 
   if (isWritePath) {
     try {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-        || req.headers.get('x-real-ip')
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')
       if (ip) {
         const ipBan = await getIpBanCache(ip)
         if (ipBan?.banned) {
           return NextResponse.json(
             { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-            { status: 403 }
+            { status: 403 },
           )
         }
       }
@@ -267,12 +275,12 @@ export async function proxy(req: NextRequest) {
             rateLimit(req, { limit: 10, window: 60, keyPrefix: 'auth:post' }),
             new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
           ]),
-        async () => null
+        async () => null,
       )
       if (rl && !rl.success) {
         return NextResponse.json(
           { error: 'محاولات كتير جداً، استنى شوية', code: 'RATE_LIMITED' },
-          { status: 429, headers: rateLimitHeaders(rl) }
+          { status: 429, headers: rateLimitHeaders(rl) },
         )
       }
     } catch (err) {
@@ -285,18 +293,27 @@ export async function proxy(req: NextRequest) {
     // IP ban already checked for write paths; this adds check for session loads
     // Do not block if Redis unavailable — fail-open
     try {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')
-      if (ip && (pathname.includes('session') || pathname.includes('/me') || pathname.includes('get-session'))) {
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')
+      if (
+        ip &&
+        (pathname.includes('session') ||
+          pathname.includes('/me') ||
+          pathname.includes('get-session'))
+      ) {
         const ipBan = await withRedisCircuit(
           async () =>
             await Promise.race([
               getIpBanCache(ip),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
             ]),
-          async () => null
+          async () => null,
         )
         if (ipBan?.banned) {
-          return NextResponse.json({ error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' }, { status: 403 })
+          return NextResponse.json(
+            { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
+            { status: 403 },
+          )
         }
       }
     } catch (err) {
@@ -308,7 +325,10 @@ export async function proxy(req: NextRequest) {
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
     const rolePayload = await getRoleFromCookie(req)
-    if (!rolePayload || !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)) {
+    if (
+      !rolePayload ||
+      !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
+    ) {
       const loginUrl = new URL('/admin/login', req.url)
       if (!rolePayload?.role) loginUrl.searchParams.set('from', pathname)
       else loginUrl.searchParams.set('error', 'insufficient_role')
@@ -325,7 +345,10 @@ export async function proxy(req: NextRequest) {
       const redirectRes = NextResponse.redirect(loginUrl)
       copyCookies(supabaseResponse, redirectRes)
       redirectRes.headers.set('x-auth-reason', 'token_version_unverified')
-      console.error('[Proxy] Admin tvVerified failed — rejecting', { path: pathname, userId: rolePayload.userId })
+      console.error('[Proxy] Admin tvVerified failed — rejecting', {
+        path: pathname,
+        userId: rolePayload.userId,
+      })
       return redirectRes
     }
     // TOTP اختياري — غير مفعلة افتراضياً — لا نفرض MFA (اختياري فقط)
@@ -342,8 +365,14 @@ export async function proxy(req: NextRequest) {
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
     const rolePayload = await getRoleFromCookie(req)
-    if (!rolePayload || !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)) {
-      const res = NextResponse.json({ error: rolePayload?.role ? 'Forbidden — insufficient role' : 'Unauthorized' }, { status: rolePayload?.role ? 403 : 401 })
+    if (
+      !rolePayload ||
+      !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
+    ) {
+      const res = NextResponse.json(
+        { error: rolePayload?.role ? 'Forbidden — insufficient role' : 'Unauthorized' },
+        { status: rolePayload?.role ? 403 : 401 },
+      )
       if (req.cookies.has(ROLE_COOKIE_NAME)) {
         res.headers.set('x-auth-reason', 'invalid_jwt')
       }
@@ -352,7 +381,7 @@ export async function proxy(req: NextRequest) {
     if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
       return NextResponse.json(
         { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
-        { status: 503 }
+        { status: 503 },
       )
     }
     // TOTP اختياري — لا نفرض MFA لـ API أيضاً
@@ -410,10 +439,7 @@ export default proxy
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
   // HSTS — forces HTTPS for 1 year
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=31536000; includeSubDomains; preload'
-  )
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
 
   // CSP — Content Security Policy
   // Note: 'unsafe-eval' is required for Next.js webpack in development (and for hydration). Removing it breaks main-app.js.
@@ -432,7 +458,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-    ].join('; ')
+    ].join('; '),
   )
 
   // Prevent MIME sniffing
@@ -450,12 +476,16 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   // Restrict browser features
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   )
 
   return response
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*', '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
 }

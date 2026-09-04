@@ -19,11 +19,10 @@ export async function GET(req: NextRequest) {
   const seriesParam = searchParams.get('series') || ''
   const search = searchParams.get('search')?.trim() || null
   const sort = pickSort(searchParams.get('sort'), SORTS, 'downloads')
-  const { page, limit } = parsePagination(
-    searchParams.get('page'),
-    searchParams.get('limit'),
-    { limit: 24, maxLimit: 100 }
-  )
+  const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
+    limit: 24,
+    maxLimit: 100,
+  })
   const translationType = searchParams.get('translationType')
 
   if (!seriesParam) {
@@ -42,10 +41,7 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = { seriesId: series.id }
   if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { summary: { contains: search } },
-    ]
+    where.OR = [{ name: { contains: search } }, { summary: { contains: search } }]
   }
   if (translationType === 'official' || translationType === 'unofficial') {
     where.translationType = translationType
@@ -78,6 +74,6 @@ export async function GET(req: NextRequest) {
       headers: {
         'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
       },
-    }
+    },
   )
 }

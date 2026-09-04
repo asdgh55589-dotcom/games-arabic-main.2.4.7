@@ -12,7 +12,11 @@ export async function GET() {
       orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
       include: {
         memberships: {
-          include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true, role: true } } },
+          include: {
+            user: {
+              select: { id: true, username: true, displayName: true, avatarUrl: true, role: true },
+            },
+          },
           orderBy: { joinedAt: 'asc' },
         },
         mods: { where: { workflowStatus: 'PUBLISHED' }, select: { id: true, downloads: true } },

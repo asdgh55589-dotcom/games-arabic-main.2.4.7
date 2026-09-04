@@ -29,10 +29,7 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    return okPaginated(
-      { logs },
-      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
-    )
+    return okPaginated({ logs }, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 })
   } catch (err) {
     console.error('[admin/audit GET] failed:', err)
     return internalError('Failed')

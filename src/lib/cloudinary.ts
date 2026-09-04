@@ -31,7 +31,7 @@ export function isCloudinaryConfigured(): boolean {
 export async function uploadToCloudinary(
   fileBuffer: Buffer,
   folder: string,
-  publicId?: string
+  publicId?: string,
 ): Promise<{ url: string; publicId: string; secureUrl: string }> {
   if (!isCloudinaryConfigured()) {
     throw new Error('Cloudinary غير مُكوَّن — أضف بيانات الاعتماد في ملف .env')
@@ -60,7 +60,7 @@ export async function uploadToCloudinary(
         } else {
           reject(new Error('فشل الرفع إلى Cloudinary'))
         }
-      }
+      },
     )
     uploadStream.end(fileBuffer)
   })

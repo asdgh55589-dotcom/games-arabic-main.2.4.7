@@ -45,12 +45,14 @@ export async function GET() {
       const satisfaction = total > 0 ? Math.round((totalEndorsements / total) * 10) / 10 : 0
 
       // Consistency: lower std dev = more consistent
-      const avg = qualityScores.length > 0
-        ? qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length
-        : 0
-      const variance = qualityScores.length > 0
-        ? qualityScores.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / qualityScores.length
-        : 0
+      const avg =
+        qualityScores.length > 0
+          ? qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length
+          : 0
+      const variance =
+        qualityScores.length > 0
+          ? qualityScores.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / qualityScores.length
+          : 0
       const consistency = Math.round(Math.max(0, 100 - Math.sqrt(variance)))
 
       return {
@@ -65,10 +67,7 @@ export async function GET() {
       }
     })
 
-    return ok(
-      { teams: result },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
-    )
+    return ok({ teams: result }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
     console.error('[admin/analytics/team-quality] failed:', err)
     return internalError('Failed to load team quality analytics')

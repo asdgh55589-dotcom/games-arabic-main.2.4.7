@@ -58,27 +58,21 @@ describe('NotificationPreference Entity', () => {
   describe('canDeliver', () => {
     it('should return true when all checks pass', () => {
       const pref = NotificationPreference.createDefault('user-123')
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp),
-      ).toBe(true)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp)).toBe(true)
     })
 
     it('should return false when email is disabled', () => {
       const pref = NotificationPreference.createDefault('user-123').updatePreference({
         emailEnabled: false,
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.Email),
-      ).toBe(false)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.Email)).toBe(false)
     })
 
     it('should return false when push is disabled', () => {
       const pref = NotificationPreference.createDefault('user-123').updatePreference({
         pushEnabled: false,
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp),
-      ).toBe(false)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp)).toBe(false)
     })
 
     it('should return false when type is disabled', () => {
@@ -87,9 +81,7 @@ describe('NotificationPreference Entity', () => {
           [NotificationType.CommentReply]: { enabled: false },
         },
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp),
-      ).toBe(false)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp)).toBe(false)
     })
 
     it('should return false when type email is disabled for email channel', () => {
@@ -98,9 +90,7 @@ describe('NotificationPreference Entity', () => {
           [NotificationType.CommentReply]: { enabled: true, emailEnabled: false },
         },
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.Email),
-      ).toBe(false)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.Email)).toBe(false)
     })
 
     it('should return false when type push is disabled for in-app channel', () => {
@@ -109,9 +99,7 @@ describe('NotificationPreference Entity', () => {
           [NotificationType.CommentReply]: { enabled: true, pushEnabled: false },
         },
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp),
-      ).toBe(false)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp)).toBe(false)
     })
 
     it('should return true when type email is disabled but checking in-app channel', () => {
@@ -120,9 +108,7 @@ describe('NotificationPreference Entity', () => {
           [NotificationType.CommentReply]: { enabled: true, emailEnabled: false },
         },
       })
-      expect(
-        pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp),
-      ).toBe(true)
+      expect(pref.canDeliver(NotificationType.CommentReply, NotificationChannel.InApp)).toBe(true)
     })
 
     it('should return false during quiet hours for in-app', () => {

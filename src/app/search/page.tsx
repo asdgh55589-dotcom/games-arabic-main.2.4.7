@@ -21,6 +21,17 @@ export const metadata: Metadata = {
   },
 }
 
-const SearchPage = dynamic(() => import('@/views/search').then(m => ({ default: m.SearchPage })), { loading: () => <div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> })
+const SearchPage = dynamic(
+  () => import('@/views/search').then((m) => ({ default: m.SearchPage })),
+  {
+    loading: () => (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  },
+)
 
-export default function SearchRoutePage() { return <SearchPage /> }
+export default function SearchRoutePage() {
+  return <SearchPage />
+}

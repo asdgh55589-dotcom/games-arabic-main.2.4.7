@@ -74,7 +74,9 @@ export function GameDetailPage() {
     return `/api/games/${slug}/mods?${params.toString()}`
   }, [slug, category, debouncedSearch, sort, page])
 
-  const { data: modsData, loading: modsLoading } = useFetch<PaginatedModsResponse>(modsUrl, [modsUrl])
+  const { data: modsData, loading: modsLoading } = useFetch<PaginatedModsResponse>(modsUrl, [
+    modsUrl,
+  ])
 
   // Reset page when filters change — derived-state pattern.
   const filterKey = `${slug}:${category}:${debouncedSearch}:${sort}`
@@ -123,7 +125,10 @@ export function GameDetailPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">{game?.category}</Badge>
                   <Badge variant="outline">{game?.releaseYear}</Badge>
-                  <Badge variant="secondary"><Package className="mr-1 h-3 w-3" /> {game ? formatNumber(game.modCount) : '...'} mods</Badge>
+                  <Badge variant="secondary">
+                    <Package className="mr-1 h-3 w-3" />{' '}
+                    {game ? formatNumber(game.modCount) : '...'} mods
+                  </Badge>
                 </div>
                 <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{game?.name}</h1>
                 <p className="mt-1 text-muted-foreground">{game?.tagline}</p>
@@ -132,16 +137,30 @@ export function GameDetailPage() {
           </div>
           <div className="flex gap-2 pb-2">
             <Button asChild variant="outline" size="sm" className="min-h-[44px]">
-              <Link href="/games"><ChevronLeft className="mr-1 h-4 w-4" /> All Games</Link>
+              <Link href="/games">
+                <ChevronLeft className="mr-1 h-4 w-4" /> All Games
+              </Link>
             </Button>
           </div>
         </div>
 
         {/* Stats row */}
         <div className="mt-6 grid grid-cols-3 gap-3 rounded-lg border border-border/60 bg-card/40 p-4">
-          <StatBlock icon={<Package className="h-4 w-4" />} value={game ? formatNumber(game.modCount) : '...'} label="Mods" />
-          <StatBlock icon={<Download className="h-4 w-4" />} value={game ? formatNumber(game.totalDownloads) : '...'} label="Downloads" />
-          <StatBlock icon={<ThumbsUp className="h-4 w-4" />} value={game ? formatNumber(game.totalEndorsements) : '...'} label="Endorsements" />
+          <StatBlock
+            icon={<Package className="h-4 w-4" />}
+            value={game ? formatNumber(game.modCount) : '...'}
+            label="Mods"
+          />
+          <StatBlock
+            icon={<Download className="h-4 w-4" />}
+            value={game ? formatNumber(game.totalDownloads) : '...'}
+            label="Downloads"
+          />
+          <StatBlock
+            icon={<ThumbsUp className="h-4 w-4" />}
+            value={game ? formatNumber(game.totalEndorsements) : '...'}
+            label="Endorsements"
+          />
         </div>
 
         {/* Tabs */}
@@ -167,7 +186,11 @@ export function GameDetailPage() {
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
+                <div
+                  className="flex flex-wrap items-center gap-2"
+                  role="group"
+                  aria-label="Filter by category"
+                >
                   <Button
                     size="sm"
                     variant={category === 'all' ? 'default' : 'outline'}
@@ -210,18 +233,24 @@ export function GameDetailPage() {
               {/* Mods grid */}
               {modsLoading ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {Array.from({ length: 8 }).map((_, i) => <ModCardSkeleton key={i} />)}
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <ModCardSkeleton key={i} />
+                  ))}
                 </div>
               ) : (modsData?.data?.length ?? 0) === 0 ? (
                 <div className="grid place-items-center py-16 text-center">
                   <Package className="mb-3 h-12 w-12 text-muted-foreground/50" />
                   <h3 className="text-lg font-semibold">No mods found</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Try a different filter or search term</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try a different filter or search term
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {modsData?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
+                    {modsData?.data?.map((m) => (
+                      <ModCard key={m.id} mod={m} />
+                    ))}
                   </div>
 
                   {/* Pagination */}
@@ -229,7 +258,8 @@ export function GameDetailPage() {
                     <div className="mt-8 flex items-center justify-center gap-2">
                       <Button
                         variant="outline"
-                        size="sm" className="min-h-[44px]"
+                        size="sm"
+                        className="min-h-[44px]"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                       >
@@ -240,7 +270,8 @@ export function GameDetailPage() {
                       </span>
                       <Button
                         variant="outline"
-                        size="sm" className="min-h-[44px]"
+                        size="sm"
+                        className="min-h-[44px]"
                         disabled={page >= modsData.pagination.totalPages}
                         onClick={() => setPage((p) => p + 1)}
                       >
@@ -266,7 +297,9 @@ export function GameDetailPage() {
                   <dt className="text-muted-foreground">Total Mods</dt>
                   <dd className="text-foreground">{game ? formatNumber(game.modCount) : '...'}</dd>
                   <dt className="text-muted-foreground">Total Downloads</dt>
-                  <dd className="text-foreground">{game ? formatNumber(game.totalDownloads) : '...'}</dd>
+                  <dd className="text-foreground">
+                    {game ? formatNumber(game.totalDownloads) : '...'}
+                  </dd>
                 </dl>
               </div>
             </div>
@@ -277,12 +310,17 @@ export function GameDetailPage() {
               {game?.categories?.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => { setCategory(c.slug); setTab('mods') }}
+                  onClick={() => {
+                    setCategory(c.slug)
+                    setTab('mods')
+                  }}
                   className="group flex items-center justify-between rounded-lg border border-border/60 bg-card/40 p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent"
                 >
                   <div>
                     <div className="font-medium">{c.name}</div>
-                    <div className="text-xs text-muted-foreground">Browse {c.name.toLowerCase()} mods</div>
+                    <div className="text-xs text-muted-foreground">
+                      Browse {c.name.toLowerCase()} mods
+                    </div>
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
                 </button>
@@ -295,7 +333,15 @@ export function GameDetailPage() {
   )
 }
 
-function StatBlock({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function StatBlock({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode
+  value: string
+  label: string
+}) {
   return (
     <div className="flex items-center gap-3">
       <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">

@@ -39,11 +39,12 @@ export async function GET(req: NextRequest) {
   const totalComments = published.reduce((sum, m) => sum + (m.comments || 0), 0)
 
   const ratedMods = published.filter((m) => m.ratingCount > 0)
-  const averageRating = ratedMods.length > 0 ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length : 0
+  const averageRating =
+    ratedMods.length > 0
+      ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length
+      : 0
 
-  const topMods = [...published]
-    .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-    .slice(0, 5)
+  const topMods = [...published].sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 5)
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   const recentMods = mods.filter((m) => m.createdAt >= thirtyDaysAgo)

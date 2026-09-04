@@ -50,9 +50,10 @@ export async function GET() {
     const activeUsersDaily = buildDailyMap(activeUsers)
 
     // Average daily active users
-    const avgSession = activeUsersDaily.length > 0
-      ? Math.round(activeUsersDaily.reduce((s, d) => s + d.count, 0) / activeUsersDaily.length)
-      : 0
+    const avgSession =
+      activeUsersDaily.length > 0
+        ? Math.round(activeUsersDaily.reduce((s, d) => s + d.count, 0) / activeUsersDaily.length)
+        : 0
 
     return ok(
       {
@@ -61,7 +62,7 @@ export async function GET() {
         activeUsers: activeUsersDaily,
         avgDailyActive: avgSession,
       },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
+      { headers: { 'Cache-Control': 'private, max-age=300' } },
     )
   } catch (err) {
     console.error('[admin/analytics/engagement] failed:', err)

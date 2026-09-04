@@ -5,12 +5,24 @@
 import { redisIncr } from './redis'
 import { NextResponse } from 'next/server'
 
-interface RateLimitEntry { count: number; resetAt: number }
+interface RateLimitEntry {
+  count: number
+  resetAt: number
+}
 const memoryStore = new Map<string, RateLimitEntry>()
 const MAX_STORE_SIZE = 10000
 
-interface RateLimitOptions { limit: number; window: number; keyPrefix?: string }
-interface RateLimitResult { success: boolean; remaining: number; resetAt: number; limit: number }
+interface RateLimitOptions {
+  limit: number
+  window: number
+  keyPrefix?: string
+}
+interface RateLimitResult {
+  success: boolean
+  remaining: number
+  resetAt: number
+  limit: number
+}
 
 export async function rateLimit(req: Request, options: RateLimitOptions): Promise<RateLimitResult> {
   const ip = getClientIP(req)
@@ -50,18 +62,23 @@ export async function rateLimit(req: Request, options: RateLimitOptions): Promis
     return { success: false, remaining: 0, resetAt: entry.resetAt, limit: options.limit }
   }
 
-  return { success: true, remaining: options.limit - entry.count, resetAt: entry.resetAt, limit: options.limit }
+  return {
+    success: true,
+    remaining: options.limit - entry.count,
+    resetAt: entry.resetAt,
+    limit: options.limit,
+  }
 }
 
 export async function rateLimitMiddleware(
   req: Request,
-  options: RateLimitOptions
+  options: RateLimitOptions,
 ): Promise<NextResponse | null> {
   const result = await rateLimit(req, options)
   if (!result.success) {
     return NextResponse.json(
       { error: 'عدد كبير من الطلبات، حاول مرة أخرى لاحقاً', code: 'RATE_LIMITED' },
-      { status: 429, headers: rateLimitHeaders(result) }
+      { status: 429, headers: rateLimitHeaders(result) },
     )
   }
   return null

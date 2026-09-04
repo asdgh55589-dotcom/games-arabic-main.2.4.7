@@ -9,15 +9,7 @@ export async function POST(req: NextRequest) {
     const admin = await requireAdmin()
 
     const body = await req.json()
-    const {
-      target,
-      role,
-      userIds,
-      type,
-      title,
-      message,
-      channels,
-    } = body
+    const { target, role, userIds, type, title, message, channels } = body
 
     if (!title?.trim() || !message?.trim()) {
       return NextResponse.json({ error: 'العنوان والرسالة مطلوبان' }, { status: 400 })
@@ -65,7 +57,12 @@ export async function POST(req: NextRequest) {
       username: admin.username,
       action: 'NOTIFICATION_SENT',
       entity: 'notification',
-      details: JSON.stringify({ target, role: role || null, recipientsCount: recipients.length, title }),
+      details: JSON.stringify({
+        target,
+        role: role || null,
+        recipientsCount: recipients.length,
+        title,
+      }),
       request: req,
     })
 

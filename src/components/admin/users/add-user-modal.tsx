@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
 
 interface AddUserModalProps {
@@ -55,7 +61,9 @@ export function AddUserModal({ onClose, onSubmit }: AddUserModalProps) {
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>إلغاء</Button>
+        <Button variant="outline" onClick={onClose}>
+          إلغاء
+        </Button>
         <Button onClick={handleSubmit}>إنشاء</Button>
       </div>
     </div>

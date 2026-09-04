@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from 'react'
 
 interface SettingsData {
   site_name?: string
@@ -65,15 +73,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     fetchSettings()
   }, [fetchSettings])
 
-  const value = useMemo(() => ({
-    settings,
-    loading,
-    error,
-  }), [settings, loading, error])
-
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
+  const value = useMemo(
+    () => ({
+      settings,
+      loading,
+      error,
+    }),
+    [settings, loading, error],
   )
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }

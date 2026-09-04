@@ -28,25 +28,35 @@ export async function generateMetadata({ params }: ModPageProps): Promise<Metada
   const { slug } = await params
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`, {
-      next: { revalidate: 300 },
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
     if (!res.ok) return { title: 'تعريب غير موجود | Games Arabic' }
     const { data: mod } = await res.json()
 
     if (!mod) return { title: 'تعريب غير موجود | Games Arabic' }
 
     const ratingText = mod.rating ? `تقييم ${mod.rating}/5` : ''
-    const downloadsText = mod.downloads ? `${Number(mod.downloads).toLocaleString('ar-EG')} تحميل` : ''
+    const downloadsText = mod.downloads
+      ? `${Number(mod.downloads).toLocaleString('ar-EG')} تحميل`
+      : ''
     const rawDesc = mod.description || mod.summary || 'تعريب احترافي لألعابك المفضلة بالعربية'
     const description = `${rawDesc.substring(0, 155)} ${ratingText} ${downloadsText}`.trim()
     const title = `${mod.name} - تعريب ${mod.game?.name || ''} | Games Arabic`
-    const imageUrl = mod.thumbnailUrl || mod.imageUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/og-default.jpg`
+    const imageUrl =
+      mod.thumbnailUrl ||
+      mod.imageUrl ||
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/og-default.jpg`
 
     return {
       title,
       description,
-      keywords: [mod.name, mod.game?.name, 'تعريب', 'ترجمة', 'العربية', 'تعريب ألعاب'].filter(Boolean) as string[],
+      keywords: [mod.name, mod.game?.name, 'تعريب', 'ترجمة', 'العربية', 'تعريب ألعاب'].filter(
+        Boolean,
+      ) as string[],
       authors: [{ name: mod.author?.username || 'Games Arabic' }],
       alternates: { canonical: `https://games-arabic.com/mod/${mod.slug}` },
       openGraph: {
@@ -75,9 +85,12 @@ export default async function ModRoutePage({ params }: ModPageProps) {
   let mod: any = null
   try {
     const { slug } = await params
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`, {
-      next: { revalidate: 300 },
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
     if (res.ok) {
       const json = await res.json()
       mod = json.data

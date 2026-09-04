@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
         },
-      }
+      },
     )
   } catch (err) {
     console.error('[api/news] failed:', err)

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const history = await db.tierHistory.findMany({
       where: { userId: id },
       orderBy: { createdAt: 'desc' },
-      take: 50
+      take: 50,
     })
     return ok({ history })
   } catch (err) {

@@ -4,10 +4,7 @@
 
 import { Redis } from '@upstash/redis'
 
-const hasRedis = !!(
-  process.env.UPSTASH_REDIS_REST_URL &&
-  process.env.UPSTASH_REDIS_REST_TOKEN
-)
+const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
 
 let redisClient: Redis | null = null
 if (hasRedis) {
@@ -18,8 +15,12 @@ if (hasRedis) {
 }
 
 // استخدام globalThis لضمان مشاركة الذاكرة بين جميع الـ routes وتجاوز HMR/Turbopack isolation
-const _global = globalThis as unknown as { __memoryStore?: Map<string, { value: string; expires: number }> }
-const memoryStore: Map<string, { value: string; expires: number }> = _global.__memoryStore ?? (_global.__memoryStore = new Map<string, { value: string; expires: number }>())
+const _global = globalThis as unknown as {
+  __memoryStore?: Map<string, { value: string; expires: number }>
+}
+const memoryStore: Map<string, { value: string; expires: number }> =
+  _global.__memoryStore ??
+  (_global.__memoryStore = new Map<string, { value: string; expires: number }>())
 
 export async function redisGet<T>(key: string): Promise<T | null> {
   if (redisClient) {
@@ -43,7 +44,11 @@ export async function redisGet<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function redisSet(key: string, value: unknown, ttlSeconds: number = 60): Promise<void> {
+export async function redisSet(
+  key: string,
+  value: unknown,
+  ttlSeconds: number = 60,
+): Promise<void> {
   const stringValue = JSON.stringify(value)
   if (redisClient) {
     try {
@@ -62,7 +67,10 @@ export async function redisSet(key: string, value: unknown, ttlSeconds: number =
 
 export async function redisDel(key: string): Promise<void> {
   if (redisClient) {
-    try { await redisClient.del(key); return } catch {}
+    try {
+      await redisClient.del(key)
+      return
+    } catch {}
   }
   memoryStore.delete(key)
 }
@@ -90,9 +98,13 @@ export async function redisSetNX(key: string, ttlSeconds: number): Promise<boole
     }
   } else {
     if (process.env.NODE_ENV === 'production') {
-      console.warn('[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ deduplication (قد لا تكون مشتركة بين النسخ)')
+      console.warn(
+        '[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ deduplication (قد لا تكون مشتركة بين النسخ)',
+      )
     } else {
-      console.warn('[redis] Using in-memory fallback for setNX (dev/test only) - dedup not shared across instances')
+      console.warn(
+        '[redis] Using in-memory fallback for setNX (dev/test only) - dedup not shared across instances',
+      )
     }
   }
   // Fallback للذاكرة — مسموح فقط في dev/test
@@ -128,7 +140,9 @@ export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<n
     }
   } else {
     if (process.env.NODE_ENV === 'production') {
-      console.warn('[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ rate-limit (قد لا تكون مشتركة بين النسخ)')
+      console.warn(
+        '[Redis] بيانات Upstash غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ rate-limit (قد لا تكون مشتركة بين النسخ)',
+      )
     }
   }
   const entry = memoryStore.get(key)
@@ -144,7 +158,11 @@ export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<n
 }
 
 export function getRedisInfo() {
-  return { connected: hasRedis, type: redisClient ? 'upstash' : 'in-memory', storeSize: memoryStore.size }
+  return {
+    connected: hasRedis,
+    type: redisClient ? 'upstash' : 'in-memory',
+    storeSize: memoryStore.size,
+  }
 }
 
 export { redisClient }

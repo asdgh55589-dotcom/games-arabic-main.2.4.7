@@ -31,23 +31,31 @@ export default function AdminGamesPage() {
 
   useEffect(() => {
     fetch('/api/admin/games')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => data?.data ? setGames(data.data) : null)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => (data?.data ? setGames(data.data) : null))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = games.filter((g) =>
-    !search || g.name.toLowerCase().includes(search.toLowerCase()) || g.platform.toLowerCase().includes(search.toLowerCase())
+  const filtered = games.filter(
+    (g) =>
+      !search ||
+      g.name.toLowerCase().includes(search.toLowerCase()) ||
+      g.platform.toLowerCase().includes(search.toLowerCase()),
   )
 
   const onDelete = async (game: GameItem) => {
-    if (!confirm(`هل أنت متأكد من حذف اللعبة "${game.name}"؟ سيتم حذف كل التعريبات المرتبطة بها.`)) return
+    if (!confirm(`هل أنت متأكد من حذف اللعبة "${game.name}"؟ سيتم حذف كل التعريبات المرتبطة بها.`))
+      return
     try {
       const res = await fetch(`/api/admin/games/${game.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data?.error?.message || (typeof data?.error === 'string' ? data.error : null) || 'فشل الحذف')
+        throw new Error(
+          data?.error?.message ||
+            (typeof data?.error === 'string' ? data.error : null) ||
+            'فشل الحذف',
+        )
       }
       toast({ title: 'تم الحذف', description: `تم حذف "${game.name}"` })
       setGames((p) => p.filter((g) => g.id !== game.id))
@@ -110,24 +118,50 @@ export default function AdminGamesPage() {
                     {g.featured && <span className="mr-2 text-amber-500">★</span>}
                   </td>
                   <td className="hidden px-4 py-3 sm:table-cell">
-                    <Badge variant="outline" className="text-[10px]">{g.platform}</Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {g.platform}
+                    </Badge>
                   </td>
                   <td className="hidden px-4 py-3 text-xs md:table-cell">{g.category}</td>
                   <td className="hidden px-4 py-3 text-xs lg:table-cell">{g.releaseYear}</td>
                   <td className="px-4 py-3 text-xs">{g._count.mods}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                        aria-label="إجراء"
+                      >
                         <Link href={`/admin/games/${g.id}/edit`} title="تعديل">
                           <Edit2 className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" aria-label="إجراء">
-                        <a href={`/platform/${g.platform}`} target="_blank" rel="noopener noreferrer" title="عرض">
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                        aria-label="إجراء"
+                      >
+                        <a
+                          href={`/platform/${g.platform}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="عرض"
+                        >
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-500 min-h-[44px] min-w-[44px]" onClick={() => onDelete(g)} title="حذف" aria-label="حذف">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-500 min-h-[44px] min-w-[44px]"
+                        onClick={() => onDelete(g)}
+                        title="حذف"
+                        aria-label="حذف"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

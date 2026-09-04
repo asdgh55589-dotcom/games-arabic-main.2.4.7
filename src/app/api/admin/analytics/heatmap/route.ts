@@ -38,10 +38,7 @@ export async function GET() {
       }
     }
 
-    return ok(
-      { data, maxCount },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
-    )
+    return ok({ data, maxCount }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
     console.error('[admin/analytics/heatmap] failed:', err)
     return internalError('Failed to load heatmap analytics')

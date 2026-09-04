@@ -61,9 +61,7 @@ interface NavItem {
 const NAV_GROUPS: NavGroup[] = [
   {
     label: '',
-    items: [
-      { href: '/admin', label: 'الرئيسية', icon: LayoutDashboard, exact: true },
-    ],
+    items: [{ href: '/admin', label: 'الرئيسية', icon: LayoutDashboard, exact: true }],
   },
   {
     label: 'إدارة المحتوى',
@@ -88,7 +86,12 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/admins', label: 'المسؤولون', icon: Shield, adminOnly: true },
       { href: '/admin/creators', label: 'المُعَرِّبون والناشرون', icon: PenTool, adminOnly: true },
       { href: '/admin/creators/requests', label: 'طلبات الترقية', icon: UserPlus, adminOnly: true },
-      { href: '/admin/publication-requests', label: 'طلبات نشر التعريبات', icon: Inbox, adminOnly: true },
+      {
+        href: '/admin/publication-requests',
+        label: 'طلبات نشر التعريبات',
+        icon: Inbox,
+        adminOnly: true,
+      },
       { href: '/admin/mod-requests', label: 'طلبات التعريب', icon: MessageSquare, adminOnly: true },
       { href: '/admin/analytics', label: 'التحليلات', icon: BarChart3, adminOnly: true },
     ],
@@ -109,8 +112,18 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/api-keys', label: 'مفاتيح API', icon: Key, adminOnly: true },
       { href: '/admin/templates', label: 'قوالب الإشعارات', icon: FileText, adminOnly: true },
       { href: '/admin/notifications/send', label: 'إرسال إشعار', icon: Send, adminOnly: true },
-      { href: '/admin/notifications/analytics', label: 'تحليلات الإشعارات', icon: BarChart3, adminOnly: true },
-      { href: '/admin/notifications-health', label: 'صحة الإشعارات', icon: HeartPulse, adminOnly: true },
+      {
+        href: '/admin/notifications/analytics',
+        label: 'تحليلات الإشعارات',
+        icon: BarChart3,
+        adminOnly: true,
+      },
+      {
+        href: '/admin/notifications-health',
+        label: 'صحة الإشعارات',
+        icon: HeartPulse,
+        adminOnly: true,
+      },
       { href: '/admin/notifications/history', label: 'سجل الإشعارات', icon: Bell, adminOnly: true },
       { href: '/admin/sessions', label: 'الجلسات النشطة', icon: Shield, adminOnly: true },
       { href: '/admin/scheduler', label: 'الجدولة', icon: Clock, adminOnly: true },
@@ -122,10 +135,26 @@ const NAV_GROUPS: NavGroup[] = [
 ]
 
 const ROLE_BADGE: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-  owner:     { label: 'مالك', icon: <Crown className="h-3 w-3" />, className: 'bg-amber-500 text-white' },
-  admin:     { label: 'مدير', icon: <Shield className="h-3 w-3" />, className: 'bg-red-500 text-white' },
-  moderator: { label: 'مشرف', icon: <Star className="h-3 w-3" />,  className: 'bg-purple-500 text-white' },
-  member:    { label: 'عضو',  icon: <UserIcon className="h-3 w-3" />, className: 'bg-blue-500 text-white' },
+  owner: {
+    label: 'مالك',
+    icon: <Crown className="h-3 w-3" />,
+    className: 'bg-amber-500 text-white',
+  },
+  admin: {
+    label: 'مدير',
+    icon: <Shield className="h-3 w-3" />,
+    className: 'bg-red-500 text-white',
+  },
+  moderator: {
+    label: 'مشرف',
+    icon: <Star className="h-3 w-3" />,
+    className: 'bg-purple-500 text-white',
+  },
+  member: {
+    label: 'عضو',
+    icon: <UserIcon className="h-3 w-3" />,
+    className: 'bg-blue-500 text-white',
+  },
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -202,7 +231,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const [creatorRes, pubRes, modReqRes] = await Promise.all([
           fetch('/api/admin/creator-requests?status=pending', { cache: 'no-store' }),
           fetch('/api/admin/mods?workflowStatus=IN_REVIEW&limit=1', { cache: 'no-store' }),
-          fetch('/api/admin/mod-requests?status=open&limit=1', { cache: 'no-store' }).catch(() => null as never),
+          fetch('/api/admin/mod-requests?status=open&limit=1', { cache: 'no-store' }).catch(
+            () => null as never,
+          ),
         ])
 
         // CRITICAL: Handle 401 gracefully
@@ -217,7 +248,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         if (creatorRes.ok) {
           const json = await creatorRes.json()
-          const count = json.data?.requests?.length ?? (Array.isArray(json.data) ? json.data.length : 0)
+          const count =
+            json.data?.requests?.length ?? (Array.isArray(json.data) ? json.data.length : 0)
           if (!cancelled) setPendingCreatorCount(count)
         }
         if (pubRes.ok) {
@@ -244,7 +276,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     fetchPending()
     const id = setInterval(fetchPending, 60000)
-    return () => { cancelled = true; clearInterval(id) }
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
   }, [user, pathname])
 
   const onLogout = async () => {
@@ -311,18 +346,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           : 'text-white/60 hover:bg-white/[0.04] hover:text-white/80'
                       }`}
                     >
-                      <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-primary' : 'opacity-50'}`} />
+                      <Icon
+                        className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-primary' : 'opacity-50'}`}
+                      />
                       <span className="flex-1">{item.label}</span>
                       {item.href === '/admin/creators/requests' && pendingCreatorCount > 0 && (
                         <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
                           {pendingCreatorCount}
                         </span>
                       )}
-                      {item.href === '/admin/publication-requests' && pendingPublicationCount > 0 && (
-                        <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
-                          {pendingPublicationCount}
-                        </span>
-                      )}
+                      {item.href === '/admin/publication-requests' &&
+                        pendingPublicationCount > 0 && (
+                          <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                            {pendingPublicationCount}
+                          </span>
+                        )}
                       {item.href === '/admin/mod-requests' && pendingModRequestsCount > 0 && (
                         <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
                           {pendingModRequestsCount}
@@ -402,7 +440,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex h-14 items-center justify-between border-b border-border-light px-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="ألعاب عربية" className="h-7 w-auto object-contain" />
-          <button onClick={() => setMobileOpen(false)} aria-label="إغلاق" className="min-h-[44px] min-w-[44px] grid place-items-center text-muted-foreground hover:text-white">
+          <button
+            onClick={() => setMobileOpen(false)}
+            aria-label="إغلاق"
+            className="min-h-[44px] min-w-[44px] grid place-items-center text-muted-foreground hover:text-white"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -422,19 +464,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-              <Link href="/admin" className="transition-colors hover:text-primary">الرئيسية</Link>
+              <Link href="/admin" className="transition-colors hover:text-primary">
+                الرئيسية
+              </Link>
               <span className="text-muted-foreground/40">/</span>
               <span className="text-foreground font-medium">
-                {NAV_GROUPS.flatMap(g => g.items).find(i => i.exact ? pathname === i.href : pathname.startsWith(i.href))?.label || 'لوحة التحكم'}
+                {NAV_GROUPS.flatMap((g) => g.items).find((i) =>
+                  i.exact ? pathname === i.href : pathname.startsWith(i.href),
+                )?.label || 'لوحة التحكم'}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            <button aria-label="بحث" className="min-h-[44px] min-w-[44px] grid place-items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-white">
+            <button
+              aria-label="بحث"
+              className="min-h-[44px] min-w-[44px] grid place-items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-white"
+            >
               <Search className="h-4.5 w-4.5" />
             </button>
-            <button aria-label="الإشعارات" className="relative min-h-[44px] min-w-[44px] grid place-items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-white">
+            <button
+              aria-label="الإشعارات"
+              className="relative min-h-[44px] min-w-[44px] grid place-items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-white"
+            >
               <Bell className="h-4.5 w-4.5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
             </button>

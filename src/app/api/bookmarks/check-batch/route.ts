@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       select: { modId: true },
     })
 
-    return ok({ bookmarkedIds: bookmarks.map(b => b.modId) })
+    return ok({ bookmarkedIds: bookmarks.map((b) => b.modId) })
   } catch (err) {
     console.error('[bookmarks/check-batch POST] failed:', err)
     return internalError('Failed')

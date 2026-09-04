@@ -1,7 +1,14 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
-import { ok, notFound, validationFail, unauthorized, forbidden, internalError } from '@/lib/api-response'
+import {
+  ok,
+  notFound,
+  validationFail,
+  unauthorized,
+  forbidden,
+  internalError,
+} from '@/lib/api-response'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -67,7 +74,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     await db.creatorRequest.update({
       where: { id: request.id },
-      data: { status: 'rejected', rejectReason: rejectReason.trim(), reviewedBy: admin.id, reviewedAt: new Date() },
+      data: {
+        status: 'rejected',
+        rejectReason: rejectReason.trim(),
+        reviewedBy: admin.id,
+        reviewedAt: new Date(),
+      },
     })
 
     try {

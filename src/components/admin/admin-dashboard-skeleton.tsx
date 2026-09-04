@@ -28,7 +28,10 @@ export function AdminDashboardSkeleton() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3">
+          <div
+            key={i}
+            className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3"
+          >
             <div className="h-4 w-4 rounded bg-background-secondary" />
             <div className="h-3.5 w-16 rounded bg-background-secondary" />
           </div>

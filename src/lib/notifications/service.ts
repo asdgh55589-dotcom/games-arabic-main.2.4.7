@@ -13,7 +13,9 @@ import { renderNotificationContent } from './template-renderer'
  * إرسال إشعار عبر القنوات المتاحة
  */
 export async function sendNotification(event: NotificationEvent): Promise<void> {
-  console.log(`[notification-service] Sending ${event.type} to ${event.recipients.length} recipients`)
+  console.log(
+    `[notification-service] Sending ${event.type} to ${event.recipients.length} recipients`,
+  )
 
   for (const recipient of event.recipients) {
     // Check user preferences
@@ -40,19 +42,20 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
     // بناء متغيرات القالب
     const variables: Record<string, unknown> = {
       actorName: (event as unknown as Record<string, unknown>).actorName || '',
-      recipientName: (recipient as unknown as Record<string, unknown>).displayName || (recipient as unknown as Record<string, unknown>).username || '',
+      recipientName:
+        (recipient as unknown as Record<string, unknown>).displayName ||
+        (recipient as unknown as Record<string, unknown>).username ||
+        '',
       modName: (event.data as Record<string, unknown> | undefined)?.modName || '',
       teamName: (event.data as Record<string, unknown> | undefined)?.teamName || '',
       ...(event.data || {}),
     }
 
     // عرض المحتوى من القالب مع fallback
-    const content = await renderNotificationContent(
-      event.type,
-      'in_app',
-      variables,
-      { title: event.title, message: event.message }
-    )
+    const content = await renderNotificationContent(event.type, 'in_app', variables, {
+      title: event.title,
+      message: event.message,
+    })
 
     // إنشاء إشعار واحد مشترك لكل القنوات بمحتوى مُصيّر
     const notification = await db.notification.create({
@@ -109,30 +112,21 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
  * إنشاء إشعار داخل التطبيق — مُهمل: استخدم sendNotification (ينشئ إشعار واحد)
  * محفوظ للتوافق الخلفي فقط
  */
-async function createInAppNotification(
-  event: NotificationEvent,
-  userId: string
-): Promise<void> {
+async function createInAppNotification(event: NotificationEvent, userId: string): Promise<void> {
   console.warn('[deprecated] createInAppNotification استخدم sendNotification')
 }
 
 /**
  * إضافة إشعار بريد إلى قائمة الانتظار — مُهمل
  */
-async function queueEmailNotification(
-  event: NotificationEvent,
-  userId: string
-): Promise<void> {
+async function queueEmailNotification(event: NotificationEvent, userId: string): Promise<void> {
   console.warn('[deprecated] queueEmailNotification استخدم sendNotification')
 }
 
 /**
  * إضافة إشعار Telegram إلى قائمة الانتظار — مُهمل
  */
-async function queueTelegramNotification(
-  event: NotificationEvent,
-  userId: string
-): Promise<void> {
+async function queueTelegramNotification(event: NotificationEvent, userId: string): Promise<void> {
   console.warn('[deprecated] queueTelegramNotification استخدم sendNotification')
 }
 
@@ -214,7 +208,7 @@ async function processEmailJob(job: any): Promise<void> {
 function determineChannels(
   requestedChannels: NotificationChannel[],
   preferences: any,
-  eventType: NotificationType
+  eventType: NotificationType,
 ): NotificationChannel[] {
   if (!preferences) return requestedChannels
 
@@ -262,7 +256,17 @@ export async function notifyWorkflowChange(params: {
   actorUsername?: string
   actorAvatarUrl?: string
 }): Promise<void> {
-  const { modId, modName, modSlug, fromStatus, toStatus, actorId, reason, actorUsername, actorAvatarUrl } = params
+  const {
+    modId,
+    modName,
+    modSlug,
+    fromStatus,
+    toStatus,
+    actorId,
+    reason,
+    actorUsername,
+    actorAvatarUrl,
+  } = params
 
   // Get mod author
   const mod = await db.mod.findUnique({
@@ -296,9 +300,7 @@ export async function notifyWorkflowChange(params: {
     title: `تحديث حالة: ${modName}`,
     message: `تم تغيير حالة التعريب من "${STATUS_LABELS[fromStatus]}" إلى "${STATUS_LABELS[toStatus]}"${reason ? `\nالسبب: ${reason}` : ''}`,
     data: { modId, modName, fromStatus, toStatus, modSlug: slug },
-    recipients: [
-      { userId: mod.authorId, channels: ['in_app', 'email'] },
-    ],
+    recipients: [{ userId: mod.authorId, channels: ['in_app', 'email'] }],
     actorId,
     actorUsername,
     actorAvatarUrl,

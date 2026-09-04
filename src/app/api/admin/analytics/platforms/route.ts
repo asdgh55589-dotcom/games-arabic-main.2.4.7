@@ -60,10 +60,7 @@ export async function GET() {
       })
       .sort((a, b) => b.count - a.count)
 
-    return ok(
-      { platforms },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
-    )
+    return ok({ platforms }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
     console.error('[admin/analytics/platforms] failed:', err)
     return internalError('Failed to load platform analytics')

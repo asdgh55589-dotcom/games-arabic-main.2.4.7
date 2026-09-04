@@ -33,7 +33,15 @@ describe('requireAdmin', () => {
     jest.clearAllMocks()
   })
 
-  function mockSession(user: { id: string; username: string; email: string; role: string; avatarUrl: string | null } | null) {
+  function mockSession(
+    user: {
+      id: string
+      username: string
+      email: string
+      role: string
+      avatarUrl: string | null
+    } | null,
+  ) {
     if (!user) {
       mockCreateClient.mockResolvedValue({
         auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null } }) },
@@ -68,35 +76,71 @@ describe('requireAdmin', () => {
   }
 
   it('should allow owner role', async () => {
-    mockSession({ id: '1', username: 'owner', email: 'owner@test.com', role: 'owner', avatarUrl: null })
+    mockSession({
+      id: '1',
+      username: 'owner',
+      email: 'owner@test.com',
+      role: 'owner',
+      avatarUrl: null,
+    })
     const user = await requireAdmin()
     expect(user.role).toBe('owner')
   })
 
   it('should allow manager role', async () => {
-    mockSession({ id: '2', username: 'manager', email: 'manager@test.com', role: 'manager', avatarUrl: null })
+    mockSession({
+      id: '2',
+      username: 'manager',
+      email: 'manager@test.com',
+      role: 'manager',
+      avatarUrl: null,
+    })
     const user = await requireAdmin()
     expect(user.role).toBe('manager')
   })
 
   it('should allow admin role', async () => {
-    mockSession({ id: '3', username: 'admin', email: 'admin@test.com', role: 'admin', avatarUrl: null })
+    mockSession({
+      id: '3',
+      username: 'admin',
+      email: 'admin@test.com',
+      role: 'admin',
+      avatarUrl: null,
+    })
     const user = await requireAdmin()
     expect(user.role).toBe('admin')
   })
 
   it('should reject moderator role with 403', async () => {
-    mockSession({ id: '4', username: 'moderator', email: 'mod@test.com', role: 'moderator', avatarUrl: null })
+    mockSession({
+      id: '4',
+      username: 'moderator',
+      email: 'mod@test.com',
+      role: 'moderator',
+      avatarUrl: null,
+    })
     await expect(requireAdmin()).rejects.toThrow(AuthError)
   })
 
   it('should reject publisher role with 403', async () => {
-    mockSession({ id: '5', username: 'publisher', email: 'pub@test.com', role: 'publisher', avatarUrl: null })
+    mockSession({
+      id: '5',
+      username: 'publisher',
+      email: 'pub@test.com',
+      role: 'publisher',
+      avatarUrl: null,
+    })
     await expect(requireAdmin()).rejects.toThrow(AuthError)
   })
 
   it('should reject member role with 403', async () => {
-    mockSession({ id: '6', username: 'member', email: 'member@test.com', role: 'member', avatarUrl: null })
+    mockSession({
+      id: '6',
+      username: 'member',
+      email: 'member@test.com',
+      role: 'member',
+      avatarUrl: null,
+    })
     await expect(requireAdmin()).rejects.toThrow(AuthError)
   })
 

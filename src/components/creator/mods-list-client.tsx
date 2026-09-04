@@ -10,8 +10,27 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Edit, Trash2, Archive, Send, Eye, Download, Star, Clock, CheckCircle, XCircle, FileText, Search } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Archive,
+  Send,
+  Eye,
+  Download,
+  Star,
+  Clock,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Search,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
@@ -34,7 +53,10 @@ interface ModItem {
   game: { id: string; name: string; slug: string } | null
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
   DRAFT: { label: 'مسودة', icon: FileText, color: 'bg-gray-500' },
   IN_REVIEW: { label: 'بانتظار المراجعة', icon: Clock, color: 'bg-yellow-500' },
   APPROVED: { label: 'موافق عليه', icon: CheckCircle, color: 'bg-blue-500' },
@@ -52,7 +74,13 @@ const STATUS_FILTERS = [
   { value: 'ARCHIVED', label: 'مؤرشف' },
 ]
 
-export function ModsListClient({ initialStatus, initialQuery }: { initialStatus: string; initialQuery: string }) {
+export function ModsListClient({
+  initialStatus,
+  initialQuery,
+}: {
+  initialStatus: string
+  initialQuery: string
+}) {
   const router = useRouter()
   const { toast } = useToast()
 
@@ -72,7 +100,10 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
         if (query) params.set('q', query)
         params.set('page', pageNum.toString())
         params.set('limit', '20')
-        const res = await fetch(`/api/creator/mods?${params.toString()}`, { cache: 'no-store', signal })
+        const res = await fetch(`/api/creator/mods?${params.toString()}`, {
+          cache: 'no-store',
+          signal,
+        })
         const data = await res.json()
         if (res.ok) {
           setMods(data.data?.mods || [])
@@ -88,7 +119,7 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
         if (!signal?.aborted) setLoading(false)
       }
     },
-    [status, query]
+    [status, query],
   )
 
   useEffect(() => {
@@ -99,7 +130,10 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus)
-    router.replace(`/creator/mods?status=${newStatus}${query ? `&q=${encodeURIComponent(query)}` : ''}`, { scroll: false })
+    router.replace(
+      `/creator/mods?status=${newStatus}${query ? `&q=${encodeURIComponent(query)}` : ''}`,
+      { scroll: false },
+    )
   }
 
   const handleAction = async (modId: string, action: string) => {
@@ -131,7 +165,10 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
         toast({ title: data.data?.message || 'تم بنجاح' })
         fetchMods(page)
       } else {
-        toast({ title: data.error?.message || data.error?.details || 'فشل الإجراء', variant: 'destructive' })
+        toast({
+          title: data.error?.message || data.error?.details || 'فشل الإجراء',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -172,7 +209,11 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
         <EmptyState
           icon="inbox"
           title="لا توجد تعريبات بعد"
-          description={query ? 'لم يتم العثور على نتائج مطابقة لبحثك' : 'ابدأ بإنشاء أول تعريب لك وشاركه مع المجتمع'}
+          description={
+            query
+              ? 'لم يتم العثور على نتائج مطابقة لبحثك'
+              : 'ابدأ بإنشاء أول تعريب لك وشاركه مع المجتمع'
+          }
           action={{ label: 'إنشاء تعريب جديد', href: '/creator/mods/new' }}
         />
       ) : (
@@ -186,13 +227,23 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => fetchMods(page - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => fetchMods(page - 1)}
+          >
             السابق
           </Button>
           <span className="flex items-center px-3 text-sm text-muted-foreground">
             صفحة {pagination.page} من {pagination.totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => fetchMods(page + 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => fetchMods(page + 1)}
+          >
             التالي
           </Button>
         </div>
@@ -201,7 +252,13 @@ export function ModsListClient({ initialStatus, initialQuery }: { initialStatus:
   )
 }
 
-function ModCard({ mod, onAction }: { mod: ModItem; onAction: (id: string, action: string) => void }) {
+function ModCard({
+  mod,
+  onAction,
+}: {
+  mod: ModItem
+  onAction: (id: string, action: string) => void
+}) {
   const statusConfig = STATUS_CONFIG[mod.workflowStatus] || STATUS_CONFIG.DRAFT
   const StatusIcon = statusConfig.icon
 
@@ -211,7 +268,14 @@ function ModCard({ mod, onAction }: { mod: ModItem; onAction: (id: string, actio
         <div className="flex items-start gap-4">
           {mod.thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <Image loading="lazy" width={56} height={56} src={mod.thumbnailUrl} alt={mod.name} className="w-20 h-14 object-cover rounded-lg shrink-0" />
+            <Image
+              loading="lazy"
+              width={56}
+              height={56}
+              src={mod.thumbnailUrl}
+              alt={mod.name}
+              className="w-20 h-14 object-cover rounded-lg shrink-0"
+            />
           ) : (
             <div className="w-20 h-14 bg-muted rounded-lg shrink-0 grid place-items-center">
               <FileText className="h-6 w-6 text-muted-foreground" />
@@ -281,7 +345,10 @@ function ModCard({ mod, onAction }: { mod: ModItem; onAction: (id: string, actio
                   <Archive className="h-4 w-4 ml-2" /> أرشفة
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => onAction(mod.id, 'delete')} className="text-red-600 focus:text-red-600">
+              <DropdownMenuItem
+                onClick={() => onAction(mod.id, 'delete')}
+                className="text-red-600 focus:text-red-600"
+              >
                 <Trash2 className="h-4 w-4 ml-2" /> حذف
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -3,7 +3,14 @@
 import { useState, useCallback } from 'react'
 import Cropper from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Slider } from '@/components/ui/slider'
 import { ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
 
@@ -41,7 +48,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string>
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   )
 
   return canvas.toDataURL('image/jpeg', 0.92)
@@ -71,12 +78,9 @@ export function ImageCropper({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const onCropCompleteCallback = useCallback(
-    (_croppedArea: Area, croppedPixels: Area) => {
-      setCroppedAreaPixels(croppedPixels)
-    },
-    []
-  )
+  const onCropCompleteCallback = useCallback((_croppedArea: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels)
+  }, [])
 
   const handleSave = async () => {
     if (!croppedAreaPixels) return
@@ -100,7 +104,9 @@ export function ImageCropper({
       <DialogContent className="max-w-2xl" dir="rtl" aria-describedby="cropper-description">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription id="cropper-description">اضبط القص بالتكبير والسحب ثم احفظ.</DialogDescription>
+          <DialogDescription id="cropper-description">
+            اضبط القص بالتكبير والسحب ثم احفظ.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="relative h-96 w-full overflow-hidden rounded-lg bg-black">

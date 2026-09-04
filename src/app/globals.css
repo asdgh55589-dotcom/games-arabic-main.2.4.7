@@ -83,7 +83,7 @@
   --secondary-foreground: oklch(0.93 0.01 260);
 
   /* Muted */
-  --muted: oklch(0.20 0.01 250);
+  --muted: oklch(0.2 0.01 250);
   --muted-foreground: oklch(0.65 0.01 260);
 
   /* Accent */
@@ -91,18 +91,18 @@
   --accent-foreground: oklch(0.93 0.01 260);
 
   /* Destructive */
-  --destructive: oklch(0.60 0.20 25);
+  --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(0.99 0 0);
 
   /* Borders — translucent white */
   --border: oklch(1 0 0 / 0.08);
   --border-light: oklch(1 0 0 / 0.05);
   --input: oklch(0.22 0.01 250);
-  --ring: oklch(0.72 0.16 175 / 0.50);
+  --ring: oklch(0.72 0.16 175 / 0.5);
 
   /* Gold — featured */
   --gold: oklch(0.82 0.17 85);
-  --gold-foreground: oklch(0.20 0.02 85);
+  --gold-foreground: oklch(0.2 0.02 85);
 
   /* Status */
   --status-new: oklch(0.65 0.19 155);
@@ -111,27 +111,27 @@
   --status-updated-foreground: oklch(0.99 0 0);
 
   /* Semantic colors — Gentelella palette */
-  --blue: oklch(0.50 0.17 255);
+  --blue: oklch(0.5 0.17 255);
   --green: oklch(0.65 0.19 155);
   --yellow: oklch(0.78 0.16 85);
   --red: oklch(0.55 0.22 25);
-  --purple: oklch(0.50 0.18 310);
-  --cyan: oklch(0.60 0.12 200);
+  --purple: oklch(0.5 0.18 310);
+  --cyan: oklch(0.6 0.12 200);
 
   /* Light variants for backgrounds */
   --green-lt: oklch(0.65 0.19 155 / 0.16);
   --red-lt: oklch(0.55 0.22 25 / 0.16);
   --yellow-lt: oklch(0.78 0.16 85 / 0.16);
-  --blue-lt: oklch(0.50 0.17 255 / 0.18);
-  --purple-lt: oklch(0.50 0.18 310 / 0.16);
-  --cyan-lt: oklch(0.60 0.12 200 / 0.16);
+  --blue-lt: oklch(0.5 0.17 255 / 0.18);
+  --purple-lt: oklch(0.5 0.18 310 / 0.16);
+  --cyan-lt: oklch(0.6 0.12 200 / 0.16);
 
   /* Charts */
   --chart-1: oklch(0.72 0.16 175);
-  --chart-2: oklch(0.50 0.17 255);
+  --chart-2: oklch(0.5 0.17 255);
   --chart-3: oklch(0.65 0.19 155);
   --chart-4: oklch(0.78 0.16 85);
-  --chart-5: oklch(0.50 0.18 310);
+  --chart-5: oklch(0.5 0.18 310);
 
   /* Sidebar — Gentelella dark navy */
   --sidebar: oklch(0.15 0.025 250);
@@ -141,16 +141,16 @@
   --sidebar-accent: oklch(0.72 0.16 175 / 0.14);
   --sidebar-accent-foreground: oklch(0.93 0.01 260);
   --sidebar-border: oklch(1 0 0 / 0.06);
-  --sidebar-ring: oklch(0.72 0.16 175 / 0.50);
+  --sidebar-ring: oklch(0.72 0.16 175 / 0.5);
 
   /* Gradients */
   --gradient-start: oklch(0.72 0.16 175);
-  --gradient-mid: oklch(0.60 0.12 200);
-  --gradient-end: oklch(0.50 0.18 310);
+  --gradient-mid: oklch(0.6 0.12 200);
+  --gradient-end: oklch(0.5 0.18 310);
 
   /* Glow */
   --glow-blue: oklch(0.72 0.16 175);
-  --glow-purple: oklch(0.50 0.18 310);
+  --glow-purple: oklch(0.5 0.18 310);
 }
 
 @layer base {
@@ -166,7 +166,12 @@
     font-weight: 400;
     background-image: none;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 700;
   }
   /* جعل كل النصوص العربية واضحة ومريحة للعين */
@@ -239,7 +244,7 @@ article[style*="--card-platform"]:hover {
   position: relative;
 }
 .section-glow::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -8px -12px;
   border-radius: 50%;
@@ -271,7 +276,7 @@ article[style*="--card-platform"]:hover {
   color: oklch(0.98 0 0 / 0.95);
 }
 .text-translucent-moderate {
-  color: oklch(0.90 0 0 / 0.78);
+  color: oklch(0.9 0 0 / 0.78);
 }
 .text-translucent-weak {
   color: oklch(0.85 0 0 / 0.55);
@@ -279,12 +284,14 @@ article[style*="--card-platform"]:hover {
 
 /* Hero gradient overlay */
 .hero-gradient-overlay {
-  background: linear-gradient(to bottom,
-    oklch(0.15 0.02 250 / 0.20) 0%,
-    oklch(0.15 0.02 250 / 0.30) 30%,
+  background: linear-gradient(
+    to bottom,
+    oklch(0.15 0.02 250 / 0.2) 0%,
+    oklch(0.15 0.02 250 / 0.3) 30%,
     oklch(0.15 0.02 250 / 0.55) 55%,
     oklch(0.15 0.02 250 / 0.85) 80%,
-    oklch(0.15 0.02 250) 100%);
+    oklch(0.15 0.02 250) 100%
+  );
 }
 
 /* Blur fade at the bottom of the hero */
@@ -294,12 +301,14 @@ article[style*="--card-platform"]:hover {
   left: 0;
   right: 0;
   height: 200px;
-  background: linear-gradient(to bottom,
+  background: linear-gradient(
+    to bottom,
     transparent 0%,
     oklch(0.15 0.02 250 / 0.15) 25%,
     oklch(0.15 0.02 250 / 0.45) 55%,
     oklch(0.15 0.02 250 / 0.85) 85%,
-    oklch(0.15 0.02 250) 100%);
+    oklch(0.15 0.02 250) 100%
+  );
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   pointer-events: none;
@@ -311,7 +320,9 @@ article[style*="--card-platform"]:hover {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid oklch(1 0 0 / 10%);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 .stat-box:hover {
   background-color: oklch(1 0 0 / 10%);
@@ -320,7 +331,12 @@ article[style*="--card-platform"]:hover {
 
 /* تدرج لوني للعناوين */
 .text-gradient {
-  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start),
+    var(--gradient-mid),
+    var(--gradient-end)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -333,7 +349,12 @@ article[style*="--card-platform"]:hover {
 
 /* تدرج لوني ثلاثي */
 .bg-gradient-tri {
-  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
+  background: linear-gradient(
+    135deg,
+    var(--gradient-start),
+    var(--gradient-mid),
+    var(--gradient-end)
+  );
 }
 
 /* توهج لوني — مخصص للوجو والهيرو فقط */

@@ -7,7 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Eye, Download, ThumbsUp, MessageSquare, Star, FileText, Clock, CheckCircle, XCircle, TrendingUp, Plus, BarChart3 } from 'lucide-react'
+import {
+  Eye,
+  Download,
+  ThumbsUp,
+  MessageSquare,
+  Star,
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Plus,
+  BarChart3,
+} from 'lucide-react'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { CreatorBadge } from '@/components/creator-badge'
@@ -62,7 +75,10 @@ export default async function CreatorDashboard() {
   const totalComments = published.reduce((sum, m) => sum + (m.comments || 0), 0)
 
   const ratedMods = published.filter((m) => m.ratingCount > 0)
-  const averageRating = ratedMods.length > 0 ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length : 0
+  const averageRating =
+    ratedMods.length > 0
+      ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length
+      : 0
 
   const topMods = [...published].sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 5)
 
@@ -90,7 +106,11 @@ export default async function CreatorDashboard() {
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <RoleBadge role={displayUser.role} size="sm" />
               <TierBadge role={displayUser.role} tier={displayUser.tier} size="sm" />
-              <CreatorBadge role={displayUser.role} specialRoles={displayUser.specialRoles} size="sm" />
+              <CreatorBadge
+                role={displayUser.role}
+                specialRoles={displayUser.specialRoles}
+                size="sm"
+              />
             </div>
           </div>
         </div>
@@ -104,20 +124,54 @@ export default async function CreatorDashboard() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={FileText} label="التعريبات" value={mods.length} sub={`${published.length} منشور`} />
+        <StatCard
+          icon={FileText}
+          label="التعريبات"
+          value={mods.length}
+          sub={`${published.length} منشور`}
+        />
         <StatCard icon={Eye} label="المشاهدات" value={totalViews} />
         <StatCard icon={Download} label="التحميلات" value={totalDownloads} />
         <StatCard icon={ThumbsUp} label="التأييدات" value={totalEndorsements} />
         <StatCard icon={MessageSquare} label="التعليقات" value={totalComments} />
-        <StatCard icon={Star} label="التقييم" value={averageRating.toFixed(1)} sub={`من ${ratedMods.length}`} />
+        <StatCard
+          icon={Star}
+          label="التقييم"
+          value={averageRating.toFixed(1)}
+          sub={`من ${ratedMods.length}`}
+        />
       </div>
 
       {/* Workflow status */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <WorkflowCard label="منشور" count={published.length} icon={CheckCircle} color="text-green-500" href="/creator/mods?status=PUBLISHED" />
-        <WorkflowCard label="مسودة" count={drafts.length} icon={FileText} color="text-gray-500" href="/creator/mods?status=DRAFT" />
-        <WorkflowCard label="بانتظار المراجعة" count={pending.length} icon={Clock} color="text-yellow-500" href="/creator/mods?status=IN_REVIEW" />
-        <WorkflowCard label="مرفوض" count={rejected.length} icon={XCircle} color="text-red-500" href="/creator/mods?status=REJECTED" />
+        <WorkflowCard
+          label="منشور"
+          count={published.length}
+          icon={CheckCircle}
+          color="text-green-500"
+          href="/creator/mods?status=PUBLISHED"
+        />
+        <WorkflowCard
+          label="مسودة"
+          count={drafts.length}
+          icon={FileText}
+          color="text-gray-500"
+          href="/creator/mods?status=DRAFT"
+        />
+        <WorkflowCard
+          label="بانتظار المراجعة"
+          count={pending.length}
+          icon={Clock}
+          color="text-yellow-500"
+          href="/creator/mods?status=IN_REVIEW"
+        />
+        <WorkflowCard
+          label="مرفوض"
+          count={rejected.length}
+          icon={XCircle}
+          color="text-red-500"
+          href="/creator/mods?status=REJECTED"
+        />
       </div>
 
       {/* Tier & Performance Overview */}
@@ -133,11 +187,20 @@ export default async function CreatorDashboard() {
             <div className="flex items-center gap-3">
               <TierBadge role={displayUser.role} tier={displayUser.tier} size="md" />
               <div className="text-sm">
-                <div className="font-bold">{displayUser.role === 'creator' ? 'مُعَرِّب' : displayUser.role === 'publisher' ? 'ناشر' : displayUser.role}</div>
+                <div className="font-bold">
+                  {displayUser.role === 'creator'
+                    ? 'مُعَرِّب'
+                    : displayUser.role === 'publisher'
+                      ? 'ناشر'
+                      : displayUser.role}
+                </div>
                 <div className="text-xs text-muted-foreground">المستوى {displayUser.tier}</div>
               </div>
             </div>
-            <Link href={`/profile/${encodeURIComponent(displayUser.username)}/level`} className="mt-3 inline-block text-xs text-primary hover:underline">
+            <Link
+              href={`/profile/${encodeURIComponent(displayUser.username)}/level`}
+              className="mt-3 inline-block text-xs text-primary hover:underline"
+            >
               عرض التقدم ←
             </Link>
           </CardContent>
@@ -162,11 +225,18 @@ export default async function CreatorDashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">نسبة النشر</span>
-                <span className="font-bold">{mods.length ? Math.round((published.length / mods.length) * 100) : 0}%</span>
+                <span className="font-bold">
+                  {mods.length ? Math.round((published.length / mods.length) * 100) : 0}%
+                </span>
               </div>
               <div className="pt-2">
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary transition-all" style={{ width: `${mods.length ? (published.length / mods.length) * 100 : 0}%` }} />
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: `${mods.length ? (published.length / mods.length) * 100 : 0}%`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -186,9 +256,15 @@ export default async function CreatorDashboard() {
             ) : (
               <div className="space-y-2">
                 {mods.slice(0, 3).map((m) => (
-                  <Link key={m.id} href={`/mod/${m.slug}`} className="flex items-center justify-between p-2 rounded hover:bg-muted text-sm">
+                  <Link
+                    key={m.id}
+                    href={`/mod/${m.slug}`}
+                    className="flex items-center justify-between p-2 rounded hover:bg-muted text-sm"
+                  >
                     <span className="truncate font-medium">{m.name}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">{new Date(m.createdAt).toLocaleDateString('ar-EG')}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {new Date(m.createdAt).toLocaleDateString('ar-EG')}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -253,7 +329,17 @@ export default async function CreatorDashboard() {
   )
 }
 
-function StatCard({ icon: Icon, label, value, sub }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | string; sub?: string }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  value: number | string
+  sub?: string
+}) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -261,14 +347,28 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: React.ComponentType
           <Icon className="h-4 w-4" />
           <span className="text-sm">{label}</span>
         </div>
-        <div className="text-2xl font-bold">{typeof value === 'number' ? value.toLocaleString('ar-EG') : value}</div>
+        <div className="text-2xl font-bold">
+          {typeof value === 'number' ? value.toLocaleString('ar-EG') : value}
+        </div>
         {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
       </CardContent>
     </Card>
   )
 }
 
-function WorkflowCard({ label, count, icon: Icon, color, href }: { label: string; count: number; icon: React.ComponentType<{ className?: string }>; color: string; href: string }) {
+function WorkflowCard({
+  label,
+  count,
+  icon: Icon,
+  color,
+  href,
+}: {
+  label: string
+  count: number
+  icon: React.ComponentType<{ className?: string }>
+  color: string
+  href: string
+}) {
   return (
     <Link href={href}>
       <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">

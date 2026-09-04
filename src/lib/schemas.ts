@@ -17,8 +17,16 @@ export const PaginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(24),
 })
 
-export const SlugParamSchema = z.string().min(1).max(200).regex(/^[a-z0-9-]+$/)
-export const UsernameParamSchema = z.string().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/)
+export const SlugParamSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[a-z0-9-]+$/)
+export const UsernameParamSchema = z
+  .string()
+  .min(1)
+  .max(50)
+  .regex(/^[a-zA-Z0-9_-]+$/)
 
 // ===== Auth Schemas =====
 
@@ -37,9 +45,15 @@ export const ChangePasswordSchema = z.object({
 // ===== Mod Schemas =====
 
 export const CreateModSchema = z.object({
-  name: z.string().min(1, 'اسم التعريب مطلوب').max(200, 'اسم التعريب طويل جداً (الحد الأقصى 200 حرف)'),
+  name: z
+    .string()
+    .min(1, 'اسم التعريب مطلوب')
+    .max(200, 'اسم التعريب طويل جداً (الحد الأقصى 200 حرف)'),
   summary: z.string().max(500, 'الملخص طويل جداً (الحد الأقصى 500 حرف)').optional().default(''),
-  description: z.string().min(10, 'الوصف قصير جداً (10 أحرف على الأقل)').max(5000, 'الوصف طويل جداً (الحد الأقصى 5000 حرف)'),
+  description: z
+    .string()
+    .min(10, 'الوصف قصير جداً (10 أحرف على الأقل)')
+    .max(5000, 'الوصف طويل جداً (الحد الأقصى 5000 حرف)'),
   gameId: z.string().optional(),
   categoryId: z.string().optional().nullable(),
   seriesId: z.string().optional().nullable(),
@@ -68,59 +82,90 @@ export const CreateModSchema = z.object({
   translationScope: z.string().optional(),
   compatibility: z.string().optional(),
   galleryUrls: z.union([z.string(), z.array(z.string())]).optional(),
-  files: z.array(z.object({
-    title: z.string().min(1, 'عنوان الملف مطلوب'),
-    description: z.string().optional(),
-    alert: z.string().optional(),
-    version: z.string().optional(),
-    releaseDate: z.string().optional(),
-    fileSize: z.string().optional(),
-    fileFormat: z.string().optional(),
-    order: z.number().optional(),
-    links: z.array(z.object({
-      url: z.string().url('رابط غير صالح').refine(
-        (url) => isAllowedDownloadUrl(url),
-        { message: 'رابط التحميل يجب أن يكون من موقع مسموح (Google Drive, Mega, Mediafire, etc.)' }
-      ),
-      label: z.string().optional(),
-    })).optional(),
-  })).optional(),
-  teamMembers: z.array(z.object({
-    name: z.string().min(1, 'اسم العضو مطلوب'),
-    avatarUrl: z.string().optional(),
-    role: z.string().optional(),
-    contribution: z.string().optional(),
-    order: z.number().optional(),
-  })).optional(),
-  contactLinks: z.array(z.object({
-    type: z.string().optional(),
-    label: z.string().optional(),
-    url: z.string().url('رابط غير صالح'),
-    order: z.number().optional(),
-  })).optional(),
-  videoGroups: z.array(z.object({
-    name: z.string().min(1, 'اسم المجموعة مطلوب'),
-    order: z.number().optional(),
-    videos: z.array(z.object({
-      title: z.string().min(1, 'عنوان الفيديو مطلوب'),
-      url: z.string().url('رابط الفيديو غير صالح'),
-      thumbnail: z.string().optional(),
-      duration: z.string().optional(),
-      description: z.string().optional(),
-      views: z.number().optional(),
-      likes: z.number().optional(),
-      commentsCount: z.number().optional(),
-      channel: z.string().optional(),
-      order: z.number().optional(),
-    })).optional(),
-  })).optional(),
-  customTabs: z.array(z.object({
-    name: z.string().min(1),
-    slug: z.string().optional(),
-    content: z.string().optional(),
-    order: z.number().optional(),
-    visible: z.boolean().optional(),
-  })).optional(),
+  files: z
+    .array(
+      z.object({
+        title: z.string().min(1, 'عنوان الملف مطلوب'),
+        description: z.string().optional(),
+        alert: z.string().optional(),
+        version: z.string().optional(),
+        releaseDate: z.string().optional(),
+        fileSize: z.string().optional(),
+        fileFormat: z.string().optional(),
+        order: z.number().optional(),
+        links: z
+          .array(
+            z.object({
+              url: z
+                .string()
+                .url('رابط غير صالح')
+                .refine((url) => isAllowedDownloadUrl(url), {
+                  message:
+                    'رابط التحميل يجب أن يكون من موقع مسموح (Google Drive, Mega, Mediafire, etc.)',
+                }),
+              label: z.string().optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+  teamMembers: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'اسم العضو مطلوب'),
+        avatarUrl: z.string().optional(),
+        role: z.string().optional(),
+        contribution: z.string().optional(),
+        order: z.number().optional(),
+      }),
+    )
+    .optional(),
+  contactLinks: z
+    .array(
+      z.object({
+        type: z.string().optional(),
+        label: z.string().optional(),
+        url: z.string().url('رابط غير صالح'),
+        order: z.number().optional(),
+      }),
+    )
+    .optional(),
+  videoGroups: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'اسم المجموعة مطلوب'),
+        order: z.number().optional(),
+        videos: z
+          .array(
+            z.object({
+              title: z.string().min(1, 'عنوان الفيديو مطلوب'),
+              url: z.string().url('رابط الفيديو غير صالح'),
+              thumbnail: z.string().optional(),
+              duration: z.string().optional(),
+              description: z.string().optional(),
+              views: z.number().optional(),
+              likes: z.number().optional(),
+              commentsCount: z.number().optional(),
+              channel: z.string().optional(),
+              order: z.number().optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+  customTabs: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        slug: z.string().optional(),
+        content: z.string().optional(),
+        order: z.number().optional(),
+        visible: z.boolean().optional(),
+      }),
+    )
+    .optional(),
 })
 
 export const UpdateModSchema = CreateModSchema.partial()
@@ -131,23 +176,34 @@ export const UpdateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
   avatarUrl: z.string().url().nullable().optional(),
   bannerUrl: z.string().url().nullable().optional(),
-  accentColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional(),
+  accentColor: z
+    .string()
+    .regex(/^#([0-9A-F]{3}){1,2}$/i)
+    .optional(),
   profileVisibility: z.enum(['everyone', 'followers', 'nobody']).optional(),
-  socialLinks: z.object({
-    website: z.string().url().nullable().optional(),
-    twitter: z.string().max(50).nullable().optional(),
-    youtube: z.string().url().nullable().optional(),
-    discord: z.string().max(50).nullable().optional(),
-    telegram: z.string().max(50).nullable().optional(),
-  }).optional(),
+  socialLinks: z
+    .object({
+      website: z.string().url().nullable().optional(),
+      twitter: z.string().max(50).nullable().optional(),
+      youtube: z.string().url().nullable().optional(),
+      discord: z.string().max(50).nullable().optional(),
+      telegram: z.string().max(50).nullable().optional(),
+    })
+    .optional(),
   displayName: z.string().max(100).optional(),
   location: z.string().max(100).optional(),
 })
 
 export const CreateUserSchema = z.object({
-  username: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+  username: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/),
   email: z.string().email(),
-  role: z.enum(['member', 'creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']).default('member'),
+  role: z
+    .enum(['member', 'creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'])
+    .default('member'),
 })
 
 // ===== Comment Schemas =====
@@ -175,7 +231,15 @@ export const CreateReportSchema = z.object({
   targetModId: z.string().optional(),
   targetCommentId: z.string().optional(),
   targetUserId: z.string().optional(),
-  reason: z.enum(['spam', 'inappropriate', 'copyright', 'offensive', 'false_info', 'technical', 'other']),
+  reason: z.enum([
+    'spam',
+    'inappropriate',
+    'copyright',
+    'offensive',
+    'false_info',
+    'technical',
+    'other',
+  ]),
   details: z.string().max(2000).optional(),
 })
 
@@ -219,28 +283,46 @@ export const UpdateTemplateSchema = CreateTemplateSchema.partial()
 
 // ===== Notification Preferences Schema =====
 
-export const UpdatePreferencesSchema = z.object({
-  emailEnabled: z.boolean().optional(),
-  pushEnabled: z.boolean().optional(),
-  dailySummary: z.boolean().optional(),
-  summaryIntervalDays: z.number().int().min(1).max(30).optional(),
-  likeThreshold: z.number().int().min(5).max(100).optional(),
-  quietHoursEnabled: z.boolean().optional(),
-  quietHoursStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
-  quietHoursEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
-  typePreferences: z.record(z.string(), z.object({
-    enabled: z.boolean(),
+export const UpdatePreferencesSchema = z
+  .object({
     emailEnabled: z.boolean().optional(),
     pushEnabled: z.boolean().optional(),
-  })).optional(),
-}).refine(data => {
-  if (data.quietHoursEnabled) {
-    return data.quietHoursStart != null && data.quietHoursEnd != null
-  }
-  return true
-}, {
-  message: 'يجب تحديد وقت البداية والنهاية لساعات الهدوء',
-})
+    dailySummary: z.boolean().optional(),
+    summaryIntervalDays: z.number().int().min(1).max(30).optional(),
+    likeThreshold: z.number().int().min(5).max(100).optional(),
+    quietHoursEnabled: z.boolean().optional(),
+    quietHoursStart: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
+    quietHoursEnd: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
+    typePreferences: z
+      .record(
+        z.string(),
+        z.object({
+          enabled: z.boolean(),
+          emailEnabled: z.boolean().optional(),
+          pushEnabled: z.boolean().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.quietHoursEnabled) {
+        return data.quietHoursStart != null && data.quietHoursEnd != null
+      }
+      return true
+    },
+    {
+      message: 'يجب تحديد وقت البداية والنهاية لساعات الهدوء',
+    },
+  )
 
 // ===== Game Schemas =====
 

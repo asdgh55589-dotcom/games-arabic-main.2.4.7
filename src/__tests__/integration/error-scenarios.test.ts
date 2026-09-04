@@ -8,12 +8,7 @@ import { RetryPolicy } from '@/infrastructure/resilience/retry-policy'
 import { DeadLetterHandler } from '@/infrastructure/resilience/dead-letter-handler'
 import { NotificationJob, NotificationChannel, NotificationType } from '@/domain'
 import { NotificationService } from '@/application/services/notification-service'
-import type {
-  NotificationRepository,
-  TemplateRenderer,
-  EventPublisher,
-  JobQueue,
-} from '@/domain'
+import type { NotificationRepository, TemplateRenderer, EventPublisher, JobQueue } from '@/domain'
 
 function createFailingNotificationRepo(): NotificationRepository {
   return {
@@ -44,7 +39,6 @@ function createSucceedingNotificationRepo(): NotificationRepository {
 }
 
 describe('Error Scenarios', () => {
-
   describe('CircuitBreaker', () => {
     let circuit: CircuitBreaker
     const onStateChange = jest.fn()
@@ -62,7 +56,9 @@ describe('Error Scenarios', () => {
     it('should open after consecutive failures', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error(`fail-${i}`) })
+          circuit.execute(async () => {
+            throw new Error(`fail-${i}`)
+          }),
         ).rejects.toThrow()
       }
 
@@ -73,7 +69,9 @@ describe('Error Scenarios', () => {
     it('should reject immediately when OPEN', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error('fail') })
+          circuit.execute(async () => {
+            throw new Error('fail')
+          }),
         ).rejects.toThrow()
       }
 
@@ -83,11 +81,13 @@ describe('Error Scenarios', () => {
     it('should transition to HALF_OPEN after reset timeout', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error('fail') })
+          circuit.execute(async () => {
+            throw new Error('fail')
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       const result = await circuit.execute(async () => 'recovered')
       expect(result).toBe('recovered')
@@ -97,11 +97,13 @@ describe('Error Scenarios', () => {
     it('should close after successful HALF_OPEN attempts', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error('fail') })
+          circuit.execute(async () => {
+            throw new Error('fail')
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       await circuit.execute(async () => 'ok1')
       await circuit.execute(async () => 'ok2')
@@ -112,14 +114,18 @@ describe('Error Scenarios', () => {
     it('should re-open if HALF_OPEN attempt fails', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error('fail') })
+          circuit.execute(async () => {
+            throw new Error('fail')
+          }),
         ).rejects.toThrow()
       }
 
-      await new Promise(r => setTimeout(r, 110))
+      await new Promise((r) => setTimeout(r, 110))
 
       await expect(
-        circuit.execute(async () => { throw new Error('fail again') })
+        circuit.execute(async () => {
+          throw new Error('fail again')
+        }),
       ).rejects.toThrow()
 
       expect(circuit.currentState).toBe('OPEN')
@@ -128,10 +134,14 @@ describe('Error Scenarios', () => {
     it('should reset failure count on success', async () => {
       // 2 failures (below threshold)
       await expect(
-        circuit.execute(async () => { throw new Error('fail') })
+        circuit.execute(async () => {
+          throw new Error('fail')
+        }),
       ).rejects.toThrow()
       await expect(
-        circuit.execute(async () => { throw new Error('fail') })
+        circuit.execute(async () => {
+          throw new Error('fail')
+        }),
       ).rejects.toThrow()
 
       // Success resets count
@@ -139,10 +149,14 @@ describe('Error Scenarios', () => {
 
       // 2 more failures should not open circuit
       await expect(
-        circuit.execute(async () => { throw new Error('fail') })
+        circuit.execute(async () => {
+          throw new Error('fail')
+        }),
       ).rejects.toThrow()
       await expect(
-        circuit.execute(async () => { throw new Error('fail') })
+        circuit.execute(async () => {
+          throw new Error('fail')
+        }),
       ).rejects.toThrow()
 
       expect(circuit.currentState).toBe('CLOSED')
@@ -151,7 +165,9 @@ describe('Error Scenarios', () => {
     it('should reset to CLOSED state', async () => {
       for (let i = 0; i < 3; i++) {
         await expect(
-          circuit.execute(async () => { throw new Error('fail') })
+          circuit.execute(async () => {
+            throw new Error('fail')
+          }),
         ).rejects.toThrow()
       }
 
@@ -183,7 +199,7 @@ describe('Error Scenarios', () => {
           attempts++
           if (attempts < 4) throw new Error('transient')
           return 'success'
-        })
+        }),
       ).resolves.toBe('success')
 
       expect(attempts).toBe(4)
@@ -206,7 +222,7 @@ describe('Error Scenarios', () => {
         policy.execute(async () => {
           attempts++
           throw new Error('permanent failure')
-        })
+        }),
       ).rejects.toThrow('permanent failure')
 
       expect(attempts).toBe(3)
@@ -222,7 +238,7 @@ describe('Error Scenarios', () => {
 
       const delays = Array.from({ length: 10 }, (_, i) => policy.calculateDelay(i))
       // Jitter means delays are not identical even for same attempt
-      const uniqueDelays = new Set(delays.map(d => Math.round(d)))
+      const uniqueDelays = new Set(delays.map((d) => Math.round(d)))
       expect(uniqueDelays.size).toBeGreaterThan(1)
     })
 
@@ -242,7 +258,7 @@ describe('Error Scenarios', () => {
         policy.execute(async () => {
           attempts++
           throw new Error('permanent')
-        })
+        }),
       ).rejects.toThrow('permanent')
 
       expect(attempts).toBe(1)
@@ -359,7 +375,13 @@ describe('Error Scenarios', () => {
           render: jest.fn().mockResolvedValue({ title: 'Test', body: 'Test' }),
         },
         eventPublisher: { publish: jest.fn(), subscribe: jest.fn(), unsubscribe: jest.fn() },
-        jobQueue: { enqueue: jest.fn(), dequeue: jest.fn(), markAsProcessed: jest.fn(), moveToDeadLetter: jest.fn(), getDeadLetterJobs: jest.fn() },
+        jobQueue: {
+          enqueue: jest.fn(),
+          dequeue: jest.fn(),
+          markAsProcessed: jest.fn(),
+          moveToDeadLetter: jest.fn(),
+          getDeadLetterJobs: jest.fn(),
+        },
         deduplicationPolicy: { check: jest.fn().mockResolvedValue({ action: 'create' }) } as any,
         preferencePolicy: {
           canDeliver: jest.fn().mockResolvedValue(true),
@@ -374,7 +396,7 @@ describe('Error Scenarios', () => {
           type: NotificationType.CommentReply,
           title: 'Test',
           message: 'Test',
-        })
+        }),
       ).rejects.toThrow('DB connection failed')
     })
 
@@ -388,7 +410,13 @@ describe('Error Scenarios', () => {
           render: jest.fn().mockResolvedValue({ title: 'Test', body: 'Test' }),
         },
         eventPublisher: { publish: jest.fn(), subscribe: jest.fn(), unsubscribe: jest.fn() },
-        jobQueue: { enqueue: jest.fn(), dequeue: jest.fn(), markAsProcessed: jest.fn(), moveToDeadLetter: jest.fn(), getDeadLetterJobs: jest.fn() },
+        jobQueue: {
+          enqueue: jest.fn(),
+          dequeue: jest.fn(),
+          markAsProcessed: jest.fn(),
+          moveToDeadLetter: jest.fn(),
+          getDeadLetterJobs: jest.fn(),
+        },
         deduplicationPolicy: { check: jest.fn().mockResolvedValue({ action: 'create' }) } as any,
         preferencePolicy: {
           canDeliver: jest.fn().mockRejectedValue(new Error('DB timeout')),
@@ -402,7 +430,7 @@ describe('Error Scenarios', () => {
           type: NotificationType.CommentReply,
           title: 'Test',
           message: 'Test',
-        })
+        }),
       ).rejects.toThrow('DB timeout')
     })
   })

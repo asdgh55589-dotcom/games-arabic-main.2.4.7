@@ -3,7 +3,18 @@
 import Image from 'next/image'
 
 import { useState } from 'react'
-import { Play, Clock, Eye, Youtube, ChevronLeft, X, VideoOff, ThumbsUp, MessageSquare, Calendar } from 'lucide-react'
+import {
+  Play,
+  Clock,
+  Eye,
+  Youtube,
+  ChevronLeft,
+  X,
+  VideoOff,
+  ThumbsUp,
+  MessageSquare,
+  Calendar,
+} from 'lucide-react'
 import { formatNumber, formatArabicDate } from '@/lib/format'
 import type { ModVideoGroup } from '@/lib/types'
 
@@ -34,7 +45,9 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
 
   // استخراج YouTube video ID من الرابط
   const extractYouTubeId = (url: string): string => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/)
+    const match = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
+    )
     return match ? match[1] : ''
   }
 
@@ -45,7 +58,9 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
           <VideoOff className="h-7 w-7 text-muted-foreground/60" />
         </div>
         <h3 className="text-base font-bold text-foreground">لا توجد فيديوهات</h3>
-        <p className="mt-1.5 text-sm text-muted-foreground">لم تتم إضافة أي فيديوهات لهذا التعريب بعد.</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          لم تتم إضافة أي فيديوهات لهذا التعريب بعد.
+        </p>
       </div>
     )
   }
@@ -75,24 +90,33 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
                 {group.videos.map((video) => (
                   <button
                     key={video.id}
-                    onClick={() => setActiveVideo({
-                      title: video.title,
-                      url: video.url,
-                      channel: video.channel,
-                      description: video.description,
-                      views: video.views,
-                      likes: video.likes,
-                      commentsCount: video.commentsCount,
-                      publishedAt: video.publishedAt,
-                      thumbnail: video.thumbnail,
-                    })}
+                    onClick={() =>
+                      setActiveVideo({
+                        title: video.title,
+                        url: video.url,
+                        channel: video.channel,
+                        description: video.description,
+                        views: video.views,
+                        likes: video.likes,
+                        commentsCount: video.commentsCount,
+                        publishedAt: video.publishedAt,
+                        thumbnail: video.thumbnail,
+                      })
+                    }
                     className="group flex w-full items-stretch gap-4 overflow-hidden rounded-xl border border-border/50 bg-card/40 text-right transition-all duration-200 hover:border-border hover:bg-card cursor-pointer"
                   >
                     {/* الصورة المصغّرة */}
                     <div className="relative aspect-video w-44 shrink-0 overflow-hidden bg-secondary sm:w-52 md:w-60">
                       {video.thumbnail ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={video.thumbnail} alt={video.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                        <Image
+                          unoptimized
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          fill
+                          src={video.thumbnail}
+                          alt={video.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
                       ) : (
                         <div className="grid h-full place-items-center bg-secondary">
                           <Youtube className="h-9 w-9 text-muted-foreground/70" />
@@ -165,10 +189,7 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
             <X className="h-5 w-5" />
           </button>
 
-          <div
-            className="w-full max-w-4xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
             <div className="relative aspect-video overflow-hidden rounded-xl bg-black shadow-2xl">
               {extractYouTubeId(activeVideo.url) ? (
                 <iframe
@@ -188,7 +209,9 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-bold text-white">{activeVideo.title}</h3>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-white/60">
-                  {activeVideo.channel && <span className="font-medium text-white/80">{activeVideo.channel}</span>}
+                  {activeVideo.channel && (
+                    <span className="font-medium text-white/80">{activeVideo.channel}</span>
+                  )}
                   <span className="flex items-center gap-1.5">
                     <Eye className="h-3.5 w-3.5" />
                     <span className="tabular-nums">{formatNumber(activeVideo.views)}</span> مشاهدة
@@ -209,7 +232,9 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
                   )}
                 </div>
                 {activeVideo.description && (
-                  <p className="mt-3 max-h-24 overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-white/60 scrollbar-thin">{activeVideo.description}</p>
+                  <p className="mt-3 max-h-24 overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-white/60 scrollbar-thin">
+                    {activeVideo.description}
+                  </p>
                 )}
               </div>
               <a

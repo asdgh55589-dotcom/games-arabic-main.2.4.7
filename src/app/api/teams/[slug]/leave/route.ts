@@ -54,7 +54,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Prevent leaving if user is the team owner
   if (team.ownerId === user.id) {
-    return fail('VALIDATION_ERROR', 'لا يمكنك مغادرة الفريق لأنك المالك. يجب نقل الملكية أولاً قبل المغادرة.', 422)
+    return fail(
+      'VALIDATION_ERROR',
+      'لا يمكنك مغادرة الفريق لأنك المالك. يجب نقل الملكية أولاً قبل المغادرة.',
+      422,
+    )
   }
 
   const oldUsername = user.username

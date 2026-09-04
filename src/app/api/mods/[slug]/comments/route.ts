@@ -28,15 +28,25 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     where: { modId: mod.id },
     include: {
       user: {
-        select: { id: true, username: true, avatarUrl: true, role: true, tier: true, specialRoles: true },
+        select: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+          role: true,
+          tier: true,
+          specialRoles: true,
+        },
       },
     },
     orderBy: { createdAt: 'asc' },
   })
 
   // بناء شجرة التعليقات
-  const commentMap = new Map<string, typeof allComments[number] & { replies: typeof allComments }>()
-  const rootComments: (typeof allComments[number] & { replies: typeof allComments })[] = []
+  const commentMap = new Map<
+    string,
+    (typeof allComments)[number] & { replies: typeof allComments }
+  >()
+  const rootComments: ((typeof allComments)[number] & { replies: typeof allComments })[] = []
 
   for (const c of allComments) {
     commentMap.set(c.id, { ...c, replies: [] })
@@ -56,7 +66,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 
   // ترتيب الردود لكل عقدة
-  type CommentNode = typeof rootComments[number]
+  type CommentNode = (typeof rootComments)[number]
   const sortReplies = (nodes: CommentNode[]) => {
     for (const n of nodes) {
       n.replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -66,16 +76,25 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   sortReplies(rootComments)
 
   // ترتيب التعليقات الرئيسية حسب sort mode — المثبت أولاً دائماً ثم حسب الفلتر
-  const sortWithPinned = (a: typeof rootComments[number], b: typeof rootComments[number], cmp: number) => {
+  const sortWithPinned = (
+    a: (typeof rootComments)[number],
+    b: (typeof rootComments)[number],
+    cmp: number,
+  ) => {
     if (a.isPinned && !b.isPinned) return -1
     if (!a.isPinned && b.isPinned) return 1
     return cmp
   }
-  const sorted = sort === 'oldest'
-    ? [...rootComments].sort((a, b) => sortWithPinned(a, b, new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()))
-    : sort === 'popular'
-      ? [...rootComments].sort((a, b) => sortWithPinned(a, b, b.likes - a.likes))
-      : [...rootComments].sort((a, b) => sortWithPinned(a, b, new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+  const sorted =
+    sort === 'oldest'
+      ? [...rootComments].sort((a, b) =>
+          sortWithPinned(a, b, new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+        )
+      : sort === 'popular'
+        ? [...rootComments].sort((a, b) => sortWithPinned(a, b, b.likes - a.likes))
+        : [...rootComments].sort((a, b) =>
+            sortWithPinned(a, b, new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+          )
 
   // عدّاد إجمالي التعليقات (رئيسية + ردود)
   const totalCount = allComments.length
@@ -104,7 +123,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const { text, parentId } = parsed.data
 
-    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true, name: true, authorId: true } })
+    const mod = await db.mod.findUnique({
+      where: { slug },
+      select: { id: true, name: true, authorId: true },
+    })
     if (!mod) {
       return notFound('Mod not found')
     }

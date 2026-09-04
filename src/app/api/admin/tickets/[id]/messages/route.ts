@@ -3,10 +3,7 @@ import { db } from '@/lib/db'
 import { requireModerator } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -25,10 +22,7 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -36,10 +30,7 @@ export async function POST(
     const { content, isInternal, userId, newStatus } = body
 
     if (!content || !userId) {
-      return NextResponse.json(
-        { error: 'المحتوى ومعرف المستخدم مطلوبان' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'المحتوى ومعرف المستخدم مطلوبان' }, { status: 400 })
     }
 
     const message = await db.ticketMessage.create({
@@ -78,10 +69,7 @@ export async function POST(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -89,10 +77,7 @@ export async function DELETE(
     const messageId = searchParams.get('messageId')
 
     if (!messageId) {
-      return NextResponse.json(
-        { error: 'معرف الرسالة مطلوب' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'معرف الرسالة مطلوب' }, { status: 400 })
     }
 
     await db.ticketMessage.delete({ where: { id: messageId } })

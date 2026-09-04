@@ -18,9 +18,10 @@ export interface EmailTemplateData {
  */
 export function generateEmailWrapper(data: EmailTemplateData): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const trackingPixel = data.logId && baseUrl
-    ? `<img src="${baseUrl}/api/notifications/track?id=${data.logId}&event=open" width="1" height="1" style="display:none" alt="" />`
-    : ''
+  const trackingPixel =
+    data.logId && baseUrl
+      ? `<img src="${baseUrl}/api/notifications/track?id=${data.logId}&event=open" width="1" height="1" style="display:none" alt="" />`
+      : ''
   return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -47,7 +48,9 @@ export function generateEmailWrapper(data: EmailTemplateData): string {
             </td>
           </tr>
           <!-- Action Button -->
-          ${data.actionUrl ? `
+          ${
+            data.actionUrl
+              ? `
           <tr>
             <td style="padding:0 32px 32px;text-align:center;">
               <a href="${sanitizeUrl(data.actionUrl)}" style="display:inline-block;background-color:#6c5ce7;color:#ffffff;padding:12px 32px;border-radius:6px;text-decoration:none;font-size:16px;">
@@ -55,7 +58,9 @@ export function generateEmailWrapper(data: EmailTemplateData): string {
               </a>
             </td>
           </tr>
-          ` : ''}
+          `
+              : ''
+          }
           <!-- Footer -->
           <tr>
             <td style="background-color:#f8f9fa;padding:24px 32px;text-align:center;border-top:1px solid #e9ecef;">

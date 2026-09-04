@@ -16,9 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (isAdmin) {
     return (
       <BookmarksProvider>
-        <ErrorBoundary label="this page">
-          {children}
-        </ErrorBoundary>
+        <ErrorBoundary label="this page">{children}</ErrorBoundary>
         <CookieConsent />
         <ScrollToTop />
       </BookmarksProvider>
@@ -35,9 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </a>
         <Navbar key={user?.username} />
         <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-          <ErrorBoundary label="this page">
-            {children}
-          </ErrorBoundary>
+          <ErrorBoundary label="this page">{children}</ErrorBoundary>
         </main>
         <Footer />
         <CookieConsent />

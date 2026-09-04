@@ -51,15 +51,21 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
               const merged = [...data.notifications, ...prev]
               // dedup by id
               const seen = new Set<string>()
-              return merged.filter((n: { id: string }) => {
-                if (seen.has(n.id)) return false
-                seen.add(n.id)
-                return true
-              }).slice(0, 50)
+              return merged
+                .filter((n: { id: string }) => {
+                  if (seen.has(n.id)) return false
+                  seen.add(n.id)
+                  return true
+                })
+                .slice(0, 50)
             })
             setSseUnread((prev) => prev + data.notifications.length)
             // Browser notification if permitted
-            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            if (
+              typeof window !== 'undefined' &&
+              'Notification' in window &&
+              Notification.permission === 'granted'
+            ) {
               data.notifications.forEach((n: { title: string; message: string }) => {
                 try {
                   new Notification(n.title, { body: n.message })
@@ -85,7 +91,11 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
   useEffect(() => {
     if (!currentUser?.id) return
     // Request browser notification permission
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
       Notification.requestPermission().catch(() => {})
     }
     connectSSE()
@@ -105,15 +115,19 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
   const handleMarkAsRead = useCallback(
     async (id: string) => {
       await markAsRead(id)
-      setSseNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } as never : n)))
+      setSseNotifications((prev) =>
+        prev.map((n) => (n.id === id ? ({ ...n, readAt: new Date().toISOString() } as never) : n)),
+      )
       setSseUnread((prev) => Math.max(0, prev - 1))
     },
-    [markAsRead]
+    [markAsRead],
   )
 
   const handleMarkAllAsRead = useCallback(async () => {
     await markAllAsRead()
-    setSseNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() } as never)))
+    setSseNotifications((prev) =>
+      prev.map((n) => ({ ...n, readAt: new Date().toISOString() }) as never),
+    )
     setSseUnread(0)
   }, [markAllAsRead])
 

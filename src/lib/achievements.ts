@@ -160,18 +160,23 @@ export async function checkAndAwardAchievements(teamId: string): Promise<string[
   const publishedCount = mods.filter((m) => m.workflowStatus === 'PUBLISHED').length
   const totalEndorsements = mods.reduce((sum, m) => sum + (m.endorsements || 0), 0)
   const totalDownloads = mods.reduce((sum, m) => sum + (m.downloads || 0), 0)
-  const avgRating = mods.length > 0
-    ? mods.filter((m) => m.qualityRating && m.qualityRating > 0)
-        .reduce((sum, m) => sum + (m.qualityRating || 0), 0) /
-      Math.max(mods.filter((m) => m.qualityRating && m.qualityRating > 0).length, 1)
-    : 0
+  const avgRating =
+    mods.length > 0
+      ? mods
+          .filter((m) => m.qualityRating && m.qualityRating > 0)
+          .reduce((sum, m) => sum + (m.qualityRating || 0), 0) /
+        Math.max(mods.filter((m) => m.qualityRating && m.qualityRating > 0).length, 1)
+      : 0
 
   const newlyEarned: string[] = []
 
   for (const achievement of achievements) {
     if (earnedIds.has(achievement.id)) continue
 
-    const req = JSON.parse(JSON.stringify(achievement.requirement)) as { type: string; value: number }
+    const req = JSON.parse(JSON.stringify(achievement.requirement)) as {
+      type: string
+      value: number
+    }
     let qualifies = false
 
     switch (req.type) {
@@ -223,7 +228,13 @@ export async function checkAndAwardAchievements(teamId: string): Promise<string[
       newlyEarned.push(achievement.id)
 
       // Award points
-      await awardPoints(teamId, achievement.points, `إنجاز: ${achievement.nameAr}`, 'achievement', achievement.id)
+      await awardPoints(
+        teamId,
+        achievement.points,
+        `إنجاز: ${achievement.nameAr}`,
+        'achievement',
+        achievement.id,
+      )
     }
   }
 

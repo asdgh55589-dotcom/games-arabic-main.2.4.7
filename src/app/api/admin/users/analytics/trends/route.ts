@@ -12,9 +12,14 @@ export async function GET(request: NextRequest) {
 
     let days: number
     switch (period) {
-      case '7d': days = 7; break
-      case '90d': days = 90; break
-      default: days = 30;
+      case '7d':
+        days = 7
+        break
+      case '90d':
+        days = 90
+        break
+      default:
+        days = 30
     }
 
     // حساب تاريخ البداية

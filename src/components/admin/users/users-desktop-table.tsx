@@ -51,9 +51,7 @@ export function UsersDesktopTable({
 
             const isPermBanned = u.banStatus === 'banned_perm'
             const isTempBanned =
-              u.banStatus === 'banned_temp' &&
-              u.bannedUntil &&
-              new Date(u.bannedUntil) > new Date()
+              u.banStatus === 'banned_temp' && u.bannedUntil && new Date(u.bannedUntil) > new Date()
 
             const isBanned = Boolean(isPermBanned || isTempBanned)
 
@@ -62,7 +60,11 @@ export function UsersDesktopTable({
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     {u.avatarUrl && (
-                      <Image unoptimized loading="lazy" width={40} height={40}
+                      <Image
+                        unoptimized
+                        loading="lazy"
+                        width={40}
+                        height={40}
                         src={u.avatarUrl}
                         alt=""
                         className="h-10 w-10 rounded-2xl object-cover"
@@ -70,9 +72,7 @@ export function UsersDesktopTable({
                     )}
 
                     <div>
-                      <div className="font-black text-white">
-                        {u.displayName || u.username}
-                      </div>
+                      <div className="font-black text-white">{u.displayName || u.username}</div>
                       {u.displayName && (
                         <div className="text-xs text-muted-foreground">@{u.username}</div>
                       )}

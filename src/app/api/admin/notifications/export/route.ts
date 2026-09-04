@@ -32,14 +32,21 @@ export async function GET(req: NextRequest) {
 
     const rows = logs.map((log) => [
       new Date(log.createdAt).toISOString(),
-      (NOTIFICATION_TYPE_LABELS as Record<string, string>)[(log.notification as unknown as { type: string })?.type] || (log.notification as unknown as { type: string })?.type || '',
+      (NOTIFICATION_TYPE_LABELS as Record<string, string>)[
+        (log.notification as unknown as { type: string })?.type
+      ] ||
+        (log.notification as unknown as { type: string })?.type ||
+        '',
       (log.notification as unknown as { title: string })?.title || '',
       (log.notification as unknown as { user: { username: string } })?.user?.username || '',
       log.channel,
       log.status,
     ])
 
-    const csv = [headers.join(','), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const csv = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+    ].join('\n')
 
     const bom = '\uFEFF'
 

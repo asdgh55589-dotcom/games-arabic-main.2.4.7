@@ -17,15 +17,28 @@ export function PrivacyPage() {
       <Card className="p-6 sm:p-8">
         <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
           <p>
-            نحن في GAMES ARABIC نحترم خصوصية مستخدمينا ونلتزم بحماية بياناتهم الشخصية. توضّح هذه السياسة كيفية جمعنا واستخدامنا وحمايتنا للبيانات التي تقدّمها عند استخدام موقعنا.
+            نحن في GAMES ARABIC نحترم خصوصية مستخدمينا ونلتزم بحماية بياناتهم الشخصية. توضّح هذه
+            السياسة كيفية جمعنا واستخدامنا وحمايتنا للبيانات التي تقدّمها عند استخدام موقعنا.
           </p>
 
           <h2 className="text-lg font-bold text-primary">١. البيانات التي نجمعها</h2>
           <ul className="mr-6 list-disc space-y-1.5">
-            <li><strong>بيانات الحساب:</strong> اسم المستخدم، البريد الإلكتروني، كلمة المرور (مشفّرة) عند تسجيل الحساب.</li>
-            <li><strong>بيانات التفاعل:</strong> التعليقات، التأييدات، المشاهدات، والتحميلات التي تقوم بها.</li>
-            <li><strong>بيانات تقنية:</strong> عنوان IP، نوع المتصفح، نظام التشغيل (لأغراض الأمان وإحصائيات الاستخدام).</li>
-            <li><strong>بيانات OAuth:</strong> عند تسجيل الدخول عبر Google أو Telegram، نحصل على الاسم والبريد الإلكتروني والصورة فقط.</li>
+            <li>
+              <strong>بيانات الحساب:</strong> اسم المستخدم، البريد الإلكتروني، كلمة المرور (مشفّرة)
+              عند تسجيل الحساب.
+            </li>
+            <li>
+              <strong>بيانات التفاعل:</strong> التعليقات، التأييدات، المشاهدات، والتحميلات التي تقوم
+              بها.
+            </li>
+            <li>
+              <strong>بيانات تقنية:</strong> عنوان IP، نوع المتصفح، نظام التشغيل (لأغراض الأمان
+              وإحصائيات الاستخدام).
+            </li>
+            <li>
+              <strong>بيانات OAuth:</strong> عند تسجيل الدخول عبر Google أو Telegram، نحصل على الاسم
+              والبريد الإلكتروني والصورة فقط.
+            </li>
           </ul>
 
           <h2 className="text-lg font-bold text-primary">٢. كيف نستخدم بياناتك</h2>
@@ -45,7 +58,8 @@ export function PrivacyPage() {
 
           <h2 className="text-lg font-bold text-primary">٤. ملفات تعريف الارتباط (Cookies)</h2>
           <p>
-            يستخدم الموقع ملفات تعريف ارتباط (Cookies) لحفظ جلسة تسجيل الدخول وتحسين تجربة الاستخدام. ملفات الـ session آمنة (HttpOnly) ولا يمكن الوصول إليها عبر JavaScript.
+            يستخدم الموقع ملفات تعريف ارتباط (Cookies) لحفظ جلسة تسجيل الدخول وتحسين تجربة
+            الاستخدام. ملفات الـ session آمنة (HttpOnly) ولا يمكن الوصول إليها عبر JavaScript.
           </p>
 
           <h2 className="text-lg font-bold text-primary">٥. حقوقك</h2>
@@ -57,7 +71,15 @@ export function PrivacyPage() {
 
           <h2 className="text-lg font-bold text-primary">٦. التواصل</h2>
           <p>
-            إذا كان لديك أي استفسار حول سياسة الخصوصية، يمكنك التواصل معنا عبر جروب تليجرام: <a href="https://t.me/GAMES_ARABIC" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@GAMES_ARABIC</a>
+            إذا كان لديك أي استفسار حول سياسة الخصوصية، يمكنك التواصل معنا عبر جروب تليجرام:{' '}
+            <a
+              href="https://t.me/GAMES_ARABIC"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              @GAMES_ARABIC
+            </a>
           </p>
         </div>
       </Card>

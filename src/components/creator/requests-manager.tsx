@@ -106,7 +106,12 @@ export function RequestsManager() {
           { value: 'completed', label: 'مكتمل' },
           { value: 'all', label: 'الكل' },
         ].map((f) => (
-          <Button key={f.value} variant={filter === f.value ? 'default' : 'outline'} size="sm" onClick={() => setFilter(f.value as never)}>
+          <Button
+            key={f.value}
+            variant={filter === f.value ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter(f.value as never)}
+          >
             {f.label}
           </Button>
         ))}
@@ -134,8 +139,24 @@ export function RequestsManager() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold">{r.gameName}</h3>
                       <Badge variant="outline">{r.platform}</Badge>
-                      <Badge className={r.status === 'open' ? 'bg-green-500 text-white' : r.status === 'accepted' ? 'bg-blue-500 text-white' : r.status === 'completed' ? 'bg-purple-500 text-white' : 'bg-gray-500 text-white'}>
-                        {r.status === 'open' ? 'مفتوح' : r.status === 'accepted' ? 'مقبول' : r.status === 'completed' ? 'مكتمل' : r.status}
+                      <Badge
+                        className={
+                          r.status === 'open'
+                            ? 'bg-green-500 text-white'
+                            : r.status === 'accepted'
+                              ? 'bg-blue-500 text-white'
+                              : r.status === 'completed'
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-gray-500 text-white'
+                        }
+                      >
+                        {r.status === 'open'
+                          ? 'مفتوح'
+                          : r.status === 'accepted'
+                            ? 'مقبول'
+                            : r.status === 'completed'
+                              ? 'مكتمل'
+                              : r.status}
                       </Badge>
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Heart className="h-3 w-3" /> {r.interestCount}
@@ -150,17 +171,32 @@ export function RequestsManager() {
                       <span>•</span>
                       <span>{timeAgo(r.createdAt)}</span>
                     </div>
-                    {r.notes && <p className="text-sm mt-2 whitespace-pre-wrap bg-muted/50 rounded p-2">{r.notes}</p>}
+                    {r.notes && (
+                      <p className="text-sm mt-2 whitespace-pre-wrap bg-muted/50 rounded p-2">
+                        {r.notes}
+                      </p>
+                    )}
                     {r.mod && (
                       <div className="text-xs mt-2">
-                        مرتبط بـ: <Link href={`/mod/${r.mod.slug}`} className="text-primary hover:underline">{r.mod.name}</Link>
+                        مرتبط بـ:{' '}
+                        <Link href={`/mod/${r.mod.slug}`} className="text-primary hover:underline">
+                          {r.mod.name}
+                        </Link>
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
                     {r.status === 'open' && (
-                      <Button size="sm" onClick={() => handleAccept(r.id)} disabled={actionLoading === r.id}>
-                        {actionLoading === r.id ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Check className="h-4 w-4 ml-1" />}
+                      <Button
+                        size="sm"
+                        onClick={() => handleAccept(r.id)}
+                        disabled={actionLoading === r.id}
+                      >
+                        {actionLoading === r.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                        ) : (
+                          <Check className="h-4 w-4 ml-1" />
+                        )}
                         قبول
                       </Button>
                     )}
@@ -170,11 +206,21 @@ export function RequestsManager() {
                           <Input
                             placeholder="معرّف التعريب"
                             value={completeModId[r.id] || ''}
-                            onChange={(e) => setCompleteModId((p) => ({ ...p, [r.id]: e.target.value }))}
+                            onChange={(e) =>
+                              setCompleteModId((p) => ({ ...p, [r.id]: e.target.value }))
+                            }
                             className="h-8 w-28 text-xs"
                           />
-                          <Button size="sm" onClick={() => handleComplete(r.id)} disabled={actionLoading === r.id}>
-                            {actionLoading === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                          <Button
+                            size="sm"
+                            onClick={() => handleComplete(r.id)}
+                            disabled={actionLoading === r.id}
+                          >
+                            {actionLoading === r.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Link2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                         <span className="text-[10px] text-muted-foreground">أدخل modId للربط</span>

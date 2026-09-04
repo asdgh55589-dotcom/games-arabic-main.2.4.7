@@ -54,7 +54,34 @@ type SortMode = 'newest' | 'popular' | 'oldest'
 const PAGE_SIZE = 20
 const MAX_DEPTH = 5
 
-const EMOJIS = ['😀','😁','😂','🤣','😍','😘','🥰','😎','🤩','🥳','😢','😭','😡','🤔','👍','👏','❤️','🔥','🎉','✨','🙏','💯','😅','🤗','🫡','👌']
+const EMOJIS = [
+  '😀',
+  '😁',
+  '😂',
+  '🤣',
+  '😍',
+  '😘',
+  '🥰',
+  '😎',
+  '🤩',
+  '🥳',
+  '😢',
+  '😭',
+  '😡',
+  '🤔',
+  '👍',
+  '👏',
+  '❤️',
+  '🔥',
+  '🎉',
+  '✨',
+  '🙏',
+  '💯',
+  '😅',
+  '🤗',
+  '🫡',
+  '👌',
+]
 
 const COLORS = [
   { name: 'أحمر', value: '#ef4444' },
@@ -70,7 +97,7 @@ function wrapSelection(
   setValue: (v: string) => void,
   prefix: string,
   suffix: string,
-  placeholder = 'نص'
+  placeholder = 'نص',
 ) {
   if (!textarea) return
   const start = textarea.selectionStart
@@ -89,7 +116,7 @@ function wrapSelection(
 function insertAtCursor(
   textarea: HTMLTextAreaElement | null,
   setValue: (v: string) => void,
-  text: string
+  text: string,
 ) {
   if (!textarea) {
     setValue(text)
@@ -156,17 +183,20 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
     if (totalPages > 0 && page > totalPages) setPage(totalPages)
   }, [totalPages, page])
 
-  const updateLikesInTree = useCallback((nodes: ModCommentType[], targetId: string, delta: number): ModCommentType[] => {
-    return nodes.map((node) => {
-      if (node.id === targetId) {
-        return { ...node, likes: Math.max(0, (node.likes || 0) + delta) }
-      }
-      if (node.replies && node.replies.length > 0) {
-        return { ...node, replies: updateLikesInTree(node.replies, targetId, delta) }
-      }
-      return node
-    })
-  }, [])
+  const updateLikesInTree = useCallback(
+    (nodes: ModCommentType[], targetId: string, delta: number): ModCommentType[] => {
+      return nodes.map((node) => {
+        if (node.id === targetId) {
+          return { ...node, likes: Math.max(0, (node.likes || 0) + delta) }
+        }
+        if (node.replies && node.replies.length > 0) {
+          return { ...node, replies: updateLikesInTree(node.replies, targetId, delta) }
+        }
+        return node
+      })
+    },
+    [],
+  )
 
   const toggleLike = (id: string) => {
     const isLiked = likedIds.has(id)
@@ -207,7 +237,11 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
   const onSubmitComment = async () => {
     if (!newComment.trim() || submitting) return
     if (!currentUser) {
-      toast({ title: 'سجّل الدخول', description: 'يجب تسجيل الدخول للتعليق', variant: 'destructive' })
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول للتعليق',
+        variant: 'destructive',
+      })
       return
     }
     setSubmitting(true)
@@ -220,7 +254,11 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
       if (!res.ok) {
         const data = await res.json()
         if (data.code === 'AUTH_REQUIRED') {
-          toast({ title: 'سجّل الدخول', description: 'يجب تسجيل الدخول للتعليق', variant: 'destructive' })
+          toast({
+            title: 'سجّل الدخول',
+            description: 'يجب تسجيل الدخول للتعليق',
+            variant: 'destructive',
+          })
           return
         }
         throw new Error(data?.error?.message || 'فشل النشر')
@@ -255,7 +293,11 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
       if (!res.ok) {
         const data = await res.json()
         if (data.code === 'AUTH_REQUIRED') {
-          toast({ title: 'سجّل الدخول', description: 'يجب تسجيل الدخول للرد', variant: 'destructive' })
+          toast({
+            title: 'سجّل الدخول',
+            description: 'يجب تسجيل الدخول للرد',
+            variant: 'destructive',
+          })
           return
         }
         throw new Error(data?.error?.message || 'فشل النشر')
@@ -295,7 +337,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
         <h2 className="flex items-center gap-2 text-xl font-bold">
           <MessageSquare className="h-5 w-5 text-primary" />
           التعليقات
-          <Badge variant="secondary" className="mr-1">{formatNumber(totalCount)}</Badge>
+          <Badge variant="secondary" className="mr-1">
+            {formatNumber(totalCount)}
+          </Badge>
         </h2>
 
         <div className="flex items-center gap-2 text-sm">
@@ -334,7 +378,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
               <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1.5">
                 <button
                   type="button"
-                  onClick={() => wrapSelection(newCommentRef.current, setNewComment, '**', '**', 'نص عريض')}
+                  onClick={() =>
+                    wrapSelection(newCommentRef.current, setNewComment, '**', '**', 'نص عريض')
+                  }
                   className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="عريض **نص**"
                 >
@@ -342,7 +388,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => wrapSelection(newCommentRef.current, setNewComment, '*', '*', 'نص مائل')}
+                  onClick={() =>
+                    wrapSelection(newCommentRef.current, setNewComment, '*', '*', 'نص مائل')
+                  }
                   className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="مائل *نص*"
                 >
@@ -350,7 +398,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => wrapSelection(newCommentRef.current, setNewComment, '~~', '~~', 'نص مشطوب')}
+                  onClick={() =>
+                    wrapSelection(newCommentRef.current, setNewComment, '~~', '~~', 'نص مشطوب')
+                  }
                   className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="مشطوب ~~نص~~"
                 >
@@ -358,7 +408,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => wrapSelection(newCommentRef.current, setNewComment, '## ', '', 'عنوان كبير')}
+                  onClick={() =>
+                    wrapSelection(newCommentRef.current, setNewComment, '## ', '', 'عنوان كبير')
+                  }
                   className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                   title="تكبير ## عنوان"
                 >
@@ -381,7 +433,13 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                           key={c.value}
                           title={c.name}
                           onClick={() => {
-                            wrapSelection(newCommentRef.current, setNewComment, `<span style="color:${c.value}">`, `</span>`, 'نص ملون')
+                            wrapSelection(
+                              newCommentRef.current,
+                              setNewComment,
+                              `<span style="color:${c.value}">`,
+                              `</span>`,
+                              'نص ملون',
+                            )
                             setShowColorNew(false)
                           }}
                           className="h-6 w-6 rounded-full border-2 border-white/20 hover:scale-110 transition-transform"
@@ -423,7 +481,9 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                     </div>
                   )}
                 </div>
-                <span className="ms-auto hidden sm:inline text-[10px] text-muted-foreground/50">حدد نص ثم اختر تنسيق</span>
+                <span className="ms-auto hidden sm:inline text-[10px] text-muted-foreground/50">
+                  حدد نص ثم اختر تنسيق
+                </span>
               </div>
               <textarea
                 ref={newCommentRef}
@@ -437,9 +497,14 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 <Button
                   onClick={onSubmitComment}
                   disabled={!newComment.trim() || submitting}
-                  size="sm" className="min-h-[44px] touch-manipulation"
+                  size="sm"
+                  className="min-h-[44px] touch-manipulation"
                 >
-                  {submitting ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="ml-1.5 h-3.5 w-3.5" />}
+                  {submitting ? (
+                    <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="ml-1.5 h-3.5 w-3.5" />
+                  )}
                   نشر التعليق
                 </Button>
               </div>
@@ -447,8 +512,10 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
           ) : (
             <div className="flex items-center justify-center rounded-lg border border-border bg-card p-6 text-center">
               <p className="text-sm text-muted-foreground">
-                <Link href="/login" className="font-bold text-primary hover:text-primary/80">سجّل الدخول</Link>
-                {' '}للتعليق على هذا التعريب
+                <Link href="/login" className="font-bold text-primary hover:text-primary/80">
+                  سجّل الدخول
+                </Link>{' '}
+                للتعليق على هذا التعريب
               </p>
             </div>
           )}
@@ -483,7 +550,10 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 onLike={toggleLike}
                 onReply={(id) => setReplyingTo(replyingTo === id ? null : id)}
                 onSubmitReply={onSubmitReply}
-                onCancelReply={() => { setReplyingTo(null); setReplyText('') }}
+                onCancelReply={() => {
+                  setReplyingTo(null)
+                  setReplyText('')
+                }}
                 onReport={onReport}
                 onRefresh={fetchComments}
                 replyRef={replyRef}
@@ -500,7 +570,8 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
             <div className="mt-6 flex items-center justify-center gap-3">
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px] touch-manipulation"
+                size="sm"
+                className="min-h-[44px] touch-manipulation"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
@@ -512,7 +583,8 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
               </span>
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px] touch-manipulation"
+                size="sm"
+                className="min-h-[44px] touch-manipulation"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
@@ -606,7 +678,11 @@ function CommentItem({
         onRefresh()
       } else {
         const data = await res.json()
-        toast({ title: 'خطأ', description: data.error?.message || 'فشل التعديل', variant: 'destructive' })
+        toast({
+          title: 'خطأ',
+          description: data.error?.message || 'فشل التعديل',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
@@ -623,7 +699,11 @@ function CommentItem({
         onRefresh()
       } else {
         const data = await res.json()
-        toast({ title: 'خطأ', description: data.error?.message || 'فشل الحذف', variant: 'destructive' })
+        toast({
+          title: 'خطأ',
+          description: data.error?.message || 'فشل الحذف',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
@@ -642,8 +722,12 @@ function CommentItem({
 
   return (
     <>
-      <div className={`rounded-none border-[1.5px] shadow-[1.5px_1.5px_0_0_var(--border)] transition-all ${depthStyle.bg} ${depthStyle.border} ${isNested ? 'p-2' : 'p-2.5'}`}>
-        <div className={`flex gap-2 ${comment.isPinned ? 'rounded-none border border-primary/30 bg-primary/5 p-2 -m-1' : ''}`}>
+      <div
+        className={`rounded-none border-[1.5px] shadow-[1.5px_1.5px_0_0_var(--border)] transition-all ${depthStyle.bg} ${depthStyle.border} ${isNested ? 'p-2' : 'p-2.5'}`}
+      >
+        <div
+          className={`flex gap-2 ${comment.isPinned ? 'rounded-none border border-primary/30 bg-primary/5 p-2 -m-1' : ''}`}
+        >
           <Avatar className={`${avatarSize} shrink-0 ring-2 ring-background`}>
             <AvatarImage src={displayAvatar || undefined} alt={displayName} />
             <AvatarFallback>{displayName[0]}</AvatarFallback>
@@ -651,18 +735,27 @@ function CommentItem({
           <div className="min-w-0 flex-1">
             {/* رأس التعليق — خط عريض وأبيض موحد مع باقي البطاقات */}
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span className={`font-bold text-foreground flex flex-wrap items-center gap-1 ${isNested ? 'text-sm' : 'text-sm'}`}>
+              <span
+                className={`font-bold text-foreground flex flex-wrap items-center gap-1 ${isNested ? 'text-sm' : 'text-sm'}`}
+              >
                 {displayName}
                 {(comment.user as unknown as { role?: string })?.role && (
                   <RoleBadge role={(comment.user as unknown as { role: string }).role} size="sm" />
                 )}
-                {(comment.user as unknown as { tier?: number; role?: string })?.tier !== undefined && (
-                  <TierBadge tier={(comment.user as unknown as { tier: number }).tier} role={(comment.user as unknown as { role?: string })?.role} size="sm" />
+                {(comment.user as unknown as { tier?: number; role?: string })?.tier !==
+                  undefined && (
+                  <TierBadge
+                    tier={(comment.user as unknown as { tier: number }).tier}
+                    role={(comment.user as unknown as { role?: string })?.role}
+                    size="sm"
+                  />
                 )}
                 {(comment.user as unknown as { role?: string; specialRoles?: string })?.role && (
                   <CreatorBadge
                     role={(comment.user as unknown as { role: string }).role}
-                    specialRoles={(comment.user as unknown as { specialRoles?: string }).specialRoles}
+                    specialRoles={
+                      (comment.user as unknown as { specialRoles?: string }).specialRoles
+                    }
                     size={14}
                   />
                 )}
@@ -694,27 +787,88 @@ function CommentItem({
             {isEditing ? (
               <div className="mb-2 overflow-hidden rounded-md border border-border bg-background">
                 <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1">
-                  <button type="button" onClick={() => wrapSelection(editRef.current, setEditText, '**', '**', 'نص عريض')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Bold className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => wrapSelection(editRef.current, setEditText, '*', '*', 'مائل')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Italic className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => wrapSelection(editRef.current, setEditText, '~~', '~~', 'مشطوب')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Strikethrough className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => wrapSelection(editRef.current, setEditText, '## ', '', 'عنوان')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Heading2 className="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      wrapSelection(editRef.current, setEditText, '**', '**', 'نص عريض')
+                    }
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Bold className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => wrapSelection(editRef.current, setEditText, '*', '*', 'مائل')}
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Italic className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => wrapSelection(editRef.current, setEditText, '~~', '~~', 'مشطوب')}
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Strikethrough className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => wrapSelection(editRef.current, setEditText, '## ', '', 'عنوان')}
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Heading2 className="h-3 w-3" />
+                  </button>
                   <span className="mx-1 h-3 w-px bg-white/10" />
                   <div className="relative">
-                    <button type="button" onClick={() => setShowColorEdit(!showColorEdit)} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Palette className="h-3 w-3" /></button>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorEdit(!showColorEdit)}
+                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                    >
+                      <Palette className="h-3 w-3" />
+                    </button>
                     {showColorEdit && (
                       <div className="absolute top-7 start-0 z-20 flex gap-1 rounded-lg border border-border bg-card p-1.5 shadow-xl">
                         {COLORS.map((c) => (
-                          <button key={c.value} onClick={() => { wrapSelection(editRef.current, setEditText, `<span style="color:${c.value}">`, `</span>`, 'ملون'); setShowColorEdit(false)}} className="h-5 w-5 rounded-full border-2 border-white/20" style={{ backgroundColor: c.value }} />
+                          <button
+                            key={c.value}
+                            onClick={() => {
+                              wrapSelection(
+                                editRef.current,
+                                setEditText,
+                                `<span style="color:${c.value}">`,
+                                `</span>`,
+                                'ملون',
+                              )
+                              setShowColorEdit(false)
+                            }}
+                            className="h-5 w-5 rounded-full border-2 border-white/20"
+                            style={{ backgroundColor: c.value }}
+                          />
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="relative">
-                    <button type="button" onClick={() => setShowEmojiEdit(!showEmojiEdit)} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Smile className="h-3 w-3" /></button>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiEdit(!showEmojiEdit)}
+                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                    >
+                      <Smile className="h-3 w-3" />
+                    </button>
                     {showEmojiEdit && (
                       <div className="absolute top-7 start-0 z-20 grid grid-cols-6 gap-1 rounded-lg border border-border bg-card p-2 shadow-xl w-48">
-                        {EMOJIS.slice(0,18).map((e) => (
-                          <button key={e} onClick={() => { insertAtCursor(editRef.current, setEditText, e); setShowEmojiEdit(false)}} className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm">{e}</button>
+                        {EMOJIS.slice(0, 18).map((e) => (
+                          <button
+                            key={e}
+                            onClick={() => {
+                              insertAtCursor(editRef.current, setEditText, e)
+                              setShowEmojiEdit(false)
+                            }}
+                            className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm"
+                          >
+                            {e}
+                          </button>
                         ))}
                       </div>
                     )}
@@ -728,16 +882,31 @@ function CommentItem({
                   rows={3}
                 />
                 <div className="flex gap-2 border-t border-white/5 bg-white/[0.01] p-2">
-                  <Button size="sm" className="min-h-[44px] touch-manipulation" onClick={handleEdit} disabled={saving || !editText.trim()}>
+                  <Button
+                    size="sm"
+                    className="min-h-[44px] touch-manipulation"
+                    onClick={handleEdit}
+                    disabled={saving || !editText.trim()}
+                  >
                     {saving ? 'جاري الحفظ...' : 'حفظ'}
                   </Button>
-                  <Button size="sm" className="min-h-[44px] touch-manipulation" variant="outline" onClick={() => { setIsEditing(false); setEditText(comment.text) }}>
+                  <Button
+                    size="sm"
+                    className="min-h-[44px] touch-manipulation"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setEditText(comment.text)
+                    }}
+                  >
                     إلغاء
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className={`${isNested ? 'text-sm' : 'mb-2 text-sm'} leading-relaxed font-medium text-foreground`}>
+              <div
+                className={`${isNested ? 'text-sm' : 'mb-2 text-sm'} leading-relaxed font-medium text-foreground`}
+              >
                 <MarkdownRenderer content={comment.text} />
               </div>
             )}
@@ -747,7 +916,9 @@ function CommentItem({
               <button
                 onClick={() => onLike(comment.id)}
                 className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition-colors border shadow-sm cursor-pointer ${
-                  liked ? 'bg-blue-600 text-white border-blue-600' : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
+                  liked
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`}
                 aria-pressed={liked}
               >
@@ -780,11 +951,19 @@ function CommentItem({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuItem onClick={() => { setIsEditing(true); setEditText(comment.text) }}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setIsEditing(true)
+                        setEditText(comment.text)
+                      }}
+                    >
                       <Edit2 className="ml-2 h-4 w-4" />
                       تعديل
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-red-500 focus:text-red-500">
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="text-red-500 focus:text-red-500"
+                    >
                       <Flag className="ml-2 h-4 w-4" />
                       حذف
                     </DropdownMenuItem>
@@ -797,32 +976,106 @@ function CommentItem({
             {replyingTo === comment.id && (
               <div className="mt-3 overflow-hidden rounded-lg border border-primary/20 bg-card">
                 <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1">
-                  <button type="button" onClick={() => replyRef?.current && wrapSelection(replyRef.current, setReplyText, '**', '**', 'عريض')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Bold className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => replyRef?.current && wrapSelection(replyRef.current, setReplyText, '*', '*', 'مائل')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Italic className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => replyRef?.current && wrapSelection(replyRef.current, setReplyText, '~~', '~~', 'مشطوب')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Strikethrough className="h-3 w-3" /></button>
-                  <button type="button" onClick={() => replyRef?.current && wrapSelection(replyRef.current, setReplyText, '## ', '', 'عنوان')} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Heading2 className="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      replyRef?.current &&
+                      wrapSelection(replyRef.current, setReplyText, '**', '**', 'عريض')
+                    }
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Bold className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      replyRef?.current &&
+                      wrapSelection(replyRef.current, setReplyText, '*', '*', 'مائل')
+                    }
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Italic className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      replyRef?.current &&
+                      wrapSelection(replyRef.current, setReplyText, '~~', '~~', 'مشطوب')
+                    }
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Strikethrough className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      replyRef?.current &&
+                      wrapSelection(replyRef.current, setReplyText, '## ', '', 'عنوان')
+                    }
+                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    <Heading2 className="h-3 w-3" />
+                  </button>
                   <span className="mx-1 h-3 w-px bg-white/10" />
                   <div className="relative">
-                    <button type="button" onClick={() => setShowColorReply?.(!showColorReply)} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Palette className="h-3 w-3" /></button>
+                    <button
+                      type="button"
+                      onClick={() => setShowColorReply?.(!showColorReply)}
+                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                    >
+                      <Palette className="h-3 w-3" />
+                    </button>
                     {showColorReply && (
                       <div className="absolute top-7 start-0 z-20 flex gap-1 rounded-lg border border-border bg-card p-1.5 shadow-xl">
                         {COLORS.map((c) => (
-                          <button key={c.value} onClick={() => { replyRef?.current && wrapSelection(replyRef.current, setReplyText, `<span style="color:${c.value}">`, `</span>`, 'ملون'); setShowColorReply?.(false)}} className="h-5 w-5 rounded-full border-2 border-white/20" style={{ backgroundColor: c.value }} />
+                          <button
+                            key={c.value}
+                            onClick={() => {
+                              replyRef?.current &&
+                                wrapSelection(
+                                  replyRef.current,
+                                  setReplyText,
+                                  `<span style="color:${c.value}">`,
+                                  `</span>`,
+                                  'ملون',
+                                )
+                              setShowColorReply?.(false)
+                            }}
+                            className="h-5 w-5 rounded-full border-2 border-white/20"
+                            style={{ backgroundColor: c.value }}
+                          />
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="relative">
-                    <button type="button" onClick={() => setShowEmojiReply?.(!showEmojiReply)} className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"><Smile className="h-3 w-3" /></button>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiReply?.(!showEmojiReply)}
+                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                    >
+                      <Smile className="h-3 w-3" />
+                    </button>
                     {showEmojiReply && (
                       <div className="absolute top-7 start-0 z-20 grid grid-cols-6 gap-1 rounded-lg border border-border bg-card p-2 shadow-xl w-48">
-                        {EMOJIS.slice(0,18).map((e) => (
-                          <button key={e} onClick={() => { replyRef?.current && insertAtCursor(replyRef.current, setReplyText, e); setShowEmojiReply?.(false)}} className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm">{e}</button>
+                        {EMOJIS.slice(0, 18).map((e) => (
+                          <button
+                            key={e}
+                            onClick={() => {
+                              replyRef?.current && insertAtCursor(replyRef.current, setReplyText, e)
+                              setShowEmojiReply?.(false)
+                            }}
+                            className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm"
+                          >
+                            {e}
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
-                  <span className="ms-auto text-[10px] text-muted-foreground/40 hidden sm:inline">حدد نص للتنسيق</span>
+                  <span className="ms-auto text-[10px] text-muted-foreground/40 hidden sm:inline">
+                    حدد نص للتنسيق
+                  </span>
                 </div>
                 <div className="flex gap-2 p-2">
                   <Avatar className="h-8 w-8 min-h-[44px] min-w-[44px] shrink-0">
@@ -839,10 +1092,20 @@ function CommentItem({
                       className="w-full resize-none rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <div className="mt-1.5 flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" className="min-h-[44px] touch-manipulation" onClick={onCancelReply}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-[44px] touch-manipulation"
+                        onClick={onCancelReply}
+                      >
                         إلغاء
                       </Button>
-                      <Button size="sm" className="min-h-[44px] touch-manipulation" onClick={() => onSubmitReply(comment.id)} disabled={!replyText.trim()}>
+                      <Button
+                        size="sm"
+                        className="min-h-[44px] touch-manipulation"
+                        onClick={() => onSubmitReply(comment.id)}
+                        disabled={!replyText.trim()}
+                      >
                         <Send className="ml-1.5 h-3.5 w-3.5" />
                         نشر الرد
                       </Button>
@@ -856,59 +1119,65 @@ function CommentItem({
       </div>
 
       {/* الردود المتداخلة — مسطحة (لا صناديق داخل بعضها) + تتعامل مع 5 ردود */}
-      {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (() => {
-        const visibleCount = 5
-        const hasMultiple = comment.replies.length > visibleCount
-        const visibleReplies = showAllReplies || !hasMultiple ? comment.replies : comment.replies.slice(0, visibleCount)
-        const hiddenCount = comment.replies.length - visibleReplies.length
-        return (
-          <div className="mt-3 space-y-2">
-            {visibleReplies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                depth={depth + 1}
-                modOwnerName={modOwnerName}
-                replyToName={displayName}
-                likedIds={likedIds}
-                replyingTo={replyingTo}
-                replyText={replyText}
-                setReplyText={setReplyText}
-                currentUser={currentUser}
-                onLike={onLike}
-                onReply={onReply}
-                onSubmitReply={onSubmitReply}
-                onCancelReply={onCancelReply}
-                onReport={onReport}
-                onRefresh={onRefresh}
-                replyRef={replyRef}
-                showEmojiReply={showEmojiReply}
-                setShowEmojiReply={setShowEmojiReply}
-                showColorReply={showColorReply}
-                setShowColorReply={setShowColorReply}
-              />
-            ))}
-            {hasMultiple && !showAllReplies && (
-              <button
-                onClick={() => setShowAllReplies(true)}
-                className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
-              >
-                <ChevronLeft className="h-3 w-3 rotate-90" />
-                عرض {hiddenCount} ردود إضافية
-              </button>
-            )}
-            {hasMultiple && showAllReplies && (
-              <button
-                onClick={() => setShowAllReplies(false)}
-                className="mt-1 inline-flex items-center gap-1 rounded-md border border-border/40 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronRight className="h-3 w-3 rotate-90" />
-                إخفاء الردود
-              </button>
-            )}
-          </div>
-        )
-      })()}
+      {comment.replies &&
+        comment.replies.length > 0 &&
+        depth < MAX_DEPTH &&
+        (() => {
+          const visibleCount = 5
+          const hasMultiple = comment.replies.length > visibleCount
+          const visibleReplies =
+            showAllReplies || !hasMultiple
+              ? comment.replies
+              : comment.replies.slice(0, visibleCount)
+          const hiddenCount = comment.replies.length - visibleReplies.length
+          return (
+            <div className="mt-3 space-y-2">
+              {visibleReplies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  depth={depth + 1}
+                  modOwnerName={modOwnerName}
+                  replyToName={displayName}
+                  likedIds={likedIds}
+                  replyingTo={replyingTo}
+                  replyText={replyText}
+                  setReplyText={setReplyText}
+                  currentUser={currentUser}
+                  onLike={onLike}
+                  onReply={onReply}
+                  onSubmitReply={onSubmitReply}
+                  onCancelReply={onCancelReply}
+                  onReport={onReport}
+                  onRefresh={onRefresh}
+                  replyRef={replyRef}
+                  showEmojiReply={showEmojiReply}
+                  setShowEmojiReply={setShowEmojiReply}
+                  showColorReply={showColorReply}
+                  setShowColorReply={setShowColorReply}
+                />
+              ))}
+              {hasMultiple && !showAllReplies && (
+                <button
+                  onClick={() => setShowAllReplies(true)}
+                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
+                >
+                  <ChevronLeft className="h-3 w-3 rotate-90" />
+                  عرض {hiddenCount} ردود إضافية
+                </button>
+              )}
+              {hasMultiple && showAllReplies && (
+                <button
+                  onClick={() => setShowAllReplies(false)}
+                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-border/40 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronRight className="h-3 w-3 rotate-90" />
+                  إخفاء الردود
+                </button>
+              )}
+            </div>
+          )
+        })()}
     </>
   )
 }

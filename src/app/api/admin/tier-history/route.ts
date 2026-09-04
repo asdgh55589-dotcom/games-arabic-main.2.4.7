@@ -16,14 +16,14 @@ export async function GET(request: NextRequest) {
         include: { user: { select: { username: true, avatarUrl: true } } },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      db.tierHistory.count()
+      db.tierHistory.count(),
     ])
 
     return okPaginated(
       { history },
-      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+      { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
     )
   } catch (err) {
     return internalError('خطأ في الخادم')

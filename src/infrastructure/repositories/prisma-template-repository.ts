@@ -8,7 +8,10 @@ import type { TemplateStore } from '../adapters/handlebars-template-renderer'
 export class PrismaTemplateRepository implements TemplateStore {
   constructor(private readonly db: PrismaClient) {}
 
-  async getTemplate(type: string, channel: string): Promise<{
+  async getTemplate(
+    type: string,
+    channel: string,
+  ): Promise<{
     titleTemplate: string
     bodyTemplate: string
   } | null> {

@@ -2,13 +2,40 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Shield, Monitor, Smartphone, Laptop, Clock, MapPin, LogOut, Search, Filter, Download, Trash2, Loader2, Users } from 'lucide-react'
+import {
+  Shield,
+  Monitor,
+  Smartphone,
+  Laptop,
+  Clock,
+  MapPin,
+  LogOut,
+  Search,
+  Filter,
+  Download,
+  Trash2,
+  Loader2,
+  Users,
+} from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { formatNumber } from '@/lib/format'
 
@@ -20,13 +47,21 @@ interface SessionItem {
   updatedAt: string
   ipAddress: string | null
   userAgent: string | null
-  user: { id: string; username: string; displayName: string | null; email: string; avatarUrl: string | null; role: string }
+  user: {
+    id: string
+    username: string
+    displayName: string | null
+    email: string
+    avatarUrl: string | null
+    role: string
+  }
 }
 
 function parseUA(ua?: string | null) {
   if (!ua) return { label: 'غير معروف', icon: Monitor }
   const l = ua.toLowerCase()
-  if (l.includes('mobile') || l.includes('iphone') || l.includes('android')) return { label: 'هاتف', icon: Smartphone }
+  if (l.includes('mobile') || l.includes('iphone') || l.includes('android'))
+    return { label: 'هاتف', icon: Smartphone }
   if (l.includes('tablet') || l.includes('ipad')) return { label: 'تابلت', icon: Smartphone }
   if (l.includes('chrome') && !l.includes('edg')) return { label: 'Chrome', icon: Laptop }
   if (l.includes('firefox')) return { label: 'Firefox', icon: Laptop }
@@ -95,7 +130,11 @@ export default function AdminSessionsPage() {
     if (!confirm('هل تريد طرد هذه الجلسة؟')) return
     setRevoking(token)
     try {
-      const res = await fetch('/api/admin/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
+      const res = await fetch('/api/admin/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
       if (!res.ok) throw new Error('failed')
       toast({ title: 'تم طرد الجلسة' })
       setSessions((p) => p.filter((s) => s.token !== token))
@@ -110,7 +149,11 @@ export default function AdminSessionsPage() {
   const revokeAll = async () => {
     if (!confirm('هل تريد طرد كل الجلسات النشطة؟ سيُسجل خروج كل المستخدمين.')) return
     try {
-      const res = await fetch('/api/admin/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+      const res = await fetch('/api/admin/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      })
       if (!res.ok) throw new Error('failed')
       const j = await res.json().catch(() => null)
       toast({ title: `تم طرد ${j?.data?.deleted ?? ''} جلسة` })
@@ -125,9 +168,18 @@ export default function AdminSessionsPage() {
     const header = ['المستخدم', 'الإيميل', 'الدور', 'الجهاز', 'IP', 'آخر نشاط']
     const rows = sessions.map((s) => {
       const { label } = parseUA(s.userAgent)
-      return [s.user.username, s.user.email, s.user.role, label, s.ipAddress || '', timeAgo(s.updatedAt)]
+      return [
+        s.user.username,
+        s.user.email,
+        s.user.role,
+        label,
+        s.ipAddress || '',
+        timeAgo(s.updatedAt),
+      ]
     })
-    const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -144,7 +196,9 @@ export default function AdminSessionsPage() {
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" /> الجلسات النشطة
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">إدارة كل الجلسات النشطة عبر Better Auth — مراقبة الأجهزة وطرد المشبوه</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            إدارة كل الجلسات النشطة عبر Better Auth — مراقبة الأجهزة وطرد المشبوه
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportCSV} className="min-h-[44px]">
@@ -198,7 +252,12 @@ export default function AdminSessionsPage() {
         <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="بحث بالمستخدم أو الإيميل..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10 h-11" />
+            <Input
+              placeholder="بحث بالمستخدم أو الإيميل..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pr-10 h-11"
+            />
           </div>
           <Select value={device} onValueChange={setDevice}>
             <SelectTrigger className="w-full sm:w-[160px] h-11">
@@ -262,14 +321,21 @@ export default function AdminSessionsPage() {
                       <div className="flex items-center gap-2">
                         {s.user.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                          <img
+                            src={s.user.avatarUrl}
+                            alt=""
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                             {s.user.username[0].toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <Link href={`/admin/users/${s.user.id}`} className="text-sm font-medium hover:text-primary">
+                          <Link
+                            href={`/admin/users/${s.user.id}`}
+                            className="text-sm font-medium hover:text-primary"
+                          >
                             {s.user.username}
                           </Link>
                           <div className="text-xs text-muted-foreground">{s.user.email}</div>
@@ -284,7 +350,10 @@ export default function AdminSessionsPage() {
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {label}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[180px]" dir="ltr">
+                      <div
+                        className="text-xs text-muted-foreground truncate max-w-[180px]"
+                        dir="ltr"
+                      >
                         {s.userAgent?.slice(0, 60) || '—'}
                       </div>
                     </TableCell>
@@ -299,8 +368,18 @@ export default function AdminSessionsPage() {
                       {s.ipAddress || '—'}
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="destructive" onClick={() => revoke(s.token)} disabled={revoking === s.token} className="min-h-[36px]">
-                        {revoking === s.token ? <Loader2 className="h-4 w-4 animate-spin" /> : 'طرد'}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => revoke(s.token)}
+                        disabled={revoking === s.token}
+                        className="min-h-[36px]"
+                      >
+                        {revoking === s.token ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'طرد'
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -327,7 +406,11 @@ export default function AdminSessionsPage() {
                 <div className="flex items-start gap-3">
                   {s.user.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={s.user.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                    <img
+                      src={s.user.avatarUrl}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
                   ) : (
                     <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                       {s.user.username[0].toUpperCase()}
@@ -351,8 +434,20 @@ export default function AdminSessionsPage() {
                     </div>
                   </div>
                 </div>
-                <Button size="sm" variant="destructive" onClick={() => revoke(s.token)} disabled={revoking === s.token} className="w-full mt-3 min-h-[44px]">
-                  {revoking === s.token ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogOut className="ml-2 h-4 w-4" /> طرد الجلسة</>}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => revoke(s.token)}
+                  disabled={revoking === s.token}
+                  className="w-full mt-3 min-h-[44px]"
+                >
+                  {revoking === s.token ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <LogOut className="ml-2 h-4 w-4" /> طرد الجلسة
+                    </>
+                  )}
                 </Button>
               </Card>
             )
@@ -362,13 +457,25 @@ export default function AdminSessionsPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="min-h-[44px]">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="min-h-[44px]"
+          >
             السابق
           </Button>
           <span className="text-sm text-muted-foreground">
             صفحة {page} من {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="min-h-[44px]">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="min-h-[44px]"
+          >
             التالي
           </Button>
         </div>

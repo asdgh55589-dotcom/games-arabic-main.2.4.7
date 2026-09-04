@@ -36,7 +36,9 @@ export async function GET(req: NextRequest) {
     if (process.env.NODE_ENV !== 'production' && !session.used) {
       try {
         const botToken = BOT_TOKEN!
-        const updatesRes = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?timeout=0`)
+        const updatesRes = await fetch(
+          `https://api.telegram.org/bot${botToken}/getUpdates?timeout=0`,
+        )
         const updatesData = await updatesRes.json().catch(() => null)
         if (updatesData?.ok && Array.isArray(updatesData.result)) {
           let foundForThisToken = false
@@ -56,38 +58,52 @@ export async function GET(req: NextRequest) {
             // جلب الصورة
             let photoUrl: string | null = null
             try {
-              const pRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${usr.id}&limit=1`)
+              const pRes = await fetch(
+                `https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${usr.id}&limit=1`,
+              )
               const pData = await pRes.json().catch(() => null)
               if (pData?.ok && pData.result?.total_count > 0) {
                 const fid = pData.result.photos[0][0]?.file_id
                 if (fid) {
-                  const fRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fid}`)
+                  const fRes = await fetch(
+                    `https://api.telegram.org/bot${botToken}/getFile?file_id=${fid}`,
+                  )
                   const fData = await fRes.json().catch(() => null)
-                  if (fData?.ok && fData.result?.file_path) photoUrl = `https://api.telegram.org/file/bot${botToken}/${fData.result.file_path}`
+                  if (fData?.ok && fData.result?.file_path)
+                    photoUrl = `https://api.telegram.org/file/bot${botToken}/${fData.result.file_path}`
                 }
               }
             } catch {}
-            await redisSet(`telegram_session:${tok}`, {
-              used: true,
-              expiresAt: targetSession.expiresAt,
-              userData: {
-                telegramId: usr.id,
-                firstName: usr.first_name,
-                lastName: usr.last_name || null,
-                username: usr.username || null,
-                photoUrl,
+            await redisSet(
+              `telegram_session:${tok}`,
+              {
+                used: true,
+                expiresAt: targetSession.expiresAt,
+                userData: {
+                  telegramId: usr.id,
+                  firstName: usr.first_name,
+                  lastName: usr.last_name || null,
+                  username: usr.username || null,
+                  photoUrl,
+                },
               },
-            }, 300)
+              300,
+            )
             const dName = [usr.first_name, usr.last_name].filter(Boolean).join(' ')
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ chat_id: usr.id, text: `✅ تم تسجيل الدخول بنجاح!\n\nمرحباً ${dName}، يمكنك الآن العودة إلى الموقع وستكون مسجّل الدخول تلقائياً.` }),
+              body: JSON.stringify({
+                chat_id: usr.id,
+                text: `✅ تم تسجيل الدخول بنجاح!\n\nمرحباً ${dName}، يمكنك الآن العودة إلى الموقع وستكون مسجّل الدخول تلقائياً.`,
+              }),
             }).catch(() => {})
             if (tok === sessionToken) foundForThisToken = true
           }
           if (maxId > 0) {
-            await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${maxId + 1}&timeout=0`).catch(() => {})
+            await fetch(
+              `https://api.telegram.org/bot${botToken}/getUpdates?offset=${maxId + 1}&timeout=0`,
+            ).catch(() => {})
           }
           if (foundForThisToken) {
             session = await getTelegramSession(sessionToken)
@@ -137,19 +153,34 @@ async function performLogin(userData: {
   try {
     const { telegramId, firstName, lastName, username, photoUrl } = userData
 
-    const displayName = [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
+    const displayName =
+      [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
     const email = `telegram_${telegramId}@telegram.local`
     const avatarUrl = photoUrl || null
 
     const userSelect = {
-      id: true, username: true, email: true, role: true, avatarUrl: true,
-      banStatus: true, bannedUntil: true, banReason: true, tokenVersion: true,
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+      banStatus: true,
+      bannedUntil: true,
+      banReason: true,
+      tokenVersion: true,
     } as const
 
     // Step 1: Find by OAuthAccount (telegram, telegramId)
     let neonUser: {
-      id: string; username: string; email: string; role: string; avatarUrl: string | null;
-      banStatus: string; bannedUntil: Date | null; banReason: string | null; tokenVersion: number;
+      id: string
+      username: string
+      email: string
+      role: string
+      avatarUrl: string | null
+      banStatus: string
+      bannedUntil: Date | null
+      banReason: string | null
+      tokenVersion: number
     } | null = null
     const existingOAuth = await db.oAuthAccount.findUnique({
       where: {
@@ -183,16 +214,18 @@ async function performLogin(userData: {
 
       if (emailUser) {
         neonUser = emailUser
-        await db.oAuthAccount.create({
-          data: {
-            userId: emailUser.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: emailUser.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       } else {
         // Step 3: Create new user + OAuthAccount — use unified generator
         const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
@@ -213,16 +246,18 @@ async function performLogin(userData: {
 
         neonUser = user
 
-        await db.oAuthAccount.create({
-          data: {
-            userId: user.id,
-            provider: 'telegram',
-            providerAccountId: telegramId.toString(),
-            providerEmail: email,
-            providerUsername: username || null,
-            avatarUrl,
-          },
-        }).catch(() => {})
+        await db.oAuthAccount
+          .create({
+            data: {
+              userId: user.id,
+              provider: 'telegram',
+              providerAccountId: telegramId.toString(),
+              providerEmail: email,
+              providerUsername: username || null,
+              avatarUrl,
+            },
+          })
+          .catch(() => {})
       }
     }
 
@@ -257,7 +292,7 @@ async function performLogin(userData: {
         email: neonUser!.email,
         role: neonUser!.role,
         avatarUrl: neonUser!.avatarUrl,
-      }
+      },
     }
   } catch (err) {
     console.error('[performLogin] failed:', err)

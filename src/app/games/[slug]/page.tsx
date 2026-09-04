@@ -27,9 +27,12 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
   const { slug } = await params
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`, {
-      next: { revalidate: 300 },
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
     if (!res.ok) return { title: 'لعبة غير موجودة | Games Arabic' }
     const { data: game } = await res.json()
 
@@ -38,12 +41,23 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
     const title = `${game.name} - تعريبات عربية | Games Arabic`
     const rawDesc = game.tagline || game.description || `تحميل تعريبات ${game.name} بالعربي`
     const description = rawDesc.slice(0, 160)
-    const imageUrl = game.thumbnailUrl || game.bannerUrl || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/og-default.jpg`
+    const imageUrl =
+      game.thumbnailUrl ||
+      game.bannerUrl ||
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/og-default.jpg`
 
     return {
       title,
       description,
-      keywords: [game.name, game.platform, 'تعريب', 'ترجمة', 'العربية', 'تعريب ألعاب', 'تحميل تعريب'].filter(Boolean) as string[],
+      keywords: [
+        game.name,
+        game.platform,
+        'تعريب',
+        'ترجمة',
+        'العربية',
+        'تعريب ألعاب',
+        'تحميل تعريب',
+      ].filter(Boolean) as string[],
       authors: [{ name: 'Games Arabic' }],
       alternates: { canonical: `https://games-arabic.com/games/${game.slug}` },
       openGraph: {
@@ -72,9 +86,12 @@ export default async function GameDetailRoutePage({ params }: GamePageProps) {
   let game: any = null
   try {
     const { slug } = await params
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`, {
-      next: { revalidate: 300 },
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
     if (res.ok) {
       const json = await res.json()
       game = json.data

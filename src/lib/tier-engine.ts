@@ -33,7 +33,19 @@ export async function calculateUserTier(userId: string): Promise<TierCalculation
     include: {
       mods: {
         where: { workflowStatus: 'PUBLISHED' },
-        select: { id: true, rating: true, ratingCount: true, downloads: true, endorsements: true } as unknown as { id: true; rating: true; ratingCount: true; downloads: true; endorsements: true },
+        select: {
+          id: true,
+          rating: true,
+          ratingCount: true,
+          downloads: true,
+          endorsements: true,
+        } as unknown as {
+          id: true
+          rating: true
+          ratingCount: true
+          downloads: true
+          endorsements: true
+        },
       },
     },
   })
@@ -66,10 +78,15 @@ export async function calculateUserTier(userId: string): Promise<TierCalculation
   }
 
   // Calculate stats
-  const publishedMods = (user as unknown as { mods: Array<{ rating: number; ratingCount: number }> }).mods
+  const publishedMods = (
+    user as unknown as { mods: Array<{ rating: number; ratingCount: number }> }
+  ).mods
   const publishedCount = publishedMods.length
   const ratedMods = publishedMods.filter((m) => m.ratingCount > 0)
-  const averageRating = ratedMods.length > 0 ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length : 0
+  const averageRating =
+    ratedMods.length > 0
+      ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length
+      : 0
 
   // reviewsCount for moderator: count workflow changes (reviews)
   let reviewsCount = 0
@@ -79,7 +96,14 @@ export async function calculateUserTier(userId: string): Promise<TierCalculation
     reviewsCount = 0
   }
 
-  const monthsActive = Math.floor((Date.now() - new Date((user as unknown as { joinedAt: Date }).joinedAt || (user as unknown as { createdAt: Date }).createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30))
+  const monthsActive = Math.floor(
+    (Date.now() -
+      new Date(
+        (user as unknown as { joinedAt: Date }).joinedAt ||
+          (user as unknown as { createdAt: Date }).createdAt,
+      ).getTime()) /
+      (1000 * 60 * 60 * 24 * 30),
+  )
 
   // Determine highest tier they qualify for
   let suggestedTier = user.tier
@@ -118,7 +142,10 @@ export async function calculateUserTier(userId: string): Promise<TierCalculation
   suggestedTier = Math.min(suggestedTier, maxTier)
 
   // If no auto-qualifying tier beyond current, check if next tier requires approval (to show progress)
-  const nextTier = requirements.find((r) => r.level === suggestedTier + 1) || requirements.find((r) => r.level > user.tier) || null
+  const nextTier =
+    requirements.find((r) => r.level === suggestedTier + 1) ||
+    requirements.find((r) => r.level > user.tier) ||
+    null
 
   return {
     currentTier: user.tier,
@@ -165,10 +192,11 @@ export async function checkAndUpgradeTier(userId: string) {
   const stats = {
     modCount: fullUser.mods.length,
     totalDownloads: fullUser.mods.reduce((s, m) => s + m.downloads, 0),
-    avgRating: fullUser.mods.filter((m) => m.ratingCount > 0).length > 0
-      ? fullUser.mods.filter((m) => m.ratingCount > 0).reduce((s, m) => s + m.rating, 0) /
-        fullUser.mods.filter((m) => m.ratingCount > 0).length
-      : 0,
+    avgRating:
+      fullUser.mods.filter((m) => m.ratingCount > 0).length > 0
+        ? fullUser.mods.filter((m) => m.ratingCount > 0).reduce((s, m) => s + m.rating, 0) /
+          fullUser.mods.filter((m) => m.ratingCount > 0).length
+        : 0,
     qualityScore: calculateQualityScore(fullUser.mods),
   }
 
@@ -194,7 +222,13 @@ export async function checkAndUpgradeTier(userId: string) {
   return { upgraded: false }
 }
 
-export async function upgradeUser(userId: string, newTier: number, reason: 'auto' | 'manual' | 'admin', triggeredBy?: string, notes?: string) {
+export async function upgradeUser(
+  userId: string,
+  newTier: number,
+  reason: 'auto' | 'manual' | 'admin',
+  triggeredBy?: string,
+  notes?: string,
+) {
   const user = await db.user.findUnique({ where: { id: userId } })
   if (!user) return
 

@@ -29,8 +29,8 @@ export default function SpecialRolesPage() {
 
   useEffect(() => {
     fetch('/api/admin/special-roles')
-      .then(r => r.json())
-      .then(data => setRoles(data.roles || []))
+      .then((r) => r.json())
+      .then((data) => setRoles(data.roles || []))
       .finally(() => setLoading(false))
   }, [])
 
@@ -43,13 +43,20 @@ export default function SpecialRolesPage() {
       const res = await fetch('/api/admin/special-roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createData)
+        body: JSON.stringify(createData),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'فشل الإنشاء')
       setRoles([...roles, { ...data.role, isActive: true }])
       setShowCreate(false)
-      setCreateData({ key: '', name: '', nameEn: '', icon: 'Star', color: '#6b7280', description: '' })
+      setCreateData({
+        key: '',
+        name: '',
+        nameEn: '',
+        icon: 'Star',
+        color: '#6b7280',
+        description: '',
+      })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'فشل الإنشاء')
     }
@@ -60,7 +67,7 @@ export default function SpecialRolesPage() {
     try {
       const res = await fetch(`/api/admin/special-roles/${key}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('فشل الحذف')
-      setRoles(roles.filter(r => r.key !== key))
+      setRoles(roles.filter((r) => r.key !== key))
     } catch {
       alert('فشل الحذف')
     }
@@ -150,8 +157,18 @@ export default function SpecialRolesPage() {
             />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">إنشاء</button>
-            <button onClick={() => setShowCreate(false)} className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent">إلغاء</button>
+            <button
+              onClick={handleCreate}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              إنشاء
+            </button>
+            <button
+              onClick={() => setShowCreate(false)}
+              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       )}
@@ -180,18 +197,30 @@ export default function SpecialRolesPage() {
 
       {/* قائمة الأدوار */}
       <div className="space-y-3">
-        {roles.map(role => (
-          <div key={role.id} className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-card/80">
+        {roles.map((role) => (
+          <div
+            key={role.id}
+            className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-card/80"
+          >
             <div className="flex items-center gap-4">
-              <span className="h-5 w-5 rounded-full ring-2 ring-white/10" style={{ backgroundColor: role.color }} />
+              <span
+                className="h-5 w-5 rounded-full ring-2 ring-white/10"
+                style={{ backgroundColor: role.color }}
+              />
               <div>
-                <h3 className="font-semibold">{role.name} <span className="text-muted-foreground text-sm">({role.nameEn})</span></h3>
+                <h3 className="font-semibold">
+                  {role.name} <span className="text-muted-foreground text-sm">({role.nameEn})</span>
+                </h3>
                 <p className="text-sm text-muted-foreground">{role.description || 'بدون وصف'}</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">المفتاح: <code className="rounded bg-muted px-1">{role.key}</code></p>
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  المفتاح: <code className="rounded bg-muted px-1">{role.key}</code>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${role.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${role.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}
+              >
                 {role.isActive ? 'نشط' : 'معطل'}
               </span>
               <button

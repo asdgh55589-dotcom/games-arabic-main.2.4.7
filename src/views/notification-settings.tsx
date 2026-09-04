@@ -56,19 +56,42 @@ const TYPE_LABELS: Record<NotificationType, string> = {
 const TYPE_CATEGORIES: { label: string; types: NotificationType[] }[] = [
   {
     label: 'اجتماعي',
-    types: [NotificationType.CommentReply, NotificationType.TopLevelComment, NotificationType.Like, NotificationType.Follow],
+    types: [
+      NotificationType.CommentReply,
+      NotificationType.TopLevelComment,
+      NotificationType.Like,
+      NotificationType.Follow,
+    ],
   },
   {
     label: 'تعريبات',
-    types: [NotificationType.ModEndorse, NotificationType.ModEndorseMilestone, NotificationType.ModFeatured, NotificationType.ModPublished, NotificationType.ModUpdated, NotificationType.ModDeleted],
+    types: [
+      NotificationType.ModEndorse,
+      NotificationType.ModEndorseMilestone,
+      NotificationType.ModFeatured,
+      NotificationType.ModPublished,
+      NotificationType.ModUpdated,
+      NotificationType.ModDeleted,
+    ],
   },
   {
     label: 'مستويات وأدوار',
-    types: [NotificationType.TierUpgrade, NotificationType.TierRevoked, NotificationType.SpecialRoleAssigned, NotificationType.SpecialRoleRemoved],
+    types: [
+      NotificationType.TierUpgrade,
+      NotificationType.TierRevoked,
+      NotificationType.SpecialRoleAssigned,
+      NotificationType.SpecialRoleRemoved,
+    ],
   },
   {
     label: 'إداري',
-    types: [NotificationType.AdminAction, NotificationType.AdminUserRegister, NotificationType.AdminRequest, NotificationType.AdminReport, NotificationType.AdminMilestone],
+    types: [
+      NotificationType.AdminAction,
+      NotificationType.AdminUserRegister,
+      NotificationType.AdminRequest,
+      NotificationType.AdminReport,
+      NotificationType.AdminMilestone,
+    ],
   },
   {
     label: 'نظام',
@@ -78,7 +101,15 @@ const TYPE_CATEGORIES: { label: string; types: NotificationType[] }[] = [
 
 // ===== Subcomponents =====
 
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+function Toggle({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  disabled?: boolean
+}) {
   return (
     <button
       onClick={() => onChange(!checked)}
@@ -89,14 +120,24 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       role="switch"
       aria-checked={checked}
     >
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 ${
-        checked ? 'translate-x-5' : 'translate-x-0.5'
-      }`} />
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 ${
+          checked ? 'translate-x-5' : 'translate-x-0.5'
+        }`}
+      />
     </button>
   )
 }
 
-function SettingRow({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
+function SettingRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="flex items-center justify-between gap-4 p-3 rounded-none hover:bg-accent/30 transition-colors">
       <div className="flex-1">
@@ -108,7 +149,19 @@ function SettingRow({ label, description, children }: { label: string; descripti
   )
 }
 
-function NumberInput({ value, onChange, min, max, disabled }: { value: number; onChange: (v: number) => void; min: number; max: number; disabled?: boolean }) {
+function NumberInput({
+  value,
+  onChange,
+  min,
+  max,
+  disabled,
+}: {
+  value: number
+  onChange: (v: number) => void
+  min: number
+  max: number
+  disabled?: boolean
+}) {
   return (
     <input
       type="number"
@@ -125,7 +178,15 @@ function NumberInput({ value, onChange, min, max, disabled }: { value: number; o
   )
 }
 
-function TimeInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+function TimeInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+}) {
   return (
     <input
       type="time"
@@ -148,31 +209,41 @@ export function NotificationSettings() {
 
   useEffect(() => {
     fetch('/api/notifications/preferences', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
         if (data?.data) setPreferences(data.data)
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
 
-  const updateField = useCallback(<K extends keyof NotificationPreferences>(key: K, value: NotificationPreferences[K]) => {
-    setPreferences(prev => prev ? { ...prev, [key]: value } : prev)
-  }, [])
+  const updateField = useCallback(
+    <K extends keyof NotificationPreferences>(key: K, value: NotificationPreferences[K]) => {
+      setPreferences((prev) => (prev ? { ...prev, [key]: value } : prev))
+    },
+    [],
+  )
 
-  const updateTypePreference = useCallback((type: NotificationType, field: keyof TypePreference, value: boolean) => {
-    setPreferences(prev => {
-      if (!prev) return prev
-      const current = prev.typePreferences[type] ?? { enabled: true, emailEnabled: true, pushEnabled: true }
-      return {
-        ...prev,
-        typePreferences: {
-          ...prev.typePreferences,
-          [type]: { ...current, [field]: value },
-        },
-      }
-    })
-  }, [])
+  const updateTypePreference = useCallback(
+    (type: NotificationType, field: keyof TypePreference, value: boolean) => {
+      setPreferences((prev) => {
+        if (!prev) return prev
+        const current = prev.typePreferences[type] ?? {
+          enabled: true,
+          emailEnabled: true,
+          pushEnabled: true,
+        }
+        return {
+          ...prev,
+          typePreferences: {
+            ...prev.typePreferences,
+            [type]: { ...current, [field]: value },
+          },
+        }
+      })
+    },
+    [],
+  )
 
   const handleSave = async () => {
     if (!preferences) return
@@ -220,9 +291,7 @@ export function NotificationSettings() {
 
   if (!preferences) {
     return (
-      <div className="text-center py-12 text-muted-foreground text-sm">
-        فشل في تحميل التفضيلات
-      </div>
+      <div className="text-center py-12 text-muted-foreground text-sm">فشل في تحميل التفضيلات</div>
     )
   }
 
@@ -237,39 +306,36 @@ export function NotificationSettings() {
             label="إشعارات البريد الإلكتروني"
             description="استلام إشعارات عبر البريد عند حدث جديد"
           >
-            <Toggle checked={preferences.emailEnabled} onChange={v => updateField('emailEnabled', v)} />
+            <Toggle
+              checked={preferences.emailEnabled}
+              onChange={(v) => updateField('emailEnabled', v)}
+            />
           </SettingRow>
-          <SettingRow
-            label="إشعارات الموقع"
-            description="استلام إشعارات فورية داخل الموقع"
-          >
-            <Toggle checked={preferences.pushEnabled} onChange={v => updateField('pushEnabled', v)} />
+          <SettingRow label="إشعارات الموقع" description="استلام إشعارات فورية داخل الموقع">
+            <Toggle
+              checked={preferences.pushEnabled}
+              onChange={(v) => updateField('pushEnabled', v)}
+            />
           </SettingRow>
-          <SettingRow
-            label="الملخص اليومي"
-            description="استلام ملخص دوري للنشاطات الجديدة"
-          >
-            <Toggle checked={preferences.dailySummary} onChange={v => updateField('dailySummary', v)} />
+          <SettingRow label="الملخص اليومي" description="استلام ملخص دوري للنشاطات الجديدة">
+            <Toggle
+              checked={preferences.dailySummary}
+              onChange={(v) => updateField('dailySummary', v)}
+            />
           </SettingRow>
-          <SettingRow
-            label="فترة الملخص (أيام)"
-            description="عدد أيام الانتظار بين الملخصات"
-          >
+          <SettingRow label="فترة الملخص (أيام)" description="عدد أيام الانتظار بين الملخصات">
             <NumberInput
               value={preferences.summaryIntervalDays}
-              onChange={v => updateField('summaryIntervalDays', v)}
+              onChange={(v) => updateField('summaryIntervalDays', v)}
               min={1}
               max={30}
               disabled={!preferences.dailySummary}
             />
           </SettingRow>
-          <SettingRow
-            label="حد الإعجابات"
-            description="عدد الإعجابات المطلوب لإرسال إشعار"
-          >
+          <SettingRow label="حد الإعجابات" description="عدد الإعجابات المطلوب لإرسال إشعار">
             <NumberInput
               value={preferences.likeThreshold}
-              onChange={v => updateField('likeThreshold', v)}
+              onChange={(v) => updateField('likeThreshold', v)}
               min={5}
               max={100}
             />
@@ -286,7 +352,10 @@ export function NotificationSettings() {
         <p className="text-xs text-muted-foreground mb-4">لن تستلم إشعارات خلال هذه الفترة</p>
         <div className="space-y-3">
           <SettingRow label="تفعيل ساعات الهدوء">
-            <Toggle checked={preferences.quietHoursEnabled} onChange={v => updateField('quietHoursEnabled', v)} />
+            <Toggle
+              checked={preferences.quietHoursEnabled}
+              onChange={(v) => updateField('quietHoursEnabled', v)}
+            />
           </SettingRow>
           {preferences.quietHoursEnabled && (
             <div className="flex items-center gap-4 px-3">
@@ -295,14 +364,14 @@ export function NotificationSettings() {
                 <span className="text-sm">من</span>
                 <TimeInput
                   value={preferences.quietHoursStart ?? '22:00'}
-                  onChange={v => updateField('quietHoursStart', v)}
+                  onChange={(v) => updateField('quietHoursStart', v)}
                 />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm">إلى</span>
                 <TimeInput
                   value={preferences.quietHoursEnd ?? '07:00'}
-                  onChange={v => updateField('quietHoursEnd', v)}
+                  onChange={(v) => updateField('quietHoursEnd', v)}
                 />
               </div>
             </div>
@@ -315,30 +384,48 @@ export function NotificationSettings() {
         <h3 className="mb-2 text-sm font-bold">تفضيلات حسب النوع</h3>
         <p className="text-xs text-muted-foreground mb-4">تحكم في كل نوع إشعار على حدة</p>
         <div className="space-y-4">
-          {TYPE_CATEGORIES.map(category => (
+          {TYPE_CATEGORIES.map((category) => (
             <div key={category.label}>
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2 px-3">{category.label}</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground mb-2 px-3">
+                {category.label}
+              </h4>
               <div className="space-y-0.5">
-                {category.types.map(type => {
-                  const pref = preferences.typePreferences[type] ?? { enabled: true, emailEnabled: true, pushEnabled: true }
+                {category.types.map((type) => {
+                  const pref = preferences.typePreferences[type] ?? {
+                    enabled: true,
+                    emailEnabled: true,
+                    pushEnabled: true,
+                  }
                   return (
-                    <div key={type} className="rounded-none hover:bg-accent/30 transition-colors px-3 py-2">
+                    <div
+                      key={type}
+                      className="rounded-none hover:bg-accent/30 transition-colors px-3 py-2"
+                    >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm min-w-[120px]">{TYPE_LABELS[type]}</span>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-muted-foreground">مفعل</span>
-                            <Toggle checked={pref.enabled} onChange={v => updateTypePreference(type, 'enabled', v)} />
+                            <Toggle
+                              checked={pref.enabled}
+                              onChange={(v) => updateTypePreference(type, 'enabled', v)}
+                            />
                           </div>
                           {pref.enabled && (
                             <>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-muted-foreground">بريد</span>
-                                <Toggle checked={pref.emailEnabled ?? true} onChange={v => updateTypePreference(type, 'emailEnabled', v)} />
+                                <Toggle
+                                  checked={pref.emailEnabled ?? true}
+                                  onChange={(v) => updateTypePreference(type, 'emailEnabled', v)}
+                                />
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-muted-foreground">موقع</span>
-                                <Toggle checked={pref.pushEnabled ?? true} onChange={v => updateTypePreference(type, 'pushEnabled', v)} />
+                                <Toggle
+                                  checked={pref.pushEnabled ?? true}
+                                  onChange={(v) => updateTypePreference(type, 'pushEnabled', v)}
+                                />
                               </div>
                             </>
                           )}
@@ -365,11 +452,17 @@ export function NotificationSettings() {
           }`}
         >
           {saving ? (
-            <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الحفظ...</>
+            <>
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الحفظ...
+            </>
           ) : saved ? (
-            <><Check className="ml-2 h-4 w-4" /> تم الحفظ</>
+            <>
+              <Check className="ml-2 h-4 w-4" /> تم الحفظ
+            </>
           ) : (
-            <><Save className="ml-2 h-4 w-4" /> حفظ التغييرات</>
+            <>
+              <Save className="ml-2 h-4 w-4" /> حفظ التغييرات
+            </>
           )}
         </Button>
       </div>

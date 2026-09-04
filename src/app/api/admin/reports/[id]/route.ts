@@ -115,7 +115,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const { id } = await params
     const body = await req.json()
 
-    const report = await db.report.findUnique({ where: { id }, select: { id: true, status: true, reporterId: true } })
+    const report = await db.report.findUnique({
+      where: { id },
+      select: { id: true, status: true, reporterId: true },
+    })
     if (!report) {
       return notFound('البلاغ غير موجود')
     }

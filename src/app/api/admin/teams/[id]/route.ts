@@ -5,10 +5,7 @@ import { slugify } from '@/lib/utils'
 import { ok, forbidden, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/admin/teams/[id] — تفاصيل الفريق
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -19,7 +16,14 @@ export async function GET(
         contactLinks: { orderBy: { order: 'asc' } },
         customTabs: { orderBy: { order: 'asc' } },
         mods: {
-          select: { id: true, name: true, slug: true, downloads: true, endorsements: true, thumbnailUrl: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            downloads: true,
+            endorsements: true,
+            thumbnailUrl: true,
+          },
           orderBy: { downloads: 'desc' },
         },
         _count: { select: { mods: true, memberships: true, follows: true } },
@@ -38,10 +42,7 @@ export async function GET(
 }
 
 // PUT /api/admin/teams/[id] — تعديل الفريق
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireModerator()
     const { id } = await params
@@ -53,7 +54,10 @@ export async function PUT(
     }
 
     const data: Record<string, unknown> = {}
-    if (body.name !== undefined) { data.name = body.name.trim(); data.slug = slugify(body.name) }
+    if (body.name !== undefined) {
+      data.name = body.name.trim()
+      data.slug = slugify(body.name)
+    }
     if (body.description !== undefined) data.description = body.description
     if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl
     if (body.bannerUrl !== undefined) data.bannerUrl = body.bannerUrl
@@ -66,8 +70,12 @@ export async function PUT(
     if (body.hiddenTabs !== undefined) data.hiddenTabs = body.hiddenTabs
 
     if (Array.isArray(body.contactLinks)) {
-      const website = body.contactLinks.find((c: { type?: string; url?: string }) => c.type === 'website' && c.url)
-      const discord = body.contactLinks.find((c: { type?: string; url?: string }) => c.type === 'discord' && c.url)
+      const website = body.contactLinks.find(
+        (c: { type?: string; url?: string }) => c.type === 'website' && c.url,
+      )
+      const discord = body.contactLinks.find(
+        (c: { type?: string; url?: string }) => c.type === 'discord' && c.url,
+      )
       if (website) data.websiteUrl = website.url
       if (discord) data.discordUrl = discord.url
 
@@ -119,7 +127,14 @@ export async function PUT(
         contactLinks: { orderBy: { order: 'asc' } },
         customTabs: { orderBy: { order: 'asc' } },
         mods: {
-          select: { id: true, name: true, slug: true, downloads: true, endorsements: true, thumbnailUrl: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            downloads: true,
+            endorsements: true,
+            thumbnailUrl: true,
+          },
           orderBy: { downloads: 'desc' },
         },
         _count: { select: { mods: true, memberships: true, follows: true } },
@@ -133,10 +148,7 @@ export async function PUT(
 }
 
 // DELETE /api/admin/teams/[id] — حذف الفريق
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireModerator()
     if (!canDelete(user)) {

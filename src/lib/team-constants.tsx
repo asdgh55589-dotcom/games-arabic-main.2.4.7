@@ -1,10 +1,18 @@
 import {
-  Crown, Star, Globe, Eye, UserCheck, User, Shield, FlaskConical,
-  Layers, Users, Gamepad2, Mail,
+  Crown,
+  Star,
+  Globe,
+  Eye,
+  UserCheck,
+  User,
+  Shield,
+  FlaskConical,
+  Layers,
+  Users,
+  Gamepad2,
+  Mail,
 } from 'lucide-react'
-import {
-  SiDiscord, SiFacebook, SiInstagram, SiTelegram, SiX, SiYoutube,
-} from 'react-icons/si'
+import { SiDiscord, SiFacebook, SiInstagram, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
 import type { ReactNode } from 'react'
 
 export type TabKey = 'overview' | 'members' | 'mods' | 'stats'

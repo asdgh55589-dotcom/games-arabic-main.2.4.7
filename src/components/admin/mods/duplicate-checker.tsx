@@ -106,11 +106,13 @@ export function DuplicateChecker({
   const isExact = result.matches.some((m) => m.matchType === 'exact')
 
   return (
-    <div className={`p-3 rounded-lg border ${
-      isExact && !overridden
-        ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
-        : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
-    }`}>
+    <div
+      className={`p-3 rounded-lg border ${
+        isExact && !overridden
+          ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
+          : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
+      }`}
+    >
       <div className="flex items-start gap-2">
         {isExact && !overridden ? (
           <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
@@ -118,11 +120,13 @@ export function DuplicateChecker({
           <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
         )}
         <div className="flex-1 min-w-0">
-          <div className={`text-sm font-medium ${
-            isExact && !overridden
-              ? 'text-red-800 dark:text-red-200'
-              : 'text-yellow-800 dark:text-yellow-200'
-          }`}>
+          <div
+            className={`text-sm font-medium ${
+              isExact && !overridden
+                ? 'text-red-800 dark:text-red-200'
+                : 'text-yellow-800 dark:text-yellow-200'
+            }`}
+          >
             {isExact && !overridden ? 'تكرار مؤكد' : 'تكرار محتمل'}
             <Badge variant="outline" className="mr-2 text-xs">
               {result.confidence}% تطابق
@@ -132,8 +136,11 @@ export function DuplicateChecker({
             {result.matches.slice(0, 5).map((match) => (
               <li key={match.modId} className="text-sm flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {match.matchType === 'exact' ? 'مطابق' :
-                   match.matchType === 'similar_name' ? 'اسم مشابه' : 'ملف مطابق'}
+                  {match.matchType === 'exact'
+                    ? 'مطابق'
+                    : match.matchType === 'similar_name'
+                      ? 'اسم مشابه'
+                      : 'ملف مطابق'}
                 </Badge>
                 <span className="truncate">{match.modTitle}</span>
                 <span className="text-xs text-muted-foreground">({match.similarity}%)</span>

@@ -48,7 +48,7 @@ export async function GET() {
       const avgDays =
         times.length > 0
           ? Math.round(
-              times.reduce((s, t) => s + t, 0) / times.length / (1000 * 60 * 60 * 24) * 10
+              (times.reduce((s, t) => s + t, 0) / times.length / (1000 * 60 * 60 * 24)) * 10,
             ) / 10
           : 0
 
@@ -63,10 +63,7 @@ export async function GET() {
       }
     })
 
-    return ok(
-      { stages },
-      { headers: { 'Cache-Control': 'private, max-age=300' } }
-    )
+    return ok({ stages }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
     console.error('[admin/analytics/funnel] failed:', err)
     return internalError('Failed to load funnel analytics')

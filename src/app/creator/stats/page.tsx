@@ -19,7 +19,17 @@ export default async function CreatorStatsPage() {
 
   const mods = await db.mod.findMany({
     where: { authorId: session.id },
-    select: { name: true, slug: true, views: true, downloads: true, endorsements: true, rating: true, ratingCount: true, comments: true, workflowStatus: true },
+    select: {
+      name: true,
+      slug: true,
+      views: true,
+      downloads: true,
+      endorsements: true,
+      rating: true,
+      ratingCount: true,
+      comments: true,
+      workflowStatus: true,
+    },
     orderBy: { downloads: 'desc' },
     take: 20,
   })

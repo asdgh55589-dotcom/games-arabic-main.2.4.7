@@ -35,10 +35,17 @@ export interface NotificationRepository {
    * Find a recent notification of the same type for deduplication.
    * Used to check if a similar notification was created within the time window.
    */
-  findRecent(userId: string, type: NotificationType, withinMinutes: number): Promise<Notification | null>
+  findRecent(
+    userId: string,
+    type: NotificationType,
+    withinMinutes: number,
+  ): Promise<Notification | null>
 
   /** Update a notification */
-  update(id: string, data: Partial<Pick<Notification, 'title' | 'message' | 'data'>>): Promise<Notification>
+  update(
+    id: string,
+    data: Partial<Pick<Notification, 'title' | 'message' | 'data'>>,
+  ): Promise<Notification>
 
   /** Delete a notification */
   delete(id: string): Promise<void>

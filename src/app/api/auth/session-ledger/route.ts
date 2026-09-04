@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
-import { createSessionLedger, listUserSessions, revokeSession, revokeOtherSessions } from '@/lib/session-ledger'
+import {
+  createSessionLedger,
+  listUserSessions,
+  revokeSession,
+  revokeOtherSessions,
+} from '@/lib/session-ledger'
 import { requireAuth } from '@/lib/auth'
 
 // GET /api/auth/session-ledger — list own sessions
@@ -10,9 +15,13 @@ export async function GET(req: NextRequest) {
     // Try Supabase first
     try {
       const supabase = await createClient()
-      const { data: { user: sbUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: sbUser },
+      } = await supabase.auth.getUser()
       if (sbUser) {
-        const u = await db.user.findFirst({ where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] } })
+        const u = await db.user.findFirst({
+          where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] },
+        })
         if (u) {
           const rows = await listUserSessions(u.id)
           return NextResponse.json({ data: rows })
@@ -36,9 +45,13 @@ export async function POST(req: NextRequest) {
     // Try Supabase
     try {
       const supabase = await createClient()
-      const { data: { user: sbUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: sbUser },
+      } = await supabase.auth.getUser()
       if (sbUser) {
-        const u = await db.user.findFirst({ where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] } })
+        const u = await db.user.findFirst({
+          where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] },
+        })
         if (u) userId = u.id
       }
     } catch {}
@@ -48,7 +61,10 @@ export async function POST(req: NextRequest) {
     }
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      null
     const ua = req.headers.get('user-agent') || null
     const row = await createSessionLedger(userId, { ip, userAgent: ua })
     const res = NextResponse.json({ data: row })
@@ -75,9 +91,13 @@ export async function DELETE(req: NextRequest) {
     let userId: string | null = null
     try {
       const supabase = await createClient()
-      const { data: { user: sbUser } } = await supabase.auth.getUser()
+      const {
+        data: { user: sbUser },
+      } = await supabase.auth.getUser()
       if (sbUser) {
-        const u = await db.user.findFirst({ where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] } })
+        const u = await db.user.findFirst({
+          where: { OR: [{ supabaseId: sbUser.id }, { email: sbUser.email || '' }] },
+        })
         if (u) userId = u.id
       }
     } catch {}
@@ -89,7 +109,8 @@ export async function DELETE(req: NextRequest) {
 
     // verify session belongs to user
     const s = await db.session.findUnique({ where: { token } as any })
-    if (!s || (s as any).userId !== userId) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    if (!s || (s as any).userId !== userId)
+      return NextResponse.json({ error: 'not found' }, { status: 404 })
     await revokeSession(token)
     return NextResponse.json({ success: true })
   } catch (err) {

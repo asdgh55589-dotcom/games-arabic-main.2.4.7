@@ -123,10 +123,14 @@ function AdItem({ ad }: { ad: HomepageAd }) {
     // رابط غير صالح — اعرض تنبيه بدل شاشة سوداء
     if (!videoId) {
       return (
-        <div className={`relative flex w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-none border-2 border-destructive/50 bg-destructive/10 p-4 text-center ${sizeInfo.className}`}>
+        <div
+          className={`relative flex w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-none border-2 border-destructive/50 bg-destructive/10 p-4 text-center ${sizeInfo.className}`}
+        >
           <Youtube className="h-8 w-8 text-destructive/60" />
           <p className="text-xs font-bold text-destructive">رابط يوتيوب غير صالح</p>
-          <p className="max-w-[90%] truncate text-[11px] text-muted-foreground" dir="ltr">{ad.url}</p>
+          <p className="max-w-[90%] truncate text-[11px] text-muted-foreground" dir="ltr">
+            {ad.url}
+          </p>
           {ad.title && <p className="text-xs font-medium text-foreground">{ad.title}</p>}
         </div>
       )
@@ -135,7 +139,9 @@ function AdItem({ ad }: { ad: HomepageAd }) {
     if (playing && videoId) {
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
       return (
-        <div className={`relative w-full overflow-hidden rounded-none border-2 border-border bg-black ${sizeInfo.className}`}>
+        <div
+          className={`relative w-full overflow-hidden rounded-none border-2 border-border bg-black ${sizeInfo.className}`}
+        >
           <iframe
             src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1${origin ? `&origin=${encodeURIComponent(origin)}` : ''}`}
             title={ad.title || 'إعلان'}
@@ -169,8 +175,17 @@ function AdItem({ ad }: { ad: HomepageAd }) {
         {/* Thumbnail — مع fallback متدرج maxres → hq → mq → sd */}
         {videoInfo?.thumbnail && (
           // eslint-disable-next-line @next/next/no-img-element
-          <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={videoInfo.thumbnail} alt={ad.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 bg-black" onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement & { dataset: { fallbackStep?: string } }
+          <Image
+            unoptimized
+            sizes="(max-width: 768px) 100vw, 50vw"
+            fill
+            src={videoInfo.thumbnail}
+            alt={ad.title || ''}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 bg-black"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement & {
+                dataset: { fallbackStep?: string }
+              }
               const step = img.dataset.fallbackStep || '0'
               const videoId = extractYouTubeId(ad.url)
               if (step === '0' && videoId) {
@@ -189,7 +204,9 @@ function AdItem({ ad }: { ad: HomepageAd }) {
           />
         )}
         {/* خلفية سوداء احتياطية لو الثامبنيل فشل */}
-        {!videoInfo?.thumbnail && <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-black" />}
+        {!videoInfo?.thumbnail && (
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-black" />
+        )}
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -225,9 +242,18 @@ function AdItem({ ad }: { ad: HomepageAd }) {
   // ===== Image Ad =====
   if (ad.type === 'image') {
     const content = (
-      <div className={`relative w-full overflow-hidden rounded-none border-2 border-border bg-card ${sizeInfo.className}`}>
+      <div
+        className={`relative w-full overflow-hidden rounded-none border-2 border-border bg-card ${sizeInfo.className}`}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <Image unoptimized sizes="(max-width: 768px) 100vw, 50vw" fill src={ad.url} alt={ad.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
+        <Image
+          unoptimized
+          sizes="(max-width: 768px) 100vw, 50vw"
+          fill
+          src={ad.url}
+          alt={ad.title || ''}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+        />
         {(ad.title || ad.description) && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
             {ad.title && <h3 className="text-base font-bold text-white">{ad.title}</h3>}
@@ -255,7 +281,11 @@ function AdItem({ ad }: { ad: HomepageAd }) {
         </a>
       )
     }
-    return <div onClick={trackClick} className="cursor-pointer">{content}</div>
+    return (
+      <div onClick={trackClick} className="cursor-pointer">
+        {content}
+      </div>
+    )
   }
 
   // ===== HTML Ad =====
@@ -288,7 +318,7 @@ export function AdSection() {
 
   useEffect(() => {
     fetch('/api/ads')
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.data?.ads) setAds(data.data.ads)
       })

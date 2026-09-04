@@ -53,9 +53,7 @@ export const ROLE_TIERS: Record<UserRole, TierConfig[]> = {
     { level: 3, label: 'مدير تنفيذي', description: 'يمتلك صلاحيات إدارية عليا قبل المالك.' },
   ],
 
-  owner: [
-    { level: 1, label: 'مالك الموقع', description: 'أعلى صلاحية في المنصة.' },
-  ],
+  owner: [{ level: 1, label: 'مالك الموقع', description: 'أعلى صلاحية في المنصة.' }],
 }
 
 export function getTierConfig(role?: string | null, tier?: number | null): TierConfig {

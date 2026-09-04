@@ -13,16 +13,16 @@ export async function GET() {
     // 1. محاولة Supabase Auth أولاً
     try {
       const supabase = await createClient()
-      const { data: { user: supabaseUser }, error: supabaseError } = await supabase.auth.getUser()
+      const {
+        data: { user: supabaseUser },
+        error: supabaseError,
+      } = await supabase.auth.getUser()
 
       if (!supabaseError && supabaseUser) {
         // يوجد Supabase session — البحث في Neon DB
         const user = await db.user.findFirst({
           where: {
-            OR: [
-              { supabaseId: supabaseUser.id },
-              { email: supabaseUser.email || '' },
-            ],
+            OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
           },
           select: {
             id: true,
@@ -49,7 +49,9 @@ export async function GET() {
 
         // المستخدم جديد — أنشئ ملف شخصي (استخدم مولد موحد)
         const { generateUsernameFromEmail } = await import('@/lib/username-generator')
-        const newUsername = supabaseUser.user_metadata?.username || (supabaseUser.email ? await generateUsernameFromEmail(supabaseUser.email) : 'مستخدم')
+        const newUsername =
+          supabaseUser.user_metadata?.username ||
+          (supabaseUser.email ? await generateUsernameFromEmail(supabaseUser.email) : 'مستخدم')
         const newUser = await db.user.create({
           data: {
             supabaseId: supabaseUser.id,
@@ -128,7 +130,11 @@ export async function GET() {
 
     // فحص tokenVersion — لو غير متطابق → الجلسة ملغاة
     if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) {
-      logger.warn('[auth/me] tokenVersion mismatch — clearing cookie', { userId, tokenVersion, dbVersion: user.tokenVersion })
+      logger.warn('[auth/me] tokenVersion mismatch — clearing cookie', {
+        userId,
+        tokenVersion,
+        dbVersion: user.tokenVersion,
+      })
       await clearRoleCookie()
       return ok({ user: null })
     }

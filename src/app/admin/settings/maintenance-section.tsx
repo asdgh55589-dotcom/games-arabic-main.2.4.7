@@ -26,7 +26,7 @@ export default function MaintenanceSettingsSection() {
 
   useEffect(() => {
     fetch('/api/admin/maintenance')
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.settings) {
           setEnabled(data.settings.enabled)

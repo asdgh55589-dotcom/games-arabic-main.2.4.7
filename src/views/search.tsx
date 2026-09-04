@@ -42,8 +42,12 @@ export function SearchPage() {
 
   const q = searchParams.get('q') || searchParams.get('translationTeam') || ''
   const selectedPlatforms = useMemo(
-    () => (searchParams.get('platform') || '').split(',').map((p) => p.trim()).filter(Boolean),
-    [searchParams]
+    () =>
+      (searchParams.get('platform') || '')
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+    [searchParams],
   )
   const minTier = useMemo(() => {
     const v = searchParams.get('minTier')
@@ -114,9 +118,7 @@ export function SearchPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-2 text-sm font-semibold">
-            🎮 المنصة:
-          </span>
+          <span className="flex items-center gap-2 text-sm font-semibold">🎮 المنصة:</span>
           {PLATFORMS.map((p) => {
             const active = selectedPlatforms.includes(p.key)
             const color = getPlatformColor(p.key)
@@ -131,7 +133,7 @@ export function SearchPage() {
                   'flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition-colors min-h-[40px] touch-manipulation',
                   active
                     ? 'border-transparent text-foreground'
-                    : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground'
+                    : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground',
                 )}
                 style={active ? { backgroundColor: `${color}1f`, borderColor: color } : undefined}
               >
@@ -160,7 +162,7 @@ export function SearchPage() {
                 'rounded-full border px-3 py-2 text-xs font-bold transition-colors min-h-[40px] touch-manipulation',
                 minTier === f.minTier
                   ? 'border-transparent bg-primary text-primary-foreground'
-                  : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground'
+                  : 'border-border bg-card text-muted-foreground hover:border-border hover:text-foreground',
               )}
             >
               {f.label}
@@ -177,7 +179,9 @@ export function SearchPage() {
 
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => <ModCardSkeleton key={i} />)}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ModCardSkeleton key={i} />
+          ))}
         </div>
       ) : totalResults === 0 ? (
         <EmptyState
@@ -193,7 +197,9 @@ export function SearchPage() {
             التعريبات ({totalResults})
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {data?.data?.mods.map((m) => <ModCard key={m.id} mod={m} />)}
+            {data?.data?.mods.map((m) => (
+              <ModCard key={m.id} mod={m} />
+            ))}
           </div>
         </section>
       )}

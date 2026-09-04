@@ -53,7 +53,9 @@ export default function AdminCommentsPage() {
       .finally(() => setLoading(false))
   }, [search, page])
 
-  useEffect(() => { fetchComments() }, [page, search])
+  useEffect(() => {
+    fetchComments()
+  }, [page, search])
 
   const onDelete = async (comment: Comment) => {
     if (!confirm('هل أنت متأكد من حذف هذا التعليق؟')) return
@@ -64,7 +66,11 @@ export default function AdminCommentsPage() {
       setComments((p) => p.filter((c) => c.id !== comment.id))
       setTotal((t) => t - 1)
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -77,14 +83,22 @@ export default function AdminCommentsPage() {
       })
       if (!res.ok) throw new Error('فشل التحديث')
       toast({ title: comment.isPinned ? 'تم إلغاء التثبيت' : 'تم التثبيت' })
-      setComments((p) => p.map((c) => c.id === comment.id ? { ...c, isPinned: !c.isPinned } : c))
+      setComments((p) => p.map((c) => (c.id === comment.id ? { ...c, isPinned: !c.isPinned } : c)))
     } catch (err) {
-      toast({ title: 'خطأ', description: err instanceof Error ? err.message : 'فشل', variant: 'destructive' })
+      toast({
+        title: 'خطأ',
+        description: err instanceof Error ? err.message : 'فشل',
+        variant: 'destructive',
+      })
     }
   }
 
   if (loading && comments.length === 0) {
-    return <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   if (error) {
@@ -107,7 +121,10 @@ export default function AdminCommentsPage() {
         <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
           placeholder="ابحث في التعليقات..."
           className="h-10 pr-10"
         />
@@ -137,18 +154,27 @@ export default function AdminCommentsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {comments.map((c) => (
-                  <tr key={c.id} className={`text-sm transition-colors hover:bg-accent/30 ${c.isPinned ? 'bg-primary/5' : ''}`}>
+                  <tr
+                    key={c.id}
+                    className={`text-sm transition-colors hover:bg-accent/30 ${c.isPinned ? 'bg-primary/5' : ''}`}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">{c.user?.username || c.guestName}</span>
+                        <span className="font-medium text-foreground">
+                          {c.user?.username || c.guestName}
+                        </span>
                         {c.isPinned && <Pin className="h-3 w-3 shrink-0 text-primary" />}
                       </div>
                     </td>
                     <td className="max-w-[320px] px-4 py-3">
-                      <p className="line-clamp-2 text-sm leading-5 text-muted-foreground">{c.text}</p>
+                      <p className="line-clamp-2 text-sm leading-5 text-muted-foreground">
+                        {c.text}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      <span className="rounded-md bg-background-secondary px-2 py-1 font-medium">{c.mod.name}</span>
+                      <span className="rounded-md bg-background-secondary px-2 py-1 font-medium">
+                        {c.mod.name}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-xs">
                       <div className="flex items-center gap-3">
@@ -165,13 +191,33 @@ export default function AdminCommentsPage() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{timeAgo(c.createdAt)}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {timeAgo(c.createdAt)}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 min-h-[44px] min-w-[44px]" onClick={() => onTogglePin(c)} title={c.isPinned ? 'إلغاء التثبيت' : 'تثبيت'} aria-label={c.isPinned ? 'إلغاء التثبيت' : 'تثبيت'}>
-                          {c.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 min-h-[44px] min-w-[44px]"
+                          onClick={() => onTogglePin(c)}
+                          title={c.isPinned ? 'إلغاء التثبيت' : 'تثبيت'}
+                          aria-label={c.isPinned ? 'إلغاء التثبيت' : 'تثبيت'}
+                        >
+                          {c.isPinned ? (
+                            <PinOff className="h-4 w-4" />
+                          ) : (
+                            <Pin className="h-4 w-4" />
+                          )}
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]" onClick={() => onDelete(c)} title="حذف" aria-label="حذف">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-red-400 hover:bg-red-500/10 min-h-[44px] min-w-[44px]"
+                          onClick={() => onDelete(c)}
+                          title="حذف"
+                          aria-label="حذف"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -185,16 +231,23 @@ export default function AdminCommentsPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {comments.map((c) => (
-              <Card key={c.id} className={`overflow-hidden ${c.isPinned ? 'border-primary/40' : ''}`}>
+              <Card
+                key={c.id}
+                className={`overflow-hidden ${c.isPinned ? 'border-primary/40' : ''}`}
+              >
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-bold">{c.user?.username || c.guestName}</span>
                         {c.isPinned ? (
-                          <Badge variant="default" className="gap-1 text-[10px]"><Pin className="h-3 w-3" /> مثبت</Badge>
+                          <Badge variant="default" className="gap-1 text-[10px]">
+                            <Pin className="h-3 w-3" /> مثبت
+                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px]">غير مثبت</Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            غير مثبت
+                          </Badge>
                         )}
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -208,9 +261,15 @@ export default function AdminCommentsPage() {
                   <p className="text-sm leading-6 text-muted-foreground">{c.text}</p>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">👍 {formatNumber(c.likes)}</span>
-                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">👎 {formatNumber(c.dislikes)}</span>
-                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">{c.mod.name}</span>
+                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">
+                      👍 {formatNumber(c.likes)}
+                    </span>
+                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">
+                      👎 {formatNumber(c.dislikes)}
+                    </span>
+                    <span className="rounded-full bg-background-secondary px-3 py-1.5 font-medium">
+                      {c.mod.name}
+                    </span>
                   </div>
 
                   <div className="flex gap-2 pt-1">
@@ -245,9 +304,27 @@ export default function AdminCommentsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
-          <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
-          <Button variant="outline" size="sm" className="min-h-[44px]" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>التالي</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            السابق
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            صفحة {page} من {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            التالي
+          </Button>
         </div>
       )}
     </div>

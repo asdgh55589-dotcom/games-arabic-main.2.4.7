@@ -31,7 +31,10 @@ export interface SeriesDetailMobileProps {
   displayName: string
   seriesInfo: SeriesInfo | null
   modsData:
-    | { data: ModSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number } }
+    | {
+        data: ModSummary[]
+        pagination: { page: number; limit: number; total: number; totalPages: number }
+      }
     | null
     | undefined
   loading: boolean
@@ -84,7 +87,10 @@ export function SeriesDetailMobile({
           سلاسل
         </Link>
         <ArrowRight className="h-3 w-3 shrink-0 rotate-180 opacity-50" aria-hidden />
-        <span className="min-w-0 flex-1 truncate break-words font-medium text-foreground" title={displayName}>
+        <span
+          className="min-w-0 flex-1 truncate break-words font-medium text-foreground"
+          title={displayName}
+        >
           {displayName}
         </span>
       </nav>
@@ -104,7 +110,9 @@ export function SeriesDetailMobile({
         ) : null}
         <div className="flex w-full min-w-0 flex-col items-center gap-1.5">
           <div className="flex flex-wrap items-center justify-center gap-1.5 min-w-0 max-w-full">
-            <h1 className="break-words text-xl font-bold leading-tight tracking-tight">{displayName}</h1>
+            <h1 className="break-words text-xl font-bold leading-tight tracking-tight">
+              {displayName}
+            </h1>
             {seriesInfo?.isFeatured ? (
               <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
             ) : null}
@@ -176,7 +184,11 @@ export function SeriesDetailMobile({
       {/* 5. Mods grid: grid-cols-2 gap-2 (compact ModCard) */}
       <div className="px-3 pb-6">
         {loading ? (
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-2" aria-busy="true" aria-label="جاري التحميل">
+          <div
+            className="grid grid-cols-2 gap-1.5 sm:gap-2"
+            aria-busy="true"
+            aria-label="جاري التحميل"
+          >
             {Array.from({ length: 6 }).map((_, i) => (
               <ModCardSkeleton key={i} variant="compact" />
             ))}

@@ -107,7 +107,10 @@ export async function checkModImages(mod: {
   if (mod.thumbnailUrl) images.push({ type: 'cover', url: mod.thumbnailUrl })
   if (mod.imageUrl) images.push({ type: 'banner', url: mod.imageUrl })
   if (mod.galleryUrls) {
-    const urls = mod.galleryUrls.split(',').map((s) => s.trim()).filter(Boolean)
+    const urls = mod.galleryUrls
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
     urls.forEach((url: string, i: number) => {
       if (url) images.push({ type: `screenshot_${i}`, url })
     })
@@ -122,7 +125,7 @@ export async function checkModImages(mod: {
       chunk.map(async (img) => ({
         ...img,
         alive: await checkUrl(img.url),
-      }))
+      })),
     )
     broken.push(...results.filter((r) => !r.alive))
   }
@@ -141,7 +144,7 @@ export async function runDailyHealthCheck() {
 
   console.log(
     `[ImageHealth] فحص ${batch.platform} — اليوم ${batch.day + 1}/5 — ` +
-      `${batch.batch.length} تعريب من ${batch.total}`
+      `${batch.batch.length} تعريب من ${batch.total}`,
   )
 
   // إنشاء سجل البداية
@@ -159,7 +162,10 @@ export async function runDailyHealthCheck() {
 
   let checked = 0
   let brokenCount = 0
-  const brokenMods: Array<{ mod: (typeof batch.batch)[number]; broken: Array<{ type: string; url: string }> }> = []
+  const brokenMods: Array<{
+    mod: (typeof batch.batch)[number]
+    broken: Array<{ type: string; url: string }>
+  }> = []
 
   // معالجة بدفعات متوازية من 10 (تحديد التزامن)
   for (let i = 0; i < batch.batch.length; i += 10) {
@@ -168,7 +174,7 @@ export async function runDailyHealthCheck() {
       chunk.map(async (mod) => {
         const broken = await checkModImages(mod)
         return { mod, broken }
-      })
+      }),
     )
 
     for (const { mod, broken } of results) {
@@ -209,12 +215,19 @@ export async function runDailyHealthCheck() {
 
   console.log(`[ImageHealth] اكتمل الفحص: ${checked} تعريب، ${brokenCount} صورة مكسورة`)
 
-  return { checked, brokenCount, brokenMods, platform: batch.platform, week: batch.week, day: batch.day }
+  return {
+    checked,
+    brokenCount,
+    brokenMods,
+    platform: batch.platform,
+    week: batch.week,
+    day: batch.day,
+  }
 }
 
 // إشعار المسؤولين
 async function notifyAdminsAboutBrokenImages(
-  brokenMods: Array<{ mod: { id: string; name: string; slug: string }; broken: unknown[] }>
+  brokenMods: Array<{ mod: { id: string; name: string; slug: string }; broken: unknown[] }>,
 ) {
   try {
     const admins = await db.user.findMany({
@@ -263,7 +276,14 @@ export async function getHealthStatus() {
   const weeklySchedule = PLATFORMS.map((platform, i) => {
     const week = i + 1
     const weekLogs = logs.filter((log) => log.platform === platform)
-    const status = weekLogs.length === 5 ? 'complete' : week === currentWeek ? 'in_progress' : week < currentWeek ? 'complete' : 'pending'
+    const status =
+      weekLogs.length === 5
+        ? 'complete'
+        : week === currentWeek
+          ? 'in_progress'
+          : week < currentWeek
+            ? 'complete'
+            : 'pending'
     const broken = weekLogs.reduce((sum, log) => sum + log.broken, 0)
 
     return { week, platform, status, broken, logsCount: weekLogs.length }
@@ -285,12 +305,22 @@ export async function getHealthStatus() {
   // تقدم اليوم
   const todayBatch = await getTodayBatch()
   const todayProgress = todayBatch
-    ? { checked: 0, total: todayBatch.total, batchSize: todayBatch.dailyBatch, currentBatch: todayBatch.batch.length }
+    ? {
+        checked: 0,
+        total: todayBatch.total,
+        batchSize: todayBatch.dailyBatch,
+        currentBatch: todayBatch.batch.length,
+      }
     : { checked: 0, total: 0, batchSize: 0, currentBatch: 0 }
 
   // إذا كان هناك سجل اليوم، استخدم أرقامه
   if (todayBatch) {
-    const todayLog = logs.find((l) => l.platform === todayBatch.platform && l.day === todayBatch.day && l.week === todayBatch.week)
+    const todayLog = logs.find(
+      (l) =>
+        l.platform === todayBatch.platform &&
+        l.day === todayBatch.day &&
+        l.week === todayBatch.week,
+    )
     if (todayLog) {
       todayProgress.checked = todayLog.checked
       todayProgress.total = todayBatch.total
@@ -298,7 +328,12 @@ export async function getHealthStatus() {
   }
 
   // استخدام Cloudinary (مع fallback)
-  let cloudinaryUsage: { storage: number; storagePercent: number; bandwidth?: number; transformations?: number } = {
+  let cloudinaryUsage: {
+    storage: number
+    storagePercent: number
+    bandwidth?: number
+    transformations?: number
+  } = {
     storage: 0,
     storagePercent: 0,
   }

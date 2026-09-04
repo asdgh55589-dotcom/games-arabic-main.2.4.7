@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Loader2, Monitor, Smartphone, Laptop, LogOut, Shield, Clock, MapPin } from 'lucide-react'
+import {
+  ArrowRight,
+  Loader2,
+  Monitor,
+  Smartphone,
+  Laptop,
+  LogOut,
+  Shield,
+  Clock,
+  MapPin,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
@@ -21,7 +31,12 @@ interface Session {
 }
 
 function parseUA(ua?: string | null): { device: string; browser: string; icon: React.ReactNode } {
-  if (!ua) return { device: 'جهاز غير معروف', browser: 'متصفح غير معروف', icon: <Monitor className="h-5 w-5" /> }
+  if (!ua)
+    return {
+      device: 'جهاز غير معروف',
+      browser: 'متصفح غير معروف',
+      icon: <Monitor className="h-5 w-5" />,
+    }
   const lower = ua.toLowerCase()
   let device = 'حاسوب'
   let icon: React.ReactNode = <Laptop className="h-5 w-5" />
@@ -103,7 +118,9 @@ export default function SessionsView() {
     if (!confirm('هل تريد طرد هذه الجلسة؟')) return
     setRevoking(token)
     try {
-      const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(token)}`, { method: 'DELETE' })
+      const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(token)}`, {
+        method: 'DELETE',
+      })
       if (r.ok) {
         toast({ title: 'تم طرد الجلسة' })
         setSessions((prev) => prev.filter((s) => s.token !== token))
@@ -124,7 +141,9 @@ export default function SessionsView() {
       const others = sessions.filter((s) => !s.isCurrent)
       let ok = true
       for (const s of others) {
-        const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(s.token)}`, { method: 'DELETE' }).catch(() => null as any)
+        const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(s.token)}`, {
+          method: 'DELETE',
+        }).catch(() => null as any)
         if (r && !r.ok) ok = false
       }
       if (ok) {
@@ -153,17 +172,24 @@ export default function SessionsView() {
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="mx-auto max-w-4xl px-4 lg:px-6 py-4">
           <div className="flex items-center gap-3">
-            <Link href="/settings" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <Link
+              href="/settings"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
               <ArrowRight className="h-5 w-5" />
             </Link>
             <div>
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" /> الأجهزة المتصلة
                 {sessions.length > 0 && (
-                  <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">{sessions.length}</span>
+                  <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">
+                    {sessions.length}
+                  </span>
                 )}
               </h1>
-              <p className="text-xs text-muted-foreground">إدارة جلساتك النشطة — يمكنك طرد أي جهاز لا تعرفه</p>
+              <p className="text-xs text-muted-foreground">
+                إدارة جلساتك النشطة — يمكنك طرد أي جهاز لا تعرفه
+              </p>
             </div>
           </div>
         </div>
@@ -174,7 +200,9 @@ export default function SessionsView() {
           <Card className="rounded-none border-[3px] border-border p-8 text-center shadow-[4px_4px_0_0_var(--border)]">
             <Clock className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">لا توجد جلسات نشطة</p>
-            <Button asChild className="mt-4"><Link href="/login">سجل دخول</Link></Button>
+            <Button asChild className="mt-4">
+              <Link href="/login">سجل دخول</Link>
+            </Button>
           </Card>
         ) : (
           <>
@@ -182,20 +210,37 @@ export default function SessionsView() {
               {sessions.map((s) => {
                 const { device, icon } = parseUA(s.userAgent)
                 return (
-                  <Card key={s.id} className={`rounded-none border-[3px] p-4 shadow-[4px_4px_0_0_var(--border)] flex items-center gap-4 ${s.isCurrent ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}>
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 ${s.isCurrent ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'}`}>
+                  <Card
+                    key={s.id}
+                    className={`rounded-none border-[3px] p-4 shadow-[4px_4px_0_0_var(--border)] flex items-center gap-4 ${s.isCurrent ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+                  >
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 ${s.isCurrent ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'}`}
+                    >
                       {icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold truncate">{device}</p>
-                        {s.isCurrent && <span className="text-[10px] bg-green-500 text-white rounded-full px-2 py-0.5">🟢 الجلسة الحالية</span>}
+                        {s.isCurrent && (
+                          <span className="text-[10px] bg-green-500 text-white rounded-full px-2 py-0.5">
+                            🟢 الجلسة الحالية
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.ipAddress || 'غير معروف'}</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTime(s.updatedAt)}</span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {s.ipAddress || 'غير معروف'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(s.updatedAt)}
+                        </span>
                       </p>
-                      <p className="text-[10px] text-muted-foreground truncate mt-1" dir="ltr">{s.userAgent || 'unknown'}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-1" dir="ltr">
+                        {s.userAgent || 'unknown'}
+                      </p>
                     </div>
                     {!s.isCurrent ? (
                       <Button
@@ -205,7 +250,11 @@ export default function SessionsView() {
                         disabled={revoking === s.token}
                         className="shrink-0 min-h-[36px]"
                       >
-                        {revoking === s.token ? <Loader2 className="h-4 w-4 animate-spin" /> : 'طرد'}
+                        {revoking === s.token ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'طرد'
+                        )}
                       </Button>
                     ) : (
                       <span className="text-xs text-muted-foreground shrink-0">الحالية</span>
@@ -223,7 +272,13 @@ export default function SessionsView() {
                   disabled={bulkLoading}
                   className="w-full h-11 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
-                  {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogOut className="ml-2 h-4 w-4" /> سجّل خروج من كل الأجهزة الأخرى</>}
+                  {bulkLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <LogOut className="ml-2 h-4 w-4" /> سجّل خروج من كل الأجهزة الأخرى
+                    </>
+                  )}
                 </Button>
               </div>
             )}
@@ -231,7 +286,9 @@ export default function SessionsView() {
         )}
 
         <div className="mt-6 text-center">
-          <Link href="/settings" className="text-sm text-primary hover:underline">← العودة للإعدادات</Link>
+          <Link href="/settings" className="text-sm text-primary hover:underline">
+            ← العودة للإعدادات
+          </Link>
         </div>
       </div>
     </div>

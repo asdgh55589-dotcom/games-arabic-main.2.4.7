@@ -1,7 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from 'recharts'
 import { ChartWrapper } from './chart-wrapper'
 
 interface TeamMetrics {
@@ -62,7 +71,10 @@ export function TeamQualityRadar({ teams, loading, error }: TeamQualityRadarProp
         <ResponsiveContainer>
           <RadarChart data={chartData}>
             <PolarGrid stroke="hsl(var(--border))" />
-            <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+            <PolarAngleAxis
+              dataKey="metric"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            />
             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
             {teams?.map((team, i) => (
               <Radar
@@ -85,7 +97,10 @@ export function TeamQualityRadar({ teams, loading, error }: TeamQualityRadarProp
                     <div className="font-medium mb-1">{payload[0]?.payload?.metric}</div>
                     {payload.map((p, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: TEAM_COLORS[i % TEAM_COLORS.length] }} />
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: TEAM_COLORS[i % TEAM_COLORS.length] }}
+                        />
                         <span className="text-muted-foreground">{p.name}:</span>
                         <span className="font-medium">{String(p.value)}</span>
                       </div>

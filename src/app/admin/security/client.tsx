@@ -153,14 +153,18 @@ export default function SecurityClient() {
             {totpEnabled ? (
               <Badge className="bg-green-500 text-white">مفعلة</Badge>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground">غير مفعلة — افتراضي</Badge>
+              <Badge variant="outline" className="text-muted-foreground">
+                غير مفعلة — افتراضي
+              </Badge>
             )}
           </CardTitle>
           <CardDescription>
-            حماية إضافية اختيارية — غير مفعلة افتراضياً. يمكنك تفعيلها لزيادة أمان حسابك. إذا فعّلتها، سيُطلب رمز التحقق عند كل تسجيل دخول.
+            حماية إضافية اختيارية — غير مفعلة افتراضياً. يمكنك تفعيلها لزيادة أمان حسابك. إذا فعّلتها،
+            سيُطلب رمز التحقق عند كل تسجيل دخول.
           </CardDescription>
           <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800 dark:bg-blue-950/20 dark:border-blue-900 dark:text-blue-300">
-            ℹ️ هذه الميزة اختيارية تماماً — تسجيل الدخول يعتمد أساساً على 4 بيانات اعتماد (اسم المستخدم + البريد + كلمة المرور + مفتاح الأمان). التفعيل اختياري لزيادة الحماية.
+            ℹ️ هذه الميزة اختيارية تماماً — تسجيل الدخول يعتمد أساساً على 4 بيانات اعتماد (اسم المستخدم
+            + البريد + كلمة المرور + مفتاح الأمان). التفعيل اختياري لزيادة الحماية.
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -172,7 +176,12 @@ export default function SecurityClient() {
               <div className="text-sm text-muted-foreground">
                 الرموز المتبقية: <span className="font-bold">{recoveryRemaining} / 10</span>
               </div>
-              <Button variant="destructive" onClick={handleDisable} disabled={actionLoading} className="min-h-[44px]">
+              <Button
+                variant="destructive"
+                onClick={handleDisable}
+                disabled={actionLoading}
+                className="min-h-[44px]"
+              >
                 {actionLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
                 تعطيل المصادقة الثنائية
               </Button>
@@ -180,10 +189,15 @@ export default function SecurityClient() {
           ) : setupPhase === 'idle' ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                فعّل المصادقة الثنائية لإضافة طبقة حماية إضافية عند تسجيل الدخول. ستحتاج إلى رمز من تطبيق المصادقة في كل مرة تسجل فيها الدخول.
+                فعّل المصادقة الثنائية لإضافة طبقة حماية إضافية عند تسجيل الدخول. ستحتاج إلى رمز من
+                تطبيق المصادقة في كل مرة تسجل فيها الدخول.
               </p>
               <Button onClick={handleSetup} disabled={actionLoading} className="min-h-[44px]">
-                {actionLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Shield className="ml-2 h-4 w-4" />}
+                {actionLoading ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="ml-2 h-4 w-4" />
+                )}
                 تفعيل المصادقة الثنائية
               </Button>
             </div>
@@ -192,11 +206,17 @@ export default function SecurityClient() {
               <p className="text-sm font-medium">امسح رمز QR بتطبيق المصادقة:</p>
               {qrCode && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrCode} alt="QR Code" className="mx-auto h-48 w-48 rounded-lg border p-2" />
+                <img
+                  src={qrCode}
+                  alt="QR Code"
+                  className="mx-auto h-48 w-48 rounded-lg border p-2"
+                />
               )}
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground mb-1">أو أدخل هذا الرمز يدوياً:</p>
-                <code className="block bg-background p-2 rounded text-sm font-mono break-all">{secret}</code>
+                <code className="block bg-background p-2 rounded text-sm font-mono break-all">
+                  {secret}
+                </code>
               </div>
               <div className="space-y-2">
                 <Input
@@ -208,11 +228,19 @@ export default function SecurityClient() {
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <Button onClick={handleVerify} disabled={actionLoading} className="flex-1 min-h-[44px]">
+                  <Button
+                    onClick={handleVerify}
+                    disabled={actionLoading}
+                    className="flex-1 min-h-[44px]"
+                  >
                     {actionLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
                     تحقق وتفعيل
                   </Button>
-                  <Button variant="outline" onClick={() => setSetupPhase('idle')} disabled={actionLoading}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSetupPhase('idle')}
+                    disabled={actionLoading}
+                  >
                     إلغاء
                   </Button>
                 </div>

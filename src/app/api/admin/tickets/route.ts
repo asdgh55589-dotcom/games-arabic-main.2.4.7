@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
     const statusCounts = stats.reduce(
       (acc, s) => ({ ...acc, [s.status]: s._count.id }),
-      {} as Record<string, number>
+      {} as Record<string, number>,
     )
 
     return NextResponse.json({
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     if (!subject || !description || !category || !userId) {
       return NextResponse.json(
         { error: 'العنوان والوصف والتصنيف ومعرف المستخدم مطلوبة' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -90,9 +90,7 @@ export async function POST(request: Request) {
         priority: priority || 'medium',
         userId,
         assignedTo: assignedTo || null,
-        tags: tags?.length
-          ? { create: tags.map((tag: string) => ({ tag })) }
-          : undefined,
+        tags: tags?.length ? { create: tags.map((tag: string) => ({ tag })) } : undefined,
       },
       include: {
         user: { select: { id: true, username: true, avatarUrl: true } },

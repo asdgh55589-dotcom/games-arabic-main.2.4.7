@@ -57,7 +57,12 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       where: { userId: id },
       orderBy: { createdAt: 'desc' },
       take: 20,
-      select: { id: true, text: true, createdAt: true, mod: { select: { name: true, slug: true } } },
+      select: {
+        id: true,
+        text: true,
+        createdAt: true,
+        mod: { select: { name: true, slug: true } },
+      },
     })
 
     return ok({ user, actions, comments })
@@ -88,12 +93,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         return forbidden('Forbidden — only owners can modify other owners')
       }
       if (!canAssignRole(currentUser.role, newRole)) {
-        return forbidden(`Forbidden — your role (${currentUser.role}) cannot assign role: ${newRole}`)
+        return forbidden(
+          `Forbidden — your role (${currentUser.role}) cannot assign role: ${newRole}`,
+        )
       }
     }
 
     const updateData: Record<string, unknown> = {}
-    const allowed = ['username', 'displayName', 'firstName', 'lastName', 'email', 'avatarUrl', 'bio', 'role']
+    const allowed = [
+      'username',
+      'displayName',
+      'firstName',
+      'lastName',
+      'email',
+      'avatarUrl',
+      'bio',
+      'role',
+    ]
     for (const field of allowed) {
       if (body[field] !== undefined) updateData[field] = body[field]
     }
@@ -121,7 +137,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           action: 'USER_ROLE_CHANGED',
           entity: 'User',
           entityId: id,
-          details: JSON.stringify({ oldRole: target.role, newRole, username: target.username, email: target.email }),
+          details: JSON.stringify({
+            oldRole: target.role,
+            newRole,
+            username: target.username,
+            email: target.email,
+          }),
           request: req,
         })
       } catch {}
@@ -139,7 +160,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         if (adminClient && target.supabaseId) {
           const { error: updateError } = await adminClient.auth.admin.updateUserById(
             target.supabaseId,
-            { password: newPassword }
+            { password: newPassword },
           )
           if (updateError) {
             console.error('[admin/users/[id] PUT] Supabase password update failed:', updateError)
@@ -154,14 +175,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           // إذا كان هناك Supabase client لكن بدون supabaseId — حاول إنشاء حساب Supabase وربطه
           if (adminClient && !target.supabaseId) {
             try {
-              const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-                email: target.email,
-                password: newPassword,
-                email_confirm: true,
-                user_metadata: { username: target.username },
-              })
+              const { data: created, error: createError } = await adminClient.auth.admin.createUser(
+                {
+                  email: target.email,
+                  password: newPassword,
+                  email_confirm: true,
+                  user_metadata: { username: target.username },
+                },
+              )
               if (!createError && created?.user?.id) {
-                await db.user.update({ where: { id }, data: { supabaseId: created.user.id } as any })
+                await db.user.update({
+                  where: { id },
+                  data: { supabaseId: created.user.id } as any,
+                })
               }
             } catch {
               // ignore — كلمة المرور المحلية كافية

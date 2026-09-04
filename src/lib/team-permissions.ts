@@ -19,7 +19,7 @@ function getTeamRole(teamId: string, userId: string): Promise<string | null> {
 export async function canEditMod(
   teamId: string,
   userId: string,
-  modId: string
+  modId: string,
 ): Promise<TeamPermissionCheck> {
   const role = await getTeamRole(teamId, userId)
   if (!role) return { allowed: false, reason: 'عضو الفريق فقط' }
@@ -38,7 +38,7 @@ export async function canEditMod(
 export async function canDeleteMod(
   teamId: string,
   userId: string,
-  modId: string
+  modId: string,
 ): Promise<TeamPermissionCheck> {
   const role = await getTeamRole(teamId, userId)
   if (!role) return { allowed: false, reason: 'عضو الفريق فقط' }
@@ -48,7 +48,7 @@ export async function canDeleteMod(
 
 export async function canManageMembers(
   teamId: string,
-  userId: string
+  userId: string,
 ): Promise<TeamPermissionCheck> {
   const role = await getTeamRole(teamId, userId)
   if (!role) return { allowed: false, reason: 'عضو الفريق فقط' }
@@ -58,7 +58,7 @@ export async function canManageMembers(
 
 export async function canViewDashboard(
   teamId: string,
-  userId: string
+  userId: string,
 ): Promise<TeamPermissionCheck> {
   const role = await getTeamRole(teamId, userId)
   if (!role) return { allowed: false, reason: 'عضو الفريق فقط' }
@@ -67,7 +67,7 @@ export async function canViewDashboard(
 
 export async function canManageTeamSettings(
   teamId: string,
-  userId: string
+  userId: string,
 ): Promise<TeamPermissionCheck> {
   const role = await getTeamRole(teamId, userId)
   if (!role) return { allowed: false, reason: 'عضو الفريق فقط' }

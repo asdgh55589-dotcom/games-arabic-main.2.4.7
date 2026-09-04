@@ -13,12 +13,7 @@ interface RatingFormProps {
   onRatingSubmitted?: () => void
 }
 
-export function RatingForm({
-  modId,
-  userId,
-  existingRating,
-  onRatingSubmitted,
-}: RatingFormProps) {
+export function RatingForm({ modId, userId, existingRating, onRatingSubmitted }: RatingFormProps) {
   const [rating, setRating] = useState(existingRating?.rating || 0)
   const [hoveredStar, setHoveredStar] = useState(0)
   const [comment, setComment] = useState(existingRating?.comment || '')
@@ -64,11 +59,7 @@ export function RatingForm({
   }
 
   if (!userId) {
-    return (
-      <div className="text-sm text-muted-foreground">
-        سجّل الدخول لتقييم هذا التعريب
-      </div>
-    )
+    return <div className="text-sm text-muted-foreground">سجّل الدخول لتقييم هذا التعريب</div>
   }
 
   if (submitted && existingRating) {
@@ -76,10 +67,21 @@ export function RatingForm({
       <div className="space-y-3">
         <RatingDisplay rating={rating} showCount={false} />
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => setSubmitted(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setSubmitted(false)}
+          >
             تعديل التقييم
           </Button>
-          <Button variant="destructive" size="sm" className="min-h-[44px]" onClick={handleDelete} disabled={submitting}>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={handleDelete}
+            disabled={submitting}
+          >
             حذف التقييم
           </Button>
         </div>
@@ -121,7 +123,8 @@ export function RatingForm({
 
       <div className="flex gap-2">
         <Button
-          size="sm" className="min-h-[44px]"
+          size="sm"
+          className="min-h-[44px]"
           onClick={handleSubmit}
           disabled={rating === 0 || submitting}
         >
@@ -129,7 +132,12 @@ export function RatingForm({
           {submitting ? 'جاري الإرسال...' : existingRating ? 'تحديث' : 'إرسال'}
         </Button>
         {existingRating && (
-          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => setSubmitted(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setSubmitted(true)}
+          >
             إلغاء
           </Button>
         )}

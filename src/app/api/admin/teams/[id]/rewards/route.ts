@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getTeamPoints } from '@/lib/points'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const rewards = await getTeamPoints(id)

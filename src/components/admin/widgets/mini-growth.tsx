@@ -28,16 +28,23 @@ export function MiniGrowth({ data, loading }: MiniGrowthProps) {
         <div className="mt-1 flex items-end gap-2">
           <span className="text-2xl font-bold">{stats?.recent ?? 0}</span>
           {stats && (
-            <span className={`flex items-center gap-0.5 text-xs font-medium ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-              {stats.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {stats.change > 0 ? '+' : ''}{stats.change}%
+            <span
+              className={`flex items-center gap-0.5 text-xs font-medium ${stats.isPositive ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {stats.isPositive ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {stats.change > 0 ? '+' : ''}
+              {stats.change}%
             </span>
           )}
         </div>
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${Math.min((stats?.recent ?? 0) / 50 * 100, 100)}%` }}
+            style={{ width: `${Math.min(((stats?.recent ?? 0) / 50) * 100, 100)}%` }}
           />
         </div>
       </CardContent>

@@ -54,7 +54,9 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         select: { role: true, username: true },
       })
       if (privileged && ['owner', 'manager', 'admin'].includes(privileged.role)) {
-        console.log(`[repeat-offender] تم تجاوز الحظر التلقائي للمستخدم المميز ${targetUserId} (الدور: ${privileged.role})`)
+        console.log(
+          `[repeat-offender] تم تجاوز الحظر التلقائي للمستخدم المميز ${targetUserId} (الدور: ${privileged.role})`,
+        )
         // سجل تجاوز للمراجعة اليدوية بدلاً من الحظر
         await db.auditLog.create({
           data: {
@@ -79,7 +81,9 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
             take: 10,
           })
           if (admins.length > 0) {
-            const { getNotificationService } = await import('@/infrastructure/di/notification-container')
+            const { getNotificationService } = await import(
+              '@/infrastructure/di/notification-container'
+            )
             const { NotificationType, NotificationChannel } = await import('@/domain')
             const service = getNotificationService()
             for (const admin of admins) {

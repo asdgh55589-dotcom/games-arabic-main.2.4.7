@@ -5,15 +5,45 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Menu, ChevronDown, Upload, LogIn, X, TrendingUp, Flame, Package, Users, LogOut, User, Settings, FileText, Activity, Bookmark, Trophy, Bell } from 'lucide-react'
-import { PcIcon, NintendoSwitchIcon, PlayStationIcon, Xbox360Icon } from '@/components/platform-icons'
+import {
+  Search,
+  Menu,
+  ChevronDown,
+  Upload,
+  LogIn,
+  X,
+  TrendingUp,
+  Flame,
+  Package,
+  Users,
+  LogOut,
+  User,
+  Settings,
+  FileText,
+  Activity,
+  Bookmark,
+  Trophy,
+  Bell,
+} from 'lucide-react'
+import {
+  PcIcon,
+  NintendoSwitchIcon,
+  PlayStationIcon,
+  Xbox360Icon,
+} from '@/components/platform-icons'
 import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
 import { getSectionIcon } from '@/lib/section-icons'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { NotificationBell } from '@/components/notification-bell'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -41,15 +71,96 @@ interface SectionItem {
 
 // Fallback sections for when API hasn't loaded yet
 const FALLBACK_SECTIONS: SectionItem[] = [
-  { id: '1', slug: 'pc', name: 'PC ARABIC', nameEn: 'PC Arabic', key: 'PC', icon: 'PcIcon', color: PLATFORM_COLORS.pc, order: 1 },
-  { id: '2', slug: 'xbox-360', name: 'XBOX 360 ARABIC', nameEn: 'Xbox 360 Arabic', key: 'X360', icon: 'Xbox360Icon', color: PLATFORM_COLORS.xbox360, order: 2 },
-  { id: '3', slug: 'ns', name: 'NS ARABIC', nameEn: 'NS Arabic', key: 'NS', icon: 'NintendoSwitchIcon', color: PLATFORM_COLORS.switch, order: 3 },
-  { id: '4', slug: 'ps4', name: 'PS4 ARABIC', nameEn: 'PS4 Arabic', key: 'PS4', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps4, order: 4 },
-  { id: '5', slug: 'ps3', name: 'PS3 ARABIC', nameEn: 'PS3 Arabic', key: 'PS3', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps3, order: 5 },
-  { id: '6', slug: 'ps2', name: 'PS2 ARABIC', nameEn: 'PS2 Arabic', key: 'PS2', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps2, order: 6 },
-  { id: '7', slug: 'ps1', name: 'PS1 ARABIC', nameEn: 'PS1 Arabic', key: 'PS1', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps1, order: 7 },
-  { id: '8', slug: 'ps5', name: 'PS5 ARABIC', nameEn: 'PS5 Arabic', key: 'PS5', icon: 'PlayStationIcon', color: PLATFORM_COLORS.ps5, order: 8 },
-  { id: '9', slug: 'android', name: 'ANDROID ARABIC', nameEn: 'Android Arabic', key: 'ANDROID', icon: 'Smartphone', color: PLATFORM_COLORS.android, order: 9 },
+  {
+    id: '1',
+    slug: 'pc',
+    name: 'PC ARABIC',
+    nameEn: 'PC Arabic',
+    key: 'PC',
+    icon: 'PcIcon',
+    color: PLATFORM_COLORS.pc,
+    order: 1,
+  },
+  {
+    id: '2',
+    slug: 'xbox-360',
+    name: 'XBOX 360 ARABIC',
+    nameEn: 'Xbox 360 Arabic',
+    key: 'X360',
+    icon: 'Xbox360Icon',
+    color: PLATFORM_COLORS.xbox360,
+    order: 2,
+  },
+  {
+    id: '3',
+    slug: 'ns',
+    name: 'NS ARABIC',
+    nameEn: 'NS Arabic',
+    key: 'NS',
+    icon: 'NintendoSwitchIcon',
+    color: PLATFORM_COLORS.switch,
+    order: 3,
+  },
+  {
+    id: '4',
+    slug: 'ps4',
+    name: 'PS4 ARABIC',
+    nameEn: 'PS4 Arabic',
+    key: 'PS4',
+    icon: 'PlayStationIcon',
+    color: PLATFORM_COLORS.ps4,
+    order: 4,
+  },
+  {
+    id: '5',
+    slug: 'ps3',
+    name: 'PS3 ARABIC',
+    nameEn: 'PS3 Arabic',
+    key: 'PS3',
+    icon: 'PlayStationIcon',
+    color: PLATFORM_COLORS.ps3,
+    order: 5,
+  },
+  {
+    id: '6',
+    slug: 'ps2',
+    name: 'PS2 ARABIC',
+    nameEn: 'PS2 Arabic',
+    key: 'PS2',
+    icon: 'PlayStationIcon',
+    color: PLATFORM_COLORS.ps2,
+    order: 6,
+  },
+  {
+    id: '7',
+    slug: 'ps1',
+    name: 'PS1 ARABIC',
+    nameEn: 'PS1 Arabic',
+    key: 'PS1',
+    icon: 'PlayStationIcon',
+    color: PLATFORM_COLORS.ps1,
+    order: 7,
+  },
+  {
+    id: '8',
+    slug: 'ps5',
+    name: 'PS5 ARABIC',
+    nameEn: 'PS5 Arabic',
+    key: 'PS5',
+    icon: 'PlayStationIcon',
+    color: PLATFORM_COLORS.ps5,
+    order: 8,
+  },
+  {
+    id: '9',
+    slug: 'android',
+    name: 'ANDROID ARABIC',
+    nameEn: 'Android Arabic',
+    key: 'ANDROID',
+    icon: 'Smartphone',
+    color: PLATFORM_COLORS.android,
+    order: 9,
+  },
 ]
 
 export function Navbar({ games, currentView }: NavbarProps) {
@@ -59,16 +170,20 @@ export function Navbar({ games, currentView }: NavbarProps) {
   const sections = FALLBACK_SECTIONS
 
   // Support both new routes (/platform/PC) and old SPA (?view=platform&platform=PC)
-  const resolvedView = currentView || (() => {
-    if (pathname === '/') return 'home'
-    const segment = pathname.split('/')[1]
-    if (segment) return segment
-    return searchParams.get('view') || 'home'
-  })()
-  const resolvedPlatform = searchParams.get('platform') || (() => {
-    const match = pathname.match(/^\/platform\/([^/]+)/)
-    return match ? decodeURIComponent(match[1]) : null
-  })()
+  const resolvedView =
+    currentView ||
+    (() => {
+      if (pathname === '/') return 'home'
+      const segment = pathname.split('/')[1]
+      if (segment) return segment
+      return searchParams.get('view') || 'home'
+    })()
+  const resolvedPlatform =
+    searchParams.get('platform') ||
+    (() => {
+      const match = pathname.match(/^\/platform\/([^/]+)/)
+      return match ? decodeURIComponent(match[1]) : null
+    })()
   const [q, setQ] = useState('')
   const [suggestions, setSuggestions] = useState<SearchResponse>({ mods: [], games: [] })
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -99,7 +214,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
     fetch(`/api/search?q=${encodeURIComponent(debouncedQ)}&limit=5`, {
       signal: controller.signal,
     })
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((json: { data: SearchResponse } | null) => {
         if (!cancelled && json) {
           setSuggestions(json.data)
@@ -131,9 +246,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
       const isTypingTarget =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
       if (e.key === '/' && !isTypingTarget && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
@@ -194,77 +307,107 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
   // الشريط العلوي — موسّع، اللوجو على اليسار
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/75 backdrop-blur-md" dir="ltr">
+    <header
+      className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/75 backdrop-blur-md"
+      dir="ltr"
+    >
       <div className="flex h-11 max-w-[1700px] items-center gap-2 px-3">
-
         {/* Left group: Logo + Desktop nav — يبقى على اليسار مع بعض */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Logo — English, على اليسار */}
-          <Link href="/" className="flex shrink-0 items-center gap-1" aria-label="Games Arabic home">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-1"
+            aria-label="Games Arabic home"
+          >
             <span className="text-base sm:text-xl font-extrabold tracking-tight">
               <span className="text-gradient">{siteName.split(' ')[0] || 'GAMES'}</span>
-              <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
+              <span className="text-foreground">
+                {' '}
+                {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}
+              </span>
             </span>
           </Link>
 
           {/* Desktop nav — الأقسام الديناميكية */}
           <nav className="hidden items-center gap-0 lg:flex" aria-label="Main">
-          {sections.map((s) => {
-            const isActive = resolvedView === 'platform' && resolvedPlatform === s.key
-            const Icon = getSectionIcon(s.icon)
-            return (
-              <Link
-                key={s.id}
-                href={`/platform/${s.key}`}
-                className={`whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-white/10 text-gray-200'
-                    : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
-                }`}
-              >
-                {s.name} <Icon width={12} height={12} color={s.color} className="inline-block align-middle ms-0.5" />
-              </Link>
-            )
-          })}
+            {sections.map((s) => {
+              const isActive = resolvedView === 'platform' && resolvedPlatform === s.key
+              const Icon = getSectionIcon(s.icon)
+              return (
+                <Link
+                  key={s.id}
+                  href={`/platform/${s.key}`}
+                  className={`whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
+                    isActive
+                      ? 'bg-white/10 text-gray-200'
+                      : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                  }`}
+                >
+                  {s.name}{' '}
+                  <Icon
+                    width={12}
+                    height={12}
+                    color={s.color}
+                    className="inline-block align-middle ms-0.5"
+                  />
+                </Link>
+              )
+            })}
 
-          {/* Vertical divider */}
-          <div className="mx-0.5 h-4 w-px bg-border/60" />
+            {/* Vertical divider */}
+            <div className="mx-0.5 h-4 w-px bg-border/60" />
 
-          <Link
-            href="/series"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
-              resolvedView === 'series' || resolvedView === 'series-detail'
-                ? 'bg-white/10 text-gray-200'
-                : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
-            }`}
-          >
-            <Package width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
-            السلاسل
-          </Link>
-          <Link
-            href="/teams"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
-              resolvedView === 'teams' || resolvedView === 'team-detail'
-                ? 'bg-white/10 text-gray-200'
-                : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
-            }`}
-          >
-            <Users width={12} height={12} style={{ color: 'var(--gold)' }} className="inline-block align-middle" />
-            الفرق
-          </Link>
-          <Link
-            href="/request"
-            className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
-              pathname === '/request' ? 'bg-white/10 text-gray-200' : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
-            }`}
-          >
-            <span className="text-[11px]">📝</span> طلب تعريب
-          </Link>
-        </nav>
+            <Link
+              href="/series"
+              className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
+                resolvedView === 'series' || resolvedView === 'series-detail'
+                  ? 'bg-white/10 text-gray-200'
+                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
+              }`}
+            >
+              <Package
+                width={12}
+                height={12}
+                style={{ color: 'var(--gold)' }}
+                className="inline-block align-middle"
+              />
+              السلاسل
+            </Link>
+            <Link
+              href="/teams"
+              className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
+                resolvedView === 'teams' || resolvedView === 'team-detail'
+                  ? 'bg-white/10 text-gray-200'
+                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
+              }`}
+            >
+              <Users
+                width={12}
+                height={12}
+                style={{ color: 'var(--gold)' }}
+                className="inline-block align-middle"
+              />
+              الفرق
+            </Link>
+            <Link
+              href="/request"
+              className={`flex items-center gap-1 whitespace-nowrap rounded-none px-1.5 py-1.5 text-xs font-black uppercase tracking-wide transition-colors ${
+                pathname === '/request'
+                  ? 'bg-white/10 text-gray-200'
+                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'
+              }`}
+            >
+              <span className="text-[11px]">📝</span> طلب تعريب
+            </Link>
+          </nav>
         </div>
 
         {/* Smart Search — يبدأ ضيق، يتمدّد عند التركيز — متجاوب 320 */}
-        <div ref={searchRef} className="relative min-w-0 max-w-[140px] shrink flex-1 transition-all duration-200 focus-within:max-w-[260px] sm:min-w-[160px] sm:max-w-[200px] lg:min-w-[180px]">
+        <div
+          ref={searchRef}
+          className="relative min-w-0 max-w-[140px] shrink flex-1 transition-all duration-200 focus-within:max-w-[260px] sm:min-w-[160px] sm:max-w-[200px] lg:min-w-[180px]"
+        >
           <form onSubmit={onSearch} role="search">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -284,7 +427,11 @@ export function Navbar({ games, currentView }: NavbarProps) {
               {q && (
                 <button
                   type="button"
-                  onClick={() => { setQ(''); setSuggestions({ mods: [], games: [] }); inputRef.current?.focus() }}
+                  onClick={() => {
+                    setQ('')
+                    setSuggestions({ mods: [], games: [] })
+                    inputRef.current?.focus()
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -317,17 +464,27 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       aria-selected={activeSuggestionIdx === modIdx}
                       className={cn(
                         'flex items-center gap-3 px-4 py-3 transition-colors',
-                        activeSuggestionIdx === modIdx ? 'bg-accent' : 'hover:bg-accent/50'
+                        activeSuggestionIdx === modIdx ? 'bg-accent' : 'hover:bg-accent/50',
                       )}
                     >
-                      <Image unoptimized width={40} height={40} src={m.thumbnailUrl} alt="" className="h-10 w-14 rounded-md object-cover" loading="lazy" />
+                      <Image
+                        unoptimized
+                        width={40}
+                        height={40}
+                        src={m.thumbnailUrl}
+                        alt=""
+                        className="h-10 w-14 rounded-md object-cover"
+                        loading="lazy"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-bold text-foreground">{m.name}</div>
                         <div className="truncate text-xs text-muted-foreground">
                           {m.game.name} · {formatNumber(m.downloads)} تحميل
                         </div>
                       </div>
-                      <Badge variant="outline" className="shrink-0 text-[10px]">{m.game.platform}</Badge>
+                      <Badge variant="outline" className="shrink-0 text-[10px]">
+                        {m.game.platform}
+                      </Badge>
                     </Link>
                   ))}
                 </div>
@@ -349,9 +506,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
           {/* اقتراحات سريعة لما البحث فاضي */}
           {showSuggestions && !hasSuggestions && q.trim() && (
-            <div
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl"
-            >
+            <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-none border-2 border-border bg-popover shadow-2xl">
               <div className="px-4 py-3 text-center text-sm text-muted-foreground">
                 لا توجد نتائج لـ &quot;{q}&quot;
               </div>
@@ -366,70 +521,102 @@ export function Navbar({ games, currentView }: NavbarProps) {
           {currentUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation"
+                >
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={currentUser.avatarUrl || undefined} alt={(currentUser as unknown as { displayName?: string }).displayName || currentUser.username} />
-                    <AvatarFallback className="text-[10px]" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-                      {((currentUser as unknown as { displayName?: string }).displayName || currentUser.username)[0]?.toUpperCase()}
+                    <AvatarImage
+                      src={currentUser.avatarUrl || undefined}
+                      alt={
+                        (currentUser as unknown as { displayName?: string }).displayName ||
+                        currentUser.username
+                      }
+                    />
+                    <AvatarFallback
+                      className="text-[10px]"
+                      style={{
+                        backgroundColor: 'var(--primary)',
+                        color: 'var(--primary-foreground)',
+                      }}
+                    >
+                      {((currentUser as unknown as { displayName?: string }).displayName ||
+                        currentUser.username)[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline">{(currentUser as unknown as { displayName?: string }).displayName || currentUser.username}</span>
+                  <span className="hidden md:inline">
+                    {(currentUser as unknown as { displayName?: string }).displayName ||
+                      currentUser.username}
+                  </span>
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`} className="flex items-center gap-2 flex-row-reverse">
-                      <User className="h-4 w-4" />
-                      الملف الشخصي
-                    </Link>
-                  </DropdownMenuItem>
-                  {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
-                    <DropdownMenuItem asChild>
-                      <Link href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`} className="flex items-center gap-2 flex-row-reverse">
-                        <FileText className="h-4 w-4" />
-                        تعريباتي
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {['creator', 'publisher'].includes(currentUser.role) && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/creator" className="flex items-center gap-2 flex-row-reverse text-sm text-muted-foreground">
-                        لوحة التحكم
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/favorites" className="flex items-center gap-2 flex-row-reverse">
-                      <Bookmark className="h-4 w-4" />
-                      مفضلاتي
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" className="flex items-center gap-2 flex-row-reverse">
-                      <Settings className="h-4 w-4" />
-                      إدارة الحساب والإعدادات
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="flex items-center gap-2 flex-row-reverse text-destructive focus:text-destructive"
-                    onClick={async () => {
-                      await logout()
-                      window.location.href = '/'
-                    }}
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`}
+                    className="flex items-center gap-2 flex-row-reverse"
                   >
-                    <LogOut className="h-4 w-4" />
-                    تسجيل الخروج
+                    <User className="h-4 w-4" />
+                    الملف الشخصي
+                  </Link>
+                </DropdownMenuItem>
+                {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`}
+                      className="flex items-center gap-2 flex-row-reverse"
+                    >
+                      <FileText className="h-4 w-4" />
+                      تعريباتي
+                    </Link>
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+                {['creator', 'publisher'].includes(currentUser.role) && (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/creator"
+                      className="flex items-center gap-2 flex-row-reverse text-sm text-muted-foreground"
+                    >
+                      لوحة التحكم
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/favorites" className="flex items-center gap-2 flex-row-reverse">
+                    <Bookmark className="h-4 w-4" />
+                    مفضلاتي
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center gap-2 flex-row-reverse">
+                    <Settings className="h-4 w-4" />
+                    إدارة الحساب والإعدادات
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="flex items-center gap-2 flex-row-reverse text-destructive focus:text-destructive"
+                  onClick={async () => {
+                    await logout()
+                    window.location.href = '/'
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  تسجيل الخروج
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <Button asChild variant="ghost" size="sm" className="text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation">
-              <Link href="/login">
-                تسجيل الدخول
-              </Link>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-sm font-medium text-foreground hover:text-primary min-h-[44px] touch-manipulation"
+            >
+              <Link href="/login">تسجيل الدخول</Link>
             </Button>
           )}
         </div>
@@ -439,18 +626,34 @@ export function Navbar({ games, currentView }: NavbarProps) {
           <NotificationBell currentUser={currentUser} />
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-none border-[2px] border-border bg-card shadow-[2px_2px_0_0_var(--border)] hover:shadow-[1px_1px_0_0_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] touch-manipulation" aria-label="القائمة">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-none border-[2px] border-border bg-card shadow-[2px_2px_0_0_var(--border)] hover:shadow-[1px_1px_0_0_var(--border)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[1px] active:translate-y-[1px] touch-manipulation"
+                aria-label="القائمة"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[360px] overflow-y-auto overscroll-contain touch-pan-y p-0" dir="rtl">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[360px] overflow-y-auto overscroll-contain touch-pan-y p-0"
+              dir="rtl"
+            >
               <SheetHeader className="border-b border-border/60 px-4 py-3">
                 <SheetTitle className="text-right">
-                  <Link href="/" className="flex items-center justify-end gap-2" onClick={() => setMobileOpen(false)}>
+                  <Link
+                    href="/"
+                    className="flex items-center justify-end gap-2"
+                    onClick={() => setMobileOpen(false)}
+                  >
                     <span className="text-lg font-bold tracking-tight">
                       <span className="text-primary">{siteName.split(' ')[0] || 'GAMES'}</span>
-                      <span className="text-foreground"> {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}</span>
+                      <span className="text-foreground">
+                        {' '}
+                        {siteName.split(' ').slice(1).join(' ') || 'ARABIC'}
+                      </span>
                     </span>
                   </Link>
                 </SheetTitle>
@@ -465,23 +668,38 @@ export function Navbar({ games, currentView }: NavbarProps) {
                         className="flex w-full items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-right transition-colors hover:bg-accent"
                       >
                         <Avatar className="h-8 w-8 shrink-0">
-                          <AvatarImage src={currentUser.avatarUrl || undefined} alt={currentUser.username} />
-                          <AvatarFallback className="text-xs">{currentUser.username[0]?.toUpperCase()}</AvatarFallback>
+                          <AvatarImage
+                            src={currentUser.avatarUrl || undefined}
+                            alt={currentUser.username}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {currentUser.username[0]?.toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1 text-right">
-                          <div className="truncate text-sm font-bold text-foreground">{currentUser.username}</div>
+                          <div className="truncate text-sm font-bold text-foreground">
+                            {currentUser.username}
+                          </div>
                           <div className="text-xs text-muted-foreground">الحساب</div>
                         </div>
-                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+                        />
                       </button>
                       {profileOpen && (
                         <div className="ms-2 space-y-1 border-s-2 border-primary/20 ps-3">
-                          <MobileLink href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`} onClick={() => setMobileOpen(false)}>
+                          <MobileLink
+                            href={`/profile/${encodeURIComponent(currentUser.username)}?tab=about`}
+                            onClick={() => setMobileOpen(false)}
+                          >
                             <User className="h-3.5 w-3.5" />
                             الملف الشخصي
                           </MobileLink>
                           {['owner', 'admin', 'moderator'].includes(currentUser.role) && (
-                            <MobileLink href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`} onClick={() => setMobileOpen(false)}>
+                            <MobileLink
+                              href={`/profile/${encodeURIComponent(currentUser.username)}?tab=mods`}
+                              onClick={() => setMobileOpen(false)}
+                            >
                               <FileText className="h-3.5 w-3.5" />
                               تعريباتي
                             </MobileLink>
@@ -519,7 +737,10 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       )}
                     </div>
                   ) : (
-                    <Button asChild className="w-full rounded-none border-[2px] border-primary bg-primary py-5 font-bold shadow-[2px_2px_0_0_var(--border)] touch-manipulation">
+                    <Button
+                      asChild
+                      className="w-full rounded-none border-[2px] border-primary bg-primary py-5 font-bold shadow-[2px_2px_0_0_var(--border)] touch-manipulation"
+                    >
                       <Link href="/login" onClick={() => setMobileOpen(false)}>
                         <LogIn className="me-2 h-4 w-4" />
                         الحساب / تسجيل الدخول
@@ -538,14 +759,21 @@ export function Navbar({ games, currentView }: NavbarProps) {
                       <Package className="h-4 w-4 text-primary" />
                       الأقسام
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${sectionsOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${sectionsOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
                   {sectionsOpen && (
                     <div className="mt-2 space-y-0.5 border-s-2 border-primary/20 ps-2">
                       {sections.map((s) => {
                         const Icon = getSectionIcon(s.icon)
                         return (
-                          <MobileLink key={s.id} href={`/platform/${s.key}`} onClick={() => setMobileOpen(false)} isActive={resolvedView === 'platform' && resolvedPlatform === s.key}>
+                          <MobileLink
+                            key={s.id}
+                            href={`/platform/${s.key}`}
+                            onClick={() => setMobileOpen(false)}
+                            isActive={resolvedView === 'platform' && resolvedPlatform === s.key}
+                          >
                             <Icon width={14} height={14} color={s.color} className="shrink-0" />
                             <span className="flex-1">{s.name}</span>
                           </MobileLink>
@@ -558,15 +786,27 @@ export function Navbar({ games, currentView }: NavbarProps) {
                 <div className="mx-3 h-px bg-border" />
 
                 <div className="space-y-0.5 p-3">
-                  <MobileLink href="/series" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'series' || resolvedView === 'series-detail'}>
+                  <MobileLink
+                    href="/series"
+                    onClick={() => setMobileOpen(false)}
+                    isActive={resolvedView === 'series' || resolvedView === 'series-detail'}
+                  >
                     <Package width={16} height={16} style={{ color: 'var(--gold)' }} />
                     السلاسل
                   </MobileLink>
-                  <MobileLink href="/teams" onClick={() => setMobileOpen(false)} isActive={resolvedView === 'teams' || resolvedView === 'team-detail'}>
+                  <MobileLink
+                    href="/teams"
+                    onClick={() => setMobileOpen(false)}
+                    isActive={resolvedView === 'teams' || resolvedView === 'team-detail'}
+                  >
                     <Users width={16} height={16} style={{ color: 'var(--gold)' }} />
                     الفرق
                   </MobileLink>
-                  <MobileLink href="/request" onClick={() => setMobileOpen(false)} isActive={pathname === '/request'}>
+                  <MobileLink
+                    href="/request"
+                    onClick={() => setMobileOpen(false)}
+                    isActive={pathname === '/request'}
+                  >
                     <span className="text-base leading-none">📝</span> طلب تعريب
                   </MobileLink>
                 </div>

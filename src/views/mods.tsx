@@ -76,7 +76,9 @@ export function ModsPage() {
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{TITLE_BY_SORT[sort] ?? 'تصفح التعديلات'}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {TITLE_BY_SORT[sort] ?? 'تصفح التعديلات'}
+        </h1>
         <p className="mt-1 text-muted-foreground">
           {data ? `${data.pagination.total} تعديل لجميع الألعاب` : 'جارٍ التحميل…'}
         </p>
@@ -113,7 +115,9 @@ export function ModsPage() {
       {/* الشبكة */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <ModCardSkeleton key={i} />
+          ))}
         </div>
       ) : (data?.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center py-20 text-center">
@@ -124,13 +128,16 @@ export function ModsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {data?.data?.map((m) => <ModCard key={m.id} mod={m} />)}
+            {data?.data?.map((m) => (
+              <ModCard key={m.id} mod={m} />
+            ))}
           </div>
           {data && data.pagination.totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-2">
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm"
+                className="min-h-[44px]"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
@@ -141,7 +148,8 @@ export function ModsPage() {
               </span>
               <Button
                 variant="outline"
-                size="sm" className="min-h-[44px]"
+                size="sm"
+                className="min-h-[44px]"
                 disabled={page >= data.pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >

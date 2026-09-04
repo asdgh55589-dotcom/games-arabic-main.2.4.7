@@ -3,10 +3,7 @@ import { db } from '@/lib/db'
 import { ok, notFound, internalError } from '@/lib/api-response'
 
 // GET /api/games/[slug]/categories — أقسام لعبة معينة
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params
     const game = await db.game.findUnique({

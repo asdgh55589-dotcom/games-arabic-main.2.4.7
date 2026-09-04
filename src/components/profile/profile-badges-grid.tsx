@@ -37,9 +37,7 @@ export function ProfileBadgesGrid({ badges }: ProfileBadgesGridProps) {
           <h4 className="text-sm font-bold text-white">{b.name}</h4>
           <p className="mt-1 text-xs text-gray-500">{b.description}</p>
           {b.earned && (
-            <Badge className="mt-2 text-[10px] bg-primary/20 text-primary">
-              مكتسبة
-            </Badge>
+            <Badge className="mt-2 text-[10px] bg-primary/20 text-primary">مكتسبة</Badge>
           )}
         </div>
       ))}

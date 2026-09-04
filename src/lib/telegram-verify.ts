@@ -3,7 +3,7 @@ import { createHmac, createHash } from 'crypto'
 /**
  * التحقق من بيانات Telegram Login Widget
  * https://core.telegram.org/widgets/login#checking-authorization
- * 
+ *
  * الصيغة: hash = HMAC-SHA256(data_check_string, SHA256(bot_token))
  * حيث data_check_string = key=value مرتبة أبجدياً ومفصولة بـ \n
  */

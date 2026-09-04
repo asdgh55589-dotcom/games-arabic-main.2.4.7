@@ -3,7 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, MessageSquare, BarChart3, Inbox, Settings, Plus, Menu, X } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Package,
+  MessageSquare,
+  BarChart3,
+  Inbox,
+  Settings,
+  Plus,
+  Menu,
+  X,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { RoleBadge } from '@/components/role-badge'
@@ -67,7 +77,9 @@ export function CreatorSidebar({ user }: CreatorSidebarProps) {
               onClick={() => setMobileOpen(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
-                isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                isActive
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -107,7 +119,11 @@ export function CreatorSidebar({ user }: CreatorSidebarProps) {
         <div className="md:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <div className="absolute inset-y-0 right-0 w-72 bg-card shadow-xl flex flex-col">
-            <button className="absolute top-4 left-4 p-1 rounded hover:bg-muted" onClick={() => setMobileOpen(false)} aria-label="إغلاق">
+            <button
+              className="absolute top-4 left-4 p-1 rounded hover:bg-muted"
+              onClick={() => setMobileOpen(false)}
+              aria-label="إغلاق"
+            >
               <X className="h-5 w-5" />
             </button>
             <div className="pt-10 flex-1 flex flex-col overflow-hidden">{sidebarContent}</div>
