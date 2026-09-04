@@ -1,9 +1,9 @@
 // Updated for new API response format
 'use client'
 
-import { Package, Search as SearchIcon, X } from 'lucide-react'
+import { Package, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -54,6 +54,12 @@ export function SearchPage() {
     const n = v ? parseInt(v, 10) : 0
     return Number.isNaN(n) ? 0 : n
   }, [searchParams])
+  const gameId = searchParams.get('gameId') || ''
+  const author = searchParams.get('author') || ''
+  const page = useMemo(() => {
+    const n = parseInt(searchParams.get('page') || '1', 10)
+    return Number.isNaN(n) || n < 1 ? 1 : n
+  }, [searchParams])
 
   useDocumentTitle(q ? `بحث: ${q}` : 'بحث')
 
@@ -68,11 +74,44 @@ export function SearchPage() {
     }
   }, [q])
 
-  const updateUrl = (newPlatforms: string[], newMinTier: number = minTier) => {
+  // Games list for the game filter dropdown (cached 60s browser-side by the API)
+  const [gamesList, setGamesList] = useState<{ id: string; name: string }[]>([])
+  useEffect(() => {
+    fetch('/api/games')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data?: { id: string; name: string }[] } | null) => {
+        if (Array.isArray(json?.data)) setGamesList(json.data)
+      })
+      .catch(() => {})
+  }, [])
+
+  const [authorInput, setAuthorInput] = useState(author)
+  useEffect(() => setAuthorInput(author), [author])
+
+  // Typo suggestion state — populated by the effect below (after results load)
+  const [trending, setTrending] = useState<string[]>([])
+
+  const updateUrl = (
+    opts: {
+      platforms?: string[]
+      tier?: number
+      game?: string
+      byAuthor?: string
+      pg?: number
+    } = {},
+  ) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
+    const newPlatforms = opts.platforms ?? selectedPlatforms
     if (newPlatforms.length) params.set('platform', newPlatforms.join(','))
-    if (newMinTier) params.set('minTier', String(newMinTier))
+    const newTier = opts.tier ?? minTier
+    if (newTier) params.set('minTier', String(newTier))
+    const newGame = opts.game ?? gameId
+    if (newGame) params.set('gameId', newGame)
+    const newAuthor = opts.byAuthor ?? author
+    if (newAuthor) params.set('author', newAuthor)
+    const newPage = opts.pg ?? 1
+    if (newPage > 1) params.set('page', String(newPage))
     const qs = params.toString()
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }
@@ -81,11 +120,11 @@ export function SearchPage() {
     const next = selectedPlatforms.includes(key)
       ? selectedPlatforms.filter((p) => p !== key)
       : [...selectedPlatforms, key]
-    updateUrl(next, minTier)
+    updateUrl({ platforms: next })
   }
 
   const setTierFilter = (value: number) => {
-    updateUrl(selectedPlatforms, value)
+    updateUrl({ tier: value })
   }
 
   const platformKey = selectedPlatforms.join(',')
@@ -94,31 +133,52 @@ export function SearchPage() {
     params.set('q', q)
     if (platformKey) params.set('platform', platformKey)
     if (minTier) params.set('minTier', String(minTier))
-    params.set('limit', '24')
+    if (gameId) params.set('gameId', gameId)
+    if (author) params.set('author', author)
+    params.set('limit', '12')
+    params.set('page', String(page))
     return `/api/search?${params.toString()}`
-  }, [q, platformKey, minTier])
-  const { data, loading } = useFetch<{ data: SearchResponse }>(url, [q, platformKey, minTier])
+  }, [q, platformKey, minTier, gameId, author, page])
+  const { data, loading } = useFetch<{
+    data: SearchResponse & { pagination?: { page: number; total: number; totalPages: number } }
+  }>(url, [q, platformKey, minTier, gameId, author, page])
 
-  const totalResults = data?.data?.mods?.length ?? 0
+  const totalResults = data?.data?.pagination?.total ?? data?.data?.mods?.length ?? 0
+  const totalPages = data?.data?.pagination?.totalPages ?? 1
 
-  return (
-    <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
-      <div className="mb-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <SearchIcon className="h-4 w-4" />
-            نتائج البحث
-          </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">
-            {q ? <>&quot;{q}&quot;</> : 'بحث'}
-          </h1>
-          <p className="mt-1 text-muted-foreground" aria-live="polite">
-            {loading ? 'جارٍ البحث…' : `${totalResults} نتيجة`}
-          </p>
-        </div>
+  // Typo suggestion — when 0 results, offer the closest trending query
+  useEffect(() => {
+    if (totalResults === 0 && !loading && q.trim().length >= 2) {
+      fetch('/api/search/trending')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json: { data?: { queries?: string[] } } | null) => {
+          if (json?.data?.queries) setTrending(json.data.queries)
+        })
+        .catch(() => {})
+    }
+  }, [totalResults, loading, q])
 
+  const typoSuggestion = useMemo(() => {
+    if (totalResults !== 0 || !q.trim()) return null
+    const needle = q.trim().toLowerCase()
+    return (
+      trending.find(
+        (t) =>
+          t.toLowerCase() !== needle &&
+          (t.toLowerCase().includes(needle.slice(0, 3)) ||
+            needle.includes(t.toLowerCase().slice(0, 3))),
+      ) ?? null
+    )
+  }, [totalResults, q, trending])
+
+  const hasActiveFilters =
+    selectedPlatforms.length > 0 || minTier > 0 || gameId !== '' || author !== ''
+
+  const filtersPanel = (
+    <div className="space-y-6">
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">🎮 المنصة:</div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-2 text-sm font-semibold">🎮 المنصة:</span>
           {PLATFORMS.map((p) => {
             const active = selectedPlatforms.includes(p.key)
             const color = getPlatformColor(p.key)
@@ -142,16 +202,12 @@ export function SearchPage() {
               </button>
             )
           })}
-          {selectedPlatforms.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => updateUrl([], minTier)}>
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-              مسح المنصة ({selectedPlatforms.length})
-            </Button>
-          )}
         </div>
+      </div>
 
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">🏆 المستوى:</div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-2 text-sm font-semibold">🏆 المستوى:</span>
           {TIER_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -168,41 +224,186 @@ export function SearchPage() {
               {f.label}
             </button>
           ))}
-          {minTier > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setTierFilter(0)}>
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-              مسح المستوى
-            </Button>
-          )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <ModCardSkeleton key={i} />
+      <div>
+        <label htmlFor="filter-game" className="mb-2 block text-sm font-semibold">
+          🎲 اللعبة:
+        </label>
+        <select
+          id="filter-game"
+          value={gameId}
+          onChange={(e) => updateUrl({ game: e.target.value })}
+          className="h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground"
+        >
+          <option value="">كل الألعاب</option>
+          {gamesList.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
           ))}
-        </div>
-      ) : totalResults === 0 ? (
-        <EmptyState
-          icon="search"
-          title="لا توجد نتائج مطابقة"
-          description="جرّب كلمات بحث مختلفة أو غيّر فلاتر المنصة"
-          action={{ label: 'الصفحة الرئيسية', href: '/' }}
-        />
-      ) : (
-        <section>
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold">
-            <Package className="h-5 w-5 text-primary" aria-hidden="true" />
-            التعريبات ({totalResults})
-          </h2>
-          <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {data?.data?.mods.map((m) => (
-              <ModCard key={m.id} mod={m} />
-            ))}
-          </div>
-        </section>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="filter-author" className="mb-2 block text-sm font-semibold">
+          ✍️ المعرّب:
+        </label>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            updateUrl({ byAuthor: authorInput.trim() })
+          }}
+          className="flex gap-2"
+        >
+          <input
+            id="filter-author"
+            value={authorInput}
+            onChange={(e) => setAuthorInput(e.target.value)}
+            placeholder="اسم المستخدم…"
+            className="h-10 min-w-0 flex-1 rounded-md border border-border bg-card px-3 text-sm text-foreground"
+          />
+          <Button type="submit" size="sm" className="h-10 shrink-0">
+            تطبيق
+          </Button>
+        </form>
+      </div>
+
+      {hasActiveFilters && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setAuthorInput('')
+            updateUrl({ platforms: [], tier: 0, game: '', byAuthor: '' })
+          }}
+          className="w-full"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+          مسح كل الفلاتر
+        </Button>
       )}
+    </div>
+  )
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-4 py-8 lg:px-6" dir="rtl">
+      <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <SearchIcon className="h-4 w-4" />
+            نتائج البحث
+          </div>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {q ? <>&quot;{q}&quot;</> : 'بحث'}
+          </h1>
+          <p className="mt-1 text-muted-foreground" aria-live="polite">
+            {loading ? 'جارٍ البحث…' : `${totalResults} نتيجة`}
+          </p>
+        </div>
+      </div>
+
+      {/* Mobile filters */}
+      <details className="mb-6 rounded-lg border border-border bg-card p-4 lg:hidden">
+        <summary className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+          <SlidersHorizontal className="h-4 w-4" />
+          الفلاتر{hasActiveFilters && ' (مفعّلة)'}
+        </summary>
+        <div className="mt-4">{filtersPanel}</div>
+      </details>
+
+      <div className="flex gap-8">
+        {/* Sidebar filters (desktop) */}
+        <aside className="hidden w-64 shrink-0 lg:block">
+          <div className="sticky top-20 rounded-lg border border-border bg-card p-4">
+            {filtersPanel}
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          {/* Typo banner */}
+          {!loading && typoSuggestion && (
+            <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm">
+              هل تقصد:{' '}
+              <button
+                type="button"
+                onClick={() => router.push(`${pathname}?q=${encodeURIComponent(typoSuggestion)}`)}
+                className="font-bold text-primary hover:underline"
+              >
+                {typoSuggestion}
+              </button>
+              ؟
+            </div>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ModCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : totalResults === 0 ? (
+            <EmptyState
+              icon="search"
+              title="لا توجد نتائج مطابقة"
+              description="جرّب كلمات بحث مختلفة أو غيّر الفلاتر"
+              action={{ label: 'الصفحة الرئيسية', href: '/' }}
+            />
+          ) : (
+            <section>
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-bold">
+                <Package className="h-5 w-5 text-primary" aria-hidden="true" />
+                التعريبات ({totalResults})
+              </h2>
+              <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3">
+                {data?.data?.mods.map((m) => (
+                  <ModCard key={m.id} mod={m} query={q} />
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <nav
+                  aria-label="ترقيم الصفحات"
+                  className="mt-6 flex items-center justify-center gap-2"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => updateUrl({ pg: page - 1 })}
+                  >
+                    السابق
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                    .map((p, i, arr) => (
+                      <span key={p} className="flex items-center gap-2">
+                        {i > 0 && arr[i - 1] !== p - 1 && (
+                          <span className="text-muted-foreground">…</span>
+                        )}
+                        <Button
+                          variant={p === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => updateUrl({ pg: p })}
+                        >
+                          {p}
+                        </Button>
+                      </span>
+                    ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => updateUrl({ pg: page + 1 })}
+                  >
+                    التالي
+                  </Button>
+                </nav>
+              )}
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

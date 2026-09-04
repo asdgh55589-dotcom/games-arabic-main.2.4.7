@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import type { NextRequest } from 'next/server'
 import { ok, rateLimited } from '@/lib/api-response'
 import { clamp, parseIntParam, serialize } from '@/lib/api-utils'
@@ -6,10 +7,10 @@ import { db } from '@/lib/db'
 import { meili, meiliHealth } from '@/lib/meilisearch/client'
 import { rateLimit } from '@/lib/rate-limit'
 
-// GET /api/search?q=...&platform=PC,PS3&limit=...&type=all|mod|game|team|user
+// GET /api/search?q=...&platform=PC,PS3&limit=...&type=all|mod|game|team|user&page=1&gameId=...&author=...
 // يبحث في 4 كيانات (تعريبات/ألعاب/فرق/مستخدمين).
 // يستخدم Meilisearch عند توفره، وإلا Prisma fallback (case-insensitive).
-// العقد القديم محفوظ: mods + games موجودان دائمًا (teams/users مضافة).
+// العقد القديم محفوظ: mods + games موجودان دائمًا (teams/users/pagination مضافة).
 export async function GET(req: NextRequest) {
   const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'search' })
   if (!rl.success) {
@@ -24,23 +25,35 @@ export async function GET(req: NextRequest) {
     .filter((p) => PLATFORM_KEYS.includes(p))
   const minTier = clamp(parseIntParam(searchParams.get('minTier'), 0), 0, 5)
   const limit = clamp(parseIntParam(searchParams.get('limit'), 8), 1, 50)
+  const page = Math.max(1, parseIntParam(searchParams.get('page'), 1))
+  const gameId = (searchParams.get('gameId') || '').trim() || null
+  const author = (searchParams.get('author') || '').trim() || null
   const type = (searchParams.get('type') || 'all').toLowerCase()
   const want = (t: string) => type === 'all' || type === t
 
-  if (!q && platforms.length === 0 && !minTier) {
-    return ok({ mods: [], games: [], teams: [], users: [] })
+  if (!q && platforms.length === 0 && !minTier && !gameId && !author) {
+    return ok({
+      mods: [],
+      games: [],
+      teams: [],
+      users: [],
+      pagination: { page: 1, limit, total: 0, totalPages: 0 },
+    })
   }
 
-  // Meilisearch path (typo-tolerant) with Prisma fallback on any failure
-  if (q && meili && (await meiliHealth())) {
+  const args = { q, platforms, minTier, limit, page, gameId, author, want }
+
+  // Meilisearch path (typo-tolerant) with Prisma fallback on any failure.
+  // gameId/author filters are Prisma-only → fall back when present.
+  if (q && !gameId && !author && meili && (await meiliHealth())) {
     try {
-      return ok(await searchViaMeili({ q, platforms, minTier, limit, want }))
+      return ok(await searchViaMeili(args))
     } catch {
       // fall through to Prisma
     }
   }
 
-  return ok(await searchViaPrisma({ q, platforms, minTier, limit, want }))
+  return ok(await searchViaPrisma(args))
 }
 
 interface SearchArgs {
@@ -48,14 +61,18 @@ interface SearchArgs {
   platforms: string[]
   minTier: number
   limit: number
+  page: number
+  gameId: string | null
+  author: string | null
   want: (t: string) => boolean
 }
 
-async function searchViaMeili({ q, platforms, minTier, limit, want }: SearchArgs) {
+async function searchViaMeili({ q, platforms, minTier, limit, page, want }: SearchArgs) {
   const mods: unknown[] = []
   let games: unknown[] = []
   let teams: unknown[] = []
   let users: unknown[] = []
+  let total = 0
 
   if (want('mod')) {
     const filters: string[] = ["workflowStatus = 'PUBLISHED'"]
@@ -63,9 +80,11 @@ async function searchViaMeili({ q, platforms, minTier, limit, want }: SearchArgs
     if (minTier) filters.push(`tier >= ${minTier}`)
     const res = await meili!.index('mods').search(q, {
       limit,
+      offset: (page - 1) * limit,
       filter: filters,
       sort: ['downloads:desc'],
     })
+    total = res.estimatedTotalHits ?? 0
     const ids = res.hits.map((h) => (h as { id: string }).id)
     if (ids.length) {
       const rows = await db.mod.findMany({
@@ -106,38 +125,66 @@ async function searchViaMeili({ q, platforms, minTier, limit, want }: SearchArgs
     })
   }
 
-  return { mods, games, teams, users }
+  return {
+    mods,
+    games,
+    teams,
+    users,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  }
 }
 
-async function searchViaPrisma({ q, platforms, minTier, limit, want }: SearchArgs) {
-  const mods = want('mod')
-    ? await db.mod.findMany({
-        where: {
-          workflowStatus: 'PUBLISHED',
-          ...(q
-            ? {
-                OR: [
-                  { name: { contains: q, mode: 'insensitive' } },
-                  { arabicTitle: { contains: q, mode: 'insensitive' } },
-                  { summary: { contains: q, mode: 'insensitive' } },
-                  { tags: { contains: q, mode: 'insensitive' } },
-                  { series: { contains: q, mode: 'insensitive' } },
-                  { translationTeam: { contains: q, mode: 'insensitive' } },
-                ],
-              }
-            : {}),
-          ...(platforms.length > 0 ? { game: { platform: { in: platforms } } } : {}),
-          ...(minTier ? { author: { tier: { gte: minTier } } } : {}),
-        },
-        take: limit,
-        orderBy: { downloads: 'desc' },
-        include: {
-          author: true,
-          game: { select: { name: true, slug: true, platform: true } },
-          category: { select: { name: true, slug: true } },
-        },
-      })
-    : []
+async function searchViaPrisma({
+  q,
+  platforms,
+  minTier,
+  limit,
+  page,
+  gameId,
+  author,
+  want,
+}: SearchArgs) {
+  const authorFilter: Prisma.UserWhereInput = {
+    ...(minTier ? { tier: { gte: minTier } } : {}),
+    ...(author ? { username: { contains: author, mode: 'insensitive' as const } } : {}),
+  }
+  const authorWhere = minTier || author ? { author: authorFilter } : {}
+
+  const modsWhere: Prisma.ModWhereInput = {
+    workflowStatus: 'PUBLISHED',
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { arabicTitle: { contains: q, mode: 'insensitive' } },
+            { summary: { contains: q, mode: 'insensitive' } },
+            { tags: { contains: q, mode: 'insensitive' } },
+            { series: { contains: q, mode: 'insensitive' } },
+            { translationTeam: { contains: q, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+    ...(platforms.length > 0 ? { game: { platform: { in: platforms } } } : {}),
+    ...(gameId ? { gameId } : {}),
+    ...authorWhere,
+  }
+
+  const [total, mods] = want('mod')
+    ? await Promise.all([
+        db.mod.count({ where: modsWhere }),
+        db.mod.findMany({
+          where: modsWhere,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { downloads: 'desc' },
+          include: {
+            author: true,
+            game: { select: { name: true, slug: true, platform: true } },
+            category: { select: { name: true, slug: true } },
+          },
+        }),
+      ])
+    : [0, []]
 
   const games = want('game')
     ? await db.game.findMany({
@@ -189,5 +236,11 @@ async function searchViaPrisma({ q, platforms, minTier, limit, want }: SearchArg
       })
     : []
 
-  return { mods: serialize(mods), games: serialize(games), teams, users }
+  return {
+    mods: serialize(mods),
+    games: serialize(games),
+    teams,
+    users,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  }
 }

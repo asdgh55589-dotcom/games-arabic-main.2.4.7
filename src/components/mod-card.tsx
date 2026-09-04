@@ -20,6 +20,7 @@ import { useEffect } from 'react'
 import { CreatorBadge } from '@/components/creator-badge'
 import { ReportDialog } from '@/components/report-dialog'
 import { RoleBadge } from '@/components/role-badge'
+import { highlightMatch } from '@/components/search-highlight'
 import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
 import { TierBadge } from '@/components/tier-badge'
 import {
@@ -39,9 +40,10 @@ interface ModCardProps {
   mod: ModSummary
   priority?: boolean
   variant?: 'full' | 'compact'
+  query?: string
 }
 
-export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProps) {
+export function ModCard({ mod, priority = false, variant = 'full', query }: ModCardProps) {
   const badgeStatus = getModBadgeStatus(mod.createdAt, mod.updatedAt)
   const platformKey = mod.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
@@ -169,7 +171,7 @@ export function ModCard({ mod, priority = false, variant = 'full' }: ModCardProp
         <div className="flex w-full flex-col gap-1.5 p-2 sm:gap-2 sm:p-3">
           {/* ZONE 1: IDENTITY */}
           <h3 className="line-clamp-2 h-[2.6em] w-full text-xs font-bold leading-[1.3] text-foreground transition-colors group-hover:text-primary sm:text-sm">
-            {mod.name}
+            {query ? highlightMatch(mod.name, query) : mod.name}
           </h3>
           {mod.isOriginalWork === false && (
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600">
