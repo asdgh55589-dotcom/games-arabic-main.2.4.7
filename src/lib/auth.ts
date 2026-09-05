@@ -502,3 +502,50 @@ export async function getOptionalSession(): Promise<SessionUser | null> {
     return null
   }
 }
+
+// ===== Ban info helper (for the suspended page) =====
+
+export interface BanInfo {
+  banned: boolean
+  type: 'temp' | 'perm' | null
+  reason: string | null
+  expiresAt: Date | null
+  username: string
+}
+
+/**
+ * Return ban details for the current Supabase-logged-in user, EVEN when
+ * banned (getSession returns null for banned users, so the suspended page
+ * cannot use it). Returns null when logged out or not banned.
+ * Additive helper — does not change getSession behavior.
+ */
+export async function getBanInfo(): Promise<BanInfo | null> {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser()
+    if (!supabaseUser) return null
+
+    const row = await db.user.findFirst({
+      where: {
+        OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
+      },
+      select: { username: true, banStatus: true, bannedUntil: true, banReason: true },
+    })
+    if (!row) return null
+
+    const ban = getBanStatus(row)
+    if (!ban.banned) return null
+
+    return {
+      banned: true,
+      type: ban.type,
+      reason: ban.reason,
+      expiresAt: ban.expiresAt,
+      username: row.username,
+    }
+  } catch {
+    return null
+  }
+}

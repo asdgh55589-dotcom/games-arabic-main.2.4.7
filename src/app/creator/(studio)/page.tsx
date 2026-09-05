@@ -35,7 +35,7 @@ export default async function CreatorDashboard() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+  const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
     redirect('/become-creator')
   }

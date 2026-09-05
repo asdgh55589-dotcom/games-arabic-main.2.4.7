@@ -12,7 +12,7 @@ export default async function CreatorRequestsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/requests')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+  const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
     redirect('/become-creator')
   }

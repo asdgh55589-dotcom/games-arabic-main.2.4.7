@@ -1,82 +1,90 @@
 import type { NextRequest } from 'next/server'
-import { ok } from '@/lib/api-response'
+import { forbidden, internalError, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
-  const { user, error } = await requireCreatorStudio(req)
-  if (error) return error
-  if (!user) return error!
+  try {
+    const { user, error } = await requireCreatorStudio(req)
+    if (error) return error
+    if (!user) return forbidden('يجب تسجيل الدخول')
 
-  const mods = await db.mod.findMany({
-    where: { authorId: user.id },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      workflowStatus: true,
-      views: true,
-      downloads: true,
-      endorsements: true,
-      rating: true,
-      ratingCount: true,
-      comments: true,
-      createdAt: true,
-      updatedAt: true,
-      isOriginalWork: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+    const authorWhere = { authorId: user.id }
+    const publishedWhere = { authorId: user.id, workflowStatus: 'PUBLISHED' }
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-  const published = mods.filter((m) => m.workflowStatus === 'PUBLISHED')
-  const drafts = mods.filter((m) => m.workflowStatus === 'DRAFT')
-  const pending = mods.filter((m) => m.workflowStatus === 'IN_REVIEW')
-  const rejected = mods.filter((m) => m.workflowStatus === 'REJECTED')
+    const [totalMods, statusGroups, sums, rating, topMods, recentMods] = await Promise.all([
+      db.mod.count({ where: authorWhere }),
+      db.mod.groupBy({
+        by: ['workflowStatus'],
+        where: authorWhere,
+        _count: { workflowStatus: true },
+      }),
+      db.mod.aggregate({
+        where: publishedWhere,
+        _sum: { views: true, downloads: true, endorsements: true, comments: true },
+      }),
+      db.mod.aggregate({
+        where: { ...publishedWhere, ratingCount: { gt: 0 } },
+        _avg: { rating: true },
+      }),
+      db.mod.findMany({
+        where: publishedWhere,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          downloads: true,
+          views: true,
+          rating: true,
+          isOriginalWork: true,
+        },
+        orderBy: { downloads: 'desc' },
+        take: 5,
+      }),
+      db.mod.findMany({
+        where: { authorId: user.id, createdAt: { gte: thirtyDaysAgo } },
+        select: { id: true, name: true, workflowStatus: true, createdAt: true, isOriginalWork: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+    ])
 
-  const totalViews = published.reduce((sum, m) => sum + (m.views || 0), 0)
-  const totalDownloads = published.reduce((sum, m) => sum + (m.downloads || 0), 0)
-  const totalEndorsements = published.reduce((sum, m) => sum + (m.endorsements || 0), 0)
-  const totalComments = published.reduce((sum, m) => sum + (m.comments || 0), 0)
+    const countFor = (status: string) =>
+      statusGroups.find((g) => g.workflowStatus === status)?._count.workflowStatus ?? 0
 
-  const ratedMods = published.filter((m) => m.ratingCount > 0)
-  const averageRating =
-    ratedMods.length > 0
-      ? ratedMods.reduce((sum, m) => sum + (m.rating || 0), 0) / ratedMods.length
-      : 0
-
-  const topMods = [...published].sort((a, b) => (b.downloads || 0) - (a.downloads || 0)).slice(0, 5)
-
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const recentMods = mods.filter((m) => m.createdAt >= thirtyDaysAgo)
-
-  return ok({
-    totals: {
-      totalMods: mods.length,
-      published: published.length,
-      drafts: drafts.length,
-      pending: pending.length,
-      rejected: rejected.length,
-      totalViews,
-      totalDownloads,
-      totalEndorsements,
-      totalComments,
-      averageRating: Number(averageRating.toFixed(2)),
-    },
-    topMods: topMods.map((m) => ({
-      id: m.id,
-      name: m.name,
-      slug: m.slug,
-      downloads: m.downloads,
-      views: m.views,
-      rating: m.rating,
-      isOriginalWork: m.isOriginalWork,
-    })),
-    recentActivity: recentMods.map((m) => ({
-      id: m.id,
-      name: m.name,
-      status: m.workflowStatus,
-      createdAt: m.createdAt,
-      isOriginalWork: m.isOriginalWork,
-    })),
-  })
+    return ok({
+      totals: {
+        totalMods,
+        published: countFor('PUBLISHED'),
+        drafts: countFor('DRAFT'),
+        pending: countFor('IN_REVIEW'),
+        rejected: countFor('REJECTED'),
+        totalViews: sums._sum.views ?? 0,
+        totalDownloads: sums._sum.downloads ?? 0,
+        totalEndorsements: sums._sum.endorsements ?? 0,
+        totalComments: sums._sum.comments ?? 0,
+        averageRating: Number((rating._avg.rating ?? 0).toFixed(2)),
+      },
+      topMods: topMods.map((m) => ({
+        id: m.id,
+        name: m.name,
+        slug: m.slug,
+        downloads: m.downloads,
+        views: m.views,
+        rating: m.rating,
+        isOriginalWork: m.isOriginalWork,
+      })),
+      recentActivity: recentMods.map((m) => ({
+        id: m.id,
+        name: m.name,
+        status: m.workflowStatus,
+        createdAt: m.createdAt,
+        isOriginalWork: m.isOriginalWork,
+      })),
+    })
+  } catch (err) {
+    console.error('[creator/stats GET] failed:', err)
+    return internalError('فشل جلب الإحصائيات')
+  }
 }

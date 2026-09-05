@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 // GET: List requests (public) — يعرض open + accepted + completed مرتبة حسب الشعبية
 export async function GET() {
@@ -25,6 +26,14 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth()
+
+    // 3 requests/hour per user (spam guard for community requests).
+    const limited = await rateLimitMiddleware(req, {
+      limit: 3,
+      window: 3600,
+      keyPrefix: `modrequest:create:${user.id}`,
+    })
+    if (limited) return limited
 
     const body = await req.json()
     const { gameName, platform, notes, storeLinks, storeLink } = body as {

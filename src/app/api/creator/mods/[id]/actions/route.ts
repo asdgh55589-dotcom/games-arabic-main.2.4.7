@@ -22,8 +22,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const mod = await db.mod.findUnique({ where: { id } })
     if (!mod) return notFound('التعريب غير موجود')
 
-    // Check ownership — only author or admin+ can manage
-    if (mod.authorId !== user.id && !['admin', 'manager', 'owner'].includes(user.role)) {
+    // Check ownership — author only (Studio gate already restricts to
+    // creator/publisher, so no staff bypass is reachable here).
+    if (mod.authorId !== user.id) {
       return forbidden('ليس لديك صلاحية تعديل هذا التعريب')
     }
 

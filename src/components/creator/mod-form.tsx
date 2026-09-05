@@ -527,7 +527,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
     try {
       const url = isEdit ? `/api/creator/mods/${modId}` : '/api/creator/mods'
-      const method = isEdit ? 'PUT' : 'POST'
+      const method = isEdit ? 'PATCH' : 'POST'
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -545,7 +545,7 @@ export default function ModForm({ modId }: ModFormProps) {
         title: 'تم الحفظ',
         description: isEdit ? 'تم تحديث التعريب' : 'تم نشر التعريب بنجاح',
       })
-      router.push('/admin/mods')
+      router.push('/creator/mods')
       router.refresh()
     } catch (err) {
       toast({
@@ -571,7 +571,7 @@ export default function ModForm({ modId }: ModFormProps) {
       {/* رأس */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/mods" className="hover:text-foreground">
+          <Link href="/creator/mods" className="hover:text-foreground">
             التعريبات
           </Link>
           <ChevronRight className="h-4 w-4 rotate-180" />
@@ -580,7 +580,7 @@ export default function ModForm({ modId }: ModFormProps) {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href="/admin/mods">إلغاء</Link>
+            <Link href="/creator/mods">إلغاء</Link>
           </Button>
           <Button onClick={onSave} disabled={saving}>
             {saving ? (
@@ -1600,7 +1600,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
       <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background/80 p-4 backdrop-blur">
         <Button asChild variant="outline">
-          <Link href="/admin/mods">إلغاء</Link>
+          <Link href="/creator/mods">إلغاء</Link>
         </Button>
         <Button onClick={onSave} disabled={saving}>
           {saving ? (

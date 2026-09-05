@@ -30,6 +30,8 @@ export function RequestsManager() {
   const [filter, setFilter] = useState<'all' | 'open' | 'mine' | 'completed'>('open')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [completeModId, setCompleteModId] = useState<Record<string, string>>({})
 
@@ -39,12 +41,17 @@ export function RequestsManager() {
       const params = new URLSearchParams()
       if (filter !== 'all') params.set('status', filter)
       // For mine filter, API expects status=mine
+      params.set('page', String(page))
+      params.set('limit', '20')
       const res = await fetch(`/api/creator/requests?${params.toString()}`, { cache: 'no-store' })
       const json = await res.json()
-      if (res.ok) setRequests(json.data?.requests || [])
+      if (res.ok) {
+        setRequests(json.data?.requests || [])
+        setTotalPages(json.data?.pagination?.totalPages || 1)
+      }
     } catch {}
     setLoading(false)
-  }, [filter])
+  }, [filter, page])
 
   useEffect(() => {
     fetchRequests()
@@ -63,7 +70,7 @@ export function RequestsManager() {
         toast({ title: 'تم قبول الطلب' })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || 'فشل', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -89,7 +96,7 @@ export function RequestsManager() {
         toast({ title: 'تم إكمال الطلب' })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || 'فشل', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'حدث خطأ', variant: 'destructive' })
@@ -110,7 +117,10 @@ export function RequestsManager() {
             key={f.value}
             variant={filter === f.value ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter(f.value as never)}
+            onClick={() => {
+              setFilter(f.value as never)
+              setPage(1)
+            }}
           >
             {f.label}
           </Button>
@@ -231,6 +241,30 @@ export function RequestsManager() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            السابق
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            صفحة {page} من {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            التالي
+          </Button>
         </div>
       )}
     </div>

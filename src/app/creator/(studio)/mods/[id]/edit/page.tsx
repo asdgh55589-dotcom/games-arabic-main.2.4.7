@@ -14,7 +14,7 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
   const session = await getSession()
   if (!session) redirect(`/login?next=/creator/mods/${id}/edit`)
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
+  const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
     redirect('/become-creator')
   }

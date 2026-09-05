@@ -1,9 +1,14 @@
 import { redirect } from 'next/navigation'
 import { CreatorSidebar } from '@/components/creator/creator-sidebar'
-import { getSession } from '@/lib/auth'
+import { getBanInfo, getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 export default async function CreatorLayout({ children }: { children: React.ReactNode }) {
+  // Banned creators see the reason instead of a generic login redirect.
+  // (getSession returns null for banned users, so check ban FIRST.)
+  const ban = await getBanInfo()
+  if (ban?.banned) redirect('/creator/suspended')
+
   const session = await getSession()
 
   if (!session) redirect('/login?next=/creator')

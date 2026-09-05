@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -75,6 +76,14 @@ export async function POST(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return error!
+
+  // 5 creations/hour per creator (spam guard for mod submissions).
+  const limited = await rateLimitMiddleware(req, {
+    limit: 5,
+    window: 3600,
+    keyPrefix: `creator:mod-create:${user.id}`,
+  })
+  if (limited) return limited
 
   const body = await req.json()
   const { action, ...modData } = body as { action?: string; [key: string]: unknown }
