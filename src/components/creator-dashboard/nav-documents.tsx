@@ -1,12 +1,12 @@
 "use client"
 
 import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react"
+  Ellipsis,
+  Folder,
+  Share2,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react' 
 
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ export function NavDocuments({
   items: {
     name: string
     url: string
-    icon: Icon
+    icon: LucideIcon
   }[]
 }) {
   const { isMobile } = useSidebar()
@@ -54,8 +54,8 @@ export function NavDocuments({
                   showOnHover
                   className="rounded-sm data-[state=open]:bg-accent"
                 >
-                  <IconDots />
-                  <span className="sr-only">More</span>
+                  <Ellipsis aria-hidden="true" />
+                  <span className="sr-only">المزيد</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -64,17 +64,17 @@ export function NavDocuments({
                 align={isMobile ? "end" : "start"}
               >
                 <DropdownMenuItem>
-                  <IconFolder />
-                  <span>Open</span>
+                  <Folder aria-hidden="true" />
+                  <span>فتح</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <IconShare3 />
-                  <span>Share</span>
+                  <Share2 aria-hidden="true" />
+                  <span>مشاركة</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
-                  <IconTrash />
-                  <span>Delete</span>
+                  <Trash2 aria-hidden="true" />
+                  <span>حذف</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -82,8 +82,8 @@ export function NavDocuments({
         ))}
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
-            <IconDots className="text-sidebar-foreground/70" />
-            <span>More</span>
+            <Ellipsis className="text-sidebar-foreground/70" aria-hidden="true" />
+            <span>المزيد</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
