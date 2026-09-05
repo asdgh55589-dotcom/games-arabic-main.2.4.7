@@ -158,9 +158,9 @@ describe('7.3 no sensitive user fields in comment reads (select allowlists)', ()
         expect((args.where as { isHidden: boolean }).isHidden).toBe(false)
     }
     // the row fetch (with user) allowlists safe fields only
-    const withUser = calls.find((a) => a.include?.user?.select)
+    const withUser = calls.find((a) => a.select?.user?.select)
     expect(withUser).toBeDefined()
-    const keys = Object.keys(withUser.include.user.select)
+    const keys = Object.keys(withUser.select.user.select)
     expect(keys).toEqual(expect.arrayContaining(['id', 'username', 'avatarUrl', 'role']))
     expect(JSON.stringify(calls)).not.toMatch(/email|phone|password/i)
   })
