@@ -143,7 +143,13 @@ describe('7.2 admin auth failure returns REAL status (FIXED: was masked as 500)'
 
 describe('7.3 no sensitive user fields in comment reads (select allowlists)', () => {
   it('public GET selects only safe user fields', async () => {
-    ;(db.modComment.findMany as jest.Mock).mockResolvedValue([])
+    const row = { id: 'c1', parentId: null, likes: 0, isPinned: false, createdAt: new Date() }
+    ;(db.modComment.findMany as jest.Mock).mockImplementation(async (args: any) => {
+      const w: any = args?.where ?? {}
+      if (w.id?.in) return [row]
+      if (w.parentId && typeof w.parentId === 'object' && 'in' in w.parentId) return []
+      return [row]
+    })
     await modsGET(req('http://x/'), slugParams)
     const calls = (db.modComment.findMany as jest.Mock).mock.calls.map((c) => c[0])
     // every read carries isHidden:false (public never sees hidden rows)
