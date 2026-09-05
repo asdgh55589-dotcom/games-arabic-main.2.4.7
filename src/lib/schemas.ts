@@ -84,6 +84,31 @@ export const UploadModSchema = z.object({
   tags: z.string().max(300, 'الحد الأقصى 300 حرف').optional().default(''),
 })
 
+export const AdminCreateUserSchema = z.object({
+  username: UsernameSchema,
+  email: EmailSchema,
+  password: PasswordSchema,
+  role: z.string().min(1, 'اختر الدور'),
+})
+
+export const AdminEditUserSchema = z.object({
+  username: UsernameSchema,
+  displayName: z.string().max(50, 'الحد الأقصى 50 حرف').optional(),
+  email: EmailSchema,
+  bio: z.string().max(500, 'الحد الأقصى 500 حرف').optional(),
+})
+
+export const BanUserFormSchema = z.object({
+  reason: z.string().max(500, 'الحد الأقصى 500 حرف').optional(),
+  duration: z.enum(['permanent', 'temp']),
+  days: z.coerce.number().int().min(1, 'يوم واحد على الأقل').max(3650, 'الحد الأقصى 10 سنوات'),
+  banIp: z.boolean(),
+})
+
+export const AdminPasswordFormSchema = z.object({
+  password: z.string().min(6, '6 أحرف على الأقل').max(100, 'كلمة المرور طويلة جداً'),
+})
+
 export const ReportFormSchema = z.object({
   reason: z.enum(
     ['spam', 'inappropriate', 'copyright', 'offensive', 'false_info', 'technical', 'other'],
@@ -273,13 +298,22 @@ export const CreateUserSchema = z.object({
 // ===== Comment Schemas =====
 
 export const CreateCommentSchema = z.object({
-  text: z.string().min(1).max(2000).trim(),
+  // trim قبل min/max — وإلا "   " تجتاز min(1) ثم تُحفظ فارغة
+  text: z
+    .string()
+    .trim()
+    .min(1, 'النص لا يمكن أن يكون فارغاً')
+    .max(2000, 'النص طويل جداً (الحد الأقصى 2000 حرف)'),
   guestName: z.string().min(1).max(50).optional(),
   parentId: z.string().optional(),
 })
 
 export const UpdateCommentSchema = z.object({
-  text: z.string().min(1).max(2000).trim(),
+  text: z
+    .string()
+    .trim()
+    .min(1, 'النص لا يمكن أن يكون فارغاً')
+    .max(2000, 'النص طويل جداً (الحد الأقصى 2000 حرف)'),
 })
 
 // ===== Bookmark Schema =====

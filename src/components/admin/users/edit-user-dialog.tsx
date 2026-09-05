@@ -1,7 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import type { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,9 +14,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { AdminEditUserSchema } from '@/lib/schemas'
 
 interface EditUserDialogProps {
   open: boolean
@@ -28,58 +39,56 @@ interface EditUserDialogProps {
   onSuccess: () => void
 }
 
+type AdminEditUserInput = z.infer<typeof AdminEditUserSchema>
+
 export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUserDialogProps) {
-  const [formData, setFormData] = useState({
-    username: user.username,
-    displayName: user.displayName || '',
-    email: user.email,
-    bio: user.bio || '',
+  const form = useForm<AdminEditUserInput>({
+    resolver: zodResolver(AdminEditUserSchema),
+    defaultValues: {
+      username: user.username,
+      displayName: user.displayName || '',
+      email: user.email,
+      bio: user.bio || '',
+    },
   })
-  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    setFormData({
+    form.reset({
       username: user.username,
       displayName: user.displayName || '',
       email: user.email,
       bio: user.bio || '',
     })
-  }, [user])
+  }, [user, form])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.username.trim() || !formData.email.trim()) {
-      toast.error('اسم المستخدم والبريد مطلوبان')
-      return
-    }
-    setIsLoading(true)
+  const handleSubmit = async (data: AdminEditUserInput) => {
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: formData.username.trim(),
-          displayName: formData.displayName.trim() || null,
-          email: formData.email.trim(),
-          bio: formData.bio.trim() || null,
+          username: data.username.trim(),
+          displayName: data.displayName?.trim() || null,
+          email: data.email.trim(),
+          bio: data.bio?.trim() || null,
         }),
       })
-      const data = await res.json().catch(() => ({}))
+      const resData = await res.json().catch(() => ({}))
       if (res.ok) {
         toast.success('تم تحديث بيانات المستخدم بنجاح')
         onOpenChange(false)
         onSuccess()
       } else {
         const msg =
-          data?.error?.message ||
-          (typeof data?.error === 'string' ? data.error : null) ||
+          resData?.error?.message ||
+          (typeof resData?.error === 'string' ? resData.error : null) ||
           'فشل تحديث البيانات'
+        form.setError('root', { message: msg })
         toast.error(msg)
       }
     } catch {
+      form.setError('root', { message: 'خطأ في الاتصال' })
       toast.error('خطأ في الاتصال')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -90,59 +99,78 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
           <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
           <DialogDescription>تعديل @{user.username}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="edit-username">اسم المستخدم</Label>
-            <Input
-              id="edit-username"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>اسم المستخدم</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
             />
-          </div>
-          <div>
-            <Label htmlFor="edit-displayName">اسم العرض</Label>
-            <Input
-              id="edit-displayName"
-              value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-              placeholder="اختياري"
+            <FormField
+              control={form.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>اسم العرض</FormLabel>
+                  <FormControl>
+                    <Input placeholder="اختياري" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
             />
-          </div>
-          <div>
-            <Label htmlFor="edit-email">البريد الإلكتروني</Label>
-            <Input
-              id="edit-email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>البريد الإلكتروني</FormLabel>
+                  <FormControl>
+                    <Input type="email" dir="ltr" {...field} />
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
             />
-          </div>
-          <div>
-            <Label htmlFor="edit-bio">النبذة</Label>
-            <Textarea
-              id="edit-bio"
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              rows={3}
-              placeholder="اختياري"
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>النبذة</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} placeholder="اختياري" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
             />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
-              إلغاء
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </DialogFooter>
-        </form>
+            {form.formState.errors.root && (
+              <p className="text-[11px] text-destructive">{form.formState.errors.root.message}</p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={form.formState.isSubmitting}
+              >
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )
