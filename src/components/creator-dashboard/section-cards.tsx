@@ -1,6 +1,8 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+'use client'
 
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from 'react'
+import { TrendingDown, TrendingUp } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardAction,
@@ -8,95 +10,138 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface AnalyticsSummary {
+  totalViews: number
+  viewsChange: number
+  totalDownloads: number
+  downloadsChange: number
+  totalComments: number
+  totalLikes: number
+  newModsThisPeriod: number
+  activeModsCount: number
+}
+
+interface StatsTotals {
+  totalMods: number
+  published: number
+  drafts: number
+  pending: number
+  rejected: number
+}
+
+function ChangeBadge({ value }: { value: number }) {
+  const up = value >= 0
+  const Icon = up ? TrendingUp : TrendingDown
+  return (
+    <Badge variant="outline" aria-label={`التغير ${value}%`}>
+      <Icon className="size-4" aria-hidden="true" />
+      {up ? '+' : ''}
+      {value}%
+    </Badge>
+  )
+}
+
+function MetricCard({
+  label,
+  value,
+  change,
+  hint,
+}: {
+  label: string
+  value: string
+  change?: number
+  hint: string
+}) {
+  return (
+    <Card className="@container/card">
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <bdi>{value}</bdi>
+        </CardTitle>
+        {change !== undefined && (
+          <CardAction>
+            <ChangeBadge value={change} />
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <div className="text-muted-foreground">{hint}</div>
+      </CardFooter>
+    </Card>
+  )
+}
 
 export function SectionCards() {
+  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null)
+  const [totals, setTotals] = useState<StatsTotals | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const [aRes, sRes] = await Promise.all([
+          fetch('/api/creator/analytics?range=30', { cache: 'no-store' }),
+          fetch('/api/creator/stats', { cache: 'no-store' }),
+        ])
+        const [aJson, sJson] = await Promise.all([aRes.json(), sRes.json()])
+        if (cancelled) return
+        if (aRes.ok && aJson.data) setAnalytics(aJson.data)
+        if (sRes.ok && sJson.data?.totals) setTotals(sJson.data.totals)
+      } catch (err) {
+        console.error('[creator-dashboard] section-cards load failed:', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div
+        className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
+        role="status"
+        aria-label="جاري تحميل الإحصائيات"
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[140px] w-full" />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total Revenue</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            $1,250.00
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Visitors for the last 6 months
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>New Customers</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingDown />
-              -20%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Acquisition needs attention
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">Engagement exceed targets</div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Growth Rate</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            4.5%
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +4.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">Meets growth projections</div>
-        </CardFooter>
-      </Card>
+      <MetricCard
+        label="إجمالي المشاهدات (30 يوم)"
+        value={(analytics?.totalViews ?? 0).toLocaleString('ar-EG')}
+        change={analytics?.viewsChange}
+        hint="مقارنة بالفترة السابقة"
+      />
+      <MetricCard
+        label="إجمالي التحميلات (30 يوم)"
+        value={(analytics?.totalDownloads ?? 0).toLocaleString('ar-EG')}
+        change={analytics?.downloadsChange}
+        hint="مقارنة بالفترة السابقة"
+      />
+      <MetricCard
+        label="التعريبات المنشورة"
+        value={(totals?.published ?? 0).toLocaleString('ar-EG')}
+        hint={`المسودات: ${(totals?.drafts ?? 0).toLocaleString('ar-EG')} — قيد المراجعة: ${(totals?.pending ?? 0).toLocaleString('ar-EG')}`}
+      />
+      <MetricCard
+        label="التعليقات (30 يوم)"
+        value={(analytics?.totalComments ?? 0).toLocaleString('ar-EG')}
+        hint={`الإعجابات: ${(analytics?.totalLikes ?? 0).toLocaleString('ar-EG')} — تعريبات نشطة: ${(analytics?.activeModsCount ?? 0).toLocaleString('ar-EG')}`}
+      />
     </div>
   )
 }
