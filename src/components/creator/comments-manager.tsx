@@ -3,6 +3,17 @@
 import { Eye, EyeOff, Loader2, Reply, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import { CommentSkeleton } from '@/components/comments/comment-skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,9 +43,12 @@ export function CommentsManager() {
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const fetchComments = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const params = new URLSearchParams()
       params.set('page', String(page))
@@ -45,8 +59,12 @@ export function CommentsManager() {
       if (res.ok) {
         setComments(json.data?.comments || [])
         setTotalPages(json.data?.pagination?.totalPages || 1)
+      } else {
+        throw new Error(json.error?.message || 'فشل التحميل')
       }
-    } catch {}
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'تعذّر تحميل التعليقات')
+    }
     setLoading(false)
   }, [filter, page])
 
@@ -55,7 +73,6 @@ export function CommentsManager() {
   }, [fetchComments])
 
   const handleAction = async (id: string, action: 'hide' | 'unhide' | 'delete') => {
-    if (action === 'delete' && !confirm('هل أنت متأكد من حذف هذا التعليق؟')) return
     setActionLoading(id)
     try {
       const res = await fetch(`/api/creator/comments/${id}`, {
@@ -71,7 +88,7 @@ export function CommentsManager() {
         toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: 'حدث خطأ أثناء الاتصال', variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -98,7 +115,7 @@ export function CommentsManager() {
         toast({ title: json.error?.message || 'فشل الإرسال', variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: 'تعذّر إرسال الرد — تحقق من اتصالك', variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -126,8 +143,13 @@ export function CommentsManager() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CommentSkeleton rows={4} />
+      ) : loadError ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={fetchComments}>
+            إعادة المحاولة
+          </Button>
         </div>
       ) : comments.length === 0 ? (
         <EmptyState
@@ -169,6 +191,7 @@ export function CommentsManager() {
                       </Link>
                       <span className="text-muted-foreground">•</span>
                       <button
+                        type="button"
                         onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
@@ -180,7 +203,13 @@ export function CommentsManager() {
                         <Textarea
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && replyText.trim())
+                              handleReply(c)
+                            if (e.key === 'Escape') setReplyTo(null)
+                          }}
                           placeholder="اكتب ردك..."
+                          aria-label={`الرد على تعليق في ${c.mod.name}`}
                           rows={2}
                           className="flex-1"
                         />
@@ -224,7 +253,7 @@ export function CommentsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleAction(c.id, 'delete')}
+                      onClick={() => setPendingDelete(c.id)}
                       disabled={actionLoading === c.id}
                       aria-label="حذف"
                       className="text-destructive hover:text-destructive"
@@ -262,6 +291,30 @@ export function CommentsManager() {
           </Button>
         </div>
       )}
+
+      {/* تأكيد الحذف — حوار RTL بدل confirm() الأصلي */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف التعليق؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف هذا التعليق نهائياً. لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingDelete && handleAction(pendingDelete, 'delete')}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

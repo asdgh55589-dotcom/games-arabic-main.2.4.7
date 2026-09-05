@@ -9,6 +9,7 @@ jest.mock('@/lib/db', () => ({
   db: {
     mod: { findUnique: jest.fn(), update: jest.fn() },
     modComment: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
+    $transaction: jest.fn(async (ops: any) => Promise.all(ops)),
   },
 }));
 

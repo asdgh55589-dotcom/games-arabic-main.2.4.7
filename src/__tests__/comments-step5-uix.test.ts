@@ -1,173 +1,179 @@
 /**
- * STEP 5 — UI/UX quality audit as executable assertions (audit only, no fixes).
- * Mix of axe-core runs on markup mirroring CommentItem patterns + static
- * assertions against the real sources with file:line anchors.
+ * STEP 5 (revised STEP 8 Phase 4) — UI/UX verification asserting the FIXED state.
+ * Regenerate axe data with: node scripts/audit-comment-a11y.mjs
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const root = process.cwd()
-const ui = fs.readFileSync(path.join(root, 'src/components/mod-comments.tsx'), 'utf8')
-const mgr = fs.readFileSync(path.join(root, 'src/components/creator/comments-manager.tsx'), 'utf8')
-const mobile = fs.readFileSync(path.join(root, 'src/views/mod-detail-mobile.tsx'), 'utf8')
-const layout = fs.readFileSync(path.join(root, 'src/app/layout.tsx'), 'utf8')
-const tailwindCfg = fs.readFileSync(path.join(root, 'tailwind.config.ts'), 'utf8')
-const renderer = fs.readFileSync(path.join(root, 'src/components/markdown-renderer.tsx'), 'utf8')
+const commentFiles = [
+  'src/components/mod-comments.tsx',
+  'src/components/comments/comment-card.tsx',
+  'src/components/comments/comment-toolbar.tsx',
+  'src/components/comments/reply-box.tsx',
+  'src/components/comments/use-comments.ts',
+  'src/components/comments/use-comment-actions.ts',
+  'src/components/comments/comment-header.tsx',
+  'src/components/comments/comment-edit-box.tsx',
+  'src/components/comments/comment-skeleton.tsx',
+  'src/components/creator/comments-manager.tsx',
+]
+const uiFiles = [
+  ...commentFiles,
+  'src/views/mod-detail-mobile.tsx',
+  'src/app/layout.tsx',
+  'src/lib/format.ts',
+]
+function readOpt(f: string): string {
+  try {
+    return fs.readFileSync(path.join(root, f), 'utf8')
+  } catch {
+    return ''
+  }
+}
+const ui = uiFiles.map(readOpt).join('\n')
+const commentsOnly = commentFiles.map(readOpt).join('\n')
 
-function axeAudit(html: string) {
-  // axe-core runs in scripts/audit-comment-a11y.mjs (jsdom@30 is ESM-only and
-  // cannot load under Jest's CJS runtime). This suite asserts on its recorded
-  // output; regenerate with: node scripts/audit-comment-a11y.mjs
-  const snap = JSON.parse(
+function axeSnapshot(): Record<
+  string,
+  { id: string; impact: string; nodes: number; help: string }[]
+> {
+  return JSON.parse(
     fs.readFileSync(path.join(root, 'src/__tests__/comment-a11y-axe.snapshot.json'), 'utf8'),
-  ) as { bySection: Record<string, { id: string; impact: string; nodes: number; help: string }[]> }
-  const key = html.includes('axe-expect:bad')
-    ? 'bad'
-    : html.includes('axe-expect:titled')
-      ? 'titled'
-      : 'like'
-  return snap.bySection[key]
+  ).bySection
 }
 
-describe('4.1 axe-core on CommentItem markup patterns', () => {
-  it('CRITICAL: icon-only buttons without accessible name fail button-name (color toggle + swatch pattern)', async () => {
-    // Mirrors mod-comments.tsx:825 (palette toggle, no title/aria) and :832-847 (color swatches, no label)
-    const violations = await axeAudit('axe-expect:bad')
-    const rule = violations.find((v) => v.id === 'button-name')
+describe('4.1 axe-core guards (icon buttons must have names)', () => {
+  it('unlabeled icon-button pattern still fails button-name (rule guard)', async () => {
+    const bad = axeSnapshot().bad
+    const rule = bad.find((v) => v.id === 'button-name')
     expect(rule).toBeDefined()
     expect(rule!.impact).toBe('critical')
-    expect(rule!.nodes).toBe(2)
   })
-  it('toolbar buttons WITH title= pass button-name via title fallback (most formatting buttons)', async () => {
-    // Mirrors :385-463 title="عريض **نص**" etc.
-    const violations = await axeAudit('axe-expect:titled')
-    expect(violations.find((v) => v.id === 'button-name')).toBeUndefined()
-  })
-  it('like button pattern (visible count + aria-pressed) passes', async () => {
-    // Mirrors :916-927 aria-pressed={liked} + {formatNumber(likes)}
-    expect(await axeAudit('axe-expect:like')).toEqual([])
-  })
-})
-
-describe('1. Responsive: mobile scale-hack crushes touch targets (static)', () => {
-  it('mobile wraps ModComments in scale-[0.60] with forced 30px buttons + 10px text', () => {
-    expect(mobile).toMatch(/scale-\[0\.60\]/)
-    expect(mobile).toMatch(/min-h-\[30px\]/) // below 44px WCAG target
-    expect(mobile).toMatch(/text-\[10px\]/) // below readable minimum
-  })
-  it('desktop layouts use flex-wrap (no overflow on narrow widths)', () => {
-    expect(ui).toMatch(/flex flex-wrap items-center/)
-  })
-  it('edit/reply toolbar buttons are 24px with no 44px minimum', () => {
-    const small =
-      ui.match(/className="grid h-6 w-6 place-items-center rounded hover:bg-white\/10/g) || []
-    expect(small.length).toBeGreaterThan(5) // ~10 instances across edit+reply toolbars
-    expect(ui).not.toMatch(/h-6 w-6[^"]*min-h-\[44px\]/)
-  })
-  it('pagination buttons DO meet 44px (good pattern)', () => {
-    expect(ui).toMatch(/ السابق/)
-    expect((ui.match(/min-h-\[44px\] touch-manipulation/g) || []).length).toBeGreaterThanOrEqual(2)
+  it('real toolbar exposes aria-labels (no unlabeled icon buttons in code)', () => {
+    const toolbar = fs.readFileSync(
+      path.join(root, 'src/components/comments/comment-toolbar.tsx'),
+      'utf8',
+    )
+    expect(toolbar).not.toMatch(
+      /<button(?![\s\S]{0,400}aria-label)(?![\s\S]{0,400}title=)[\s\S]*?>\s*<(Palette|Smile|Bold|Italic|Strikethrough|Heading2)/,
+    )
   })
 })
 
-describe('2. Theme: forced dark, system preference ignored; light-mode overlays broken (static)', () => {
-  it('ThemeProvider forces dark + enableSystem=false', () => {
-    expect(layout).toMatch(/defaultTheme="dark"/)
-    expect(layout).toMatch(/enableSystem=\{false\}/)
+describe('1. Responsive: native mobile layout, 44px targets', () => {
+  it('mobile renders ModComments WITHOUT scale hack', () => {
+    const mobile = fs.readFileSync(path.join(root, 'src/views/mod-detail-mobile.tsx'), 'utf8')
+    expect(mobile).not.toMatch(/scale-\[0\.60\]/)
+    expect(mobile).not.toMatch(/min-h-\[30px\]/)
+    expect(mobile).toMatch(/<ModComments/)
   })
-  it('dark mode uses class strategy (toggle possible)', () => {
-    expect(tailwindCfg).toMatch(/darkMode:\s*["']class["']/)
-  })
-  it('36 white/* overlays are near-invisible in light mode', () => {
-    const count = (ui.match(/white\//g) || []).length
-    expect(count).toBeGreaterThan(20) // borders, hovers, dividers
-    expect(ui).toMatch(/border-white\/10/)
-    expect(ui).toMatch(/hover:bg-white\/10/)
+  it('unified toolbar buttons meet 44px minimum', () => {
+    const toolbar = fs.readFileSync(
+      path.join(root, 'src/components/comments/comment-toolbar.tsx'),
+      'utf8',
+    )
+    expect(toolbar).toMatch(/min-h-\[44px\] min-w-\[44px\]/)
   })
 })
 
-describe('3. RTL: dir + mirroring good; bidi isolation + plurals missing (static)', () => {
+describe('2. Theme: system preference respected; no raw white/* overlays in comments', () => {
+  it('ThemeProvider follows the OS theme', () => {
+    const layout = fs.readFileSync(path.join(root, 'src/app/layout.tsx'), 'utf8')
+    expect(layout).toMatch(/defaultTheme="system"/)
+    expect(layout).not.toMatch(/enableSystem=\{false\}/)
+  })
+  it('comment files use theme tokens instead of white/* overlays', () => {
+    expect(commentsOnly).not.toMatch(/white\//)
+  })
+})
+
+describe('3. RTL: dir + mirroring + bidi isolation + plurals', () => {
   it('html lang=ar dir=rtl', () => {
-    expect(layout).toMatch(/<html lang="ar" dir="rtl"/)
+    expect(ui).toMatch(/<html lang="ar" dir="rtl"/)
   })
-  it('pagination chevrons correctly mirrored (Right=previous in RTL)', () => {
-    expect(ui).toMatch(/<ChevronRight[^/]*\/>\s*\n?\s*السابق/)
-    expect(ui).toMatch(/التالي\s*\n?\s*<ChevronLeft/)
+  it('display names isolated with <bdi>', () => {
+    const header = fs.readFileSync(
+      path.join(root, 'src/components/comments/comment-header.tsx'),
+      'utf8',
+    )
+    expect(header).toMatch(/<bdi>/)
   })
-  it('no bidi isolation for mixed Arabic/Latin text', () => {
-    expect(ui).not.toMatch(/<bdi|unicode-bidi|isolate/)
-    expect(renderer).not.toMatch(/<bdi|unicode-bidi|isolate/)
-  })
-  it('timeAgo Arabic but no plural forms (منذ 2 دقيقة instead of دقيقتين)', () => {
+  it('timeAgo has dual/plural Arabic forms', () => {
     const fmt = fs.readFileSync(path.join(root, 'src/lib/format.ts'), 'utf8')
-    expect(fmt).toMatch(/منذ/)
-    expect(fmt).not.toMatch(/دقيقتين|ساعتين|يومين/)
+    expect(fmt).toMatch(/دقيقتين|ساعتين|يومين/)
+    expect(fmt).toMatch(/دقائق|ساعات/)
   })
-  it('all title/placeholder/aria-label attribute values are Arabic (no Latin UI copy)', () => {
-    const attrs = [...ui.matchAll(/(title|placeholder|aria-label)="([^"]*)"/g)].map((m) => m[2])
+  it('all title/placeholder/aria-label values remain Arabic', () => {
+    const attrs = [...commentsOnly.matchAll(/(title|placeholder|aria-label)="([^"]*)"/g)].map(
+      (m) => m[2],
+    )
     expect(attrs.length).toBeGreaterThan(5)
     for (const v of attrs) expect(v).not.toMatch(/[A-Za-z]{2,}/)
   })
 })
 
-describe('4. a11y gaps (static)', () => {
-  it('sort toggle buttons expose no aria-pressed state to screen readers', () => {
-    const sortBlock = ui.slice(ui.indexOf('SORT_OPTIONS.map'), ui.indexOf('SORT_OPTIONS.map') + 800)
-    expect(sortBlock).toMatch(/<button/)
-    expect(sortBlock).not.toMatch(/aria-pressed/)
+describe('4. a11y: labels, focus, keyboard, dialogs, button types', () => {
+  it('sort toggle buttons expose aria-pressed', () => {
+    expect(commentsOnly).toMatch(/aria-pressed=\{sortMode === opt\.value\}/)
   })
-  it('textareas have placeholder but no <label>/aria-label/aria-labelledby', () => {
-    const areas = ui.match(/<textarea[\s\S]*?\/>|<textarea[\s\S]*?<\/textarea>/g) || []
-    expect(areas.length).toBeGreaterThanOrEqual(3) // new + edit + reply
-    for (const a of areas) expect(a).not.toMatch(/aria-label|aria-labelledby|<label/)
+  it('all comment textareas carry aria-label', () => {
+    for (const f of [
+      'src/components/mod-comments.tsx',
+      'src/components/comments/comment-edit-box.tsx',
+      'src/components/comments/reply-box.tsx',
+      'src/components/creator/comments-manager.tsx',
+    ]) {
+      const src = fs.readFileSync(path.join(root, f), 'utf8')
+      const areas = src.match(/<textarea[\s\S]*?\/>|<Textarea[\s\S]*?\/>/g) || []
+      expect(areas.length).toBeGreaterThan(0)
+      for (const a of areas) expect(a).toMatch(/aria-label=/)
+    }
   })
-  it('focus:outline-none without visible replacement on 2 textareas (WCAG 2.4.7)', () => {
-    expect(ui).toMatch(/bg-transparent p-3 text-sm[^"]*focus:outline-none"/)
-    expect(ui).toMatch(/p-2\.5 text-sm focus:outline-none"/)
+  it('no focus:outline-none without a visible replacement', () => {
+    expect(commentsOnly).not.toMatch(/focus:outline-none"/)
   })
-  it('no keyboard submit (Ctrl+Enter) or Escape-to-cancel anywhere in comment UIs', () => {
-    expect(ui).not.toMatch(/onKeyDown|onKeyUp|Escape|Ctrl\+Enter|Meta\+Enter/)
-    expect(mgr).not.toMatch(/onKeyDown|onKeyUp|Escape/)
+  it('Ctrl+Enter submits, Escape cancels reply', () => {
+    expect(commentsOnly).toMatch(/onKeyDown/)
+    expect(commentsOnly).toMatch(/Control.*Enter|Enter.*Control|ctrlKey/)
+    expect(commentsOnly).toMatch(/Escape/)
   })
-  it('~12 buttons missing type="button" (Biome useButtonType, Step 2)', () => {
-    expect((ui.match(/<button\n?\s*[^>]*onClick/g) || []).length).toBeGreaterThan(5)
+  it('destructive deletes use Radix AlertDialog (no native confirm)', () => {
+    const codeOnly = commentsOnly.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\n)\s*\/\/.*/g, '')
+    expect(codeOnly).not.toMatch(/[^a-zA-Z]confirm\(/)
+    expect(commentsOnly).toMatch(/AlertDialog/)
   })
-  it('dropdown trigger has Arabic aria-label (good pattern)', () => {
-    expect(ui).toMatch(/aria-label="خيارات"/)
-  })
-})
-
-describe('5. Loading/empty states (static)', () => {
-  it('loading = bare spinner, no skeleton, no role=status/aria-busy', () => {
-    expect(ui).toMatch(/<Loader2 className="h-6 w-6 animate-spin/)
-    expect(ui).not.toMatch(/Skeleton|skeleton/)
-    expect(ui).not.toMatch(/role="status"|aria-busy/)
-  })
-  it('empty state Arabic with CTA copy but no action prop passed', () => {
-    expect(ui).toMatch(/title="لا توجد تعليقات"/)
-    expect(ui).toMatch(/كن أول من يعلّق/)
-    expect(ui).not.toMatch(/<EmptyState[\s\S]*?action=\{/)
-  })
-  it('manager loading also spinner-only', () => {
-    expect(mgr).toMatch(/animate-spin/)
-    expect(mgr).not.toMatch(/Skeleton/)
+  it('every raw <button> in comment UI has type="button"', () => {
+    const withoutType = [...commentsOnly.matchAll(/<button(?![^>]*type=)[^>]*>/g)].map((m) => m[0])
+    expect(withoutType).toEqual([])
   })
 })
 
-describe('6. Interactions (static)', () => {
-  it('destructive deletes use blocking native confirm() (no RTL styling, no undo)', () => {
-    expect(ui).toMatch(/confirm\('هل أنت متأكد من حذف هذا التعليق؟'\)/)
-    expect(mgr).toMatch(/confirm\('هل أنت متأكد من حذف هذا التعليق؟'\)/)
+describe('5. Loading/error states: skeletons, live regions, retry', () => {
+  it('comment skeleton component exists and is used while loading', () => {
+    expect(fs.existsSync(path.join(root, 'src/components/comments/comment-skeleton.tsx'))).toBe(
+      true,
+    )
+    expect(commentsOnly).toMatch(/CommentSkeleton/)
   })
-  it('no enter/exit animations, no virtualization for long lists', () => {
-    expect(ui).not.toMatch(/AnimatePresence|framer-motion|duration-\d+|keyframes/)
-    expect(ui).not.toMatch(/react-window|virtua|virtual/)
+  it('loading and error regions use role="status"', () => {
+    expect(commentsOnly).toMatch(/role="status"/)
   })
-  it('only instant color transitions (default 150ms, within 150-250ms budget)', () => {
-    expect(ui).toMatch(/transition-colors/)
+  it('failed loads offer a retry button (no silent dead-ends)', () => {
+    expect(commentsOnly).toMatch(/إعادة المحاولة|حاول مجدداً/)
   })
-  it('like gives instant visual fill + count change (good feedback)', () => {
-    expect(ui).toMatch(/aria-pressed=\{liked\}/)
-    expect(ui).toMatch(/fill-current/)
+  it('empty state copy stays Arabic with CTA', () => {
+    expect(commentsOnly).toMatch(/لا توجد تعليقات/)
+    expect(commentsOnly).toMatch(/كن أول من يعلّق/)
+  })
+})
+
+describe('6. Interactions: transitions kept, like feedback kept', () => {
+  it('instant color transitions preserved', () => {
+    expect(commentsOnly).toMatch(/transition-colors/)
+  })
+  it('like keeps aria-pressed + fill feedback', () => {
+    expect(commentsOnly).toMatch(/aria-pressed=\{liked\}/)
+    expect(commentsOnly).toMatch(/fill-current/)
   })
 })

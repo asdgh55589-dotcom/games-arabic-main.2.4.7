@@ -557,9 +557,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           iconBg="bg-orange-500/10 text-orange-500"
           defaultOpen
         >
-          <div className="scale-[0.60] origin-top -mx-12 -mb-8 -mt-3 text-[10px] [&_p]:!text-[10px] [&_p]:!leading-normal [&_span]:!text-[10px] [&_div.text-sm]:!text-[11px] [&_textarea]:!text-[11px] [&_textarea]:!p-2 [&_textarea]:!leading-normal [&_textarea]:!placeholder:text-[10px] [&_textarea]:!min-h-[60px] [&_button]:!text-[11px] [&_button]:!min-h-[30px] [&_button]:!py-1 [&_button]:!px-2.5 [&_button]:!gap-1 [&_input]:!text-[10px] [&_div.mb-6]:!mb-2 [&_div.mb-6]:!gap-1.5 [&_div.space-y-4]:!space-y-2 [&_div.rounded-lg]:!p-2 [&_h2]:!text-xs [&_.h-10]:!h-7 [&_.w-10]:!w-7 [&_.h-8]:!h-6 [&_.w-8]:!w-6">
-            <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
-          </div>
+          <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
         </CollapsibleCard>
 
         {/* تنقل التعريبات — السابق / التالي */}

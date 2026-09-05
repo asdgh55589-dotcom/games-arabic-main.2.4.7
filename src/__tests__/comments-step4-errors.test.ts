@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { GET as modsGET, POST as modsPOST } from '@/app/api/mods/[slug]/comments/route';
 import { DELETE as commentsDELETE, PATCH as commentsPATCH } from '@/app/api/comments/[id]/route';
-import { POST as likePOST } from '@/app/api/comments/[id]/like/route';
+import { POST as reactionPOST } from '@/app/api/comments/[id]/reaction/route';
 import { GET as adminGET } from '@/app/api/admin/comments/route';
 
 jest.mock('@/lib/db', () => ({
@@ -122,7 +122,7 @@ describe('1.1.5 invalid mod slug → 404', () => {
     const res = await modsGET(req('http://x/?sort=newest'), slugParams);
     const body = await res.json();
     expect(res.status).toBe(404);
-    expect(body.error?.message).toBe('Mod not found'); // ❌ English in Arabic app
+    expect(body.error?.message).toBe('التعريب غير موجود'); // ✅ Arabic (FIXED Phase 4)
   });
 });
 
@@ -152,17 +152,23 @@ describe('1.2.4 permission matrix (public delete route)', () => {
 describe('1.3.1 like rate limit → 429', () => {
   it('rateLimited() when limiter fails', async () => {
     mockedRateLimit.mockResolvedValue({ success: false });
-    const res = await likePOST(req(), { params: Promise.resolve({ id: 'c1' }) } as any);
+    const res = await reactionPOST(req('http://x/', { value: 'like' }), { params: Promise.resolve({ id: 'c1' }) } as any);
     const body = await res.json();
     expect(res.status).toBe(429);
     expect(body.error?.code).toBe('RATE_LIMITED');
   });
 });
 
-describe('1.3.2 create rate limit present (FIXED: 5/60)', () => {
-  it('mods comments route calls rateLimit with comments:create', () => {
+describe('1.3.2 create rate limit present (FIXED: via COMMENTS_CONFIG)', () => {
+  it('mods comments route rate-limits create from central config', () => {
     const src = fs.readFileSync(path.join(process.cwd(), 'src/app/api/mods/[slug]/comments/route.ts'), 'utf8');
-    expect(src).toMatch(/rateLimit\(req, \{ limit: 5, window: 60, keyPrefix: 'comments:create' \}\)/);
+    expect(src).toMatch(/rateLimit\(req, \{[\s\S]*?limit: COMMENTS_CONFIG\.createLimit/);
+    expect(src).toMatch(/keyPrefix: COMMENTS_CONFIG\.createKeyPrefix/);
+  });
+  it('config values are 5/minute', async () => {
+    const { COMMENTS_CONFIG } = await import('@/lib/comments-config');
+    expect(COMMENTS_CONFIG.createLimit).toBe(5);
+    expect(COMMENTS_CONFIG.createWindowSec).toBe(60);
   });
 });
 
@@ -188,7 +194,7 @@ describe('2.1.3 P2002 race on like → graceful 200 (already handled ✅)', () =
     (db.modComment.findUnique as jest.Mock).mockResolvedValue({ id: 'c1', likes: 6, dislikes: 0 });
     (db.commentLike.findUnique as jest.Mock).mockResolvedValue(null);
     (db.commentLike.create as jest.Mock).mockRejectedValue({ code: 'P2002' });
-    const res = await likePOST(req(), { params: Promise.resolve({ id: 'c1' }) } as any);
+    const res = await reactionPOST(req('http://x/', { value: 'like' }), { params: Promise.resolve({ id: 'c1' }) } as any);
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data?.liked).toBe(true);
@@ -207,10 +213,10 @@ describe('2.3.1 GET is wrapped in try/catch (FIXED: proper 500 envelope)', () =>
 });
 
 describe('2.2.1/2.3.2 frontend resilience (FIXED: AbortController + toasts)', () => {
-  const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/mod-comments.tsx'), 'utf8');
-  it('comment fetches use AbortController with 10s timeout', () => {
+  const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/comments/use-comments.ts'), 'utf8');
+  it('comment fetches use AbortController with central timeout', () => {
     expect(ui).toMatch(/new AbortController\(\)/);
-    expect(ui).toMatch(/setTimeout\(\(\) => controller\.abort\(\), 10000\)/);
+    expect(ui).toMatch(/controller\.abort\(\), COMMENTS_CONFIG\.fetchTimeoutMs/);
     expect(ui).toMatch(/signal: controller\.signal/);
   });
   it('no scoped ErrorBoundary around <ModComments> in views', () => {
@@ -252,7 +258,7 @@ describe('3.5.1 enumeration: missing vs deleted IDs indistinguishable ✅', () =
 
 describe('4.2.2 form state preserved on failure ✅', () => {
   it("setNewComment('') only runs after res.ok (static order check)", () => {
-    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/mod-comments.tsx'), 'utf8');
+    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/comments/use-comments.ts'), 'utf8');
     const block = ui.slice(ui.indexOf('const onSubmitComment'), ui.indexOf('const onSubmitReply'));
     expect(block.indexOf("setNewComment('')") > block.indexOf('if (!res.ok)')).toBe(true);
   });
@@ -260,15 +266,16 @@ describe('4.2.2 form state preserved on failure ✅', () => {
 
 describe('4.3 silent catches inventory (FIXED in UI; manager deferred to Phase 4)', () => {
   it('mod-comments fetch surfaces toast instead of silent catch', () => {
-    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/mod-comments.tsx'), 'utf8');
+    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/comments/use-comments.ts'), 'utf8');
     expect(ui).not.toMatch(/catch \{\s*\/\/ silent/);
     expect(ui).toMatch(/تعذّر تحميل التعليقات/);
   });
-  it('manager fetches still silent (Phase 4 backlog)', () => {
+  it('manager surfaces toasts on all failures (FIXED Phase 4)', () => {
     const mgr = fs.readFileSync(
       path.join(process.cwd(), 'src/components/creator/comments-manager.tsx'),
       'utf8',
     );
-    expect(mgr).toMatch(/catch \{\}/); // fetchComments/handleAction/handleReply
+    expect(mgr).not.toMatch(/catch \{\}/);
+    expect(mgr).toMatch(/تعذّر تحميل التعليقات|حدث خطأ أثناء الاتصال|تعذّر إرسال الرد/);
   });
 });

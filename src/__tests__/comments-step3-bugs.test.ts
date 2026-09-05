@@ -8,8 +8,20 @@ import { PATCH as creatorPATCH } from '@/app/api/creator/comments/[id]/route';
 
 jest.mock('@/lib/db', () => ({
   db: {
-    modComment: { findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
+    modComment: { findUnique: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     mod: { update: jest.fn(), findUnique: jest.fn() },
+    // callback-txn form: run the callback with a tx shim
+    $transaction: jest.fn(async (fn: any) =>
+      typeof fn === 'function'
+        ? fn({
+            modComment: {
+              delete: (...a: any[]) => (jest.requireMock('@/lib/db') as any).db.modComment.delete(...a),
+              count: (...a: any[]) => (jest.requireMock('@/lib/db') as any).db.modComment.count(...a),
+            },
+            mod: { update: (...a: any[]) => (jest.requireMock('@/lib/db') as any).db.mod.update(...a) },
+          })
+        : fn,
+    ),
   },
 }));
 
@@ -21,7 +33,14 @@ import { requireCreatorStudio } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 const root = process.cwd();
-const modCommentsSrc = fs.readFileSync(path.join(root, 'src/components/mod-comments.tsx'), 'utf8');
+const commentSources = [
+  'src/components/mod-comments.tsx',
+  'src/components/comments/use-comments.ts',
+  'src/components/comments/comment-card.tsx',
+  'src/components/comments/comment-toolbar.tsx',
+  'src/components/comments/reply-box.tsx',
+].map((f) => fs.readFileSync(path.join(root, f), 'utf8'))
+const modCommentsSrc = commentSources.join('\n');
 const managerSrc = fs.readFileSync(
   path.join(root, 'src/components/creator/comments-manager.tsx'),
   'utf8',
@@ -60,32 +79,42 @@ describe('13. Duplicate Submission (double-click guard)', () => {
   });
 });
 
-describe('18. Creator Delete Counter Drift (bug from Step 2)', () => {
-  it('BUG: creator delete does NOT touch Mod.comments', async () => {
+describe('18. Creator Delete Counter Drift (FIXED: recount like admin)', () => {
+  it('creator delete recounts Mod.comments', async () => {
     (requireCreatorStudio as jest.Mock).mockResolvedValue({
       user: { id: 'creator-1', role: 'creator' },
       error: null,
     });
     (db.modComment.findUnique as jest.Mock).mockResolvedValue({
       id: 'c1',
+      modId: 'mod-1',
       mod: { authorId: 'creator-1' },
     });
     (db.modComment.delete as jest.Mock).mockResolvedValue({ id: 'c1' });
+    (db.modComment.count as jest.Mock).mockResolvedValue(9);
     const res = await creatorPATCH({ url: 'http://x/', json: async () => ({ action: 'delete' }) } as any, {
       params: Promise.resolve({ id: 'c1' }),
     } as any);
     expect(res.status).toBe(200);
     expect(db.modComment.delete as jest.Mock).toHaveBeenCalled();
-    // the bug: counter never updated
-    expect(db.mod.update as jest.Mock).not.toHaveBeenCalled();
+    // fixed: counter recounted and written back
+    expect(db.modComment.count as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { modId: 'mod-1' } }),
+    );
+    expect(db.mod.update as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { comments: 9 } }),
+    );
   });
 });
 
-describe('20. Dislike UI Missing (backend ready, frontend incomplete)', () => {
-  it('BUG: dislike API exists but no dislike button in public UI', () => {
-    expect(fs.existsSync(path.join(root, 'src/app/api/comments/[id]/dislike/route.ts'))).toBe(true);
-    expect(modCommentsSrc).toMatch(/\/api\/comments\/.*\/like/);
-    expect(modCommentsSrc).not.toMatch(/\/api\/comments\/.*\/dislike/);
-    expect(modCommentsSrc).not.toMatch(/dislike|عدم الإعجاب|لا يعجبني/i);
+describe('20. Reaction endpoint unified; dislike UI still deferred (P6)', () => {
+  it('unified /reaction route exists; old /like + /dislike removed', () => {
+    expect(fs.existsSync(path.join(root, 'src/app/api/comments/[id]/reaction/route.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'src/app/api/comments/[id]/like/route.ts'))).toBe(false);
+    expect(fs.existsSync(path.join(root, 'src/app/api/comments/[id]/dislike/route.ts'))).toBe(false);
+    expect(modCommentsSrc).toMatch(/\/api\/comments\/.*\/reaction/);
+  });
+  it('UI exposes like toggle only (dedicated dislike button deferred)', () => {
+    expect(modCommentsSrc).not.toMatch(/عدم الإعجاب|لا يعجبني/i);
   });
 });

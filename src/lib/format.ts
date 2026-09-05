@@ -41,6 +41,14 @@ export function formatArabicDate(date: Date | string | null | undefined): string
   return `${day} ${month} ${year}`
 }
 
+/** صياغة عربية سليمة: مفرد/مثنى/جمع (3-10)/مفرد منصوب (11+) */
+function arabicUnit(n: number, one: string, two: string, few: string, many: string): string {
+  if (n === 1) return one
+  if (n === 2) return two
+  if (n >= 3 && n <= 10) return `${n} ${few}`
+  return `${n} ${many}`
+}
+
 export function timeAgo(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
@@ -48,15 +56,15 @@ export function timeAgo(date: Date | string | null | undefined): string {
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000)
   if (seconds < 60) return 'الآن'
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `منذ ${minutes} دقيقة`
+  if (minutes < 60) return `منذ ${arabicUnit(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')}`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `منذ ${hours} ساعة`
+  if (hours < 24) return `منذ ${arabicUnit(hours, 'ساعة', 'ساعتين', 'ساعات', 'ساعة')}`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `منذ ${days} يوم`
+  if (days < 30) return `منذ ${arabicUnit(days, 'يوم', 'يومين', 'أيام', 'يوماً')}`
   const months = Math.floor(days / 30)
-  if (months < 12) return `منذ ${months} شهر`
+  if (months < 12) return `منذ ${arabicUnit(months, 'شهر', 'شهرين', 'أشهر', 'شهراً')}`
   const years = Math.floor(days / 365)
-  return `منذ ${years} سنة`
+  return `منذ ${arabicUnit(years, 'سنة', 'سنتين', 'سنوات', 'سنة')}`
 }
 
 export function parseGalleryUrls(s: string | null | undefined): string[] {

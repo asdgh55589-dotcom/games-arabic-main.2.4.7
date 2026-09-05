@@ -1,7 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
-import { db } from '@/lib/db'
+import {
+  creatorDeleteComment,
+  creatorSetHidden,
+  getCommentModAuthor,
+} from '@/lib/comments/repository'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -13,10 +17,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (!user) return forbidden('يجب تسجيل الدخول')
 
   const { id } = await params
-  const comment = await db.modComment.findUnique({
-    where: { id },
-    include: { mod: { select: { authorId: true } } },
-  })
+  const comment = await getCommentModAuthor(id)
 
   if (!comment) return notFound('التعليق غير موجود')
 
@@ -29,23 +30,18 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { action } = body as { action?: string }
 
   if (action === 'hide') {
-    await db.modComment.update({
-      where: { id },
-      data: { isHidden: true },
-    })
+    await creatorSetHidden(id, true)
     return ok({ message: 'تم إخفاء التعليق' })
   }
 
   if (action === 'unhide') {
-    await db.modComment.update({
-      where: { id },
-      data: { isHidden: false },
-    })
+    await creatorSetHidden(id, false)
     return ok({ message: 'تم إظهار التعليق' })
   }
 
   if (action === 'delete') {
-    await db.modComment.delete({ where: { id } })
+    // حذف + إعادة عدّ (إصلاح انحراف Mod.comments)
+    await creatorDeleteComment(id, comment.modId)
     return ok({ message: 'تم حذف التعليق' })
   }
 
@@ -59,10 +55,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   if (!user) return forbidden('يجب تسجيل الدخول')
 
   const { id } = await params
-  const comment = await db.modComment.findUnique({
-    where: { id },
-    include: { mod: { select: { authorId: true } } },
-  })
+  const comment = await getCommentModAuthor(id)
   if (!comment) return notFound('التعليق غير موجود')
 
   const isAdmin = ['admin', 'manager', 'owner'].includes(user.role)
@@ -70,6 +63,6 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return forbidden('هذا التعليق ليس على تعريبك')
   }
 
-  await db.modComment.delete({ where: { id } })
+  await creatorDeleteComment(id, comment.modId)
   return ok({ message: 'تم حذف التعليق' })
 }

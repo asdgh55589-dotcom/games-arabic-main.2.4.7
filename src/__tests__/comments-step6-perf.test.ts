@@ -6,7 +6,7 @@
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { POST as likePOST } from '@/app/api/comments/[id]/like/route'
+import { POST as reactionPOST } from '@/app/api/comments/[id]/reaction/route'
 import { DELETE as commentsDELETE, PATCH as commentsPATCH } from '@/app/api/comments/[id]/route'
 import { GET as modsGET, POST as modsPOST } from '@/app/api/mods/[slug]/comments/route'
 
@@ -39,7 +39,15 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 
 const root = process.cwd()
-const ui = fs.readFileSync(path.join(root, 'src/components/mod-comments.tsx'), 'utf8')
+const uiFiles = [
+  'src/components/mod-comments.tsx',
+  'src/components/comments/comment-card.tsx',
+  'src/components/comments/comment-toolbar.tsx',
+  'src/components/comments/reply-box.tsx',
+  'src/components/comments/use-comments.ts',
+  'src/components/comments/use-comment-actions.ts',
+]
+const ui = uiFiles.map((f) => fs.readFileSync(path.join(root, f), 'utf8')).join('\n')
 
 beforeEach(() => {
   jest.resetAllMocks()
@@ -188,7 +196,7 @@ describe('3.1 DB round trips per endpoint (mocked call counts)', () => {
   it('like = 4 trips (comment + vote + txn + refetch)', async () => {
     ;(db.modComment.findUnique as jest.Mock).mockResolvedValue({ id: 'c', likes: 1, dislikes: 0 })
     ;(db.commentLike.findUnique as jest.Mock).mockResolvedValue(null)
-    await likePOST({ url: 'http://x/' } as any, { params: Promise.resolve({ id: 'c' }) } as any)
+    await reactionPOST({ url: 'http://x/', json: async () => ({ value: 'like' }) } as any, { params: Promise.resolve({ id: 'c' }) } as any)
     expect((db.modComment.findUnique as jest.Mock).mock.calls.length).toBe(2)
   })
 })
@@ -206,12 +214,12 @@ describe('3.1.3 composite indexes exist in schema but NOT in migrations (static)
 })
 
 describe('5. Rendering: no memo/virtualization/lazy (static)', () => {
-  it('CommentItem is a plain function: no memo, recursion re-renders whole tree', () => {
-    expect(ui).toMatch(/function CommentItem\(/)
-    expect(ui).not.toMatch(/memo\(.*CommentItem|const CommentItem = memo/)
+  it('CommentCard is a plain function: no memo, recursion re-renders subtree', () => {
+    expect(ui).toMatch(/export function CommentCard\(/)
+    expect(ui).not.toMatch(/memo\(.*CommentCard|const CommentCard = memo/)
   })
-  it('35 inline arrow handlers in JSX (new fn per render per comment)', () => {
-    expect((ui.match(/onClick=\{\(\) =>/g) || []).length).toBeGreaterThanOrEqual(30)
+  it('inline arrow handlers reduced 35 → 15 by the split (Phase 5 backlog: useCallback)', () => {
+    expect((ui.match(/onClick=\{\(\) =>/g) || []).length).toBeLessThanOrEqual(20)
   })
   it('only MarkdownRenderer is memoized; sortPopular re-sorts + updateLikesInTree deep-clones on every like', () => {
     const renderer = fs.readFileSync(
