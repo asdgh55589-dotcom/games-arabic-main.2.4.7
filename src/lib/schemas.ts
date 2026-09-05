@@ -43,10 +43,7 @@ export const PasswordSchema = z
   .min(8, '٨ أحرف على الأقل')
   .max(100, 'كلمة المرور طويلة جداً')
 
-export const DisplayNameSchema = z
-  .string()
-  .min(1, 'الاسم مطلوب')
-  .max(50, 'الحد الأقصى 50 حرف')
+export const DisplayNameSchema = z.string().min(1, 'الاسم مطلوب').max(50, 'الحد الأقصى 50 حرف')
 
 export const PublicRegisterSchema = z.object({
   username: UsernameSchema,
@@ -75,6 +72,24 @@ export const ProfileUpdateSchema = z.object({
   username: UsernameSchema.optional(),
   displayName: DisplayNameSchema.optional(),
   bio: z.string().max(500, 'الحد الأقصى 500 حرف').optional(),
+})
+
+export const UploadModSchema = z.object({
+  name: z.string().min(1, 'اسم التعريب مطلوب').max(200, 'الحد الأقصى 200 حرف'),
+  summary: z.string().min(1, 'الملخص مطلوب').max(200, 'الحد الأقصى 200 حرف'),
+  description: z.string().max(5000, 'الحد الأقصى 5000 حرف').optional().default(''),
+  gameSlug: z.string().min(1, 'اختر اللعبة'),
+  category: z.string().optional().default(''),
+  version: z.string().min(1, 'النسخة مطلوبة').max(20, 'الحد الأقصى 20 حرف'),
+  tags: z.string().max(300, 'الحد الأقصى 300 حرف').optional().default(''),
+})
+
+export const ReportFormSchema = z.object({
+  reason: z.enum(
+    ['spam', 'inappropriate', 'copyright', 'offensive', 'false_info', 'technical', 'other'],
+    { message: 'اختر سبب البلاغ' },
+  ),
+  description: z.string().max(1000, 'الحد الأقصى 1000 حرف').optional().default(''),
 })
 
 // ===== Auth Schemas =====

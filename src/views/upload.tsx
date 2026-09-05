@@ -1,14 +1,24 @@
 // Updated for new API response format
 'use client'
 
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronLeft, FileArchive, Image as ImageIcon, Tag, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -20,24 +30,34 @@ import { Textarea } from '@/components/ui/textarea'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/hooks/use-toast'
+import { UploadModSchema } from '@/lib/schemas'
 import type { GameDetail, GameSummary } from '@/lib/types'
+
+type UploadModInput = z.input<typeof UploadModSchema>
 
 export function UploadPage() {
   useDocumentTitle('Upload a Mod')
-  const [name, setName] = useState('')
-  const [summary, setSummary] = useState('')
-  const [description, setDescription] = useState('')
-  const [version, setVersion] = useState('1.0.0')
-  const [tags, setTags] = useState('')
-  const [gameSlug, setGameSlug] = useState('')
-  const [category, setCategory] = useState('')
+  const form = useForm<UploadModInput>({
+    resolver: zodResolver(UploadModSchema),
+    defaultValues: {
+      name: '',
+      summary: '',
+      description: '',
+      gameSlug: '',
+      category: '',
+      version: '1.0.0',
+      tags: '',
+    },
+  })
   const [modFileName, setModFileName] = useState<string | null>(null)
   const [imageFileName, setImageFileName] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [submittedName, setSubmittedName] = useState('')
   const { toast } = useToast()
   const modFileRef = useRef<HTMLInputElement>(null)
   const imageFileRef = useRef<HTMLInputElement>(null)
+
+  const gameSlug = form.watch('gameSlug')
 
   const { data: gamesData } = useFetch<{ data: GameSummary[] }>('/api/games?sort=name&limit=50')
   const { data: gameData } = useFetch<{ data: GameDetail }>(
@@ -46,59 +66,45 @@ export function UploadPage() {
   )
 
   const resetForm = () => {
-    setName('')
-    setSummary('')
-    setDescription('')
-    setVersion('1.0.0')
-    setTags('')
-    setGameSlug('')
-    setCategory('')
+    form.reset()
     setModFileName(null)
     setImageFileName(null)
     if (modFileRef.current) modFileRef.current.value = ''
     if (imageFileRef.current) imageFileRef.current.value = ''
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name || !summary || !gameSlug) {
-      toast({
-        title: 'Missing fields',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      })
-      return
-    }
+  const onSubmit = async (data: UploadModInput) => {
     if (!modFileName) {
+      form.setError('root', { message: 'اختر ملف التعريب أولاً (.zip أو .7z أو .rar)' })
       toast({
-        title: 'Missing mod file',
-        description: 'Please select a mod archive to upload',
+        title: 'ملف ناقص',
+        description: 'اختر ملف التعريب لرفعه',
         variant: 'destructive',
       })
       return
     }
     const game = gameData?.data
     if (!game) {
+      form.setError('root', { message: 'اختر لعبة صحيحة من القائمة' })
       toast({
-        title: 'Game not found',
-        description: 'Please select a valid game',
+        title: 'اللعبة غير موجودة',
+        description: 'اختر لعبة صحيحة',
         variant: 'destructive',
       })
       return
     }
-    setSubmitting(true)
     try {
       const res = await fetch('/api/admin/mods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          summary,
-          description: description || summary,
+          name: data.name,
+          summary: data.summary,
+          description: data.description || data.summary,
           gameId: game.id,
-          categoryId: category || undefined,
-          version,
-          tags,
+          categoryId: data.category || undefined,
+          version: data.version,
+          tags: data.tags,
           thumbnailUrl: game.thumbnailUrl,
           imageUrl: game.bannerUrl,
           fileSize: 'Unknown',
@@ -106,38 +112,41 @@ export function UploadPage() {
         }),
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
+        const resData = await res.json().catch(() => ({}))
         if (res.status === 401) {
+          form.setError('root', { message: 'لازم تسجل الدخول كمُشرف لرفع التعريبات' })
           toast({
-            title: 'Authentication required',
-            description: 'You must be logged in as a moderator to upload mods.',
+            title: 'تسجيل الدخول مطلوب',
+            description: 'لازم تسجل الدخول كمُشرف لرفع التعريبات.',
             variant: 'destructive',
           })
           return
         }
         if (res.status === 403) {
+          form.setError('root', { message: 'المشرفون والمديرون فقط يقدروا يرفعوا تعريبات' })
           toast({
-            title: 'Insufficient permissions',
-            description: 'Only moderators and admins can upload mods. Use the admin panel.',
+            title: 'صلاحيات غير كافية',
+            description: 'المشرفون والمديرون فقط يقدروا يرفعوا تعريبات.',
             variant: 'destructive',
           })
           return
         }
-        throw new Error(data?.error || 'Failed to submit mod')
+        throw new Error(resData?.error || 'فشل إرسال التعريب')
       }
+      setSubmittedName(data.name)
       setSubmitted(true)
       toast({
-        title: 'Mod submitted!',
-        description: 'Your mod has been created successfully.',
+        title: 'تم إرسال التعريب!',
+        description: 'تم إنشاء التعريب بنجاح.',
       })
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'تعذّر إرسال التعريب'
+      form.setError('root', { message: msg })
       toast({
-        title: 'Submission failed',
-        description: err instanceof Error ? err.message : 'Could not submit mod',
+        title: 'فشل الإرسال',
+        description: msg,
         variant: 'destructive',
       })
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -149,8 +158,9 @@ export function UploadPage() {
         </div>
         <h1 className="text-3xl font-bold">Mod Submitted!</h1>
         <p className="mt-3 text-muted-foreground">
-          Thank you for contributing to the community. Your mod &quot;{name}&quot; is now in the
-          moderation queue. You&apos;ll receive a notification once it&apos;s approved and live.
+          Thank you for contributing to the community. Your mod &quot;{submittedName}&quot; is now
+          in the moderation queue. You&apos;ll receive a notification once it&apos;s approved and
+          live.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Button
@@ -187,160 +197,225 @@ export function UploadPage() {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        <Card className="space-y-4 p-6">
-          <h2 className="text-lg font-semibold">Basic Information</h2>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="space-y-4 p-6">
+            <h2 className="text-lg font-semibold">Basic Information</h2>
 
-          <div className="space-y-2">
-            <Label htmlFor="name">Mod Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Unofficial Skyrim Patch"
-              required
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>اسم التعريب *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Unofficial Skyrim Patch" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="summary">Summary *</Label>
-            <Input
-              id="summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="A one-line description of your mod"
-              maxLength={200}
-              required
+            <FormField
+              control={form.control}
+              name="summary"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>الملخص *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="A one-line description of your mod"
+                      maxLength={200}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    {field.value.length}/200 characters
+                  </p>
+                </FormItem>
+              )}
             />
-            <p className="text-xs text-muted-foreground">{summary.length}/200 characters</p>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your mod in detail. Supports markdown formatting…"
-              rows={8}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>الوصف</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe your mod in detail. Supports markdown formatting…"
+                      rows={8}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Markdown supported. Use ## for headings, - for lists.
+                  </p>
+                </FormItem>
+              )}
             />
-            <p className="text-xs text-muted-foreground">
-              Markdown supported. Use ## for headings, - for lists.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="game-select">Game *</Label>
-              <Select
-                value={gameSlug}
-                onValueChange={(v) => {
-                  setGameSlug(v)
-                  setCategory('')
-                }}
-              >
-                <SelectTrigger id="game-select">
-                  <SelectValue placeholder="Select a game" />
-                </SelectTrigger>
-                <SelectContent>
-                  {gamesData?.data?.map((g) => (
-                    <SelectItem key={g.id} value={g.slug}>
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category-select">Category</Label>
-              <Select value={category} onValueChange={setCategory} disabled={!gameData?.data}>
-                <SelectTrigger id="category-select">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {gameData?.data?.categories?.map((c) => (
-                    <SelectItem key={c.id} value={c.slug}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="version">Version</Label>
-              <Input
-                id="version"
-                value={version}
-                onChange={(e) => setVersion(e.target.value)}
-                placeholder="1.0.0"
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gameSlug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اللعبة *</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        form.setValue('category', '')
+                      }}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a game" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {gamesData?.data?.map((g) => (
+                          <SelectItem key={g.id} value={g.slug}>
+                            {g.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>التصنيف</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={!gameData?.data}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {gameData?.data?.categories?.map((c) => (
+                          <SelectItem key={c.id} value={c.slug}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
-              <Input
-                id="tags"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="comma, separated, tags"
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="version"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>النسخة</FormLabel>
+                    <FormControl>
+                      <Input placeholder="1.0.0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الوسوم</FormLabel>
+                    <FormControl>
+                      <Input placeholder="comma, separated, tags" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="space-y-4 p-6">
-          <h2 className="text-lg font-semibold">Files &amp; Media</h2>
+          <Card className="space-y-4 p-6">
+            <h2 className="text-lg font-semibold">Files &amp; Media</h2>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FileDropzone
-              icon={<FileArchive className="h-8 w-8" />}
-              label="Mod File *"
-              hint={modFileName ? modFileName : '.zip, .7z, or .rar (max 2GB)'}
-              filled={!!modFileName}
-              inputRef={modFileRef}
-              accept=".zip,.7z,.rar"
-              onFileSelected={(name) => setModFileName(name)}
-            />
-            <FileDropzone
-              icon={<ImageIcon className="h-8 w-8" />}
-              label="Hero Image"
-              hint={imageFileName ? imageFileName : '.jpg or .png (16:9 recommended)'}
-              filled={!!imageFileName}
-              inputRef={imageFileRef}
-              accept="image/jpeg,image/png"
-              onFileSelected={(name) => setImageFileName(name)}
-            />
-          </div>
-
-          {tags && (
-            <div>
-              <Label className="mb-2 block">Tag Preview</Label>
-              <div className="flex flex-wrap gap-2">
-                {tags
-                  .split(',')
-                  .map((t) => t.trim())
-                  .filter(Boolean)
-                  .map((t) => (
-                    <Badge key={t} variant="secondary" className="gap-1">
-                      <Tag className="h-3 w-3" /> {t}
-                    </Badge>
-                  ))}
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FileDropzone
+                icon={<FileArchive className="h-8 w-8" />}
+                label="Mod File *"
+                hint={modFileName ? modFileName : '.zip, .7z, or .rar (max 2GB)'}
+                filled={!!modFileName}
+                inputRef={modFileRef}
+                accept=".zip,.7z,.rar"
+                onFileSelected={(name) => setModFileName(name)}
+              />
+              <FileDropzone
+                icon={<ImageIcon className="h-8 w-8" />}
+                label="Hero Image"
+                hint={imageFileName ? imageFileName : '.jpg or .png (16:9 recommended)'}
+                filled={!!imageFileName}
+                inputRef={imageFileRef}
+                accept="image/jpeg,image/png"
+                onFileSelected={(name) => setImageFileName(name)}
+              />
             </div>
+
+            <TagPreview tags={form.watch('tags') || ''} />
+          </Card>
+
+          {form.formState.errors.root && (
+            <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
           )}
-        </Card>
 
-        <div className="flex gap-3">
-          <Button type="submit" size="lg" className="flex-1" disabled={submitting}>
-            <Upload className="mr-2 h-4 w-4" /> {submitting ? 'Submitting...' : 'Submit for Review'}
-          </Button>
-          <Button type="button" variant="outline" size="lg" asChild>
-            <Link href="/">Cancel</Link>
-          </Button>
-        </div>
-      </form>
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              size="lg"
+              className="flex-1"
+              disabled={form.formState.isSubmitting}
+            >
+              <Upload className="mr-2 h-4 w-4" />{' '}
+              {form.formState.isSubmitting ? 'جارٍ الإرسال...' : 'Submit for Review'}
+            </Button>
+            <Button type="button" variant="outline" size="lg" asChild>
+              <Link href="/">Cancel</Link>
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  )
+}
+
+function TagPreview({ tags }: { tags: string }) {
+  if (!tags) return null
+  return (
+    <div>
+      <p className="mb-2 block text-sm font-medium">Tag Preview</p>
+      <div className="flex flex-wrap gap-2">
+        {tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .map((t) => (
+            <Badge key={t} variant="secondary" className="gap-1">
+              <Tag className="h-3 w-3" /> {t}
+            </Badge>
+          ))}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,10 @@
 'use client'
 
-import { Flag } from 'lucide-react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Flag, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,8 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
-import { REPORT_REASONS, type ReportReason, type ReportTargetType } from '@/lib/reports/constants'
+import { REPORT_REASONS, type ReportTargetType } from '@/lib/reports/constants'
+import { ReportFormSchema } from '@/lib/schemas'
 
 interface ReportDialogProps {
   targetType: ReportTargetType
@@ -22,48 +34,57 @@ interface ReportDialogProps {
   onSuccess?: () => void
 }
 
+type ReportFormInput = z.input<typeof ReportFormSchema>
+
 export function ReportDialog({ targetType, targetId, children, onSuccess }: ReportDialogProps) {
   const [open, setOpen] = useState(false)
-  const [reason, setReason] = useState<ReportReason | ''>('')
-  const [description, setDescription] = useState('')
-  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = async () => {
-    if (!reason) {
-      toast({ title: 'اختر سبب البلاغ', variant: 'destructive' })
-      return
-    }
+  const form = useForm<ReportFormInput>({
+    resolver: zodResolver(ReportFormSchema),
+    defaultValues: { reason: undefined as unknown as ReportFormInput['reason'], description: '' },
+  })
 
-    setLoading(true)
+  const handleSubmit = async (data: ReportFormInput) => {
     try {
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetType, targetId, reason, description }),
+        body: JSON.stringify({
+          targetType,
+          targetId,
+          reason: data.reason,
+          description: data.description,
+        }),
       })
 
-      const data = await res.json()
+      const resData = await res.json()
 
       if (!res.ok) {
-        toast({ title: data.error?.message || 'فشل إرسال البلاغ', variant: 'destructive' })
+        const msg = resData.error?.message || 'فشل إرسال البلاغ'
+        form.setError('root', { message: msg })
+        toast({ title: msg, variant: 'destructive' })
         return
       }
 
       toast({ title: 'لقد تم استلام بلاغك', description: 'شكراً لمساهمتك، ستتم مراجعته قريباً' })
       onSuccess?.()
       setOpen(false)
-      setReason('')
-      setDescription('')
+      form.reset()
     } catch {
+      form.setError('root', { message: 'حدث خطأ أثناء إرسال البلاغ' })
       toast({ title: 'حدث خطأ أثناء إرسال البلاغ', variant: 'destructive' })
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v)
+        if (!v) form.reset()
+      }}
+    >
       <DialogTrigger asChild>
         {children || (
           <Button
@@ -87,41 +108,70 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium">سبب البلاغ *</label>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value as ReportReason)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-            >
-              <option value="">اختر سبب البلاغ...</option>
-              {Object.entries(REPORT_REASONS).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">تفاصيل إضافية (اختياري)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="اشرح المشكلة بالتفصيل..."
-              rows={3}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>سبب البلاغ *</FormLabel>
+                  <FormControl>
+                    <select
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">اختر سبب البلاغ...</option>
+                      {Object.entries(REPORT_REASONS).map(([key, config]) => (
+                        <option key={key} value={key}>
+                          {config.label}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
             />
-          </div>
-        </div>
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>تفاصيل إضافية (اختياري)</FormLabel>
+                  <FormControl>
+                    <textarea
+                      placeholder="اشرح المشكلة بالتفصيل..."
+                      rows={3}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-[11px]" />
+                </FormItem>
+              )}
+            />
+
+            {form.formState.errors.root && (
+              <p className="text-[11px] text-destructive">{form.formState.errors.root.message}</p>
+            )}
+          </form>
+        </Form>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             إلغاء
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || !reason}>
-            {loading ? 'جاري الإرسال...' : 'إرسال البلاغ'}
+          <Button onClick={form.handleSubmit(handleSubmit)} disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> جاري الإرسال...
+              </>
+            ) : (
+              'إرسال البلاغ'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
