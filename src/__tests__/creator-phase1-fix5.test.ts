@@ -9,7 +9,6 @@ const root = process.cwd();
 const src = (p: string) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const PAGES = [
-  'src/app/creator/(studio)/page.tsx',
   'src/app/creator/(studio)/mods/page.tsx',
   'src/app/creator/(studio)/mods/new/page.tsx',
   'src/app/creator/(studio)/mods/[id]/edit/page.tsx',
@@ -25,6 +24,13 @@ describe('Fix 5: page guards narrowed to creator/publisher', () => {
     // broadened 6-role list must be gone
     expect(code).not.toMatch(/'moderator', 'admin', 'manager', 'owner'/);
     expect(code).toMatch(/'creator', 'publisher'/);
+  });
+
+  it('home page relies on the studio layout gate (single source of truth)', () => {
+    const layout = src('src/app/creator/(studio)/layout.tsx');
+    expect(layout).toMatch(/CREATOR_ONLY = \['creator', 'publisher'\]/);
+    const home = src('src/app/creator/(studio)/page.tsx');
+    expect(home).not.toMatch(/'moderator', 'admin', 'manager', 'owner'/);
   });
 });
 
