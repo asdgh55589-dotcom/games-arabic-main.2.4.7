@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
-import { CreatorSidebar } from '@/components/creator/creator-sidebar'
+import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { getBanInfo, getSession } from '@/lib/auth'
-import { db } from '@/lib/db'
 
 export default async function CreatorLayout({ children }: { children: React.ReactNode }) {
   // Banned creators see the reason instead of a generic login redirect.
@@ -18,23 +18,19 @@ export default async function CreatorLayout({ children }: { children: React.Reac
     redirect('/become-creator')
   }
 
-  const fullUser = await db.user.findUnique({
-    where: { id: session.id },
-    select: { username: true, avatarUrl: true, role: true, tier: true, specialRoles: true },
-  })
-
-  const userForSidebar = {
-    username: fullUser?.username || session.username,
-    avatarUrl: fullUser?.avatarUrl || session.avatarUrl,
-    role: fullUser?.role || session.role,
-    tier: fullUser?.tier || 0,
-    specialRoles: fullUser?.specialRoles || null,
-  }
-
   return (
-    <div className="flex min-h-screen" dir="rtl">
-      <CreatorSidebar user={userForSidebar} />
-      <main className="flex-1 p-6 md:p-8 bg-background">{children}</main>
-    </div>
+    <SidebarProvider dir="rtl">
+      <AppSidebar
+        side="right"
+        user={{
+          name: session.username,
+          email: session.email,
+          avatar: session.avatarUrl ?? '',
+        }}
+      />
+      <SidebarInset>
+        <main className="flex-1 p-4 md:p-6 bg-background">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
