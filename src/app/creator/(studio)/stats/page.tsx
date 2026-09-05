@@ -15,7 +15,7 @@ export default async function CreatorStatsPage() {
   if (!session) redirect('/login?next=/creator/stats')
 
   const creatorRoles = ['creator', 'publisher']
-  if (!creatorRoles.includes(session.role)) redirect('/become-creator')
+  if (!creatorRoles.includes(session.role)) redirect('/become-creator/apply')
 
   const mods = await db.mod.findMany({
     where: { authorId: session.id },

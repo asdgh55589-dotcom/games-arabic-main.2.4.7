@@ -16,7 +16,7 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
 
   const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
-    redirect('/become-creator')
+    redirect('/become-creator/apply')
   }
 
   const mod = await db.mod.findUnique({ where: { id } })

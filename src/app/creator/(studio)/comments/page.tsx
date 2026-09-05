@@ -14,7 +14,7 @@ export default async function CreatorCommentsPage() {
 
   const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
-    redirect('/become-creator')
+    redirect('/become-creator/apply')
   }
 
   return (

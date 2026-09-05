@@ -70,7 +70,7 @@ export function CreatorLeaderboardCard() {
             <Trophy className="mx-auto h-8 w-8 text-muted-foreground/30" />
             <p className="mt-2 text-xs font-semibold text-muted-foreground">لا يوجد مُعَرِّبون بعد</p>
             <Link
-              href="/become-creator"
+              href="/become-creator/apply"
               className="mt-2 inline-block text-xs text-primary hover:underline"
             >
               كن أول مُعَرِّب

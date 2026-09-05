@@ -65,7 +65,7 @@ export default async function CreatorsLeaderboard() {
           icon="users"
           title="لا يوجد مُعَرِّبون بعد"
           description="كن أول مُعَرِّب ينضم للمنصة!"
-          action={{ label: 'كن معرّباً', href: '/become-creator' }}
+          action={{ label: 'كن معرّباً', href: '/become-creator/apply' }}
         />
       ) : (
         <div className="space-y-4">

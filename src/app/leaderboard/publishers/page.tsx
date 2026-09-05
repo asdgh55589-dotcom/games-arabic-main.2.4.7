@@ -61,7 +61,7 @@ export default async function PublishersLeaderboard() {
           icon="users"
           title="لا يوجد ناشرون بعد"
           description="كن أول ناشر ينضم للمنصة!"
-          action={{ label: 'كن معرّباً', href: '/become-creator' }}
+          action={{ label: 'كن معرّباً', href: '/become-creator/apply' }}
         />
       ) : (
         <div className="space-y-4">

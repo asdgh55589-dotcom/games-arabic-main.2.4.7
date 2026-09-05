@@ -405,7 +405,7 @@ export async function proxy(req: NextRequest) {
     }
     const CREATOR_ONLY = ['creator', 'publisher']
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
-      const becomeUrl = new URL('/become-creator', req.url)
+      const becomeUrl = new URL('/become-creator/apply', req.url)
       const redirectRes = NextResponse.redirect(becomeUrl)
       copyCookies(supabaseResponse, redirectRes)
       return redirectRes

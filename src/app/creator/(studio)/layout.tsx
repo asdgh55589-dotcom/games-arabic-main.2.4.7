@@ -15,7 +15,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
 
   const CREATOR_ONLY = ['creator', 'publisher']
   if (!CREATOR_ONLY.includes(session.role)) {
-    redirect('/become-creator')
+    redirect('/become-creator/apply')
   }
 
   return (

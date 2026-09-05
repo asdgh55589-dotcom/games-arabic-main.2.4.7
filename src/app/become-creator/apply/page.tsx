@@ -174,7 +174,7 @@ export default function BecomeCreatorApplyPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 سيتم مراجعته خلال 48 ساعة وستصلك إشعار بالنتيجة
               </p>
-              <Link href="/become-creator">
+              <Link href="/settings">
                 <Button variant="outline">العودة</Button>
               </Link>
             </CardContent>
@@ -211,7 +211,7 @@ export default function BecomeCreatorApplyPage() {
     <div className="container mx-auto py-12 max-w-2xl px-4" dir="rtl">
       <div className="mb-6">
         <Link
-          href="/become-creator"
+          href="/settings"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowRight className="h-4 w-4" /> العودة

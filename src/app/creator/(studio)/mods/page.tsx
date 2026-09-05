@@ -18,7 +18,7 @@ export default async function MyModsPage({
 
   const creatorRoles = ['creator', 'publisher']
   if (!creatorRoles.includes(session.role)) {
-    redirect('/become-creator')
+    redirect('/become-creator/apply')
   }
 
   const params = await searchParams

@@ -70,6 +70,9 @@ const nextConfig: NextConfig = {
       { source: '/:path*', destination: '/privacy',   permanent: true, has: [{ type: 'query', key: 'view', value: 'privacy' }] },
       { source: '/:path*', destination: '/explore',   permanent: true, has: [{ type: 'query', key: 'view', value: 'explore' }] },
       { source: '/:path*', destination: '/community', permanent: true, has: [{ type: 'query', key: 'view', value: 'community' }] },
+      // Removed landing page (was duplicate of settings entry section):
+      // old /become-creator links go straight to the application form.
+      { source: '/become-creator', destination: '/become-creator/apply', permanent: true },
 
       // Auth / Settings / Notifications
       { source: '/:path*', destination: '/login',         permanent: true, has: [{ type: 'query', key: 'view', value: 'login' }] },
