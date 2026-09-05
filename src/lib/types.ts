@@ -177,10 +177,13 @@ export interface ModCommentType {
   parentId: string | null
   text: string
   likes: number
-  dislikes: number
+  // تُكشف انتقائياً: محذوفة من الـGET العام (غير مستخدمة)، موجودة في الإدارة
+  dislikes?: number
   isPinned: boolean
   isEdited: boolean
-  isHidden: boolean
+  // تُكشف انتقائياً: موجودة في لوحات الإشراف، محذوفة من الـGET العام
+  isHidden?: boolean
+  depth?: number
   createdAt: string | Date
   updatedAt: string | Date
   user?: {

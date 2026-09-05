@@ -145,11 +145,18 @@ describe('7.3 no sensitive user fields in comment reads (select allowlists)', ()
   it('public GET selects only safe user fields', async () => {
     ;(db.modComment.findMany as jest.Mock).mockResolvedValue([])
     await modsGET(req('http://x/'), slugParams)
-    const args = (db.modComment.findMany as jest.Mock).mock.calls[0][0]
-    const keys = Object.keys(args.include.user.select)
+    const calls = (db.modComment.findMany as jest.Mock).mock.calls.map((c) => c[0])
+    // every read carries isHidden:false (public never sees hidden rows)
+    for (const args of calls) {
+      if (args.where && 'isHidden' in (args.where as object))
+        expect((args.where as { isHidden: boolean }).isHidden).toBe(false)
+    }
+    // the row fetch (with user) allowlists safe fields only
+    const withUser = calls.find((a) => a.include?.user?.select)
+    expect(withUser).toBeDefined()
+    const keys = Object.keys(withUser.include.user.select)
     expect(keys).toEqual(expect.arrayContaining(['id', 'username', 'avatarUrl', 'role']))
-    expect(keys).not.toEqual(expect.arrayContaining(['email', 'phone']))
-    expect(JSON.stringify(args)).not.toMatch(/email|phone|password/i)
+    expect(JSON.stringify(calls)).not.toMatch(/email|phone|password/i)
   })
   it('admin GET selects only id/username/avatarUrl', async () => {
     ;(requireModerator as jest.Mock).mockResolvedValue({ id: 'm', role: 'moderator' })

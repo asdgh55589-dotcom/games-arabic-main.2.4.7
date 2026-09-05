@@ -19,6 +19,7 @@ jest.mock('@/lib/db', () => ({
       create: jest.fn(),
       update: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
     commentLike: { findUnique: jest.fn(), delete: jest.fn(), update: jest.fn(), create: jest.fn() },
     $transaction: jest.fn(async (ops: any) => ops),
@@ -75,11 +76,23 @@ function flatComments(n: number) {
   }))
 }
 
-describe('4.2 GET payload + tree-build scaling (DB time excluded; serialization + tree cost only)', () => {
+describe('4.2 GET payload + tree-build scaling (FIXED: server pagination)', () => {
+  // Like Prisma: honor roots / rows-by-id / level-scan shapes (unfiltered mocks
+  // duplicate replies exponentially and explode the payload).
+  function mockTable(all: any[]) {
+    ;(db.modComment.findMany as jest.Mock).mockImplementation(async (args: any) => {
+      const w: any = args?.where ?? {}
+      if (w.id?.in) return all.filter((c) => w.id.in.includes(c.id))
+      if (w.parentId && typeof w.parentId === 'object' && 'in' in w.parentId)
+        return all.filter((c) => c.parentId && w.parentId.in.includes(c.parentId))
+      return all.filter((c) => c.parentId == null)
+    })
+  }
   it.each([100, 1000, 2000])(
-    'N=%i: measures ms + bytes, returns ALL rows (no pagination)',
+    'N=%i: one page of roots (≤20 trees), total preserved, payload bounded',
     async (n) => {
-      ;(db.modComment.findMany as jest.Mock).mockResolvedValue(flatComments(n))
+      mockTable(flatComments(n))
+      ;(db.modComment.count as jest.Mock).mockResolvedValue(n)
       const t0 = performance.now()
       const res = await modsGET(
         { url: 'http://x/?sort=newest' } as any,
@@ -94,9 +107,13 @@ describe('4.2 GET payload + tree-build scaling (DB time excluded; serialization 
       console.log(
         `GET comments N=${n}: tree+serialize ${ms.toFixed(1)}ms, payload ${(bytes / 1024).toFixed(1)}KB`,
       )
-      expect(body.data.comments.length).toBeLessThanOrEqual(n) // roots only; total counts all
+      expect(res.status).toBe(200)
+      expect(body.data.comments.length).toBeLessThanOrEqual(20) // page, was N
       expect(body.data.total).toBe(n)
-      expect(bytes).toBeGreaterThan(n * 200) // ≥200B/row proves linear payload growth
+      expect(body.data.totalRoots).toBe(Math.ceil(n / 5))
+      if (n > 100) expect(body.data.nextCursor).toBeTruthy() // more pages remain
+      else expect(body.data.nextCursor).toBeNull() // exactly one page
+      expect(bytes).toBeLessThan(150 * 1024) // was ~1MB at N=2000
     },
   )
 })
@@ -125,14 +142,14 @@ describe('3.1 DB round trips per endpoint (mocked call counts)', () => {
     )
     expect(trips()).toBe(3)
   })
-  it('POST reply = 6 trips (mod + parent + FULL-TABLE depth scan + create + counter + parent re-read)', async () => {
+  it('POST reply = 4 trips (mod + parent[depth] + create + counter), no table scan', async () => {
     ;(db.modComment.findUnique as jest.Mock).mockResolvedValue({
       id: 'p',
       modId: 'mod-1',
       parentId: null,
+      depth: 0,
       userId: 'u2',
     })
-    ;(db.modComment.findMany as jest.Mock).mockResolvedValue([{ id: 'p', parentId: null }])
     ;(db.modComment.create as jest.Mock).mockResolvedValue({ id: 'c2' })
     await modsPOST(
       { url: 'http://x/', json: async () => ({ text: 'r', parentId: 'p' }) } as any,
@@ -140,11 +157,8 @@ describe('3.1 DB round trips per endpoint (mocked call counts)', () => {
         params: Promise.resolve({ slug: 'm' }),
       } as any,
     )
-    expect(trips()).toBe(6)
-    // the depth check re-reads the ENTIRE mod comment table on every reply
-    expect(db.modComment.findMany as jest.Mock).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { modId: 'mod-1' } }),
-    )
+    expect(trips()).toBe(4) // was 6 (full-table depth scan + parent re-read gone)
+    expect(db.modComment.findMany as jest.Mock).not.toHaveBeenCalled()
   })
   it('PATCH = 2 trips (read + update)', async () => {
     ;(db.modComment.findUnique as jest.Mock).mockResolvedValue({ id: 'c', userId: 'u1' })

@@ -74,22 +74,31 @@ describe('14. Unauthorized Edit', () => {
 });
 
 describe('4. Delete Own Comment (+ cascade counter)', () => {
-  it('owner DELETE removes subtree and decrements Mod.comments', async () => {
+  it('owner DELETE removes subtree via level scans and decrements Mod.comments', async () => {
     (db.modComment.findUnique as jest.Mock).mockResolvedValue({
       id: 'c1',
       userId: 'user-1',
       modId: 'mod-1',
     });
-    (db.modComment.findMany as jest.Mock).mockResolvedValue([
+    // level scans filter by parentId (like real Prisma) — no full-table read
+    const all = [
       { id: 'c1', parentId: null },
       { id: 'r1', parentId: 'c1' },
       { id: 'r2', parentId: 'r1' },
       { id: 'r3', parentId: 'c1' },
-    ]);
+    ];
+    (db.modComment.findMany as jest.Mock).mockImplementation(async (args: any) => {
+      const wanted: string[] = args?.where?.parentId?.in ?? [];
+      return all.filter((c) => c.parentId && wanted.includes(c.parentId));
+    });
     const res = await DELETE(req(), { params: Promise.resolve({ id: 'c1' }) } as any);
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data?.deletedCount).toBe(4); // 1 + 3 nested replies
+    // every scan is scoped to parentId (never a full-table read)
+    for (const call of (db.modComment.findMany as jest.Mock).mock.calls) {
+      expect(call[0].where.parentId?.in).toBeDefined();
+    }
     expect(db.modComment.deleteMany as jest.Mock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: { in: expect.arrayContaining(['c1', 'r1', 'r2', 'r3']) } } }),
     );

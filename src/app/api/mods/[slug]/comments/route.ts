@@ -17,97 +17,132 @@ interface RouteParams {
   params: Promise<{ slug: string }>
 }
 
-// GET /api/mods/[slug]/comments — قائمة التعليقات
+// GET /api/mods/[slug]/comments — قائمة التعليقات (ترقيم صفحات للجذور)
 //
 // Query params:
-//   - sort: newest | popular | oldest
+//   - sort: newest | popular | oldest (default newest)
+//   - limit: 1..50 (default 20) — عدد التعليقات الجذرية للصفحة
+//   - cursor: id آخر جذري في الصفحة السابقة (null للأولى)
+// Response: { comments (tree للصفحة), total (ظاهر: جذور+ردود), totalRoots, nextCursor }
+const MAX_COMMENT_DEPTH = 5
+
+const commentSelect = {
+  id: true,
+  userId: true,
+  guestName: true,
+  guestAvatar: true,
+  parentId: true,
+  text: true,
+  likes: true,
+  isPinned: true,
+  isEdited: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
+
+const commentUserSelect = {
+  id: true,
+  username: true,
+  avatarUrl: true,
+  role: true,
+  tier: true,
+  specialRoles: true,
+} as const
+
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params
     const { searchParams } = new URL(req.url)
     const sort = searchParams.get('sort') || 'newest'
+    const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') || '20')))
+    const cursor = searchParams.get('cursor')
 
     const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
     if (!mod) {
       return notFound('Mod not found')
     }
 
-    // التعليقات المخفية (isHidden) لا تُعرض للعموم — تُدار من لوحة المُعَرِّب فقط
-    const allComments = await db.modComment.findMany({
-      where: { modId: mod.id, isHidden: false },
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          avatarUrl: true,
-          role: true,
-          tier: true,
-          specialRoles: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'asc' },
-  })
+    const visibleWhere = { modId: mod.id, isHidden: false }
 
-  // بناء شجرة التعليقات
-  const commentMap = new Map<
-    string,
-    (typeof allComments)[number] & { replies: typeof allComments }
-  >()
-  const rootComments: ((typeof allComments)[number] & { replies: typeof allComments })[] = []
+    // 1) مسح ضيق للجذور فقط (id + حقول الترتيب) — التعليقات المخفية مستبعدة للعموم
+    const rootIndex = await db.modComment.findMany({
+      where: { ...visibleWhere, parentId: null },
+      select: { id: true, likes: true, isPinned: true, createdAt: true },
+    })
 
-  for (const c of allComments) {
-    commentMap.set(c.id, { ...c, replies: [] })
-  }
-  for (const c of allComments) {
-    const node = commentMap.get(c.id)!
-    if (c.parentId) {
-      const parent = commentMap.get(c.parentId)
-      // الردود اليتيمة (أب مخفي/محذوف) تُسقط ولا تُرقّى لجذور
-      if (parent) {
-        parent.replies.push(node)
+    const timeOf = (c: { createdAt: Date }) => new Date(c.createdAt).getTime()
+    const pinnedFirst = <T extends { isPinned: boolean }>(a: T, b: T, cmp: number) => {
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      return cmp
+    }
+    const orderedRoots =
+      sort === 'oldest'
+        ? [...rootIndex].sort((a, b) => pinnedFirst(a, b, timeOf(a) - timeOf(b)))
+        : sort === 'popular'
+          ? [...rootIndex].sort((a, b) => pinnedFirst(a, b, b.likes - a.likes))
+          : [...rootIndex].sort((a, b) => pinnedFirst(a, b, timeOf(b) - timeOf(a)))
+
+    const startAt = cursor ? orderedRoots.findIndex((r) => r.id === cursor) + 1 : 0
+    const pageRoots = orderedRoots.slice(startAt < 0 ? 0 : startAt, (startAt < 0 ? 0 : startAt) + limit)
+    const nextCursor =
+      startAt + pageRoots.length < orderedRoots.length
+        ? pageRoots[pageRoots.length - 1]?.id ?? null
+        : null
+
+    // 2) صفوف الصفحة + أحفادها بمستويات محدودة (مفهرسة على modId+parentId)
+    const pageIds = pageRoots.map((r) => r.id)
+    const rows =
+      pageIds.length === 0
+        ? []
+        : await db.modComment.findMany({
+            where: { id: { in: pageIds } },
+            select: { ...commentSelect, user: { select: commentUserSelect } },
+          })
+
+    let frontier = pageIds
+    const descendants: typeof rows = []
+    for (let level = 0; level < MAX_COMMENT_DEPTH && frontier.length > 0; level++) {
+      const children: typeof rows = await db.modComment.findMany({
+        where: { ...visibleWhere, parentId: { in: frontier } },
+        select: { ...commentSelect, user: { select: commentUserSelect } },
+      })
+      if (children.length === 0) break
+      descendants.push(...children)
+      frontier = children.map((c) => c.id)
+    }
+
+    // 3) بناء الشجرة (الردود اليتيمة تُسقط ولا تُرقّى لجذور)
+    const all = [...rows, ...descendants]
+    const commentMap = new Map<string, (typeof all)[number] & { replies: typeof all }>()
+    const trees: ((typeof all)[number] & { replies: typeof all })[] = []
+    const order = new Map(pageIds.map((id, i) => [id, i]))
+    for (const c of all) commentMap.set(c.id, { ...c, replies: [] })
+    for (const c of all) {
+      const node = commentMap.get(c.id)!
+      if (c.parentId) {
+        commentMap.get(c.parentId)?.replies.push(node)
+      } else if (order.has(c.id)) {
+        trees.push(node)
       }
-    } else {
-      rootComments.push(node)
     }
-  }
+    trees.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
 
-  // ترتيب الردود لكل عقدة
-  type CommentNode = (typeof rootComments)[number]
-  const sortReplies = (nodes: CommentNode[]) => {
-    for (const n of nodes) {
-      n.replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      sortReplies(n.replies as unknown as CommentNode[])
+    type CommentNode = (typeof trees)[number]
+    const sortReplies = (nodes: CommentNode[]) => {
+      for (const n of nodes) {
+        n.replies.sort((a, b) => timeOf(a) - timeOf(b))
+        sortReplies(n.replies as unknown as CommentNode[])
+      }
     }
-  }
-  sortReplies(rootComments)
+    sortReplies(trees)
 
-  // ترتيب التعليقات الرئيسية حسب sort mode — المثبت أولاً دائماً ثم حسب الفلتر
-  const sortWithPinned = (
-    a: (typeof rootComments)[number],
-    b: (typeof rootComments)[number],
-    cmp: number,
-  ) => {
-    if (a.isPinned && !b.isPinned) return -1
-    if (!a.isPinned && b.isPinned) return 1
-    return cmp
-  }
-  const sorted =
-    sort === 'oldest'
-      ? [...rootComments].sort((a, b) =>
-          sortWithPinned(a, b, new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
-        )
-      : sort === 'popular'
-        ? [...rootComments].sort((a, b) => sortWithPinned(a, b, b.likes - a.likes))
-        : [...rootComments].sort((a, b) =>
-            sortWithPinned(a, b, new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-          )
+    const [totalCount, totalRoots] = await Promise.all([
+      db.modComment.count({ where: visibleWhere }),
+      Promise.resolve(orderedRoots.length),
+    ])
 
-  // عدّاد إجمالي التعليقات (رئيسية + ردود)
-  const totalCount = allComments.length
-
-  return ok({ comments: sorted, total: totalCount })
+    return ok({ comments: trees, total: totalCount, totalRoots, nextCursor })
   } catch (err) {
     console.error('[comments GET] failed:', err)
     return internalError('فشل تحميل التعليقات')
@@ -150,28 +185,21 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     // لو فيه parentId → تأكد إن الـ parent موجود وينتمي لنفس الـ mod + تحقق من العمق
+    // (عمود depth المحسوب عند الإنشاء — قراءة واحدة بدل مسح الجدول كاملاً)
+    let parentDepth = -1
+    let parentOwnerId: string | null = null
     if (parentId) {
       const parent = await db.modComment.findUnique({
         where: { id: parentId },
-        select: { id: true, modId: true, parentId: true },
+        select: { id: true, modId: true, depth: true, userId: true },
       })
       if (!parent || parent.modId !== mod.id) {
         return notFound('Parent comment not found')
       }
 
-      // حساب عمق التعليق الأصلي (حد أقصى 5 مستويات) — single-query بدل N+1
-      const allForDepth = await db.modComment.findMany({
-        where: { modId: mod.id },
-        select: { id: true, parentId: true },
-      })
-      const parentMap = new Map<string, string | null>(allForDepth.map((c) => [c.id, c.parentId]))
-      let depth = 1
-      let currentParentId: string | null = parent.parentId
-      while (currentParentId && depth < 10) {
-        depth++
-        currentParentId = parentMap.get(currentParentId) ?? null
-      }
-      if (depth > 5) {
+      parentDepth = parent.depth
+      parentOwnerId = parent.userId
+      if (parentDepth + 1 > MAX_COMMENT_DEPTH) {
         return validationFail({ formErrors: ['تم الوصول للحد الأقصى من الردود (5 مستويات)'] })
       }
     }
@@ -182,6 +210,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         parentId: parentId || null,
         userId: user.id,
         text: text.trim(),
+        depth: parentDepth + 1,
       },
     })
 
@@ -191,23 +220,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       data: { comments: { increment: 1 } },
     })
 
-    // إشعار عند الرد على تعليق
+    // إشعار عند الرد على تعليق (userId الأب مقروء مسبقاً — لا إعادة قراءة)
     if (parentId) {
-      const parentComment = await db.modComment.findUnique({
-        where: { id: parentId },
-        select: { userId: true, id: true },
-      })
-      if (parentComment?.userId) {
+      if (parentOwnerId) {
         try {
           const useCases = getUseCases()
           await useCases.sendCommentReply.execute({
-            commentOwnerId: parentComment.userId,
+            commentOwnerId: parentOwnerId,
             replierId: user.id,
             replierName: user.username || 'مستخدم',
             modId: mod.id,
             modTitle: mod.name || slug,
             modSlug: slug,
-            commentId: parentComment.id,
+            commentId: parentId,
             replyPreview: text.substring(0, 100),
           })
         } catch {}

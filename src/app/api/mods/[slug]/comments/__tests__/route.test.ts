@@ -8,7 +8,7 @@ import { GET, POST } from '../route';
 jest.mock('@/lib/db', () => ({
   db: {
     mod: { findUnique: jest.fn(), update: jest.fn() },
-    modComment: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn() },
+    modComment: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
   },
 }));
 
@@ -48,11 +48,25 @@ function req(url: string, body?: unknown) {
 }
 const slugParams = Promise.resolve({ slug: 'test-mod' });
 
+// Behaves like Prisma for the shapes this route uses: roots index scan,
+// rows-by-id, and parentId-in level scans (anything else → full table).
+function mockCommentTable(all: any[]) {
+  mockedCommentFindMany.mockImplementation(async (args: any) => {
+    const w: any = args?.where ?? {};
+    if (w.id?.in) return all.filter((c) => w.id.in.includes(c.id));
+    if (w.parentId && typeof w.parentId === 'object' && 'in' in w.parentId)
+      return all.filter((c) => c.parentId && w.parentId.in.includes(c.parentId));
+    if (w.parentId === null || w.parentId === undefined) return all.filter((c) => c.parentId == null);
+    return all;
+  });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockedSession.mockResolvedValue(user);
   mockedMod.mockResolvedValue(modRow);
   mockedModUpdate.mockResolvedValue({});
+  (db.modComment.count as jest.Mock).mockResolvedValue(0);
 });
 
 describe('1. Basic Comment Creation', () => {
@@ -74,10 +88,9 @@ describe('1. Basic Comment Creation', () => {
 });
 
 describe('2. Reply to Comment', () => {
-  it('creates reply with parentId when depth < 5', async () => {
-    mockedCommentFind.mockResolvedValue({ id: 'p1', modId: 'mod-1', parentId: null });
-    mockedCommentFindMany.mockResolvedValue([{ id: 'p1', parentId: null }]);
-    mockedCommentCreate.mockResolvedValue({ id: 'c2', parentId: 'p1' });
+  it('creates reply with parentId + computed depth, no full-table scan', async () => {
+    mockedCommentFind.mockResolvedValue({ id: 'p1', modId: 'mod-1', parentId: null, depth: 2, userId: 'u9' });
+    mockedCommentCreate.mockResolvedValue({ id: 'c2', parentId: 'p1', depth: 3 });
     const res = await POST(
       req('http://x/api/mods/test-mod/comments', { text: 'رد', parentId: 'p1' }),
       { params: slugParams } as any,
@@ -85,6 +98,20 @@ describe('2. Reply to Comment', () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data?.parentId).toBe('p1');
+    expect(mockedCommentCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ depth: 3 }) }),
+    );
+    // depth comes from the parent row — the full-table scan is gone
+    expect(mockedCommentFindMany).not.toHaveBeenCalled();
+  });
+  it('reply to depth-5 parent → 422 (max depth via column)', async () => {
+    mockedCommentFind.mockResolvedValue({ id: 'p5', modId: 'mod-1', parentId: 'p4', depth: 5, userId: 'u9' });
+    const res = await POST(
+      req('http://x/api/mods/test-mod/comments', { text: 'عميق', parentId: 'p5' }),
+      { params: slugParams } as any,
+    );
+    expect(res.status).toBe(422);
+    expect(mockedCommentCreate).not.toHaveBeenCalled();
   });
 });
 
@@ -96,7 +123,8 @@ describe('6. Sort & Pagination', () => {
   ];
   beforeEach(() => {
     mockedMod.mockResolvedValue({ id: 'mod-1' });
-    mockedCommentFindMany.mockResolvedValue(rows);
+    mockCommentTable(rows);
+    (db.modComment.count as jest.Mock).mockResolvedValue(rows.length);
   });
   it('popular sort orders by likes DESC with pinned first', async () => {
     const res = await GET(req('http://x/api/mods/test-mod/comments?sort=popular'), {
@@ -107,23 +135,53 @@ describe('6. Sort & Pagination', () => {
     expect(ids[0]).toBe('p'); // pinned first
     expect(ids.slice(1)).toEqual(['b', 'a']);
   });
-  it('BUG: server returns ALL rows (no server pagination)', async () => {
-    const big = Array.from({ length: 1000 }, (_, i) => ({
+  it('FIXED: server paginates roots (default limit 20) + reports totals', async () => {
+    const big = Array.from({ length: 100 }, (_, i) => ({
       id: `c${i}`,
       parentId: null,
       likes: 0,
       isPinned: false,
-      createdAt: new Date(),
+      createdAt: new Date(Date.now() - i * 1000),
       user: null,
     }));
-    mockedCommentFindMany.mockResolvedValue(big);
+    mockCommentTable(big);
+    (db.modComment.count as jest.Mock).mockResolvedValue(100);
     const res = await GET(req('http://x/api/mods/test-mod/comments?sort=newest'), {
       params: slugParams,
     } as any);
     const body = await res.json();
-    // Documents bug from Step 2: expected 20 (PAGE_SIZE), actual 1000
-    expect(body.data.comments.length).toBe(1000);
-    expect(body.data.total).toBe(1000);
+    expect(body.data.comments.length).toBe(20); // page, not 100
+    expect(body.data.total).toBe(100);
+    expect(body.data.totalRoots).toBe(100);
+    expect(body.data.nextCursor).toBeTruthy();
+  });
+  it('second page via cursor returns the next roots', async () => {
+    const big = Array.from({ length: 30 }, (_, i) => ({
+      id: `c${i}`,
+      parentId: null,
+      likes: 0,
+      isPinned: false,
+      createdAt: new Date(Date.now() - i * 1000),
+      user: null,
+    }));
+    mockCommentTable(big);
+    (db.modComment.count as jest.Mock).mockResolvedValue(30);
+    const p1 = await (
+      await GET(req('http://x/api/mods/test-mod/comments?sort=newest&limit=20'), {
+        params: slugParams,
+      } as any)
+    ).json();
+    expect(p1.data.comments.length).toBe(20);
+    const cursor = p1.data.nextCursor;
+    const p2 = await (
+      await GET(req(`http://x/api/mods/test-mod/comments?sort=newest&limit=20&cursor=${cursor}`), {
+        params: slugParams,
+      } as any)
+    ).json();
+    expect(p2.data.comments.length).toBe(10);
+    expect(p2.data.nextCursor).toBeNull();
+    const ids1 = new Set(p1.data.comments.map((c: any) => c.id));
+    for (const c of p2.data.comments) expect(ids1.has(c.id)).toBe(false);
   });
 });
 
@@ -166,24 +224,17 @@ describe('9. Maximum Length Validation', () => {
   });
 });
 
-describe('10. Depth Limit Enforcement', () => {
-  it('reply beyond 5 levels rejected with 422', async () => {
-    // chain: p5 -> p4 -> p3 -> p2 -> p1 -> root (depth would exceed 5)
-    const chain = [
-      { id: 'p5', parentId: 'p4' },
-      { id: 'p4', parentId: 'p3' },
-      { id: 'p3', parentId: 'p2' },
-      { id: 'p2', parentId: 'p1' },
-      { id: 'p1', parentId: 'root' },
-      { id: 'root', parentId: null },
-    ];
-    mockedCommentFind.mockResolvedValue({ id: 'p5', modId: 'mod-1', parentId: 'p4' });
-    mockedCommentFindMany.mockResolvedValue(chain);
-    const res = await POST(req('http://x/api/mods/test-mod/comments', { text: 'عميق', parentId: 'p5' }), {
+describe('10. Depth Limit Enforcement (column-based)', () => {
+  it('reply at depth 5 boundary accepted (new depth = 5)', async () => {
+    mockedCommentFind.mockResolvedValue({ id: 'p4', modId: 'mod-1', parentId: 'p3', depth: 4, userId: 'u9' });
+    mockedCommentCreate.mockResolvedValue({ id: 'c5', depth: 5 });
+    const res = await POST(req('http://x/api/mods/test-mod/comments', { text: 'حدي', parentId: 'p4' }), {
       params: slugParams,
     } as any);
-    expect(res.status).toBe(422);
-    expect(mockedCommentCreate).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(mockedCommentCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ depth: 5 }) }),
+    );
   });
 });
 

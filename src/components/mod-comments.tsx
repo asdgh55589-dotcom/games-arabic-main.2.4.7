@@ -142,6 +142,10 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
   const [loading, setLoading] = useState(true)
   const [sortMode, setSortMode] = useState<SortMode>('newest')
   const [page, setPage] = useState(1)
+  // مكدس cursor للتنقل: cursors[i] هو cursor صفحة i+1 (null للأولى)
+  const [cursors, setCursors] = useState<(string | null)[]>([null])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [totalRoots, setTotalRoots] = useState(0)
   const [newComment, setNewComment] = useState('')
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -154,43 +158,66 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
   const [showColorNew, setShowColorNew] = useState(false)
   const [showColorReply, setShowColorReply] = useState(false)
 
-  const fetchComments = useCallback(async () => {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10000)
-    try {
-      const res = await fetch(`/api/mods/${modSlug}/comments?sort=${sortMode}`, {
-        signal: controller.signal,
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const responseData = await res.json()
-      setComments(responseData.data?.comments || [])
-      setTotalCount(responseData.data?.total || 0)
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        toast({ title: 'انتهت مهلة التحميل', description: 'تحقق من اتصالك وحاول مجدداً', variant: 'destructive' })
-      } else {
-        toast({ title: 'تعذّر تحميل التعليقات', description: 'حاول مجدداً', variant: 'destructive' })
+  // ترقيم خادمي: كل صفحة = limit جذور + ردودها (لا مزيد من slice محلياً)
+  const fetchPage = useCallback(
+    async (cursor: string | null) => {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      try {
+        const params = new URLSearchParams({ sort: sortMode, limit: String(PAGE_SIZE) })
+        if (cursor) params.set('cursor', cursor)
+        const res = await fetch(`/api/mods/${modSlug}/comments?${params.toString()}`, {
+          signal: controller.signal,
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const responseData = await res.json()
+        setComments(responseData.data?.comments || [])
+        setTotalCount(responseData.data?.total || 0)
+        setTotalRoots(responseData.data?.totalRoots || 0)
+        setNextCursor(responseData.data?.nextCursor ?? null)
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          toast({ title: 'انتهت مهلة التحميل', description: 'تحقق من اتصالك وحاول مجدداً', variant: 'destructive' })
+        } else {
+          toast({ title: 'تعذّر تحميل التعليقات', description: 'حاول مجدداً', variant: 'destructive' })
+        }
+      } finally {
+        clearTimeout(timeout)
+        setLoading(false)
       }
-    } finally {
-      clearTimeout(timeout)
-      setLoading(false)
-    }
-  }, [modSlug, sortMode, toast])
+    },
+    [modSlug, sortMode, toast],
+  )
+
+  const fetchComments = useCallback(() => {
+    return fetchPage(cursors[cursors.length - 1] ?? null)
+  }, [fetchPage, cursors])
 
   useEffect(() => {
     setLoading(true)
     setPage(1)
-    fetchComments()
-  }, [fetchComments])
+    setCursors([null])
+    fetchPage(null)
+  }, [modSlug, sortMode, fetchPage])
 
-  // pagination على التعليقات الجذرية فقط — totalCount يشمل الردود لذلك لا نستخدمه هنا
-  const totalPages = Math.ceil(comments.length / PAGE_SIZE)
-  const paginatedComments = comments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(totalRoots / PAGE_SIZE))
 
-  // لو حذف تعليق وصارت الصفحة الحالية خارج النطاق، ارجع لآخر صفحة موجودة
-  useEffect(() => {
-    if (totalPages > 0 && page > totalPages) setPage(totalPages)
-  }, [totalPages, page])
+  const goNext = () => {
+    if (!nextCursor) return
+    setCursors((c) => [...c, nextCursor])
+    setPage((p) => p + 1)
+    setLoading(true)
+    fetchPage(nextCursor)
+  }
+
+  const goPrev = () => {
+    if (page <= 1) return
+    const prev = cursors.length > 1 ? cursors.slice(0, -1) : [null]
+    setCursors(prev)
+    setPage((p) => p - 1)
+    setLoading(true)
+    fetchPage(prev[prev.length - 1] ?? null)
+  }
 
   const updateLikesInTree = useCallback(
     (nodes: ModCommentType[], targetId: string, delta: number): ModCommentType[] => {
@@ -561,7 +588,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
       ) : (
         <>
           <div className="space-y-4">
-            {paginatedComments.map((comment) => (
+            {comments.map((comment) => (
               <CommentItem
                 key={comment.id}
                 comment={comment}
@@ -598,7 +625,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 size="sm"
                 className="min-h-[44px] touch-manipulation"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={goPrev}
               >
                 <ChevronRight className="h-4 w-4" />
                 السابق
@@ -610,8 +637,8 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 variant="outline"
                 size="sm"
                 className="min-h-[44px] touch-manipulation"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                disabled={!nextCursor}
+                onClick={goNext}
               >
                 التالي
                 <ChevronLeft className="h-4 w-4" />

@@ -786,6 +786,7 @@ model ModComment {
   isPinned     Boolean       @default(false)
   isEdited     Boolean       @default(false)
   isHidden     Boolean       @default(false)
+  depth        Int           @default(0) // عمق التداخل: 0 = جذري، يُحسب عند الإنشاء من الأب
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -795,6 +796,8 @@ model ModComment {
   @@index([createdAt])
   @@index([modId, createdAt])
   @@index([userId, createdAt])
+  @@index([modId, parentId])
+  @@index([modId, isHidden, createdAt])
 }
 
 // ===== طلبات التعريب =====

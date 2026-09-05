@@ -83,31 +83,21 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       return forbidden()
     }
 
-    // Count total descendants to fix counter drift (cascade deletes)
-    const allModComments = await db.modComment.findMany({
-      where: { modId: comment.modId },
-      select: { id: true, parentId: true },
-    })
-    const childMap = new Map<string, string[]>()
-    for (const c of allModComments) {
-      if (c.parentId) {
-        const arr = childMap.get(c.parentId) || []
-        arr.push(c.id)
-        childMap.set(c.parentId, arr)
-      }
+    // جمع الأحفاد بمستويات محدودة (مفهرسة على parentId) بدل مسح جدول المود كاملاً.
+    // العمق الأقصى 5 + هامش أمان → 10 جولات كحد أقصى.
+    const idsToDelete = [id]
+    let frontier = [id]
+    for (let level = 0; level < 10 && frontier.length > 0; level++) {
+      const children = await db.modComment.findMany({
+        where: { modId: comment.modId, parentId: { in: frontier } },
+        select: { id: true },
+      })
+      if (children.length === 0) break
+      const childIds = children.map((c) => c.id)
+      idsToDelete.push(...childIds)
+      frontier = childIds
     }
-    const descendantIds: string[] = []
-    const queue: string[] = [id]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      const children = childMap.get(current) || []
-      for (const childId of children) {
-        descendantIds.push(childId)
-        queue.push(childId)
-      }
-    }
-    const totalToDelete = 1 + descendantIds.length
-    const idsToDelete = [id, ...descendantIds]
+    const totalToDelete = idsToDelete.length
 
     await db.$transaction([
       db.modComment.deleteMany({ where: { id: { in: idsToDelete } } }),
