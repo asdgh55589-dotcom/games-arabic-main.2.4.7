@@ -1,0 +1,15 @@
+{
+  "generatedBy": "node scripts/audit-comment-a11y.mjs",
+  "bySection": {
+    "bad": [
+      {
+        "id": "button-name",
+        "impact": "critical",
+        "nodes": 2,
+        "help": "Buttons must have discernible text"
+      }
+    ],
+    "titled": [],
+    "like": []
+  }
+}

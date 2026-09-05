@@ -180,6 +180,7 @@ export interface ModCommentType {
   dislikes: number
   isPinned: boolean
   isEdited: boolean
+  isHidden: boolean
   createdAt: string | Date
   updatedAt: string | Date
   user?: {

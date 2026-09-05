@@ -155,18 +155,27 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
   const [showColorReply, setShowColorReply] = useState(false)
 
   const fetchComments = useCallback(async () => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
     try {
-      const res = await fetch(`/api/mods/${modSlug}/comments?sort=${sortMode}`)
-      if (!res.ok) return
+      const res = await fetch(`/api/mods/${modSlug}/comments?sort=${sortMode}`, {
+        signal: controller.signal,
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const responseData = await res.json()
       setComments(responseData.data?.comments || [])
       setTotalCount(responseData.data?.total || 0)
-    } catch {
-      // silent
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        toast({ title: 'انتهت مهلة التحميل', description: 'تحقق من اتصالك وحاول مجدداً', variant: 'destructive' })
+      } else {
+        toast({ title: 'تعذّر تحميل التعليقات', description: 'حاول مجدداً', variant: 'destructive' })
+      }
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
-  }, [modSlug, sortMode])
+  }, [modSlug, sortMode, toast])
 
   useEffect(() => {
     setLoading(true)
@@ -253,6 +262,14 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
       })
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 429 || data.error?.code === 'RATE_LIMITED') {
+          toast({
+            title: 'انتظر قليلاً',
+            description: 'انتظر قليلاً قبل التعليق مرة أخرى',
+            variant: 'destructive',
+          })
+          return
+        }
         if (data.code === 'AUTH_REQUIRED') {
           toast({
             title: 'سجّل الدخول',
@@ -292,6 +309,14 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
       })
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 429 || data.error?.code === 'RATE_LIMITED') {
+          toast({
+            title: 'انتظر قليلاً',
+            description: 'انتظر قليلاً قبل التعليق مرة أخرى',
+            variant: 'destructive',
+          })
+          return
+        }
         if (data.code === 'AUTH_REQUIRED') {
           toast({
             title: 'سجّل الدخول',

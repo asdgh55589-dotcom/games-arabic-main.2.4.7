@@ -1,7 +1,24 @@
 import type { NextRequest } from 'next/server'
-import { internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
+import {
+  forbidden,
+  internalError,
+  notFound,
+  ok,
+  okPaginated,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+
+/** يحوّل خطأ صلاحيات إلى الاستجابة الصحيحة بدل 500 */
+function authFail(err: unknown) {
+  // duck-typing على status (يعمل مع AuthError ومع أي كائن خطأ يحمل status)
+  const status = (err as { status?: number })?.status
+  if (status === 401) return unauthorized('يجب تسجيل الدخول')
+  if (status === 403) return forbidden('ليس لديك صلاحية')
+  return null
+}
 
 // GET /api/admin/comments — جلب التعليقات (للإدارة)
 export async function GET(req: NextRequest) {
@@ -44,11 +61,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[admin/comments GET] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return internalError('Unauthorized or forbidden')
-    }
-    return internalError('Failed')
+    return authFail(err) ?? internalError('Failed')
   }
 }
 
@@ -76,10 +89,6 @@ export async function DELETE(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     console.error('[admin/comments DELETE] failed:', err)
-    const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return internalError('Unauthorized or forbidden')
-    }
-    return internalError('Failed')
+    return authFail(err) ?? internalError('Failed')
   }
 }

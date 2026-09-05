@@ -87,7 +87,8 @@ export const validationFail = (details?: unknown) =>
   fail('VALIDATION_ERROR', 'Invalid input', 422, details)
 
 /** 429 — Rate limited */
-export const rateLimited = () => fail('RATE_LIMITED', 'Too many requests', 429)
+export const rateLimited = (msg = 'طلبات كثيرة جداً، انتظر قليلاً وحاول مجدداً') =>
+  fail('RATE_LIMITED', msg, 429)
 
 /** 409 — Resource conflict */
 export const conflict = (msg = 'Resource already exists') => fail('CONFLICT', msg, 409)

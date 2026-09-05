@@ -1,8 +1,16 @@
 import type { NextRequest } from 'next/server'
 import { getUseCases } from '@/application/use-cases/factory'
-import { internalError, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
+import {
+  internalError,
+  notFound,
+  ok,
+  rateLimited,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/rate-limit'
 import { CreateCommentSchema } from '@/lib/schemas'
 
 interface RouteParams {
@@ -14,18 +22,19 @@ interface RouteParams {
 // Query params:
 //   - sort: newest | popular | oldest
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  const { slug } = await params
-  const { searchParams } = new URL(req.url)
-  const sort = searchParams.get('sort') || 'newest'
+  try {
+    const { slug } = await params
+    const { searchParams } = new URL(req.url)
+    const sort = searchParams.get('sort') || 'newest'
 
-  const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
-  if (!mod) {
-    return notFound('Mod not found')
-  }
+    const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+    if (!mod) {
+      return notFound('Mod not found')
+    }
 
-  // جلب كل التعليقات (رئيسية + ردود) بشكل مسطّح ثم بناء الشجرة على السيرفر
-  const allComments = await db.modComment.findMany({
-    where: { modId: mod.id },
+    // التعليقات المخفية (isHidden) لا تُعرض للعموم — تُدار من لوحة المُعَرِّب فقط
+    const allComments = await db.modComment.findMany({
+      where: { modId: mod.id, isHidden: false },
     include: {
       user: {
         select: {
@@ -55,10 +64,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const node = commentMap.get(c.id)!
     if (c.parentId) {
       const parent = commentMap.get(c.parentId)
+      // الردود اليتيمة (أب مخفي/محذوف) تُسقط ولا تُرقّى لجذور
       if (parent) {
         parent.replies.push(node)
-      } else {
-        rootComments.push(node)
       }
     } else {
       rootComments.push(node)
@@ -100,6 +108,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   const totalCount = allComments.length
 
   return ok({ comments: sorted, total: totalCount })
+  } catch (err) {
+    console.error('[comments GET] failed:', err)
+    return internalError('فشل تحميل التعليقات')
+  }
 }
 
 // POST /api/mods/[slug]/comments — إضافة تعليق جديد (يتطلب تسجيل دخول)
@@ -112,6 +124,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return unauthorized('Login required to comment')
+    }
+
+    // حد النشر: 5 تعليقات/دقيقة (مكافحة الإغراق) — نفس نمط like/dislike
+    const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'comments:create' })
+    if (!rl.success) {
+      return rateLimited()
     }
 
     const { slug } = await params
