@@ -351,6 +351,14 @@ export async function getCommentModAuthor(id: string) {
   })
 }
 
+/** مالك التعليق (لتقييد تعديل الردود على أصحابها) */
+export async function getCommentOwner(id: string) {
+  return db.modComment.findUnique({
+    where: { id },
+    select: { id: true, userId: true },
+  })
+}
+
 export async function creatorListComments(
   authorId: string,
   opts: { filter: string; page: number; limit: number },
@@ -378,6 +386,21 @@ export async function creatorListComments(
 
 export async function creatorSetHidden(id: string, isHidden: boolean) {
   return db.modComment.update({ where: { id }, data: { isHidden } })
+}
+
+/** تثبيت المُعَرِّب لتعليق على تعريبه (صلاحية جديدة — الإداري كما هو) */
+export async function creatorSetPinned(id: string, isPinned: boolean) {
+  return db.modComment.update({ where: { id }, data: { isPinned } })
+}
+
+/** تعديل المُعَرِّب لردّه الخاص فقط — يتحقق المتصل من الملكية */
+export async function creatorEditReply(id: string, text: string) {
+  return db.modComment.update({ where: { id }, data: { text, isEdited: true } })
+}
+
+/** Bulk hide/unhide for creator-owned comments (caller verifies ownership of ALL ids) */
+export async function creatorBulkSetHidden(ids: string[], isHidden: boolean) {
+  return db.modComment.updateMany({ where: { id: { in: ids } }, data: { isHidden } })
 }
 
 /** حذف المُعَرِّب + إعادة عدّ (إصلاح انحراف العدّاد) */

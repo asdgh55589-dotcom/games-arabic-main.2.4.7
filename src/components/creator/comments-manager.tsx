@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, EyeOff, Loader2, Reply, Send, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Pencil, Pin, PinOff, Reply, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { CommentSkeleton } from '@/components/comments/comment-skeleton'
@@ -18,9 +18,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import { timeAgo } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
@@ -37,6 +39,7 @@ interface CommentItem {
 export function CommentsManager() {
   const { toast } = useToast()
   const { dict, locale } = useStudioLanguage()
+  const { user: me } = useAuth()
   const t = dict.commentsMgr
   const [filter, setFilter] = useState<'all' | 'visible' | 'hidden'>('all')
   const [comments, setComments] = useState<CommentItem[]>([])
@@ -48,6 +51,14 @@ export function CommentsManager() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
   const fetchComments = useCallback(async () => {
     setLoading(true)
@@ -75,7 +86,7 @@ export function CommentsManager() {
     fetchComments()
   }, [fetchComments])
 
-  const handleAction = async (id: string, action: 'hide' | 'unhide' | 'delete') => {
+  const handleAction = async (id: string, action: 'hide' | 'unhide' | 'delete' | 'pin' | 'unpin') => {
     setActionLoading(id)
     try {
       const res = await fetch(`/api/creator/comments/${id}`, {
@@ -94,6 +105,57 @@ export function CommentsManager() {
       toast({ title: t.connectionError, variant: 'destructive' })
     }
     setActionLoading(null)
+  }
+
+  const handleEditSave = async (comment: CommentItem) => {
+    if (!editText.trim()) {
+      toast({ title: t.writeReplyFirst, variant: 'destructive' })
+      return
+    }
+    setActionLoading(comment.id)
+    try {
+      const res = await fetch(`/api/creator/comments/${comment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit', text: editText.trim() }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        toast({ title: json.data?.message || t.actionDone })
+        setEditingId(null)
+        setEditText('')
+        fetchComments()
+      } else {
+        toast({ title: json.error?.message || t.actionFailed, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: t.connectionError, variant: 'destructive' })
+    }
+    setActionLoading(null)
+  }
+
+  const handleBulk = async (action: 'hide' | 'unhide' | 'delete') => {
+    if (selected.length === 0) return
+    setBulkLoading(true)
+    try {
+      const res = await fetch('/api/creator/comments/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selected, action }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        toast({ title: json.data?.message || t.actionDone })
+        setSelected([])
+        setPendingBulkDelete(false)
+        fetchComments()
+      } else {
+        toast({ title: json.error?.message || t.actionFailed, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: t.connectionError, variant: 'destructive' })
+    }
+    setBulkLoading(false)
   }
 
   const handleReply = async (comment: CommentItem) => {
@@ -145,6 +207,31 @@ export function CommentsManager() {
         ))}
       </div>
 
+      {selected.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap rounded-lg border border-border bg-muted/50 px-3 py-2">
+          <span className="text-sm font-medium">
+            {selected.length} {t.selectedCount}
+          </span>
+          <Button size="sm" variant="outline" disabled={bulkLoading} onClick={() => handleBulk('hide')}>
+            {t.hideSelected}
+          </Button>
+          <Button size="sm" variant="outline" disabled={bulkLoading} onClick={() => handleBulk('unhide')}>
+            {t.showSelected}
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={bulkLoading}
+            onClick={() => setPendingBulkDelete(true)}
+          >
+            {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.deleteSelected}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelected([])}>
+            {t.clearSelection}
+          </Button>
+        </div>
+      )}
+
       {loading ? (
         <CommentSkeleton rows={4} />
       ) : loadError ? (
@@ -166,6 +253,12 @@ export function CommentsManager() {
             <Card key={c.id} className={c.isHidden ? 'opacity-60 border-dashed' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={selected.includes(c.id)}
+                    onCheckedChange={() => toggleSelect(c.id)}
+                    aria-label={`${t.selectRow} ${c.user?.username || ''}`}
+                    className="mt-1 shrink-0"
+                  />
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={c.user?.avatarUrl || undefined} />
                     <AvatarFallback>{c.user?.username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
@@ -181,9 +274,45 @@ export function CommentsManager() {
                           {t.hiddenBadge}
                         </Badge>
                       )}
+                      {c.isPinned && (
+                        <Badge variant="secondary" className="text-xs">
+                          {t.pinnedBadge}
+                        </Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt, locale)}</span>
                     </div>
-                    <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
+                    {editingId === c.id ? (
+                      <div className="mt-2 flex gap-2">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={2}
+                          className="flex-1"
+                          aria-label={t.editReply}
+                        />
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            onClick={() => handleEditSave(c)}
+                            disabled={actionLoading === c.id || !editText.trim()}
+                          >
+                            {t.saveEdit}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingId(null)
+                              setEditText('')
+                            }}
+                          >
+                            {t.cancelEdit}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
+                    )}
                     <div className="flex items-center gap-2 mt-3">
                       <Link
                         href={`/mod/${c.mod.slug}`}
@@ -200,6 +329,21 @@ export function CommentsManager() {
                       >
                         <Reply className="h-3 w-3" /> {t.reply}
                       </button>
+                      {me && c.user?.id === me.id && (
+                        <>
+                          <span className="text-muted-foreground">•</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(c.id)
+                              setEditText(c.text)
+                            }}
+                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          >
+                            <Pencil className="h-3 w-3" /> {t.editReply}
+                          </button>
+                        </>
+                      )}
                     </div>
                     {replyTo === c.id && (
                       <div className="mt-3 flex gap-2">
@@ -232,6 +376,27 @@ export function CommentsManager() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {c.isPinned ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleAction(c.id, 'unpin')}
+                        disabled={actionLoading === c.id}
+                        aria-label={t.unpin}
+                      >
+                        <PinOff className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleAction(c.id, 'pin')}
+                        disabled={actionLoading === c.id}
+                        aria-label={t.pin}
+                      >
+                        <Pin className="h-4 w-4" />
+                      </Button>
+                    )}
                     {c.isHidden ? (
                       <Button
                         variant="ghost"
@@ -311,6 +476,29 @@ export function CommentsManager() {
             <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingDelete && handleAction(pendingDelete, 'delete')}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t.confirmDelete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={pendingBulkDelete}
+        onOpenChange={(open) => !open && setPendingBulkDelete(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.bulkDeleteTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t.bulkDeleteDesc} ({selected.length})
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleBulk('delete')}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t.confirmDelete}

@@ -3,8 +3,11 @@ import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import {
   creatorDeleteComment,
+  creatorEditReply,
   creatorSetHidden,
+  creatorSetPinned,
   getCommentModAuthor,
+  getCommentOwner,
 } from '@/lib/comments/repository'
 
 interface RouteParams {
@@ -27,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const { action } = body as { action?: string }
+  const { action, text } = body as { action?: string; text?: string }
 
   if (action === 'hide') {
     await creatorSetHidden(id, true)
@@ -37,6 +40,30 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (action === 'unhide') {
     await creatorSetHidden(id, false)
     return ok({ message: 'تم إظهار التعليق' })
+  }
+
+  if (action === 'pin') {
+    await creatorSetPinned(id, true)
+    return ok({ message: 'تم تثبيت التعليق' })
+  }
+
+  if (action === 'unpin') {
+    await creatorSetPinned(id, false)
+    return ok({ message: 'تم إلغاء تثبيت التعليق' })
+  }
+
+  if (action === 'edit') {
+    // Edit own replies only (admins may edit any reply on the mod).
+    const full = await getCommentOwner(id)
+    if (!full) return notFound('التعليق غير موجود')
+    if (full.userId !== user.id && !isAdmin) {
+      return forbidden('يمكنك تعديل ردودك فقط')
+    }
+    const clean = typeof text === 'string' ? text.trim() : ''
+    if (!clean) return validationFail('نص الرد مطلوب')
+    if (clean.length > 2000) return validationFail('النص طويل جداً (الحد الأقصى 2000 حرف)')
+    await creatorEditReply(id, clean)
+    return ok({ message: 'تم تعديل الرد' })
   }
 
   if (action === 'delete') {
