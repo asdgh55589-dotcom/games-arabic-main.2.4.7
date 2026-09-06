@@ -41,74 +41,74 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
+      title: "لوحة التحكم",
+      url: "/creator",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "تعريباتي",
+      url: "/creator/mods",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
-      url: "#",
+      title: "الإحصائيات",
+      url: "/creator/stats",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
-      url: "#",
+      title: "طلبات التعريب",
+      url: "/creator/requests",
       icon: IconFolder,
     },
     {
-      title: "Team",
-      url: "#",
+      title: "التعليقات",
+      url: "/creator/comments",
       icon: IconUsers,
     },
   ],
   navClouds: [
     {
-      title: "Capture",
+      title: "التقاط",
       icon: IconCamera,
       isActive: true,
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "مقترحات نشطة",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "الأرشيف",
           url: "#",
         },
       ],
     },
     {
-      title: "Proposal",
+      title: "مقترح",
       icon: IconFileDescription,
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "مقترحات نشطة",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "الأرشيف",
           url: "#",
         },
       ],
     },
     {
-      title: "Prompts",
+      title: "توجيهات",
       icon: IconFileAi,
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "مقترحات نشطة",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "الأرشيف",
           url: "#",
         },
       ],
@@ -116,41 +116,46 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
+      title: "الإعدادات",
+      url: "/creator/settings",
       icon: IconSettings,
     },
     {
-      title: "Get Help",
+      title: "مساعدة",
       url: "#",
       icon: IconHelp,
     },
     {
-      title: "Search",
+      title: "بحث",
       url: "#",
       icon: IconSearch,
     },
   ],
   documents: [
     {
-      name: "Data Library",
+      name: "مكتبة البيانات",
       url: "#",
       icon: IconDatabase,
     },
     {
-      name: "Reports",
+      name: "التقارير",
       url: "#",
       icon: IconReport,
     },
     {
-      name: "Word Assistant",
+      name: "مساعد الكلمات",
       url: "#",
       icon: IconFileWord,
     },
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user = data.user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user?: { name: string; email: string; avatar: string }
+}) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -162,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Games Arabic</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -174,7 +179,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

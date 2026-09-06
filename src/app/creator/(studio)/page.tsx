@@ -1,35 +1,68 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
+'use client'
+
+import * as React from 'react'
 import { ChartAreaInteractive } from '@/components/creator-dashboard/chart-area-interactive'
-import { ModsTable } from '@/components/creator-dashboard/mods-table'
+import { DataTable, schema } from '@/components/creator-dashboard/data-table'
 import { SectionCards } from '@/components/creator-dashboard/section-cards'
 import { SiteHeader } from '@/components/creator-dashboard/site-header'
-import { Button } from '@/components/ui/button'
+import type { z } from 'zod'
 
-export const metadata: Metadata = {
-  title: 'لوحة تحكم المُعَرِّب | Games Arabic',
-  description: 'لوحة تحكم المُعَرِّب لإدارة التعريبات ومتابعة الأداء',
-  robots: { index: false, follow: false },
+type Row = z.infer<typeof schema>
+
+interface CreatorMod {
+  id: string
+  name: string
+  workflowStatus: string
+  views: number | null
+  downloads: number | null
+  game?: { name: string } | null
+}
+
+function toRow(mod: CreatorMod, index: number): Row {
+  return {
+    id: index + 1,
+    header: mod.name,
+    type: mod.game?.name ?? '—',
+    status: mod.workflowStatus === 'PUBLISHED' ? 'منشور' : 'قيد التنفيذ',
+    target: String(mod.downloads ?? 0),
+    limit: String(mod.views ?? 0),
+    reviewer: '—',
+  }
 }
 
 export default function CreatorDashboard() {
+  const [rows, setRows] = React.useState<Row[]>([])
+
+  React.useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch('/api/creator/mods?page=1&limit=10', {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const json = await res.json()
+        const mods: CreatorMod[] = json?.data?.mods ?? []
+        if (!cancelled) setRows(mods.map(toRow))
+      } catch {
+        // table shows its empty state on failure
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="flex flex-1 flex-col" dir="rtl">
-      <SiteHeader title="لوحة التحكم" />
+      <SiteHeader />
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="flex items-center justify-end px-4 lg:px-6">
-          <Button asChild>
-            <Link href="/creator/mods/new">تعريب جديد</Link>
-          </Button>
-        </div>
         <SectionCards />
         <div className="px-4 lg:px-6">
           <ChartAreaInteractive />
         </div>
-        <div className="px-4 lg:px-6">
-          <h2 className="mb-2 text-lg font-bold">أحدث التعريبات</h2>
-          <ModsTable />
-        </div>
+        <DataTable data={rows} />
       </div>
     </div>
   )

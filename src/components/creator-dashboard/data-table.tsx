@@ -152,7 +152,7 @@ function DragHandle({ id }: { id: number }) {
       className="size-7 text-muted-foreground hover:bg-transparent"
     >
       <IconGripVertical className="size-3 text-muted-foreground" />
-      <span className="sr-only">Drag to reorder</span>
+      <span className="sr-only">اسحب لإعادة الترتيب</span>
     </Button>
   )
 }
@@ -173,7 +173,7 @@ const columns = columnHelper.columns([
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
+          aria-label="تحديد الكل"
         />
       </div>
     ),
@@ -182,7 +182,7 @@ const columns = columnHelper.columns([
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
+          aria-label="تحديد الصف"
         />
       </div>
     ),
@@ -190,14 +190,14 @@ const columns = columnHelper.columns([
     enableHiding: false,
   }),
   columnHelper.accessor("header", {
-    header: "Header",
+    header: "الاسم",
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />
     },
     enableHiding: false,
   }),
   columnHelper.accessor("type", {
-    header: "Section Type",
+    header: "نوع القسم",
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="px-1.5 text-muted-foreground">
@@ -207,10 +207,10 @@ const columns = columnHelper.columns([
     ),
   }),
   columnHelper.accessor("status", {
-    header: "Status",
+    header: "الحالة",
     cell: ({ row }) => (
       <Badge variant="outline" className="px-1.5 text-muted-foreground">
-        {row.original.status === "Done" ? (
+        {row.original.status === "منشور" ? (
           <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
         ) : (
           <IconLoader />
@@ -220,21 +220,21 @@ const columns = columnHelper.columns([
     ),
   }),
   columnHelper.accessor("target", {
-    header: () => <div className="w-full text-right">Target</div>,
+    header: () => <div className="w-full text-right">الهدف</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
-        </Label>
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `حفظ ${row.original.header}`,
+              success: "تم",
+              error: "خطأ",
+            })
+          }
+        }>
+          <Label htmlFor={`${row.original.id}-target`} className="sr-only">
+            الهدف
+          </Label>
         <Input
           className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
           defaultValue={row.original.target}
@@ -244,21 +244,21 @@ const columns = columnHelper.columns([
     ),
   }),
   columnHelper.accessor("limit", {
-    header: () => <div className="w-full text-right">Limit</div>,
+    header: () => <div className="w-full text-right">الحد</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Limit
-        </Label>
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `حفظ ${row.original.header}`,
+              success: "تم",
+              error: "خطأ",
+            })
+          }
+        }>
+          <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
+            الحد
+          </Label>
         <Input
           className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
           defaultValue={row.original.limit}
@@ -268,9 +268,9 @@ const columns = columnHelper.columns([
     ),
   }),
   columnHelper.accessor("reviewer", {
-    header: "Reviewer",
+    header: "المراجع",
     cell: ({ row }) => {
-      const isAssigned = row.original.reviewer !== "Assign reviewer"
+      const isAssigned = row.original.reviewer !== "تعيين مراجع"
 
       if (isAssigned) {
         return row.original.reviewer
@@ -279,7 +279,7 @@ const columns = columnHelper.columns([
       return (
         <>
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
+            المراجع
           </Label>
           <Select>
             <SelectTrigger
@@ -287,7 +287,7 @@ const columns = columnHelper.columns([
               size="sm"
               id={`${row.original.id}-reviewer`}
             >
-              <SelectValue placeholder="Assign reviewer" />
+              <SelectValue placeholder="تعيين مراجع" />
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
@@ -311,15 +311,15 @@ const columns = columnHelper.columns([
             size="icon"
           >
             <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">فتح القائمة</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+          <DropdownMenuItem>تعديل</DropdownMenuItem>
+          <DropdownMenuItem>إنشاء نسخة</DropdownMenuItem>
+          <DropdownMenuItem>مفضلة</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive">حذف</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -415,6 +415,11 @@ export function DataTable({
     }
   }
 
+  const doneCount = data.filter((row) => row.status === "منشور").length
+  const inProgressCount = data.filter(
+    (row) => row.status === "قيد التنفيذ"
+  ).length
+
   return (
     <Tabs
       defaultValue="outline"
@@ -422,7 +427,7 @@ export function DataTable({
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
-          View
+          العرض
         </Label>
         <Select defaultValue="outline">
           <SelectTrigger
@@ -430,32 +435,32 @@ export function DataTable({
             size="sm"
             id="view-selector"
           >
-            <SelectValue placeholder="Select a view" />
+            <SelectValue placeholder="اختر عرضًا" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="outline">الأقسام</SelectItem>
+            <SelectItem value="past-performance">الأداء السابق</SelectItem>
+            <SelectItem value="key-personnel">الأشخاص الرئيسيون</SelectItem>
+            <SelectItem value="focus-documents">مستندات مميزة</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Outline</TabsTrigger>
+          <TabsTrigger value="outline">الأقسام</TabsTrigger>
           <TabsTrigger value="past-performance">
-            Past Performance <Badge variant="secondary">3</Badge>
+            الأداء السابق <Badge variant="secondary">{doneCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel">
-            Key Personnel <Badge variant="secondary">2</Badge>
+            الأشخاص الرئيسيون <Badge variant="secondary">{inProgressCount}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
+          <TabsTrigger value="focus-documents">مستندات مميزة</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
+                <span className="hidden lg:inline">تخصيص الأعمدة</span>
+                <span className="lg:hidden">الأعمدة</span>
                 <IconChevronDown />
               </Button>
             </DropdownMenuTrigger>
@@ -485,7 +490,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <IconPlus />
-            <span className="hidden lg:inline">Add Section</span>
+            <span className="hidden lg:inline">إضافة قسم</span>
           </Button>
         </div>
       </div>
@@ -533,7 +538,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      لا توجد نتائج.
                     </TableCell>
                   </TableRow>
                 )}
@@ -543,13 +548,13 @@ export function DataTable({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+            {table.getFilteredSelectedRowModel().rows.length} من{" "}
+            {table.getFilteredRowModel().rows.length} صفوف محددة.
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
+                صفوف لكل صفحة
               </Label>
               <Select
                 value={`${table.state.pagination.pageSize}`}
@@ -570,7 +575,7 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.state.pagination.pageIndex + 1} of{" "}
+              صفحة {table.state.pagination.pageIndex + 1} من{" "}
               {table.getPageCount()}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -580,7 +585,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to first page</span>
+                <span className="sr-only">إلى الصفحة الأولى</span>
                 <IconChevronsLeft />
               </Button>
               <Button
@@ -590,7 +595,7 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to previous page</span>
+                <span className="sr-only">إلى الصفحة السابقة</span>
                 <IconChevronLeft />
               </Button>
               <Button
@@ -600,7 +605,7 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to next page</span>
+                <span className="sr-only">إلى الصفحة التالية</span>
                 <IconChevronRight />
               </Button>
               <Button
@@ -610,7 +615,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to last page</span>
+                <span className="sr-only">إلى الصفحة الأخيرة</span>
                 <IconChevronsRight />
               </Button>
             </div>
@@ -670,7 +675,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.header}</DrawerTitle>
           <DrawerDescription>
-            Showing total visitors for the last 6 months
+            عرض إجمالي الزوار آخر 6 أشهر
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
@@ -719,13 +724,12 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month{" "}
+                  ارتفاع بنسبة 5.2% هذا الشهر{" "}
                   <IconTrendingUp className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Showing total visitors for the last 6 months. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
+                  عرض إجمالي الزوار آخر 6 أشهر. هذا نص عشوائي لاختبار
+                  التخطيط. يمتد على عدة أسطر ويجب أن يلتف حول نفسه.
                 </div>
               </div>
               <Separator />
@@ -733,15 +737,15 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">Header</Label>
+              <Label htmlFor="header">الاسم</Label>
               <Input id="header" defaultValue={item.header} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">Type</Label>
+                <Label htmlFor="type">النوع</Label>
                 <Select defaultValue={item.type}>
                   <SelectTrigger id="type" className="w-full">
-                    <SelectValue placeholder="Select a type" />
+                    <SelectValue placeholder="اختر النوع" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Table of Contents">
@@ -764,34 +768,34 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">الحالة</Label>
                 <Select defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder="Select a status" />
+                    <SelectValue placeholder="اختر الحالة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Done">Done</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="منشور">منشور</SelectItem>
+                    <SelectItem value="قيد التنفيذ">قيد التنفيذ</SelectItem>
+                    <SelectItem value="لم يبدأ">لم يبدأ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="target">Target</Label>
+                <Label htmlFor="target">الهدف</Label>
                 <Input id="target" defaultValue={item.target} />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">Limit</Label>
+                <Label htmlFor="limit">الحد</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="reviewer">Reviewer</Label>
+              <Label htmlFor="reviewer">المراجع</Label>
               <Select defaultValue={item.reviewer}>
                 <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder="Select a reviewer" />
+                  <SelectValue placeholder="اختر مراجعًا" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
@@ -805,9 +809,9 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           </form>
         </div>
         <DrawerFooter>
-          <Button>Submit</Button>
+          <Button>إرسال</Button>
           <DrawerClose asChild>
-            <Button variant="outline">Done</Button>
+            <Button variant="outline">تم</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
