@@ -9,6 +9,12 @@
 
 export const ONBOARDING_PATH = '/onboarding'
 
+/** Synthetic, undeliverable Telegram identity — can never receive recovery mail. */
+export function isSyntheticTelegramEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  return email.toLowerCase().endsWith('@telegram.local')
+}
+
 /** Path prefixes that must stay reachable while onboarding is incomplete. */
 const EXEMPT_PREFIXES = [
   '/onboarding',
