@@ -565,6 +565,7 @@ export default function ModForm({ modId }: ModFormProps) {
       )}
 
       <ModFormMedia
+        modId={modId}
         imageUrl={imageUrl}
         setImageUrl={setImageUrl}
         thumbnailUrl={thumbnailUrl}
@@ -586,6 +587,7 @@ export default function ModForm({ modId }: ModFormProps) {
       />
 
       <ModFormFiles
+        modId={modId}
         version={version}
         setVersion={setVersion}
         fileSize={fileSize}

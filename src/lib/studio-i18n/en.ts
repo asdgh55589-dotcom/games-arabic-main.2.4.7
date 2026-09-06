@@ -406,6 +406,16 @@ export const en: StudioDict = {
     cropUploading: 'Uploading cropped image...',
     cropUploadFailed: 'Cropped image upload failed — please try again',
     cropNotUploaded: 'Cropped image is still uploading — wait before saving',
+    freeImageToggle: 'Upload images via FreeImage',
+    freeImageHint: 'Drag & drop — up to 64MB per image — pause/resume from the upload panel',
+    iaToggle: 'Upload file to the Archive',
+    iaHint: 'Up to 2GB per file — streams directly to Internet Archive — progress from the upload panel',
+    iaBadge: 'Archive',
+    directKeptNote: 'Or paste a direct link — always supported',
+  },
+  uploader: {
+    signFailed: 'Failed to prepare upload',
+    confirmFailed: 'Failed to confirm upload',
   },
   apply: {
     requiredFields: 'Required fields',

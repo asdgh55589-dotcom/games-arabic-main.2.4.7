@@ -15,16 +15,61 @@ import {
   Video,
 } from 'lucide-react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
 import { ImageCropper } from '@/components/admin/image-cropper'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatArabicDate, formatNumber } from '@/lib/format'
+import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { Section } from './primitives'
+
 import type { VideoGroup } from './primitives'
 
+// Code-split: Uppy vendor chunk loads only when the panel opens.
+const UppyImagePanel = dynamic(
+  () => import('@/components/creator/uppy-uploader').then((m) => ({ default: m.UppyUploader })),
+  {
+    ssr: false,
+    loading: () => <div className="h-[120px] animate-pulse rounded-lg bg-muted" />,
+  },
+)
+
+const FREEIMAGE_MAX_BYTES = 64 * 1024 * 1024 // 64MB service cap (server enforces too)
+
+function FreeImagePanel({
+  modId,
+  single,
+  note,
+  onPick,
+  onError,
+}: {
+  modId?: string
+  single: boolean
+  note: string
+  onPick: (urls: string[]) => void
+  onError: (message: string) => void
+}) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <UppyImagePanel
+        endpoint="/api/storage/upload-image"
+        meta={modId ? { modId } : {}}
+        allowedFileTypes={['image/*']}
+        maxFileSize={FREEIMAGE_MAX_BYTES}
+        maxNumberOfFiles={single ? 1 : 5}
+        note={note}
+        onComplete={(files) => onPick(files.map((f) => f.url))}
+        onError={onError}
+      />
+    </div>
+  )
+}
+
 interface Props {
+  modId?: string
   imageUrl: string
   setImageUrl: (v: string) => void
   thumbnailUrl: string
@@ -51,7 +96,12 @@ interface Props {
 
 export function ModFormMedia(p: Props) {
   const { dict, locale } = useStudioLanguage()
+  const { toast } = useToast()
   const t = dict.form
+  const [fiOpen, setFiOpen] = useState<'imageUrl' | 'thumbnailUrl' | 'gallery' | null>(null)
+  const toggleFi = (target: 'imageUrl' | 'thumbnailUrl' | 'gallery') =>
+    setFiOpen((cur) => (cur === target ? null : target))
+  const fiError = (message: string) => toast({ title: message, variant: 'destructive' })
   return (
     <>
       {/* ===== 2. images ===== */}
@@ -85,7 +135,27 @@ export function ModFormMedia(p: Props) {
               {t.cropCurrentLink}
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs min-h-[44px]"
+            onClick={() => toggleFi('imageUrl')}
+          >
+            {t.freeImageToggle}
+          </Button>
         </div>
+        {fiOpen === 'imageUrl' && (
+          <FreeImagePanel
+            modId={p.modId}
+            single
+            note={t.freeImageHint}
+            onPick={(urls) => {
+              if (urls[0]) p.setImageUrl(urls[0])
+              setFiOpen(null)
+            }}
+            onError={fiError}
+          />
+        )}
         <ImageUpload
           bucket="mods"
           value={p.thumbnailUrl}
@@ -115,7 +185,27 @@ export function ModFormMedia(p: Props) {
               {t.cropCurrentLink}
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs min-h-[44px]"
+            onClick={() => toggleFi('thumbnailUrl')}
+          >
+            {t.freeImageToggle}
+          </Button>
         </div>
+        {fiOpen === 'thumbnailUrl' && (
+          <FreeImagePanel
+            modId={p.modId}
+            single
+            note={t.freeImageHint}
+            onPick={(urls) => {
+              if (urls[0]) p.setThumbnailUrl(urls[0])
+              setFiOpen(null)
+            }}
+            onError={fiError}
+          />
+        )}
         <ImageUpload
           bucket="mods"
           values={p.galleryUrls}
@@ -136,7 +226,27 @@ export function ModFormMedia(p: Props) {
             {t.galleryCrop}
           </label>
           <p className="text-xs text-muted-foreground">{p.galleryUrls.length} {t.imagesCount}</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs min-h-[44px]"
+            onClick={() => toggleFi('gallery')}
+          >
+            {t.freeImageToggle}
+          </Button>
         </div>
+        {fiOpen === 'gallery' && (
+          <FreeImagePanel
+            modId={p.modId}
+            single={false}
+            note={t.freeImageHint}
+            onPick={(urls) => {
+              if (urls.length > 0) p.setGalleryUrls((prev) => [...prev, ...urls])
+              setFiOpen(null)
+            }}
+            onError={fiError}
+          />
+        )}
       </Section>
 
       {p.cropperImage && (

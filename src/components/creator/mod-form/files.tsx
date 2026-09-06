@@ -2,13 +2,29 @@
 // Presentational only; all state lives in the ModForm orchestrator.
 
 import { FileArchive, Plus, Trash2 } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, Section, Toggle, type DownloadFile } from './primitives'
+import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { Field, Section, Toggle, type DownloadFile } from './primitives'
+
+// Code-split: Uppy + IA vendor chunk loads only when the panel opens.
+const IaUploadPanel = dynamic(
+  () => import('@/components/creator/ia-uploader').then((m) => ({ default: m.IaUploader })),
+  {
+    ssr: false,
+    loading: () => <div className="h-[120px] animate-pulse rounded-lg bg-muted" />,
+  },
+)
+
+const IA_MAX_BYTES = 2 * 1024 * 1024 * 1024 // 2GB owner cap (server quota enforces too)
 
 interface Props {
+  modId?: string
   version: string
   setVersion: (v: string) => void
   fileSize: string
@@ -32,7 +48,11 @@ interface Props {
 
 export function ModFormFiles(p: Props) {
   const { dict } = useStudioLanguage()
+  const { toast } = useToast()
   const t = dict.form
+  const [iaOpen, setIaOpen] = useState<Record<number, boolean>>({})
+  const iaMode = process.env.NEXT_PUBLIC_IA_UPLOAD_MODE === 'relay' ? 'relay' : 'direct'
+  const iaError = (message: string) => toast({ title: message, variant: 'destructive' })
   return (
     <>
       {/* ===== 3. file basics ===== */}
@@ -109,16 +129,45 @@ export function ModFormFiles(p: Props) {
               <div key={i} className="rounded-lg border border-border bg-card/40 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-bold">{t.fileNumber}{i + 1}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]"
-                    onClick={() => p.setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`${t.deleteFile}${i + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 min-h-[44px] text-xs"
+                      onClick={() => setIaOpen((prev) => ({ ...prev, [i]: !prev[i] }))}
+                    >
+                      <Plus className="me-1 h-3 w-3" /> {t.iaToggle}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]"
+                      onClick={() => p.setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      aria-label={`${t.deleteFile}${i + 1}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+                {iaOpen[i] && (
+                  <div className="mb-3 rounded-lg border border-border p-3">
+                    <IaUploadPanel
+                      modId={p.modId}
+                      maxFileSize={IA_MAX_BYTES}
+                      maxNumberOfFiles={3}
+                      mode={iaMode}
+                      onComplete={(files) => {
+                        const links = files.map((f) => ({ url: f.url, label: f.name || f.url }))
+                        p.setFiles((prev) =>
+                          prev.map((file, idx) => (idx === i ? { ...file, links: [...file.links, ...links] } : file)),
+                        )
+                        setIaOpen((prev) => ({ ...prev, [i]: false }))
+                      }}
+                      onError={iaError}
+                    />
+                    <p className="mt-2 text-[11px] text-muted-foreground">{t.iaHint}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field label={t.fileTitle}>
                     <Input
@@ -197,7 +246,7 @@ export function ModFormFiles(p: Props) {
                 <div className="mt-3">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground">
-                      {t.downloadLinks}
+                      {t.downloadLinks} <span className="font-normal">• {t.directKeptNote}</span>
                     </span>
                     <Button
                       size="sm"
@@ -217,14 +266,21 @@ export function ModFormFiles(p: Props) {
                   <div className="space-y-2">
                     {file.links.map((link, j) => {
                       const info = link.url ? getPlatformInfo(link.url) : null
+                      const isIaLink = link.url.includes('archive.org/download/')
                       return (
                         <div key={j} className="flex items-center gap-2">
-                          <div
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-md p-1.5 text-white"
-                            style={{ backgroundColor: info?.color || '#4b5563' }}
-                          >
-                            {info?.icon || <Plus className="h-4 w-4" />}
-                          </div>
+                          {isIaLink ? (
+                            <Badge variant="secondary" className="h-9 shrink-0 place-items-center px-2 text-[11px]">
+                              {t.iaBadge}
+                            </Badge>
+                          ) : (
+                            <div
+                              className="grid h-9 w-9 shrink-0 place-items-center rounded-md p-1.5 text-white"
+                              style={{ backgroundColor: info?.color || '#4b5563' }}
+                            >
+                              {info?.icon || <Plus className="h-4 w-4" />}
+                            </div>
+                          )}
                           <Input
                             value={link.url}
                             onChange={(e) =>

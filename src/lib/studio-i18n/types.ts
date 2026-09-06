@@ -408,6 +408,16 @@ export interface StudioDict {
     cropUploading: string
     cropUploadFailed: string
     cropNotUploaded: string
+    freeImageToggle: string
+    freeImageHint: string
+    iaToggle: string
+    iaHint: string
+    iaBadge: string
+    directKeptNote: string
+  }
+  uploader: {
+    signFailed: string
+    confirmFailed: string
   }
   apply: {
     requiredFields: string

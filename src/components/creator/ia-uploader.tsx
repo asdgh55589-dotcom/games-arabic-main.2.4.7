@@ -56,7 +56,7 @@ export function IaUploader({
   onComplete,
   onError,
 }: IaUploaderProps) {
-  const { locale } = useStudioLanguage()
+  const { dict, locale } = useStudioLanguage()
   const targetRef = React.useRef<HTMLDivElement>(null)
   const callbacksRef = React.useRef({ onComplete, onError })
   callbacksRef.current = { onComplete, onError }
@@ -143,7 +143,7 @@ export function IaUploader({
           if (!signRes.ok) {
             const msg =
               (typeof signJson?.error?.message === 'string' && signJson.error.message) ||
-              'فشل تجهيز الرفع'
+              dict.uploader.signFailed
             throw new Error(msg)
           }
           const signed = signJson?.data as SignResponse
@@ -202,12 +202,12 @@ export function IaUploader({
           if (!completeRes.ok) {
             const msg =
               (typeof completeJson?.error?.message === 'string' && completeJson.error.message) ||
-              'فشل تأكيد الرفع'
+              dict.uploader.confirmFailed
             throw new Error(msg)
           }
           const data = completeJson?.data as { downloadUrl?: unknown; key?: unknown; bytes?: unknown }
           const url = typeof data?.downloadUrl === 'string' ? data.downloadUrl : ''
-          if (!url.startsWith('https://')) throw new Error('فشل تأكيد الرفع')
+          if (!url.startsWith('https://')) throw new Error(dict.uploader.confirmFailed)
           return {
             url,
             key: typeof data?.key === 'string' ? data.key : String(meta.iaKey ?? ''),
@@ -215,7 +215,7 @@ export function IaUploader({
             name: file.name || '',
           }
         } catch (err) {
-          callbacksRef.current.onError?.(err instanceof Error ? err.message : 'فشل تأكيد الرفع')
+          callbacksRef.current.onError?.(err instanceof Error ? err.message : dict.uploader.confirmFailed)
           return null
         }
       })()

@@ -407,6 +407,16 @@ export const ar: StudioDict = {
     cropUploading: 'جاري رفع الصورة المقصوصة...',
     cropUploadFailed: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى',
     cropNotUploaded: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ',
+    freeImageToggle: 'رفع صور عبر FreeImage',
+    freeImageHint: 'سحب وإفلات — حتى 64MB للصورة — الإيقاف المؤقت والإعادة من لوحة الرفع',
+    iaToggle: 'رفع ملف إلى الأرشيف',
+    iaHint: 'حتى 2GB للملف — يبث مباشرة إلى Internet Archive — التقدم والإيقاف من لوحة الرفع',
+    iaBadge: 'الأرشيف',
+    directKeptNote: 'أو الصق رابطاً مباشراً — يبقى مدعوماً دائماً',
+  },
+  uploader: {
+    signFailed: 'فشل تجهيز الرفع',
+    confirmFailed: 'فشل تأكيد الرفع',
   },
   apply: {
     requiredFields: 'الحقول المطلوبة',
