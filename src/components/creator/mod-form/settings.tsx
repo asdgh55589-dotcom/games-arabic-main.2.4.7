@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, Section } from './primitives'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import type {
   ContactLink,
   CustomTab,
@@ -34,18 +35,20 @@ interface Props {
 }
 
 export function ModFormSettings(p: Props) {
+  const { dict } = useStudioLanguage()
+  const f = dict.form
   return (
     <>
-      {/* ===== 4. العلاقات — السلسلة وفريق التعريب (تظهر أي سلسلة/فريق جديد تلقائياً) ===== */}
-      <Section title="العلاقات">
+      {/* ===== 4. relations ===== */}
+      <Section title={f.relations}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="السلسلة" hint="اختر السلسلة — أي سلسلة جديدة تضاف ستظهر هنا تلقائياً">
+          <Field label={f.series} hint={f.seriesHint}>
             <select
               value={p.seriesId}
               onChange={(e) => p.setSeriesId(e.target.value)}
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
             >
-              <option value="">— بدون سلسلة —</option>
+              <option value="">{f.noSeries}</option>
               {p.seriesList.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -53,13 +56,13 @@ export function ModFormSettings(p: Props) {
               ))}
             </select>
           </Field>
-          <Field label="فريق التعريب" hint="اختر الفريق — أي فريق جديد يضاف سيظهر هنا تلقائياً">
+          <Field label={f.transTeam} hint={f.teamHint}>
             <select
               value={p.teamId}
               onChange={(e) => p.setTeamId(e.target.value)}
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
             >
-              <option value="">— بدون فريق —</option>
+              <option value="">{f.noTeam}</option>
               {p.teamsList.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -70,9 +73,9 @@ export function ModFormSettings(p: Props) {
         </div>
       </Section>
 
-      {/* ===== 6. فريق التعريب ===== */}
+      {/* ===== 6. translation team ===== */}
       <Section
-        title="فريق التعريب"
+        title={f.teamSection}
         icon={<Users className="h-4 w-4" />}
         action={
           <Button
@@ -81,12 +84,12 @@ export function ModFormSettings(p: Props) {
             variant="outline"
             onClick={p.addEmptyMember}
           >
-            <Plus className="ml-1 h-4 w-4" /> إضافة عضو
+            <Plus className="me-1 h-4 w-4" /> {f.addMember}
           </Button>
         }
       >
         {p.teamMembers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">لا يوجد أعضاء فريق.</p>
+          <p className="text-sm text-muted-foreground">{f.noMembers}</p>
         ) : (
           <div className="space-y-3">
             {p.teamMembers.map((m, i) => (
@@ -94,7 +97,7 @@ export function ModFormSettings(p: Props) {
                 key={i}
                 className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-card/40 p-3 sm:grid-cols-4"
               >
-                <Field label="الاسم">
+                <Field label={f.memberName}>
                   <Input
                     value={m.name}
                     onChange={(e) =>
@@ -104,7 +107,7 @@ export function ModFormSettings(p: Props) {
                     }
                   />
                 </Field>
-                <Field label="الدور">
+                <Field label={f.memberRole}>
                   <Input
                     value={m.role}
                     onChange={(e) =>
@@ -114,7 +117,7 @@ export function ModFormSettings(p: Props) {
                     }
                   />
                 </Field>
-                <Field label="رابط الأفاتار">
+                <Field label={f.avatarUrl}>
                   <Input
                     value={m.avatarUrl}
                     onChange={(e) =>
@@ -127,7 +130,7 @@ export function ModFormSettings(p: Props) {
                     placeholder="https://..."
                   />
                 </Field>
-                <Field label="المساهمة">
+                <Field label={f.contribution}>
                   <Input
                     value={m.contribution}
                     onChange={(e) =>
@@ -145,7 +148,7 @@ export function ModFormSettings(p: Props) {
                     variant="ghost"
                     className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]"
                     onClick={() => p.setTeamMembers((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`حذف العضو #${i + 1}`}
+                    aria-label={`${f.deleteMember}${i + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -155,11 +158,11 @@ export function ModFormSettings(p: Props) {
           </div>
         )}
 
-        {/* روابط التواصل */}
+        {/* contact links */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-bold">
-              <Mail className="h-4 w-4" /> روابط التواصل
+              <Mail className="h-4 w-4" /> {f.contacts}
             </h3>
             <Button
               size="sm"
@@ -167,11 +170,11 @@ export function ModFormSettings(p: Props) {
               variant="outline"
               onClick={p.addEmptyContact}
             >
-              <Plus className="ml-1 h-4 w-4" /> إضافة رابط
+              <Plus className="me-1 h-4 w-4" /> {f.addContact}
             </Button>
           </div>
           {p.contactLinks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">لا توجد روابط تواصل.</p>
+            <p className="text-sm text-muted-foreground">{f.noContacts}</p>
           ) : (
             <div className="space-y-2">
               {p.contactLinks.map((c, i) => (
@@ -187,14 +190,14 @@ export function ModFormSettings(p: Props) {
                       )
                     }
                     className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-                    aria-label="نوع الرابط"
+                    aria-label={f.linkType}
                   >
-                    <option value="mail">بريد</option>
-                    <option value="website">موقع</option>
-                    <option value="telegram">تيليجرام</option>
-                    <option value="twitter">تويتر</option>
-                    <option value="youtube">يوتيوب</option>
-                    <option value="discord">ديسكورد</option>
+                    <option value="mail">{f.linkMail}</option>
+                    <option value="website">{f.linkWebsite}</option>
+                    <option value="telegram">{f.linkTelegram}</option>
+                    <option value="twitter">{f.linkTwitter}</option>
+                    <option value="youtube">{f.linkYoutube}</option>
+                    <option value="discord">{f.linkDiscord}</option>
                   </select>
                   <Input
                     value={c.label}
@@ -203,8 +206,8 @@ export function ModFormSettings(p: Props) {
                         prev.map((cc, idx) => (idx === i ? { ...cc, label: e.target.value } : cc)),
                       )
                     }
-                    placeholder="التسمية"
-                    aria-label="تسمية الرابط"
+                    placeholder={f.labelPlaceholder}
+                    aria-label={f.labelAria}
                   />
                   <Input
                     value={c.url}
@@ -214,14 +217,14 @@ export function ModFormSettings(p: Props) {
                       )
                     }
                     placeholder="https://..."
-                    aria-label="رابط التواصل"
+                    aria-label={f.contactUrlAria}
                   />
                   <Button
                     size="icon"
                     variant="ghost"
                     className="h-10 w-10 text-red-400 min-h-[44px] min-w-[44px]"
                     onClick={() => p.setContactLinks((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`حذف رابط التواصل #${i + 1}`}
+                    aria-label={`${f.deleteContact}${i + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -232,9 +235,9 @@ export function ModFormSettings(p: Props) {
         </div>
       </Section>
 
-      {/* ===== 8. التبويبات المخصصة ===== */}
+      {/* ===== 8. custom tabs ===== */}
       <Section
-        title="التبويبات المخصصة"
+        title={f.customTabs}
         icon={<LayoutPanelTop className="h-4 w-4" />}
         action={
           <Button
@@ -243,13 +246,13 @@ export function ModFormSettings(p: Props) {
             variant="outline"
             onClick={p.addEmptyTab}
           >
-            <Plus className="ml-1 h-4 w-4" /> إضافة تبويب
+            <Plus className="me-1 h-4 w-4" /> {f.addTab}
           </Button>
         }
       >
         {p.customTabs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            لا توجد تبويبات مخصصة. هذه التبويبات ستظهر في صفحة التعريب بجانب التبويبات الافتراضية.
+            {f.noTabs}
           </p>
         ) : (
           <div className="space-y-3">
@@ -271,9 +274,9 @@ export function ModFormSettings(p: Props) {
                         ),
                       )
                     }
-                    placeholder="اسم التبويب (مثال: أسئلة شائعة)"
+                    placeholder={f.tabNamePh}
                     className="flex-1 font-medium"
-                    aria-label="اسم التبويب"
+                    aria-label={f.tabNameAria}
                   />
                   <label className="flex items-center gap-1 text-xs">
                     <input
@@ -287,14 +290,14 @@ export function ModFormSettings(p: Props) {
                         )
                       }
                     />
-                    مرئي
+                    {f.visible}
                   </label>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="h-9 w-9 text-red-400 min-h-[44px] min-w-[44px]"
                     onClick={() => p.setCustomTabs((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`حذف التبويب #${i + 1}`}
+                    aria-label={`${f.deleteTab}${i + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -307,8 +310,8 @@ export function ModFormSettings(p: Props) {
                     )
                   }
                   rows={5}
-                  placeholder="محتوى التبويب (يدعم Markdown)..."
-                  aria-label="محتوى التبويب"
+                  placeholder={f.tabContentPh}
+                  aria-label={f.tabContentAria}
                 />
               </div>
             ))}

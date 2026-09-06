@@ -276,6 +276,14 @@ describe('4.3 silent catches inventory (FIXED in UI; manager deferred to Phase 4
       'utf8',
     );
     expect(mgr).not.toMatch(/catch \{\}/);
-    expect(mgr).toMatch(/تعذّر تحميل التعليقات|حدث خطأ أثناء الاتصال|تعذّر إرسال الرد/);
+    // Phase 1 i18n: toast copy lives in src/lib/studio-i18n/ar.ts, referenced by key.
+    expect(mgr).toMatch(/t\.loadError|t\.connectionError|t\.sendConnectionError/);
+    const arDict = fs.readFileSync(
+      path.join(process.cwd(), 'src/lib/studio-i18n/ar.ts'),
+      'utf8',
+    );
+    expect(arDict).toMatch(/تعذّر تحميل التعليقات/);
+    expect(arDict).toMatch(/حدث خطأ أثناء الاتصال/);
+    expect(arDict).toMatch(/تعذّر إرسال الرد/);
   });
 });

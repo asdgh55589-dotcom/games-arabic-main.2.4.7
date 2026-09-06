@@ -6,6 +6,7 @@ import { getPlatformInfo } from '@/components/platform-upload-icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, Section, Toggle, type DownloadFile } from './primitives'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface Props {
   version: string
@@ -30,26 +31,28 @@ interface Props {
 }
 
 export function ModFormFiles(p: Props) {
+  const { dict } = useStudioLanguage()
+  const t = dict.form
   return (
     <>
-      {/* ===== 3. معلومات الملف الأساسية ===== */}
-      <Section title="معلومات الملف الأساسية">
+      {/* ===== 3. file basics ===== */}
+      <Section title={t.fileMeta}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="الإصدار">
+          <Field label={t.version}>
             <Input
               value={p.version}
               onChange={(e) => p.setVersion(e.target.value)}
               placeholder="1.0.0"
             />
           </Field>
-          <Field label="حجم الملف" hint="بالصيغة: MB 200">
+          <Field label={t.fileSize} hint={t.fileSizeHint}>
             <Input
               value={p.fileSize}
               onChange={(e) => p.setFileSize(e.target.value)}
               placeholder="MB 200"
             />
           </Field>
-          <Field label="صيغة الملف">
+          <Field label={t.fileFormat}>
             <select
               value={p.fileFormat}
               onChange={(e) => p.setFileFormat(e.target.value)}
@@ -62,28 +65,28 @@ export function ModFormFiles(p: Props) {
             </select>
           </Field>
         </div>
-        <Field label="التوافق">
+        <Field label={t.compatibility}>
           <Input
             value={p.compatibility}
             onChange={(e) => p.setCompatibility(e.target.value)}
-            placeholder="مثال: متوافق مع كل إصدارات اللعبة"
+            placeholder={t.compatPlaceholder}
           />
         </Field>
         {p.isEdit && (
-          <Field label="تاريخ النشر" hint="تاريخ ثابت — يُحدّد تلقائياً عند النشر">
+          <Field label={t.publishDate} hint={t.publishDateHint}>
             <Input type="date" value={p.releaseDate} disabled className="opacity-60" />
           </Field>
         )}
         <div className="flex flex-wrap gap-4">
-          <Toggle label="مميّز" checked={p.isFeatured} onChange={p.setIsFeatured} />
-          <Toggle label="رائج" checked={p.isTrending} onChange={p.setIsTrending} />
-          <Toggle label="أحدث" checked={p.isLatest} onChange={p.setIsLatest} />
+          <Toggle label={t.featured} checked={p.isFeatured} onChange={p.setIsFeatured} />
+          <Toggle label={t.trending} checked={p.isTrending} onChange={p.setIsTrending} />
+          <Toggle label={t.latest} checked={p.isLatest} onChange={p.setIsLatest} />
         </div>
       </Section>
 
-      {/* ===== 5. ملفات التحميل ===== */}
+      {/* ===== 5. download files ===== */}
       <Section
-        title="ملفات التحميل"
+        title={t.downloadFiles}
         icon={<FileArchive className="h-4 w-4" />}
         action={
           <Button
@@ -92,32 +95,32 @@ export function ModFormFiles(p: Props) {
             variant="outline"
             onClick={p.addEmptyFile}
           >
-            <Plus className="ml-1 h-4 w-4" /> إضافة ملف
+            <Plus className="me-1 h-4 w-4" /> {t.addFile}
           </Button>
         }
       >
         {p.files.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            لا توجد ملفات. اضغط "إضافة ملف" لإضافة ملف تحميل.
+            {t.noFiles}
           </p>
         ) : (
           <div className="space-y-4">
             {p.files.map((file, i) => (
               <div key={i} className="rounded-lg border border-border bg-card/40 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-bold">ملف #{i + 1}</span>
+                  <span className="text-sm font-bold">{t.fileNumber}{i + 1}</span>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 text-red-400 min-h-[44px] min-w-[44px]"
                     onClick={() => p.setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`حذف ملف #${i + 1}`}
+                    aria-label={`${t.deleteFile}${i + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Field label="عنوان الملف">
+                  <Field label={t.fileTitle}>
                     <Input
                       value={file.title}
                       onChange={(e) =>
@@ -127,7 +130,7 @@ export function ModFormFiles(p: Props) {
                       }
                     />
                   </Field>
-                  <Field label="الإصدار">
+                  <Field label={t.fileVersion}>
                     <Input
                       value={file.version}
                       onChange={(e) =>
@@ -137,7 +140,7 @@ export function ModFormFiles(p: Props) {
                       }
                     />
                   </Field>
-                  <Field label="الحجم">
+                  <Field label={t.fileSizeLabel}>
                     <Input
                       value={file.fileSize}
                       onChange={(e) =>
@@ -147,7 +150,7 @@ export function ModFormFiles(p: Props) {
                       }
                     />
                   </Field>
-                  <Field label="الصيغة">
+                  <Field label={t.fileFormatLabel}>
                     <select
                       value={file.fileFormat}
                       onChange={(e) =>
@@ -166,7 +169,7 @@ export function ModFormFiles(p: Props) {
                     </select>
                   </Field>
                 </div>
-                <Field label="وصف الملف">
+                <Field label={t.fileDesc}>
                   <Input
                     value={file.description}
                     onChange={(e) =>
@@ -178,7 +181,7 @@ export function ModFormFiles(p: Props) {
                     }
                   />
                 </Field>
-                <Field label="تنبيه (اختياري)">
+                <Field label={t.alertOptional}>
                   <Input
                     value={file.alert}
                     onChange={(e) =>
@@ -186,15 +189,15 @@ export function ModFormFiles(p: Props) {
                         prev.map((f, idx) => (idx === i ? { ...f, alert: e.target.value } : f)),
                       )
                     }
-                    placeholder="مثال: يجب تثبيت الملف الرئيسي أولاً"
+                    placeholder={t.alertPlaceholder}
                   />
                 </Field>
 
-                {/* روابط الملف */}
+                {/* file links */}
                 <div className="mt-3">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground">
-                      روابط التحميل
+                      {t.downloadLinks}
                     </span>
                     <Button
                       size="sm"
@@ -208,7 +211,7 @@ export function ModFormFiles(p: Props) {
                         )
                       }
                     >
-                      <Plus className="ml-1 h-3 w-3" /> إضافة رابط
+                      <Plus className="me-1 h-3 w-3" /> {t.addLink}
                     </Button>
                   </div>
                   <div className="space-y-2">
@@ -254,7 +257,7 @@ export function ModFormFiles(p: Props) {
                                 ),
                               )
                             }
-                            aria-label={`حذف رابط #${j + 1} من ملف #${i + 1}`}
+                            aria-label={`${t.deleteLink} #${j + 1} / ${t.fileNumber}${i + 1}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

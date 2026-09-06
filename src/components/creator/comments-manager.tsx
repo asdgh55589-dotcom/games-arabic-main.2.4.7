@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface CommentItem {
   id: string
@@ -35,6 +36,8 @@ interface CommentItem {
 
 export function CommentsManager() {
   const { toast } = useToast()
+  const { dict, locale } = useStudioLanguage()
+  const t = dict.commentsMgr
   const [filter, setFilter] = useState<'all' | 'visible' | 'hidden'>('all')
   const [comments, setComments] = useState<CommentItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,10 +63,10 @@ export function CommentsManager() {
         setComments(json.data?.comments || [])
         setTotalPages(json.data?.pagination?.totalPages || 1)
       } else {
-        throw new Error(json.error?.message || 'فشل التحميل')
+        throw new Error(json.error?.message || t.loadFailed)
       }
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'تعذّر تحميل التعليقات')
+      setLoadError(err instanceof Error ? err.message : t.loadError)
     }
     setLoading(false)
   }, [filter, page])
@@ -82,20 +85,20 @@ export function CommentsManager() {
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: json.data?.message || 'تم بنجاح' })
+        toast({ title: json.data?.message || t.actionDone })
         fetchComments()
       } else {
-        toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || t.actionFailed, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ أثناء الاتصال', variant: 'destructive' })
+      toast({ title: t.connectionError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
 
   const handleReply = async (comment: CommentItem) => {
     if (!replyText.trim()) {
-      toast({ title: 'اكتب رداً أولاً', variant: 'destructive' })
+      toast({ title: t.writeReplyFirst, variant: 'destructive' })
       return
     }
     setActionLoading(comment.id)
@@ -108,14 +111,14 @@ export function CommentsManager() {
       })
       const json = await modRes.json()
       if (modRes.ok) {
-        toast({ title: 'تم إرسال الرد' })
+        toast({ title: t.replySent })
         setReplyTo(null)
         setReplyText('')
       } else {
-        toast({ title: json.error?.message || 'فشل الإرسال', variant: 'destructive' })
+        toast({ title: json.error?.message || t.sendFailed, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'تعذّر إرسال الرد — تحقق من اتصالك', variant: 'destructive' })
+      toast({ title: t.sendConnectionError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -124,9 +127,9 @@ export function CommentsManager() {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {[
-          { value: 'all', label: 'الكل' },
-          { value: 'visible', label: 'ظاهر' },
-          { value: 'hidden', label: 'مخفي' },
+          { value: 'all', label: t.all },
+          { value: 'visible', label: t.visible },
+          { value: 'hidden', label: t.hidden },
         ].map((f) => (
           <Button
             key={f.value}
@@ -148,14 +151,14 @@ export function CommentsManager() {
         <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
           <p className="text-sm text-muted-foreground">{loadError}</p>
           <Button variant="outline" size="sm" className="min-h-[44px]" onClick={fetchComments}>
-            إعادة المحاولة
+            {t.retry}
           </Button>
         </div>
       ) : comments.length === 0 ? (
         <EmptyState
           icon="file"
-          title="لا توجد تعليقات"
-          description="ستظهر تعليقات المستخدمين على تعريباتك هنا"
+          title={t.emptyTitle}
+          description={t.emptyDesc}
         />
       ) : (
         <div className="space-y-3">
@@ -169,16 +172,16 @@ export function CommentsManager() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{c.user?.username || 'مجهول'}</span>
+                      <span className="font-medium text-sm">{c.user?.username || t.unknownUser}</span>
                       <Badge variant="outline" className="text-xs">
                         {c.mod.name}
                       </Badge>
                       {c.isHidden && (
                         <Badge variant="destructive" className="text-xs">
-                          مخفي
+                          {t.hiddenBadge}
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
+                      <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt, locale)}</span>
                     </div>
                     <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
                     <div className="flex items-center gap-2 mt-3">
@@ -187,7 +190,7 @@ export function CommentsManager() {
                         target="_blank"
                         className="text-xs text-primary hover:underline"
                       >
-                        عرض التعريب
+                        {t.viewMod}
                       </Link>
                       <span className="text-muted-foreground">•</span>
                       <button
@@ -195,7 +198,7 @@ export function CommentsManager() {
                         onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
-                        <Reply className="h-3 w-3" /> رد
+                        <Reply className="h-3 w-3" /> {t.reply}
                       </button>
                     </div>
                     {replyTo === c.id && (
@@ -208,8 +211,8 @@ export function CommentsManager() {
                               handleReply(c)
                             if (e.key === 'Escape') setReplyTo(null)
                           }}
-                          placeholder="اكتب ردك..."
-                          aria-label={`الرد على تعليق في ${c.mod.name}`}
+                          placeholder={t.replyPlaceholder}
+                          aria-label={`${t.replyAria} ${c.mod.name}`}
                           rows={2}
                           className="flex-1"
                         />
@@ -235,7 +238,7 @@ export function CommentsManager() {
                         size="icon"
                         onClick={() => handleAction(c.id, 'unhide')}
                         disabled={actionLoading === c.id}
-                        aria-label="إظهار"
+                        aria-label={t.show}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -245,7 +248,7 @@ export function CommentsManager() {
                         size="icon"
                         onClick={() => handleAction(c.id, 'hide')}
                         disabled={actionLoading === c.id}
-                        aria-label="إخفاء"
+                        aria-label={t.hide}
                       >
                         <EyeOff className="h-4 w-4" />
                       </Button>
@@ -254,8 +257,8 @@ export function CommentsManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setPendingDelete(c.id)}
-                      disabled={actionLoading === c.id}
-                      aria-label="حذف"
+                        disabled={actionLoading === c.id}
+                        aria-label={t.remove}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -276,10 +279,10 @@ export function CommentsManager() {
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            السابق
+            {t.prev}
           </Button>
           <span className="flex items-center px-3 text-sm text-muted-foreground">
-            صفحة {page} من {totalPages}
+            {t.page} {page} {t.pageOf} {totalPages}
           </span>
           <Button
             variant="outline"
@@ -287,7 +290,7 @@ export function CommentsManager() {
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            التالي
+            {t.next}
           </Button>
         </div>
       )}
@@ -299,18 +302,18 @@ export function CommentsManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>حذف التعليق؟</AlertDialogTitle>
+            <AlertDialogTitle>{t.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف هذا التعليق نهائياً. لا يمكن التراجع عن هذا الإجراء.
+              {t.deleteDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingDelete && handleAction(pendingDelete, 'delete')}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              حذف
+              {t.confirmDelete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

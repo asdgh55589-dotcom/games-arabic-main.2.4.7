@@ -17,10 +17,13 @@ export function formatDate(date: Date | string | null | undefined): string {
 
 // تنسيق التاريخ بالعربية كاملة (يوم شهر سنة) — باستخدام الأرقام العربية (1234567890)
 // مش الأرقام الهندية (١٢٣٤٥٦٧٨٩٠) — نستخدم UTC لتجنب إزاحة يوم بسبب المنطقة الزمنية
-export function formatArabicDate(date: Date | string | null | undefined): string {
+export function formatArabicDate(date: Date | string | null | undefined, locale: 'ar' | 'en' = 'ar'): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
+  if (locale === 'en') {
+    return `${d.getUTCDate()} ${d.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} ${d.getUTCFullYear()}`
+  }
   const months = [
     'يناير',
     'فبراير',
@@ -49,11 +52,24 @@ function arabicUnit(n: number, one: string, two: string, few: string, many: stri
   return `${n} ${many}`
 }
 
-export function timeAgo(date: Date | string | null | undefined): string {
+export function timeAgo(date: Date | string | null | undefined, locale: 'ar' | 'en' = 'ar'): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (isNaN(d.getTime())) return '—'
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000)
+  if (locale === 'en') {
+    if (seconds < 60) return 'just now'
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
+    const months = Math.floor(days / 30)
+    if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`
+    const years = Math.floor(days / 365)
+    return `${years} year${years === 1 ? '' : 's'} ago`
+  }
   if (seconds < 60) return 'الآن'
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) return `منذ ${arabicUnit(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')}`

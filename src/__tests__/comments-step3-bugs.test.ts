@@ -53,7 +53,13 @@ describe('7. Empty State', () => {
     expect(modCommentsSrc).toMatch(/لا توجد|لا يوجد|EmptyState/);
   });
   it('creator inbox has empty state', () => {
-    expect(managerSrc).toMatch(/لا توجد تعليقات/);
+    // Phase 1 i18n: copy lives in src/lib/studio-i18n/ar.ts, referenced by key.
+    expect(managerSrc).toMatch(/t\.emptyTitle/);
+    const arDict = fs.readFileSync(
+      path.join(root, 'src/lib/studio-i18n/ar.ts'),
+      'utf8',
+    );
+    expect(arDict).toMatch(/لا توجد تعليقات/);
   });
 });
 

@@ -14,6 +14,7 @@ import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { ModFormActions } from './mod-form/actions'
 import { ModFormBasicInfo } from './mod-form/basic-info'
 import { ModFormFiles } from './mod-form/files'
@@ -43,6 +44,8 @@ interface ModFormProps {
 export default function ModForm({ modId }: ModFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { dict, dir } = useStudioLanguage()
+  const t = dict.form
   const isEdit = Boolean(modId)
 
   const [saving, setSaving] = useState(false)
@@ -67,7 +70,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [tags, setTags] = useState('')
   const [series, setSeries] = useState('')
   const [translationTeam, setTranslationTeam] = useState('')
-  const [translationType, setTranslationType] = useState('تعريب غير رسمي')
+  const [translationType, setTranslationType] = useState(t.unofficialDefault)
   const [seriesId, setSeriesId] = useState('')
   const [teamId, setTeamId] = useState('')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
@@ -149,7 +152,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setTags(m.tags || '')
         setSeries(m.series || '')
         setTranslationTeam(m.translationTeam || '')
-        setTranslationType(m.translationType || 'تعريب غير رسمي')
+        setTranslationType(m.translationType || t.unofficialDefault)
         setSeriesId((m as any).seriesId || '')
         setTeamId((m as any).teamId || '')
         setThumbnailUrl(m.thumbnailUrl || '')
@@ -243,8 +246,8 @@ export default function ModForm({ modId }: ModFormProps) {
     )?.[1]
     if (!videoId) {
       toast({
-        title: 'رابط غير صالح',
-        description: 'الرجاء إدخال رابط يوتيوب صحيح',
+        title: t.invalidLink,
+        description: t.invalidLinkDesc,
         variant: 'destructive',
       })
       return
@@ -260,7 +263,7 @@ export default function ModForm({ modId }: ModFormProps) {
         body: JSON.stringify({ url: videoUrl }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || 'فشل الجلب')
+      if (!res.ok) throw new Error(data?.error?.message || t.fetchFailed)
 
       setVideoGroups((prev) =>
         prev.map((g, gi) => {
@@ -286,11 +289,11 @@ export default function ModForm({ modId }: ModFormProps) {
         }),
       )
 
-      toast({ title: 'تم جلب البيانات', description: `تم جلب بيانات فيديو: ${data.title}` })
+      toast({ title: t.fetched, description: `${t.fetchedVideo}: ${data.title}` })
     } catch (err) {
       toast({
-        title: 'فشل الجلب',
-        description: err instanceof Error ? err.message : 'حدث خطأ أثناء جلب البيانات',
+        title: t.fetchError,
+        description: err instanceof Error ? err.message : t.fetchErrorDesc,
         variant: 'destructive',
       })
     } finally {
@@ -325,7 +328,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
   const handleUrlCrop = (url: string, target: 'imageUrl' | 'thumbnailUrl', aspect: number) => {
     if (!url) {
-      toast({ title: 'لا يوجد رابط صورة', variant: 'destructive' })
+      toast({ title: t.noImageLink, variant: 'destructive' })
       return
     }
     setCropperImage(url)
@@ -340,11 +343,11 @@ export default function ModForm({ modId }: ModFormProps) {
     const _description = (description || '').trim()
     if (!_name || !_description) {
       const missing: string[] = []
-      if (!_name) missing.push('الاسم')
-      if (!_description) missing.push('الوصف الكامل')
+      if (!_name) missing.push(t.missingName)
+      if (!_description) missing.push(t.missingDesc)
       toast({
-        title: 'بيانات ناقصة',
-        description: `الحقول التالية مطلوبة: ${missing.join('، ')}`,
+        title: t.incompleteData,
+        description: `${t.requiredFields}: ${missing.join('، ')}`,
         variant: 'destructive',
       })
       return
@@ -352,8 +355,8 @@ export default function ModForm({ modId }: ModFormProps) {
     const _summary = (summary || '').trim() || _description.slice(0, 150) || _name
     if (!(thumbnailUrl || '').trim() || !(imageUrl || '').trim()) {
       toast({
-        title: 'صور ناقصة',
-        description: 'الصورة الرئيسية والصورة المصغّرة مطلوبتان',
+        title: t.imagesMissing,
+        description: t.imagesMissingDesc,
         variant: 'destructive',
       })
       return
@@ -363,8 +366,8 @@ export default function ModForm({ modId }: ModFormProps) {
     const effectiveIsOriginalWork = userRole === 'publisher' ? false : isOriginalWork
     if (!effectiveIsOriginalWork && !originalSource.trim()) {
       toast({
-        title: 'المصدر مطلوب',
-        description: 'كناشر، يجب عليك ذكر المصدر الأصلي للتعريب',
+        title: t.sourceRequired,
+        description: t.sourceRequiredDesc,
         variant: 'destructive',
       })
       return
@@ -427,19 +430,19 @@ export default function ModForm({ modId }: ModFormProps) {
         throw new Error(
           data?.error?.message ||
             (typeof data?.error === 'string' ? data.error : null) ||
-            'فشل الحفظ',
+            t.saveFailed,
         )
 
       toast({
-        title: 'تم الحفظ',
-        description: isEdit ? 'تم تحديث التعريب' : 'تم نشر التعريب بنجاح',
+        title: t.saved,
+        description: isEdit ? t.updated : t.publishedOk,
       })
       router.push('/creator/mods')
       router.refresh()
     } catch (err) {
       toast({
-        title: 'خطأ',
-        description: err instanceof Error ? err.message : 'فشل الحفظ',
+        title: t.errorTitle,
+        description: err instanceof Error ? err.message : t.saveErrorDesc,
         variant: 'destructive',
       })
     } finally {
@@ -461,11 +464,11 @@ export default function ModForm({ modId }: ModFormProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/creator/mods" className="hover:text-foreground">
-            التعريبات
+            {t.breadcrumbMods}
           </Link>
-          <ChevronRight className="h-4 w-4 rotate-180" />
-          <span className="text-foreground">{isEdit ? 'تعديل تعريب' : 'تعريب جديد'}</span>
-          {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ml-2" />}
+          <ChevronRight className={`h-4 w-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
+          <span className="text-foreground">{isEdit ? t.editMod : t.newMod}</span>
+          {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ms-2" />}
         </div>
       </div>
 
@@ -581,7 +584,7 @@ export default function ModForm({ modId }: ModFormProps) {
       {/* سجل الإصدارات */}
       {isEdit && (
         <Section
-          title="الإصدارات"
+          title={t.versions}
           icon={<FileArchive className="h-4 w-4" />}
           action={
             <Button
@@ -590,8 +593,8 @@ export default function ModForm({ modId }: ModFormProps) {
               variant="outline"
               onClick={() => setNewVersionDialogOpen(true)}
             >
-              <Plus className="ml-1 h-3.5 w-3.5" />
-              إصدار جديد
+              <Plus className="me-1 h-3.5 w-3.5" />
+              {t.newVersion}
             </Button>
           }
         >
@@ -620,7 +623,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
       {/* سجل تغييرات الحالة */}
       {isEdit && workflowHistory.length > 0 && (
-        <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
+        <Section title={t.statusHistory} icon={<Clock className="h-4 w-4" />}>
           <WorkflowHistory history={workflowHistory} />
         </Section>
       )}

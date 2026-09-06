@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface RequestItem {
   id: string
@@ -27,6 +28,8 @@ interface RequestItem {
 
 export function RequestsManager() {
   const { toast } = useToast()
+  const { dict, locale } = useStudioLanguage()
+  const t = dict.requestsMgr
   const [filter, setFilter] = useState<'all' | 'open' | 'mine' | 'completed'>('open')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,13 +70,13 @@ export function RequestsManager() {
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: 'تم قبول الطلب' })
+        toast({ title: t.acceptedToast })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || t.failedToast, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: t.unexpectedError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -81,7 +84,7 @@ export function RequestsManager() {
   const handleComplete = async (id: string) => {
     const modId = completeModId[id]?.trim()
     if (!modId) {
-      toast({ title: 'يرجى إدخال معرف التعريب', variant: 'destructive' })
+      toast({ title: t.enterModId, variant: 'destructive' })
       return
     }
     setActionLoading(id)
@@ -93,13 +96,13 @@ export function RequestsManager() {
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: 'تم إكمال الطلب' })
+        toast({ title: t.completedToast })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || t.failedToast, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: t.unexpectedError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -108,10 +111,10 @@ export function RequestsManager() {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {[
-          { value: 'open', label: 'متاح' },
-          { value: 'mine', label: 'قبلته أنا' },
-          { value: 'completed', label: 'مكتمل' },
-          { value: 'all', label: 'الكل' },
+          { value: 'open', label: t.open },
+          { value: 'mine', label: t.mine },
+          { value: 'completed', label: t.completed },
+          { value: 'all', label: t.all },
         ].map((f) => (
           <Button
             key={f.value}
@@ -135,8 +138,8 @@ export function RequestsManager() {
         <Card>
           <CardContent className="py-12 text-center">
             <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-medium">لا توجد طلبات</h3>
-            <p className="text-sm text-muted-foreground mt-1">عندما يطلب أحد تعريباً، ستظهر هنا</p>
+            <h3 className="font-medium">{t.emptyTitle}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{t.emptyDesc}</p>
           </CardContent>
         </Card>
       ) : (
@@ -161,11 +164,11 @@ export function RequestsManager() {
                         }
                       >
                         {r.status === 'open'
-                          ? 'مفتوح'
+                          ? t.statusOpen
                           : r.status === 'accepted'
-                            ? 'مقبول'
+                            ? t.statusAccepted
                             : r.status === 'completed'
-                              ? 'مكتمل'
+                              ? t.statusCompleted
                               : r.status}
                       </Badge>
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -179,7 +182,7 @@ export function RequestsManager() {
                       </Avatar>
                       <span>{r.user.username}</span>
                       <span>•</span>
-                      <span>{timeAgo(r.createdAt)}</span>
+                      <span>{timeAgo(r.createdAt, locale)}</span>
                     </div>
                     {r.notes && (
                       <p className="text-sm mt-2 whitespace-pre-wrap bg-muted/50 rounded p-2">
@@ -188,7 +191,7 @@ export function RequestsManager() {
                     )}
                     {r.mod && (
                       <div className="text-xs mt-2">
-                        مرتبط بـ:{' '}
+                        {t.linkedTo}{' '}
                         <Link href={`/mod/${r.mod.slug}`} className="text-primary hover:underline">
                           {r.mod.name}
                         </Link>
@@ -203,18 +206,18 @@ export function RequestsManager() {
                         disabled={actionLoading === r.id}
                       >
                         {actionLoading === r.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                          <Loader2 className="h-4 w-4 animate-spin me-1" />
                         ) : (
-                          <Check className="h-4 w-4 ml-1" />
+                          <Check className="h-4 w-4 me-1" />
                         )}
-                        قبول
+                        {t.accept}
                       </Button>
                     )}
                     {r.status === 'accepted' && (
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1">
                           <Input
-                            placeholder="معرّف التعريب"
+                            placeholder={t.modIdPlaceholder}
                             value={completeModId[r.id] || ''}
                             onChange={(e) =>
                               setCompleteModId((p) => ({ ...p, [r.id]: e.target.value }))
@@ -233,7 +236,7 @@ export function RequestsManager() {
                             )}
                           </Button>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">أدخل modId للربط</span>
+                        <span className="text-[10px] text-muted-foreground">{t.modIdHint}</span>
                       </div>
                     )}
                   </div>
@@ -252,10 +255,10 @@ export function RequestsManager() {
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            السابق
+            {t.prev}
           </Button>
           <span className="text-xs text-muted-foreground">
-            صفحة {page} من {totalPages}
+            {t.page} {page} {t.pageOf} {totalPages}
           </span>
           <Button
             variant="outline"
@@ -263,7 +266,7 @@ export function RequestsManager() {
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           >
-            التالي
+            {t.next}
           </Button>
         </div>
       )}

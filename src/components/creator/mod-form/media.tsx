@@ -20,6 +20,7 @@ import { ImageUpload } from '@/components/admin/image-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatArabicDate, formatNumber } from '@/lib/format'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { Section } from './primitives'
 import type { VideoGroup } from './primitives'
 
@@ -49,17 +50,19 @@ interface Props {
 }
 
 export function ModFormMedia(p: Props) {
+  const { dict, locale } = useStudioLanguage()
+  const t = dict.form
   return (
     <>
-      {/* ===== 2. الصور — Supabase Storage (mods bucket) + قص اختياري ===== */}
-      <Section title="الصور">
+      {/* ===== 2. images ===== */}
+      <Section title={t.images}>
         <ImageUpload
           bucket="mods"
           value={p.imageUrl}
           onChange={p.setImageUrl}
-          label="الصورة الرئيسية (Banner) *"
+          label={t.banner}
           required
-          hint="سحب وإفلات أو رفع — 16:9 — أعلى جودة"
+          hint={t.bannerHint}
           folder="banners"
         />
         <div className="flex flex-wrap gap-2">
@@ -70,7 +73,7 @@ export function ModFormMedia(p: Props) {
               className="hidden"
               onChange={(e) => p.handleImageFileSelect(e, 'imageUrl', 16 / 9)}
             />
-            قص متقدم (16:9)
+            {t.cropAdvanced169}
           </label>
           {p.imageUrl && (
             <Button
@@ -79,7 +82,7 @@ export function ModFormMedia(p: Props) {
               className="h-7 text-xs min-h-[44px]"
               onClick={() => p.handleUrlCrop(p.imageUrl, 'imageUrl', 16 / 9)}
             >
-              قص الرابط الحالي
+              {t.cropCurrentLink}
             </Button>
           )}
         </div>
@@ -87,9 +90,9 @@ export function ModFormMedia(p: Props) {
           bucket="mods"
           value={p.thumbnailUrl}
           onChange={p.setThumbnailUrl}
-          label="الصورة المصغّرة (Thumbnail) *"
+          label={t.thumbnail}
           required
-          hint="سحب وإفلات أو رفع — 1:1 — أعلى جودة"
+          hint={t.thumbnailHint}
           folder="thumbnails"
         />
         <div className="flex flex-wrap gap-2">
@@ -100,7 +103,7 @@ export function ModFormMedia(p: Props) {
               className="hidden"
               onChange={(e) => p.handleImageFileSelect(e, 'thumbnailUrl', 1)}
             />
-            قص متقدم (1:1)
+            {t.cropAdvanced11}
           </label>
           {p.thumbnailUrl && (
             <Button
@@ -109,7 +112,7 @@ export function ModFormMedia(p: Props) {
               className="h-7 text-xs min-h-[44px]"
               onClick={() => p.handleUrlCrop(p.thumbnailUrl, 'thumbnailUrl', 1)}
             >
-              قص الرابط الحالي
+              {t.cropCurrentLink}
             </Button>
           )}
         </div>
@@ -118,8 +121,8 @@ export function ModFormMedia(p: Props) {
           values={p.galleryUrls}
           onValuesChange={p.setGalleryUrls}
           multiple
-          label="معرض الصور"
-          hint="سحب متعدد — يرفع كل صورة لأعلى جودة — 4:3"
+          label={t.gallery}
+          hint={t.galleryHint}
           folder="gallery"
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -130,9 +133,9 @@ export function ModFormMedia(p: Props) {
               className="hidden"
               onChange={(e) => p.handleImageFileSelect(e, 'gallery', 4 / 3)}
             />
-            قص متقدم للمعرض (4:3)
+            {t.galleryCrop}
           </label>
-          <p className="text-xs text-muted-foreground">{p.galleryUrls.length} صورة</p>
+          <p className="text-xs text-muted-foreground">{p.galleryUrls.length} {t.imagesCount}</p>
         </div>
       </Section>
 
@@ -145,17 +148,17 @@ export function ModFormMedia(p: Props) {
           aspectRatio={p.cropperAspect}
           title={
             p.cropperTarget === 'imageUrl'
-              ? 'قص الصورة الرئيسية (16:9)'
+              ? t.cropBanner
               : p.cropperTarget === 'thumbnailUrl'
-                ? 'قص الصورة المصغّرة (1:1)'
-                : 'قص صورة المعرض (4:3)'
+                ? t.cropThumb
+                : t.cropGallery
           }
         />
       )}
 
-      {/* ===== 7. الفيديوهات ===== */}
+      {/* ===== 7. videos ===== */}
       <Section
-        title="الفيديوهات"
+        title={t.videos}
         icon={<Video className="h-4 w-4" />}
         action={
           <Button
@@ -166,16 +169,15 @@ export function ModFormMedia(p: Props) {
               p.setVideoGroups((prev) => [...prev, { name: '', videos: [] }])
             }
           >
-            <Plus className="ml-1 h-4 w-4" /> إضافة قسم
+            <Plus className="me-1 h-4 w-4" /> {t.addSection}
           </Button>
         }
       >
         <p className="text-xs text-muted-foreground mb-3">
-          الصق رابط يوتيوب فقط — وسيتم جلب كل البيانات تلقائياً (العنوان، الوصف، القناة، المشاهدات،
-          الإعجابات، التعليقات، المدة، تاريخ النشر، والصورة المصغّرة).
+          {t.youtubeHint}
         </p>
         {p.videoGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">لا توجد أقسام فيديوهات.</p>
+          <p className="text-sm text-muted-foreground">{t.noVideoSections}</p>
         ) : (
           <div className="space-y-4">
             {p.videoGroups.map((group, i) => (
@@ -188,7 +190,7 @@ export function ModFormMedia(p: Props) {
                         prev.map((g, idx) => (idx === i ? { ...g, name: e.target.value } : g)),
                       )
                     }
-                    placeholder="اسم القسم (مثال: فيديوهات شرح التركيب)"
+                    placeholder={t.videoSectionNamePh}
                     className="flex-1 font-medium"
                   />
                   <Button
@@ -198,7 +200,7 @@ export function ModFormMedia(p: Props) {
                     onClick={() =>
                       p.setVideoGroups((prev) => prev.filter((_, idx) => idx !== i))
                     }
-                    aria-label="حذف قسم الفيديو"
+                    aria-label={t.deleteVideoSection}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -238,7 +240,7 @@ export function ModFormMedia(p: Props) {
                               className="flex-1"
                             />
                             {isFetching && (
-                              <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />
+                              <Loader2 className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />
                             )}
                           </div>
                           <Button
@@ -249,11 +251,11 @@ export function ModFormMedia(p: Props) {
                             className="shrink-0 min-h-[44px]"
                           >
                             {isFetching ? (
-                              <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin" />
+                              <Loader2 className="me-1 h-3.5 w-3.5 animate-spin" />
                             ) : (
-                              <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                              <ExternalLink className="me-1 h-3.5 w-3.5" />
                             )}
-                            {hasFetched ? 'تحديث البيانات' : 'جلب البيانات'}
+                            {hasFetched ? t.refreshData : t.fetchData}
                           </Button>
                           <Button
                             size="icon"
@@ -268,7 +270,7 @@ export function ModFormMedia(p: Props) {
                                 ),
                               )
                             }
-                            aria-label="حذف الفيديو"
+                            aria-label={t.deleteVideo}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -294,7 +296,7 @@ export function ModFormMedia(p: Props) {
                                   </div>
                                 )}
                                 {v.duration && (
-                                  <span className="absolute bottom-1 left-1 rounded bg-black/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                  <span className="absolute bottom-1 start-1 rounded bg-black/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                     {v.duration}
                                   </span>
                                 )}
@@ -302,7 +304,7 @@ export function ModFormMedia(p: Props) {
                               <div className="flex min-w-0 flex-1 flex-col gap-1">
                                 <div className="flex items-center gap-1.5 text-[11px] text-green-500">
                                   <CheckCircle2 className="h-3.5 w-3.5" />
-                                  <span>تم الجلب تلقائياً من يوتيوب</span>
+                                  <span>{t.autoFetchedYoutube}</span>
                                 </div>
                                 <h5 className="line-clamp-2 text-sm font-bold text-foreground">
                                   {v.title}
@@ -326,7 +328,7 @@ export function ModFormMedia(p: Props) {
                                   {v.publishedAt && (
                                     <span className="flex items-center gap-1">
                                       <Calendar className="h-3 w-3" />
-                                      {formatArabicDate(v.publishedAt)}
+                                      {formatArabicDate(v.publishedAt, locale)}
                                     </span>
                                   )}
                                 </div>
@@ -375,7 +377,7 @@ export function ModFormMedia(p: Props) {
                       )
                     }
                   >
-                    <Plus className="ml-1 h-3 w-3" /> إضافة فيديو
+                    <Plus className="me-1 h-3 w-3" /> {t.addVideo}
                   </Button>
                 </div>
               </div>

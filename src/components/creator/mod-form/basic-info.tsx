@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { Field, Section } from './primitives'
 
 interface Props {
@@ -36,61 +37,63 @@ interface Props {
 }
 
 export function ModFormBasicInfo(p: Props) {
+  const { dict } = useStudioLanguage()
+  const t = dict.form
   return (
     <>
-      {/* ===== 1. المعلومات الأساسية ===== */}
-      <Section title="المعلومات الأساسية">
-        <Field label="اسم التعريب *" required>
+      {/* ===== 1. basic info ===== */}
+      <Section title={t.basicInfo}>
+        <Field label={t.modName} required>
           <Input
             value={p.name}
             onChange={(e) => p.setName(e.target.value)}
-            placeholder="مثال: Unofficial Skyrim Patch"
+            placeholder="Unofficial Skyrim Patch"
           />
         </Field>
-        <Field label="الاسم بالعربي">
+        <Field label={t.arabicName}>
           <Input
             value={p.arabicTitle}
             onChange={(e) => p.setArabicTitle(e.target.value)}
-            placeholder="مثال: باتش سكايرم غير الرسمي"
+            placeholder={t.arabicNamePh}
           />
         </Field>
-        <Field label="نطاق التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
+        <Field label={t.scope} hint={t.scopeHint}>
           <Input
             value={p.translationScope}
             onChange={(e) => p.setTranslationScope(e.target.value)}
-            placeholder="مثال: العالم العربي"
+            placeholder={t.scopePlaceholder}
           />
         </Field>
         <Field
-          label="الوصف الكامل *"
+          label={t.fullDesc}
           required
-          hint="يدعم Markdown — استخدم ## للعناوين و - للقوائم"
+          hint={t.descHint}
         >
           <Textarea
             value={p.description}
             onChange={(e) => p.setDescription(e.target.value)}
             rows={8}
-            placeholder="## عن هذا التعريب\n\n..."
+            placeholder="## ..."
           />
         </Field>
-        <Field label="الوسوم" hint="افصل بينها بفاصلة">
+        <Field label={t.tags} hint={t.tagsHint}>
           <Input
             value={p.tags}
             onChange={(e) => p.setTags(e.target.value)}
             placeholder="Bugfix, UI, Gameplay"
           />
         </Field>
-        <Field label="نوع التعريب" hint="اكتب أي نوع: رسمي، غير رسمي، واجهة، أسلحة، إلخ">
+        <Field label={t.modType} hint={t.modTypeHint}>
           <Input
             value={p.translationType}
             onChange={(e) => p.setTranslationType(e.target.value)}
-            placeholder="مثال: تعريب رسمي - واجهة وقوالب"
+            placeholder={t.modTypePlaceholder}
           />
         </Field>
       </Section>
 
-      {/* ===== مصدر التعريب — creator vs publisher ===== */}
-      <Section title="مصدر التعريب">
+      {/* ===== mod source — creator vs publisher ===== */}
+      <Section title={t.modSource}>
         <div className="flex items-center gap-3">
           <Switch
             id="isOriginalWork"
@@ -103,55 +106,55 @@ export function ModFormBasicInfo(p: Props) {
           />
           <Label htmlFor="isOriginalWork" className="cursor-pointer">
             {p.userRole === 'publisher'
-              ? 'هذا التعريب من مصدر خارجي (الناشر ينشر من مصادر خارجية فقط)'
+              ? t.externalYes
               : p.isOriginalWork
-                ? 'هذا التعريب من ترجمتي الخاصة'
-                : 'هذا التعريب من مصدر خارجي'}
+                ? t.ownYes
+                : t.ownNo}
           </Label>
         </div>
         {(p.userRole === 'publisher' ? true : !p.isOriginalWork) && (
           <div className="space-y-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
             <p className="text-sm text-amber-600">
-              ⚠️ يجب ذكر المصدر الأصلي عند النشر من مصدر خارجي
+              {t.externalWarn}
             </p>
-            <Field label="المصدر الأصلي *" required>
+            <Field label={t.origSource} required>
               <Input
                 value={p.originalSource}
                 onChange={(e) => p.setOriginalSource(e.target.value)}
-                placeholder="رابط أو اسم المصدر الأصلي"
+                placeholder={t.origSourcePlaceholder}
               />
             </Field>
-            <Field label="اسم المترجم الأصلي">
+            <Field label={t.origAuthor}>
               <Input
                 value={p.originalAuthor}
                 onChange={(e) => p.setOriginalAuthor(e.target.value)}
-                placeholder="اسم الشخص أو الفريق الأصلي"
+                placeholder={t.origAuthorPlaceholder}
               />
             </Field>
           </div>
         )}
       </Section>
 
-      {/* ===== 9. سجل التغييرات ===== */}
-      <Section title="سجل التغييرات">
-        <Field label="محتوى سجل التغييرات" hint="يدعم Markdown">
+      {/* ===== 9. changelog ===== */}
+      <Section title={t.changelog}>
+        <Field label={t.changelogContent} hint={t.changelogHint}>
           <Textarea
             value={p.changelog}
             onChange={(e) => p.setChangelog(e.target.value)}
             rows={6}
-            placeholder="## v1.0.0\n- الإصدار الأول العام..."
+            placeholder="## v1.0.0"
           />
         </Field>
       </Section>
 
-      {/* ===== 10. طريقة التركيب ===== */}
-      <Section title="طريقة التركيب">
-        <Field label="دليل التركيب" hint="يدعم Markdown — اكتب خطوات التركيب بالتفصيل">
+      {/* ===== 10. install guide ===== */}
+      <Section title={t.installGuide}>
+        <Field label={t.installContent} hint={t.installHint}>
           <Textarea
             value={p.installGuide}
             onChange={(e) => p.setInstallGuide(e.target.value)}
             rows={8}
-            placeholder="## طريقة التركيب\n\n1. حمّل ملف التعريب\n2. استخرج الملفات\n3. انسخها لمجلد اللعبة\n4. فعّل العربية من الإعدادات"
+            placeholder="## ..."
           />
         </Field>
       </Section>
