@@ -2,10 +2,17 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ModForm from '@/components/creator/mod-form'
 import { getSession } from '@/lib/auth'
+import { getStudioLocale } from '@/lib/studio-i18n/server'
+import { ar } from '@/lib/studio-i18n/ar'
+import { en } from '@/lib/studio-i18n/en'
 
-export const metadata: Metadata = {
-  title: 'تعريب جديد | لوحة تحكم المُعَرِّب',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStudioLocale()
+  const t = locale === 'en' ? en : ar
+  return {
+    title: `${t.newModPage.metaTitle} | ${t.meta.suffix}`,
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function NewModPage() {

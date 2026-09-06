@@ -112,4 +112,50 @@ export const en: StudioDict = {
     submit: 'Submit',
     done: 'Done',
   },
+  meta: {
+    suffix: 'Creator Dashboard',
+  },
+  newModPage: {
+    metaTitle: 'New Mod',
+  },
+  editModPage: {
+    metaTitle: 'Edit Mod',
+  },
+  modsPage: {
+    title: 'My Mods',
+    metaTitle: 'My Mods',
+  },
+  commentsPage: {
+    title: 'Comment Management',
+    subtitle: 'Manage comments on your mods — reply, hide, delete',
+    metaTitle: 'Comment Management',
+  },
+  requestsPage: {
+    title: 'Mod Requests',
+    subtitle: 'Browse community requests, accept what suits you, then link your mod on completion',
+    metaTitle: 'Mod Requests',
+  },
+  settingsPage: {
+    title: 'Dashboard Settings',
+    subtitle: 'Manage your creator dashboard settings',
+    metaTitle: 'Dashboard Settings',
+    profile: 'Profile',
+    bio: 'Bio',
+    noBio: 'No bio yet',
+    website: 'Website',
+    editProfile: 'Edit Profile',
+    notifications: 'Notifications',
+    manageNotifPrefs: 'Manage notification preferences',
+    openNotifSettings: 'Open Notification Settings',
+  },
+  statsPage: {
+    title: 'My Statistics',
+    subtitle: 'Track your mods performance in detail',
+    metaTitle: 'My Statistics',
+    empty: 'No published mods to show statistics for',
+    views: 'views',
+    downloads: 'downloads',
+    rating: 'rating',
+    comments: 'comments',
+  },
 }

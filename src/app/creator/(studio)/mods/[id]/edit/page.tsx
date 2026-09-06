@@ -3,10 +3,17 @@ import { notFound, redirect } from 'next/navigation'
 import ModForm from '@/components/creator/mod-form'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getStudioLocale } from '@/lib/studio-i18n/server'
+import { ar } from '@/lib/studio-i18n/ar'
+import { en } from '@/lib/studio-i18n/en'
 
-export const metadata: Metadata = {
-  title: 'تعديل التعريب | لوحة تحكم المُعَرِّب',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStudioLocale()
+  const t = locale === 'en' ? en : ar
+  return {
+    title: `${t.editModPage.metaTitle} | ${t.meta.suffix}`,
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function EditModPage({ params }: { params: Promise<{ id: string }> }) {

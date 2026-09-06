@@ -6,10 +6,17 @@ import { Button } from '@/components/official-ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-ui/card'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
+import { ar } from '@/lib/studio-i18n/ar'
+import { en } from '@/lib/studio-i18n/en'
 
-export const metadata: Metadata = {
-  title: 'إعدادات لوحة التحكم | لوحة تحكم المُعَرِّب',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStudioLocale()
+  const t = locale === 'en' ? en : ar
+  return {
+    title: `${t.settingsPage.metaTitle} | ${t.meta.suffix}`,
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function CreatorSettingsPage() {
@@ -23,27 +30,28 @@ export default async function CreatorSettingsPage() {
     where: { id: session.id },
     select: { bio: true, websiteUrl: true, twitterUrl: true, youtubeUrl: true, discordUrl: true },
   })
+  const { dict } = await getStudioDict()
 
   return (
-    <div className="space-y-6 max-w-2xl" dir="rtl">
+    <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Settings className="h-6 w-6" />
-          إعدادات لوحة التحكم
+          {dict.settingsPage.title}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">إدارة إعدادات لوحة تحكم المُعَرِّب</p>
+        <p className="text-sm text-muted-foreground mt-1">{dict.settingsPage.subtitle}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>الملف الشخصي</CardTitle>
+          <CardTitle>{dict.settingsPage.profile}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <div>السيرة: {user?.bio || 'لا توجد سيرة'}</div>
-          <div>الموقع: {user?.websiteUrl || '—'}</div>
+          <div>{dict.settingsPage.bio}: {user?.bio || dict.settingsPage.noBio}</div>
+          <div>{dict.settingsPage.website}: {user?.websiteUrl || '—'}</div>
           <Link href="/settings?section=profile">
             <Button variant="outline" size="sm" className="mt-2">
-              تعديل الملف الشخصي
+              {dict.settingsPage.editProfile}
             </Button>
           </Link>
         </CardContent>
@@ -53,14 +61,14 @@ export default async function CreatorSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            الإشعارات
+            {dict.settingsPage.notifications}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">إدارة تفضيلات الإشعارات</p>
+          <p className="text-sm text-muted-foreground mb-3">{dict.settingsPage.manageNotifPrefs}</p>
           <Link href="/settings?section=notifications">
             <Button variant="outline" size="sm">
-              فتح إعدادات الإشعارات
+              {dict.settingsPage.openNotifSettings}
             </Button>
           </Link>
         </CardContent>

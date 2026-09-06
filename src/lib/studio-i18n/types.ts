@@ -114,4 +114,50 @@ export interface StudioDict {
     submit: string
     done: string
   }
+  meta: {
+    suffix: string
+  }
+  newModPage: {
+    metaTitle: string
+  }
+  editModPage: {
+    metaTitle: string
+  }
+  modsPage: {
+    title: string
+    metaTitle: string
+  }
+  commentsPage: {
+    title: string
+    subtitle: string
+    metaTitle: string
+  }
+  requestsPage: {
+    title: string
+    subtitle: string
+    metaTitle: string
+  }
+  settingsPage: {
+    title: string
+    subtitle: string
+    metaTitle: string
+    profile: string
+    bio: string
+    noBio: string
+    website: string
+    editProfile: string
+    notifications: string
+    manageNotifPrefs: string
+    openNotifSettings: string
+  }
+  statsPage: {
+    title: string
+    subtitle: string
+    metaTitle: string
+    empty: string
+    views: string
+    downloads: string
+    rating: string
+    comments: string
+  }
 }

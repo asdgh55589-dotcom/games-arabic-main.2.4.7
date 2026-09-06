@@ -113,4 +113,50 @@ export const ar: StudioDict = {
     submit: 'إرسال',
     done: 'تم',
   },
+  meta: {
+    suffix: 'لوحة تحكم المُعَرِّب',
+  },
+  newModPage: {
+    metaTitle: 'تعريب جديد',
+  },
+  editModPage: {
+    metaTitle: 'تعديل التعريب',
+  },
+  modsPage: {
+    title: 'تعريباتي',
+    metaTitle: 'تعريباتي',
+  },
+  commentsPage: {
+    title: 'إدارة التعليقات',
+    subtitle: 'إدارة التعليقات على تعريباتك — الرد، الإخفاء، الحذف',
+    metaTitle: 'إدارة التعليقات',
+  },
+  requestsPage: {
+    title: 'طلبات التعريب',
+    subtitle: 'تصفح طلبات المجتمع وقبول ما يناسبك، ثم اربطه بتعريبك عند الإكمال',
+    metaTitle: 'طلبات التعريب',
+  },
+  settingsPage: {
+    title: 'إعدادات لوحة التحكم',
+    subtitle: 'إدارة إعدادات لوحة تحكم المُعَرِّب',
+    metaTitle: 'إعدادات لوحة التحكم',
+    profile: 'الملف الشخصي',
+    bio: 'السيرة',
+    noBio: 'لا توجد سيرة',
+    website: 'الموقع',
+    editProfile: 'تعديل الملف الشخصي',
+    notifications: 'الإشعارات',
+    manageNotifPrefs: 'إدارة تفضيلات الإشعارات',
+    openNotifSettings: 'فتح إعدادات الإشعارات',
+  },
+  statsPage: {
+    title: 'إحصائياتي',
+    subtitle: 'تابع أداء تعريباتك بالتفصيل',
+    metaTitle: 'إحصائياتي',
+    empty: 'لا توجد تعريبات منشورة لعرض الإحصائيات',
+    views: 'مشاهدة',
+    downloads: 'تحميل',
+    rating: 'تقييم',
+    comments: 'تعليق',
+  },
 }
