@@ -403,6 +403,9 @@ export const en: StudioDict = {
     cancel: 'Cancel',
     saveChanges: 'Save changes',
     publishMod: 'Publish mod',
+    cropUploading: 'Uploading cropped image...',
+    cropUploadFailed: 'Cropped image upload failed — please try again',
+    cropNotUploaded: 'Cropped image is still uploading — wait before saving',
   },
   apply: {
     requiredFields: 'Required fields',
@@ -446,5 +449,16 @@ export const en: StudioDict = {
     submitting: 'Submitting...',
     submit: 'Submit request',
     backLink: 'Back',
+  },
+  suspended: {
+    metaTitle: 'Account suspended',
+    title: 'Your account has been suspended',
+    hello: 'Hello',
+    tempWord: 'temporarily',
+    permWord: 'permanently',
+    noAccess: 'and you cannot access the creator dashboard right now.',
+    reason: 'Reason:',
+    expiresAt: 'Suspension ends:',
+    backHome: 'Back to home',
   },
 }

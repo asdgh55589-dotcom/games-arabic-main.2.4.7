@@ -404,6 +404,9 @@ export const ar: StudioDict = {
     cancel: 'إلغاء',
     saveChanges: 'حفظ التعديلات',
     publishMod: 'نشر التعريب',
+    cropUploading: 'جاري رفع الصورة المقصوصة...',
+    cropUploadFailed: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى',
+    cropNotUploaded: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ',
   },
   apply: {
     requiredFields: 'الحقول المطلوبة',
@@ -447,5 +450,16 @@ export const ar: StudioDict = {
     submitting: 'جاري الإرسال...',
     submit: 'إرسال الطلب',
     backLink: 'العودة',
+  },
+  suspended: {
+    metaTitle: 'الحساب موقوف',
+    title: 'تم تعليق حسابك',
+    hello: 'أهلاً',
+    tempWord: 'مؤقتاً',
+    permWord: 'نهائياً',
+    noAccess: 'ولا يمكنك الوصول إلى لوحة المُعَرِّب حالياً.',
+    reason: 'السبب:',
+    expiresAt: 'ينتهي التعليق في:',
+    backHome: 'العودة إلى الرئيسية',
   },
 }

@@ -405,6 +405,9 @@ export interface StudioDict {
     cancel: string
     saveChanges: string
     publishMod: string
+    cropUploading: string
+    cropUploadFailed: string
+    cropNotUploaded: string
   }
   apply: {
     requiredFields: string
@@ -448,5 +451,16 @@ export interface StudioDict {
     submitting: string
     submit: string
     backLink: string
+  }
+  suspended: {
+    metaTitle: string
+    title: string
+    hello: string
+    tempWord: string
+    permWord: string
+    noAccess: string
+    reason: string
+    expiresAt: string
+    backHome: string
   }
 }

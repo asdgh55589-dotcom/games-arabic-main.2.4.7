@@ -41,6 +41,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import {
+  cropTargetToImageType,
+  isDataUrl,
+  uploadCroppedDataUrl,
+} from '@/lib/upload-cropped'
 import { formatArabicDate, formatNumber } from '@/lib/format'
 
 // ===== Types =====
@@ -199,6 +204,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [cropperTarget, setCropperTarget] = useState<
     'imageUrl' | 'thumbnailUrl' | 'gallery' | null
   >(null)
+  // True while a cropped image is being uploaded — save is blocked meanwhile
+  // so a data: URL can never land in the DB.
+  const [cropUploading, setCropUploading] = useState(false)
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
 
@@ -425,10 +433,32 @@ export default function ModForm({ modId }: ModFormProps) {
     e.target.value = ''
   }
 
-  const handleCropComplete = (croppedImage: string) => {
-    if (cropperTarget === 'imageUrl') setImageUrl(croppedImage)
-    else if (cropperTarget === 'thumbnailUrl') setThumbnailUrl(croppedImage)
-    else if (cropperTarget === 'gallery') setGalleryUrls((prev) => [...prev, croppedImage])
+  // Crop → Blob → server upload → https URL. The data: URL is NEVER
+  // stored in state (it would otherwise land in the DB as multi-MB base64).
+  const handleCropComplete = async (croppedImage: string) => {
+    const target = cropperTarget
+    if (!target) return
+    if (!isDataUrl(croppedImage)) {
+      if (target === 'imageUrl') setImageUrl(croppedImage)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(croppedImage)
+      else setGalleryUrls((prev) => [...prev, croppedImage])
+      return
+    }
+    setCropUploading(true)
+    try {
+      const url = await uploadCroppedDataUrl(
+        croppedImage,
+        cropTargetToImageType(target),
+        modId,
+      )
+      if (target === 'imageUrl') setImageUrl(url)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(url)
+      else setGalleryUrls((prev) => [...prev, url])
+    } catch {
+      toast({ title: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى', variant: 'destructive' })
+    } finally {
+      setCropUploading(false)
+    }
   }
 
   const handleUrlCrop = (url: string, target: 'imageUrl' | 'thumbnailUrl', aspect: number) => {
@@ -444,6 +474,19 @@ export default function ModForm({ modId }: ModFormProps) {
 
   // ===== Save =====
   const onSave = async () => {
+    // Defense in depth: never persist base64.
+    if (cropUploading) {
+      toast({ title: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ', variant: 'destructive' })
+      return
+    }
+    if (
+      isDataUrl(thumbnailUrl) ||
+      isDataUrl(imageUrl) ||
+      galleryUrls.some((u) => isDataUrl(u))
+    ) {
+      toast({ title: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى', variant: 'destructive' })
+      return
+    }
     if (loadError) {
       toast({
         title: 'تنبيه',

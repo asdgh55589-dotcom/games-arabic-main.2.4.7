@@ -15,6 +15,11 @@ import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-bad
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import {
+  cropTargetToImageType,
+  isDataUrl,
+  uploadCroppedDataUrl,
+} from '@/lib/upload-cropped'
 import { ModFormActions } from './mod-form/actions'
 import { ModFormBasicInfo } from './mod-form/basic-info'
 import { ModFormFiles } from './mod-form/files'
@@ -44,7 +49,7 @@ interface ModFormProps {
 export default function ModForm({ modId }: ModFormProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { dict, dir } = useStudioLanguage()
+  const { dict, dir, locale } = useStudioLanguage()
   const t = dict.form
   const isEdit = Boolean(modId)
 
@@ -99,6 +104,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [cropperTarget, setCropperTarget] = useState<
     'imageUrl' | 'thumbnailUrl' | 'gallery' | null
   >(null)
+  // True while a cropped image is being uploaded — save is blocked meanwhile
+  // so a data: URL can never land in the DB.
+  const [cropUploading, setCropUploading] = useState(false)
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
 
@@ -320,10 +328,33 @@ export default function ModForm({ modId }: ModFormProps) {
     e.target.value = ''
   }
 
-  const handleCropComplete = (croppedImage: string) => {
-    if (cropperTarget === 'imageUrl') setImageUrl(croppedImage)
-    else if (cropperTarget === 'thumbnailUrl') setThumbnailUrl(croppedImage)
-    else if (cropperTarget === 'gallery') setGalleryUrls((prev) => [...prev, croppedImage])
+  // Crop → Blob → server upload → https URL. The data: URL is NEVER
+  // stored in state (it would otherwise land in the DB as multi-MB base64).
+  const handleCropComplete = async (croppedImage: string) => {
+    const target = cropperTarget
+    if (!target) return
+    if (!isDataUrl(croppedImage)) {
+      // Already a URL (e.g. uncropped remote) — keep previous behavior.
+      if (target === 'imageUrl') setImageUrl(croppedImage)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(croppedImage)
+      else setGalleryUrls((prev) => [...prev, croppedImage])
+      return
+    }
+    setCropUploading(true)
+    try {
+      const url = await uploadCroppedDataUrl(
+        croppedImage,
+        cropTargetToImageType(target),
+        modId,
+      )
+      if (target === 'imageUrl') setImageUrl(url)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(url)
+      else setGalleryUrls((prev) => [...prev, url])
+    } catch {
+      toast({ title: t.cropUploadFailed, variant: 'destructive' })
+    } finally {
+      setCropUploading(false)
+    }
   }
 
   const handleUrlCrop = (url: string, target: 'imageUrl' | 'thumbnailUrl', aspect: number) => {
@@ -339,6 +370,20 @@ export default function ModForm({ modId }: ModFormProps) {
 
   // ===== Save =====
   const onSave = async () => {
+    // Defense in depth: never persist base64 — block save while a crop
+    // upload is in flight or any image field still holds a data: URL.
+    if (cropUploading) {
+      toast({ title: t.cropNotUploaded, variant: 'destructive' })
+      return
+    }
+    if (
+      isDataUrl(thumbnailUrl) ||
+      isDataUrl(imageUrl) ||
+      galleryUrls.some((u) => isDataUrl(u))
+    ) {
+      toast({ title: t.cropUploadFailed, variant: 'destructive' })
+      return
+    }
     const _name = (name || '').trim()
     const _description = (description || '').trim()
     if (!_name || !_description) {
@@ -347,7 +392,7 @@ export default function ModForm({ modId }: ModFormProps) {
       if (!_description) missing.push(t.missingDesc)
       toast({
         title: t.incompleteData,
-        description: `${t.requiredFields}: ${missing.join('، ')}`,
+        description: `${t.requiredFields}: ${missing.join(locale === 'ar' ? '، ' : ', ')}`,
         variant: 'destructive',
       })
       return
