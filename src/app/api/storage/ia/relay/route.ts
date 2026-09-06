@@ -8,8 +8,12 @@ import { checkUploadQuota } from '@/lib/quota'
 
 // POST /api/storage/ia/relay — FALLBACK when browser→IA direct is blocked
 // (e.g. IA S3 CORS). Raw octet-stream body + x-ia-* headers; the server
-// STREAMS bytes to IA (flat memory via SDK chunked signing) — our bandwidth
+// STREAMS bytes to IA with explicit Content-Length (flat memory) — our bandwidth
 // is consumed, so prefer IA_UPLOAD_MODE=direct whenever it works.
+//
+// DIAGNOSTIC CONSTRAINT (live-tested): IA answers 411 Length Required to
+// chunked transfer-encoding — ContentLength is therefore REQUIRED below
+// (taken from x-ia-bytes, validated against quota). Never stream without it.
 export async function POST(req: NextRequest) {
   try {
     const { user, error } = await requireCreatorStudio(req)

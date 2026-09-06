@@ -78,10 +78,16 @@ export interface IaSignedUpload {
  * Presigned PUT for DIRECT browser→IA streaming (full bandwidth, keys stay
  * server-side). Client must PUT raw bytes with the returned headers exactly.
  *
+ * ⛔ PHASE 2.1 — PROVEN DEAD against live IA (see ../app/api/storage/ia/README.md):
+ * query-presigned SigV4 → 403 InvalidAccessKeyId. Kept for reference only.
+ * The remaining direct-mode candidate (UNTESTED) is header-based SigV4:
+ * server signs an `Authorization` header set, browser echoes it on a raw PUT.
+ *
  * OPS NOTE (verify in staging with a real test upload): the IA_IDENTIFIER
  * item must exist (create once via archive.org upload UI or first server
- * relay) with the desired collection; presigned PUTs then write files into
- * it. If IA ever rejects SigV4, set IA_UPLOAD_MODE=relay (server streams).
+ * relay) with the desired collection. Keep IA_ENABLED=false until ONE real
+ * staging upload passes in EACH mode (direct-header vs relay); if both
+ * fail → R2 buffer architecture (owner-approved fallback).
  */
 export async function signIaPut(params: {
   key: string
