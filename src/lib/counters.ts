@@ -44,6 +44,16 @@ function hashUA(userAgent: string): string {
   return (h >>> 0).toString(36)
 }
 
+/** Privacy hash for guest identifiers (stored instead of raw IP). */
+export function hashIdentity(s: string): string {
+  let h = 0
+  const input = s.slice(0, 200)
+  for (let i = 0; i < input.length; i++) {
+    h = ((h << 5) - h + input.charCodeAt(i)) | 0
+  }
+  return (h >>> 0).toString(36)
+}
+
 interface CounterIdentity {
   /** مفتاح الهوية داخل الـ dedup key */
   identity: string
@@ -150,6 +160,34 @@ export async function recordTeamView(teamId: string, req: Request, db: any): Pro
   await db.team.update({
     where: { id: teamId },
     data: { views: { increment: 1 } },
+  })
+  return { counted: true }
+}
+
+/**
+ * Wave B Task 5 — تسجيل فتح قسم التعليقات (funnel: view → download → click).
+ * نفس سياسة المشاهدات (bot-excluded + Redis dedup). يُرجع counted=false
+ * للمكرر أو الـ bots. لا يوجد عدّاد تراكمي — التجميع من الجدول مباشرة.
+ */
+export async function recordCommentSectionClick(
+  modId: string,
+  req: Request,
+  db: any,
+): Promise<RecordResult> {
+  const userAgent = req.headers.get('user-agent')
+  if (isBot(userAgent)) return { counted: false }
+
+  const { fresh, identity } = await shouldCount(`csc:mod:${modId}`, req)
+  if (!fresh) return { counted: false }
+
+  const ip = getClientIP(req)
+  await db.commentSectionClick.create({
+    data: {
+      modId,
+      userId: identity.authenticated ? identity.identity.slice(2) : null,
+      ipHash: identity.authenticated ? null : hashIdentity(`${ip}:${userAgent || 'unknown'}`),
+      userAgent: userAgent?.substring(0, 200) || null,
+    },
   })
   return { counted: true }
 }

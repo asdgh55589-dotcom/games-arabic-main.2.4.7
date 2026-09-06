@@ -40,6 +40,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { ModComments } from '@/components/mod-comments'
+import { CommentSectionBeacon } from '@/components/comment-section-beacon'
 import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
@@ -897,6 +898,7 @@ export function ModDetailPage() {
 
                   <TabsContent value="comments" className="mt-0" dir="rtl">
                     <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                      <CommentSectionBeacon slug={mod.slug} />
                       <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
                     </Card>
                   </TabsContent>

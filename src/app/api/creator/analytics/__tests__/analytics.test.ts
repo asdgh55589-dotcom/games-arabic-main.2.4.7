@@ -8,6 +8,7 @@ jest.mock('@/lib/db', () => ({
     modView: { findMany: jest.fn(), count: jest.fn() },
     downloadClick: { findMany: jest.fn(), count: jest.fn() },
     modComment: { count: jest.fn() },
+    commentSectionClick: { findMany: jest.fn(), count: jest.fn() },
   },
 }));
 
@@ -26,6 +27,7 @@ const mockDb = db as unknown as {
   modView: { findMany: jest.Mock; count: jest.Mock };
   downloadClick: { findMany: jest.Mock; count: jest.Mock };
   modComment: { count: jest.Mock };
+  commentSectionClick: { findMany: jest.Mock; count: jest.Mock };
 };
 
 const MODS = [{ id: 'm-1' }, { id: 'm-2' }];
@@ -43,8 +45,10 @@ describe('GET /api/creator/analytics/history', () => {
   beforeEach(() => {
     mockDb.modView.findMany.mockResolvedValue([]);
     mockDb.downloadClick.findMany.mockResolvedValue([]);
+    mockDb.commentSectionClick.findMany.mockResolvedValue([]);
     mockDb.modView.count.mockResolvedValue(0);
     mockDb.downloadClick.count.mockResolvedValue(0);
+    mockDb.commentSectionClick.count.mockResolvedValue(0);
   });
 
   it('returns zero-filled daily buckets for the range', async () => {
@@ -113,6 +117,7 @@ describe('GET /api/creator/analytics', () => {
     mockDb.modView.count.mockResolvedValue(100);
     mockDb.downloadClick.count.mockResolvedValue(40);
     mockDb.modComment.count.mockResolvedValue(12);
+    mockDb.commentSectionClick.count.mockResolvedValue(0);
     mockDb.mod.aggregate.mockResolvedValue({ _sum: { endorsements: 9 } });
   });
 

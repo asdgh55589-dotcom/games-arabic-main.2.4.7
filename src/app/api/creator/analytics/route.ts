@@ -61,6 +61,14 @@ export async function GET(req: NextRequest) {
       modIds.length > 0
         ? { modId: { in: modIds }, createdAt: { gte: prevStart, lt: start } as const }
         : { modId: { in: ['__none__'] } }
+    const cscWhere =
+      modIds.length > 0
+        ? { modId: { in: modIds }, createdAt: { gte: start } as const }
+        : { modId: { in: ['__none__'] } }
+    const cscPrevWhere =
+      modIds.length > 0
+        ? { modId: { in: modIds }, createdAt: { gte: prevStart, lt: start } as const }
+        : { modId: { in: ['__none__'] } }
 
     const [
       totalViews,
@@ -71,6 +79,8 @@ export async function GET(req: NextRequest) {
       likesAgg,
       newModsThisPeriod,
       activeModsCount,
+      totalCommentClicks,
+      prevCommentClicks,
     ] = await Promise.all([
       db.modView.count({ where: viewWhere }),
       db.modView.count({ where: viewPrevWhere }),
@@ -85,7 +95,12 @@ export async function GET(req: NextRequest) {
       }),
       db.mod.count({ where: { authorId: user.id, createdAt: { gte: start } } }),
       db.mod.count({ where: { authorId: user.id, workflowStatus: 'PUBLISHED' } }),
+      db.commentSectionClick.count({ where: cscWhere }),
+      db.commentSectionClick.count({ where: cscPrevWhere }),
     ])
+
+    const pct = (num: number, den: number) =>
+      den > 0 ? Number(((num / den) * 100).toFixed(1)) : 0
 
     return ok(
       {
@@ -98,6 +113,16 @@ export async function GET(req: NextRequest) {
         totalLikes: likesAgg._sum.endorsements ?? 0,
         newModsThisPeriod,
         activeModsCount,
+        // Wave B Task 5 — funnel step 3 (comment-section opens).
+        totalCommentClicks,
+        commentClicksChange: changeRate(totalCommentClicks, prevCommentClicks),
+        funnel: {
+          views: totalViews,
+          downloads: totalDownloads,
+          commentClicks: totalCommentClicks,
+          viewToDownloadPct: pct(totalDownloads, totalViews),
+          downloadToClickPct: pct(totalCommentClicks, totalDownloads),
+        },
       },
       PRIVATE_NO_STORE,
     )

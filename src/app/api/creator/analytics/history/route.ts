@@ -52,9 +52,10 @@ export async function GET(req: NextRequest) {
 
     const viewsBuckets = buckets.map((b) => ({ ...b }))
     const downloadsBuckets = buckets.map((b) => ({ ...b }))
+    const commentClicksBuckets = buckets.map((b) => ({ ...b }))
 
     if (modIds.length > 0) {
-      const [viewRows, downloadRows, totalViews, totalDownloads] = await Promise.all([
+      const [viewRows, downloadRows, clickRows, totalViews, totalDownloads, totalCommentClicks] = await Promise.all([
         db.modView.findMany({
           where: { modId: { in: modIds }, viewedAt: { gte: start } },
           select: { viewedAt: true },
@@ -63,8 +64,13 @@ export async function GET(req: NextRequest) {
           where: { modId: { in: modIds }, createdAt: { gte: start } },
           select: { createdAt: true },
         }),
+        db.commentSectionClick.findMany({
+          where: { modId: { in: modIds }, createdAt: { gte: start } },
+          select: { createdAt: true },
+        }),
         db.modView.count({ where: { modId: { in: modIds }, viewedAt: { gte: start } } }),
         db.downloadClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
+        db.commentSectionClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
       ])
 
       for (const row of viewRows) {
@@ -75,15 +81,19 @@ export async function GET(req: NextRequest) {
         const idx = indexByDay.get(row.createdAt.toISOString().slice(0, 10))
         if (idx !== undefined) downloadsBuckets[idx].count++
       }
+      for (const row of clickRows) {
+        const idx = indexByDay.get(row.createdAt.toISOString().slice(0, 10))
+        if (idx !== undefined) commentClicksBuckets[idx].count++
+      }
 
       return ok(
-        { views: viewsBuckets, downloads: downloadsBuckets, totalViews, totalDownloads },
+        { views: viewsBuckets, downloads: downloadsBuckets, commentClicks: commentClicksBuckets, totalViews, totalDownloads, totalCommentClicks },
         PRIVATE_NO_STORE,
       )
     }
 
     return ok(
-      { views: viewsBuckets, downloads: downloadsBuckets, totalViews: 0, totalDownloads: 0 },
+      { views: viewsBuckets, downloads: downloadsBuckets, commentClicks: commentClicksBuckets, totalViews: 0, totalDownloads: 0, totalCommentClicks: 0 },
       PRIVATE_NO_STORE,
     )
   } catch (err) {

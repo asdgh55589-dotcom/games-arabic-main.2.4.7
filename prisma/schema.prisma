@@ -137,6 +137,7 @@ model User {
   ticketMessages         TicketMessage[]
   savedSearches          SavedSearch[]
   modViews               ModView[]
+  commentSectionClicks CommentSectionClick[]
   adClicks               AdClick[]
   newsViews              NewsView[]
   newsClicks             NewsClick[]
@@ -321,6 +322,7 @@ model Mod {
   bookmarks           Bookmark[]
   downloadClicks      DownloadClick[]
   modViews            ModView[]
+  commentSectionClicks CommentSectionClick[]
   scheduledJobs       ScheduledJob[]
   workflowStatus      String           @default("DRAFT") // DRAFT|IN_REVIEW|APPROVED|PUBLISHED|ARCHIVED|REJECTED
   workflowHistory     WorkflowEntry[]
@@ -1237,6 +1239,23 @@ model ModView {
   @@index([userId])
   @@index([viewedAt])
   @@index([modId, viewedAt])
+}
+
+// ===== Wave B Task 5 — فتحات قسم التعليقات (funnel: view → download → comment-click) =====
+// صف لكل فتح فريد (dedup عبر Redis مثل المشاهدات). ipHash بدل IP الخام للخصوصية.
+// لا يوجد عدّاد تراكمي على Mod — التحليلات تجمع من هذا الجدول مباشرة.
+model CommentSectionClick {
+  id        String   @id @default(cuid())
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipHash    String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([modId])
+  @@index([modId, createdAt])
 }
 
 model ScheduledJob {
