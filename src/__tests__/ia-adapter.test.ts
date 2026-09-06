@@ -34,6 +34,7 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 import { POST as signPOST } from '@/app/api/storage/ia/sign/route'
 import { POST as completePOST } from '@/app/api/storage/ia/complete/route'
 import { POST as relayPOST } from '@/app/api/storage/ia/relay/route'
+import { POST as uploadFilePOST } from '@/app/api/storage/upload-file/route'
 
 const USER = { id: 'u-9', username: 'creator1', email: 'c@x', role: 'creator', avatarUrl: null }
 const { NextRequest } = jest.requireActual('next/server') as typeof import('next/server')
@@ -48,6 +49,7 @@ function jsonReq(url: string, body: unknown) {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  process.env.IA_ENABLED = 'true'
   process.env.IA_ACCESS_KEY = 'AK'
   process.env.IA_SECRET_KEY = 'SK'
   process.env.IA_IDENTIFIER = 'games-arabic-mods-test'
@@ -63,6 +65,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  delete process.env.IA_ENABLED
   delete process.env.IA_ACCESS_KEY
   delete process.env.IA_SECRET_KEY
   delete process.env.IA_IDENTIFIER
@@ -202,5 +205,59 @@ describe('POST /api/storage/ia/relay', () => {
     expect(res.status).toBe(422)
     expect(JSON.stringify(await res.json())).toMatch(/حد الرفع اليومي/)
     expect(mockSend).not.toHaveBeenCalled()
+  })
+})
+
+describe('Phase 2.1 — IA disabled by default (COMING_SOON, fail closed)', () => {
+  const good = { filename: 'patch.zip', mime: 'application/zip', bytes: 1024 }
+  const done = {
+    key: 'u-9/x.zip',
+    downloadUrl: 'https://archive.org/download/i/u-9/x.zip',
+    bytes: 1234, mime: 'application/zip', mode: 'direct',
+  }
+
+  beforeEach(() => {
+    delete process.env.IA_ENABLED
+  })
+
+  it('sign/relay/complete/upload-file all return 503 without touching IA', async () => {
+    const signRes = await signPOST(jsonReq('http://x/', good))
+    expect(signRes.status).toBe(503)
+    expect(JSON.stringify(await signRes.json())).toMatch(/قريبًا/)
+
+    const relayStream = new ReadableStream({
+      start(c) { c.enqueue(new Uint8Array([1])); c.close() },
+    })
+    const relayRes = await relayPOST(new NextRequest('http://x/api/storage/ia/relay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'x-ia-filename': 'patch.zip',
+        'x-ia-bytes': '1',
+      },
+      body: relayStream as never,
+      duplex: 'half',
+    } as never))
+    expect(relayRes.status).toBe(503)
+
+    const doneRes = await completePOST(jsonReq('http://x/', done))
+    expect(doneRes.status).toBe(503)
+
+    const upRes = await uploadFilePOST(jsonReq('http://x/', {}))
+    expect(upRes.status).toBe(503)
+    const upBody = await upRes.json()
+    expect(upBody.error.code).toBe('COMING_SOON')
+    expect(upBody.error.message).toMatch(/قريبًا/)
+
+    expect(mockPresign).not.toHaveBeenCalled()
+    expect(mockSend).not.toHaveBeenCalled()
+    expect(mockRecord).not.toHaveBeenCalled()
+  })
+
+  it('auth still runs before the flag (no anonymous probing)', async () => {
+    mockStudio.mockResolvedValueOnce({ user: null, error: null })
+    const res = await signPOST(jsonReq('http://x/', good))
+    // requireCreatorStudio mocked to no-user without error → validation path, not 503
+    expect(res.status).not.toBe(503)
   })
 })

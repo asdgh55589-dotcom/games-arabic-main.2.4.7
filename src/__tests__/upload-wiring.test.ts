@@ -19,9 +19,14 @@ describe('code-split upload panels (bundle-safe)', () => {
     expect(media).toMatch(/\/api\/storage\/upload-image/)
   })
 
-  it('files lazy-load the IA Uppy panel (ssr:false)', () => {
+  it('files lazy-load the IA Uppy panel (ssr:false, flag-gated)', () => {
     expect(files).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\('@\/components\/creator\/ia-uploader'\)/)
     expect(files).toMatch(/ssr:\s*false/)
+    // Phase 2.1: IA disabled by default — toggle behind public flag,
+    // otherwise a disabled "soon" button (direct links unaffected).
+    expect(files).toMatch(/NEXT_PUBLIC_IA_ENABLED/)
+    expect(files).toMatch(/t\.soon/)
+    expect(files).toMatch(/iaEnabled && iaOpen/)
   })
 
   it('orchestrator passes modId to both upload sections (usage attribution)', () => {

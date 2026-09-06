@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
-import { verifyIaObject } from '@/lib/ia'
+import { IA_COMING_SOON_MESSAGE, isIaEnabled, verifyIaObject } from '@/lib/ia'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
     const { user, error } = await requireCreatorStudio(req)
     if (error) return error
     if (!user) return validationFail('يجب تسجيل الدخول')
+    if (!isIaEnabled()) {
+      return fail('COMING_SOON', IA_COMING_SOON_MESSAGE, 503)
+    }
 
     const body = await req.json().catch(() => null)
     const key = typeof body?.key === 'string' ? body.key : ''

@@ -412,6 +412,7 @@ export const en: StudioDict = {
     iaHint: 'Up to 2GB per file — streams directly to Internet Archive — progress from the upload panel',
     iaBadge: 'Archive',
     directKeptNote: 'Or paste a direct link — always supported',
+    soon: 'Soon',
   },
   uploader: {
     signFailed: 'Failed to prepare upload',

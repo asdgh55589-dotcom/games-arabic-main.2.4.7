@@ -51,6 +51,10 @@ export function ModFormFiles(p: Props) {
   const { toast } = useToast()
   const t = dict.form
   const [iaOpen, setIaOpen] = useState<Record<number, boolean>>({})
+  // Phase 2.1: IA temporarily disabled (no presigned/multipart/tus upstream).
+  // Build-time flag: 'true' restores the full IA toggle, otherwise a
+  // disabled "soon" button (direct links keep working regardless).
+  const iaEnabled = process.env.NEXT_PUBLIC_IA_ENABLED === 'true'
   const iaMode = process.env.NEXT_PUBLIC_IA_UPLOAD_MODE === 'relay' ? 'relay' : 'direct'
   const iaError = (message: string) => toast({ title: message, variant: 'destructive' })
   return (
@@ -130,14 +134,29 @@ export function ModFormFiles(p: Props) {
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-bold">{t.fileNumber}{i + 1}</span>
                   <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 min-h-[44px] text-xs"
-                      onClick={() => setIaOpen((prev) => ({ ...prev, [i]: !prev[i] }))}
-                    >
-                      <Plus className="me-1 h-3 w-3" /> {t.iaToggle}
-                    </Button>
+                    {iaEnabled ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 min-h-[44px] text-xs"
+                        onClick={() => setIaOpen((prev) => ({ ...prev, [i]: !prev[i] }))}
+                      >
+                        <Plus className="me-1 h-3 w-3" /> {t.iaToggle}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 min-h-[44px] text-xs"
+                        disabled
+                        title={t.iaHint}
+                      >
+                        <Plus className="me-1 h-3 w-3" /> {t.iaToggle}
+                        <Badge variant="secondary" className="ms-1 text-[10px]">
+                          {t.soon}
+                        </Badge>
+                      </Button>
+                    )}
                     <Button
                       size="icon"
                       variant="ghost"
@@ -149,7 +168,7 @@ export function ModFormFiles(p: Props) {
                     </Button>
                   </div>
                 </div>
-                {iaOpen[i] && (
+                {iaEnabled && iaOpen[i] && (
                   <div className="mb-3 rounded-lg border border-border p-3">
                     <IaUploadPanel
                       modId={p.modId}

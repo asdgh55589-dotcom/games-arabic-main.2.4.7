@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
-import { buildIaKey, isIaConfigured, sanitizeIaSegment, signIaPut } from '@/lib/ia'
+import { buildIaKey, IA_COMING_SOON_MESSAGE, isIaConfigured, isIaEnabled, sanitizeIaSegment, signIaPut } from '@/lib/ia'
 import { checkUploadQuota } from '@/lib/quota'
 
 const ALLOWED_ARCHIVE_MIMES = [
@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
     const { user, error } = await requireCreatorStudio(req)
     if (error) return error
     if (!user) return validationFail('يجب تسجيل الدخول')
+    if (!isIaEnabled()) {
+      return fail('COMING_SOON', IA_COMING_SOON_MESSAGE, 503)
+    }
     if (!isIaConfigured()) {
       return internalError('خدمة رفع الملفات غير متاحة حالياً — حاول لاحقاً')
     }

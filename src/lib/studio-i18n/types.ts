@@ -414,6 +414,7 @@ export interface StudioDict {
     iaHint: string
     iaBadge: string
     directKeptNote: string
+    soon: string
   }
   uploader: {
     signFailed: string

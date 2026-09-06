@@ -413,6 +413,7 @@ export const ar: StudioDict = {
     iaHint: 'حتى 2GB للملف — يبث مباشرة إلى Internet Archive — التقدم والإيقاف من لوحة الرفع',
     iaBadge: 'الأرشيف',
     directKeptNote: 'أو الصق رابطاً مباشراً — يبقى مدعوماً دائماً',
+    soon: 'قريبًا',
   },
   uploader: {
     signFailed: 'فشل تجهيز الرفع',

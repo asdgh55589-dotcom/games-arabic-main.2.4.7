@@ -24,6 +24,18 @@ export function isIaConfigured(): boolean {
   return Boolean(c.accessKey && c.secretKey && c.identifier)
 }
 
+/**
+ * Phase 2.1 — Internet Archive is TEMPORARILY DISABLED (live diagnostics:
+ * no presigned URLs (403), no Content-Range append, no multipart (404), no
+ * tus). The adapter code stays for future use (R2 buffer → background IA);
+ * all IA routes fail closed unless IA_ENABLED=true.
+ */
+export const IA_COMING_SOON_MESSAGE = 'قريبًا — رفع ملفات الأرشيف سيتوفر قريباً'
+
+export function isIaEnabled(): boolean {
+  return process.env.IA_ENABLED === 'true'
+}
+
 export function getIaClient(): S3Client {
   const c = getIaConfig()
   return new S3Client({
