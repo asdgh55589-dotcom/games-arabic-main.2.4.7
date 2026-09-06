@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   BellIcon,
   CreditCardIcon,
@@ -28,6 +29,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/official-ui/sidebar"
+import { useAuth } from "@/contexts/auth-context"
+import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 export function NavUser({
   user,
@@ -39,6 +42,9 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { dict, dir } = useStudioLanguage()
+  const { logout } = useAuth()
+  const initial = user.name.trim().charAt(0).toUpperCase() || "–"
 
   return (
     <SidebarMenu>
@@ -51,30 +57,30 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{initial}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs font-normal text-muted-foreground">
                   {user.email}
                 </span>
               </div>
-              <MoreVerticalIcon className="ml-auto size-4" />
+              <MoreVerticalIcon className="ms-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "bottom" : dir === "rtl" ? "right" : "left"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{initial}</AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-start text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="truncate text-xs font-normal text-muted-foreground">
                     {user.email}
@@ -84,23 +90,29 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <UserCircleIcon />
-                الحساب
+              <DropdownMenuItem asChild>
+                <Link href="/settings?section=profile">
+                  <UserCircleIcon />
+                  {dict.nav.account}
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon />
-                الفواتير
+              <DropdownMenuItem asChild>
+                <Link href="/settings?section=account">
+                  <CreditCardIcon />
+                  {dict.nav.billing}
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                الإشعارات
+              <DropdownMenuItem asChild>
+                <Link href="/settings?section=notifications">
+                  <BellIcon />
+                  {dict.nav.notifications}
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => logout()}>
               <LogOutIcon />
-              تسجيل الخروج
+              {dict.nav.logout}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

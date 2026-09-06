@@ -4,6 +4,7 @@ import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useStudioLanguage } from "@/lib/studio-i18n/context"
 import {
   Card,
   CardContent,
@@ -34,22 +35,19 @@ interface HistoryPoint {
   mobile: number
 }
 
-const chartConfig = {
-  visitors: {
-    label: "الزوار",
-  },
-  desktop: {
-    label: "مشاهدات",
-    color: "var(--chart-1)",
-  },
-  mobile: {
-    label: "تحميلات",
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig
-
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
+  const { dict, formatShortDate } = useStudioLanguage()
+  // Labels drive the tooltip/legend — translated at render; colors stay static.
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        visitors: { label: dict.chart.visitors },
+        desktop: { label: dict.chart.views, color: "var(--chart-1)" },
+        mobile: { label: dict.chart.downloads, color: "var(--chart-2)" },
+      }) satisfies ChartConfig,
+    [dict]
+  )
   const [timeRange, setTimeRange] = React.useState("30d")
   const [chartData, setChartData] = React.useState<HistoryPoint[]>([])
 
@@ -121,14 +119,14 @@ export function ChartAreaInteractive() {
   return (
     <Card className="@container/card">
       <CardHeader className="relative">
-        <CardTitle>إجمالي الزوار</CardTitle>
+        <CardTitle>{dict.chart.title}</CardTitle>
         <CardDescription>
           <span className="@[540px]/card:block hidden">
-            الإجمالي آخر 3 أشهر
+            {dict.chart.totalLast3Months}
           </span>
-          <span className="@[540px]/card:hidden">آخر 3 أشهر</span>
+          <span className="@[540px]/card:hidden">{dict.chart.last3Months}</span>
         </CardDescription>
-        <div className="absolute right-4 top-4">
+        <div className="absolute end-4 top-4">
           <ToggleGroup
             type="single"
             value={timeRange}
@@ -137,31 +135,31 @@ export function ChartAreaInteractive() {
             className="@[767px]/card:flex hidden"
           >
             <ToggleGroupItem value="90d" className="h-8 px-2.5">
-              آخر 3 أشهر
+              {dict.chart.last3Months}
             </ToggleGroupItem>
             <ToggleGroupItem value="30d" className="h-8 px-2.5">
-              آخر 30 يومًا
+              {dict.chart.last30Days}
             </ToggleGroupItem>
             <ToggleGroupItem value="7d" className="h-8 px-2.5">
-              آخر 7 أيام
+              {dict.chart.last7Days}
             </ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="@[767px]/card:hidden flex w-40"
-              aria-label="اختر قيمة"
+              aria-label={dict.chart.pickRange}
             >
-              <SelectValue placeholder="آخر 3 أشهر" />
+              <SelectValue placeholder={dict.chart.last3Months} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                آخر 3 أشهر
+                {dict.chart.last3Months}
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                آخر 30 يومًا
+                {dict.chart.last30Days}
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                آخر 7 أيام
+                {dict.chart.last7Days}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -206,24 +204,13 @@ export function ChartAreaInteractive() {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("ar-EG", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
+              tickFormatter={(value) => formatShortDate(value)}
             />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("ar-EG", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }}
+                  labelFormatter={(value) => formatShortDate(value)}
                   indicator="dot"
                 />
               }

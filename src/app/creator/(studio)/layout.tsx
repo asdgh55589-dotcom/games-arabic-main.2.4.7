@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
+import { StudioShell } from '@/components/creator-dashboard/studio-shell'
 import { SidebarInset, SidebarProvider } from '@/components/official-ui/sidebar'
 import { getBanInfo, getSession } from '@/lib/auth'
+import { StudioLanguageProvider } from '@/lib/studio-i18n/context'
 
 export default async function CreatorLayout({ children }: { children: React.ReactNode }) {
   // Banned creators see the reason instead of a generic login redirect.
@@ -19,18 +21,16 @@ export default async function CreatorLayout({ children }: { children: React.Reac
   }
 
   return (
-    <SidebarProvider dir="rtl" className="creator-studio-official">
-      <AppSidebar
-        side="right"
+    <StudioLanguageProvider>
+      <StudioShell
         user={{
           name: session.username,
           email: session.email,
           avatar: session.avatarUrl ?? '',
         }}
-      />
-      <SidebarInset>
-        <main className="flex-1 p-4 md:p-6 bg-background">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+      >
+        {children}
+      </StudioShell>
+    </StudioLanguageProvider>
   )
 }

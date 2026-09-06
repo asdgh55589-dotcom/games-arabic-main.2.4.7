@@ -55,6 +55,8 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useStudioLanguage } from "@/lib/studio-i18n/context"
+import type { StudioDict } from "@/lib/studio-i18n/types"
 import { Badge } from "@/components/official-ui/badge"
 import { Button } from "@/components/official-ui/button"
 import {
@@ -119,6 +121,7 @@ export const schema = z.object({
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
+  const { dict } = useStudioLanguage()
   const { attributes, listeners } = useSortable({
     id,
   })
@@ -132,12 +135,13 @@ function DragHandle({ id }: { id: number }) {
       className="size-7 text-muted-foreground hover:bg-transparent"
     >
       <GripVerticalIcon className="size-3 text-muted-foreground" />
-      <span className="sr-only">اسحب لإعادة الترتيب</span>
+      <span className="sr-only">{dict.table.dragToReorder}</span>
     </Button>
   )
 }
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+function useColumns(dict: StudioDict): ColumnDef<z.infer<typeof schema>>[] {
+  return [
   {
     id: "drag",
     header: () => null,
@@ -153,7 +157,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="تحديد الكل"
+          aria-label={dict.table.selectAll}
         />
       </div>
     ),
@@ -162,7 +166,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="تحديد الصف"
+          aria-label={dict.table.selectRow}
         />
       </div>
     ),
@@ -171,7 +175,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "header",
-    header: "الاسم",
+    header: dict.table.name,
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />
     },
@@ -179,7 +183,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "type",
-    header: "نوع القسم",
+    header: dict.table.sectionType,
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="px-1.5 text-muted-foreground">
@@ -190,32 +194,35 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "status",
-    header: "الحالة",
-    cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
-      >
-        {row.original.status === "منشور" ? (
-          <CheckCircle2Icon className="text-green-500" />
-        ) : (
-          <LoaderIcon />
-        )}
-        {row.original.status}
-      </Badge>
-    ),
+    header: dict.table.status,
+    cell: ({ row }) => {
+      const isPublished = row.original.status === dict.status.publishedKey
+      return (
+        <Badge
+          variant="outline"
+          className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
+        >
+          {isPublished ? (
+            <CheckCircle2Icon className="text-green-500" />
+          ) : (
+            <LoaderIcon />
+          )}
+          {isPublished ? dict.status.published : dict.status.inProgress}
+        </Badge>
+      )
+    },
   },
   {
     accessorKey: "target",
-    header: () => <div className="w-full text-right">الهدف</div>,
+    header: () => <div className="w-full text-end">{dict.table.target}</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `حفظ ${row.original.header}`,
-            success: "تم",
-            error: "خطأ",
+            loading: `${dict.table.savingItem} ${row.original.header}`,
+            success: dict.table.saved,
+            error: dict.table.saveError,
           })
         }}
       >
@@ -223,7 +230,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
           Target
         </Label>
         <Input
-          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
+          className="h-8 w-16 border-transparent bg-transparent text-end shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.target}
           id={`${row.original.id}-target`}
         />
@@ -232,15 +239,15 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "limit",
-    header: () => <div className="w-full text-right">الحد</div>,
+    header: () => <div className="w-full text-end">{dict.table.limit}</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `حفظ ${row.original.header}`,
-            success: "تم",
-            error: "خطأ",
+            loading: `${dict.table.savingItem} ${row.original.header}`,
+            success: dict.table.saved,
+            error: dict.table.saveError,
           })
         }}
       >
@@ -248,7 +255,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
           Limit
         </Label>
         <Input
-          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
+          className="h-8 w-16 border-transparent bg-transparent text-end shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.limit}
           id={`${row.original.id}-limit`}
         />
@@ -257,9 +264,9 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "reviewer",
-    header: "المراجع",
+    header: dict.table.reviewer,
     cell: ({ row }) => {
-      const isAssigned = row.original.reviewer !== "تعيين مراجع"
+      const isAssigned = row.original.reviewer !== dict.table.assignReviewer
 
       if (isAssigned) {
         return row.original.reviewer
@@ -275,7 +282,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
               className="h-8 w-40"
               id={`${row.original.id}-reviewer`}
             >
-              <SelectValue placeholder="تعيين مراجع" />
+              <SelectValue placeholder={dict.table.assignReviewer} />
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
@@ -299,20 +306,21 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             size="icon"
           >
             <MoreVerticalIcon />
-            <span className="sr-only">فتح القائمة</span>
+            <span className="sr-only">{dict.table.openMenu}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>تعديل</DropdownMenuItem>
-          <DropdownMenuItem>إنشاء نسخة</DropdownMenuItem>
-          <DropdownMenuItem>مفضلة</DropdownMenuItem>
+          <DropdownMenuItem>{dict.table.edit}</DropdownMenuItem>
+          <DropdownMenuItem>{dict.table.duplicate}</DropdownMenuItem>
+          <DropdownMenuItem>{dict.table.favorite}</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>حذف</DropdownMenuItem>
+          <DropdownMenuItem>{dict.table.remove}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
   },
-]
+  ]
+}
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
@@ -344,6 +352,8 @@ export function DataTable({
 }: {
   data: z.infer<typeof schema>[]
 }) {
+  const { dict, dir } = useStudioLanguage()
+  const columns = React.useMemo(() => useColumns(dict), [dict])
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -393,9 +403,9 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  const doneCount = data.filter((row) => row.status === "منشور").length
+  const doneCount = data.filter((row) => row.status === dict.status.publishedKey).length
   const inProgressCount = data.filter(
-    (row) => row.status === "قيد التنفيذ"
+    (row) => row.status === dict.status.inProgressKey
   ).length
 
   function handleDragEnd(event: DragEndEvent) {
@@ -416,26 +426,26 @@ export function DataTable({
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
-          العرض
+          {dict.table.view}
         </Label>
         <Select defaultValue="outline">
           <SelectTrigger
             className="@4xl/main:hidden flex w-fit"
             id="view-selector"
           >
-            <SelectValue placeholder="اختر عرضًا" />
+            <SelectValue placeholder={dict.table.chooseView} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">الأقسام</SelectItem>
-            <SelectItem value="past-performance">الأداء السابق</SelectItem>
-            <SelectItem value="key-personnel">الأشخاص الرئيسيون</SelectItem>
-            <SelectItem value="focus-documents">مستندات مميزة</SelectItem>
+            <SelectItem value="outline">{dict.table.sections}</SelectItem>
+            <SelectItem value="past-performance">{dict.table.pastPerformance}</SelectItem>
+            <SelectItem value="key-personnel">{dict.table.keyPeople}</SelectItem>
+            <SelectItem value="focus-documents">{dict.table.featuredDocs}</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="@4xl/main:flex hidden">
-          <TabsTrigger value="outline">الأقسام</TabsTrigger>
+          <TabsTrigger value="outline">{dict.table.sections}</TabsTrigger>
           <TabsTrigger value="past-performance" className="gap-1">
-            الأداء السابق{" "}
+            {dict.table.pastPerformance}{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -444,7 +454,7 @@ export function DataTable({
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="gap-1">
-            الأشخاص الرئيسيون{" "}
+            {dict.table.keyPeople}{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -452,15 +462,15 @@ export function DataTable({
               {inProgressCount}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">مستندات مميزة</TabsTrigger>
+          <TabsTrigger value="focus-documents">{dict.table.featuredDocs}</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <ColumnsIcon />
-                <span className="hidden lg:inline">تخصيص الأعمدة</span>
-                <span className="lg:hidden">الأعمدة</span>
+                <span className="hidden lg:inline">{dict.table.customizeColumns}</span>
+                <span className="lg:hidden">{dict.table.columnsShort}</span>
                 <ChevronDownIcon />
               </Button>
             </DropdownMenuTrigger>
@@ -490,7 +500,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <PlusIcon />
-            <span className="hidden lg:inline">إضافة قسم</span>
+            <span className="hidden lg:inline">{dict.table.addSection}</span>
           </Button>
         </div>
       </div>
@@ -541,7 +551,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      لا توجد نتائج.
+                      {dict.table.noResults}
                     </TableCell>
                   </TableRow>
                 )}
@@ -551,13 +561,13 @@ export function DataTable({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} من{" "}
-            {table.getFilteredRowModel().rows.length} صفوف محددة.
+            {table.getFilteredSelectedRowModel().rows.length} {dict.table.selectedOf}{" "}
+            {table.getFilteredRowModel().rows.length} {dict.table.selectedRows}
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                صفوف لكل صفحة
+                {dict.table.rowsPerPage}
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
@@ -580,18 +590,18 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              صفحة {table.getState().pagination.pageIndex + 1} من{" "}
+              {dict.table.page} {table.getState().pagination.pageIndex + 1} {dict.table.pageOf}{" "}
               {table.getPageCount()}
             </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <div className="ms-auto flex items-center gap-2 lg:ms-0">
               <Button
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">إلى الصفحة الأولى</span>
-                <ChevronsLeftIcon />
+                <span className="sr-only">{dict.table.firstPage}</span>
+                {dir === "rtl" ? <ChevronsRightIcon /> : <ChevronsLeftIcon />}
               </Button>
               <Button
                 variant="outline"
@@ -600,8 +610,8 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">إلى الصفحة السابقة</span>
-                <ChevronLeftIcon />
+                <span className="sr-only">{dict.table.prevPage}</span>
+                {dir === "rtl" ? <ChevronRightIcon /> : <ChevronLeftIcon />}
               </Button>
               <Button
                 variant="outline"
@@ -610,8 +620,8 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">إلى الصفحة التالية</span>
-                <ChevronRightIcon />
+                <span className="sr-only">{dict.table.nextPage}</span>
+                {dir === "rtl" ? <ChevronLeftIcon /> : <ChevronRightIcon />}
               </Button>
               <Button
                 variant="outline"
@@ -620,8 +630,8 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">إلى الصفحة الأخيرة</span>
-                <ChevronsRightIcon />
+                <span className="sr-only">{dict.table.lastPage}</span>
+                {dir === "rtl" ? <ChevronsLeftIcon /> : <ChevronsRightIcon />}
               </Button>
             </div>
           </div>
@@ -668,19 +678,20 @@ const chartConfig = {
 
 function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
   const isMobile = useIsMobile()
+  const { dict, dir } = useStudioLanguage()
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="link" className="w-fit px-0 text-left text-foreground">
+        <Button variant="link" className="w-fit px-0 text-start text-foreground">
           {item.header}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="flex flex-col">
+      <SheetContent side={dir === "rtl" ? "right" : "left"} className="flex flex-col">
         <SheetHeader className="gap-1">
           <SheetTitle>{item.header}</SheetTitle>
           <SheetDescription>
-            عرض إجمالي الزوار آخر 6 أشهر
+            {dict.table.visitorsLast6Months}
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
@@ -729,12 +740,11 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 font-medium leading-none">
-                  ارتفاع بنسبة 5.2% هذا الشهر{" "}
+                  {dict.table.upThisMonth52}{" "}
                   <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  عرض إجمالي الزوار آخر 6 أشهر. هذا نص عشوائي لاختبار
-                  التخطيط. يمتد على عدة أسطر ويجب أن يلتف حول نفسه.
+                  {dict.table.drawerLorem}
                 </div>
               </div>
               <Separator />
@@ -742,15 +752,15 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">الاسم</Label>
+              <Label htmlFor="header">{dict.table.name}</Label>
               <Input id="header" defaultValue={item.header} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">النوع</Label>
+                <Label htmlFor="type">{dict.table.typeLabel}</Label>
                 <Select defaultValue={item.type}>
                   <SelectTrigger id="type" className="w-full">
-                    <SelectValue placeholder="اختر النوع" />
+                    <SelectValue placeholder={dict.table.chooseType} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Table of Contents">
@@ -773,34 +783,34 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="status">الحالة</Label>
+                <Label htmlFor="status">{dict.table.status}</Label>
                 <Select defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder="اختر الحالة" />
+                    <SelectValue placeholder={dict.table.chooseStatus} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="منشور">منشور</SelectItem>
-                    <SelectItem value="قيد التنفيذ">قيد التنفيذ</SelectItem>
-                    <SelectItem value="لم يبدأ">لم يبدأ</SelectItem>
+                    <SelectItem value={dict.status.publishedKey}>{dict.status.published}</SelectItem>
+                    <SelectItem value={dict.status.inProgressKey}>{dict.status.inProgress}</SelectItem>
+                    <SelectItem value="not-started">{dict.status.notStarted}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="target">الهدف</Label>
+                <Label htmlFor="target">{dict.table.target}</Label>
                 <Input id="target" defaultValue={item.target} />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">الحد</Label>
+                <Label htmlFor="limit">{dict.table.limit}</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="reviewer">المراجع</Label>
+              <Label htmlFor="reviewer">{dict.table.reviewer}</Label>
               <Select defaultValue={item.reviewer}>
                 <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder="اختر مراجعًا" />
+                  <SelectValue placeholder={dict.table.chooseReviewer} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
@@ -813,11 +823,11 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
             </div>
           </form>
         </div>
-        <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
-          <Button className="w-full">إرسال</Button>
+        <SheetFooter className="mt-auto flex gap-2 sm:flex-col">
+          <Button className="w-full">{dict.table.submit}</Button>
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
-              تم
+              {dict.table.done}
             </Button>
           </SheetClose>
         </SheetFooter>
