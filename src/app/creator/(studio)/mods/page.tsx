@@ -16,7 +16,7 @@ export default async function MyModsPage({
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/mods')
 
-  const creatorRoles = ['creator', 'publisher']
+  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
   if (!creatorRoles.includes(session.role)) {
     redirect('/become-creator/apply')
   }

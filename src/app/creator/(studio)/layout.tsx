@@ -13,7 +13,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
 
   if (!session) redirect('/login?next=/creator')
 
-  const CREATOR_ONLY = ['creator', 'publisher']
+  const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
   if (!CREATOR_ONLY.includes(session.role)) {
     redirect('/become-creator/apply')
   }

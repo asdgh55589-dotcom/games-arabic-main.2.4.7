@@ -12,7 +12,7 @@ export default async function CreatorCommentsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/comments')
 
-  const creatorRoles = ['creator', 'publisher']
+  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
   if (!creatorRoles.includes(session.role)) {
     redirect('/become-creator/apply')
   }

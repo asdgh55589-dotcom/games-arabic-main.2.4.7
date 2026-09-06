@@ -792,7 +792,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {['creator', 'publisher'].includes(currentUser.role) && (
+                {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
                   <DropdownMenuItem asChild>
                     <Link
                       href="/creator"
@@ -923,7 +923,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                               تعريباتي
                             </MobileLink>
                           )}
-                          {['creator', 'publisher'].includes(currentUser.role) && (
+                          {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
                             <MobileLink href="/creator" onClick={() => setMobileOpen(false)}>
                               <Activity className="h-3.5 w-3.5" />
                               لوحة التحكم

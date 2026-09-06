@@ -322,17 +322,17 @@ export async function requireCreatorStudio(
 ): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
-    const CREATOR_ONLY = ['creator', 'publisher']
+    const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(user.role)) {
       const { forbidden } = await import('@/lib/api-response')
-      return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+      return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والإدارة فقط') }
     }
     return { user, error: null }
   } catch (err) {
     const status = (err as { status?: number })?.status || 401
     const { unauthorized, forbidden: forbiddenResp } = await import('@/lib/api-response')
     if (status === 401) return { user: null, error: unauthorized('يجب تسجيل الدخول') }
-    return { user: null, error: forbiddenResp('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+    return { user: null, error: forbiddenResp('هذه الصفحة متاحة للمُعَرِّبين والإدارة فقط') }
   }
 }
 

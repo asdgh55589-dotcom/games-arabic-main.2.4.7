@@ -137,6 +137,7 @@ export default function BecomeCreatorApplyPage() {
   }
 
   if (user.role !== 'member') {
+    const isStaff = ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
     return (
       <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir="rtl">
         <Card>
@@ -147,8 +148,8 @@ export default function BecomeCreatorApplyPage() {
               لديك صلاحيات تفوق العضو العادي — لا حاجة لتقديم الطلب
             </p>
             <div className="flex justify-center gap-3">
-              <Link href="/upload">
-                <Button>رفع تعريب</Button>
+              <Link href={isStaff ? '/admin' : '/creator'}>
+                <Button>{isStaff ? 'لوحة الإدارة' : 'لوحة المُعرّب'}</Button>
               </Link>
               <Link href="/settings">
                 <Button variant="outline">الإعدادات</Button>

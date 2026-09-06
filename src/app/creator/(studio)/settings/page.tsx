@@ -16,7 +16,7 @@ export default async function CreatorSettingsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/settings')
 
-  const creatorRoles = ['creator', 'publisher']
+  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
   if (!creatorRoles.includes(session.role)) redirect('/become-creator/apply')
 
   const user = await db.user.findUnique({

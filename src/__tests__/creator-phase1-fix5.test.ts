@@ -1,6 +1,7 @@
 /**
- * PART 2 Phase 1 — Fix 5 tests: creator pages allow ONLY creator/publisher
- * (matches proxy + layout gate). No dead staff branches in creator APIs.
+ * PART 2 Phase 1 — Fix 5 tests (updated): creator pages admit creator..owner
+ * (user decision: owner/management enter /creator alongside creators).
+ * Only plain members are redirected to /become-creator/apply.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -18,19 +19,17 @@ const PAGES = [
   'src/app/creator/(studio)/settings/page.tsx',
 ];
 
-describe('Fix 5: page guards narrowed to creator/publisher', () => {
-  it.each(PAGES)('%s allows exactly creator+publisher', (p) => {
+describe('Fix 5: page guards admit creators + management (only members redirected)', () => {
+  it.each(PAGES)('%s admits owner', (p) => {
     const code = src(p);
-    // broadened 6-role list must be gone
-    expect(code).not.toMatch(/'moderator', 'admin', 'manager', 'owner'/);
-    expect(code).toMatch(/'creator', 'publisher'/);
+    expect(code).toMatch(/'creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'/);
   });
 
   it('home page relies on the studio layout gate (single source of truth)', () => {
     const layout = src('src/app/creator/(studio)/layout.tsx');
-    expect(layout).toMatch(/CREATOR_ONLY = \['creator', 'publisher'\]/);
+    expect(layout).toMatch(/CREATOR_ONLY = \['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'\]/);
     const home = src('src/app/creator/(studio)/page.tsx');
-    expect(home).not.toMatch(/'moderator', 'admin', 'manager', 'owner'/);
+    expect(home).not.toMatch(/redirect\('\/become-creator\/apply'\)/);
   });
 });
 
