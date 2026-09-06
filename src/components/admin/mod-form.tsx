@@ -42,7 +42,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import {
-  cropTargetToImageType,
   isDataUrl,
   uploadCroppedDataUrl,
 } from '@/lib/upload-cropped'
@@ -446,11 +445,7 @@ export default function ModForm({ modId }: ModFormProps) {
     }
     setCropUploading(true)
     try {
-      const url = await uploadCroppedDataUrl(
-        croppedImage,
-        cropTargetToImageType(target),
-        modId,
-      )
+      const url = await uploadCroppedDataUrl(croppedImage, modId)
       if (target === 'imageUrl') setImageUrl(url)
       else if (target === 'thumbnailUrl') setThumbnailUrl(url)
       else setGalleryUrls((prev) => [...prev, url])

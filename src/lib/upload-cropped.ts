@@ -1,26 +1,18 @@
 /**
  * Upload a cropped canvas image WITHOUT ever storing base64 in the DB.
- * Converts the cropper's data: URL to a File and POSTs it to the existing
- * server route (same validation + Cloudinary pipeline as direct uploads).
+ * Converts the cropper's data: URL to a File and POSTs it to the FreeImage
+ * relay route (same validation + quota pipeline as direct uploads).
  * Resolves with the https:// URL — never a data: URL.
+ *
+ * Owner rule: Cloudinary is EXCLUSIVELY for User.avatarUrl/User.bannerUrl —
+ * mod images (incl. crops) go through FreeImage, never Cloudinary.
  */
-export type CropImageType = 'cover' | 'banner' | 'screenshot'
-
-export function cropTargetToImageType(
-  target: 'imageUrl' | 'thumbnailUrl' | 'gallery',
-): CropImageType {
-  if (target === 'imageUrl') return 'banner'
-  if (target === 'thumbnailUrl') return 'cover'
-  return 'screenshot'
-}
-
 export function isDataUrl(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.startsWith('data:')
 }
 
 export async function uploadCroppedDataUrl(
   dataUrl: string,
-  imageType: CropImageType,
   modId?: string,
 ): Promise<string> {
   // data: URL → Blob → File (canvas crops are jpeg/png; keep mime, cap type)
@@ -34,10 +26,9 @@ export async function uploadCroppedDataUrl(
 
   const fd = new FormData()
   fd.append('file', file)
-  fd.append('type', imageType)
   fd.append('modId', modId || 'new')
 
-  const res = await fetch('/api/storage/upload-mod-image', {
+  const res = await fetch('/api/storage/upload-image', {
     method: 'POST',
     body: fd,
   })
