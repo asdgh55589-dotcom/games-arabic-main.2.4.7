@@ -1,11 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { ok, validationFail } from '@/lib/api-response'
-import { logAction } from '@/lib/audit'
-import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { redisGet, redisSet } from '@/lib/redis'
+import { redisSet } from '@/lib/redis'
+import { performTelegramLogin } from '@/lib/telegram-login'
 import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
-import { generateUniqueUsername } from '@/lib/username-generator'
 
 export async function GET(req: NextRequest) {
   try {
@@ -119,8 +116,13 @@ export async function GET(req: NextRequest) {
 
     // إذا اكتملت عبر الـ webhook (session.used && userData) ولم يُسجّل الدخول بعد — قم بتسجيل الدخول الآن
     if (session.used && session.userData && !session.user) {
-      const loginResult = await performLogin(session.userData)
-      if (loginResult.error) {
+      const loginResult = await performTelegramLogin(session.userData, {
+        ipAddress:
+          req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+          req.headers.get('x-real-ip'),
+        userAgent: req.headers.get('user-agent'),
+      })
+      if (!loginResult.ok) {
         return ok({ status: loginResult.status, error: loginResult.error })
       }
       await updateTelegramSession(sessionToken, {
@@ -139,163 +141,5 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('[telegram poll] failed:', err instanceof Error ? err.message : 'unknown error')
     return ok({ status: 'pending' })
-  }
-}
-
-// دالة مساعدة لتسجيل الدخول ووضع الكوكيز
-async function performLogin(userData: {
-  telegramId: number
-  firstName: string
-  lastName?: string | null
-  username?: string | null
-  photoUrl?: string | null
-}) {
-  try {
-    const { telegramId, firstName, lastName, username, photoUrl } = userData
-
-    const displayName =
-      [firstName, lastName].filter(Boolean).join(' ') || username || `Telegram User ${telegramId}`
-    const email = `telegram_${telegramId}@telegram.local`
-    const avatarUrl = photoUrl || null
-
-    const userSelect = {
-      id: true,
-      username: true,
-      email: true,
-      role: true,
-      avatarUrl: true,
-      banStatus: true,
-      bannedUntil: true,
-      banReason: true,
-      tokenVersion: true,
-    } as const
-
-    // Step 1: Find by OAuthAccount (telegram, telegramId)
-    let neonUser: {
-      id: string
-      username: string
-      email: string
-      role: string
-      avatarUrl: string | null
-      banStatus: string
-      bannedUntil: Date | null
-      banReason: string | null
-      tokenVersion: number
-    } | null = null
-    const existingOAuth = await db.oAuthAccount.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider: 'telegram',
-          providerAccountId: telegramId.toString(),
-        },
-      },
-      include: {
-        user: {
-          select: userSelect,
-        },
-      },
-    })
-
-    if (existingOAuth) {
-      neonUser = existingOAuth.user
-      if (!neonUser.avatarUrl && avatarUrl) {
-        neonUser = await db.user.update({
-          where: { id: neonUser.id },
-          data: { avatarUrl },
-          select: userSelect,
-        })
-      }
-    } else {
-      // Step 2: Try to find by email (telegram_{id}@telegram.local)
-      const emailUser = await db.user.findUnique({
-        where: { email },
-        select: userSelect,
-      })
-
-      if (emailUser) {
-        neonUser = emailUser
-        await db.oAuthAccount
-          .create({
-            data: {
-              userId: emailUser.id,
-              provider: 'telegram',
-              providerAccountId: telegramId.toString(),
-              providerEmail: email,
-              providerUsername: username || null,
-              avatarUrl,
-            },
-          })
-          .catch(() => {})
-      } else {
-        // Step 3: Create new user + OAuthAccount — use unified generator
-        const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
-        const finalUsername = await generateUniqueUsername(baseUsername)
-
-        const user = await db.user.upsert({
-          where: { email },
-          create: {
-            username: finalUsername,
-            email,
-            avatarUrl,
-            role: 'member',
-            emailVerified: true,
-          },
-          update: {},
-          select: userSelect,
-        })
-
-        neonUser = user
-
-        await db.oAuthAccount
-          .create({
-            data: {
-              userId: user.id,
-              provider: 'telegram',
-              providerAccountId: telegramId.toString(),
-              providerEmail: email,
-              providerUsername: username || null,
-              avatarUrl,
-            },
-          })
-          .catch(() => {})
-      }
-    }
-
-    // فحص الحظر
-    const ban = getBanStatus(neonUser!)
-    if (ban.banned) {
-      return { status: 'banned', error: 'حسابك محظور' }
-    }
-
-    // إنشاء role cookie — مرة واحدة فقط
-    await setRoleCookie(neonUser!.id, neonUser!.role as UserRole, neonUser!.tokenVersion)
-
-    // تحديث lastLoginAt
-    await db.user.update({
-      where: { id: neonUser!.id },
-      data: { lastLoginAt: new Date(), loginCount: { increment: 1 } },
-    })
-
-    // تسجيل audit
-    await logAction({
-      userId: neonUser!.id,
-      username: neonUser!.username,
-      action: 'login',
-      entity: 'user',
-      entityId: neonUser!.id,
-    })
-
-    return {
-      user: {
-        id: neonUser!.id,
-        username: neonUser!.username,
-        email: neonUser!.email,
-        role: neonUser!.role,
-        avatarUrl: neonUser!.avatarUrl,
-      },
-    }
-  } catch (err) {
-    console.error('[performLogin] failed:', err)
-    return { status: 'error', error: 'حدث خطأ أثناء تسجيل الدخول' }
   }
 }
