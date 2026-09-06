@@ -1,12 +1,12 @@
 "use client"
 
 import {
-  Ellipsis,
-  Folder,
-  Share2,
-  Trash2,
-  type LucideIcon,
-} from 'lucide-react' 
+  IconDots,
+  IconFolder,
+  IconShare3,
+  IconTrash,
+  type Icon,
+} from "@tabler/icons-react"
 
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ export function NavDocuments({
   items: {
     name: string
     url: string
-    icon: LucideIcon
+    icon: Icon
   }[]
 }) {
   const { isMobile } = useSidebar()
@@ -54,8 +54,8 @@ export function NavDocuments({
                   showOnHover
                   className="rounded-sm data-[state=open]:bg-accent"
                 >
-                  <Ellipsis aria-hidden="true" />
-                  <span className="sr-only">المزيد</span>
+                  <IconDots />
+                  <span className="sr-only">More</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -64,17 +64,17 @@ export function NavDocuments({
                 align={isMobile ? "end" : "start"}
               >
                 <DropdownMenuItem>
-                  <Folder aria-hidden="true" />
-                  <span>فتح</span>
+                  <IconFolder />
+                  <span>Open</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Share2 aria-hidden="true" />
-                  <span>مشاركة</span>
+                  <IconShare3 />
+                  <span>Share</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
-                  <Trash2 aria-hidden="true" />
-                  <span>حذف</span>
+                  <IconTrash />
+                  <span>Delete</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -82,8 +82,8 @@ export function NavDocuments({
         ))}
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
-            <Ellipsis className="text-sidebar-foreground/70" aria-hidden="true" />
-            <span>المزيد</span>
+            <IconDots className="text-sidebar-foreground/70" />
+            <span>More</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
