@@ -612,6 +612,11 @@ export function LoginPage() {
                         'سجل دخول'
                       )}
                     </Button>
+                    <p className="text-center text-xs">
+                      <Link href="/recover" className="text-primary hover:underline font-medium">
+                        نسيت كلمة المرور؟
+                      </Link>
+                    </p>
                     <p className="text-center text-xs text-muted-foreground">
                       مش عندك حساب؟{' '}
                       <button
