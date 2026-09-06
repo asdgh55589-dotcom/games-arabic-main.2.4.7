@@ -20,6 +20,7 @@ export interface StudioDict {
     comments: string
     likes: string
     news: string
+    reports: string
     quickCreate: string
     inbox: string
     settings: string
@@ -489,6 +490,39 @@ export interface StudioDict {
     reason: string
     expiresAt: string
     backHome: string
+  }
+  reports: {
+    title: string
+    subtitle: string
+    metaTitle: string
+    all: string
+    targetMod: string
+    targetComment: string
+    outcome: string
+    noOutcomeYet: string
+    empty: string
+    emptyDesc: string
+    reason_spam: string
+    reason_inappropriate: string
+    reason_copyright: string
+    reason_offensive: string
+    reason_false_info: string
+    reason_technical: string
+    reason_other: string
+    status_new: string
+    status_under_review: string
+    status_confirmed: string
+    status_rejected: string
+    status_pending: string
+    status_resolved: string
+    status_reopened: string
+    action_none: string
+    action_warned: string
+    action_content_hidden: string
+    action_content_deleted: string
+    action_temp_ban: string
+    action_perm_ban: string
+    action_unset: string
   }
   likes: {
     title: string
