@@ -128,12 +128,6 @@ export function SectionCards() {
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {summary ? formatNumber(summary.totalComments) : "—"}
           </CardTitle>
-          <div className="absolute end-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              <TrendingUpIcon className="size-3" />
-              <span dir="ltr">+12.5%</span>
-            </Badge>
-          </div>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
@@ -148,12 +142,6 @@ export function SectionCards() {
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
 {totals ? formatNumber(totals.published) : "—"}
           </CardTitle>
-          <div className="absolute end-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              <TrendingUpIcon className="size-3" />
-              <span dir="ltr">+4.5%</span>
-            </Badge>
-          </div>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
