@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/official-ui/sidebar'
 import { getBanInfo, getSession } from '@/lib/auth'
 
 export default async function CreatorLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
   }
 
   return (
-    <SidebarProvider dir="rtl">
+    <SidebarProvider dir="rtl" className="creator-studio-official">
       <AppSidebar
         side="right"
         user={{

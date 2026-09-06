@@ -2,24 +2,23 @@
 
 import * as React from "react"
 import {
-  IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react"
+  ArrowUpCircleIcon,
+  BarChartIcon,
+  CameraIcon,
+  ClipboardListIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  FileIcon,
+  FileTextIcon,
+  FolderIcon,
+  HelpCircleIcon,
+  LayoutDashboardIcon,
+  ListIcon,
+  SearchIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "lucide-react"
 
-import { NavDocuments } from "@/components/creator-dashboard/nav-documents"
 import { NavMain } from "@/components/creator-dashboard/nav-main"
 import { NavSecondary } from "@/components/creator-dashboard/nav-secondary"
 import { NavUser } from "@/components/creator-dashboard/nav-user"
@@ -31,7 +30,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/official-ui/sidebar"
 
 const data = {
   user: {
@@ -43,33 +42,33 @@ const data = {
     {
       title: "لوحة التحكم",
       url: "/creator",
-      icon: IconDashboard,
+      icon: LayoutDashboardIcon,
     },
     {
       title: "تعريباتي",
       url: "/creator/mods",
-      icon: IconListDetails,
+      icon: ListIcon,
     },
     {
       title: "الإحصائيات",
       url: "/creator/stats",
-      icon: IconChartBar,
+      icon: BarChartIcon,
     },
     {
       title: "طلبات التعريب",
       url: "/creator/requests",
-      icon: IconFolder,
+      icon: FolderIcon,
     },
     {
       title: "التعليقات",
       url: "/creator/comments",
-      icon: IconUsers,
+      icon: UsersIcon,
     },
   ],
   navClouds: [
     {
       title: "التقاط",
-      icon: IconCamera,
+      icon: CameraIcon,
       isActive: true,
       url: "#",
       items: [
@@ -85,7 +84,7 @@ const data = {
     },
     {
       title: "مقترح",
-      icon: IconFileDescription,
+      icon: FileTextIcon,
       url: "#",
       items: [
         {
@@ -100,7 +99,7 @@ const data = {
     },
     {
       title: "توجيهات",
-      icon: IconFileAi,
+      icon: FileCodeIcon,
       url: "#",
       items: [
         {
@@ -118,34 +117,34 @@ const data = {
     {
       title: "الإعدادات",
       url: "/creator/settings",
-      icon: IconSettings,
+      icon: SettingsIcon,
     },
     {
       title: "مساعدة",
       url: "#",
-      icon: IconHelp,
+      icon: HelpCircleIcon,
     },
     {
       title: "بحث",
       url: "#",
-      icon: IconSearch,
+      icon: SearchIcon,
     },
   ],
   documents: [
     {
       name: "مكتبة البيانات",
       url: "#",
-      icon: IconDatabase,
+      icon: DatabaseIcon,
     },
     {
       name: "التقارير",
       url: "#",
-      icon: IconReport,
+      icon: ClipboardListIcon,
     },
     {
       name: "مساعد الكلمات",
       url: "#",
-      icon: IconFileWord,
+      icon: FileIcon,
     },
   ],
 }
@@ -163,10 +162,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="size-5!" />
+                <ArrowUpCircleIcon className="h-5 w-5" />
                 <span className="text-base font-semibold">Games Arabic</span>
               </a>
             </SidebarMenuButton>
@@ -175,7 +174,6 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

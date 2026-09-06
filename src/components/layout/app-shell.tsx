@@ -13,7 +13,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const pathname = usePathname()
   const isAdmin = pathname?.startsWith('/admin')
-  if (isAdmin) {
+  // Creator studio renders its own standalone shell (official dashboard-01):
+  // no site navbar/footer, like /admin.
+  const isStandalone = isAdmin || pathname?.startsWith('/creator')
+  if (isStandalone) {
     return (
       <BookmarksProvider>
         <ErrorBoundary label="this page">{children}</ErrorBoundary>

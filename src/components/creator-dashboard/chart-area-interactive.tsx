@@ -6,32 +6,28 @@ import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/official-ui/card"
 import {
+  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+} from "@/components/official-ui/chart"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/official-ui/select"
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "@/components/ui/toggle-group"
-
-export const description = "مخطط مساحي تفاعلي"
-
+} from "@/components/official-ui/toggle-group"
 interface HistoryPoint {
   date: string
   desktop: number
@@ -44,17 +40,17 @@ const chartConfig = {
   },
   desktop: {
     label: "مشاهدات",
-    color: "var(--primary)",
+    color: "hsl(var(--chart-1))",
   },
   mobile: {
     label: "تحميلات",
-    color: "var(--primary)",
+    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("90d")
+  const [timeRange, setTimeRange] = React.useState("30d")
   const [chartData, setChartData] = React.useState<HistoryPoint[]>([])
 
   React.useEffect(() => {
@@ -79,21 +75,17 @@ export function ChartAreaInteractive() {
         const downloads: { date: string; count: number }[] =
           json?.data?.downloads ?? []
         const byDate = new Map<string, HistoryPoint>()
-        for (const p of views) {
-          byDate.set(p.date, {
-            date: p.date,
-            desktop: p.count,
-            mobile: 0,
-          })
+        for (const v of views) {
+          byDate.set(v.date, { date: v.date, desktop: v.count, mobile: 0 })
         }
-        for (const p of downloads) {
-          const cur = byDate.get(p.date) ?? {
-            date: p.date,
+        for (const d of downloads) {
+          const cur = byDate.get(d.date) ?? {
+            date: d.date,
             desktop: 0,
             mobile: 0,
           }
-          cur.mobile = p.count
-          byDate.set(p.date, cur)
+          cur.mobile = d.count
+          byDate.set(d.date, cur)
         }
         if (!cancelled) {
           setChartData(
@@ -128,30 +120,35 @@ export function ChartAreaInteractive() {
 
   return (
     <Card className="@container/card">
-      <CardHeader>
+      <CardHeader className="relative">
         <CardTitle>إجمالي الزوار</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">
+          <span className="@[540px]/card:block hidden">
             الإجمالي آخر 3 أشهر
           </span>
           <span className="@[540px]/card:hidden">آخر 3 أشهر</span>
         </CardDescription>
-        <CardAction>
+        <div className="absolute right-4 top-4">
           <ToggleGroup
             type="single"
             value={timeRange}
             onValueChange={setTimeRange}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
+            className="@[767px]/card:flex hidden"
           >
-            <ToggleGroupItem value="90d">آخر 3 أشهر</ToggleGroupItem>
-            <ToggleGroupItem value="30d">آخر 30 يومًا</ToggleGroupItem>
-            <ToggleGroupItem value="7d">آخر 7 أيام</ToggleGroupItem>
+            <ToggleGroupItem value="90d" className="h-8 px-2.5">
+              آخر 3 أشهر
+            </ToggleGroupItem>
+            <ToggleGroupItem value="30d" className="h-8 px-2.5">
+              آخر 30 يومًا
+            </ToggleGroupItem>
+            <ToggleGroupItem value="7d" className="h-8 px-2.5">
+              آخر 7 أيام
+            </ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-              size="sm"
+              className="@[767px]/card:hidden flex w-40"
               aria-label="اختر قيمة"
             >
               <SelectValue placeholder="آخر 3 أشهر" />
@@ -168,7 +165,7 @@ export function ChartAreaInteractive() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </CardAction>
+        </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer

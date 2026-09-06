@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import {
-  closestCenter,
   DndContext,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
+  closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -14,68 +14,56 @@ import {
 } from "@dnd-kit/core"
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import {
-  arrayMove,
   SortableContext,
+  arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconCircleCheckFilled,
-  IconDotsVertical,
-  IconGripVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-  IconTrendingUp,
-} from "@tabler/icons-react"
-import {
-  columnFilteringFeature,
-  columnVisibilityFeature,
-  createColumnHelper,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  FlexRender,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  tableFeatures,
-  useTable,
-  type ColumnFiltersState,
-  type ColumnVisibilityState,
-  type Row,
-  type SortingState,
+  ColumnDef,
+  ColumnFiltersState,
+  Row,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
 } from "@tanstack/react-table"
+import {
+  CheckCircle2Icon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
+  ColumnsIcon,
+  GripVerticalIcon,
+  LoaderIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+  TrendingUpIcon,
+} from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { toast } from "sonner"
 import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/official-ui/badge"
+import { Button } from "@/components/official-ui/button"
 import {
+  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
+} from "@/components/official-ui/chart"
+import { Checkbox } from "@/components/official-ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -83,17 +71,27 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/official-ui/dropdown-menu"
+import { Input } from "@/components/official-ui/input"
+import { Label } from "@/components/official-ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/official-ui/select"
+import { Separator } from "@/components/official-ui/separator"
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/official-ui/sheet"
 import {
   Table,
   TableBody,
@@ -101,31 +99,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/official-ui/table"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs"
-
-// New in v9: declare the features this table uses — anything you don't
-// register is tree-shaken out of the bundle.
-const features = tableFeatures({
-  columnFilteringFeature,
-  columnVisibilityFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-  sortedRowModel: createSortedRowModel(),
-})
-
-const columnHelper = createColumnHelper<
-  typeof features,
-  z.infer<typeof schema>
->()
+} from "@/components/official-ui/tabs"
 
 export const schema = z.object({
   id: z.number(),
@@ -151,19 +131,19 @@ function DragHandle({ id }: { id: number }) {
       size="icon"
       className="size-7 text-muted-foreground hover:bg-transparent"
     >
-      <IconGripVertical className="size-3 text-muted-foreground" />
+      <GripVerticalIcon className="size-3 text-muted-foreground" />
       <span className="sr-only">اسحب لإعادة الترتيب</span>
     </Button>
   )
 }
 
-const columns = columnHelper.columns([
-  columnHelper.display({
+const columns: ColumnDef<z.infer<typeof schema>>[] = [
+  {
     id: "drag",
     header: () => null,
     cell: ({ row }) => <DragHandle id={row.original.id} />,
-  }),
-  columnHelper.display({
+  },
+  {
     id: "select",
     header: ({ table }) => (
       <div className="flex items-center justify-center">
@@ -188,15 +168,17 @@ const columns = columnHelper.columns([
     ),
     enableSorting: false,
     enableHiding: false,
-  }),
-  columnHelper.accessor("header", {
+  },
+  {
+    accessorKey: "header",
     header: "الاسم",
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />
     },
     enableHiding: false,
-  }),
-  columnHelper.accessor("type", {
+  },
+  {
+    accessorKey: "type",
     header: "نوع القسم",
     cell: ({ row }) => (
       <div className="w-32">
@@ -205,69 +187,76 @@ const columns = columnHelper.columns([
         </Badge>
       </div>
     ),
-  }),
-  columnHelper.accessor("status", {
+  },
+  {
+    accessorKey: "status",
     header: "الحالة",
     cell: ({ row }) => (
-      <Badge variant="outline" className="px-1.5 text-muted-foreground">
+      <Badge
+        variant="outline"
+        className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
+      >
         {row.original.status === "منشور" ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+          <CheckCircle2Icon className="text-green-500" />
         ) : (
-          <IconLoader />
+          <LoaderIcon />
         )}
         {row.original.status}
       </Badge>
     ),
-  }),
-  columnHelper.accessor("target", {
+  },
+  {
+    accessorKey: "target",
     header: () => <div className="w-full text-right">الهدف</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
-            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-              loading: `حفظ ${row.original.header}`,
-              success: "تم",
-              error: "خطأ",
-            })
-          }
-        }>
-          <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-            الهدف
-          </Label>
+          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+            loading: `حفظ ${row.original.header}`,
+            success: "تم",
+            error: "خطأ",
+          })
+        }}
+      >
+        <Label htmlFor={`${row.original.id}-target`} className="sr-only">
+          Target
+        </Label>
         <Input
-          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
+          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.target}
           id={`${row.original.id}-target`}
         />
       </form>
     ),
-  }),
-  columnHelper.accessor("limit", {
+  },
+  {
+    accessorKey: "limit",
     header: () => <div className="w-full text-right">الحد</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
           e.preventDefault()
-            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-              loading: `حفظ ${row.original.header}`,
-              success: "تم",
-              error: "خطأ",
-            })
-          }
-        }>
-          <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-            الحد
-          </Label>
+          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+            loading: `حفظ ${row.original.header}`,
+            success: "تم",
+            error: "خطأ",
+          })
+        }}
+      >
+        <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
+          Limit
+        </Label>
         <Input
-          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
+          className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.limit}
           id={`${row.original.id}-limit`}
         />
       </form>
     ),
-  }),
-  columnHelper.accessor("reviewer", {
+  },
+  {
+    accessorKey: "reviewer",
     header: "المراجع",
     cell: ({ row }) => {
       const isAssigned = row.original.reviewer !== "تعيين مراجع"
@@ -279,12 +268,11 @@ const columns = columnHelper.columns([
       return (
         <>
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            المراجع
+            Reviewer
           </Label>
           <Select>
             <SelectTrigger
-              className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
-              size="sm"
+              className="h-8 w-40"
               id={`${row.original.id}-reviewer`}
             >
               <SelectValue placeholder="تعيين مراجع" />
@@ -299,8 +287,8 @@ const columns = columnHelper.columns([
         </>
       )
     },
-  }),
-  columnHelper.display({
+  },
+  {
     id: "actions",
     cell: () => (
       <DropdownMenu>
@@ -310,7 +298,7 @@ const columns = columnHelper.columns([
             className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
             size="icon"
           >
-            <IconDotsVertical />
+            <MoreVerticalIcon />
             <span className="sr-only">فتح القائمة</span>
           </Button>
         </DropdownMenuTrigger>
@@ -319,18 +307,14 @@ const columns = columnHelper.columns([
           <DropdownMenuItem>إنشاء نسخة</DropdownMenuItem>
           <DropdownMenuItem>مفضلة</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">حذف</DropdownMenuItem>
+          <DropdownMenuItem>حذف</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
-  }),
-])
+  },
+]
 
-function DraggableRow({
-  row,
-}: {
-  row: Row<typeof features, z.infer<typeof schema>>
-}) {
+function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -348,7 +332,7 @@ function DraggableRow({
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>
-          <FlexRender cell={cell} />
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
     </TableRow>
@@ -363,7 +347,7 @@ export function DataTable({
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
-    React.useState<ColumnVisibilityState>({})
+    React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
@@ -384,8 +368,7 @@ export function DataTable({
     [data]
   )
 
-  const table = useTable({
-    features,
+  const table = useReactTable({
     data,
     columns,
     state: {
@@ -402,7 +385,18 @@ export function DataTable({
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
+
+  const doneCount = data.filter((row) => row.status === "منشور").length
+  const inProgressCount = data.filter(
+    (row) => row.status === "قيد التنفيذ"
+  ).length
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -415,15 +409,10 @@ export function DataTable({
     }
   }
 
-  const doneCount = data.filter((row) => row.status === "منشور").length
-  const inProgressCount = data.filter(
-    (row) => row.status === "قيد التنفيذ"
-  ).length
-
   return (
     <Tabs
       defaultValue="outline"
-      className="w-full flex-col justify-start gap-6"
+      className="flex w-full flex-col justify-start gap-6"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
@@ -431,8 +420,7 @@ export function DataTable({
         </Label>
         <Select defaultValue="outline">
           <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
+            className="@4xl/main:hidden flex w-fit"
             id="view-selector"
           >
             <SelectValue placeholder="اختر عرضًا" />
@@ -444,13 +432,25 @@ export function DataTable({
             <SelectItem value="focus-documents">مستندات مميزة</SelectItem>
           </SelectContent>
         </Select>
-        <TabsList className="hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1 @4xl/main:flex">
+        <TabsList className="@4xl/main:flex hidden">
           <TabsTrigger value="outline">الأقسام</TabsTrigger>
-          <TabsTrigger value="past-performance">
-            الأداء السابق <Badge variant="secondary">{doneCount}</Badge>
+          <TabsTrigger value="past-performance" className="gap-1">
+            الأداء السابق{" "}
+            <Badge
+              variant="secondary"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+            >
+              {doneCount}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="key-personnel">
-            الأشخاص الرئيسيون <Badge variant="secondary">{inProgressCount}</Badge>
+          <TabsTrigger value="key-personnel" className="gap-1">
+            الأشخاص الرئيسيون{" "}
+            <Badge
+              variant="secondary"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
+            >
+              {inProgressCount}
+            </Badge>
           </TabsTrigger>
           <TabsTrigger value="focus-documents">مستندات مميزة</TabsTrigger>
         </TabsList>
@@ -458,10 +458,10 @@ export function DataTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <IconLayoutColumns />
+                <ColumnsIcon />
                 <span className="hidden lg:inline">تخصيص الأعمدة</span>
                 <span className="lg:hidden">الأعمدة</span>
-                <IconChevronDown />
+                <ChevronDownIcon />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -489,7 +489,7 @@ export function DataTable({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" size="sm">
-            <IconPlus />
+            <PlusIcon />
             <span className="hidden lg:inline">إضافة قسم</span>
           </Button>
         </div>
@@ -513,9 +513,12 @@ export function DataTable({
                     {headerGroup.headers.map((header) => {
                       return (
                         <TableHead key={header.id} colSpan={header.colSpan}>
-                          {header.isPlaceholder ? null : (
-                            <FlexRender header={header} />
-                          )}
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
                       )
                     })}
@@ -557,13 +560,15 @@ export function DataTable({
                 صفوف لكل صفحة
               </Label>
               <Select
-                value={`${table.state.pagination.pageSize}`}
+                value={`${table.getState().pagination.pageSize}`}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value))
                 }}
               >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue placeholder={table.state.pagination.pageSize} />
+                <SelectTrigger className="w-20" id="rows-per-page">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
                 </SelectTrigger>
                 <SelectContent side="top">
                   {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -575,7 +580,7 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              صفحة {table.state.pagination.pageIndex + 1} من{" "}
+              صفحة {table.getState().pagination.pageIndex + 1} من{" "}
               {table.getPageCount()}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -586,7 +591,7 @@ export function DataTable({
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">إلى الصفحة الأولى</span>
-                <IconChevronsLeft />
+                <ChevronsLeftIcon />
               </Button>
               <Button
                 variant="outline"
@@ -596,7 +601,7 @@ export function DataTable({
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">إلى الصفحة السابقة</span>
-                <IconChevronLeft />
+                <ChevronLeftIcon />
               </Button>
               <Button
                 variant="outline"
@@ -606,7 +611,7 @@ export function DataTable({
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">إلى الصفحة التالية</span>
-                <IconChevronRight />
+                <ChevronRightIcon />
               </Button>
               <Button
                 variant="outline"
@@ -616,7 +621,7 @@ export function DataTable({
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">إلى الصفحة الأخيرة</span>
-                <IconChevronsRight />
+                <ChevronsRightIcon />
               </Button>
             </div>
           </div>
@@ -665,20 +670,20 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
   const isMobile = useIsMobile()
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
+    <Sheet>
+      <SheetTrigger asChild>
         <Button variant="link" className="w-fit px-0 text-left text-foreground">
           {item.header}
         </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.header}</DrawerTitle>
-          <DrawerDescription>
+      </SheetTrigger>
+      <SheetContent side="right" className="flex flex-col">
+        <SheetHeader className="gap-1">
+          <SheetTitle>{item.header}</SheetTitle>
+          <SheetDescription>
             عرض إجمالي الزوار آخر 6 أشهر
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
           {!isMobile && (
             <>
               <ChartContainer config={chartConfig}>
@@ -723,9 +728,9 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               </ChartContainer>
               <Separator />
               <div className="grid gap-2">
-                <div className="flex gap-2 leading-none font-medium">
+                <div className="flex gap-2 font-medium leading-none">
                   ارتفاع بنسبة 5.2% هذا الشهر{" "}
-                  <IconTrendingUp className="size-4" />
+                  <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
                   عرض إجمالي الزوار آخر 6 أشهر. هذا نص عشوائي لاختبار
@@ -808,13 +813,15 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
             </div>
           </form>
         </div>
-        <DrawerFooter>
-          <Button>إرسال</Button>
-          <DrawerClose asChild>
-            <Button variant="outline">تم</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
+          <Button className="w-full">إرسال</Button>
+          <SheetClose asChild>
+            <Button variant="outline" className="w-full">
+              تم
+            </Button>
+          </SheetClose>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

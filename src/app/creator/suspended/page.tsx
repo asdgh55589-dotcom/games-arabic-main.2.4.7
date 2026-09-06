@@ -1,8 +1,8 @@
 import { Ban } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/official-ui/button'
+import { Card, CardContent } from '@/components/official-ui/card'
 import { getBanInfo, getSession } from '@/lib/auth'
 
 export const metadata = {

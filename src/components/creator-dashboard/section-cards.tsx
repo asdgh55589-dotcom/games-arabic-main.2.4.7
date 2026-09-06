@@ -1,17 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { TrendingDownIcon, TrendingUpIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/official-ui/badge"
 import {
   Card,
-  CardAction,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/official-ui/card"
 
 interface Summary {
   totalViews: number
@@ -60,95 +59,87 @@ export function SectionCards() {
   const downloadsUp = (summary?.downloadsChange ?? 0) >= 0
 
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+    <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card lg:px-6">
       <Card className="@container/card">
-        <CardHeader>
+        <CardHeader className="relative">
           <CardDescription>إجمالي المشاهدات</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {summary ? summary.totalViews.toLocaleString("ar-EG") : "—"}
           </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {viewsUp ? <IconTrendingUp /> : <IconTrendingDown />}
-              {summary ? `${viewsUp ? "+" : ""}${summary.viewsChange}%` : "—"}
+          <div className="absolute right-4 top-4">
+            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+              {viewsUp ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+              <span dir="ltr">{summary ? `${viewsUp ? "+" : ""}${summary.viewsChange}%` : "—"}</span>
             </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {viewsUp ? "ارتفاع هذا الشهر" : "انخفاض هذا الشهر"}{" "}
-            {viewsUp ? (
-              <IconTrendingUp className="size-4" />
-            ) : (
-              <IconTrendingDown className="size-4" />
-            )}
           </div>
-          <div className="text-muted-foreground">المشاهدات آخر 30 يومًا</div>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            {viewsUp ? "ارتفاع هذا الشهر" : "انخفاض هذا الشهر"} <TrendingUpIcon className="size-4" />
+          </div>
+          <div className="text-muted-foreground">
+            المشاهدات آخر 30 يومًا
+          </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
-        <CardHeader>
+        <CardHeader className="relative">
           <CardDescription>التحميلات</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {summary ? summary.totalDownloads.toLocaleString("ar-EG") : "—"}
           </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {downloadsUp ? <IconTrendingUp /> : <IconTrendingDown />}
-              {summary
-                ? `${downloadsUp ? "+" : ""}${summary.downloadsChange}%`
-                : "—"}
+          <div className="absolute right-4 top-4">
+            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+              {downloadsUp ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+              <span dir="ltr">{summary ? `${downloadsUp ? "+" : ""}${summary.downloadsChange}%` : "—"}</span>
             </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {downloadsUp ? "ارتفاع هذه الفترة" : "انخفاض هذه الفترة"}{" "}
-            {downloadsUp ? (
-              <IconTrendingUp className="size-4" />
-            ) : (
-              <IconTrendingDown className="size-4" />
-            )}
           </div>
-          <div className="text-muted-foreground">التحميلات تحتاج متابعة</div>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            {downloadsUp ? "ارتفاع هذه الفترة" : "انخفاض هذه الفترة"} <TrendingDownIcon className="size-4" />
+          </div>
+          <div className="text-muted-foreground">
+            التحميلات تحتاج متابعة
+          </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
-        <CardHeader>
+        <CardHeader className="relative">
           <CardDescription>التعليقات</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {summary ? summary.totalComments.toLocaleString("ar-EG") : "—"}
           </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
+          <div className="absolute right-4 top-4">
+            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+              <TrendingUpIcon className="size-3" />
+              <span dir="ltr">+12.5%</span>
             </Badge>
-          </CardAction>
+          </div>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            تفاعل قوي <IconTrendingUp className="size-4" />
+            تفاعل قوي <TrendingUpIcon className="size-4" />
           </div>
           <div className="text-muted-foreground">التعليقات تتجاوز الأهداف</div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
-        <CardHeader>
+        <CardHeader className="relative">
           <CardDescription>تعريبات منشورة</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {totals ? totals.published.toLocaleString("ar-EG") : "—"}
+          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+{totals ? totals.published.toLocaleString("ar-EG") : "—"}
           </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +4.5%
+          <div className="absolute right-4 top-4">
+            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+              <TrendingUpIcon className="size-3" />
+              <span dir="ltr">+4.5%</span>
             </Badge>
-          </CardAction>
+          </div>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            أداء ثابت <IconTrendingUp className="size-4" />
+            أداء ثابت <TrendingUpIcon className="size-4" />
           </div>
           <div className="text-muted-foreground">يواكب توقعات النمو</div>
         </CardFooter>
