@@ -415,6 +415,7 @@ model Endorsement {
 
   @@unique([userId, modId])
   @@index([modId])
+  @@index([modId, createdAt])
 }
 
 // ===== ملفات التحميل المتعددة لكل تعريب =====
@@ -1173,6 +1174,7 @@ model CommentLike {
   @@unique([userId, commentId])
   @@index([userId])
   @@index([commentId])
+  @@index([commentId, createdAt])
 }
 
 // ===== أقسام المنصات (ديناميكي) =====

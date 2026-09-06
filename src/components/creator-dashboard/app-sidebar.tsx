@@ -5,6 +5,7 @@ import {
   ArrowUpCircleIcon,
   BarChartIcon,
   FolderIcon,
+  HeartIcon,
   LayoutDashboardIcon,
   ListIcon,
   SettingsIcon,
@@ -39,6 +40,7 @@ export function AppSidebar({
     { title: dict.nav.stats, url: "/creator/stats", icon: BarChartIcon },
     { title: dict.nav.requests, url: "/creator/requests", icon: FolderIcon },
     { title: dict.nav.comments, url: "/creator/comments", icon: UsersIcon },
+    { title: dict.nav.likes, url: "/creator/likes", icon: HeartIcon },
   ]
   const navSecondary = [
     { title: dict.nav.settings, url: "/creator/settings", icon: SettingsIcon },

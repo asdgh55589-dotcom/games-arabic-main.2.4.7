@@ -18,6 +18,7 @@ export interface StudioDict {
     stats: string
     requests: string
     comments: string
+    likes: string
     quickCreate: string
     inbox: string
     settings: string
@@ -190,6 +191,20 @@ export interface StudioDict {
     deleteDesc: string
     cancel: string
     confirmDelete: string
+    pin: string
+    unpin: string
+    pinnedBadge: string
+    editReply: string
+    saveEdit: string
+    cancelEdit: string
+    selectRow: string
+    selectedCount: string
+    hideSelected: string
+    showSelected: string
+    deleteSelected: string
+    clearSelection: string
+    bulkDeleteTitle: string
+    bulkDeleteDesc: string
   }
   requestsMgr: {
     open: string
@@ -473,5 +488,23 @@ export interface StudioDict {
     reason: string
     expiresAt: string
     backHome: string
+  }
+  likes: {
+    title: string
+    subtitle: string
+    metaTitle: string
+    endorsements: string
+    commentLikes: string
+    ratings: string
+    avgRating: string
+    topMod: string
+    noneYet: string
+    perMod: string
+    recent: string
+    mod: string
+    openMod: string
+    empty: string
+    total: string
+    sortBy: string
   }
 }
