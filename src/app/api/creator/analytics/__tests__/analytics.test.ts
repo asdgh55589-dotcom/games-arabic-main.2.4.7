@@ -9,6 +9,9 @@ jest.mock('@/lib/db', () => ({
     downloadClick: { findMany: jest.fn(), count: jest.fn() },
     modComment: { count: jest.fn() },
     commentSectionClick: { findMany: jest.fn(), count: jest.fn() },
+    endorsement: { count: jest.fn() },
+    news: { findMany: jest.fn() },
+    newsView: { count: jest.fn() },
   },
 }));
 
@@ -28,6 +31,9 @@ const mockDb = db as unknown as {
   downloadClick: { findMany: jest.Mock; count: jest.Mock };
   modComment: { count: jest.Mock };
   commentSectionClick: { findMany: jest.Mock; count: jest.Mock };
+  endorsement: { count: jest.Mock };
+  news: { findMany: jest.Mock };
+  newsView: { count: jest.Mock };
 };
 
 const MODS = [{ id: 'm-1' }, { id: 'm-2' }];
@@ -118,6 +124,9 @@ describe('GET /api/creator/analytics', () => {
     mockDb.downloadClick.count.mockResolvedValue(40);
     mockDb.modComment.count.mockResolvedValue(12);
     mockDb.commentSectionClick.count.mockResolvedValue(0);
+    mockDb.endorsement.count.mockResolvedValue(0);
+    mockDb.news.findMany.mockResolvedValue([]);
+    mockDb.newsView.count.mockResolvedValue(0);
     mockDb.mod.aggregate.mockResolvedValue({ _sum: { endorsements: 9 } });
   });
 
