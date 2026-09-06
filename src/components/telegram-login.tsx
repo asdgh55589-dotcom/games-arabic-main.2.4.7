@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from 'react'
 
+import {
+  TELEGRAM_WIDGET_CALLBACK_NAME,
+  TELEGRAM_WIDGET_SCRIPT_SRC,
+  buildTelegramWidgetAttributes,
+} from '@/lib/telegram-widget'
+
 interface TelegramLoginProps {
   botName: string
   onAuth: (data: TelegramAuthData) => void
@@ -27,40 +33,34 @@ export function TelegramLogin({ botName, onAuth }: TelegramLoginProps) {
   useEffect(() => {
     if (!containerRef.current) return
 
+    // Official widget protocol: the script calls the window-global function
+    // named in `data-onauth` with the auth payload. Keep a stable ref so the
+    // global always invokes the latest onAuth without re-injecting the script.
+    const onAuthRef = { current: onAuth }
+    onAuthRef.current = onAuth
+    const globalScope = window as unknown as Record<string, unknown>
+    const previousCallback = globalScope[TELEGRAM_WIDGET_CALLBACK_NAME]
+    globalScope[TELEGRAM_WIDGET_CALLBACK_NAME] = (data: TelegramAuthData) => {
+      onAuthRef.current(data)
+    }
+
     // تحميل Telegram Login Widget script
     const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', botName)
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-radius', '8')
-    script.setAttribute('data-request-access', 'write')
-    script.setAttribute('data-userpic', 'true')
-    script.setAttribute('data-lang', 'ar')
-    script.async = true
-
-    // التعامل مع النتيجة
-    script.onload = () => {
-      // مراقبة الرسائل من Telegram widget
-      const handler = (event: MessageEvent) => {
-        if (event.origin !== 'https://oauth.telegram.org') return
-        if (event.data && typeof event.data === 'string') {
-          try {
-            const data = JSON.parse(event.data)
-            if (data.telegramAuth) {
-              onAuth(data.telegramAuth)
-            }
-          } catch {
-            // تجاهل
-          }
-        }
-      }
-      window.addEventListener('message', handler)
-      return () => window.removeEventListener('message', handler)
+    script.src = TELEGRAM_WIDGET_SCRIPT_SRC
+    const attrs = buildTelegramWidgetAttributes(botName)
+    for (const [key, value] of Object.entries(attrs)) {
+      script.setAttribute(key, value)
     }
+    script.async = true
 
     containerRef.current.appendChild(script)
 
     return () => {
+      if (previousCallback === undefined) {
+        delete globalScope[TELEGRAM_WIDGET_CALLBACK_NAME]
+      } else {
+        globalScope[TELEGRAM_WIDGET_CALLBACK_NAME] = previousCallback
+      }
       if (containerRef.current) {
         containerRef.current.innerHTML = ''
       }
