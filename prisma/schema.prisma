@@ -449,7 +449,18 @@ model ModFileLink {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
+  // Phase 2 — professional upload providers. 'direct' = hand-pasted URL
+  // (kept forever). 'freeimage' / 'ia' rows are written by server adapters.
+  provider   String  @default("direct") // direct | freeimage | ia
+  storageKey String? // provider-side key/identifier (IA item path, FreeImage delete hash)
+  wrappedUrl String? // edge-cached URL (Cloudflare Worker) when applicable
+  bytes      BigInt?
+  mime       String?
+  checksum   String? // sha256 hex when computed server-side
+  uploadedBy String? // uploader userId (audit)
+
   @@index([fileId])
+  @@index([provider])
 }
 
 // ===== أقسام الفيديوهات (شرح/ترويجي/مراجعة) =====
@@ -1459,4 +1470,77 @@ model Session {
 
   @@index([userId])
   @@map("session")
+}
+
+// ===== Phase 2 — professional upload system (providers + quotas) =====
+
+// Audit row for every non-direct upload (FreeImage images, IA files).
+// Mod display fields keep working unchanged (URL strings); this table
+// powers quotas, admin visibility, and provider migration later.
+// userId is a raw id (no FK) to avoid churning the User model.
+model UploadAsset {
+  id          String   @id @default(cuid())
+  userId      String
+  modId       String?
+  kind        String   // image | file
+  provider    String   // freeimage | ia
+  originalUrl String
+  wrappedUrl  String?
+  storageKey  String?
+  bytes       BigInt   @default(0)
+  mime        String?
+  checksum    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([modId])
+  @@index([provider])
+  @@index([createdAt])
+}
+
+// Rank-based quota defaults. rank = role string (creator, publisher, ...).
+// Owner edits these from the admin panel — absolute control.
+model QuotaPolicy {
+  id            String   @id @default(cuid())
+  rank          String   @unique
+  uploadsPerDay Int      @default(10)
+  maxFileBytes  BigInt   @default(2147483648) // 2GB
+  totalBytes    BigInt   @default(21474836480) // 20GB
+  updatedAt     DateTime @updatedAt
+}
+
+// Per-user quota exceptions. NULL field = inherit the rank default.
+model QuotaOverride {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  uploadsPerDay Int?
+  maxFileBytes  BigInt?
+  totalBytes    BigInt?
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Daily upload counter per user. date = YYYY-MM-DD (UTC) — new row per
+// day means the daily quota resets automatically, no cron needed.
+model UploadUsageDaily {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  count     Int      @default(0)
+  bytes     BigInt   @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+// Lifetime storage footprint per creator (updated transactionally on upload).
+model CreatorStorage {
+  userId      String   @unique
+  totalBytes  BigInt   @default(0)
+  filesCount  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
