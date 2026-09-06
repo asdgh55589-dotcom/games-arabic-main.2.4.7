@@ -36,21 +36,21 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import {
+  ArchiveIcon,
   CheckCircle2Icon,
-  CheckCircleIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ColumnsIcon,
+  EyeIcon,
   GripVerticalIcon,
   LoaderIcon,
   MoreVerticalIcon,
-  PlusIcon,
-  TrendingUpIcon,
+  PencilIcon,
 } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import Link from "next/link"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -59,12 +59,6 @@ import { useStudioLanguage } from "@/lib/studio-i18n/context"
 import type { StudioDict } from "@/lib/studio-i18n/types"
 import { Badge } from "@/components/official-ui/badge"
 import { Button } from "@/components/official-ui/button"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/official-ui/chart"
 import { Checkbox } from "@/components/official-ui/checkbox"
 import {
   DropdownMenu,
@@ -74,7 +68,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/official-ui/dropdown-menu"
-import { Input } from "@/components/official-ui/input"
 import { Label } from "@/components/official-ui/label"
 import {
   Select,
@@ -83,7 +76,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/official-ui/select"
-import { Separator } from "@/components/official-ui/separator"
 import {
   Sheet,
   SheetClose,
@@ -111,13 +103,16 @@ import {
 
 export const schema = z.object({
   id: z.number(),
+  modId: z.string(),
   header: z.string(),
   type: z.string(),
   status: z.string(),
   target: z.string(),
   limit: z.string(),
-  reviewer: z.string(),
+  slug: z.string(),
 })
+
+type TableRow = z.infer<typeof schema>
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -140,189 +135,145 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-function useColumns(dict: StudioDict): ColumnDef<z.infer<typeof schema>>[] {
+function useColumns(
+  dict: StudioDict,
+  opts: { onArchive: (modId: string, name: string) => void },
+): ColumnDef<TableRow>[] {
   return [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label={dict.table.selectAll}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label={dict.table.selectRow}
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "header",
-    header: dict.table.name,
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />
+    {
+      id: "drag",
+      header: () => null,
+      cell: ({ row }) => <DragHandle id={row.original.id} />,
     },
-    enableHiding: false,
-  },
-  {
-    accessorKey: "type",
-    header: dict.table.sectionType,
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="outline" className="px-1.5 text-muted-foreground">
-          {row.original.type}
-        </Badge>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: dict.table.status,
-    cell: ({ row }) => {
-      const isPublished = row.original.status === dict.status.publishedKey
-      return (
-        <Badge
-          variant="outline"
-          className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
-        >
-          {isPublished ? (
-            <CheckCircle2Icon className="text-green-500" />
-          ) : (
-            <LoaderIcon />
-          )}
-          {isPublished ? dict.status.published : dict.status.inProgress}
-        </Badge>
-      )
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label={dict.table.selectAll}
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label={dict.table.selectRow}
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
     },
-  },
-  {
-    accessorKey: "target",
-    header: () => <div className="w-full text-end">{dict.table.target}</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `${dict.table.savingItem} ${row.original.header}`,
-            success: dict.table.saved,
-            error: dict.table.saveError,
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
-        </Label>
-        <Input
-          className="h-8 w-16 border-transparent bg-transparent text-end shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
-          defaultValue={row.original.target}
-          id={`${row.original.id}-target`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "limit",
-    header: () => <div className="w-full text-end">{dict.table.limit}</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `${dict.table.savingItem} ${row.original.header}`,
-            success: dict.table.saved,
-            error: dict.table.saveError,
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Limit
-        </Label>
-        <Input
-          className="h-8 w-16 border-transparent bg-transparent text-end shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
-          defaultValue={row.original.limit}
-          id={`${row.original.id}-limit`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "reviewer",
-    header: dict.table.reviewer,
-    cell: ({ row }) => {
-      const isAssigned = row.original.reviewer !== dict.table.assignReviewer
-
-      if (isAssigned) {
-        return row.original.reviewer
-      }
-
-      return (
-        <>
-          <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
-          </Label>
-          <Select>
-            <SelectTrigger
-              className="h-8 w-40"
-              id={`${row.original.id}-reviewer`}
-            >
-              <SelectValue placeholder={dict.table.assignReviewer} />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-              <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </>
-      )
+    {
+      accessorKey: "header",
+      header: dict.table.name,
+      cell: ({ row }) => {
+        return <TableCellViewer item={row.original} />
+      },
+      enableHiding: false,
     },
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
+    {
+      accessorKey: "type",
+      header: dict.table.sectionType,
+      cell: ({ row }) => (
+        <div className="w-32">
+          <Badge variant="outline" className="px-1.5 text-muted-foreground">
+            {row.original.type}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: dict.table.status,
+      cell: ({ row }) => {
+        const isPublished = row.original.status === dict.status.publishedKey
+        return (
+          <Badge
+            variant="outline"
+            className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
           >
-            <MoreVerticalIcon />
-            <span className="sr-only">{dict.table.openMenu}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>{dict.table.edit}</DropdownMenuItem>
-          <DropdownMenuItem>{dict.table.duplicate}</DropdownMenuItem>
-          <DropdownMenuItem>{dict.table.favorite}</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>{dict.table.remove}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
+            {isPublished ? (
+              <CheckCircle2Icon className="text-green-500" />
+            ) : (
+              <LoaderIcon />
+            )}
+            {isPublished ? dict.status.published : dict.status.inProgress}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "target",
+      header: () => <div className="w-full text-end">{dict.table.target}</div>,
+      cell: ({ row }) => (
+        <span className="tabular-nums text-muted-foreground">{row.original.target}</span>
+      ),
+    },
+    {
+      accessorKey: "limit",
+      header: () => <div className="w-full text-end">{dict.table.limit}</div>,
+      cell: ({ row }) => (
+        <span className="tabular-nums text-muted-foreground">{row.original.limit}</span>
+      ),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const item = row.original
+        const isPublished = item.status === dict.status.publishedKey
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+                size="icon"
+              >
+                <MoreVerticalIcon />
+                <span className="sr-only">{dict.table.openMenu}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {item.slug && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/mod/${item.slug}`} target="_blank">
+                    <EyeIcon className="me-1 size-4" />
+                    {dict.mods.view}
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href={`/creator/mods/${item.modId}/edit`}>
+                  <PencilIcon className="me-1 size-4" />
+                  {dict.mods.edit}
+                </Link>
+              </DropdownMenuItem>
+              {isPublished && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => opts.onArchive(item.modId, item.header)}>
+                    <ArchiveIcon className="me-1 size-4" />
+                    {dict.mods.archive}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
   ]
 }
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
+function DraggableRow({ row }: { row: Row<TableRow> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -349,12 +300,43 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export function DataTable({
   data: initialData,
+  onChanged,
 }: {
-  data: z.infer<typeof schema>[]
+  data: TableRow[]
+  onChanged?: () => void
 }) {
   const { dict, dir } = useStudioLanguage()
-  const columns = React.useMemo(() => useColumns(dict), [dict])
+
+  const handleArchive = React.useCallback(
+    async (modId: string, name: string) => {
+      if (!window.confirm(`${dict.table.confirmArchive} "${name}"؟`)) return
+      try {
+        const res = await fetch(`/api/creator/mods/${modId}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'archive' }),
+        })
+        const json = await res.json().catch(() => null)
+        if (res.ok) {
+          toast.success(json?.data?.message || dict.table.saved)
+          onChanged?.()
+        } else {
+          toast.error(json?.error?.message || dict.table.saveError)
+        }
+      } catch {
+        toast.error(dict.table.saveError)
+      }
+    },
+    [dict, onChanged]
+  )
+
+  const columns = React.useMemo(() => useColumns(dict, { onArchive: handleArchive }), [dict, handleArchive])
   const [data, setData] = React.useState(() => initialData)
+
+  // Refresh rows when the parent reloads (e.g. after archive).
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -425,44 +407,16 @@ export function DataTable({
       className="flex w-full flex-col justify-start gap-6"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
-        <Label htmlFor="view-selector" className="sr-only">
-          {dict.table.view}
-        </Label>
-        <Select defaultValue="outline">
-          <SelectTrigger
-            className="@4xl/main:hidden flex w-fit"
-            id="view-selector"
-          >
-            <SelectValue placeholder={dict.table.chooseView} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="outline">{dict.table.sections}</SelectItem>
-            <SelectItem value="past-performance">{dict.table.pastPerformance}</SelectItem>
-            <SelectItem value="key-personnel">{dict.table.keyPeople}</SelectItem>
-            <SelectItem value="focus-documents">{dict.table.featuredDocs}</SelectItem>
-          </SelectContent>
-        </Select>
         <TabsList className="@4xl/main:flex hidden">
-          <TabsTrigger value="outline">{dict.table.sections}</TabsTrigger>
-          <TabsTrigger value="past-performance" className="gap-1">
-            {dict.table.pastPerformance}{" "}
+          <TabsTrigger value="outline" className="gap-1">
+            {dict.table.sections}{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
             >
-              {doneCount}
+              {doneCount + inProgressCount}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="key-personnel" className="gap-1">
-            {dict.table.keyPeople}{" "}
-            <Badge
-              variant="secondary"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
-            >
-              {inProgressCount}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="focus-documents">{dict.table.featuredDocs}</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -498,10 +452,6 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
-            <PlusIcon />
-            <span className="hidden lg:inline">{dict.table.addSection}</span>
-          </Button>
         </div>
       </div>
       <TabsContent
@@ -637,48 +587,14 @@ export function DataTable({
           </div>
         </div>
       </TabsContent>
-      <TabsContent
-        value="past-performance"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent value="key-personnel" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent
-        value="focus-documents"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
     </Tabs>
   )
 }
 
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
-]
-
-const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig
-
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({ item }: { item: TableRow }) {
   const isMobile = useIsMobile()
-  const { dict, dir } = useStudioLanguage()
+  const { dict, dir, formatNumber } = useStudioLanguage()
+  const isPublished = item.status === dict.status.publishedKey
 
   return (
     <Sheet>
@@ -691,140 +607,41 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
         <SheetHeader className="gap-1">
           <SheetTitle>{item.header}</SheetTitle>
           <SheetDescription>
-            {dict.table.visitorsLast6Months}
+            {item.type} • {isPublished ? dict.status.published : dict.status.inProgress}
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">{dict.table.target}</div>
+              <div className="text-xl font-bold tabular-nums">{formatNumber(Number(item.target) || 0)}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">{dict.table.limit}</div>
+              <div className="text-xl font-bold tabular-nums">{formatNumber(Number(item.limit) || 0)}</div>
+            </div>
+          </div>
           {!isMobile && (
-            <>
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: 0,
-                    right: 10,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                    hide
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="mobile"
-                    type="natural"
-                    fill="var(--color-mobile)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-mobile)"
-                    stackId="a"
-                  />
-                  <Area
-                    dataKey="desktop"
-                    type="natural"
-                    fill="var(--color-desktop)"
-                    fillOpacity={0.4}
-                    stroke="var(--color-desktop)"
-                    stackId="a"
-                  />
-                </AreaChart>
-              </ChartContainer>
-              <Separator />
-              <div className="grid gap-2">
-                <div className="flex gap-2 font-medium leading-none">
-                  {dict.table.upThisMonth52}{" "}
-                  <TrendingUpIcon className="size-4" />
-                </div>
-                <div className="text-muted-foreground">
-                  {dict.table.drawerLorem}
-                </div>
-              </div>
-              <Separator />
-            </>
+            <p className="text-xs text-muted-foreground">{dict.table.drawerHint}</p>
           )}
-          <form className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="header">{dict.table.name}</Label>
-              <Input id="header" defaultValue={item.header} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="type">{dict.table.typeLabel}</Label>
-                <Select defaultValue={item.type}>
-                  <SelectTrigger id="type" className="w-full">
-                    <SelectValue placeholder={dict.table.chooseType} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Table of Contents">
-                      Table of Contents
-                    </SelectItem>
-                    <SelectItem value="Executive Summary">
-                      Executive Summary
-                    </SelectItem>
-                    <SelectItem value="Technical Approach">
-                      Technical Approach
-                    </SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Capabilities">Capabilities</SelectItem>
-                    <SelectItem value="Focus Documents">
-                      Focus Documents
-                    </SelectItem>
-                    <SelectItem value="Narrative">Narrative</SelectItem>
-                    <SelectItem value="Cover Page">Cover Page</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="status">{dict.table.status}</Label>
-                <Select defaultValue={item.status}>
-                  <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder={dict.table.chooseStatus} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={dict.status.publishedKey}>{dict.status.published}</SelectItem>
-                    <SelectItem value={dict.status.inProgressKey}>{dict.status.inProgress}</SelectItem>
-                    <SelectItem value="not-started">{dict.status.notStarted}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="target">{dict.table.target}</Label>
-                <Input id="target" defaultValue={item.target} />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">{dict.table.limit}</Label>
-                <Input id="limit" defaultValue={item.limit} />
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="reviewer">{dict.table.reviewer}</Label>
-              <Select defaultValue={item.reviewer}>
-                <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder={dict.table.chooseReviewer} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-                  <SelectItem value="Jamik Tashpulatov">
-                    Jamik Tashpulatov
-                  </SelectItem>
-                  <SelectItem value="Emily Whalen">Emily Whalen</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </form>
+          <div className="flex gap-2">
+            {item.slug && (
+              <Button asChild variant="outline" className="flex-1">
+                <Link href={`/mod/${item.slug}`} target="_blank">
+                  <EyeIcon className="me-1 size-4" />
+                  {dict.mods.view}
+                </Link>
+              </Button>
+            )}
+            <Button asChild variant="outline" className="flex-1">
+              <Link href={`/creator/mods/${item.modId}/edit`}>
+                <PencilIcon className="me-1 size-4" />
+                {dict.mods.edit}
+              </Link>
+            </Button>
+          </div>
         </div>
         <SheetFooter className="mt-auto flex gap-2 sm:flex-col">
-          <Button className="w-full">{dict.table.submit}</Button>
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
               {dict.table.done}

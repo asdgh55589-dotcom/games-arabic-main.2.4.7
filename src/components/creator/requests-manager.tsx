@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
@@ -37,6 +36,7 @@ export function RequestsManager() {
   const [totalPages, setTotalPages] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [completeModId, setCompleteModId] = useState<Record<string, string>>({})
+  const [myMods, setMyMods] = useState<{ id: string; name: string }[]>([])
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
@@ -60,17 +60,28 @@ export function RequestsManager() {
     fetchRequests()
   }, [fetchRequests])
 
-  const handleAccept = async (id: string) => {
+  // Own mods for the link-on-complete dropdown (server enforces ownership).
+  useEffect(() => {
+    fetch('/api/creator/mods?limit=100', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const mods = json?.data?.mods
+        if (Array.isArray(mods)) setMyMods(mods.map((m: { id: string; name: string }) => ({ id: m.id, name: m.name })))
+      })
+      .catch(() => {})
+  }, [])
+
+  const patchRequest = async (id: string, body: Record<string, string>, okMsg: string) => {
     setActionLoading(id)
     try {
       const res = await fetch(`/api/creator/requests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'accept' }),
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: t.acceptedToast })
+        toast({ title: json.data?.message || okMsg })
         fetchRequests()
       } else {
         toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || t.failedToast, variant: 'destructive' })
@@ -80,6 +91,12 @@ export function RequestsManager() {
     }
     setActionLoading(null)
   }
+
+  const handleAccept = (id: string) => patchRequest(id, { action: 'accept' }, t.acceptedToast)
+
+  const handleCancel = (id: string) => patchRequest(id, { action: 'cancel' }, t.cancelledToast)
+
+  const handleBoost = (id: string) => patchRequest(id, { action: 'boost' }, t.boostedToast)
 
   const handleComplete = async (id: string) => {
     const modId = completeModId[id]?.trim()
@@ -200,30 +217,48 @@ export function RequestsManager() {
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
                     {r.status === 'open' && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(r.id)}
-                        disabled={actionLoading === r.id}
-                      >
-                        {actionLoading === r.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin me-1" />
-                        ) : (
-                          <Check className="h-4 w-4 me-1" />
-                        )}
-                        {t.accept}
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAccept(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          {actionLoading === r.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin me-1" />
+                          ) : (
+                            <Check className="h-4 w-4 me-1" />
+                          )}
+                          {t.accept}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBoost(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          <Heart className="h-4 w-4 me-1" />
+                          {t.boost}
+                        </Button>
+                      </>
                     )}
                     {r.status === 'accepted' && (
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1">
-                          <Input
-                            placeholder={t.modIdPlaceholder}
+                          <select
                             value={completeModId[r.id] || ''}
                             onChange={(e) =>
                               setCompleteModId((p) => ({ ...p, [r.id]: e.target.value }))
                             }
-                            className="h-8 w-28 text-xs"
-                          />
+                            className="h-8 w-28 text-xs rounded-md border border-border bg-background px-1"
+                            aria-label={t.linkMod}
+                          >
+                            <option value="">{t.linkMod}</option>
+                            {myMods.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
                           <Button
                             size="sm"
                             onClick={() => handleComplete(r.id)}
@@ -236,7 +271,15 @@ export function RequestsManager() {
                             )}
                           </Button>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{t.modIdHint}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-muted-foreground"
+                          onClick={() => handleCancel(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          {t.cancel}
+                        </Button>
                       </div>
                     )}
                   </div>

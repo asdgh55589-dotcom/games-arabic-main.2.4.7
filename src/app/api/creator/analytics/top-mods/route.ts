@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     const viewsByMod = new Map(viewGroups.map((g) => [g.modId, g._count._all]))
     const mods = await db.mod.findMany({
       where: { id: { in: dlGroups.map((g) => g.modId) } },
-      select: { id: true, name: true, workflowStatus: true, game: { select: { name: true } } },
+      select: { id: true, name: true, slug: true, workflowStatus: true, game: { select: { name: true } } },
     })
     const modById = new Map(mods.map((m) => [m.id, m]))
 
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       return {
         modId: g.modId,
         name: m?.name ?? '—',
+        slug: m?.slug ?? '',
         game: m?.game?.name ?? '—',
         workflowStatus: m?.workflowStatus ?? 'DRAFT',
         downloads: g._count._all,

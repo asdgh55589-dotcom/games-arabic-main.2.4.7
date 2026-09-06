@@ -254,7 +254,7 @@ export function LikesClient() {
                       {r.type === 'endorsement' ? t.endorsements : r.type === 'commentLike' ? t.commentLikes : t.ratings}
                     </Badge>
                     <bdi className="font-medium">{r.username}</bdi>
-                    {r.value && <span className="text-amber-500">★ {r.value}</span>}
+                    {r.value && <span className="text-amber-500">{t.avgRating}: {r.value}</span>}
                     <span className="text-muted-foreground">{r.modName}</span>
                     <span className="text-xs text-muted-foreground ms-auto">
                       {timeAgo(r.createdAt, locale)}

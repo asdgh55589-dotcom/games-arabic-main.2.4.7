@@ -125,6 +125,8 @@ export interface StudioDict {
     chooseReviewer: string
     submit: string
     done: string
+    confirmArchive: string
+    drawerHint: string
   }
   meta: {
     suffix: string
@@ -227,6 +229,11 @@ export interface StudioDict {
     unexpectedError: string
     enterModId: string
     completedToast: string
+    cancelledToast: string
+    boostedToast: string
+    cancel: string
+    boost: string
+    linkMod: string
     emptyTitle: string
     emptyDesc: string
     statusOpen: string
@@ -277,6 +284,16 @@ export interface StudioDict {
     downloads: string
     rating: string
     comments: string
+    period: string
+    lifetime: string
+    endorsements: string
+    avgRating: string
+    drafts: string
+    pendingReview: string
+    rejected: string
+    published: string
+    recentActivity: string
+    topMods: string
   }
   form: {
     unofficialDefault: string
