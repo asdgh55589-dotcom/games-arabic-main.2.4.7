@@ -8,6 +8,7 @@ import {
   HeartIcon,
   LayoutDashboardIcon,
   ListIcon,
+  NewspaperIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
@@ -41,6 +42,7 @@ export function AppSidebar({
     { title: dict.nav.requests, url: "/creator/requests", icon: FolderIcon },
     { title: dict.nav.comments, url: "/creator/comments", icon: UsersIcon },
     { title: dict.nav.likes, url: "/creator/likes", icon: HeartIcon },
+    { title: dict.nav.news, url: "/creator/news", icon: NewspaperIcon },
   ]
   const navSecondary = [
     { title: dict.nav.settings, url: "/creator/settings", icon: SettingsIcon },

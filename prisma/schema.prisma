@@ -142,6 +142,7 @@ model User {
   newsClicks             NewsClick[]
   apiKeys                ApiKey[]
   creatorRequests        CreatorRequest[]
+  authoredNews           News[]
   modRequests            ModRequest[]
   acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
   sessions               Session[]
@@ -738,14 +739,20 @@ model News {
   clicksCount Int         @default(0)
   publishAt   DateTime    @default(now()) // جدولة النشر
   expiresAt   DateTime? // انتهاء العرض
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   newsViews   NewsView[]
   newsClicks  NewsClick[]
+  // Phase 3: creator-authored rows (nullable — legacy staff rows have none).
+  // Creator rows REQUIRE authorId (enforced in the creator API, not the DB,
+  // so staff tooling keeps working unchanged).
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([type, visible])
   @@index([publishAt])
   @@index([clicksCount])
+  @@index([authorId])
 }
 
 model NewsView {

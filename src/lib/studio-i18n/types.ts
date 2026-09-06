@@ -19,6 +19,7 @@ export interface StudioDict {
     requests: string
     comments: string
     likes: string
+    news: string
     quickCreate: string
     inbox: string
     settings: string
@@ -506,5 +507,43 @@ export interface StudioDict {
     empty: string
     total: string
     sortBy: string
+  }
+  news: {
+    title: string
+    subtitle: string
+    metaTitle: string
+    newPost: string
+    editPost: string
+    postTitle: string
+    postTitlePh: string
+    summary: string
+    summaryPh: string
+    content: string
+    contentPh: string
+    imageUrl: string
+    imagePh: string
+    uploadImage: string
+    linkUrl: string
+    linkPh: string
+    category: string
+    type: string
+    typeTicker: string
+    typeFeatured: string
+    publishNow: string
+    saveDraft: string
+    update: string
+    cancel: string
+    draft: string
+    published: string
+    publish: string
+    unpublish: string
+    remove: string
+    confirmDeleteTitle: string
+    confirmDeleteDesc: string
+    confirmDelete: string
+    empty: string
+    emptyDesc: string
+    views: string
+    clicks: string
   }
 }
