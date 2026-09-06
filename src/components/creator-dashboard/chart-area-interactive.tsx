@@ -33,20 +33,26 @@ interface HistoryPoint {
   date: string
   desktop: number
   mobile: number
+  clicks: number
 }
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const { dict, formatShortDate } = useStudioLanguage()
+  // Series 2 toggles downloads ↔ comment-clicks (design shell unchanged).
+  const [seriesMode, setSeriesMode] = React.useState<'downloads' | 'clicks'>('downloads')
   // Labels drive the tooltip/legend — translated at render; colors stay static.
   const chartConfig = React.useMemo(
     () =>
       ({
         visitors: { label: dict.chart.visitors },
         desktop: { label: dict.chart.views, color: "var(--chart-1)" },
-        mobile: { label: dict.chart.downloads, color: "var(--chart-2)" },
+        mobile: {
+          label: seriesMode === 'downloads' ? dict.chart.downloads : dict.chart.commentClicks,
+          color: "var(--chart-2)",
+        },
       }) satisfies ChartConfig,
-    [dict]
+    [dict, seriesMode]
   )
   const [timeRange, setTimeRange] = React.useState("30d")
   const [chartData, setChartData] = React.useState<HistoryPoint[]>([])
@@ -72,18 +78,31 @@ export function ChartAreaInteractive() {
           json?.data?.views ?? []
         const downloads: { date: string; count: number }[] =
           json?.data?.downloads ?? []
+        const clicks: { date: string; count: number }[] =
+          json?.data?.commentClicks ?? []
         const byDate = new Map<string, HistoryPoint>()
         for (const v of views) {
-          byDate.set(v.date, { date: v.date, desktop: v.count, mobile: 0 })
+          byDate.set(v.date, { date: v.date, desktop: v.count, mobile: 0, clicks: 0 })
         }
         for (const d of downloads) {
           const cur = byDate.get(d.date) ?? {
             date: d.date,
             desktop: 0,
             mobile: 0,
+            clicks: 0,
           }
           cur.mobile = d.count
           byDate.set(d.date, cur)
+        }
+        for (const k of clicks) {
+          const cur = byDate.get(k.date) ?? {
+            date: k.date,
+            desktop: 0,
+            mobile: 0,
+            clicks: 0,
+          }
+          cur.clicks = k.count
+          byDate.set(k.date, cur)
         }
         if (!cancelled) {
           setChartData(
@@ -116,6 +135,15 @@ export function ChartAreaInteractive() {
     return date >= startDate
   })
 
+  // Series-2 source switch (same shell, same colors — only the data + label change).
+  const displayData = React.useMemo(
+    () =>
+      seriesMode === 'downloads'
+        ? filteredData
+        : filteredData.map((d) => ({ ...d, mobile: d.clicks })),
+    [filteredData, seriesMode]
+  )
+
   return (
     <Card className="@container/card">
       <CardHeader className="relative">
@@ -126,7 +154,21 @@ export function ChartAreaInteractive() {
           </span>
           <span className="@[540px]/card:hidden">{dict.chart.last3Months}</span>
         </CardDescription>
-        <div className="absolute end-4 top-4">
+        <div className="absolute end-4 top-4 flex flex-col items-end gap-2">
+          <ToggleGroup
+            type="single"
+            value={seriesMode}
+            onValueChange={(v) => v && setSeriesMode(v as 'downloads' | 'clicks')}
+            variant="outline"
+            className="@[767px]/card:flex hidden"
+          >
+            <ToggleGroupItem value="downloads" className="h-8 px-2.5">
+              {dict.chart.downloads}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="clicks" className="h-8 px-2.5">
+              {dict.chart.commentClicks}
+            </ToggleGroupItem>
+          </ToggleGroup>
           <ToggleGroup
             type="single"
             value={timeRange}
@@ -170,7 +212,7 @@ export function ChartAreaInteractive() {
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={filteredData}>
+          <AreaChart data={displayData}>
             <defs>
               <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
                 <stop

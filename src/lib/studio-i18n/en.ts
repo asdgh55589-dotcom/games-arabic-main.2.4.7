@@ -47,6 +47,14 @@ export const en: StudioDict = {
     commentsBeatTargets: 'Comments beating targets',
     steadyPerformance: 'Steady performance',
     meetsGrowthExpectations: 'Meeting growth expectations',
+    conversion: 'View → download conversion',
+    conversionDesc: 'Downloads share of views',
+    clickRate: 'Comment-open rate',
+    clickRateDesc: 'Comment-section opens share of views',
+    periodLikes: 'Period endorsements',
+    periodLikesDesc: 'Endorsements over the last 30 days',
+    newsViews: 'News views',
+    newsViewsDesc: 'Your news views over the last 30 days',
   },
   chart: {
     title: 'Total Visitors',
@@ -57,6 +65,7 @@ export const en: StudioDict = {
     pickRange: 'Pick a range',
     views: 'Views',
     downloads: 'Downloads',
+    commentClicks: 'Comment clicks',
     visitors: 'Visitors',
   },
   status: {

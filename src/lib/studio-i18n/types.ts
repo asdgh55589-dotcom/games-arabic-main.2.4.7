@@ -49,6 +49,14 @@ export interface StudioDict {
     commentsBeatTargets: string
     steadyPerformance: string
     meetsGrowthExpectations: string
+    conversion: string
+    conversionDesc: string
+    clickRate: string
+    clickRateDesc: string
+    periodLikes: string
+    periodLikesDesc: string
+    newsViews: string
+    newsViewsDesc: string
   }
   chart: {
     title: string
@@ -59,6 +67,7 @@ export interface StudioDict {
     pickRange: string
     views: string
     downloads: string
+    commentClicks: string
     visitors: string
   }
   /** Status KEYS (never display raw) + their labels. Rows carry keys. */

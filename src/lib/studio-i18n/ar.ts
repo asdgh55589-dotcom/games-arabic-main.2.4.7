@@ -48,6 +48,14 @@ export const ar: StudioDict = {
     commentsBeatTargets: 'التعليقات تتجاوز الأهداف',
     steadyPerformance: 'أداء ثابت',
     meetsGrowthExpectations: 'يواكب توقعات النمو',
+    conversion: 'التحويل مشاهدة ← تحميل',
+    conversionDesc: 'نسبة التحميلات من المشاهدات',
+    clickRate: 'معدل فتح التعليقات',
+    clickRateDesc: 'نسبة فتح قسم التعليقات من المشاهدات',
+    periodLikes: 'تأييدات الفترة',
+    periodLikesDesc: 'تأييدات آخر 30 يومًا',
+    newsViews: 'مشاهدات الأخبار',
+    newsViewsDesc: 'مشاهدات أخبارك آخر 30 يومًا',
   },
   chart: {
     title: 'إجمالي الزوار',
@@ -58,6 +66,7 @@ export const ar: StudioDict = {
     pickRange: 'اختر قيمة',
     views: 'مشاهدات',
     downloads: 'تحميلات',
+    commentClicks: 'نقرات التعليقات',
     visitors: 'الزوار',
   },
   status: {

@@ -11,23 +11,19 @@ import type { z } from 'zod'
 type Row = z.infer<typeof schema>
 
 interface CreatorMod {
-  id: string
+  modId: string
   name: string
   workflowStatus: string
   views: number | null
   downloads: number | null
-  game?: { name: string } | null
+  game?: string | null
 }
 
-function toRow(
-  mod: CreatorMod,
-  index: number,
-  status: { publishedKey: string; inProgressKey: string }
-): Row {
+function toRow(mod: CreatorMod, index: number, status: { publishedKey: string; inProgressKey: string }): Row {
   return {
     id: index + 1,
     header: mod.name,
-    type: mod.game?.name ?? '—',
+    type: mod.game ?? '—',
     // Status KEYS only — data-table translates at render. Never compare Arabic literals.
     status: mod.workflowStatus === 'PUBLISHED' ? status.publishedKey : status.inProgressKey,
     target: String(mod.downloads ?? 0),
@@ -44,7 +40,8 @@ export default function CreatorDashboard() {
     let cancelled = false
     async function load() {
       try {
-        const res = await fetch('/api/creator/mods?page=1&limit=10', {
+        // Wave B Task 6 — top mods by PERIOD downloads (server aggregate).
+        const res = await fetch('/api/creator/analytics/top-mods?range=30&limit=10', {
           cache: 'no-store',
         })
         if (!res.ok) return
@@ -59,7 +56,7 @@ export default function CreatorDashboard() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [dict])
 
   return (
     <div className="flex flex-1 flex-col">

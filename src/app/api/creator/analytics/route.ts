@@ -81,6 +81,9 @@ export async function GET(req: NextRequest) {
       activeModsCount,
       totalCommentClicks,
       prevCommentClicks,
+      periodLikes,
+      prevPeriodLikes,
+      newsIds,
     ] = await Promise.all([
       db.modView.count({ where: viewWhere }),
       db.modView.count({ where: viewPrevWhere }),
@@ -97,7 +100,18 @@ export async function GET(req: NextRequest) {
       db.mod.count({ where: { authorId: user.id, workflowStatus: 'PUBLISHED' } }),
       db.commentSectionClick.count({ where: cscWhere }),
       db.commentSectionClick.count({ where: cscPrevWhere }),
+      db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: start } } }),
+      db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: prevStart, lt: start } } }),
+      db.news.findMany({ where: { authorId: user.id }, select: { id: true } }),
     ])
+
+    const newsIdList = newsIds.map((n) => n.id)
+    const [newsViews, prevNewsViews] = newsIdList.length
+      ? await Promise.all([
+          db.newsView.count({ where: { newsId: { in: newsIdList }, viewedAt: { gte: start } } }),
+          db.newsView.count({ where: { newsId: { in: newsIdList }, viewedAt: { gte: prevStart, lt: start } } }),
+        ])
+      : [0, 0]
 
     const pct = (num: number, den: number) =>
       den > 0 ? Number(((num / den) * 100).toFixed(1)) : 0
@@ -116,6 +130,11 @@ export async function GET(req: NextRequest) {
         // Wave B Task 5 — funnel step 3 (comment-section opens).
         totalCommentClicks,
         commentClicksChange: changeRate(totalCommentClicks, prevCommentClicks),
+        // Wave B Task 6 — period KPIs for the KPI-card shell.
+        periodLikes,
+        periodLikesChange: changeRate(periodLikes, prevPeriodLikes),
+        newsViews,
+        newsViewsChange: changeRate(newsViews, prevNewsViews),
         funnel: {
           views: totalViews,
           downloads: totalDownloads,
