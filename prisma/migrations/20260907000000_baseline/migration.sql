@@ -2120,28 +2120,3 @@ ALTER TABLE "BrokenImage" ADD CONSTRAINT "BrokenImage_modId_fkey" FOREIGN KEY ("
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Enable pg_trgm extension for trigram indexes
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- Create trigram indexes for fast LIKE/contains queries
-CREATE INDEX IF NOT EXISTS idx_user_username_trgm
-  ON "User" USING gin (username gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_user_email_trgm
-  ON "User" USING gin (email gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_user_display_name_trgm
-  ON "User" USING gin ("displayName" gin_trgm_ops);
--- Trigram indexes for fast case-insensitive LIKE/contains on Mod text columns
--- (used by /api/search Prisma fallback). Plain CREATE INDEX (not CONCURRENTLY:
--- Prisma migrate runs in a transaction where CONCURRENTLY is forbidden).
--- Follows prisma/migrations/20260901000000_add_pg_trgm_indexes pattern.
-
-CREATE INDEX IF NOT EXISTS idx_mod_name_trgm
-  ON "Mod" USING gin (name gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_mod_summary_trgm
-  ON "Mod" USING gin (summary gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_mod_arabic_title_trgm
-  ON "Mod" USING gin ("arabicTitle" gin_trgm_ops);

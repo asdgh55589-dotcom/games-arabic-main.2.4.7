@@ -134,11 +134,25 @@ npx prisma migrate status
 - The retired migration files remain recoverable in git history
   (commit `3fe1c9a^` and earlier) if per-change archaeology is ever needed.
 
-## 7. Known residual (not a blocker)
+## 7. Known behaviors (not blockers)
 
-`prisma migrate dev` prompts to name a migration even with zero schema
-changes, because the 6 raw-SQL trigram indexes are not modelable in
-`schema.prisma`. Rule: never accept `DROP INDEX` for `idx_*_trgm` —
-inspect the generated SQL first. (Pre-existing repo behavior since the
-trgm migrations landed; the squash only made it visible by fixing the
-shadow-DB crash.)
+- **Trigram indexes are intentionally schema-invisible.** `gin_trgm_ops`
+  indexes cannot be modeled in `schema.prisma`, so they live ONLY in the
+  baseline SQL tail (fresh DBs) and step-3 extras (existing DBs) — never as
+  model indexes. Consequence: `prisma migrate diff` history-vs-schema is
+  empty and `migrate dev` runs silent.
+- **NEVER add `DROP INDEX idx_*_trgm` to a migration.** `migrate dev`
+  auto-generates those DROPs whenever the dev DB carries trgm indexes
+  (raw-SQL drift) — accepting them once deleted prod-grade search indexes
+  AND hard-blocked later `migrate dev` runs (Prisma state validation
+  P3006). If you see trgm DROPs in a generated migration, delete those
+  lines before applying.
+- **Post-baseline migrations must sort AFTER `20260907000000_baseline`.**
+  `migrate dev` names new dirs with the wall clock — the container clock
+  currently lags the baseline stamp, so RENAME the generated dir to
+  `2026090700000N_*` and mirror the rename in `_prisma_migrations` if it
+  already applied. Always verify with `migrate diff … --script` (expect:
+  `-- This is an empty migration.`) before committing a migration.
+- **Dev DB intentionally carries NO trgm indexes** (keeps `migrate dev`
+  drift-free); staging/prod get them via step 3. Fresh DBs get them via
+  the baseline tail.
