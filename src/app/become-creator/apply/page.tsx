@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, CheckCircle, Clock, Link2, Loader2, XCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Clock, Link2, Loader2, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface CreatorRequestStatus {
   id: string
@@ -23,6 +24,10 @@ export default function BecomeCreatorApplyPage() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
+  const { dict, dir, locale } = useStudioLanguage()
+  const t = dict.apply
+  const tag = locale === 'ar' ? 'ar-EG' : 'en-US'
+  const BackIcon = dir === 'rtl' ? ArrowRight : ArrowLeft
 
   const [experience, setExperience] = useState('')
   const [preferredGames, setPreferredGames] = useState('')
@@ -55,8 +60,8 @@ export default function BecomeCreatorApplyPage() {
     e.preventDefault()
     if (!experience.trim() || !reason.trim()) {
       toast({
-        title: 'الحقول المطلوبة',
-        description: 'الخبرة وسبب الرغبة مطلوبان',
+        title: t.requiredFields,
+        description: t.requiredFieldsDesc,
         variant: 'destructive',
       })
       return
@@ -79,7 +84,7 @@ export default function BecomeCreatorApplyPage() {
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: 'تم إرسال طلبك بنجاح، سيتم مراجعته قريباً' })
+        toast({ title: t.submitOk })
         setExisting({
           id: json.data?.id || '',
           status: 'pending',
@@ -98,11 +103,11 @@ export default function BecomeCreatorApplyPage() {
           (typeof json?.error?.details === 'string' ? json.error.details : null) ||
           json?.error?.message ||
           json?.error ||
-          'فشل الإرسال'
+          t.submitFailed
         toast({ title: msg, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ، حاول مرة أخرى', variant: 'destructive' })
+      toast({ title: t.unexpectedRetry, variant: 'destructive' })
     }
     setSubmitting(false)
   }
@@ -111,7 +116,7 @@ export default function BecomeCreatorApplyPage() {
     return (
       <div
         className="container mx-auto py-12 max-w-2xl px-4 flex items-center justify-center min-h-[50vh]"
-        dir="rtl"
+        dir={dir}
       >
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
@@ -120,14 +125,14 @@ export default function BecomeCreatorApplyPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir="rtl">
+      <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir={dir}>
         <Card>
           <CardContent className="p-8">
-            <h2 className="text-xl font-bold mb-2">يجب تسجيل الدخول أولاً</h2>
-            <p className="text-sm text-muted-foreground mb-6">سجّل دخولك لتقديم طلب أن تصبح معرّباً</p>
+            <h2 className="text-xl font-bold mb-2">{t.loginRequired}</h2>
+            <p className="text-sm text-muted-foreground mb-6">{t.loginRequiredDesc}</p>
             <Link href="/login">
               <Button size="lg" className="min-h-[44px]">
-                تسجيل الدخول
+                {t.login}
               </Button>
             </Link>
           </CardContent>
@@ -139,20 +144,20 @@ export default function BecomeCreatorApplyPage() {
   if (user.role !== 'member') {
     const isStaff = ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
     return (
-      <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir="rtl">
+      <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir={dir}>
         <Card>
           <CardContent className="p-8">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">أنت بالفعل معرّب أو لديك صلاحيات أعلى</h2>
+            <h2 className="text-xl font-bold mb-2">{t.alreadyCreator}</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              لديك صلاحيات تفوق العضو العادي — لا حاجة لتقديم الطلب
+              {t.alreadyCreatorDesc}
             </p>
             <div className="flex justify-center gap-3">
               <Link href={isStaff ? '/admin' : '/creator'}>
-                <Button>{isStaff ? 'لوحة الإدارة' : 'لوحة المُعرّب'}</Button>
+                <Button>{isStaff ? t.adminPanel : t.creatorPanel}</Button>
               </Link>
               <Link href="/settings">
-                <Button variant="outline">الإعدادات</Button>
+                <Button variant="outline">{t.settings}</Button>
               </Link>
             </div>
           </CardContent>
@@ -164,19 +169,19 @@ export default function BecomeCreatorApplyPage() {
   if (existing) {
     if (existing.status === 'pending') {
       return (
-        <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir="rtl">
+        <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir={dir}>
           <Card>
             <CardContent className="p-8">
               <Clock className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold mb-2">لديك طلب قيد المراجعة بالفعل</h2>
+              <h2 className="text-xl font-bold mb-2">{t.pendingTitle}</h2>
               <p className="text-sm text-muted-foreground mb-2">
-                تم إرسال طلبك بتاريخ {new Date(existing.createdAt).toLocaleDateString('ar-EG')}
+                {t.pendingDatePrefix} {new Date(existing.createdAt).toLocaleDateString(tag)}
               </p>
               <p className="text-sm text-muted-foreground mb-6">
-                سيتم مراجعته خلال 48 ساعة وستصلك إشعار بالنتيجة
+                {t.pendingSla}
               </p>
               <Link href="/settings">
-                <Button variant="outline">العودة</Button>
+                <Button variant="outline">{t.back}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -185,16 +190,16 @@ export default function BecomeCreatorApplyPage() {
     }
     if (existing.status === 'approved') {
       return (
-        <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir="rtl">
+        <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir={dir}>
           <Card>
             <CardContent className="p-8">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold mb-2">مبروك! تم قبول طلبك</h2>
+              <h2 className="text-xl font-bold mb-2">{t.approvedTitle}</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                أنت الآن معرّب رسمي — يمكنك رفع تعريباتك
+                {t.approvedDesc}
               </p>
               <Link href="/upload">
-                <Button>ابدأ رفع تعريب</Button>
+                <Button>{t.startUpload}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -209,13 +214,13 @@ export default function BecomeCreatorApplyPage() {
   const isRejected = existing?.status === 'rejected'
 
   return (
-    <div className="container mx-auto py-12 max-w-2xl px-4" dir="rtl">
+    <div className="container mx-auto py-12 max-w-2xl px-4" dir={dir}>
       <div className="mb-6">
         <Link
           href="/settings"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowRight className="h-4 w-4" /> العودة
+          <BackIcon className="h-4 w-4" /> {t.backLink}
         </Link>
       </div>
       {isRejected && (
@@ -224,14 +229,14 @@ export default function BecomeCreatorApplyPage() {
             <div className="flex gap-3">
               <XCircle className="h-6 w-6 text-destructive shrink-0" />
               <div>
-                <h3 className="font-bold text-sm">تم رفض طلبك السابق</h3>
+                <h3 className="font-bold text-sm">{t.rejectedTitle}</h3>
                 {existing?.rejectReason && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    السبب: {existing.rejectReason}
+                    {t.rejectReasonLabel} {existing.rejectReason}
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-2">
-                  يمكنك تقديم طلب جديد بعد معالجة الملاحظات
+                  {t.rejectedHint}
                 </p>
               </div>
             </div>
@@ -240,18 +245,18 @@ export default function BecomeCreatorApplyPage() {
       )}
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">قدّم طلبك لتصبح معرّباً</CardTitle>
-          <CardDescription>املأ البيانات التالية وسيتم مراجعة طلبك خلال 48 ساعة</CardDescription>
+          <CardTitle className="text-2xl">{t.formTitle}</CardTitle>
+          <CardDescription>{t.formDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="experience">الخبرة في الترجمة *</Label>
+              <Label htmlFor="experience">{t.expLabel}</Label>
               <Textarea
                 id="experience"
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                placeholder="صف خبرتك في ترجمة الألعاب، عدد السنوات، الأدوات التي تستخدمها..."
+                placeholder={t.expPlaceholder}
                 rows={4}
                 required
                 className="resize-none"
@@ -259,37 +264,37 @@ export default function BecomeCreatorApplyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="preferredGames">الألعاب المفضلة للترجمة</Label>
+              <Label htmlFor="preferredGames">{t.favGames}</Label>
               <Input
                 id="preferredGames"
                 value={preferredGames}
                 onChange={(e) => setPreferredGames(e.target.value)}
-                placeholder="مثال: The Witcher 3, Elden Ring, God of War"
+                placeholder="The Witcher 3, Elden Ring, God of War"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="portfolioLinks">روابط أعمال سابقة (اختياري)</Label>
+              <Label htmlFor="portfolioLinks">{t.portfolio}</Label>
               <Textarea
                 id="portfolioLinks"
                 value={portfolioLinks}
                 onChange={(e) => setPortfolioLinks(e.target.value)}
-                placeholder="ضع روابط لأعمالك السابقة إن وجدت (كل رابط في سطر)"
+                placeholder={t.portfolioPlaceholder}
                 rows={3}
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                اختياري — لكن وجود أعمال سابقة يزيد فرصة القبول
+                {t.portfolioHint}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">سبب الرغبة في أن تكون معرّباً *</Label>
+              <Label htmlFor="reason">{t.reasonLabel}</Label>
               <Textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="لماذا تريد أن تصبح معرّباً في Games Arabic؟"
+                placeholder={t.reasonPlaceholder}
                 rows={4}
                 required
                 className="resize-none"
@@ -300,11 +305,11 @@ export default function BecomeCreatorApplyPage() {
             <div className="space-y-4 border-t pt-6">
               <h3 className="font-bold flex items-center gap-2 text-sm">
                 <Link2 className="h-5 w-5 text-primary" />
-                روابط التواصل الاجتماعي (اختياري)
+                {t.socials}
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="twitterUrl">حساب تويتر / X</Label>
+                  <Label htmlFor="twitterUrl">{t.twitter}</Label>
                   <Input
                     id="twitterUrl"
                     value={twitterUrl}
@@ -315,7 +320,7 @@ export default function BecomeCreatorApplyPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="youtubeUrl">قناة يوتيوب</Label>
+                  <Label htmlFor="youtubeUrl">{t.youtube}</Label>
                   <Input
                     id="youtubeUrl"
                     value={youtubeUrl}
@@ -326,7 +331,7 @@ export default function BecomeCreatorApplyPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="discordHandle">حساب ديسكورد</Label>
+                  <Label htmlFor="discordHandle">{t.discord}</Label>
                   <Input
                     id="discordHandle"
                     value={discordHandle}
@@ -337,7 +342,7 @@ export default function BecomeCreatorApplyPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="websiteUrl">موقع شخصي / مدونة</Label>
+                  <Label htmlFor="websiteUrl">{t.website}</Label>
                   <Input
                     id="websiteUrl"
                     value={websiteUrl}
@@ -353,10 +358,10 @@ export default function BecomeCreatorApplyPage() {
             <Button type="submit" className="w-full min-h-[48px] text-base" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الإرسال...
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" /> {t.submitting}
                 </>
               ) : (
-                'إرسال الطلب'
+                t.submit
               )}
             </Button>
           </form>

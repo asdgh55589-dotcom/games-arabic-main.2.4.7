@@ -406,4 +406,47 @@ export interface StudioDict {
     saveChanges: string
     publishMod: string
   }
+  apply: {
+    requiredFields: string
+    requiredFieldsDesc: string
+    submitOk: string
+    submitFailed: string
+    unexpectedRetry: string
+    loginRequired: string
+    loginRequiredDesc: string
+    login: string
+    alreadyCreator: string
+    alreadyCreatorDesc: string
+    adminPanel: string
+    creatorPanel: string
+    settings: string
+    pendingTitle: string
+    pendingDatePrefix: string
+    pendingSla: string
+    back: string
+    approvedTitle: string
+    approvedDesc: string
+    startUpload: string
+    rejectedTitle: string
+    rejectReasonLabel: string
+    rejectedHint: string
+    formTitle: string
+    formDesc: string
+    expLabel: string
+    expPlaceholder: string
+    favGames: string
+    portfolio: string
+    portfolioPlaceholder: string
+    portfolioHint: string
+    reasonLabel: string
+    reasonPlaceholder: string
+    socials: string
+    twitter: string
+    youtube: string
+    discord: string
+    website: string
+    submitting: string
+    submit: string
+    backLink: string
+  }
 }
