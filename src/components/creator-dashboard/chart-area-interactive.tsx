@@ -40,11 +40,11 @@ const chartConfig = {
   },
   desktop: {
     label: "مشاهدات",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   mobile: {
     label: "تحميلات",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig
 

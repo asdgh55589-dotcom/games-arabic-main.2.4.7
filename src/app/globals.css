@@ -433,11 +433,13 @@ body {
    consumed by the block + official-ui primitives are overridden. */
 .creator-studio-official {
   color-scheme: light;
-  /* Official preview stack first (metrics parity for latin/digits),
-     project Arabic font as fallback for Arabic glyphs. */
-  font-family:
-    var(--font-geist-sans), var(--font-cairo), ui-sans-serif, system-ui,
-    sans-serif;
+  /* Latin/digit metrics parity with the official preview (Geist first).
+     Arabic glyphs fall back to Cairo via --font-arabic (:lang(ar) below). */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-arabic: var(--font-cairo), var(--font-geist-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  font-family: var(--font-sans);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
@@ -454,7 +456,7 @@ body {
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
@@ -471,4 +473,78 @@ body {
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+  /* Official zinc-light (Tailwind v4 default) shadow scale, pinned so the
+     studio never inherits project shadow tuning. */
+  --shadow-2xs: 0 1px rgb(0 0 0 / 0.05);
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm:
+    0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+/* Arabic UI keeps the project Arabic font; latin/digits keep Geist metrics. */
+.creator-studio-official:lang(ar) {
+  font-family: var(--font-arabic);
+}
+/* Portal containment: Radix menus/selects/sheets/toasts render under
+   <body>, outside .creator-studio-official. Studio pages are standalone
+   (no navbar/footer), so when the studio is mounted we re-pin the same
+   zinc-light tokens at body level — portals + Toaster inherit them.
+   Non-studio pages never match :has() and are unaffected. */
+body:has(.creator-studio-official) {
+  color-scheme: light;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+}
+/* Scope-local resets for unlayered project rules (these beat layered
+   utilities, so they need explicit neutralization; the @layer base rules
+   for headings/.text-xs/transitions already lose to utilities by layer
+   order and are intentionally left alone).
+   NOTE: mobile 16px inputs rule is intentionally kept (iOS zoom a11y,
+   ~1rem ≈ text-base on mobile — negligible delta). */
+.creator-studio-official {
+  scrollbar-gutter: auto;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+/* official-ui logical-prop overrides (pristine files stay untouched):
+   - table headers: direction-aware alignment both dirs
+   - sidebar sub-menu guide border: inline-start instead of left */
+.creator-studio-official th {
+  text-align: start;
+}
+.creator-studio-official [data-sidebar="menu-sub"] {
+  border-left-width: 0;
+  border-inline-start-width: 1px;
 }
