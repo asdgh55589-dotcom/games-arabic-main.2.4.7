@@ -74,6 +74,7 @@ const userSelect = {
   bannedUntil: true,
   banReason: true,
   tokenVersion: true,
+  onboardingCompleted: true,
 } as const
 
 type CanonicalUser = {
@@ -86,6 +87,7 @@ type CanonicalUser = {
   bannedUntil: Date | null
   banReason: string | null
   tokenVersion: number
+  onboardingCompleted: boolean
 }
 
 export async function performTelegramLogin(
@@ -195,7 +197,13 @@ export async function performTelegramLogin(
     }
 
     // Step 5: cookie + counters + ledger + audit.
-    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
+    await setRoleCookie(
+      neonUser.id,
+      neonUser.role as UserRole,
+      neonUser.tokenVersion,
+      false,
+      neonUser.onboardingCompleted,
+    )
 
     await db.user.update({
       where: { id: neonUser.id },

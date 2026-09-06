@@ -36,6 +36,7 @@ export async function GET() {
             banStatus: true,
             bannedUntil: true,
             banReason: true,
+            onboardingCompleted: true,
           },
         })
 
@@ -67,6 +68,7 @@ export async function GET() {
             email: newUser.email,
             role: newUser.role,
             avatarUrl: newUser.avatarUrl,
+            onboardingCompleted: newUser.onboardingCompleted,
           },
         })
       }
@@ -120,6 +122,7 @@ export async function GET() {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -152,6 +155,7 @@ export async function GET() {
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
       },
     })
   } catch (err) {

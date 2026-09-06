@@ -43,12 +43,12 @@ export async function POST(req: NextRequest) {
         recoveryCodes: encryptRecoveryCodes(recoveryCodes),
         recoveryCodesUsed: [],
       },
-      select: { id: true, role: true, tokenVersion: true },
+      select: { id: true, role: true, tokenVersion: true, onboardingCompleted: true },
     })
 
     // تحديث الكوكيز ليحتوي على mfaVerified = true
     const { setRoleCookie } = await import('@/lib/auth')
-    await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, true)
+    await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, true, updatedUser.onboardingCompleted)
 
     return ok({ success: true, recoveryCodes })
   } catch (err) {

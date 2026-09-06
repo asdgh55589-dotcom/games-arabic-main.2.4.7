@@ -64,6 +64,7 @@ export interface SessionUser {
   email: string
   role: UserRole
   avatarUrl: string | null
+  onboardingCompleted: boolean
 }
 
 // ===== Password helpers =====
@@ -122,6 +123,7 @@ export async function getSession(): Promise<SessionUser | null> {
           bannedUntil: true,
           banReason: true,
           tokenVersion: true,
+          onboardingCompleted: true,
         },
       })
 
@@ -165,6 +167,7 @@ export async function getSession(): Promise<SessionUser | null> {
         email: user.email,
         role: user.role as UserRole,
         avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
       }
     }
 
@@ -195,6 +198,7 @@ export async function getSession(): Promise<SessionUser | null> {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -215,6 +219,7 @@ export async function getSession(): Promise<SessionUser | null> {
       email: user.email,
       role: user.role as UserRole,
       avatarUrl: user.avatarUrl,
+      onboardingCompleted: user.onboardingCompleted,
     }
   } catch {
     return null
@@ -223,14 +228,15 @@ export async function getSession(): Promise<SessionUser | null> {
 
 // ===== Role cookie helpers =====
 
-/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa في httpOnly cookie موقّع */
+/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa + ob في httpOnly cookie موقّع */
 export async function setRoleCookie(
   userId: string,
   role: UserRole,
   tokenVersion?: number,
   mfaVerified: boolean = false,
+  onboarded: boolean = true,
 ): Promise<void> {
-  const payload: Record<string, unknown> = { userId, role }
+  const payload: Record<string, unknown> = { userId, role, ob: onboarded }
   if (tokenVersion !== undefined) payload.tv = tokenVersion
   if (mfaVerified) payload.mfa = true
 
@@ -341,6 +347,16 @@ export async function requireManager(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!hasRoleAtLeast(user.role, 'manager')) {
     throw new AuthError('Forbidden — manager access required', 403)
+  }
+  return user
+}
+
+/** يتأكد إن العضو أكمل إعداد حسابه (D.6) — غير الأعضاء يتجاوزون دائماً.
+ *  المصدر: User.onboardingCompleted في DB ( sessions الـ Edge تستخدم ob claim كإشارة فقط ) */
+export async function requireOnboarded(): Promise<SessionUser> {
+  const user = await requireAuth()
+  if (user.role === 'member' && !user.onboardingCompleted) {
+    throw new AuthError('Onboarding required — أكمل إعداد حسابك أولاً', 403)
   }
   return user
 }

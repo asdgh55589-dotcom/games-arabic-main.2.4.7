@@ -66,6 +66,7 @@ function dbUser(overrides = {}) {
     bannedUntil: null,
     banReason: null,
     tokenVersion: 0,
+    onboardingCompleted: true,
     ...overrides,
   }
 }
@@ -89,7 +90,7 @@ describe('performTelegramLogin', () => {
     expect(result.user.id).toBe('user-1')
     expect(mockUserUpsert).not.toHaveBeenCalled()
     expect(mockOACreate).not.toHaveBeenCalled()
-    expect(mockSetRoleCookie).toHaveBeenCalledWith('user-1', 'member', 0)
+    expect(mockSetRoleCookie).toHaveBeenCalledWith('user-1', 'member', 0, false, true)
     expect(mockLogAction).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-1', action: 'login' }),
     )

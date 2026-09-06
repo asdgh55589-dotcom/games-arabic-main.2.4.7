@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { id: tokenData.userId },
-      select: { id: true, role: true, totpSecret: true, tokenVersion: true, totpEnabled: true },
+      select: { id: true, role: true, totpSecret: true, tokenVersion: true, totpEnabled: true, onboardingCompleted: true },
     })
 
     if (!user || !user.totpSecret || !user.totpEnabled) {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return validationFail({ message: 'رمز التحقق غير صحيح' })
     }
 
-    await setRoleCookie(user.id, user.role as never, user.tokenVersion, true)
+    await setRoleCookie(user.id, user.role as never, user.tokenVersion, true, user.onboardingCompleted)
 
     await db.user.update({
       where: { id: user.id },

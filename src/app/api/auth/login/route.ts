@@ -65,6 +65,7 @@ async function ensureOwnerExists() {
               securityKeyChangedAt: new Date(),
               role: 'owner',
               bio: 'مالك و مؤسس منصة ألعاب بالعربي',
+              onboardingCompleted: true,
             },
           })
           const supabaseId = await createSupabaseAuthUser(email, password, username).catch(
@@ -291,7 +292,13 @@ export async function POST(req: NextRequest) {
     }
 
     // إنشاء role cookie مع tokenVersion (لا MFA)
-    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
+    await setRoleCookie(
+      neonUser.id,
+      neonUser.role as UserRole,
+      neonUser.tokenVersion,
+      false,
+      neonUser.onboardingCompleted,
+    )
 
     // تتبع تسجيل الدخول
     await db.user.update({
