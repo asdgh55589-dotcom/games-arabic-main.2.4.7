@@ -505,6 +505,31 @@ export interface StudioDict {
     submitting: string
     submit: string
     backLink: string
+    step: string
+    next: string
+    prev: string
+    trackTitle: string
+    trackDesc: string
+    trackPublisher: string
+    trackPublisherDesc: string
+    trackTranslator: string
+    trackTranslatorDesc: string
+    trackRequired: string
+    portfolioTitle: string
+    portfolioUrlsLabel: string
+    portfolioUrlsPh: string
+    portfolioCountError: string
+    portfolioUrlError: string
+    yearsLabel: string
+    yearsRequired: string
+    yearsPlus: string
+    samplesLabel: string
+    samplesHint: string
+    samplesRequired: string
+    reasonRange: string
+    termsLabel: string
+    termsText: string
+    termsRequired: string
   }
   suspended: {
     metaTitle: string

@@ -53,14 +53,14 @@ async function resolveUser(): Promise<SessionUser> {
   }
 }
 
-// POST /api/creator-requests — تقديم طلب ترقية لمُعَرِّب
+// POST /api/creator-requests — تقديم طلب انضمام لبرنامج منشئ المحتوى
 export async function POST(req: NextRequest) {
   try {
     const user = await resolveUser()
 
     // فقط الأعضاء العاديون يمكنهم التقديم
     if (user.role !== 'member') {
-      return forbidden('أنت بالفعل معرّب أو لديك صلاحيات أعلى')
+      return forbidden('أنت منشئ محتوى بالفعل أو لديك صلاحيات أعلى')
     }
 
     // منع الطلبات المكررة (قيد المراجعة)
@@ -81,6 +81,11 @@ export async function POST(req: NextRequest) {
       youtubeUrl,
       discordHandle,
       websiteUrl,
+      track,
+      portfolioUrls,
+      experienceYears,
+      samplesCount,
+      agreeToTerms,
     } = body as {
       experience?: string
       preferredGames?: string
@@ -90,10 +95,60 @@ export async function POST(req: NextRequest) {
       youtubeUrl?: string
       discordHandle?: string
       websiteUrl?: string
+      track?: string
+      portfolioUrls?: string
+      experienceYears?: number
+      samplesCount?: number
+      agreeToTerms?: boolean
     }
 
     if (!experience?.trim() || !reason?.trim()) {
       return validationFail('الخبرة وسبب الرغبة مطلوبان')
+    }
+
+    const reasonLen = reason.trim().length
+    if (reasonLen < 100 || reasonLen > 1000) {
+      return validationFail('نبذة الدافع يجب أن تكون بين 100 و1000 حرف')
+    }
+
+    // المسار: ناشر أو معرّب (افتراضي معرّب للتوافق)
+    const cleanTrack = track?.trim() || 'translator'
+    if (!['publisher', 'translator'].includes(cleanTrack)) {
+      return validationFail('المسار المختار غير صحيح')
+    }
+
+    // ملف الأعمال: 3-5 روابط صالحة
+    const isValidHttpUrl = (val: string) => {
+      try {
+        const u = new URL(val)
+        return ['http:', 'https:'].includes(u.protocol)
+      } catch {
+        return false
+      }
+    }
+    const portfolioList = (portfolioUrls || '')
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (portfolioList.length < 3 || portfolioList.length > 5) {
+      return validationFail('أضف من 3 إلى 5 روابط لأعمالك (كل رابط في سطر)')
+    }
+    if (!portfolioList.every(isValidHttpUrl)) {
+      return validationFail('أحد روابط الأعمال غير صحيح — يجب أن يبدأ بـ http')
+    }
+
+    // سنوات الخبرة 0-50 وعدد الأعمال 0-100
+    const years = Number(experienceYears)
+    if (!Number.isInteger(years) || years < 0 || years > 50) {
+      return validationFail('سنوات الخبرة يجب أن تكون رقماً بين 0 و50')
+    }
+    const samples = Number(samplesCount)
+    if (!Number.isInteger(samples) || samples < 0 || samples > 100) {
+      return validationFail('عدد الأعمال يجب أن يكون رقماً بين 0 و100')
+    }
+
+    if (agreeToTerms !== true) {
+      return validationFail('يجب الموافقة على شروط البرنامج للمتابعة')
     }
 
     // تحقق اختياري لروابط التواصل
@@ -129,6 +184,11 @@ export async function POST(req: NextRequest) {
         youtubeUrl: cleanYoutube,
         discordHandle: discordHandle?.trim() || null,
         websiteUrl: cleanWebsite,
+        track: cleanTrack,
+        portfolioUrls: portfolioList.join('\n'),
+        experienceYears: years,
+        samplesCount: samples,
+        agreeToTerms: true,
       },
     })
 
