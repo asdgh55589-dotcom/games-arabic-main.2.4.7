@@ -105,9 +105,9 @@ const SECTIONS: {
   },
   {
     key: 'translation',
-    label: 'كن معرّباً',
+    label: 'برنامج منشئ المحتوى',
     icon: <Upload className="h-[18px] w-[18px]" />,
-    description: 'شارك تعريباتك مع الآخرين',
+    description: 'انضم كمعرّب أو ناشر وشارك المحتوى العربي',
   },
 ]
 
@@ -136,7 +136,7 @@ const TRANSLATOR_STEPS = [
   { title: 'استلم الرد', desc: 'تُراجع الطلبات خلال 48 ساعة، وتصلك الموافقة على حسابك.' },
   {
     title: 'ابدأ بالنشر',
-    desc: 'بعد الموافقة تصبح معرّباً رسمياً ويمكنك رفع تعريباتك من لوحة المُعرّب.',
+    desc: 'بعد الموافقة تحصل على دور منشئ محتوى رسمي ويمكنك النشر من لوحة منشئ المحتوى.',
   },
   { title: 'تابع النتائج', desc: 'تتبع تحميلاتك ومشاهداتك واستقبل تعليقات وتقييمات جمهورك.' },
 ]
@@ -1541,10 +1541,11 @@ export function SettingsPage() {
                       <Upload className="h-6 w-6" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-lg font-bold">صبح معرّباً — شارك تعريباتك مع الآخرين</h3>
+                      <h3 className="text-lg font-bold">انضم لبرنامج منشئ المحتوى — شارك المحتوى العربي مع آلاف اللاعبين</h3>
                       <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                        انضم إلى مجتمع المُعَرِّبين، انشر تعريباتك، وتفاعل مع آلاف اللاعبين المتحمسين
-                        للعب بالعربية.
+                        برنامج منشئ المحتوى يفتح لك مسارين: معرّب ينشر تعريبات الألعاب، أو ناشر
+                        يشارك المحتوى والأخبار. كل ما تحتاجه حساب نشط وشغف بالمحتوى العربي —
+                        قدّم طلبك وستصلك المراجعة خلال 48 ساعة.
                       </p>
                     </div>
                   </div>
@@ -1552,11 +1553,12 @@ export function SettingsPage() {
 
                 {/* What it means */}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-3 text-sm font-bold">ما معنى أن تكون معرّباً؟</h3>
+                  <h3 className="mb-3 text-sm font-bold">ما هو برنامج منشئ المحتوى؟</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    المعرّب هو من يتكفل بتحويل الألعاب إلى اللغة العربية ليجعلها في متناول الآلاف من
-                    اللاعبين العرب. كل تعريب تنشره على المنصة يصبح متاحاً للتحميل والاستخدام، وتُحفظ
-                    حقوقك كصاحب الترجمة بذكر اسمك وفريقك كاملين في صفحة التعريب.
+                    منشئ المحتوى هو عضو معتمد ينشر المحتوى العربي على المنصة عبر مسارين: مسار
+                    المعرّب الذي يحوّل الألعاب إلى العربية، ومسار الناشر الذي يشارك المحتوى
+                    والأخبار. كل ما تنشره يصبح متاحاً للآلاف، وتُحفظ حقوقك بذكر اسمك وفريقك
+                    كاملين في صفحة المحتوى.
                   </p>
                 </div>
 
@@ -1580,7 +1582,7 @@ export function SettingsPage() {
 
                 {/* Steps */}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-4 text-sm font-bold">كيف تصبح معرّباً؟</h3>
+                  <h3 className="mb-4 text-sm font-bold">كيف تنضم للبرنامج؟</h3>
                   <ol className="space-y-4">
                     {TRANSLATOR_STEPS.map((step, i) => (
                       <li key={step.title} className="flex items-start gap-3">
@@ -1621,17 +1623,17 @@ export function SettingsPage() {
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="min-w-0">
                       <h3 className="text-base font-bold">
-                        {isCreator ? 'أنت معرّب بالفعل' : 'جاهز تبدأ رحلتك؟'}
+                        {isCreator ? 'أنت منشئ محتوى بالفعل' : 'جاهز تبدأ رحلتك؟'}
                       </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {isCreator
-                          ? 'من لوحة المُعرّب تقدر ترفع تعريباتك وتتابع إحصائياتك مباشرة.'
+                          ? 'من لوحة منشئ المحتوى تقدر تنشر أعمالك وتتابع إحصائياتك مباشرة.'
                           : 'يستغرق التقديم دقيقتين فقط — سيتم مراجعة طلبك خلال 48 ساعة.'}
                       </p>
                     </div>
                     <Link href={isCreator ? '/creator' : '/become-creator/apply'}>
                       <Button className="min-h-[44px]">
-                        {isCreator ? 'لوحة المُعرّب' : 'قدّم طلبك الآن'}
+                        {isCreator ? 'لوحة منشئ المحتوى' : 'قدّم طلبك الآن'}
                       </Button>
                     </Link>
                   </div>

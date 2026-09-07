@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
             actorId: user.id,
             type: 'admin_request',
             title: '🎨 طلب ترقية جديد لمُعَرِّب',
-            message: `${user.username} قدم طلباً ليصبح معرّباً`,
+            message: `${user.username} قدم طلباً للانضمام إلى برنامج منشئ المحتوى`,
             data: { requestId: created.id, username: user.username },
           },
         })
