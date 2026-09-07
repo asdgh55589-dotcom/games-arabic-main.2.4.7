@@ -170,6 +170,7 @@ model CreatorRequest {
   samplesCount   Int?
   agreeToTerms   Boolean   @default(false)
   adminNotes     String?   @db.Text
+  approveNote    String?   @db.Text
   reviewedBy     String?
   reviewedAt     DateTime?
   rejectReason   String?   @db.Text

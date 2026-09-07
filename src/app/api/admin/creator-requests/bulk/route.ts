@@ -11,10 +11,11 @@ export async function POST(req: NextRequest) {
   try {
     const admin = await requireAdmin()
     const body = await req.json()
-    const { action, ids, rejectReason } = body as {
+    const { action, ids, rejectReason, approveNote } = body as {
       action?: string
       ids?: string[]
       rejectReason?: string
+      approveNote?: string
     }
 
     if (!action || !['approve', 'reject'].includes(action)) {
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       }
       try {
         if (action === 'approve') {
-          await approveCreatorRequest(request, admin.id)
+          await approveCreatorRequest(request, admin.id, { approveNote })
         } else {
           await rejectCreatorRequest(request, admin.id, rejectReason!.trim())
         }

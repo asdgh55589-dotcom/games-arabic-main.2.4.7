@@ -134,6 +134,7 @@ export default function AdminCreatorRequestsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [notesSaving, setNotesSaving] = useState<string | null>(null)
+  const [approveNotes, setApproveNotes] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -180,7 +181,10 @@ export default function AdminCreatorRequestsPage() {
       const res = await fetch(`/api/admin/creator-requests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'approve' }),
+        body: JSON.stringify({
+          action: 'approve',
+          approveNote: approveNotes[id]?.trim() || undefined,
+        }),
       })
       const json = await res.json()
       if (res.ok) {
@@ -644,29 +648,39 @@ export default function AdminCreatorRequestsPage() {
                   </div>
 
                   {isPending && (
-                    <div className="flex gap-2 mt-6">
-                      <Button
-                        onClick={() => handleApprove(req.id, req.track)}
-                        disabled={actionLoading === req.id}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        {actionLoading === req.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                        ) : (
-                          <Check className="h-4 w-4 ml-1" />
-                        )}
-                        قبول
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          setRejectDialog({ open: true, id: req.id })
-                          setRejectReason('')
-                        }}
-                        disabled={actionLoading === req.id}
-                      >
-                        <X className="h-4 w-4 ml-1" /> رفض
-                      </Button>
+                    <div className="flex flex-col gap-2 mt-6">
+                      <Input
+                        value={approveNotes[req.id] || ''}
+                        onChange={(e) =>
+                          setApproveNotes((prev) => ({ ...prev, [req.id]: e.target.value }))
+                        }
+                        placeholder="ملاحظة للمقبول (اختياري — تظهر له)"
+                        className="text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleApprove(req.id, req.track)}
+                          disabled={actionLoading === req.id}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {actionLoading === req.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                          ) : (
+                            <Check className="h-4 w-4 ml-1" />
+                          )}
+                          قبول
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setRejectDialog({ open: true, id: req.id })
+                            setRejectReason('')
+                          }}
+                          disabled={actionLoading === req.id}
+                        >
+                          <X className="h-4 w-4 ml-1" /> رفض
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>

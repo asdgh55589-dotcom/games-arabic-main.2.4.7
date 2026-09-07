@@ -21,10 +21,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const admin = await requireAdmin()
     const { id } = await params
     const body = await req.json()
-    const { action, rejectReason, adminNotes } = body as {
+    const { action, rejectReason, adminNotes, approveNote } = body as {
       action?: string
       rejectReason?: string
       adminNotes?: string
+      approveNote?: string
     }
 
     if (!action || !['approve', 'reject', 'note'].includes(action)) {
@@ -52,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     if (action === 'approve') {
-      await approveCreatorRequest(request, admin.id)
+      await approveCreatorRequest(request, admin.id, { approveNote })
       return ok({ success: true })
     }
 

@@ -172,10 +172,51 @@ export async function generateDailySummary(userId: string) {
   })
 }
 
+// ===== Creator Program Approval Email =====
+
+export async function sendCreatorApprovalEmail(
+  to: string,
+  opts: { username: string; track: 'publisher' | 'translator'; approveNote?: string },
+): Promise<void> {
+  const isPublisher = opts.track === 'publisher'
+  const trackName = isPublisher ? 'ناشر' : 'معرّب'
+  const nextSteps = isPublisher
+    ? 'يمكنك الآن نشر المحتوى والأخبار من لوحة منشئ المحتوى.'
+    : 'يمكنك الآن رفع تعريباتك ومشاركتها مع المجتمع من لوحة منشئ المحتوى.'
+  const noteHtml = opts.approveNote
+    ? `<p><strong>ملاحظة من المراجعة:</strong> ${opts.approveNote}</p>`
+    : ''
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ''
+
+  const html = REPORT_EMAIL_TEMPLATE(
+    `مبروك! انضممت لبرنامج منشئ المحتوى ك${trackName}`,
+    `<p>مرحباً ${opts.username}،</p>
+     <p>تم قبول طلب انضمامك إلى برنامج منشئ المحتوى بمسار <strong>${trackName}</strong>.</p>
+     <p>${nextSteps}</p>
+     ${noteHtml}
+     <p><a class="btn" href="${appUrl}/creator">افتح لوحة منشئ المحتوى</a></p>`,
+  )
+
+  if (!resend) {
+    console.warn('[Resend] Skipping email — API key not configured (sendCreatorApprovalEmail)')
+    return
+  }
+
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM ?? 'notifications@games-arabic.com',
+      to,
+      subject: `مبروك! انضممت لبرنامج منشئ المحتوى ك${trackName}`,
+      html,
+    })
+  } catch (err) {
+    console.error('[email] failed to send creator approval email:', err)
+  }
+}
+
 // ===== Report Email Notifications =====
 
-const REPORT_EMAIL_TEMPLATE = (title: string, body: string) => `
-  <!DOCTYPE html>
+const REPORT_EMAIL_TEMPLATE = (title: string, body: string) => `  <!DOCTYPE html>
   <html dir="rtl" lang="ar">
   <head>
     <meta charset="UTF-8">

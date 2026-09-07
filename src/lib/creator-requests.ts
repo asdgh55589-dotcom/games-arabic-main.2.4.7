@@ -1,46 +1,87 @@
 import { db } from '@/lib/db'
+import { sendCreatorApprovalEmail } from '@/lib/notifications/email-service'
 
 interface CreatorRequestWithUser {
   id: string
   userId: string
   status: string
-  // NOTE (Phase 4 Task 5): role assignment becomes track-based here.
-  // Until then approvals grant the legacy 'creator' role.
   track?: string | null
+}
+
+export type CreatorTrack = 'publisher' | 'translator'
+
+/** Track → role mapping: translator is a subset of creator. */
+export function roleForTrack(track?: string | null): 'publisher' | 'creator' {
+  return track === 'publisher' ? 'publisher' : 'creator'
+}
+
+export function trackLabel(track?: string | null): string {
+  return track === 'publisher' ? 'ناشر' : 'معرّب'
 }
 
 /**
  * Shared approve/reject path for single ([id]) and bulk admin actions.
- * Approving grants the creator role + notifies the applicant.
+ * Approving grants the track role (publisher → publisher, else creator),
+ * stores the optional applicant-visible approveNote, notifies in-app,
+ * and emails track + next steps (fail-open when Resend is unconfigured).
  */
 export async function approveCreatorRequest(
   request: CreatorRequestWithUser,
   adminId: string,
+  opts?: { approveNote?: string },
 ) {
+  const role = roleForTrack(request.track)
+  const label = trackLabel(request.track)
+  const note = opts?.approveNote?.trim() || null
+
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: request.userId },
-      data: { role: 'creator' },
+      data: { role },
     })
     await tx.creatorRequest.update({
       where: { id: request.id },
-      data: { status: 'approved', reviewedBy: adminId, reviewedAt: new Date() },
+      data: {
+        status: 'approved',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        approveNote: note,
+      },
     })
   })
 
+  const message = note
+    ? `تم قبول طلبك ك${label}. ملاحظة المراجعة: ${note}`
+    : `تم قبول طلبك ك${label}. يمكنك الآن النشر من لوحة منشئ المحتوى.`
   try {
     await db.notification.create({
       data: {
         userId: request.userId,
         actorId: adminId,
         type: 'admin_action',
-        title: '🎉 مبروك! أنت الآن معرّب رسمي',
-        message: 'تم قبول طلبك. يمكنك الآن رفع تعريباتك ومشاركتها مع المجتمع.',
-        data: { requestId: request.id },
+        title: `🎉 مبروك! أنت الآن ${label} رسمي`,
+        message,
+        data: { requestId: request.id, track: request.track || 'translator', approveNote: note },
       },
     })
   } catch (e) {
     console.error('[creator-requests approve notify] failed:', e)
+  }
+
+  try {
+    const user = await db.user.findUnique({
+      where: { id: request.userId },
+      select: { email: true, username: true },
+    })
+    if (user?.email) {
+      await sendCreatorApprovalEmail(user.email, {
+        username: user.username,
+        track: role === 'publisher' ? 'publisher' : 'translator',
+        approveNote: note || undefined,
+      })
+    }
+  } catch (e) {
+    console.error('[creator-requests approve email] failed:', e)
   }
 }
 
