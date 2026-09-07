@@ -28,8 +28,9 @@ jest.mock('@/lib/auth', () => ({
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 
-const CREATOR = { id: 'u1', username: 'c1', email: 'c@x', role: 'creator', avatarUrl: null }
-const OTHER = { id: 'u9', username: 'c9', email: 'c9@x', role: 'creator', avatarUrl: null }
+const CREATOR = { id: 'u1', username: 'c1', email: 'c@x', role: 'publisher', avatarUrl: null }
+const OTHER = { id: 'u9', username: 'c9', email: 'c9@x', role: 'publisher', avatarUrl: null }
+const TRANSLATOR = { id: 'u2', username: 't2', email: 't@x', role: 'creator', avatarUrl: null }
 const req = (url: string, body?: unknown, method = 'GET') => ({
   url,
   method,
@@ -49,6 +50,20 @@ beforeEach(() => {
 })
 
 describe('guards + validation', () => {
+  it('rejects translator-track mutations → 403, GET still allowed', async () => {
+    ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: TRANSLATOR, error: null })
+    expect(
+      (await createPOST(req('http://x/', { title: 'Translator news attempt' }, 'POST'))).status,
+    ).toBe(403)
+    ;(db.news.findFirst as jest.Mock).mockResolvedValue({ id: 'n1', authorId: 'u2' })
+    expect(
+      (await patchOne(req('http://x/', { title: 'Translator edit attempt' }, 'PATCH'), idParams))
+        .status,
+    ).toBe(403)
+    expect((await deleteOne(req('http://x/', undefined, 'DELETE'), idParams)).status).toBe(403)
+    expect((await listGET(req('http://x/'))).status).toBe(200)
+  })
+
   it('rejects unauthenticated create', async () => {
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: null, error: null })
     const res = await createPOST(req('http://x/', { title: 'Hello world news' }, 'POST'))

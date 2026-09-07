@@ -12,7 +12,7 @@ export function StudioShell({
   user,
   children,
 }: {
-  user: { name: string; email: string; avatar: string }
+  user: { name: string; email: string; avatar: string; role?: string }
   children: React.ReactNode
 }) {
   const { dir, locale } = useStudioLanguage()

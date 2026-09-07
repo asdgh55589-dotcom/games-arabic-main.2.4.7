@@ -424,6 +424,31 @@ export async function proxy(req: NextRequest) {
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
       return NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 })
     }
+    // Track gate (Phase 4): news.create is publisher-only — translators
+    // (creator role) get 403 even though they pass the studio gate above.
+    // Role IS the track post-approval (translator→creator, publisher→publisher).
+    if (pathname === '/api/creator/news' || pathname.startsWith('/api/creator/news/')) {
+      const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
+      if (!NEWS_PUBLISHERS.includes(rolePayload.role)) {
+        return NextResponse.json(
+          { error: 'Forbidden — publisher track required' },
+          { status: 403 },
+        )
+      }
+    }
+  }
+
+  // Track gate (Phase 4): /creator/news page is publisher-only — translators
+  // fall back to the dashboard (the page itself also renders a notice).
+  if (pathname === '/creator/news' || pathname.startsWith('/creator/news/')) {
+    const rolePayload = await getRoleFromCookie(req)
+    const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
+    if (rolePayload?.role && !NEWS_PUBLISHERS.includes(rolePayload.role)) {
+      const dashboardUrl = new URL('/creator', req.url)
+      const redirectRes = NextResponse.redirect(dashboardUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      return redirectRes
+    }
   }
 
   return addSecurityHeaders(supabaseResponse)

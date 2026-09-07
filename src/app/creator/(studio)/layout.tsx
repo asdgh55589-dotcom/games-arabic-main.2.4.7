@@ -27,6 +27,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
           name: session.username,
           email: session.email,
           avatar: session.avatarUrl ?? '',
+          role: session.role,
         }}
       >
         {children}

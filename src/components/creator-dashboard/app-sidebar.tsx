@@ -17,6 +17,7 @@ import {
 import { NavMain } from "@/components/creator-dashboard/nav-main"
 import { NavSecondary } from "@/components/creator-dashboard/nav-secondary"
 import { NavUser } from "@/components/creator-dashboard/nav-user"
+import { canPublishNews } from "@/lib/permissions"
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +33,7 @@ export function AppSidebar({
   user = { name: "", email: "", avatar: "" },
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user?: { name: string; email: string; avatar: string }
+  user?: { name: string; email: string; avatar: string; role?: string }
 }) {
   const { dict } = useStudioLanguage()
 
@@ -43,7 +44,11 @@ export function AppSidebar({
     { title: dict.nav.requests, url: "/creator/requests", icon: FolderIcon },
     { title: dict.nav.comments, url: "/creator/comments", icon: UsersIcon },
     { title: dict.nav.likes, url: "/creator/likes", icon: HeartIcon },
-    { title: dict.nav.news, url: "/creator/news", icon: NewspaperIcon },
+    // Track gate (Phase 4): news authoring is publisher-only — translators
+    // don't see the item (API + page + proxy enforce the same rule).
+    ...(canPublishNews(user.role)
+      ? [{ title: dict.nav.news, url: "/creator/news", icon: NewspaperIcon }]
+      : []),
     { title: dict.nav.reports, url: "/creator/reports", icon: ShieldAlertIcon },
   ]
   const navSecondary = [

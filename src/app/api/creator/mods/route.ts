@@ -3,7 +3,7 @@ import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { canCreateMod } from '@/lib/permissions'
+import { canCreateMod, canTranslateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
 import { slugify } from '@/lib/utils'
 
@@ -107,6 +107,11 @@ export async function POST(req: NextRequest) {
       return forbidden('المُعَرِّب يمكنه فقط إنشاء تعريبات من ترجمته الخاصة')
     }
     return forbidden('الناشر يمكنه فقط نشر تعريبات من مصادر خارجية')
+  }
+
+  // مسار المعرّب: العمل المترجم الخاص يتطلب صلاحية الترجمة explicitly.
+  if (isOriginalWork && !canTranslateMod(user.role)) {
+    return forbidden('لا تملك صلاحية الترجمة')
   }
 
   if (!isOriginalWork && !(data.originalSource as unknown as string)?.trim()) {

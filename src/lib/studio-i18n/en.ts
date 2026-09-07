@@ -595,6 +595,9 @@ export const en: StudioDict = {
     emptyDesc: 'Write your first mod news post for your audience',
     views: 'views',
     clicks: 'clicks',
+    trackOnlyTitle: 'News publishing is for the publisher track',
+    trackOnlyDesc: 'Your account is on the translator track — news publishing is for publishers only. You can keep uploading your mods from My Mods.',
+    trackOnlyCta: 'Back to dashboard',
   },
   reports: {
     title: 'Report follow-ups',

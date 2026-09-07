@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { canPublishNews } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -17,6 +18,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+  if (!canPublishNews(user.role)) {
+    return forbidden('نشر الأخبار متاح لمسار الناشر فقط')
+  }
 
   const { id } = await params
   const row = await ownNews(id, user.id)
@@ -73,6 +77,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+  if (!canPublishNews(user.role)) {
+    return forbidden('نشر الأخبار متاح لمسار الناشر فقط')
+  }
 
   const { id } = await params
   const row = await ownNews(id, user.id)

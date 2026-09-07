@@ -18,7 +18,10 @@ export type Permission =
   | 'content.follow'
   | 'content.requestTranslation'
   | 'mod.createOwn'
+  | 'mod.translate'
   | 'mod.republishExternal'
+  | 'news.create'
+  | 'report.readOwn'
   | 'mod.saveDraft'
   | 'mod.editOwn'
   | 'mod.deleteOwn'
@@ -57,7 +60,10 @@ export const PERMISSION_MIN_ROLE: Record<Permission, UserRole> = {
   'content.follow': 'member',
   'content.requestTranslation': 'member',
   'mod.createOwn': 'creator',
+  'mod.translate': 'creator',
   'mod.republishExternal': 'publisher',
+  'news.create': 'publisher',
+  'report.readOwn': 'creator',
   'mod.saveDraft': 'creator',
   'mod.editOwn': 'creator',
   'mod.deleteOwn': 'creator',
@@ -95,6 +101,46 @@ export function can(role: string | null | undefined, permission: Permission): bo
 export function canCreateMod(role: string, isOriginalWork: boolean): boolean {
   if (isOriginalWork) return can(role, 'mod.createOwn')
   return can(role, 'mod.republishExternal')
+}
+
+/**
+ * Phase 4 — Content Creator Program track matrix.
+ *
+ * Track lives in CreatorRequest.track at application time; after approval it
+ * is ENCODED AS ROLE: translator → 'creator', publisher → 'publisher'
+ * (see roleForTrack in src/lib/creator-requests.ts). The Edge proxy only
+ * sees the role cookie, so every track gate below is a role gate.
+ *
+ *   publisher (ناشر):  mod.createOwn + mod.republishExternal + news.create
+ *                       + report.readOwn (all inherited upward to staff)
+ *   translator (معرّب = creator role): mod.createOwn (own translation work)
+ *                       + mod.translate + report.readOwn — a strict subset.
+ *                       NO news.create, NO republishExternal.
+ */
+export type CreatorTrack = 'publisher' | 'translator'
+
+export function trackForRole(role: string | null | undefined): CreatorTrack | null {
+  if (!role) return null
+  if (role === 'publisher') return 'publisher'
+  if (role === 'creator') return 'translator'
+  // Staff operate above tracks — publisher capabilities for gating purposes.
+  if (['moderator', 'admin', 'manager', 'owner'].includes(role)) return 'publisher'
+  return null
+}
+
+/** نشر الأخبار — مسار الناشر فقط (الإدارة ترثها). */
+export function canPublishNews(role: string | null | undefined): boolean {
+  return can(role, 'news.create')
+}
+
+/** الترجمة — مسار المعرّب (subset من creator) والناشر والإدارة. */
+export function canTranslateMod(role: string | null | undefined): boolean {
+  return can(role, 'mod.translate')
+}
+
+/** قراءة بلاغات المحتوى الخاصة — كل أدوار الاستوديو. */
+export function canReadOwnReports(role: string | null | undefined): boolean {
+  return can(role, 'report.readOwn')
 }
 
 // صلاحيات الأدوار الخاصة

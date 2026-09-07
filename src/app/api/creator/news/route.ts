@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { ok, validationFail } from '@/lib/api-response'
+import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { canPublishNews } from '@/lib/permissions'
 
 // GET /api/creator/news — own news rows (drafts + published)
 export async function GET(req: NextRequest) {
@@ -47,13 +48,17 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${base}-${Date.now()}`
 }
 
-// POST /api/creator/news — creators publish DIRECTLY, no admin review.
+// POST /api/creator/news — publishers publish DIRECTLY, no admin review.
+// Track gate: news.create is publisher-only (translators get 403).
 // Draft = visible:false. Creator rows REQUIRE authorId (staff legacy rows
 // keep authorId null and stay admin-managed).
 export async function POST(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return validationFail('يجب تسجيل الدخول')
+  if (!canPublishNews(user.role)) {
+    return forbidden('نشر الأخبار متاح لمسار الناشر فقط')
+  }
 
   const body = await req.json().catch(() => ({}))
   const title = typeof body?.title === 'string' ? body.title.trim() : ''

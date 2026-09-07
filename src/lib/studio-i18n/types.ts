@@ -630,5 +630,8 @@ export interface StudioDict {
     emptyDesc: string
     views: string
     clicks: string
+    trackOnlyTitle: string
+    trackOnlyDesc: string
+    trackOnlyCta: string
   }
 }

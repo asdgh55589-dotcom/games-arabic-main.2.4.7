@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { ok, validationFail } from '@/lib/api-response'
+import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { canReadOwnReports } from '@/lib/permissions'
 
 const STATUSES = ['new', 'under_review', 'confirmed', 'rejected', 'pending', 'resolved', 'reopened'] as const
 
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return validationFail('يجب تسجيل الدخول')
+  if (!canReadOwnReports(user.role)) {
+    return forbidden('لا تملك صلاحية قراءة البلاغات')
+  }
 
   const params = new URL(req.url).searchParams
   const status = params.get('status') || 'all'
