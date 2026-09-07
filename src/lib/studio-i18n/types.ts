@@ -505,6 +505,7 @@ export interface StudioDict {
     submitting: string
     submit: string
     backLink: string
+    viewStatus: string
     step: string
     next: string
     prev: string
@@ -530,6 +531,33 @@ export interface StudioDict {
     termsLabel: string
     termsText: string
     termsRequired: string
+  }
+  applyStatus: {
+    title: string
+    loginRequired: string
+    loginRequiredDesc: string
+    login: string
+    noRequest: string
+    noRequestDesc: string
+    applyNow: string
+    pendingTitle: string
+    pendingDesc: string
+    submittedOn: string
+    trackIs: string
+    trackPublisher: string
+    trackTranslator: string
+    slaBreachTitle: string
+    slaBreachDesc: string
+    supportLink: string
+    approvedTitle: string
+    approvedDesc: string
+    reviewerNote: string
+    openDashboard: string
+    rejectedTitle: string
+    rejectedDesc: string
+    rejectReasonLabel: string
+    resubmit: string
+    back: string
   }
   suspended: {
     metaTitle: string

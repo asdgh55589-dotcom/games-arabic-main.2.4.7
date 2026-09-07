@@ -250,9 +250,14 @@ export default function BecomeCreatorApplyPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 {t.pendingSla}
               </p>
-              <Link href="/settings">
-                <Button variant="outline">{t.back}</Button>
-              </Link>
+              <div className="flex justify-center gap-3">
+                <Link href="/become-creator/status">
+                  <Button>{t.viewStatus}</Button>
+                </Link>
+                <Link href="/settings">
+                  <Button variant="outline">{t.back}</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
