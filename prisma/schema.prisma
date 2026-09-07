@@ -164,6 +164,12 @@ model CreatorRequest {
   portfolioLinks String?   @db.Text
   reason         String?   @db.Text
   status         String    @default("pending") // pending | approved | rejected
+  track          String    @default("translator") // publisher | translator
+  portfolioUrls  String?   @db.Text
+  experienceYears Int?
+  samplesCount   Int?
+  agreeToTerms   Boolean   @default(false)
+  adminNotes     String?   @db.Text
   reviewedBy     String?
   reviewedAt     DateTime?
   rejectReason   String?   @db.Text
