@@ -75,6 +75,8 @@ interface HealthData {
     storagePercent: number
     bandwidth?: number
     transformations?: number
+    unavailable?: boolean
+    configured?: boolean
   }
 }
 
@@ -245,6 +247,19 @@ export default function ImageHealthPage() {
   const cloudinaryUsage = data?.cloudinaryUsage ?? { storage: 0, storagePercent: 0 }
 
   const storageGB = (cloudinaryUsage.storage / (1024 * 1024 * 1024)).toFixed(2)
+
+  // SA-3: شارة حالة Cloudinary من الـ probe الحقيقي (lib/image-health-check).
+  // unavailable (فشل الـ probe) → غير متاح | غير مُكوَّن → غير مُكوَّن | غير ذلك → متصل.
+  // مسار الأصفار القديم (configured غير موجود) يُفسَّر كغير مُكوَّن للتوافق.
+  const cloudinaryStatus: 'connected' | 'unconfigured' | 'unavailable' =
+    cloudinaryUsage.unavailable
+      ? 'unavailable'
+      : cloudinaryUsage.configured === false ||
+          (cloudinaryUsage.configured === undefined &&
+            cloudinaryUsage.storage === 0 &&
+            cloudinaryUsage.storagePercent === 0)
+        ? 'unconfigured'
+        : 'connected'
   const progressPercent =
     todayProgress.total > 0 ? (todayProgress.checked / todayProgress.total) * 100 : 0
 
@@ -625,6 +640,9 @@ export default function ImageHealthPage() {
           <CardTitle className="flex items-center gap-2">
             <Cloud className="h-5 w-5 text-sky-500" />
             استخدام Cloudinary
+            {cloudinaryStatus === 'connected' && <Badge variant="default">متصل</Badge>}
+            {cloudinaryStatus === 'unconfigured' && <Badge variant="secondary">غير مُكوَّن</Badge>}
+            {cloudinaryStatus === 'unavailable' && <Badge variant="destructive">غير متاح</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -646,11 +664,16 @@ export default function ImageHealthPage() {
                 </AlertDescription>
               </Alert>
             )}
-            {cloudinaryUsage.storagePercent <= 80 && (
+            {cloudinaryStatus !== 'unavailable' && cloudinaryUsage.storagePercent <= 80 && (
               <p className="text-xs text-muted-foreground mt-2">
                 {cloudinaryUsage.storagePercent < 50
                   ? '✅ الاستخدام ضمن الحدود الآمنة'
                   : '⚠️ الاستخدام متوسط — راقب الاستهلاك'}
+              </p>
+            )}
+            {cloudinaryStatus === 'unavailable' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                ⚠️ تعذّر الوصول إلى Cloudinary — تحقق من الإعدادات (CLOUDINARY_ENABLED والمفاتيح)
               </p>
             )}
           </div>
