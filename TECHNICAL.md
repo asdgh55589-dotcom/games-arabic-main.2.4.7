@@ -115,7 +115,7 @@ The app uses **Next.js App Router file-based routing**. Each route has a `src/ap
 | **Data Fetching** | React Query | 5 | Server state management |
 | **Animation** | Framer Motion | 12 | Smooth animations |
 | **Charts** | Recharts | 2 | Data visualization |
-| **Email** | Resend | 6 | Transactional emails |
+| **Email** | Emitlo | 6 | Transactional emails |
 | **Caching** | Upstash Redis | - | Rate limiting, IP bans |
 | **Testing** | Jest | 30 | Unit testing |
 | **Package Manager** | Bun | - | Fast runtime |
@@ -1497,9 +1497,9 @@ DISCORD_CLIENT_SECRET=""
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_BOT_NAME=""
 
-# Email (Resend)
-RESEND_API_KEY="re_your_api_key"
-EMAIL_FROM="noreply@yourdomain.com"
+# Email (Emitlo)
+EMITLO_API_KEY="em_your_api_key"
+EMAIL_FROM="noreply@games-arabic.com"
 
 # Site
 NEXT_PUBLIC_SITE_URL="https://yourdomain.com"

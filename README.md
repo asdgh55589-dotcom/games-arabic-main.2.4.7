@@ -27,7 +27,7 @@ bun install
 cp .env.example .env
 # Required: DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 #           SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET, OWNER_USERNAME/EMAIL/PASSWORD
-# Optional: TELEGRAM_BOT_TOKEN/CHANNEL_ID, RESEND_API_KEY, UPSTASH_REDIS, YT_DLP_PATH
+# Optional: TELEGRAM_BOT_TOKEN/CHANNEL_ID, EMITLO_API_KEY, UPSTASH_REDIS, YT_DLP_PATH
 # See .env.example for full list with comments.
 
 # 3. DB
@@ -79,8 +79,7 @@ await useCases.sendCommentReply.execute({
 ### Environment Variables
 
 Required for email notifications:
-- `RESEND_API_KEY` — Resend API key
-- `EMAIL_FROM_ADDRESS` — Sender email address
+- `EMITLO_API_KEY` — Emitlo API key
 
 ### Admin Dashboard
 - Templates: `/admin/templates`
@@ -95,7 +94,7 @@ Required for email notifications:
 - Supabase Auth (Google, Discord, Telegram Deep Link)
 - Zustand + `useFetch` + React Query for data fetching
 - Upstash Redis (IP ban cache + tokenVersion cache + rate limiting)
-- Resend (email), yt-dlp (YouTube metadata)
+- Emitlo (email), yt-dlp (YouTube metadata)
 
 ## Commands
 

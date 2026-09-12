@@ -22,7 +22,7 @@ The notification system delivers in-app, email, and (future) Telegram notificati
 ├─────────────────────────────────────────────────┤
 │            Infrastructure Layer                  │
 │  Repositories: Prisma implementations            │
-│  Adapters: Handlebars renderer, Resend email     │
+│  Adapters: Handlebars renderer, Emitlo email     │
 │  Resilience: Circuit Breaker, Retry, Dead Letter │
 │  Observability: Logger, Metrics, Alerts          │
 │  DI Container: Singleton factories               │
@@ -79,7 +79,7 @@ Each use case is a single-responsibility class with an `execute(context)` method
 
 ### Adapters
 - **HandlebarsTemplateRenderer** — Renders notification templates using Handlebars.
-- **ResendEmailSender** — Sends emails via Resend API with circuit breaker and retry.
+- **emitloProvider (EmailProvider)** — Sends emails via Emitlo API with circuit breaker and retry.
 
 ### Resilience
 - **CircuitBreaker** — Opens after N consecutive failures, transitions to HALF_OPEN after timeout.

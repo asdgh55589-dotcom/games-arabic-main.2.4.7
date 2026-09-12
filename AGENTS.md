@@ -52,7 +52,7 @@ All under `src/app/api/` — standard Next.js Route Handlers (147 handlers). Adm
 ### Notification System (Clean Architecture)
 - Domain layer: `src/domain/` (entities, value objects, ports, policies, events)
 - Application layer: `src/application/use-cases/` (20+ use cases)
-- Infrastructure layer: `src/infrastructure/` (Prisma repos, Resend email, circuit breaker, retry policy, dead letter handler)
+- Infrastructure layer: `src/infrastructure/` (Prisma repos, Emitlo email, circuit breaker, retry policy, dead letter handler)
 - Templates: Handlebars-based, seeded via `prisma/seed-notification-templates.ts`
 - Admin UI: `/admin/templates` (CRUD + preview), `/admin/notifications-health` (observability)
 

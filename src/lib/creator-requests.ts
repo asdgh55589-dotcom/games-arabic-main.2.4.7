@@ -23,7 +23,7 @@ export function trackLabel(track?: string | null): string {
  * Shared approve/reject path for single ([id]) and bulk admin actions.
  * Approving grants the track role (publisher → publisher, else creator),
  * stores the optional applicant-visible approveNote, notifies in-app,
- * and emails track + next steps (fail-open when Resend is unconfigured).
+ * and emails track + next steps (fail-open when Emitlo is unconfigured).
  */
 export async function approveCreatorRequest(
   request: CreatorRequestWithUser,

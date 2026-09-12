@@ -16,8 +16,8 @@ Local `.env` (gitignored) holds 32 keys. Status from live validation:
 | `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` / `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` / `TELEGRAM_WEBHOOK_SECRET` | Telegram login | PRESENT+VALID (`getMe` ok) |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` / `CLOUDINARY_URL` | Images/files | PRESENT+**INVALID** (`usage` → 401 Invalid credentials) — re-check console values |
 | `MEILISEARCH_HOST` | Search (local :7700) | PRESENT+UNTESTABLE (nothing listening) |
-| `RESEND_API_KEY` | Recovery/verification mail | **MISSING** → resend.com → API Keys |
-| `EMAIL_FROM` | Mail sender identity | **MISSING** → resend.com → Domains (verified sender) |
+| `EMITLO_API_KEY` | Recovery/verification mail | **MISSING** → emitlo.com → API Keys |
+| `EMAIL_FROM` | Mail sender identity | **MISSING** → emitlo.com → Domains (verified sender) |
 | `FREEIMAGE_API_KEY` | Mod-image uploads | **MISSING** → freeimage.host → account API key |
 | `IA_ACCESS_KEY` / `IA_SECRET_KEY` / `IA_IDENTIFIER` | IA multipart uploads | **MISSING** → archive.org/account/s3.php (stay `IA_ENABLED=false` until proof) |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate-limit/ban caches | MISSING (empty) → console.upstash.com → Redis → REST credentials. App runs in-memory fallback without them |
