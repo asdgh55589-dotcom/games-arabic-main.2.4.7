@@ -63,6 +63,11 @@ export async function POST(req: NextRequest) {
       return forbidden('أنت منشئ محتوى بالفعل أو لديك صلاحيات أعلى')
     }
 
+    // D.6: لا ترقية قبل إكمال إعداد الحساب
+    if (!user.onboardingCompleted) {
+      return forbidden('أكمل إعداد حسابك أولاً')
+    }
+
     // منع الطلبات المكررة (قيد المراجعة)
     const existing = await db.creatorRequest.findFirst({
       where: { userId: user.id, status: 'pending' },

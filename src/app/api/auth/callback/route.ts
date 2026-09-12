@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -102,6 +103,7 @@ export async function GET(req: NextRequest) {
             bannedUntil: true,
             banReason: true,
             tokenVersion: true,
+            onboardingCompleted: true,
           },
         })
       }
@@ -153,6 +155,7 @@ export async function GET(req: NextRequest) {
               bannedUntil: true,
               banReason: true,
               tokenVersion: true,
+              onboardingCompleted: true,
             },
           })
 
@@ -198,7 +201,7 @@ export async function GET(req: NextRequest) {
     }
 
     // إنشاء role cookie مع tokenVersion
-    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
+    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion, false, neonUser.onboardingCompleted)
 
     // تحديث lastLoginAt + loginCount
     await db.user.update({

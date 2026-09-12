@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/auth/errors'
 import { PublicLoginSchema, PublicRegisterSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/client'
+import { getTelegramBotUsername } from '@/lib/telegram-widget'
 
 type PublicLoginInput = z.infer<typeof PublicLoginSchema>
 type PublicRegisterInput = z.infer<typeof PublicRegisterSchema>
@@ -74,9 +75,10 @@ export function LoginPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
   const { user, loading: authLoading } = useAuth()
-  const telegramEnabled = !!(
-    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME
-  )
+  // NOTE: only NEXT_PUBLIC_-prefixed vars exist in browser bundles —
+  // process.env.TELEGRAM_BOT_NAME is always undefined here (D.1 fix).
+  const telegramBotUsername = getTelegramBotUsername()
+  const telegramEnabled = !!telegramBotUsername
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -449,11 +451,7 @@ export function LoginPage() {
                 </Button>
                 <div className="flex justify-center">
                   <TelegramWidget
-                    botName={
-                      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
-                      process.env.TELEGRAM_BOT_NAME ||
-                      'GAMES_ARABIC_BOT'
-                    }
+                    botName={telegramBotUsername || 'GAMES_ARABIC_BOT'}
                     onAuth={async (data) => {
                       try {
                         setLoading('telegram')
@@ -614,6 +612,11 @@ export function LoginPage() {
                         'سجل دخول'
                       )}
                     </Button>
+                    <p className="text-center text-xs">
+                      <Link href="/recover" className="text-primary hover:underline font-medium">
+                        نسيت كلمة المرور؟
+                      </Link>
+                    </p>
                     <p className="text-center text-xs text-muted-foreground">
                       مش عندك حساب؟{' '}
                       <button

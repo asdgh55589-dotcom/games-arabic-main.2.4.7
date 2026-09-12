@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { LoginPage } from '@/views/login'
+import { OfficialLoginPage } from '@/components/official-login/login-page'
 
 export const metadata: Metadata = {
   title: 'تسجيل الدخول — GAMES ARABIC',
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function LoginRoutePage() {
-  return <LoginPage />
+  return <OfficialLoginPage />
 }

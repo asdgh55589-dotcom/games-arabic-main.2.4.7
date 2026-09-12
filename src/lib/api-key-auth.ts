@@ -57,6 +57,7 @@ export async function authenticateApiKey(
             banStatus: true,
             bannedUntil: true,
             banReason: true,
+            onboardingCompleted: true,
           },
         },
       },
@@ -100,6 +101,7 @@ export async function authenticateApiKey(
         email: apiKey.user.email,
         role: apiKey.role as UserRole, // الدور الممنوح من المفتاح
         avatarUrl: apiKey.user.avatarUrl,
+        onboardingCompleted: apiKey.user.onboardingCompleted,
       },
       apiKeyId: apiKey.id,
     }

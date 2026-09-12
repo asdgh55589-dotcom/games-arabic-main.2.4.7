@@ -104,6 +104,7 @@ model User {
   lastLoginAt            DateTime?
   loginCount             Int                     @default(0)
   emailVerified          Boolean                 @default(false)
+  onboardingCompleted    Boolean                 @default(false) // D.6: اكتمال إعداد الحساب (username + password + تأكيد البيانات)
   joinedAt               DateTime                @default(now())
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -147,6 +148,7 @@ model User {
   modRequests            ModRequest[]
   acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
   sessions               Session[]
+  passwordResetTokens    PasswordResetToken[]
 
   @@index([role])
   @@index([joinedAt])
@@ -1578,4 +1580,19 @@ model CreatorStorage {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ===== Password recovery tokens (D.6-c) — single-use, 1h expiry, hash at rest =====
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // SHA-256 hex of the raw token (raw token only ever emailed)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ipAddress String?
+
+  @@index([userId])
+  @@index([expiresAt])
 }

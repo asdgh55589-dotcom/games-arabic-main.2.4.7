@@ -17,6 +17,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { logger } from '@/lib/logger'
+import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
 import { updateSession } from '@/lib/supabase/middleware'
@@ -39,6 +40,7 @@ interface RoleCookiePayload {
   tv?: number // tokenVersion
   tvVerified: boolean
   mfaVerified?: boolean
+  onboarded?: boolean // ob claim — absent on legacy cookies (fail-open)
 }
 
 /** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
@@ -51,6 +53,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
     const mfaVerified = payload.mfa === true
+    const onboarded = typeof payload.ob === 'boolean' ? (payload.ob as boolean) : undefined
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
     // الأمن الحقيقي في getSession() عبر DB — Edge هنا دفاع إضافي فقط، لذا FAIL-OPEN عند عدم وجود Redis
@@ -82,7 +85,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
       tvVerified = false
     }
 
-    return { userId, role, tv, tvVerified, mfaVerified }
+    return { userId, role, tv, tvVerified, mfaVerified, onboarded }
   } catch (err) {
     logger.warn('[middleware] invalid role cookie', err)
     return null
@@ -318,6 +321,29 @@ export async function proxy(req: NextRequest) {
       }
     } catch (err) {
       logger.error('[Middleware] session ban check failed', err)
+    }
+  }
+
+  // ===== Onboarding gate (D.6-a) — members with ob===false funnel to /onboarding =====
+  // Edge has no DB access: the ob claim in ga_admin_role carries the flag.
+  // Missing claim (legacy cookies) = fail-open; server-side DB flag is truth.
+  // Pages → 302, API calls → 403 JSON (so fetch() callers can route client-side).
+  {
+    const rolePayload = await getRoleFromCookie(req)
+    const decision = getOnboardingGate(rolePayload?.role, rolePayload?.onboarded, pathname)
+    if (decision === 'redirect') {
+      const onboardingUrl = new URL(ONBOARDING_PATH, req.url)
+      onboardingUrl.searchParams.set('from', pathname)
+      const redirectRes = NextResponse.redirect(onboardingUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'onboarding_required')
+      return redirectRes
+    }
+    if (decision === 'json') {
+      return NextResponse.json(
+        { error: 'أكمل إعداد حسابك أولاً', code: 'ONBOARDING_REQUIRED' },
+        { status: 403 },
+      )
     }
   }
 

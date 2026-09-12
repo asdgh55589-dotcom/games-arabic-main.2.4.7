@@ -61,13 +61,14 @@ export async function POST(req: NextRequest) {
         role: string
         tokenVersion: number
         email: string
+        onboardingCompleted: boolean
       } | null
       try {
         neonUser = await db.user.findFirst({
           where: {
             OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
           },
-          select: { id: true, username: true, role: true, tokenVersion: true, email: true },
+          select: { id: true, username: true, role: true, tokenVersion: true, email: true, onboardingCompleted: true },
         })
       } catch {}
 
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
               select: { totpEnabled: true },
             })
             const mfaVerified = !!fullUser?.totpEnabled
-            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified)
+            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified, neonUser.onboardingCompleted)
           } catch (e) {
             console.error('[ChangePassword] setRoleCookie failed:', e)
           }
