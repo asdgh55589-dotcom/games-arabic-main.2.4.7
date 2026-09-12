@@ -89,7 +89,7 @@ model User {
   securityKeyExpiresAt   DateTime? // Expiry set by owner
   securityKeyChangedAt   DateTime? // Last change
   // ===== MFA fields — TOTP/WebAuthn/Recovery =====
-  totpSecret             String? // مشفّر base64 — سر TOTP
+  totpSecret             String? // AES-256-GCM (مفتاح من JWT_SECRET) — سر TOTP
   totpEnabled            Boolean                 @default(false)
   webauthnCredentials    Json? // مصفوفة مفاتيح الأمان
   mfaRequiredAt          DateTime? // متى فُرضت MFA

@@ -1,6 +1,17 @@
 import { jwtVerify, SignJWT } from 'jose'
 
-const MFA_TOKEN_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-mfa-secret')
+// Audit D.2: no default — a missing JWT_SECRET fails closed at import
+// (same fail-closed precedent as proxy.ts). MFA tokens must never be
+// signed with a hardcoded key.
+function getMfaTokenSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required (mfa-token)')
+  }
+  return new TextEncoder().encode(secret)
+}
+
+const MFA_TOKEN_SECRET = getMfaTokenSecret()
 const MFA_TOKEN_EXPIRY = '10m'
 
 export async function generateMFAToken(userId: string): Promise<string> {
