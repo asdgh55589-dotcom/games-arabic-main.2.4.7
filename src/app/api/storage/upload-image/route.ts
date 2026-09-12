@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { isFreeImageConfigured, uploadToFreeImage } from '@/lib/freeimage'
 import { wrapImageUrl } from '@/lib/image-worker'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
+import { reportError } from '@/lib/error-reporting'
 
 // Owner decision (FINAL): FreeImage service cap for mod images.
 const MAX_IMAGE_BYTES = 64 * 1024 * 1024 // 64MB
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     console.error('[upload-image] failed:', error)
+    reportError(error, { route: 'POST /api/storage/upload-image' })
     const message = error instanceof Error ? error.message : 'فشل رفع الصورة — حاول مرة أخرى'
     if (message.includes('FREEIMAGE_API_KEY') || message.includes('غير مُكوَّن')) {
       return internalError('خدمة رفع الصور غير متاحة حالياً — حاول لاحقاً')

@@ -3,6 +3,7 @@ import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { buildIaKey, IA_COMING_SOON_MESSAGE, isIaConfigured, isIaEnabled, sanitizeIaSegment, signIaPut } from '@/lib/ia'
 import { checkUploadQuota } from '@/lib/quota'
+import { reportError } from '@/lib/error-reporting'
 
 const ALLOWED_ARCHIVE_MIMES = [
   'application/zip',
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     console.error('[ia/sign] failed:', err)
+    reportError(err, { route: 'POST /api/storage/ia/sign' })
     return internalError('فشل تجهيز الرفع — حاول مرة أخرى')
   }
 }
