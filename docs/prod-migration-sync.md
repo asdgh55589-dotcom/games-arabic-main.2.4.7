@@ -3,7 +3,103 @@
 > DOCS ONLY. Nothing here has been executed against production.
 > Run the steps below IN ORDER during a maintenance window. Estimated: 15 min.
 
-## Background
+## RELEASE deploy — 8 additive migrations above baseline (this branch)
+
+> Production Neon already carries ONLY the `20260907000000_baseline` row
+> (synced live earlier). At deploy, `prisma migrate deploy` will apply
+> exactly the 8 additive migrations below — all additive-only
+> (`ADD COLUMN` / `CREATE TABLE` / `CREATE INDEX`, `IF NOT EXISTS` where
+> the author wrote raw SQL). No backfill touches user data except the
+> onboarding grandfathering `UPDATE` (sets `onboardingCompleted = true`
+> for pre-existing accounts — idempotent, one-time).
+>
+> NOTE: the task brief listed 7; the IA multipart journal
+> (`...07110000`, added same-branch after the brief) makes 8. If your
+> checkout predates the journal commit, expect 7 (everything but the
+> last row).
+
+## R0. Safety FIRST — restore point (Neon, same rule as §0)
+
+1. Neon dashboard → project → Branches → **Create branch** from `main`
+   (name: `pre-release-YYYYMMDD`). Instant restore point — do NOT skip.
+2. `pg_dump` off-site as a second copy for releases that add tables.
+
+## R1. Pre-deploy verification (read-only, production)
+
+```sql
+SELECT migration_name, finished_at, rolled_back_at
+FROM "_prisma_migrations"
+ORDER BY migration_name;
+-- expected: exactly ONE row: 20260907000000_baseline
+-- (finished_at set, rolled_back_at NULL). Anything else — STOP.
+```
+
+Record the table count for the post-deploy delta check:
+
+```sql
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  AND table_name != '_prisma_migrations';
+-- expected pre-deploy: 73
+```
+
+## R2. What `migrate deploy` will apply (in order)
+
+| # | Migration | Effect |
+|---|-----------|--------|
+| 1 | `20260907000001_wave3a_likes_composite_indexes` | Composite indexes for creator-likes analytics (no tables/columns) |
+| 2 | `20260907000002_wave3a_news_author` | `News.authorId` column + index + FK |
+| 3 | `20260907000003_wave3b_comment_clicks` | NEW TABLE `CommentSectionClick` |
+| 4 | `20260907070000_add_creator_track_and_portfolio` | `CreatorRequest` track/portfolio/terms columns |
+| 5 | `20260907080000_add_creator_approve_note` | `CreatorRequest.approveNote` column |
+| 6 | `20260907090000_add_onboarding_completed` | `User.onboardingCompleted` + grandfathering UPDATE |
+| 7 | `20260907100000_add_password_reset_tokens` | NEW TABLE `PasswordResetToken` |
+| 8 | `20260907110000_add_ia_multipart_journal` | NEW TABLE `IaMultipartUpload` |
+
+Deploy: `prisma migrate deploy` (runs inside `bun run build`). If it
+reports anything OTHER than these 8 applying cleanly — STOP, restore
+from R0, investigate.
+
+## R3. Post-deploy verification (production)
+
+```sql
+-- 1. History: baseline + 8, in order
+SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name;
+-- expected: 9 rows (baseline + the 8 above)
+
+-- 2. Tables: 73 + 3 new = 76
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  AND table_name != '_prisma_migrations';
+-- expected: 76
+
+-- 3. New tables present
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('CommentSectionClick','PasswordResetToken','IaMultipartUpload');
+-- expected: 3 rows
+
+-- 4. New columns present
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND (
+  (table_name = 'User' AND column_name = 'onboardingCompleted') OR
+  (table_name = 'News' AND column_name = 'authorId') OR
+  (table_name = 'CreatorRequest' AND column_name IN ('track','portfolioUrls','approveNote'))
+);
+-- expected: 5 rows
+
+-- 5. App smoke: /login renders login-03, /creator gates hold,
+--    /onboarding funnel reachable, IA toggle still "soon" (flags off).
+```
+
+Rollback: promote the R0 Neon branch to primary (minutes of downtime
+at most). The 8 migrations are additive — rolling the app back to the
+previous build is safe even with the new tables/columns in place
+(old code ignores them).
+
+---
+
+## Background (baseline squash — historical, keep for archaeology)
 
 Migration history never contained the core `CREATE TABLE`s (history started
 mid-life with `ALTER TABLE "User"`), so `migrate deploy` can never provision
