@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const RANGES = new Set([7, 30, 90])
@@ -147,6 +148,7 @@ export async function GET(req: NextRequest) {
     )
   } catch (err) {
     console.error('[creator/analytics GET] failed:', err)
+    reportError(err, { route: 'GET /api/creator/analytics' })
     return internalError('فشل جلب التحليلات')
   }
 }

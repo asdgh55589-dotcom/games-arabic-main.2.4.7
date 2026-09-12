@@ -5,6 +5,7 @@ import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getIaClient, getIaConfig, iaDownloadUrl, IA_COMING_SOON_MESSAGE, isIaConfigured, isIaEnabled, sanitizeIaSegment, buildIaKey } from '@/lib/ia'
 import { checkUploadQuota } from '@/lib/quota'
+import { reportError } from '@/lib/error-reporting'
 
 // POST /api/storage/ia/relay — FALLBACK when browser→IA direct is blocked
 // (e.g. IA S3 CORS). Raw octet-stream body + x-ia-* headers; the server
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     console.error('[ia/relay] failed:', err)
+    reportError(err, { route: 'POST /api/storage/ia/relay' })
     return internalError('فشل رفع الملف — حاول مرة أخرى')
   }
 }

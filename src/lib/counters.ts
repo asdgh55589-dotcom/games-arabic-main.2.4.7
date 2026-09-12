@@ -14,6 +14,7 @@
 
 import { getUserIdFromRequestCookies } from './auth'
 import { clearHomeCache } from './home-cache'
+import { logger } from './logger'
 import { redisSetNX } from './redis'
 
 const HOUR = 3600
@@ -143,7 +144,14 @@ export async function recordModView(modId: string, req: Request, db: any): Promi
   }
   try {
     clearHomeCache()
-  } catch {}
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the view is already counted, stale homepage self-heals on TTL
+    // intentional: expected+handled (count already committed, no rollback)
+    logger.warn(
+      { event: 'home_cache_clear_failed', action: 'record_mod_view', err },
+      'home cache clear failed',
+    )
+  }
   return { counted: true }
 }
 
@@ -255,7 +263,14 @@ export async function recordDownload(
             data: { totalDownloads: { increment: 1 } },
           })
         }
-      } catch {}
+      } catch (err) {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: Game/Series cascade is best-effort — the Mod count + DownloadClick row are already committed in the same tx
+        // intentional: expected+handled (partial cascade converges on next download; no rollback of the primary count)
+        logger.warn(
+          { event: 'download_cascade_failed', action: 'record_download_tx', err },
+          'download game/series cascade failed',
+        )
+      }
     })
   } else {
     await Promise.all([
@@ -294,11 +309,25 @@ export async function recordDownload(
             data: { totalDownloads: { increment: 1 } },
           })
       }
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: non-transactional cascade is best-effort — primary Mod count + DownloadClick already written
+      // intentional: expected+handled (converges on next download; no rollback)
+      logger.warn(
+        { event: 'download_cascade_failed', action: 'record_download_fallback', err },
+        'download game/series cascade failed',
+      )
+    }
   }
   try {
     clearHomeCache()
-  } catch {}
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the download is already counted, stale homepage self-heals on TTL
+    // intentional: expected+handled (count already committed, no rollback)
+    logger.warn(
+      { event: 'home_cache_clear_failed', action: 'record_download', err },
+      'home cache clear failed',
+    )
+  }
   return { counted: true }
 }
 

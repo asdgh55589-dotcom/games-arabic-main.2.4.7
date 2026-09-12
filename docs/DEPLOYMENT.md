@@ -8,7 +8,7 @@
 - **Database:** Neon PostgreSQL (serverless)
 - **Auth:** Supabase (hosted)
 - **Cache:** Upstash Redis (serverless)
-- **Email:** Resend
+- **Email:** Emitlo
 
 ## Environment Variables
 
@@ -38,9 +38,8 @@ NEXT_PUBLIC_SITE_URL="https://yourdomain.com"
 # Upstash Redis (rate limiting + IP ban + tokenVersion cache)
 UPSTASH_REDIS_REST_URL="https://..."
 UPSTASH_REDIS_REST_TOKEN="..."
-# Email (Resend)
-RESEND_API_KEY="re_..."
-EMAIL_FROM_ADDRESS="noreply@yourdomain.com"
+# Email (Emitlo)
+EMITLO_API_KEY="em_..."
 # Telegram Deep Link
 TELEGRAM_BOT_TOKEN="..."
 TELEGRAM_BOT_NAME="..."

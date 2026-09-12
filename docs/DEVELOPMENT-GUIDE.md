@@ -48,9 +48,9 @@ DISCORD_CLIENT_SECRET=""
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_BOT_NAME=""
 
-# Email (Resend)
-RESEND_API_KEY="re_your_api_key"
-EMAIL_FROM="noreply@yourdomain.com"
+# Email (Emitlo)
+EMITLO_API_KEY="em_your_api_key"
+EMAIL_FROM="noreply@games-arabic.com"
 
 # Site
 NEXT_PUBLIC_SITE_URL="https://yourdomain.com"

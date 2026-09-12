@@ -3,6 +3,7 @@
  */
 
 import { Redis } from '@upstash/redis'
+import { logger } from '@/lib/logger'
 
 const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
 
@@ -28,7 +29,8 @@ export async function redisGet<T>(key: string): Promise<T | null> {
       const result = await redisClient.get<T>(key)
       return result
     } catch (err) {
-      console.error('[redis] get failed:', err)
+      // intentional: expected+handled (Redis down → in-memory fallback below); key omitted — dedup keys may embed user identity
+      logger.warn({ event: 'redis_get_failed', err }, 'redis get failed, using memory fallback')
     }
   }
   const entry = memoryStore.get(key)
@@ -39,7 +41,10 @@ export async function redisGet<T>(key: string): Promise<T | null> {
   }
   try {
     return JSON.parse(entry.value) as T
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: corrupt memory entry is self-healing — treated as cache miss
+    // intentional: expected+handled (stale/corrupt entry → miss, no value to preserve)
+    logger.warn({ event: 'redis_memory_parse_failed', err }, 'redis memory entry unparseable')
     return null
   }
 }
@@ -55,7 +60,8 @@ export async function redisSet(
       await redisClient.set(key, stringValue, { ex: ttlSeconds })
       return
     } catch (err) {
-      console.error('[redis] set failed:', err)
+      // intentional: expected+handled (Redis down → in-memory fallback below)
+      logger.warn({ event: 'redis_set_failed', err }, 'redis set failed, using memory fallback')
     }
   }
   memoryStore.set(key, { value: stringValue, expires: Date.now() + ttlSeconds * 1000 })
@@ -70,7 +76,11 @@ export async function redisDel(key: string): Promise<void> {
     try {
       await redisClient.del(key)
       return
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: delete is idempotent — memory fallback below converges to the same state
+      // intentional: expected+handled (fall through to memory delete)
+      logger.warn({ event: 'redis_del_failed', err }, 'redis del failed, using memory fallback')
+    }
   }
   memoryStore.delete(key)
 }
@@ -88,7 +98,8 @@ export async function redisSetNX(key: string, ttlSeconds: number): Promise<boole
         const result = await redisClient.set(key, '1', { ex: ttlSeconds, nx: true })
         return result === 'OK'
       } catch (err) {
-        console.error(`[redis] setnx attempt ${attempt + 1}/3 failed:`, err)
+        // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
+        logger.warn({ event: 'redis_setnx_failed', attempt: attempt + 1, err }, 'redis setnx failed')
         if (attempt === 2) {
           console.warn('[Redis] فشل Redis لـ deduplication — التحويل للذاكرة المؤقتة')
           break
@@ -130,7 +141,8 @@ export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<n
         if (result === 1) await redisClient.expire(key, ttlSeconds)
         return result
       } catch (err) {
-        console.error(`[redis] incr attempt ${attempt + 1}/3 failed:`, err)
+        // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
+        logger.warn({ event: 'redis_incr_failed', attempt: attempt + 1, err }, 'redis incr failed')
         if (attempt === 2) {
           console.warn('[Redis] فشل Redis لـ rate-limit — التحويل للذاكرة المؤقتة')
           break

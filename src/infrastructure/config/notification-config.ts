@@ -3,6 +3,8 @@
  * Central configuration for all infrastructure components.
  */
 
+import { emailFrom } from '@/lib/email/from'
+
 export const NOTIFICATION_CONFIG = {
   // Circuit Breaker
   circuitBreaker: {
@@ -31,9 +33,10 @@ export const NOTIFICATION_CONFIG = {
     cacheTtlMs: 300_000,
   },
 
-  // Email
+  // Email — single source of truth lives in @/lib/email/from (owner decision:
+  // noreply@games-arabic.com). Do NOT add another default here.
   email: {
-    fromAddress: process.env.EMAIL_FROM ?? 'notifications@games-arabic.com',
+    fromAddress: emailFrom(),
     maxPerMinute: 100,
   },
 

@@ -3,6 +3,7 @@ import { getUseCases } from '@/application/use-cases/factory'
 import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
 import { rateLimit } from '@/lib/rate-limit'
 import { REPORT_REASONS } from '@/lib/reports/constants'
 import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
     return ok({ report }, { status: 201 })
   } catch (err) {
     console.error('[reports POST] failed:', err)
+    reportError(err, { route: 'POST /api/reports' })
     return internalError('فشل إرسال البلاغ')
   }
 }

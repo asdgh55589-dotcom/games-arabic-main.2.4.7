@@ -57,7 +57,7 @@ describe('scripts/deploy.sh contract', () => {
       'JWT_SECRET',
       'NEXT_PUBLIC_TELEGRAM_BOT_USERNAME',
       'TELEGRAM_BOT_TOKEN',
-      'RESEND_API_KEY',
+      'EMITLO_API_KEY',
       'EMAIL_FROM',
       'FREEIMAGE_API_KEY',
       'IA_ACCESS_KEY',

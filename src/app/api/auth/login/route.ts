@@ -32,6 +32,7 @@ import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { LoginSchema } from '@/lib/schemas'
 import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
 import { createClient } from '@/lib/supabase/server'
+import { reportError } from '@/lib/error-reporting'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME
@@ -336,6 +337,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[auth/login] failed:', err)
+    reportError(err, { route: 'POST /api/auth/login' })
     return internalError('Login failed')
   }
 }

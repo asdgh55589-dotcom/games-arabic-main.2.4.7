@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import { db } from '@/lib/db'
+import { maskId } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 
 const SESSION_TTL_DAYS = 7
@@ -40,7 +41,10 @@ export async function isSessionActive(token: string): Promise<boolean> {
     const s = await db.session.findUnique({ where: { token } as any, select: { expiresAt: true } })
     if (!s) return false
     return new Date((s as any).expiresAt) > new Date()
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: fail-open liveness check — DB down means "not verifiable", caller treats false as signed-out
+    // intentional: expected+handled (fail-open to signed-out), keep return shape
+    logger.warn({ event: 'session_ledger_check_failed', err }, 'session liveness check failed')
     return false
   }
 }
@@ -49,8 +53,12 @@ export async function revokeSession(token: string): Promise<void> {
   if (!token) return
   try {
     await db.session.deleteMany({ where: { token } as any })
-    logger.warn({ token: `${token.slice(0, 8)}...` }, 'session revoked')
-  } catch {}
+    logger.warn({ token: maskId(token) }, 'session revoked')
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort revoke — row may already be gone; nothing to retry
+    // intentional: expected+handled (idempotent delete), no state to roll back
+    logger.warn({ event: 'session_revoke_failed', err }, 'session revoke failed')
+  }
 }
 
 export async function revokeOtherSessions(userId: string, currentToken: string) {
@@ -62,7 +70,11 @@ export async function revokeOtherSessions(userId: string, currentToken: string) 
       } as any,
     })
     logger.warn({ userId }, 'other sessions revoked')
-  } catch {}
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort revoke — user stays signed in, next login re-sweeps
+    // intentional: expected+handled (fail-open, non-blocking for the active session)
+    logger.warn({ event: 'session_revoke_others_failed', err }, 'revoke other sessions failed')
+  }
 }
 
 export async function listUserSessions(userId: string) {
@@ -72,7 +84,10 @@ export async function listUserSessions(userId: string) {
       orderBy: { updatedAt: 'desc' },
     })
     return rows
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: read-only settings page — empty list is a safe degraded render
+    // intentional: expected+handled (fail-open to empty list)
+    logger.warn({ event: 'session_list_failed', err }, 'list user sessions failed')
     return []
   }
 }

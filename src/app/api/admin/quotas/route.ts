@@ -3,6 +3,7 @@ import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { BUILTIN_QUOTAS, QUOTA_RANKS } from '@/lib/quota'
+import { reportError } from '@/lib/error-reporting'
 
 // GET /api/admin/quotas — rank policies with effective values (admin+ only)
 export async function GET() {
@@ -24,6 +25,7 @@ export async function GET() {
     })
     return ok({ policies: rows })
   } catch (error) {
+    reportError(error, { route: 'GET /api/admin/quotas' })
     return internalError(error instanceof Error ? error.message : 'فشل تحميل السياسات')
   }
 }
@@ -66,6 +68,7 @@ export async function PUT(req: NextRequest) {
       },
     })
   } catch (error) {
+    reportError(error, { route: 'PUT /api/admin/quotas' })
     return internalError(error instanceof Error ? error.message : 'فشل حفظ السياسة')
   }
 }

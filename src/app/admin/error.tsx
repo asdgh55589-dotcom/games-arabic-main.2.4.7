@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { reportError } from '@/lib/error-reporting'
 
 export default function Error({
   error,
@@ -9,8 +10,18 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const reportedRef = useRef<string | null>(null)
+
   useEffect(() => {
     console.error('Admin Layout Error:', error)
+    const key = error?.digest ?? error?.message ?? 'admin-error'
+    if (reportedRef.current === key) return
+    reportedRef.current = key
+    try {
+      reportError(error, { route: 'admin-error', action: 'render' })
+    } catch {
+      // fail-open: never break the fallback UI
+    }
   }, [error])
 
   return (

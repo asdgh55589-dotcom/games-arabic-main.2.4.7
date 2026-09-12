@@ -5,7 +5,7 @@ Nothing below has been executed — staging verification steps for a human.
 
 ## 0. Env
 
-- [ ] Set `RESEND_API_KEY` + `EMAIL_FROM` (approval emails are fail-open without them:
+- [ ] Set `EMITLO_API_KEY` + `EMAIL_FROM` (approval emails are fail-open without them:
  .warn + skip; see `sendCreatorApprovalEmail` in `src/lib/notifications/email-service.ts`)
 - [ ] Apply migrations on staging via the normal deploy path
   (`20260907070000_add_creator_track_and_portfolio`,
@@ -37,3 +37,11 @@ Nothing below has been executed — staging verification steps for a human.
 - [ ] Pending > 48h shows the escalation box linking to `/support`
 - [ ] Approved sees welcome + reviewer note + `/creator` link
 - [ ] Rejected sees reason + resubmit link back to `/become-creator/apply`
+
+## 4. Emitlo staging checklist
+
+- [ ] `EMITLO_API_KEY` set on staging (approval emails are fail-open without it)
+- [ ] Sending domain DNS verified (SPF/DKIM) in Emitlo dashboard
+- [ ] Test email arrives (template render + delivery)
+- [ ] Creator approval email arrives (applicant inbox)
+- [ ] Password-reset email arrives

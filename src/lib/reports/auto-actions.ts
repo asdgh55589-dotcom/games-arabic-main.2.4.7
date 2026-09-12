@@ -1,5 +1,6 @@
 import { getUseCases } from '@/application/use-cases/factory'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { setTokenVersionCache } from '@/lib/token-version-cache'
 import type { ReportAction } from './constants'
 
@@ -63,7 +64,14 @@ export async function executeAutoAction(
         reportId,
         reason: resolution,
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: warning delivery is best-effort — the warn userAction row above is already committed
+      // intentional: expected+handled (moderation state committed; notify is advisory)
+      logger.warn(
+        { event: 'auto_action_warning_failed', action: 'warned', err },
+        'auto-action warning notify failed',
+      )
+    }
   }
 
   if (action === 'content_hidden' && report.targetModId) {
@@ -99,7 +107,14 @@ export async function executeAutoAction(
     // إبطال جميع الجلسات عبر كاش Edge لتسجيل خروج فوري بعد الحظر
     try {
       await setTokenVersionCache(userId, updatedUser.tokenVersion)
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Edge token-version cache is advisory — DB tokenVersion is truth, getSession re-checks it
+      // intentional: expected+handled (fail-open; logout converges on next DB read)
+      logger.warn(
+        { event: 'token_version_cache_failed', action: 'auto_action_ban', err },
+        'token version cache set failed',
+      )
+    }
 
     await db.userAction.create({
       data: {
@@ -119,7 +134,14 @@ export async function executeAutoAction(
         banType: action === 'temp_ban' ? 'temp_ban' : 'perm_ban',
         durationDays: action === 'temp_ban' ? banDuration || 7 : undefined,
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: ban notify is best-effort — the ban + userAction rows above are already committed
+      // intentional: expected+handled (enforcement committed; notify is advisory)
+      logger.warn(
+        { event: 'auto_action_ban_notify_failed', action, err },
+        'auto-action ban notify failed',
+      )
+    }
   }
 
   await db.report.update({

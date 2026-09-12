@@ -46,7 +46,7 @@ GOOGLE_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=YYYY-YYYYYYYYYYYYYYYYYYYYYYYYYYYY
 
 # البريد (اختياري لكن مهم لتأكيد الإيميل)
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
+EMITLO_API_KEY=em_xxxxxxxxxxxxxxxx
 EMAIL_FROM="Games Arabic <noreply@games-arabic.com>"
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
@@ -128,4 +128,4 @@ bun run dev # أو npm run dev
 
 - لا تشارك `GOOGLE_CLIENT_SECRET` أبداً في الواجهة الأمامية (هو `server-only` عبر `process.env` في `src/lib/better-auth.ts`)
 - فعّل **Google Identity Services** فقط للدومينات التي تملكها
-- للبريد: استخدم `RESEND_API_KEY` مع دومين موثّق في Resend (SPF/DKIM)
+- للبريد: استخدم `EMITLO_API_KEY` مع دومين موثّق في Emitlo (SPF/DKIM)

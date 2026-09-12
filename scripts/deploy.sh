@@ -27,7 +27,7 @@ REQUIRED_KEYS=(
   JWT_SECRET
   NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
   TELEGRAM_BOT_TOKEN
-  RESEND_API_KEY
+  EMITLO_API_KEY
   EMAIL_FROM
   FREEIMAGE_API_KEY
   IA_ACCESS_KEY
@@ -83,7 +83,7 @@ ar_why() {
     SUPABASE_SERVICE_ROLE_KEY) echo "مفتاح الخدمة للتحقق من allowlist وإدارة المستخدمين" ;;
     JWT_SECRET) echo "سر توقيع كوكيز الجلسات (32+ حرف)" ;;
     NEXT_PUBLIC_TELEGRAM_BOT_USERNAME|TELEGRAM_BOT_TOKEN) echo "بوت تيليجرام لتسجيل الدخول" ;;
-    RESEND_API_KEY|EMAIL_FROM) echo "خدمة البريد (استعادة كلمة المرور والتحقق)" ;;
+    EMITLO_API_KEY|EMAIL_FROM) echo "خدمة البريد (استعادة كلمة المرور والتحقق)" ;;
     FREEIMAGE_API_KEY) echo "رفع صور التعريبات" ;;
     IA_ACCESS_KEY|IA_SECRET_KEY|IA_IDENTIFIER) echo "أرشيف الإنترنت لملفات المودات" ;;
     CLOUDINARY_*) echo "Cloudinary (صور/ملفات احتياطية)" ;;

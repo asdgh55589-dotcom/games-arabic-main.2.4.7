@@ -1,5 +1,7 @@
 import { getUseCases } from '@/application/use-cases/factory'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 import { setTokenVersionCache } from '@/lib/token-version-cache'
 
 const ESCALATION_THRESHOLDS = [
@@ -99,13 +101,36 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
                     reason: 'محاولة حظر تلقائي لمستخدم مميز — يتطلب مراجعة يدوية',
                   },
                 })
-              } catch {}
+              } catch (err) {
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: per-admin notify is best-effort — one admin's failure must not block the rest or the skip-audit path
+                // intentional: expected+handled (loop continues; audit row above already records the skip)
+                logger.warn(
+                  { event: 'repeat_offender_admin_notify_failed', err },
+                  'privileged-skip admin notify failed',
+                )
+              }
             }
           }
-        } catch {}
+        } catch (err) {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: admin broadcast is advisory — the privileged skip + audit row above already protected the user
+          // intentional: expected+handled (escalation stays skipped via the return below)
+          logger.warn(
+            { event: 'repeat_offender_admin_broadcast_failed', err },
+            'privileged-skip admin broadcast failed',
+          )
+        }
         return
       }
-    } catch {}
+    } catch (err) {
+      // UNEXPECTED: the privileged-user guard itself failed (DB/audit down) — fall-through
+      // below would escalate a possibly-privileged user, so this needs on-call eyes.
+      // Control flow unchanged (fail-open to escalation) — report only.
+      logger.error(
+        { event: 'repeat_offender_privileged_check_failed', route: 'repeat-offender', err },
+        'privileged guard check failed',
+      )
+      reportError(err, { route: 'reports/repeat-offender', action: 'privileged_guard' })
+    }
   }
 
   // Execute escalation action
@@ -118,7 +143,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         reportId: 'repeat_offender',
         reason: 'تكرار بلاغات مؤكدة',
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: warning delivery is best-effort — the level is already persisted on open reports above
+      // intentional: expected+handled (escalation state committed; notify retries on next report)
+      logger.warn(
+        { event: 'repeat_offender_warning_failed', err },
+        'repeat-offender warning notify failed',
+      )
+    }
   }
 
   if (newLevel === 2) {
@@ -138,7 +170,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
     })
     try {
       await setTokenVersionCache(targetUserId, updatedUserLevel2.tokenVersion)
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Edge token-version cache is advisory — DB tokenVersion is truth, getSession re-checks it
+      // intentional: expected+handled (fail-open; logout converges on next DB read)
+      logger.warn(
+        { event: 'token_version_cache_failed', action: 'repeat_offender_l2', err },
+        'token version cache set failed',
+      )
+    }
 
     await db.userAction.create({
       data: {
@@ -157,7 +196,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         banType: 'temp_ban',
         durationDays: 7,
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: ban notify is best-effort — the ban + userAction rows above are already committed
+      // intentional: expected+handled (enforcement committed; notify retries on next report)
+      logger.warn(
+        { event: 'repeat_offender_ban_notify_failed', action: 'temp_ban', err },
+        'repeat-offender ban notify failed',
+      )
+    }
   }
 
   if (newLevel === 3) {
@@ -174,7 +220,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
     })
     try {
       await setTokenVersionCache(targetUserId, updatedUserLevel3.tokenVersion)
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Edge token-version cache is advisory — DB tokenVersion is truth, getSession re-checks it
+      // intentional: expected+handled (fail-open; logout converges on next DB read)
+      logger.warn(
+        { event: 'token_version_cache_failed', action: 'repeat_offender_l3', err },
+        'token version cache set failed',
+      )
+    }
 
     await db.userAction.create({
       data: {
@@ -191,7 +244,14 @@ export async function updateRepeatOffenseLevel(targetUserId: string): Promise<vo
         reportId: 'repeat_offender',
         banType: 'perm_ban',
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: ban notify is best-effort — the ban + userAction rows above are already committed
+      // intentional: expected+handled (enforcement committed; notify retries on next report)
+      logger.warn(
+        { event: 'repeat_offender_ban_notify_failed', action: 'perm_ban', err },
+        'repeat-offender ban notify failed',
+      )
+    }
   }
 
   // Audit log

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { reportError } from '@/lib/error-reporting'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -22,6 +23,7 @@ interface ErrorBoundaryState {
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, error: null }
+  private reportedErrors = new WeakSet<Error>()
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error }
@@ -29,6 +31,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error('[ErrorBoundary]', this.props.label ?? 'unknown', error, info.componentStack)
+    try {
+      if (!this.reportedErrors.has(error)) {
+        this.reportedErrors.add(error)
+        const stackLine = info?.componentStack?.split('\n').find((l) => l.trim().length > 0)
+        const derived = stackLine?.trim().replace(/^in\s+/, '').split(/\s/)[0]
+        reportError(error, {
+          route: derived || 'error-boundary',
+          action: 'componentDidCatch',
+        })
+      }
+    } catch {
+      // fail-open: reporting must never break the fallback UI
+    }
   }
 
   handleReset = () => {

@@ -3,6 +3,7 @@ import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { IA_COMING_SOON_MESSAGE, isIaEnabled, verifyIaObject } from '@/lib/ia'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
+import { reportError } from '@/lib/error-reporting'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
     return ok({ downloadUrl, key, bytes }, { status: 201 })
   } catch (err) {
     console.error('[ia/complete] failed:', err)
+    reportError(err, { route: 'POST /api/storage/ia/complete' })
     return internalError('فشل تأكيد الرفع — حاول مرة أخرى')
   }
 }

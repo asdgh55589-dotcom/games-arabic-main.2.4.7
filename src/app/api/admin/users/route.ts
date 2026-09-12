@@ -4,6 +4,7 @@ import { parsePagination } from '@/lib/api-utils'
 import { hashPassword, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canAssignRole } from '@/lib/permissions'
+import { reportError } from '@/lib/error-reporting'
 import { createAdminClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users — قائمة المستخدمين مع pagination + فلتر
@@ -83,6 +84,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[admin/users GET] failed:', err)
+    reportError(err, { route: 'GET /api/admin/users' })
     return internalError('Failed')
   }
 }
@@ -191,6 +193,7 @@ export async function POST(req: NextRequest) {
     return ok(user)
   } catch (err) {
     console.error('[admin/users POST] failed:', err)
+    reportError(err, { route: 'POST /api/admin/users' })
     return internalError('Failed to create user')
   }
 }

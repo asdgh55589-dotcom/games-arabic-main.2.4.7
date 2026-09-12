@@ -10,6 +10,7 @@ import { CreateModSchema } from '@/lib/schemas'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
+import { reportError } from '@/lib/error-reporting'
 import { slugify } from '@/lib/utils'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[admin/mods GET] failed:', err)
+    reportError(err, { route: 'GET /api/admin/mods' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')
@@ -478,6 +480,7 @@ export async function POST(req: NextRequest) {
     return ok(mod)
   } catch (err) {
     console.error('[admin/mods POST] failed:', err)
+    reportError(err, { route: 'POST /api/admin/mods' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

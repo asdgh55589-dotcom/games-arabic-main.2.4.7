@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { buildResetLink, sendPasswordResetEmail } from '@/lib/recovery-email'
+import { reportError } from '@/lib/error-reporting'
 import { EmailSchema } from '@/lib/schemas'
 
 export const RECOVERY_TTL_MS = 60 * 60 * 1000 // 1h, single-use
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     console.error('[recover] failed:', err instanceof Error ? err.message : 'unknown')
+    reportError(err, { route: 'POST /api/auth/recover' })
     return internalError('حدث خطأ')
   }
 }

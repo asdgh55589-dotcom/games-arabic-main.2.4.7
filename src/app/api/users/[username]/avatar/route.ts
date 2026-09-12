@@ -10,6 +10,7 @@ import {
 } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
 import { rateLimit } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -126,6 +127,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return ok({ avatarUrl })
   } catch (err) {
     console.error('[avatar POST] failed:', err)
+    reportError(err, { route: 'POST /api/users/[username]/avatar' })
     return internalError('Failed')
   }
 }
