@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -37,7 +39,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
               data: { requestId: id, gameName: request.gameName },
             },
           })
-        } catch {}
+        } catch (err) {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: boost notify is best-effort — the interestCount increment above is already committed
+          // intentional: expected+handled (boost counted; notify is advisory)
+          logger.warn(
+            { event: 'mod_request_boost_notify_failed', action: 'boost', err },
+            'boost notify failed',
+          )
+        }
       }
 
       return ok({ message: 'تم دعم الطلب' })
@@ -47,7 +56,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
-    console.error('[mod-requests PATCH] failed:', err)
+    // UNEXPECTED: boost PATCH failed past auth — control flow unchanged (still 500 via internalError).
+    logger.error(
+      { event: 'mod_request_patch_failed', route: 'mod-requests/[id]', err },
+      'mod-requests PATCH failed',
+    )
+    reportError(err, { route: 'api/mod-requests/[id]', action: 'PATCH_boost' })
     return internalError('فشل')
   }
 }

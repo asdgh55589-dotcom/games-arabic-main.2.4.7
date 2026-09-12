@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +49,13 @@ export async function GET(req: NextRequest) {
             lastCheck = now
           }
         } catch (error) {
-          console.error('[SSE] Error:', error)
+          // UNEXPECTED: notification poll query failed — stream stays alive for retry on next tick.
+          // Control flow unchanged (no rethrow, interval continues) — report only. No userId logged.
+          logger.error(
+            { event: 'notifications_stream_poll_failed', route: 'notifications/stream', error },
+            'SSE poll failed',
+          )
+          reportError(error, { route: 'api/notifications/stream', action: 'sse_poll' })
         }
       }, 3000)
 
@@ -55,7 +63,11 @@ export async function GET(req: NextRequest) {
         clearInterval(interval)
         try {
           controller.close()
-        } catch {}
+        } catch (err) {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: close-after-abort routinely throws (already closed) — teardown is complete either way
+          // intentional: expected+handled (interval already cleared; nothing left to clean up)
+          logger.warn({ event: 'sse_controller_close', err }, 'SSE controller close failed')
+        }
       })
     },
   })

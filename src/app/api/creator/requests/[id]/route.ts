@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
@@ -61,7 +62,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           data: { requestId: id, gameName: request.gameName },
         },
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: accept notify is best-effort — the atomic claim above is already committed
+      // intentional: expected+handled (claim won; notify is advisory)
+      logger.warn(
+        { event: 'creator_request_accept_notify_failed', action: 'accept', err },
+        'accept notify failed',
+      )
+    }
 
     return ok({ message: 'تم قبول الطلب بنجاح' })
   }
@@ -102,7 +110,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           data: { requestId: id, modId, gameName: request.gameName },
         },
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: complete notify is best-effort — the completed status above is already committed
+      // intentional: expected+handled (request completed; notify is advisory)
+      logger.warn(
+        { event: 'creator_request_complete_notify_failed', action: 'complete', err },
+        'complete notify failed',
+      )
+    }
 
     return ok({ message: 'تم إكمال الطلب' })
   }
