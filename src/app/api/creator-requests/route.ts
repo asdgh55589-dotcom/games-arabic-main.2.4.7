@@ -37,11 +37,12 @@ async function resolveUser(): Promise<SessionUser> {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
     if (!dbUser || getBanStatus(dbUser).banned) throw err
     try {
-      await setRoleCookie(dbUser.id, dbUser.role as UserRole, dbUser.tokenVersion)
+      await setRoleCookie(dbUser.id, dbUser.role as UserRole, dbUser.tokenVersion, false, dbUser.onboardingCompleted)
     } catch {}
     return {
       id: dbUser.id,
@@ -49,6 +50,7 @@ async function resolveUser(): Promise<SessionUser> {
       email: dbUser.email,
       role: dbUser.role as UserRole,
       avatarUrl: dbUser.avatarUrl,
+      onboardingCompleted: dbUser.onboardingCompleted,
     }
   }
 }
