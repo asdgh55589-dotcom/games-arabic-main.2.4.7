@@ -1,17 +1,33 @@
 import type { NextRequest } from 'next/server'
 import {
+  fail,
   forbidden,
   internalError,
-  notFound,
   ok,
   rateLimited,
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
+import * as cloudinaryLib from '@/lib/cloudinary'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
-import { createAdminClient } from '@/lib/supabase/server'
+
+type CloudinarySA1 = {
+  uploadToCloudinary: (
+    buffer: Buffer,
+    opts: { folder: string; transform?: string; publicId?: string },
+  ) => Promise<{ url: string; publicId: string }>
+  deleteFromCloudinary: (publicId: string) => Promise<{ ok: boolean }>
+  isCloudinaryEnabled: () => boolean
+  checkAvatarQuota: (
+    userId: string,
+    bytes: number,
+  ) => Promise<{ ok: boolean; reasonAr?: string }>
+}
+
+const { uploadToCloudinary, deleteFromCloudinary, isCloudinaryEnabled, checkAvatarQuota } =
+  cloudinaryLib as unknown as CloudinarySA1
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAGIC_BYTES: Record<string, number[]> = {
@@ -36,8 +52,6 @@ interface RouteParams {
 // POST /api/users/[username]/banner — رفع صورة بانر
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const startedAt = Date.now()
-
     const neonUser = await getOptionalSession()
     if (!neonUser) {
       return unauthorized()
@@ -48,9 +62,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return forbidden()
     }
 
-    const adminClient = createAdminClient()
-    if (!adminClient) {
-      return internalError('Storage not configured')
+    if (!isCloudinaryEnabled()) {
+      return fail('SERVICE_UNAVAILABLE', 'خدمة الصور غير مفعّلة حالياً', 503)
     }
 
     // Rate limit على رفع الملفات
@@ -71,14 +84,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return validationFail({ file: 'ملفات SVG غير مسموحة' })
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      return validationFail({ file: 'File too large (max 10MB)' })
+    // فحص الحجم (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      return validationFail({ file: 'حجم الصورة كبير جداً — الحد الأقصى 5MB' })
     }
 
-    const arrayBufferStartedAt = Date.now()
+    // قراءة الملف لفحص magic bytes
     const arrayBuffer = await file.arrayBuffer()
-
-    console.log('[banner upload] arrayBuffer ms:', Date.now() - arrayBufferStartedAt)
 
     // فحص magic bytes
     const detectedMime = checkMagicBytes(arrayBuffer)
@@ -86,71 +98,87 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return validationFail({ file: 'نوع الملف غير مسموح' })
     }
 
-    const path = `banners/${neonUser.id}.${ext || 'jpg'}`
-
-    const uploadStartedAt = Date.now()
-
-    const { error: uploadError } = await adminClient.storage
-      .from('banners')
-      .upload(path, arrayBuffer, {
-        contentType: detectedMime,
-        upsert: true,
-      })
-
-    console.log('[banner upload] storage upload ms:', Date.now() - uploadStartedAt)
-
-    if (uploadError) {
-      const shouldCreateBucket =
-        uploadError.message?.includes('Bucket not found') || uploadError.name === 'StorageApiError'
-
-      if (!shouldCreateBucket) {
-        console.error('[banner upload] failed:', uploadError)
-        return internalError('Upload failed')
-      }
-
-      if (!adminClient) {
-        console.error('[banner upload] missing SUPABASE_SERVICE_ROLE_KEY')
-        return internalError('Storage is not configured correctly')
-      }
-
-      const { error: createBucketError } = await adminClient.storage.createBucket('banners', {
-        public: true,
-      })
-
-      if (createBucketError && !createBucketError.message?.includes('already exists')) {
-        console.error('[banner bucket create] failed:', createBucketError)
-        return internalError('Failed to create storage bucket')
-      }
-
-      const { error: retryUploadError } = await adminClient.storage
-        .from('banners')
-        .upload(path, arrayBuffer, {
-          contentType: detectedMime,
-          upsert: true,
-        })
-
-      if (retryUploadError) {
-        console.error('[banner retry upload] failed:', retryUploadError)
-        return internalError('Upload failed')
-      }
+    // حصة صور الحساب (creators: quota engine, others: 50MB lifetime)
+    const quota = await checkAvatarQuota(neonUser.id, file.size)
+    if (!quota.ok) {
+      return validationFail({ file: quota.reasonAr ?? 'تجاوزت حد الرفع المسموح' })
     }
 
-    const { data: urlData } = adminClient.storage.from('banners').getPublicUrl(path)
+    const buffer = Buffer.from(arrayBuffer)
 
-    const dbStartedAt = Date.now()
+    // حذف البانر القديم قبل الرفع (best-effort — لا يحجب الرفع عند الفشل)
+    try {
+      const existing = await db.user.findUnique({
+        where: { id: neonUser.id },
+        select: { bannerPublicId: true },
+      })
+      if (existing?.bannerPublicId) {
+        await deleteFromCloudinary(existing.bannerPublicId).catch(() => {})
+      }
+    } catch {
+      console.warn('[banner upload] old asset cleanup failed')
+    }
 
-    const updatedUser = await db.user.update({
+    let uploaded: { url: string; publicId: string }
+    try {
+      uploaded = await uploadToCloudinary(buffer, {
+        folder: 'games-arabic/banners',
+        transform: 'w_1500,h_500,c_fill,q_auto,f_webp',
+      })
+    } catch (err) {
+      console.error('[banner upload] failed:', err)
+      return internalError('Failed')
+    }
+
+    await db.user.update({
       where: { id: neonUser.id },
-      data: { bannerUrl: urlData.publicUrl },
-      select: { bannerUrl: true },
+      data: { bannerUrl: uploaded.url, bannerPublicId: uploaded.publicId },
     })
 
-    console.log('[banner upload] db update ms:', Date.now() - dbStartedAt)
-    console.log('[banner upload] total ms:', Date.now() - startedAt)
-
-    return ok({ bannerUrl: updatedUser.bannerUrl })
+    return ok({ url: uploaded.url, publicId: uploaded.publicId })
   } catch (err) {
     console.error('[banner upload] failed:', err)
     return internalError('Failed')
+  }
+}
+
+// DELETE /api/users/[username]/banner — حذف صورة البانر
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+  try {
+    const neonUser = await getOptionalSession()
+    if (!neonUser) {
+      return unauthorized()
+    }
+
+    const { username } = await params
+    if (neonUser.username.toLowerCase() !== username.toLowerCase()) {
+      return forbidden()
+    }
+
+    try {
+      const existing = await db.user.findUnique({
+        where: { id: neonUser.id },
+        select: { bannerPublicId: true },
+      })
+      if (existing?.bannerPublicId) {
+        await deleteFromCloudinary(existing.bannerPublicId).catch(() => {})
+      }
+    } catch {
+      console.warn('[banner delete] old asset cleanup failed')
+    }
+
+    try {
+      await db.user.update({
+        where: { id: neonUser.id },
+        data: { bannerUrl: null, bannerPublicId: null },
+      })
+    } catch {
+      console.warn('[banner delete] db clear failed')
+    }
+
+    return ok({ message: 'تم حذف صورة البانر' })
+  } catch (err) {
+    console.error('[banner delete] failed:', err)
+    return ok({ message: 'تم حذف صورة البانر' })
   }
 }

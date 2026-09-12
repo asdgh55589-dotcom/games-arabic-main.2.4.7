@@ -64,7 +64,9 @@ model User {
   email                  String                  @unique
   password               String? // deprecated — للتوافق مع البيانات القديمة فقط
   avatarUrl              String?
+  avatarPublicId         String?
   bannerUrl              String? // صورة الخلفية بمقاس اليوتيوب (2560×1440)
+  bannerPublicId         String?
   bio                    String?
   websiteUrl             String? // الموقع الشخصي
   twitterUrl             String? // رابط Twitter/X
