@@ -14,6 +14,7 @@ db/*.db-journal
 *.tar.gz
 *.zip
 tsconfig.tsbuildinfo
+coverage/
 
 # Logs
 *.log
@@ -36,3 +37,6 @@ examples/
 Thumbs.db
 .vscode/
 .idea/
+
+# Backups — local pg_dump / JSON artifacts, never commit (SA-3)
+/backups/

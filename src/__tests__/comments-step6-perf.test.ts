@@ -263,10 +263,10 @@ describe('2. Bundle: sanitize-html ships to browser for a 12-line pure function 
     expect(lib).toMatch(/from 'sanitize-html'/)
     expect(renderer).not.toMatch(/sanitizeHTML/) // only sanitizeUrl (pure) is used client-side
   })
-  it('react-markdown + isomorphic-dompurify are installed but imported nowhere', () => {
+  it('react-markdown + isomorphic-dompurify were removed (purged, not shipped)', () => {
     const pkg = fs.readFileSync(path.join(root, 'package.json'), 'utf8')
-    expect(pkg).toMatch(/react-markdown/)
-    expect(pkg).toMatch(/isomorphic-dompurify/)
+    expect(pkg).not.toMatch(/react-markdown/)
+    expect(pkg).not.toMatch(/isomorphic-dompurify/)
     const hits: string[] = []
     for (const f of ['src/components/markdown-renderer.tsx', 'src/components/mod-comments.tsx']) {
       const s = fs.readFileSync(path.join(root, f), 'utf8')
