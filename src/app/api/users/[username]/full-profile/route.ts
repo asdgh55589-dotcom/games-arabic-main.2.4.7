@@ -36,7 +36,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         tiktokUrl: true,
         youtubeUrl: true,
         githubUrl: true,
-        discordUrl: true,
         accentColor: true,
         profileVisibility: true,
         hideJoinDate: true,

@@ -49,7 +49,6 @@ export interface ProfileData {
   tiktokUrl: string | null
   youtubeUrl: string | null
   githubUrl: string | null
-  discordUrl: string | null
   accentColor: string | null
   hideJoinDate?: boolean
   profileVisibility?: string
@@ -257,8 +256,7 @@ export function ProfileMobile({
         profile.instagramUrl ||
         profile.tiktokUrl ||
         profile.youtubeUrl ||
-        profile.githubUrl ||
-        profile.discordUrl) && (
+        profile.githubUrl) && (
         <div className="mt-3 flex justify-center px-3 sm:px-4">
           <ProfileSocialLinks
             websiteUrl={profile.websiteUrl}
@@ -267,7 +265,6 @@ export function ProfileMobile({
             tiktokUrl={profile.tiktokUrl}
             youtubeUrl={profile.youtubeUrl}
             githubUrl={profile.githubUrl}
-            discordUrl={profile.discordUrl}
           />
         </div>
       )}

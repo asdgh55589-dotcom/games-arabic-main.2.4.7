@@ -62,7 +62,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.logoUrl !== undefined) data.logoUrl = body.logoUrl
     if (body.bannerUrl !== undefined) data.bannerUrl = body.bannerUrl
     if (body.websiteUrl !== undefined) data.websiteUrl = body.websiteUrl
-    if (body.discordUrl !== undefined) data.discordUrl = body.discordUrl
     if (body.isOfficial !== undefined) data.isOfficial = body.isOfficial
     if (body.isFeatured !== undefined) data.isFeatured = body.isFeatured
     if (body.order !== undefined) data.order = body.order
@@ -73,11 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const website = body.contactLinks.find(
         (c: { type?: string; url?: string }) => c.type === 'website' && c.url,
       )
-      const discord = body.contactLinks.find(
-        (c: { type?: string; url?: string }) => c.type === 'discord' && c.url,
-      )
       if (website) data.websiteUrl = website.url
-      if (discord) data.discordUrl = discord.url
 
       await db.$transaction(async (tx) => {
         await tx.teamContactLink.deleteMany({ where: { teamId: id } })

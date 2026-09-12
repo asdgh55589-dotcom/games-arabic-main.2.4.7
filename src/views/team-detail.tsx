@@ -459,7 +459,7 @@ function OverviewTab({ team }: { team: TeamDetail }) {
           </div>
         </section>
       )}
-      {(team.websiteUrl || team.discordUrl) && (
+      {team.websiteUrl && (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-foreground">
             <ExternalLink className="h-5 w-5 text-slate-400" />
@@ -475,17 +475,6 @@ function OverviewTab({ team }: { team: TeamDetail }) {
               >
                 <Globe className="h-4 w-4 text-blue-400" />
                 الموقع الرسمي
-              </a>
-            )}
-            {team.discordUrl && (
-              <a
-                href={team.discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-4 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
-              >
-                <MessageCircle className="h-4 w-4 text-indigo-400" />
-                سيرفر ديسكورد
               </a>
             )}
           </div>

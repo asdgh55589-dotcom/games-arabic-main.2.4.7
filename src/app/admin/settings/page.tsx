@@ -116,7 +116,6 @@ const SETTING_GROUPS = [
     icon: Share2,
     fields: [
       { key: 'twitter', label: 'Twitter/X', type: 'text', placeholder: 'https://twitter.com/...' },
-      { key: 'discord', label: 'Discord', type: 'text', placeholder: 'https://discord.gg/...' },
       { key: 'youtube', label: 'YouTube', type: 'text', placeholder: 'https://youtube.com/...' },
       { key: 'telegram', label: 'Telegram', type: 'text', placeholder: 'https://t.me/...' },
     ],

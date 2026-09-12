@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { fail, internalError, ok, validationFail } from '@/lib/api-response'
+import { apiKeyPrefix, hashApiKey } from '@/lib/api-key-auth'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -22,10 +23,14 @@ function generateApiKey(): string {
   return `${prefix}${randomPart}`
 }
 
-/** إخفاء المفتاح: عرض أول 16 حرف فقط */
-function maskKey(key: string): string {
-  // sk_live_ = 8 chars + 8 more = first 16 visible
-  return `${key.substring(0, 16)}${'*'.repeat(Math.max(0, key.length - 16))}`
+/** إخفاء المفتاح: sk_live_ + أول 8 أحرف فقط */
+function maskKey(prefix: string): string {
+  return `sk_live_${prefix || '…'}\u2026`
+}
+
+/** البادئة المخزنة — تُعرض في القائمة بدل أي جزء من المفتاح */
+function storedPrefix(keyPrefix: string | null): string {
+  return maskKey(keyPrefix || '')
 }
 
 // ===== GET /api/admin/api-keys — قائمة المفاتيح =====
@@ -41,18 +46,19 @@ export async function GET() {
         id: true,
         name: true,
         role: true,
+        keyPrefix: true,
         expiresAt: true,
         lastUsedAt: true,
         isActive: true,
         createdAt: true,
-        // لا نُرجع key الحقيقية — فقط mask
+        // لا نُرجع key الحقيقية ولا hash — البادئة فقط
       },
     })
 
-    // نُرجع masked version مع الـ key الأصلي مخفي
+    // نُرجع البادئة المخزنة فقط — لا شيء يقترب من المفتاح الخام
     const maskedKeys = keys.map((k) => ({
       ...k,
-      keyPreview: maskKey('sk_live_' + 'x'.repeat(64)), // preview ثابت
+      keyPreview: storedPrefix(k.keyPrefix),
     }))
 
     return ok(maskedKeys)
@@ -104,13 +110,15 @@ export async function POST(req: NextRequest) {
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null
 
-    // توليد المفتاح
+    // توليد المفتاح — يُعرض خاماً مرة واحدة فقط أدناه، ولا يُخزَّن أبداً
     const rawKey = generateApiKey()
 
-    // حفظ في قاعدة البيانات
+    // حفظ الـ hash + البادئة فقط (audit D.2 — الخام لا يصل إلى DB)
     const apiKey = await db.apiKey.create({
       data: {
-        key: rawKey,
+        key: null,
+        keyHash: hashApiKey(rawKey),
+        keyPrefix: apiKeyPrefix(rawKey),
         name,
         userId: user.id,
         role,

@@ -86,7 +86,6 @@ export async function POST(req: NextRequest) {
       reason,
       twitterUrl,
       youtubeUrl,
-      discordHandle,
       websiteUrl,
       track,
       portfolioUrls,
@@ -100,7 +99,6 @@ export async function POST(req: NextRequest) {
       reason?: string
       twitterUrl?: string
       youtubeUrl?: string
-      discordHandle?: string
       websiteUrl?: string
       track?: string
       portfolioUrls?: string
@@ -189,7 +187,6 @@ export async function POST(req: NextRequest) {
         reason: reason.trim(),
         twitterUrl: cleanTwitter,
         youtubeUrl: cleanYoutube,
-        discordHandle: discordHandle?.trim() || null,
         websiteUrl: cleanWebsite,
         track: cleanTrack,
         portfolioUrls: portfolioList.join('\n'),

@@ -43,8 +43,16 @@ interface RoleCookiePayload {
   onboarded?: boolean // ob claim — absent on legacy cookies (fail-open)
 }
 
-/** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
-async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | null> {
+/**
+ * قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible).
+ * Exported for tier tests. Audit D.2 tiers: strictTv=true (admin/MFA paths)
+ * fails CLOSED when tv is present but the cache is unverifiable; default
+ * false keeps member pages fail-open (DB check in getSession is truth).
+ */
+export async function getRoleFromCookie(
+  req: NextRequest,
+  opts?: { strictTv?: boolean },
+): Promise<RoleCookiePayload | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
@@ -70,8 +78,10 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
         )
 
         if (cachedTv === null) {
-          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss) — FAIL-OPEN، getSession() سيتحقق عبر DB
-          tvVerified = true
+          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss).
+          // strictTv (admin/MFA): fail-CLOSED — tvVerified=false.
+          // default (member pages): FAIL-OPEN — getSession() سيتحقق عبر DB.
+          tvVerified = opts?.strictTv !== true
         } else if (cachedTv !== tv) {
           // تباين مؤكد → الجلسة أُبطلت → رفض
           return null
@@ -350,7 +360,8 @@ export async function proxy(req: NextRequest) {
   // حماية /admin/* (مش /admin/login) — تحقق من role cookie فقط
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
@@ -377,20 +388,23 @@ export async function proxy(req: NextRequest) {
       })
       return redirectRes
     }
-    // TOTP اختياري — غير مفعلة افتراضياً — لا نفرض MFA (اختياري فقط)
-    // if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
-    //   const securityUrl = new URL('/admin/security', req.url)
-    //   securityUrl.searchParams.set('mfa_required', '1')
-    //   const redirectRes = NextResponse.redirect(securityUrl)
-    //   copyCookies(supabaseResponse, redirectRes)
-    //   redirectRes.headers.set('x-auth-reason', 'mfa_required')
-    //   return redirectRes
-    // }
+    // Audit D.2: MFA enforced for staff pages. /admin/security stays
+    // exempt so unenrolled staff can enroll; verify re-issues the cookie
+    // with mfa=true (see mfa/verify route).
+    if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
+      const securityUrl = new URL('/admin/security', req.url)
+      securityUrl.searchParams.set('mfa_required', '1')
+      const redirectRes = NextResponse.redirect(securityUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'mfa_required')
+      return redirectRes
+    }
   }
 
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
@@ -410,13 +424,14 @@ export async function proxy(req: NextRequest) {
         { status: 503 },
       )
     }
-    // TOTP اختياري — لا نفرض MFA لـ API أيضاً
-    // if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
-    //   return NextResponse.json(
-    //     { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
-    //     { status: 403 }
-    //   )
-    // }
+    // Audit D.2: MFA enforced for staff APIs (mfa/* stays open for the
+    // verify/login handshake itself).
+    if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
+      return NextResponse.json(
+        { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
+        { status: 403 }
+      )
+    }
   }
 
   // حماية /creator/* — كل الأدوار ما عدا member (المعرّبون + الإدارة)

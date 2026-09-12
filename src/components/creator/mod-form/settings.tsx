@@ -197,7 +197,6 @@ export function ModFormSettings(p: Props) {
                     <option value="telegram">{f.linkTelegram}</option>
                     <option value="twitter">{f.linkTwitter}</option>
                     <option value="youtube">{f.linkYoutube}</option>
-                    <option value="discord">{f.linkDiscord}</option>
                   </select>
                   <Input
                     value={c.label}

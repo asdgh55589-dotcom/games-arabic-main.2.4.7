@@ -1,7 +1,7 @@
 'use client'
 
 import { Globe, Mail, Users } from 'lucide-react'
-import { SiDiscord, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
+import { SiTelegram, SiX, SiYoutube } from 'react-icons/si'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import type { ModContactLink, ModTeamMember } from '@/lib/types'
@@ -21,7 +21,6 @@ const CONTACT_ICONS: Record<string, React.ReactNode> = {
   telegram: <SiTelegram className="h-4 w-4" />,
   twitter: <SiX className="h-4 w-4" />,
   youtube: <SiYoutube className="h-4 w-4" />,
-  discord: <SiDiscord className="h-4 w-4" />,
 }
 
 const CONTACT_COLORS: Record<string, string> = {
@@ -30,7 +29,6 @@ const CONTACT_COLORS: Record<string, string> = {
   telegram: '#229ED9',
   twitter: '#1DA1F2',
   youtube: '#FF0000',
-  discord: '#5865F2',
 }
 
 const ROLE_BADGES: Record<number, string> = {

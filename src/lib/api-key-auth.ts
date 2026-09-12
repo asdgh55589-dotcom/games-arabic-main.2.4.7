@@ -8,8 +8,25 @@
  */
 
 import type { SessionUser, UserRole } from './auth'
+import { createHash } from 'node:crypto'
 import { db } from './db'
 import { logger } from './logger'
+
+// ===== Hash-at-rest helpers (audit D.2) =====
+
+/** SHA-256 hex of the raw key — the ONLY form that ever reaches the DB. */
+export function hashApiKey(rawKey: string): string {
+  return createHash('sha256').update(rawKey).digest('hex')
+}
+
+/**
+ * 8-char public prefix (first 8 of the 64-hex random part, i.e. raw[8:16])
+ * — identifies the key in UI/logs without exposing it. Rendered as
+ * `sk_live_<prefix>…`.
+ */
+export function apiKeyPrefix(rawKey: string): string {
+  return rawKey.slice(8, 16)
+}
 
 // ===== Types =====
 
@@ -38,9 +55,9 @@ export async function authenticateApiKey(
   if (!key || !key.startsWith('sk_live_')) return null
 
   try {
-    // البحث عن المفتاح في قاعدة البيانات
+    // Audit D.2: lookup by SHA-256 hash — the raw key never touches the DB.
     const apiKey = await db.apiKey.findUnique({
-      where: { key },
+      where: { keyHash: hashApiKey(key) },
       select: {
         id: true,
         userId: true,

@@ -13,7 +13,7 @@ import {
   Users,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { SiDiscord, SiFacebook, SiInstagram, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
+import { SiFacebook, SiInstagram, SiTelegram, SiX, SiYoutube } from 'react-icons/si'
 
 export type TabKey = 'overview' | 'members' | 'mods' | 'stats'
 
@@ -35,7 +35,6 @@ export const CONTACT_ICONS: Record<string, ReactNode> = {
   telegram: <SiTelegram className="h-4 w-4" />,
   twitter: <SiX className="h-4 w-4" />,
   youtube: <SiYoutube className="h-4 w-4" />,
-  discord: <SiDiscord className="h-4 w-4" />,
   facebook: <SiFacebook className="h-4 w-4" />,
   instagram: <SiInstagram className="h-4 w-4" />,
 }
@@ -46,7 +45,6 @@ export const CONTACT_COLORS: Record<string, string> = {
   telegram: '#229ED9',
   twitter: '#000000',
   youtube: '#FF0000',
-  discord: '#5865F2',
   facebook: '#1877F2',
   instagram: '#E4405F',
 }

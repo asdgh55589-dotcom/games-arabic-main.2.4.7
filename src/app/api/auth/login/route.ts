@@ -17,6 +17,17 @@ import {
   type UserRole,
 } from '@/lib/auth'
 import { db } from '@/lib/db'
+import {
+  LOGIN_GENERIC_ERROR,
+  captchaRequired,
+  clearLoginFailures,
+  failureKey,
+  getLoginFailures,
+  loginDelayFor,
+  recordLoginFailure,
+  sleep,
+  verifyCaptchaToken,
+} from '@/lib/login-defense'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { LoginSchema } from '@/lib/schemas'
 import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
@@ -158,24 +169,34 @@ export async function POST(req: NextRequest) {
       return rateLimited()
     }
 
+    // Audit D.2: anti-enumeration — every credential failure below returns
+    // the SAME 401 message after a progressive per-IP+username delay.
+    const fkey = failureKey(loginIp, typeof body?.username === 'string' ? body.username : '')
+    const failClosed = async () => {
+      const fails = recordLoginFailure(fkey)
+      await sleep(loginDelayFor(fails) * 1000)
+      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
+    }
+
+    // Turnstile hook: required after 5 fails (placeholder when unconfigured).
+    if (captchaRequired(getLoginFailures(fkey))) {
+      const captchaToken = typeof body?.captchaToken === 'string' ? body.captchaToken : ''
+      const verdict = await verifyCaptchaToken(captchaToken, loginIp)
+      if (!verdict.ok) return failClosed()
+    }
+
     // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)
     const userByUsername = await db.user.findUnique({
       where: { username },
     })
 
     if (!userByUsername || !userByUsername.password) {
-      return NextResponse.json(
-        { error: 'اسم المستخدم أو البريد الإلكتروني غير صحيح', field: 'username' },
-        { status: 401 },
-      )
+      return failClosed()
     }
 
     // 2. التحقق من تطابق البريد (حساسية حالة الأحرف غير مهمة)
     if (userByUsername.email.toLowerCase() !== email.toLowerCase()) {
-      return NextResponse.json(
-        { error: 'البريد الإلكتروني لا يطابق اسم المستخدم', field: 'email' },
-        { status: 401 },
-      )
+      return failClosed()
     }
 
     const neonUser = userByUsername
@@ -183,35 +204,23 @@ export async function POST(req: NextRequest) {
     // 3. التحقق من كلمة المرور
     const passwordValid = await bcrypt.compare(password, neonUser.password!)
     if (!passwordValid) {
-      return NextResponse.json(
-        { error: 'كلمة المرور غير صحيحة', field: 'password' },
-        { status: 401 },
-      )
+      return failClosed()
     }
 
     // 4. التحقق من وجود مفتاح الأمان
     if (!neonUser.securityKey) {
-      return NextResponse.json(
-        { error: 'لا يوجد مفتاح أمان مسجل — تواصل مع مدير الموقع', field: 'securityKey' },
-        { status: 403 },
-      )
+      return failClosed()
     }
 
     // 5. التحقق من مفتاح الأمان
     const keyValid = await verifySecurityKey(securityKey, neonUser.securityKey)
     if (!keyValid) {
-      return NextResponse.json(
-        { error: 'مفتاح الأمان غير صحيح', field: 'securityKey' },
-        { status: 401 },
-      )
+      return failClosed()
     }
 
     // 6. فحص انتهاء صلاحية المفتاح
     if (isSecurityKeyExpired(neonUser.securityKeyExpiresAt as Date | null)) {
-      return NextResponse.json(
-        { error: 'مفتاح الأمان منتهي الصلاحية — تواصل مع مدير الموقع', field: 'securityKey' },
-        { status: 403 },
-      )
+      return failClosed()
     }
 
     // فحص الحظر قبل أي محاولة دخول
@@ -299,6 +308,7 @@ export async function POST(req: NextRequest) {
       false,
       neonUser.onboardingCompleted,
     )
+    clearLoginFailures(fkey)
 
     // تتبع تسجيل الدخول
     await db.user.update({

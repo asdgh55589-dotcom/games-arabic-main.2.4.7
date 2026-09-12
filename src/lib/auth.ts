@@ -2,7 +2,7 @@
  * lib/auth.ts — نظام المصادقة (Supabase Auth + Neon DB).
  *
  * يستخدم:
- *   - Supabase Auth للمصادقة عبر OAuth (Google, Discord, Telegram)
+ *   - Supabase Auth للمصادقة عبر OAuth (Google, Telegram)
  *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *

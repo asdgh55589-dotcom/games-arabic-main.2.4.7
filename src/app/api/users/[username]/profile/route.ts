@@ -39,7 +39,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         tiktokUrl: true,
         youtubeUrl: true,
         githubUrl: true,
-        discordUrl: true,
         accentColor: true,
         profileVisibility: true,
         hideJoinDate: true,
@@ -214,7 +213,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'tiktokUrl',
       'youtubeUrl',
       'githubUrl',
-      'discordUrl',
       'accentColor',
       'avatarUrl',
       'bannerUrl',
@@ -228,7 +226,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'tiktokUrl',
       'youtubeUrl',
       'githubUrl',
-      'discordUrl',
     ]
     const booleanFields = ['hideJoinDate']
     const nullableFields = ['avatarUrl', 'bannerUrl', 'displayName', 'firstName', 'lastName']
@@ -287,7 +284,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         tiktokUrl: true,
         youtubeUrl: true,
         githubUrl: true,
-        discordUrl: true,
         accentColor: true,
         avatarUrl: true,
         bannerUrl: true,

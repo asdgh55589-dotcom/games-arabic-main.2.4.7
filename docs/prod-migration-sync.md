@@ -3,20 +3,16 @@
 > DOCS ONLY. Nothing here has been executed against production.
 > Run the steps below IN ORDER during a maintenance window. Estimated: 15 min.
 
-## RELEASE deploy — 8 additive migrations above baseline (this branch)
+## RELEASE deploy — 9 additive migrations above baseline (this branch)
 
 > Production Neon already carries ONLY the `20260907000000_baseline` row
 > (synced live earlier). At deploy, `prisma migrate deploy` will apply
-> exactly the 8 additive migrations below — all additive-only
+> exactly the 9 additive migrations below — all additive-only
 > (`ADD COLUMN` / `CREATE TABLE` / `CREATE INDEX`, `IF NOT EXISTS` where
 > the author wrote raw SQL). No backfill touches user data except the
 > onboarding grandfathering `UPDATE` (sets `onboardingCompleted = true`
-> for pre-existing accounts — idempotent, one-time).
->
-> NOTE: the task brief listed 7; the IA multipart journal
-> (`...07110000`, added same-branch after the brief) makes 8. If your
-> checkout predates the journal commit, expect 7 (everything but the
-> last row).
+> for pre-existing accounts — idempotent, one-time) and the API-key
+> hash backfill (computed inside the DB via pgcrypto — no rotation).
 
 ## R0. Safety FIRST — restore point (Neon, same rule as §0)
 
@@ -55,17 +51,18 @@ WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
 | 6 | `20260907090000_add_onboarding_completed` | `User.onboardingCompleted` + grandfathering UPDATE |
 | 7 | `20260907100000_add_password_reset_tokens` | NEW TABLE `PasswordResetToken` |
 | 8 | `20260907110000_add_ia_multipart_journal` | NEW TABLE `IaMultipartUpload` |
+| 9 | `20260907120000_api_keys_hash_at_rest` | `ApiKey.keyHash`/`keyPrefix` + pgcrypto backfill (raw kept nullable until cleanup) |
 
 Deploy: `prisma migrate deploy` (runs inside `bun run build`). If it
-reports anything OTHER than these 8 applying cleanly — STOP, restore
+reports anything OTHER than these 9 applying cleanly — STOP, restore
 from R0, investigate.
 
 ## R3. Post-deploy verification (production)
 
 ```sql
--- 1. History: baseline + 8, in order
+-- 1. History: baseline + 9, in order
 SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name;
--- expected: 9 rows (baseline + the 8 above)
+-- expected: 10 rows (baseline + the 9 above)
 
 -- 2. Tables: 73 + 3 new = 76
 SELECT count(*) FROM information_schema.tables
@@ -93,7 +90,7 @@ WHERE table_schema = 'public' AND (
 ```
 
 Rollback: promote the R0 Neon branch to primary (minutes of downtime
-at most). The 8 migrations are additive — rolling the app back to the
+at most). The 9 migrations are additive — rolling the app back to the
 previous build is safe even with the new tables/columns in place
 (old code ignores them).
 

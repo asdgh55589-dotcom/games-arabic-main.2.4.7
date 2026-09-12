@@ -5,7 +5,7 @@
 - React 19, TypeScript 5
 - Tailwind CSS 4 with shadcn/ui components (40+ primitives)
 - Prisma 6 + PostgreSQL (Neon, 53 models)
-- Supabase Auth (OAuth: Google, Discord, Telegram Deep Link)
+- Supabase Auth (OAuth: Google, Telegram Deep Link)
 - Zustand + `useFetch` + React Query for data fetching
 - Upstash Redis (IP ban cache + tokenVersion cache + rate limiting)
 

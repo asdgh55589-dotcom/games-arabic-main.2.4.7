@@ -378,7 +378,6 @@ export interface TeamDetail {
   logoUrl: string
   bannerUrl: string
   websiteUrl: string
-  discordUrl: string
   telegramUrl: string
   isFeatured: boolean
   isOfficial: boolean

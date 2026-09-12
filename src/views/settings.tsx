@@ -64,7 +64,6 @@ interface ProfileData {
   tiktokUrl: string | null
   youtubeUrl: string | null
   githubUrl: string | null
-  discordUrl: string | null
   accentColor: string | null
   profileVisibility: string
   hideJoinDate: boolean
@@ -143,7 +142,6 @@ const TRANSLATOR_STEPS = [
 
 const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string }> = {
   google: { name: 'Google', icon: '🌐', color: '#4285f4' },
-  discord: { name: 'Discord', icon: '💬', color: '#5865f2' },
   telegram: { name: 'Telegram', icon: '📱', color: '#0088cc' },
 }
 
@@ -169,7 +167,6 @@ export function SettingsPage() {
   const [tiktokUrl, setTiktokUrl] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [githubUrl, setGithubUrl] = useState('')
-  const [discordUrl, setDiscordUrl] = useState('')
   const [accentColor, setAccentColor] = useState('#ff8c00')
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -230,7 +227,6 @@ export function SettingsPage() {
       tiktokUrl !== (profile.tiktokUrl || '') ||
       youtubeUrl !== (profile.youtubeUrl || '') ||
       githubUrl !== (profile.githubUrl || '') ||
-      discordUrl !== (profile.discordUrl || '') ||
       accentColor !== (profile.accentColor || '#ff8c00') ||
       profileVisibility !== (profile.profileVisibility || 'everyone') ||
       hideJoinDate !== !!profile.hideJoinDate ||
@@ -252,7 +248,6 @@ export function SettingsPage() {
     tiktokUrl,
     youtubeUrl,
     githubUrl,
-    discordUrl,
     accentColor,
     profileVisibility,
     hideJoinDate,
@@ -302,7 +297,6 @@ export function SettingsPage() {
           setTiktokUrl(p.tiktokUrl || '')
           setYoutubeUrl(p.youtubeUrl || '')
           setGithubUrl(p.githubUrl || '')
-          setDiscordUrl(p.discordUrl || '')
           setAccentColor(p.accentColor || '#ff8c00')
           setProfileVisibility(p.profileVisibility || 'everyone')
           setHideJoinDate(p.hideJoinDate || false)
@@ -608,7 +602,6 @@ export function SettingsPage() {
           tiktokUrl,
           youtubeUrl,
           githubUrl,
-          discordUrl,
           accentColor,
           avatarUrl,
           bannerUrl,
@@ -740,7 +733,6 @@ export function SettingsPage() {
             tiktokUrl,
             youtubeUrl,
             githubUrl,
-            discordUrl,
             accentColor,
             avatarUrl,
             bannerUrl,
@@ -1307,14 +1299,12 @@ export function SettingsPage() {
                       tiktokUrl={tiktokUrl}
                       youtubeUrl={youtubeUrl}
                       githubUrl={githubUrl}
-                      discordUrl={discordUrl}
                       onWebsiteUrlChange={setWebsiteUrl}
                       onTwitterUrlChange={setTwitterUrl}
                       onInstagramUrlChange={setInstagramUrl}
                       onTiktokUrlChange={setTiktokUrl}
                       onYoutubeUrlChange={setYoutubeUrl}
                       onGithubUrlChange={setGithubUrl}
-                      onDiscordUrlChange={setDiscordUrl}
                     />
                   </div>
 
@@ -1788,14 +1778,12 @@ interface SocialLinksEditorProps {
   tiktokUrl: string
   youtubeUrl: string
   githubUrl: string
-  discordUrl: string
   onWebsiteUrlChange: (value: string) => void
   onTwitterUrlChange: (value: string) => void
   onInstagramUrlChange: (value: string) => void
   onTiktokUrlChange: (value: string) => void
   onYoutubeUrlChange: (value: string) => void
   onGithubUrlChange: (value: string) => void
-  onDiscordUrlChange: (value: string) => void
 }
 
 function SocialLinksEditor({
@@ -1805,14 +1793,12 @@ function SocialLinksEditor({
   tiktokUrl,
   youtubeUrl,
   githubUrl,
-  discordUrl,
   onWebsiteUrlChange,
   onTwitterUrlChange,
   onInstagramUrlChange,
   onTiktokUrlChange,
   onYoutubeUrlChange,
   onGithubUrlChange,
-  onDiscordUrlChange,
 }: SocialLinksEditorProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -1824,7 +1810,6 @@ function SocialLinksEditor({
     tiktokUrl: { value: tiktokUrl, onChange: onTiktokUrlChange },
     youtubeUrl: { value: youtubeUrl, onChange: onYoutubeUrlChange },
     githubUrl: { value: githubUrl, onChange: onGithubUrlChange },
-    discordUrl: { value: discordUrl, onChange: onDiscordUrlChange },
   }
 
   const activePlatforms = PLATFORM_KEYS.filter((key) => urlMap[SOCIAL_PLATFORMS[key].column]?.value)
