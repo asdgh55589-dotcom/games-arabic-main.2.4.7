@@ -204,9 +204,14 @@ model OAuthAccount {
 }
 
 // ===== API Keys للوصول البرمجي (MCP Server, Scripts, etc.) =====
+// Audit D.2: raw keys are NEVER stored — keyHash (SHA-256) + keyPrefix
+// only. `key` stays nullable for pre-migration rows until the cleanup
+// migration drops it (all rows backfilled by ...07120000).
 model ApiKey {
   id         String    @id @default(cuid())
-  key        String    @unique // sk_live_<64 random hex chars>
+  key        String?   @unique // LEGACY raw — NULL for new rows, dropped later
+  keyHash    String    @unique // SHA-256 hex of sk_live_<64hex>
+  keyPrefix  String    @default("") // first 8 of the random part (UI display)
   name       String // وصفي: "MCP Server - Office PC"
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
