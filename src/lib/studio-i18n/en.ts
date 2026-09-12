@@ -459,8 +459,6 @@ export const en: StudioDict = {
   uploader: {
     signFailed: 'Failed to prepare upload',
     confirmFailed: 'Failed to confirm upload',
-    multipartFailed: 'Multipart upload failed',
-    sessionExpired: 'Upload session expired — start over',
   },
   apply: {
     requiredFields: 'Required fields',

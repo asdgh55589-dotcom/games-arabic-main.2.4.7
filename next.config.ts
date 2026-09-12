@@ -25,7 +25,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
-  reactStrictMode: false,
+  reactStrictMode: true,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
   experimental: {
     optimizePackageImports: [
@@ -33,11 +33,21 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-icons',
       '@radix-ui/react-dialog',
       '@radix-ui/react-select',
+      'recharts',
+      'date-fns',
+      'react-icons',
+      'motion',
+      '@tanstack/react-table',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
     ],
   },
   images: {
     formats: ['image/avif', 'image/webp'],
-    qualities: [100, 85, 75, 50],
+    qualities: [85, 75, 50],
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
@@ -50,6 +60,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'https', hostname: 'telegram.org', pathname: '/**' },
       { protocol: 'https', hostname: 't.me', pathname: '/**' },
+      { protocol: 'https', hostname: 'iili.io', pathname: '/**' },
+      { protocol: 'https', hostname: 'freeimage.host', pathname: '/**' },
+      { protocol: 'https', hostname: 'img.gamesarabic.com', pathname: '/**' },
     ],
   },
   async headers() {
@@ -57,6 +70,12 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
     ]
   },
