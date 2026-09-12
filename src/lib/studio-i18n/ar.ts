@@ -461,6 +461,8 @@ export const ar: StudioDict = {
   uploader: {
     signFailed: 'فشل تجهيز الرفع',
     confirmFailed: 'فشل تأكيد الرفع',
+    multipartFailed: 'فشل الرفع المُجزّأ',
+    sessionExpired: 'انتهت جلسة الرفع — ابدأ من جديد',
   },
   apply: {
     requiredFields: 'الحقول المطلوبة',

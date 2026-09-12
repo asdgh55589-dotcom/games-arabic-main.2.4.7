@@ -9,6 +9,7 @@ import '@uppy/core/dist/style.css'
 import '@uppy/dashboard/dist/style.css'
 import * as React from 'react'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { createMultipartController, type MultipartController } from '@/lib/ia-multipart-client'
 import { parseUppyErrorEnvelope } from '@/lib/uppy-envelope'
 
 export interface IaUploadedFile {
@@ -25,8 +26,8 @@ interface IaUploaderProps {
   title?: string
   maxFileSize?: number
   maxNumberOfFiles?: number
-  /** 'direct' = browser→IA presigned PUT (full bandwidth). 'relay' = via server stream (IA CORS fallback). */
-  mode?: 'direct' | 'relay'
+  /** 'direct' = browser→IA presigned PUT (full bandwidth). 'relay' = via server stream (IA CORS fallback). 'multipart' = SAFE server per-part proxy + DB journal (pause/resume/retry). */
+  mode?: 'direct' | 'relay' | 'multipart'
   onComplete: (files: IaUploadedFile[]) => void
   onError?: (message: string) => void
 }
@@ -65,6 +66,8 @@ export function IaUploader({
 
   React.useEffect(() => {
     const pending = new Map<string, Promise<IaUploadedFile | null>>()
+    const multipartCtrls = new Map<string, MultipartController>()
+    const isMultipart = propsRef.current.mode === 'multipart'
 
     const uppy = new Uppy({
       autoProceed: false,
@@ -89,26 +92,116 @@ export function IaUploader({
     })
 
     // Base XHR opts — per-file endpoint/headers set by the preprocessor.
-    uppy.use(XHRUpload, {
-      endpoint: '/api/storage/ia/relay',
-      method: mode === 'direct' ? 'PUT' : 'POST',
-      formData: mode !== 'direct',
-      fieldName: 'file',
-      bundle: false,
-      allowedMetaFields: false,
-      timeout: TWO_HOURS_MS,
-      limit: 2,
-      getResponseData: () => ({}),
-    })
+    // Multipart mode attaches NO XHRUpload: parts stream via /api/ia/part
+    // from the preprocessor below (Dashboard stays the only upload surface).
+    if (!isMultipart) {
+      uppy.use(XHRUpload, {
+        endpoint: '/api/storage/ia/relay',
+        method: mode === 'direct' ? 'PUT' : 'POST',
+        formData: mode !== 'direct',
+        fieldName: 'file',
+        bundle: false,
+        allowedMetaFields: false,
+        timeout: TWO_HOURS_MS,
+        limit: 2,
+        getResponseData: () => ({}),
+      })
+    }
+
+    // Multipart runner: initiate (or resume from journal) → stream 5MB
+    // parts → mark Dashboard success so the shared verify/record handler
+    // below assembles via /api/ia/complete. Throws on failure so the
+    // Dashboard shows its native retry, which resumes from the journal.
+    const runMultipartFile = async (id: string): Promise<void> => {
+      const { modId: mid, modSlug: slug, title: t } = propsRef.current
+      const file = uppy.getFile(id)
+      if (!file || !file.data) throw new Error(dict.uploader.multipartFailed)
+      const meta = (file.meta ?? {}) as Record<string, unknown>
+
+      let sessionId = typeof meta.iaSessionId === 'string' ? meta.iaSessionId : ''
+      let session: { totalParts: number; partSize: number; parts: Record<string, string> } | null = null
+      if (sessionId) {
+        // Retry path — resume from the journal, never re-send parts.
+        const stRes = await fetch(`/api/ia/status?session=${encodeURIComponent(sessionId)}`)
+        const stJson = await stRes.json().catch(() => null)
+        if (!stRes.ok) throw new Error(dict.uploader.sessionExpired)
+        const d = stJson?.data as { totalParts?: unknown; partSize?: unknown; parts?: unknown }
+        session = {
+          totalParts: typeof d?.totalParts === 'number' ? d.totalParts : 0,
+          partSize: typeof d?.partSize === 'number' ? d.partSize : 0,
+          parts: (d?.parts ?? {}) as Record<string, string>,
+        }
+      } else {
+        const initRes = await fetch('/api/ia/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            mime: file.type || 'application/octet-stream',
+            bytes: file.size,
+            modSlug: slug || 'mod',
+            modId: mid,
+            title: t || file.name,
+          }),
+        })
+        const initJson = await initRes.json().catch(() => null)
+        if (!initRes.ok) {
+          const msg =
+            (typeof initJson?.error?.message === 'string' && initJson.error.message) ||
+            dict.uploader.signFailed
+          throw new Error(msg)
+        }
+        const d = initJson?.data as { sessionId?: unknown; totalParts?: unknown; partSize?: unknown; parts?: unknown }
+        sessionId = typeof d?.sessionId === 'string' ? d.sessionId : ''
+        if (!sessionId) throw new Error(dict.uploader.signFailed)
+        session = {
+          totalParts: typeof d?.totalParts === 'number' ? d.totalParts : 0,
+          partSize: typeof d?.partSize === 'number' ? d.partSize : 0,
+          parts: (d?.parts ?? {}) as Record<string, string>,
+        }
+      }
+
+      uppy.setFileState(id, {
+        meta: { ...file.meta, iaReady: true, iaMode: 'multipart', iaSessionId: sessionId },
+      })
+      const ctrl = createMultipartController(
+        file.data as Blob,
+        { sessionId, totalParts: session.totalParts, partSize: session.partSize, partsDone: { ...session.parts } },
+        {
+          onProgress: (p) => {
+            const cur = uppy.getFile(id)
+            const started =
+              typeof cur?.progress?.uploadStarted === 'number' ? cur.progress.uploadStarted : Date.now()
+            uppy.setFileState(id, {
+              progress: { uploadStarted: started, bytesUploaded: p.bytesUploaded, bytesTotal: p.bytesTotal },
+            })
+          },
+        },
+      )
+      multipartCtrls.set(id, ctrl)
+      try {
+        await ctrl.start()
+      } finally {
+        multipartCtrls.delete(id)
+      }
+      const done = uppy.getFile(id)
+      uppy.emit('upload-success', done, { status: 200, body: {} })
+    }
 
     // Sanctioned pre-upload hook: sign each file (direct) or attach relay
     // headers — runs after user presses Upload, before any byte moves.
+    // Multipart files upload their parts HERE (Dashboard progress via
+    // file-state; pause/resume/retry wired below) and skip XHR entirely.
     uppy.addPreProcessor(async (fileIDs: string[]) => {
       const { modId: mid, modSlug: slug, title: t, mode: m } = propsRef.current
       await Promise.all(
         fileIDs.map(async (id) => {
           const file = uppy.getFile(id)
           if (!file || (file.meta as Record<string, unknown>).iaReady) return
+          if (m === 'multipart') {
+            await runMultipartFile(id)
+            return
+          }
           if (m === 'relay') {
             uppy.setFileState(id, {
               xhrUpload: {
@@ -168,6 +261,25 @@ export function IaUploader({
       )
     })
 
+    // Dashboard pause/resume/retry/cancel → multipart controllers.
+    // Retry re-runs the preprocessor, which resumes from the DB journal
+    // (uploaded parts are never re-sent).
+    uppy.on('upload-pause', (file) => {
+      if (file) multipartCtrls.get(file.id)?.pause()
+    })
+    uppy.on('resume-all', () => {
+      for (const ctrl of multipartCtrls.values()) {
+        void ctrl.resume().catch(() => undefined)
+      }
+    })
+    uppy.on('file-removed', (file) => {
+      const ctrl = file && multipartCtrls.get(file.id)
+      if (ctrl) {
+        multipartCtrls.delete(file.id)
+        void ctrl.abort().catch(() => undefined)
+      }
+    })
+
     // Per-file verify+record AFTER bytes land (server HeadObject + quota).
     uppy.on('upload-success', (file, _response) => {
       if (!file) return
@@ -175,6 +287,32 @@ export function IaUploader({
       const body = (file.response?.body ?? {}) as Record<string, unknown>
       const p = (async (): Promise<IaUploadedFile | null> => {
         try {
+          if (meta.iaMode === 'multipart') {
+            // Assemble server-side (polls metadata, records quota+URL).
+            const sessionId = typeof meta.iaSessionId === 'string' ? meta.iaSessionId : ''
+            if (!sessionId) throw new Error(dict.uploader.sessionExpired)
+            const asmRes = await fetch('/api/ia/complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId }),
+            })
+            const asmJson = await asmRes.json().catch(() => null)
+            if (!asmRes.ok) {
+              const msg =
+                (typeof asmJson?.error?.message === 'string' && asmJson.error.message) ||
+                dict.uploader.confirmFailed
+              throw new Error(msg)
+            }
+            const asm = asmJson?.data as { downloadUrl?: unknown; key?: unknown; bytes?: unknown }
+            const asmUrl = typeof asm?.downloadUrl === 'string' ? asm.downloadUrl : ''
+            if (!asmUrl.startsWith('https://')) throw new Error(dict.uploader.confirmFailed)
+            return {
+              url: asmUrl,
+              key: typeof asm?.key === 'string' ? asm.key : '',
+              bytes: typeof asm?.bytes === 'number' ? asm.bytes : file.size || 0,
+              name: file.name || '',
+            }
+          }
           const completeRes = await fetch('/api/storage/ia/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -240,6 +378,10 @@ export function IaUploader({
     })
 
     return () => {
+      for (const ctrl of multipartCtrls.values()) {
+        void ctrl.abort().catch(() => undefined)
+      }
+      multipartCtrls.clear()
       uppy.destroy()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

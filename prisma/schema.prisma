@@ -1596,3 +1596,25 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
 }
+
+// ===== IA SAFE-multipart journal — resume without re-upload =====
+// One row per initiate(); parts = { partNumber: md5hex } for received
+// parts; status: initiated | parts | complete | aborted.
+model IaMultipartUpload {
+  id          String   @id @default(cuid())
+  userId      String
+  modId       String?
+  key         String
+  uploadId    String   @unique
+  totalBytes  BigInt
+  partSize    Int      @default(5242880)
+  totalParts  Int
+  parts       Json     @default("{}")
+  status      String   @default("initiated")
+  downloadUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
