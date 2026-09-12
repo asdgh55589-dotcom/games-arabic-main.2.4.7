@@ -462,8 +462,6 @@ export interface StudioDict {
   uploader: {
     signFailed: string
     confirmFailed: string
-    multipartFailed: string
-    sessionExpired: string
   }
   apply: {
     requiredFields: string

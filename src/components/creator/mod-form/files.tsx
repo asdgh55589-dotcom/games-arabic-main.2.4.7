@@ -55,8 +55,7 @@ export function ModFormFiles(p: Props) {
   // Build-time flag: 'true' restores the full IA toggle, otherwise a
   // disabled "soon" button (direct links keep working regardless).
   const iaEnabled = process.env.NEXT_PUBLIC_IA_ENABLED === 'true'
-  const iaUploadMode = process.env.NEXT_PUBLIC_IA_UPLOAD_MODE
-  const iaMode = iaUploadMode === 'relay' ? 'relay' : iaUploadMode === 'multipart' ? 'multipart' : 'direct'
+  const iaMode = process.env.NEXT_PUBLIC_IA_UPLOAD_MODE === 'relay' ? 'relay' : 'direct'
   const iaError = (message: string) => toast({ title: message, variant: 'destructive' })
   return (
     <>
