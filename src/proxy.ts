@@ -43,8 +43,16 @@ interface RoleCookiePayload {
   onboarded?: boolean // ob claim — absent on legacy cookies (fail-open)
 }
 
-/** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
-async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | null> {
+/**
+ * قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible).
+ * Exported for tier tests. Audit D.2 tiers: strictTv=true (admin/MFA paths)
+ * fails CLOSED when tv is present but the cache is unverifiable; default
+ * false keeps member pages fail-open (DB check in getSession is truth).
+ */
+export async function getRoleFromCookie(
+  req: NextRequest,
+  opts?: { strictTv?: boolean },
+): Promise<RoleCookiePayload | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
@@ -70,8 +78,10 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
         )
 
         if (cachedTv === null) {
-          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss) — FAIL-OPEN، getSession() سيتحقق عبر DB
-          tvVerified = true
+          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss).
+          // strictTv (admin/MFA): fail-CLOSED — tvVerified=false.
+          // default (member pages): FAIL-OPEN — getSession() سيتحقق عبر DB.
+          tvVerified = opts?.strictTv !== true
         } else if (cachedTv !== tv) {
           // تباين مؤكد → الجلسة أُبطلت → رفض
           return null
@@ -350,7 +360,8 @@ export async function proxy(req: NextRequest) {
   // حماية /admin/* (مش /admin/login) — تحقق من role cookie فقط
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
@@ -392,7 +403,8 @@ export async function proxy(req: NextRequest) {
 
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
