@@ -24,7 +24,7 @@ import { db } from '@/lib/db'
 const root = process.cwd()
 const src = (p: string) => fs.readFileSync(path.join(root, p), 'utf8')
 
-const member = { id: 'u1', username: 'ali', email: 'a@x', role: 'member', avatarUrl: null }
+const member = { id: 'u1', username: 'ali', email: 'a@x', role: 'member', avatarUrl: null, onboardingCompleted: true }
 const validBody = () => ({
   experience: 'خبرة خمس سنوات في ترجمة الألعاب باستخدام مختلف الأدوات',
   reason: 'ر'.repeat(150),
