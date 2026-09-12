@@ -383,7 +383,6 @@ COOKIE_DOMAIN="yourdomain.com"
 - Test rotation locally: corrupt `ga_admin_role` cookie → should auto-clear and show login message
 
 ## Security Features
-
 - **HttpOnly cookies** — JavaScript cannot access the JWT
 - **Secure cookies** — Only sent over HTTPS in production
 - **SameSite Lax** — CSRF protection
@@ -392,3 +391,62 @@ COOKIE_DOMAIN="yourdomain.com"
 - **Rate limiting** — Via Upstash Redis
 - **IP banning** — Edge-compatible via Redis cache
 - **Audit logging** — All admin actions logged
+
+## Onboarding Gate (`ob` claim)
+
+New signups must complete `/onboarding` (confirm data, pick username, set
+first password) before entering the site; pre-existing accounts are
+grandfathered (`User.onboardingCompleted = true`).
+
+- **Source of truth:** `User.onboardingCompleted` in the DB, enforced
+  server-side by `requireOnboarded()` (`src/lib/auth.ts`) — non-members
+  always pass; `member + !onboardingCompleted` throws 403.
+- **Edge signal:** the `ga_admin_role` JWT carries an `ob` boolean claim
+  (`setRoleCookie(..., onboarded)`). `src/proxy.ts` reads it via the pure,
+  Edge-safe `getOnboardingGate()` (`src/lib/onboarding.ts`): members with
+  `ob === false` get a 302 to `/onboarding?from=<path>` for pages and a
+  403 `{ code: 'ONBOARDING_REQUIRED' }` for `/api/*`.
+- **Fail-open at Edge:** legacy cookies without the claim (`ob === undefined`)
+  are allowed through — the DB check remains authoritative.
+- **Exempt paths** (reachable while incomplete): `/onboarding`, `/login`,
+  `/verify-email`, auth API (`callback`, `telegram*`, `onboarding`,
+  `recover`, `reset-password`, `send-verification-email`, `mfa`, `me`,
+  `logout`, ledgers), link-account settings routes. Full list:
+  `EXEMPT_PREFIXES` in `src/lib/onboarding.ts`.
+- Related guards: `POST /api/creator-requests` rejects non-onboarded
+  members (`أكمل إعداد حسابك أولاً`); synthetic `@telegram.local`
+  identities can never receive recovery mail (`isSyntheticTelegramEmail`).
+
+## Recovery Flow (single-use, 1h, hash at rest)
+
+- `POST /api/auth/recover` (`src/app/api/auth/recover/route.ts`): looks up
+  the user by email, invalidates older unused tokens, stores **only the
+  SHA-256 hash** (`PasswordResetToken.tokenHash`, `RECOVERY_TTL_MS = 1h`),
+  emails the raw token (Resend). The raw token never touches the DB.
+- `POST /api/auth/reset-password`: hashes the presented token, rejects
+  unknown / used (`usedAt`) / expired rows, sets the new password, then
+  stamps `usedAt` — single-use enforced at the row.
+- `POST /api/auth/send-verification-email`: (re)sends the Supabase
+  verification mail (`emailRedirectTo: '/verify-email'`), rate-limited
+  (`auth:resend-verify`, 5/10min).
+- UI: `/recover` → email form; `/reset-password` → new-password form.
+
+## Telegram Widget Contract (`data-onauth`)
+
+The official Telegram Login Widget does **not** `postMessage` — it calls a
+**window-global function** named in the injected script's `data-onauth`
+attribute. Locked in `src/lib/telegram-widget.ts` so component and views
+cannot drift:
+
+- Loader: `https://telegram.org/js/telegram-widget.js?22`
+- Global callback name: `onTelegramAuth` (`TELEGRAM_WIDGET_CALLBACK_NAME`);
+  the component assigns `window.onTelegramAuth = onAuth`.
+- Script attributes (`buildTelegramWidgetAttributes`): `data-telegram-login`,
+  `data-size=large`, `data-radius=8`, `data-request-access=write`,
+  `data-userpic=true`, `data-lang=ar`,
+  **`data-onauth="onTelegramAuth(user)"`**.
+- Client-safe bot name: **only** `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is
+  visible in the browser — gating widget UI on server-only
+  `TELEGRAM_BOT_NAME` silently disables it (`getTelegramBotUsername()`).
+- Server: `/api/auth/telegram*` routes verify the payload hash, bridge or
+  deep-link the session; widget polling via `/api/auth/telegram/poll`.
