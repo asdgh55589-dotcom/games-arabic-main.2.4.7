@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
           logoUrl: body.logoUrl || '',
           bannerUrl: body.bannerUrl || '',
           websiteUrl: body.websiteUrl || '',
-          discordUrl: body.discordUrl || '',
           isOfficial: body.isOfficial || false,
           isFeatured: body.isFeatured || false,
           order: body.order || 0,

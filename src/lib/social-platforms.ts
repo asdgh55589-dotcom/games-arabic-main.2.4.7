@@ -1,7 +1,6 @@
 import { Globe } from 'lucide-react'
 import type { IconType } from 'react-icons'
 import {
-  SiDiscord,
   SiGithub,
   SiInstagram,
   SiTelegram,
@@ -47,12 +46,6 @@ export const SOCIAL_PLATFORMS: Record<string, SocialPlatform> = {
     icon: SiGithub,
     column: 'githubUrl',
     placeholder: 'https://github.com/username',
-  },
-  discord: {
-    label: 'Discord',
-    icon: SiDiscord,
-    column: 'discordUrl',
-    placeholder: 'username#1234 or invite link',
   },
   telegram: {
     label: 'Telegram',

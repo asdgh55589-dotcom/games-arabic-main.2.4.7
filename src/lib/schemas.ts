@@ -275,7 +275,6 @@ export const UpdateProfileSchema = z.object({
       website: z.string().url().nullable().optional(),
       twitter: z.string().max(50).nullable().optional(),
       youtube: z.string().url().nullable().optional(),
-      discord: z.string().max(50).nullable().optional(),
       telegram: z.string().max(50).nullable().optional(),
     })
     .optional(),
@@ -449,7 +448,6 @@ export const CreateTeamSchema = z.object({
   logoUrl: z.string().url().optional(),
   bannerUrl: z.string().url().optional(),
   websiteUrl: z.string().url().optional(),
-  discordUrl: z.string().url().optional(),
   telegramUrl: z.string().url().optional(),
   isOfficial: z.boolean().optional(),
   isFeatured: z.boolean().optional(),

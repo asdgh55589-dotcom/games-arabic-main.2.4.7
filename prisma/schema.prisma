@@ -72,7 +72,7 @@ model User {
   tiktokUrl              String? // رابط TikTok
   youtubeUrl             String? // رابط YouTube
   githubUrl              String? // رابط GitHub
-  discordUrl             String? // رابط Discord
+  discordUrl             String? // legacy profile link (unused — provider vaporized)
   telegramUrl            String? // رابط Telegram
   accentColor            String?                 @default("#ff8c00") // اللون المميز للملف الشخصي
   profileVisibility      String                  @default("everyone") // everyone | followers | nobody
@@ -191,7 +191,7 @@ model OAuthAccount {
   id                String   @id @default(cuid())
   userId            String
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider          String // google | discord | telegram
+  provider          String // google | telegram
   providerAccountId String // Supabase Auth user ID or Telegram ID
   providerEmail     String? // email from provider (may be null for Telegram)
   providerUsername  String? // username from provider
@@ -530,7 +530,7 @@ model ModContactLink {
   id        String   @id @default(cuid())
   modId     String
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
-  type      String // mail | website | telegram | twitter | youtube | discord
+  type      String // mail | website | telegram | twitter | youtube
   label     String
   url       String
   order     Int      @default(0)
@@ -644,7 +644,7 @@ model TeamMembership {
 model TeamContactLink {
   id     String @id @default(cuid())
   teamId String
-  type   String // mail|website|telegram|twitter|youtube|discord
+  type   String // mail|website|telegram|twitter|youtube
   label  String
   url    String
   order  Int    @default(0)

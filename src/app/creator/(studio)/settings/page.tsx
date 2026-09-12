@@ -28,7 +28,7 @@ export default async function CreatorSettingsPage() {
 
   const user = await db.user.findUnique({
     where: { id: session.id },
-    select: { bio: true, websiteUrl: true, twitterUrl: true, youtubeUrl: true, discordUrl: true },
+    select: { bio: true, websiteUrl: true, twitterUrl: true, youtubeUrl: true },
   })
   const { dict } = await getStudioDict()
 

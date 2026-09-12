@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 const LinkAccountSchema = z.object({
-  provider: z.enum(['google', 'discord', 'telegram']),
+  provider: z.enum(['google', 'telegram']),
   providerAccountId: z.string().min(1),
   providerEmail: z.string().email().optional(),
   providerUsername: z.string().optional(),

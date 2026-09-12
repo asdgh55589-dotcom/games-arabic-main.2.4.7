@@ -1197,7 +1197,6 @@ export default function ModForm({ modId }: ModFormProps) {
                     <option value="telegram">تيليجرام</option>
                     <option value="twitter">تويتر</option>
                     <option value="youtube">يوتيوب</option>
-                    <option value="discord">ديسكورد</option>
                   </select>
                   <Input
                     value={c.label}

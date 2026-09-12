@@ -43,7 +43,6 @@ export default function BecomeCreatorApplyPage() {
   const [reason, setReason] = useState('')
   const [twitterUrl, setTwitterUrl] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
-  const [discordHandle, setDiscordHandle] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [existing, setExisting] = useState<CreatorRequestStatus | null>(null)
@@ -137,7 +136,6 @@ export default function BecomeCreatorApplyPage() {
           reason: reason.trim(),
           twitterUrl: twitterUrl.trim() || undefined,
           youtubeUrl: youtubeUrl.trim() || undefined,
-          discordHandle: discordHandle.trim() || undefined,
           websiteUrl: websiteUrl.trim() || undefined,
           track,
           portfolioUrls: splitUrls(portfolioInput).join('\n'),
@@ -160,7 +158,6 @@ export default function BecomeCreatorApplyPage() {
         setReason('')
         setTwitterUrl('')
         setYoutubeUrl('')
-        setDiscordHandle('')
         setWebsiteUrl('')
         setTrack('')
         setPortfolioInput('')
@@ -509,17 +506,6 @@ export default function BecomeCreatorApplyPage() {
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
                       placeholder="https://youtube.com/@channel"
-                      dir="ltr"
-                      className="text-left"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="discordHandle">{t.discord}</Label>
-                    <Input
-                      id="discordHandle"
-                      value={discordHandle}
-                      onChange={(e) => setDiscordHandle(e.target.value)}
-                      placeholder="username#1234"
                       dir="ltr"
                       className="text-left"
                     />

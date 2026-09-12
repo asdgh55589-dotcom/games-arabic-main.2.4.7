@@ -61,7 +61,6 @@ interface CreatorRequest {
   adminNotes: string | null
   twitterUrl: string | null
   youtubeUrl: string | null
-  discordHandle: string | null
   websiteUrl: string | null
   createdAt: string
   updatedAt: string
@@ -538,12 +537,6 @@ export default function AdminCreatorRequestsPage() {
                         <span className="hidden sm:inline">{s.label}</span>
                       </a>
                     ))}
-                    {req.discordHandle && (
-                      <Badge variant="outline" title="ديسكورد">
-                        <MessageCircle className="h-3 w-3 ml-1" />
-                        <span dir="ltr">{req.discordHandle}</span>
-                      </Badge>
-                    )}
                   </div>
 
                   <div className="grid gap-4 text-sm">

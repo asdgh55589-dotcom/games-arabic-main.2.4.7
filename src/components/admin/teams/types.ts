@@ -38,7 +38,6 @@ export interface TeamAdminData {
   logoUrl: string
   bannerUrl: string
   websiteUrl: string
-  discordUrl: string
   ownerId: string | null
   isFeatured: boolean
   isOfficial: boolean

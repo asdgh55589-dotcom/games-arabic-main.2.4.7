@@ -431,7 +431,6 @@ export interface StudioDict {
     linkTelegram: string
     linkTwitter: string
     linkYoutube: string
-    linkDiscord: string
     labelPlaceholder: string
     labelAria: string
     contactUrlAria: string
@@ -502,7 +501,6 @@ export interface StudioDict {
     socials: string
     twitter: string
     youtube: string
-    discord: string
     website: string
     submitting: string
     submit: string

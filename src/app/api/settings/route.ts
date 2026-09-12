@@ -20,7 +20,6 @@ const DEFAULTS: Record<string, string> = {
   google_analytics_id: '',
   google_search_console: '',
   twitter: '',
-  discord: '',
   youtube: '',
   telegram: '',
 }

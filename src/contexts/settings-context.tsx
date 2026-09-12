@@ -20,7 +20,6 @@ interface SettingsData {
   site_url?: string
   theme_color?: string
   telegram?: string
-  discord?: string
   youtube?: string
   twitter?: string
   google_analytics_id?: string
