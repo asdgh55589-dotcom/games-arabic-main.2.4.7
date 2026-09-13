@@ -176,7 +176,9 @@ export default function AdminNewsPage() {
       const res = await fetch(`/api/admin/news/${n.id}/stats`)
       const data = await res.json()
       if (res.ok) setStats(data?.data ?? data)
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort news operation
+    }
     setLoadingStats(false)
   }
 

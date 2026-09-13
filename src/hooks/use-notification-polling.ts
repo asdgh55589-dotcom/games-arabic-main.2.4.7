@@ -64,7 +64,7 @@ export function useNotificationPolling(
       prevCountRef.current = count
       setUnreadCount(count)
     } catch {
-      // Silent — will retry on next poll
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification polling
     }
   }, [userId, fetchNotifications])
 
@@ -121,7 +121,7 @@ export function useNotificationPolling(
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {
-      // Silent — state not updated, will refresh on next poll
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification polling
     }
   }, [])
 
@@ -131,7 +131,7 @@ export function useNotificationPolling(
       setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })))
       setUnreadCount(0)
     } catch {
-      // Silent
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification polling
     }
   }, [])
 

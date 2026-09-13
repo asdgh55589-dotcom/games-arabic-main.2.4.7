@@ -454,7 +454,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         }
         revalidatePath('/mod/' + updatedMod.slug)
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     return ok({ success: true })
   } catch (err) {

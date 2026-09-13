@@ -107,7 +107,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
               },
             })
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification to admins
+        }
         return ok({ success: true, message: 'تم إعادة إرسال التعريب للمراجعة' })
       }
 

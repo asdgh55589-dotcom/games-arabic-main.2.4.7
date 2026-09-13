@@ -27,7 +27,9 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({ data: rows })
         }
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Supabase fallback, try JWT next
+    }
     // fallback to JWT
     const u = await requireAuth().catch(() => null)
     if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -54,7 +56,9 @@ export async function POST(req: NextRequest) {
         })
         if (u) userId = u.id
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Supabase fallback, try JWT next
+    }
     if (!userId) {
       const u = await requireAuth().catch(() => null)
       if (u) userId = u.id
@@ -100,7 +104,9 @@ export async function DELETE(req: NextRequest) {
         })
         if (u) userId = u.id
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: Supabase fallback, try JWT next
+    }
     if (!userId) {
       const u = await requireAuth().catch(() => null)
       if (u) userId = u.id

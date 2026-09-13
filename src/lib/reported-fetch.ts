@@ -51,15 +51,15 @@ export async function reportedFetch(
           action,
         })
       } catch {
-        // fail-open
-      }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort reported fetch
+    }
     }
     return res
   } catch (err) {
     try {
       reportError(err, { route: pathname, action })
     } catch {
-      // fail-open
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort reported fetch
     }
     throw err
   }

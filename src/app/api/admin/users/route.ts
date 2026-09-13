@@ -175,7 +175,9 @@ export async function POST(req: NextRequest) {
           try {
             const hashed = await hashPassword(rawPassword)
             await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort local password hash sync
+          }
         } catch (error) {
           console.error('[admin/users POST] Supabase creation error:', error)
           await db.user.delete({ where: { id: user.id } })
@@ -186,7 +188,9 @@ export async function POST(req: NextRequest) {
         try {
           const hashed = await hashPassword(rawPassword)
           await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort local password hash
+        }
       }
     }
 

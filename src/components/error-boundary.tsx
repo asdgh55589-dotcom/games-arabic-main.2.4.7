@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         })
       }
     } catch {
-      // fail-open: reporting must never break the fallback UI
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort error boundary
     }
   }
 

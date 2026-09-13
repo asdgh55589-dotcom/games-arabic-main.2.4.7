@@ -70,7 +70,9 @@ export async function POST(req: NextRequest) {
           },
           select: { id: true, username: true, role: true, tokenVersion: true, email: true, onboardingCompleted: true },
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: DB lookup fallback, will use Supabase user
+      }
 
       if (neonUser) {
         const newTokenVersion = await invalidateUserSessions(neonUser.id)
@@ -103,7 +105,9 @@ export async function POST(req: NextRequest) {
               allOtherSessionsInvalidated: true,
             }),
           })
-        } catch {}
+        } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+      }
       }
     } catch (e) {
       console.error('[ChangePassword] session invalidation failed:', e)

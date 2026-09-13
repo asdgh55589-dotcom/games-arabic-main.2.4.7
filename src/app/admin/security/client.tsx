@@ -30,7 +30,9 @@ export default function SecurityClient() {
       } else if (data?.data) {
         setTotpEnabled(!!data.data.totpEnabled)
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort security operation
+    }
   }
 
   useEffect(() => {

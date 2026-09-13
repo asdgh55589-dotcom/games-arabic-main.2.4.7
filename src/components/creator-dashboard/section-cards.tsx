@@ -53,8 +53,8 @@ export function SectionCards() {
           if (!cancelled && json?.data?.totals) setTotals(json.data.totals)
         }
       } catch {
-        // keep placeholders on failure
-      }
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort section cards
+} }
     }
     load()
     return () => {

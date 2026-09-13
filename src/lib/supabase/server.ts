@@ -19,8 +19,8 @@ export async function createClient() {
               cookieStore.set(name, value, options),
             )
           } catch {
-            // Server Component — ignore
-          }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase session
+    }
         },
       },
     },

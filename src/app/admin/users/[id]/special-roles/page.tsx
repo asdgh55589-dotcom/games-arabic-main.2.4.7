@@ -52,7 +52,9 @@ export default function UserSpecialRolesPage() {
           specialRoles: u.specialRoles || '',
         })
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort special roles
+    }
     setLoading(false)
   }
 

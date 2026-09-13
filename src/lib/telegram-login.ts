@@ -122,8 +122,8 @@ export async function performTelegramLogin(
             select: userSelect,
           })) as CanonicalUser
         } catch {
-          // keep the stored user — avatar refresh is best-effort
-        }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Telegram login
+    }
       }
     } else {
       // Step 2: reuse the synthetic-email user, ensuring exactly one link row.

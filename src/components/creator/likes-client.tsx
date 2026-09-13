@@ -83,7 +83,7 @@ export function LikesClient() {
       const json = await res.json()
       if (res.ok) setData(json.data)
     } catch {
-      // empty state on failure
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort likes operation
     }
     setLoading(false)
   }, [range])

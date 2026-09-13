@@ -132,7 +132,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             commentId: parentId,
             replyPreview: text.substring(0, 100),
           })
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort comment operation
+        }
       }
     }
 
@@ -149,7 +151,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           modSlug: slug,
           commentPreview: text.substring(0, 100),
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort comment operation
+      }
     }
 
     return ok(comment)

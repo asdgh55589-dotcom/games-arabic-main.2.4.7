@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             ipCleared = true
           }
         } catch {
-          // ما كانش محظور — تجاهل
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: IP was not banned — safe to ignore
         }
       }
     }
@@ -75,7 +75,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         title: 'تم إلغاء الحظر عن حسابك',
         message: 'يمكنك الآن استخدام الموقع بشكل طبيعي.',
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort unban notification
+    }
 
     return ok({ success: true, ipCleared })
   } catch (err) {

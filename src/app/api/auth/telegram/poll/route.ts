@@ -70,7 +70,9 @@ export async function GET(req: NextRequest) {
                     photoUrl = `https://api.telegram.org/file/bot${botToken}/${fData.result.file_path}`
                 }
               }
-            } catch {}
+            } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Telegram polling
+    }
             await redisSet(
               `telegram_session:${tok}`,
               {

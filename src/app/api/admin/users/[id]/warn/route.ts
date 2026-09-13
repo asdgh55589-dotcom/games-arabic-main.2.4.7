@@ -53,7 +53,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           message: reason,
         },
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort user notification
+    }
 
     return ok({ success: true })
   } catch (err) {

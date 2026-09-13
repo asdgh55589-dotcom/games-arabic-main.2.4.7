@@ -77,7 +77,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         action: 'TIER_MANUAL_SET',
         details: JSON.stringify({ oldTier, newTier: tier, reason }),
       } as unknown as Parameters<typeof logUserAction>[0])
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     // إشعار المستخدم
     try {

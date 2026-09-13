@@ -77,7 +77,7 @@ export function NewsClient() {
       const json = await res.json()
       if (res.ok) setRows(json.data?.news || [])
     } catch {
-      // empty state on failure
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort news operation
     }
     setLoading(false)
   }, [])

@@ -91,8 +91,9 @@ export async function getSession(): Promise<SessionUser | null> {
           return apiKeyResult.user
         }
       }
-    } catch {
+    } catch (err) {
       // headers() قد تفشل في بعض السياقات — نكمل مع الأ_other methods
+      logger.warn({ err, context: 'auth-getSession-headers' }, 'headers() failed in getSession')
     }
 
     // 1. محاولة Supabase Auth أولاً
@@ -103,8 +104,9 @@ export async function getSession(): Promise<SessionUser | null> {
         data: { user },
       } = await supabase.auth.getUser()
       supabaseUser = user
-    } catch {
+    } catch (err) {
       // Supabase غير متاح — نكمل مع role cookie
+      logger.warn({ err, context: 'auth-getSession-supabase' }, 'Supabase session lookup failed')
     }
 
     if (supabaseUser) {
@@ -157,7 +159,8 @@ export async function getSession(): Promise<SessionUser | null> {
         } else if (user.tokenVersion > 0) {
           return null
         }
-      } catch {
+      } catch (err) {
+        logger.warn({ err, context: 'auth-getSession-tokenVersion' }, 'tokenVersion verification failed')
         return null
       }
 
@@ -221,7 +224,8 @@ export async function getSession(): Promise<SessionUser | null> {
       avatarUrl: user.avatarUrl,
       onboardingCompleted: user.onboardingCompleted,
     }
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getSession' }, 'getSession failed unexpectedly')
     return null
   }
 }
@@ -467,7 +471,8 @@ export async function getUserIdFromRequestCookies(req: Request): Promise<string 
     if (!match?.[1]) return null
     const { payload } = await jwtVerify(match[1], JWT_SECRET)
     return typeof payload.userId === 'string' ? payload.userId : null
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getUserIdFromCookies' }, 'Failed to extract userId from cookies')
     return null
   }
 }
@@ -503,7 +508,9 @@ export async function createSupabaseAuthUser(
     if (!res.ok) return null
     const data = await res.json()
     return data.id as string
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase provisioning, safe to ignore
+    logger.warn({ err, context: 'auth-createSupabaseUser' }, 'Failed to create Supabase auth user')
     return null
   }
 }
@@ -514,7 +521,8 @@ export async function createSupabaseAuthUser(
 export async function getOptionalSession(): Promise<SessionUser | null> {
   try {
     return await getSession()
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getOptionalSession' }, 'getOptionalSession failed')
     return null
   }
 }
@@ -561,7 +569,8 @@ export async function getBanInfo(): Promise<BanInfo | null> {
       expiresAt: ban.expiresAt,
       username: row.username,
     }
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getBanInfo' }, 'getBanInfo failed')
     return null
   }
 }

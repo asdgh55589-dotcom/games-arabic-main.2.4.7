@@ -99,7 +99,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         followerId: currentUser.id,
         followerName: currentUser.username || 'مستخدم',
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
 
     const [followersCount, followingCount] = await Promise.all([
       db.follow.count({ where: { followingId: targetUser.id } }),

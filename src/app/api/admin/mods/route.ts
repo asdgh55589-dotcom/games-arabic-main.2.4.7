@@ -444,7 +444,9 @@ export async function POST(req: NextRequest) {
         modTitle: mod.name,
         modSlug: mod.slug,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
 
     // تحديث عدّادات اللعبة والسلسلة — increment ذري (Issue 3.4/3.5)
     if (mod.gameId) {
@@ -475,7 +477,9 @@ export async function POST(req: NextRequest) {
         }
       }
       revalidatePath('/mod/' + mod.slug)
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     return ok(mod)
   } catch (err) {

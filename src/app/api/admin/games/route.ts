@@ -93,7 +93,8 @@ export async function POST(req: NextRequest) {
       revalidatePath('/')
       revalidatePath('/games/' + game.slug)
       revalidatePath('/platform/' + game.platform)
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
 
     return ok(game)
   } catch (err) {

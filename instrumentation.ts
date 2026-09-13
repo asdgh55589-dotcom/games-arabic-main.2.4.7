@@ -50,4 +50,30 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== 'edge') {
     installGlobalErrorHandlers()
   }
+
+  // OpenObserve OTLP — fail-open, only on node runtime
+  if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT && process.env.NEXT_RUNTIME !== 'edge') {
+    try {
+      const { initOtlp } = await import('./src/lib/observability/otlp')
+      initOtlp()
+    } catch {
+      // fail-open
+    }
+  }
+
+  // Graceful OTLP shutdown
+  if (process.env.NEXT_RUNTIME !== 'edge') {
+    const graceful = async () => {
+      try {
+        const { shutdownOtlp } = await import('./src/lib/observability/otlp')
+        await shutdownOtlp()
+      } catch {
+        // fail-open
+      }
+    }
+    if (typeof process !== 'undefined' && typeof process.on === 'function') {
+      process.on('SIGTERM', graceful)
+      process.on('SIGINT', graceful)
+    }
+  }
 }

@@ -295,7 +295,9 @@ export async function proxy(req: NextRequest) {
         }
       }
     }
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort proxy operation
+  }
 
   // ===== IP ban check (ONLY for write/sensitive paths) =====
   // Read-only operations (GET /api/mods, /api/games, etc.) are NOT checked.

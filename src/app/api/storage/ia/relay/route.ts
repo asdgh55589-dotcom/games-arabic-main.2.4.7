@@ -41,7 +41,9 @@ export async function POST(req: NextRequest) {
     const check = await checkUploadQuota(user.id, user.role, bytes)
     if (!check.allowed) {
       // Drain nothing — client already sent bytes; just refuse + Arabic reason.
-      try { await req.arrayBuffer() } catch { /* ignore */ }
+      try { await req.arrayBuffer() } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort cleanup
+      }
       return validationFail(check.reason || 'تم رفض الرفع — تجاوزت الحصة')
     }
 

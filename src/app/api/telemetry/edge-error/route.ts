@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         )
       }
     } catch {
-      // Limiter unavailable — fail open, still accept the beacon.
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort telemetry
     }
 
     // Size cap: Content-Length pre-check (cheap reject before reading body).
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         action: 'edge-beacon',
       })
     } catch {
-      // reportError is fail-open by spec — never break the beacon response.
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort telemetry
     }
 
     return NextResponse.json({ ok: true })

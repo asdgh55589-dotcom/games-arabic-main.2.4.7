@@ -33,6 +33,7 @@ import { LoginSchema } from '@/lib/schemas'
 import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
 import { createClient } from '@/lib/supabase/server'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME
@@ -107,7 +108,10 @@ async function ensureOwnerExists() {
         })
         await createSupabaseAuthUser(email, password, username).catch(() => null)
       }
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort owner provisioning, continues regardless
+      logger.warn({ err, context: 'auth-login-ensureOwner' }, 'ensureOwnerExists failed')
+    }
     ownerEnsured = true
     return
   }

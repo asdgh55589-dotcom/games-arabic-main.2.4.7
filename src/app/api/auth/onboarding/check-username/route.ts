@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       })
     }
   } catch {
-    // fail-open
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open
   }
 
   try {

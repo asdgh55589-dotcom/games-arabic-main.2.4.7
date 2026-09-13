@@ -20,7 +20,7 @@ export default function Error({
     try {
       reportError(error, { route: 'admin-error', action: 'render' })
     } catch {
-      // fail-open: never break the fallback UI
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort admin error boundary
     }
   }, [error])
 

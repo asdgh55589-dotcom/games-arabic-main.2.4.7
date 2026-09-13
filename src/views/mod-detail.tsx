@@ -126,11 +126,15 @@ export function ModDetailPage() {
     if (!slug) return
     try {
       if (localStorage.getItem(`ga_endorsed_${slug}`) === '1') setEndorsed(true)
-    } catch {}
+    } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
     if (mod?.id) {
       try {
         if (localStorage.getItem(`ga_reported_mod_${mod.id}`) === '1') setHasReported(true)
-      } catch {}
+      } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
     }
     fetch(`/api/mods/${slug}/endorse`)
       .then((r) => r.json())
@@ -139,7 +143,9 @@ export function ModDetailPage() {
           setEndorsed(true)
           try {
             localStorage.setItem(`ga_endorsed_${slug}`, '1')
-          } catch {}
+          } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
         }
       })
       .catch(() => {})
@@ -216,7 +222,9 @@ export function ModDetailPage() {
       if (result.data.endorsed) {
         try {
           localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {}
+        } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
         toast({
           title: 'تم التأييد',
           description: 'شكراً لدعمك لمؤلف هذا التعريب',
@@ -224,7 +232,9 @@ export function ModDetailPage() {
       } else {
         try {
           localStorage.removeItem(`ga_endorsed_${mod.slug}`)
-        } catch {}
+        } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
         toast({
           title: 'تم إلغاء التأييد',
           description: 'تمت إزالة إعجابك',
@@ -671,7 +681,9 @@ export function ModDetailPage() {
                           setHasReported(true)
                           try {
                             if (mod?.id) localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-                          } catch {}
+                          } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+} }
                         }}
                       />
                     )}
