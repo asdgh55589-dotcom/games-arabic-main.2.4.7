@@ -4,10 +4,11 @@
 
 ## Overview
 
-- **Database:** PostgreSQL hosted on Neon (serverless)
+- **Database:** PostgreSQL hosted on Aiven (primary) / Neon (legacy fallback)
 - **ORM:** Prisma 6
 - **Schema:** `prisma/schema.prisma` (53 models, 40+ indexes)
 - **Connection:** 5 connections, 30s timeout (serverless-optimized, singleton via `globalThis` in dev)
+- **SSL:** `sslmode=require` enforced (Aiven requirement)
 
 ## Connection Setup
 
@@ -27,6 +28,47 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 ```
 
 The singleton pattern prevents multiple Prisma clients in development (hot reload).
+
+## Connection Setup — Aiven (Primary)
+
+`src/lib/db.ts` resolves the active connection URL with dual-URL support:
+
+1. **`AIVEN_DATABASE_URL`** — preferred when set (cutover day variable)
+2. **`DATABASE_URL`** — fallback (Neon or Aiven, same shape)
+
+```typescript
+// src/lib/db.ts — getDatabaseUrl() helper
+export function getDatabaseUrl(): string {
+  const aiven = process.env.AIVEN_DATABASE_URL
+  const fallback = process.env.DATABASE_URL
+  const raw = aiven && aiven.trim() !== '' ? aiven : fallback
+  if (!raw || raw.trim() === '') {
+    throw new Error('DATABASE_URL must be set (or AIVEN_DATABASE_URL for Aiven)')
+  }
+  return raw
+}
+```
+
+`ensureSslmode(url)` enforces `sslmode=require` and injects pool-tuning defaults if missing:
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| `sslmode` | `require` | TLS to Aiven (throws if `disable`/`allow`/non-require) |
+| `connect_timeout` | `10` | Seconds to wait for connection |
+| `connection_limit` | `5` | Prisma connection pool size |
+| `pool_timeout` | `10` | Seconds before pool exhaustion error |
+
+`withRetry(fn)` provides exponential backoff (1s, 2s, 4s, max 3 attempts) for Aiven cold-start resilience.
+
+### Cutover Pattern
+
+Set `AIVEN_DATABASE_URL` on deploy day; unset to revert to `DATABASE_URL`. No code change needed — runtime switch only.
+
+```env
+# .env (cutover day)
+AIVEN_DATABASE_URL="postgresql://avnadmin:xxx@host:5432/games_arabic?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
+DATABASE_URL="postgresql://..."  # kept as fallback
+```
 
 ## Key Models
 
@@ -330,14 +372,18 @@ npx tsx scripts/seed.ts
 ## Environment Variables
 
 ```env
-DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require&connection_limit=5&pool_timeout=10"
+# Optional: Aiven cutover override (preferred when set)
+AIVEN_DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
 ```
 
-The `sslmode=require` is required for Neon connections.
+The `sslmode=require` is required for both Aiven and Neon connections.
 
 ## Performance Considerations
 
-- **Connection pooling:** 5 connections, 30s timeout (configured for serverless)
+- **Connection pooling:** 5 connections, 30s timeout (configured for serverless; pool-tuned for Aiven)
+- **Aiven cold-start resilience:** `withRetry()` exponential backoff (1s, 2s, 4s, 3 attempts)
+- **SSL enforcement:** `sslmode=require` injected automatically if missing from connection URL
 - **Indexes:** Added on frequently queried fields (slug, authorId, gameId, etc.)
 - **Select only needed fields:** Use `select` instead of `include` when possible
 - **Avoid N+1:** Use `include` or `findMany` with relations instead of separate queries

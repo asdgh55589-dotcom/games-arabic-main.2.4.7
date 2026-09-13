@@ -71,6 +71,46 @@ Neon **restore-point branch first** (`pre-release-YYYYMMDD`), then
 `docs/prod-migration-sync.md` §R1–R3 for the exact history/row counts),
 then app deploy, then §R3 verification queries.
 
+## §7 Aiven staging items
+
+> Validate before production cutover. All items must pass on staging clone.
+
+### Connection & SSL
+- [ ] Aiven connection string configured with `sslmode=require`
+- [ ] `AIVEN_DATABASE_URL` env var set (or `DATABASE_URL` pointing at Aiven)
+- [ ] `connection_limit=5`, `pool_timeout=10`, `connect_timeout=10` present
+- [ ] `src/lib/db.ts:ensureSslmode` injects defaults correctly (tested)
+
+### PITR
+- [ ] PITR enabled on Aiven staging instance
+- [ ] First backup completed (check Aiven UI → Backups)
+- [ ] Restore drill performed: restore to point-in-time, verify data integrity
+- [ ] WAL archiving confirmed healthy (`pg_last_xact_replay_timestamp` < 5 min)
+
+### Migration
+- [ ] Baseline + 9 additive migrations applied to Aiven staging
+- [ ] `prisma migrate status` → "Database schema is up to date!"
+- [ ] Table count matches Neon: 76 tables (73 + 3 new)
+- [ ] `pg_trgm` extension + 6 GIN indexes present
+- [ ] Row counts verified for User, Mod, ModFile tables
+
+### Smoke test
+- [ ] `/` → 200
+- [ ] `/login` → 200
+- [ ] `/creator` → redirect (or 200 if authenticated)
+- [ ] `/api/auth/me` → 401 (unauthenticated)
+- [ ] `/api/health` → 200
+- [ ] Trigram search functional (`/search?q=test` returns results)
+
+### Cold-start resilience
+- [ ] `withRetry` / `withDatabaseRetry` tested (exponential backoff 1s→2s→4s)
+- [ ] App recovers from Aiven cold start without user-visible errors
+
+### Rollback
+- [ ] Rollback procedure documented and tested
+- [ ] Neon branch `pre-cutover-staging` created as restore point
+- [ ] Rollback tested: env revert → rebuild → health check passes
+
 ## §6 Rollback procedure
 
 1. Promote the §5 Neon branch to primary; re-point app env.
