@@ -30,9 +30,11 @@ export async function GET(req: NextRequest) {
   const windowKey = `${now.getUTCFullYear()}-W${String(weekNumber).padStart(2, '0')}`
 
   const claimed = await claimRun('weekly-backup', windowKey)
-  if (!claimed) {
+  if (claimed.alreadyRan) {
     return NextResponse.json({ ok: true, skipped: 'duplicate' })
   }
+
+  const jobId = claimed.jobId
 
   try {
     // Ensure backup directory exists
@@ -95,7 +97,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    await completeRun('weekly-backup', windowKey)
+    if (jobId) await completeRun(jobId)
     return NextResponse.json({ ok: true, manifest })
   } catch (error) {
     console.error('[weekly-backup] فشل النسخ الاحتياطي:', error)

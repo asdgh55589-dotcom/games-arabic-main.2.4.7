@@ -3,7 +3,7 @@
  */
 
 const mockScheduledJob = {
-  upsert: jest.fn(),
+  create: jest.fn(),
   findFirst: jest.fn(),
   update: jest.fn(),
 }
@@ -35,7 +35,10 @@ beforeEach(() => {
 
 describe('claimRun', () => {
   it('first call returns { alreadyRan: false, jobId }', async () => {
-    mockScheduledJob.upsert.mockResolvedValue({
+    mockScheduledJob.findFirst
+      .mockResolvedValueOnce(null) // no completed
+      .mockResolvedValueOnce(null) // no pending
+    mockScheduledJob.create.mockResolvedValue({
       id: 'job-1',
       status: 'running',
     })
@@ -44,17 +47,15 @@ describe('claimRun', () => {
 
     expect(result.alreadyRan).toBe(false)
     expect(result.jobId).toBe('job-1')
-    expect(mockScheduledJob.upsert).toHaveBeenCalledWith(
+    expect(mockScheduledJob.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { type_windowKey: { type: 'daily_cleanup', windowKey: '2026-09-13' } },
-        create: expect.objectContaining({ type: 'daily_cleanup', windowKey: '2026-09-13', status: 'running' }),
-        update: expect.objectContaining({ status: 'running' }),
+        data: expect.objectContaining({ type: 'daily_cleanup', status: 'running' }),
       }),
     )
   })
 
-  it('duplicate returns { alreadyRan: true } when status is completed', async () => {
-    mockScheduledJob.upsert.mockResolvedValue({
+  it('duplicate returns { alreadyRan: true } when completed exists', async () => {
+    mockScheduledJob.findFirst.mockResolvedValueOnce({
       id: 'job-existing',
       status: 'completed',
     })
@@ -66,7 +67,9 @@ describe('claimRun', () => {
   })
 
   it('handles unique constraint violation as duplicate', async () => {
-    mockScheduledJob.upsert.mockRejectedValue({ code: 'P2002' })
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null) // no completed
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null) // no pending
+    mockScheduledJob.create.mockRejectedValue({ code: 'P2002' })
 
     const result = await claimRun('daily_cleanup', '2026-09-13')
 
@@ -75,22 +78,21 @@ describe('claimRun', () => {
   })
 
   it('propagates unexpected errors', async () => {
-    mockScheduledJob.upsert.mockRejectedValue(new Error('connection refused'))
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null)
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null)
+    mockScheduledJob.create.mockRejectedValue(new Error('connection refused'))
 
     await expect(claimRun('daily_cleanup', '2026-09-13')).rejects.toThrow('connection refused')
   })
 
-  it('treats null windowKey as empty string in upsert', async () => {
-    mockScheduledJob.upsert.mockResolvedValue({ id: 'job-2', status: 'running' })
+  it('returns existing pending job if one exists', async () => {
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null) // no completed
+    mockScheduledJob.findFirst.mockResolvedValueOnce({ id: 'pending-1', status: 'running' }) // pending exists
 
     const result = await claimRun('backup', null)
 
     expect(result.alreadyRan).toBe(false)
-    expect(mockScheduledJob.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { type_windowKey: { type: 'backup', windowKey: '' } },
-      }),
-    )
+    expect(result.jobId).toBe('pending-1')
   })
 })
 

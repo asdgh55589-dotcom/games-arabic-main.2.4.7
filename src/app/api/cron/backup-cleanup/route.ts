@@ -15,13 +15,15 @@ export async function GET(req: NextRequest) {
   const windowKey = today
 
   const claimed = await claimRun('backup-cleanup', windowKey)
-  if (!claimed) {
+  if (claimed.alreadyRan) {
     return NextResponse.json({ ok: true, skipped: 'duplicate' })
   }
 
+  const jobId = claimed.jobId
+
   try {
     const deleted = await cleanupOldBackups()
-    await completeRun('backup-cleanup', windowKey)
+    if (jobId) await completeRun(jobId)
     return NextResponse.json({ ok: true, deleted })
   } catch (error) {
     console.error('[backup-cleanup] فشل التنظيف:', error)

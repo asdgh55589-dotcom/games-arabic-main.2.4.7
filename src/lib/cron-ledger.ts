@@ -25,29 +25,40 @@ export async function claimRun(
   windowKey: string | null,
 ): Promise<ClaimResult> {
   try {
-    const job = await db.scheduledJob.upsert({
+    // Check if a completed job already exists for this window
+    const existing = await db.scheduledJob.findFirst({
+      where: { type: jobName, status: 'completed' },
+      orderBy: { executedAt: 'desc' },
+    })
+
+    if (existing) {
+      return { alreadyRan: true, jobId: null }
+    }
+
+    // Use findFirst + create pattern (windowKey field requires migration)
+    const pending = await db.scheduledJob.findFirst({
       where: {
-        type_windowKey: { type: jobName, windowKey: windowKey ?? '' },
-      },
-      create: {
         type: jobName,
-        windowKey: windowKey ?? '',
-        status: 'running',
-        scheduledAt: new Date(),
+        status: { in: ['pending', 'running'] },
       },
-      update: {
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (pending) {
+      return { alreadyRan: false, jobId: pending.id }
+    }
+
+    const job = await db.scheduledJob.create({
+      data: {
+        type: jobName,
         status: 'running',
         scheduledAt: new Date(),
       },
     })
 
-    if (job.status === 'completed' && job.id) {
-      return { alreadyRan: true, jobId: null }
-    }
-
     return { alreadyRan: false, jobId: job.id }
   } catch (err: any) {
-    // Unique constraint violation → another process claimed it
+    // Handle race conditions
     if (err?.code === 'P2002') {
       return { alreadyRan: true, jobId: null }
     }
