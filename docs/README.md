@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Last Updated:** 2026-08-20
+> **Last Updated:** 2026-09-13
 
 Welcome to the Games Arabic project documentation. This index links to all documentation files.
 
@@ -15,7 +15,7 @@ Welcome to the Games Arabic project documentation. This index links to all docum
 | [AUTH-SYSTEM.md](./AUTH-SYSTEM.md) | Supabase OAuth + JWT `ga_admin_role` + `tokenVersion` + IP ban |
 | [ROUTING-ARCHITECTURE.md](./ROUTING-ARCHITECTURE.md) | File-based routing, `generateMetadata`, 301 redirects |
 | [FRONTEND-ARCHITECTURE.md](./FRONTEND-ARCHITECTURE.md) | AppShell, 26 views, `useFetch`, providers |
-| [DATABASE.md](./DATABASE.md) | Prisma schema — 53 models, singleton, migrations |
+| [DATABASE.md](./DATABASE.md) | Prisma schema — 53 models, singleton, Aiven/Neon migrations |
 | [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) | Local setup, adding features, testing |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Standalone build, Caddy, env, monitoring |
 | [CHANGELOG.md](./CHANGELOG.md) | Architectural decisions (ADRs) + changelog |

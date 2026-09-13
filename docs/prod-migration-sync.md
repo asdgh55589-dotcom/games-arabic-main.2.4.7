@@ -3,6 +3,13 @@
 > DOCS ONLY. Nothing here has been executed against production.
 > Run the steps below IN ORDER during a maintenance window. Estimated: 15 min.
 
+## Target: Aiven PostgreSQL (Phase 5 cutover)
+
+Production is migrating from Neon to **Aiven PostgreSQL**. This runbook
+covers migration sync and cutover verification. For Aiven connection
+setup, pool tuning, and `AIVEN_DATABASE_URL` details, see
+[AIVEN-CONFIG.md](./AIVEN-CONFIG.md).
+
 ## RELEASE deploy — 9 additive migrations above baseline (this branch)
 
 > Production Neon already carries ONLY the `20260907000000_baseline` row
@@ -13,12 +20,16 @@
 > onboarding grandfathering `UPDATE` (sets `onboardingCompleted = true`
 > for pre-existing accounts — idempotent, one-time) and the API-key
 > hash backfill (computed inside the DB via pgcrypto — no rotation).
+>
+> **Aiven target:** After Neon baseline verification, set
+> `AIVEN_DATABASE_URL` on deploy to point `db.ts` at the Aiven replica.
 
-## R0. Safety FIRST — restore point (Neon, same rule as §0)
+## R0. Safety FIRST — restore point (Neon / Aiven)
 
 1. Neon dashboard → project → Branches → **Create branch** from `main`
    (name: `pre-release-YYYYMMDD`). Instant restore point — do NOT skip.
 2. `pg_dump` off-site as a second copy for releases that add tables.
+3. For Aiven: snapshot or logical backup via Aiven console before cutover.
 
 ## R1. Pre-deploy verification (read-only, production)
 
@@ -90,9 +101,10 @@ WHERE table_schema = 'public' AND (
 ```
 
 Rollback: promote the R0 Neon branch to primary (minutes of downtime
-at most). The 9 migrations are additive — rolling the app back to the
-previous build is safe even with the new tables/columns in place
-(old code ignores them).
+at most). For Aiven: unset `AIVEN_DATABASE_URL` to fall back to
+`DATABASE_URL` (Neon). The 9 migrations are additive — rolling the app
+back to the previous build is safe even with the new tables/columns in
+place (old code ignores them).
 
 ---
 
