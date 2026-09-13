@@ -52,7 +52,9 @@ export function RequestsManager() {
         setRequests(json.data?.requests || [])
         setTotalPages(json.data?.pagination?.totalPages || 1)
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort requests operation
+    }
     setLoading(false)
   }, [filter, page])
 

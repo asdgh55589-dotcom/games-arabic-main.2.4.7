@@ -95,7 +95,9 @@ export default async function ModRoutePage({ params }: ModPageProps) {
       const json = await res.json()
       mod = json.data
     }
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod page operation
+  }
   return (
     <>
       {mod && (

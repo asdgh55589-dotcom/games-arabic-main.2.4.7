@@ -64,7 +64,7 @@ export function ReportsClient() {
         setTotalPages(json.data?.pagination?.totalPages || 1)
       }
     } catch {
-      // empty state on failure
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort reports operation
     }
     setLoading(false)
   }, [status, page])

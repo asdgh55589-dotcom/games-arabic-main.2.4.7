@@ -82,7 +82,7 @@ export function StatsClient() {
         if (json?.data?.recentActivity) setRecent(json.data.recentActivity)
       }
     } catch {
-      // empty states on failure
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort stats operation
     }
     setLoading(false)
   }, [range])

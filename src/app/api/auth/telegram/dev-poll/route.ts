@@ -97,7 +97,9 @@ export async function GET(req: NextRequest) {
             }
           }
         }
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort photo fetch
+      }
 
       const expires = session.expiresAt || Date.now() + 5 * 60 * 1000
       await redisSet(
@@ -129,7 +131,9 @@ export async function GET(req: NextRequest) {
     if (lastUpdateId > 0) {
       await fetch(
         `https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=0`,
-      ).catch(() => {})
+      ).catch(() => {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort offset confirmation
+      })
     }
 
     return ok({ ok: true, processed, total: updates.length })
@@ -145,5 +149,7 @@ async function sendMessage(botToken: string, chatId: number, text: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
     })
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Telegram message
+  }
 }

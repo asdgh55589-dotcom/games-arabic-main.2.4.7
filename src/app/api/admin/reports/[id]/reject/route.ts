@@ -84,7 +84,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           resolution: resolution || 'البلاغ غير مبرر',
           moderatorId: moderator.id,
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
     }
 
     return ok({ success: true })

@@ -348,8 +348,8 @@ function detectBackupStatus(filepath: string): 'completed' | 'partial' {
     const head = gunzipSync(raw).subarray(0, 2048).toString('utf-8')
     if (head.includes('"partial":true') || head.includes('"partial": true')) return 'partial'
   } catch {
-    // Legacy/unreadable files: keep backward-compat 'completed'.
-  }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort backup operation
+    }
   return 'completed'
 }
 

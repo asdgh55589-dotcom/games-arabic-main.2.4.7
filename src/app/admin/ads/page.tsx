@@ -169,7 +169,9 @@ export default function AdminAdsPage() {
         const payload = data?.data ?? data
         setStats(payload)
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ads operation
+    }
     setLoadingStats(false)
   }
 

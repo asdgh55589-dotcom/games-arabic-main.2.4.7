@@ -69,13 +69,17 @@ export function NotificationBell({ currentUser }: NotificationBellProps) {
               data.notifications.forEach((n: { title: string; message: string }) => {
                 try {
                   new Notification(n.title, { body: n.message })
-                } catch {}
+                } catch {
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification bell
+              }
               })
             }
           } else if (data.type === 'heartbeat') {
             // keep alive
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification bell
+        }
       }
 
       es.onerror = () => {

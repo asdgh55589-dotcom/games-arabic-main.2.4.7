@@ -49,7 +49,7 @@ export default function CreatorDashboard() {
       const mods: CreatorMod[] = json?.data?.mods ?? []
       setRows(mods.map((m, i) => toRow(m, i, dict.status)))
     } catch {
-      // table shows its empty state on failure
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort studio operation
     }
   }, [dict])
 

@@ -272,9 +272,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               const c = j.pagination?.total ?? j.data?.length ?? 0
               if (!cancelled) setPendingModRequestsCount(c)
             }
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort admin layout
+          }
         }
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort admin layout
+      }
     }
     fetchPending()
     const id = setInterval(fetchPending, 60000)

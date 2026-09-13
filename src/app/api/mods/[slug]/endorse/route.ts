@@ -135,7 +135,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
               modSlug: slug,
               milestone: result.endorsements,
             })
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort endorsement
+          }
         }
       }
     }
@@ -143,7 +145,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     // Invalidate home cache for real-time stats
     try {
       clearHomeCache()
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort endorsement
+    }
 
     return ok({
       endorsed: result.endorsed,

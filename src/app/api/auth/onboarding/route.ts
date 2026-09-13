@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
       })
     }
   } catch {
-    // fail-open
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open
   }
 
   try {
@@ -181,7 +181,9 @@ export async function PATCH(req: NextRequest) {
         entity: 'user',
         entityId: neonUser.id,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     return ok({
       user: {

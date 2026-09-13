@@ -4,6 +4,8 @@ import { Suspense } from 'react'
 import { cairo } from './fonts'
 import './globals.css'
 import { AppShell } from '@/components/layout/app-shell'
+import { ConsentBanner } from '@/components/consent-banner'
+import { PostHogProvider } from '@/components/posthog-provider'
 import { SeoUpdater } from '@/components/seo-updater'
 import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -83,10 +85,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} antialiased bg-background text-foreground`}
       >
+        <ClarityScript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
         />
+        <PostHogProvider>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -103,9 +107,11 @@ export default function RootLayout({
                 </Suspense>
               </SmoothScrollProvider>
               <Toaster />
+              <ConsentBanner />
             </SettingsProvider>
           </AuthProvider>
         </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

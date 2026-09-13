@@ -274,7 +274,9 @@ export async function upgradeUser(
       toTierName: tierNames[newTier] || `المستوى ${newTier}`,
       reason,
     })
-  } catch {}
+  } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort tier calculation
+    }
 }
 
 export async function revokeTier(userId: string, revokedBy: string, reason?: string) {

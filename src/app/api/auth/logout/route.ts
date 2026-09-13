@@ -12,11 +12,15 @@ export async function POST(req: NextRequest) {
     // المستخدم غير مسجل دخول أصلاً — امسح الكوكيز بحذر
     try {
       await clearRoleCookie()
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort cookie cleanup
+    }
     try {
       const supabase = await createClient()
       await supabase.auth.signOut()
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase signOut
+    }
     return ok({ message: 'تم تسجيل الخروج بنجاح' })
   }
 
@@ -53,7 +57,9 @@ export async function POST(req: NextRequest) {
       entityId: user.id,
       details: JSON.stringify({ username: user.username, allSessionsInvalidated: true }),
     })
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+  }
 
   return ok({ message: 'تم تسجيل الخروج بنجاح', success: true })
 }

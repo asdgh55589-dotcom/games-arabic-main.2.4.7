@@ -100,7 +100,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             clearInterval(poll)
             try {
               await fetch('/api/auth/session-ledger', { method: 'POST' }).catch(() => {})
-            } catch {}
+            } catch {
+              // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+            }
             window.location.href = '/'
           } else if (d?.status === 'banned') {
             clearInterval(poll)
@@ -111,7 +113,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             setError('انتهت صلاحية الرابط. حاول مرة أخرى.')
             setBusy(null)
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+        }
       }, 2000)
       setTimeout(() => {
         clearInterval(poll)
@@ -153,7 +157,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         if (authData.user) {
           try {
             await fetch('/api/auth/session-ledger', { method: 'POST' })
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+          }
         }
         window.location.href = '/'
       } else {
@@ -164,7 +170,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             setBusy(null)
             return
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+        }
         const { data: authData, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -202,7 +210,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               }),
             }).catch(() => {})
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+        }
         setPendingEmail(email.trim())
         setBusy(null)
       }

@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       })
     }
   } catch {
-    // fail-open
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open
   }
 
   try {
@@ -95,7 +95,9 @@ export async function POST(req: NextRequest) {
         entity: 'user',
         entityId: row.userId,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     return ok({ success: true })
   } catch (err) {

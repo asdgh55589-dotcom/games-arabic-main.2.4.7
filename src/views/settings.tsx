@@ -325,8 +325,8 @@ export function SettingsPage() {
           setLinkedAccounts(data.accounts || [])
         }
       } catch {
-        // silent
-      } finally {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort settings operation
+} } finally {
         setLoadingAccounts(false)
       }
     }

@@ -48,14 +48,14 @@ export function StudioLanguageProvider({
     try {
       window.localStorage.setItem(STORAGE_KEY, next)
     } catch {
-      // private mode — locale simply won't persist
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort i18n context
     }
     // Mirror to a cookie so server components (stats/settings pages,
     // generateMetadata) can render the same locale. No sensitive data.
     try {
       document.cookie = `${STORAGE_KEY}=${next}; path=/; max-age=31536000; SameSite=Lax`
     } catch {
-      // ignore
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort i18n context
     }
   }, [])
 

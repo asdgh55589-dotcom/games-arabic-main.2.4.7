@@ -73,7 +73,7 @@ export async function GET() {
         })
       }
     } catch {
-      // تجاهل أخطاء Supabase والمتابعة مع role cookie
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase fallback
     }
 
     // 2. لا يوجد Supabase session — فحص role cookie (للمستخدمين عبر Telegram)
@@ -92,6 +92,7 @@ export async function GET() {
       const verified = await jwtVerify(roleToken, JWT_SECRET)
       payload = verified.payload as Record<string, unknown>
     } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort operation
       // JWT غير صالح (قديم أو مزور) — امسح الـ cookie الفاسد
       logger.warn('[auth/me] invalid role cookie — clearing')
       await clearRoleCookie()
@@ -163,7 +164,9 @@ export async function GET() {
     // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع
     try {
       await clearRoleCookie()
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort cookie cleanup in error path
+    }
     return ok({ user: null })
   }
 }

@@ -95,7 +95,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
     try {
       if (localStorage.getItem(`ga_endorsed_${mod.slug}`) === '1') setEndorsed(true)
       if (localStorage.getItem(`ga_reported_mod_${mod.id}`) === '1') setHasReported(true)
-    } catch {}
+    } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+} }
     fetch(`/api/mods/${mod.slug}/endorse`)
       .then((r) => r.json())
       .then((j) => {
@@ -103,7 +105,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           setEndorsed(true)
           try {
             localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-          } catch {}
+          } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+} }
         }
       })
       .catch(() => {})
@@ -126,7 +130,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       if (result.data.endorsed) {
         try {
           localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {}
+        } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+} }
         toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
@@ -402,7 +408,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               setHasReported(true)
               try {
                 localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-              } catch {}
+              } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+} }
             }}
           >
             <Button

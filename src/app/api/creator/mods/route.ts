@@ -170,7 +170,9 @@ export async function POST(req: NextRequest) {
           },
         })
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification to admins
+    }
   }
 
   return ok(

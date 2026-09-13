@@ -86,7 +86,7 @@ function parseTypePreferences(raw: unknown): Record<string, TypePreference> {
       const parsed = JSON.parse(raw)
       if (typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
     } catch {
-      /* fall through */
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort preference repository
     }
   }
   return {}

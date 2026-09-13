@@ -120,7 +120,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       try {
         const tmp = await db.mod.findUnique({ where: { id }, select: { name: true } })
         modNameForLog = tmp?.name || null
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod name lookup for audit
+      }
       await logAction({
         userId: user.id,
         username: user.username,
@@ -135,7 +137,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         }),
         request: req,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     // إرسال إشعار تغيير الحالة
     const modForNotif = await db.mod.findUnique({
@@ -162,7 +166,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         revalidatePath('/')
         revalidatePath('/mod/' + modForRevalidate.slug)
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     // Meilisearch sync (no-op without env, fire-and-forget)
     if (targetStatus === 'PUBLISHED') {

@@ -112,7 +112,7 @@ export function ChartAreaInteractive() {
           )
         }
       } catch {
-        // keep the chart empty on failure
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort chart operation
       }
     }
     load()

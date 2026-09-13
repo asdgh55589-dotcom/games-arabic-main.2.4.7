@@ -112,7 +112,9 @@ export async function POST(req: NextRequest) {
           },
         })
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
 
     return ok({ request, message: 'تم إرسال طلبك بنجاح' }, { status: 201 })
   } catch (err) {

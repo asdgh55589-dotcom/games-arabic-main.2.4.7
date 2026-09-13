@@ -53,7 +53,9 @@ function extractYouTubeId(url: string): string {
         if (/^[\w-]{11}$/.test(part)) return part
       }
     }
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ad section
+  }
   // fallback regex للروابط بدون scheme أو بصيغ غريبة
   const patterns = [
     /(?:youtube\.com\/watch\?.*v=)([\w-]{11})/,

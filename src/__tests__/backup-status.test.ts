@@ -72,11 +72,15 @@ describe('backup status (SA-3)', () => {
       if (ex(dir)) {
         for (const f of readdirSync(dir)) {
           if (f.startsWith('db-backup-')) {
-            try { unlinkSync(pjoin(dir, f)); } catch { /* ignore */ }
+            try { unlinkSync(pjoin(dir, f)); } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
+} }
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
+} }
   });
 
   it('pg_dump success → completed', async () => {

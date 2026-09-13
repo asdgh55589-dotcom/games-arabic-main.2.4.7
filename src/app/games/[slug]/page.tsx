@@ -96,7 +96,9 @@ export default async function GameDetailRoutePage({ params }: GamePageProps) {
       const json = await res.json()
       game = json.data
     }
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort view tracking
+  }
   return (
     <>
       {game && (

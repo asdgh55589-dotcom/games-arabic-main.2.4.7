@@ -79,7 +79,8 @@ export async function POST(req: NextRequest) {
         targetTitle: targetId,
         reason: REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.label || reason,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
 
     // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
     analyzeReportFraud(report.id).catch((err) => {

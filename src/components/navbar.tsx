@@ -106,7 +106,9 @@ function pushRecent(query: string) {
   try {
     const next = [query, ...loadRecent().filter((x) => x !== query)].slice(0, 5)
     localStorage.setItem(RECENT_KEY, JSON.stringify(next))
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort navbar operation
+  }
 }
 
 interface SectionItem {
