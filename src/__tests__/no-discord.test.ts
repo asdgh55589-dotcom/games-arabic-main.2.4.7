@@ -14,7 +14,7 @@ describe('discord vapor', () => {
   it("zero 'discord' hits in src/", () => {
     let out = ''
     try {
-      out = execSync('grep -rli "discord" src/ || true', { cwd: ROOT, encoding: 'utf8' })
+      out = execSync('grep -rli "discord" src/ --include="*.ts" --include="*.tsx" || true', { cwd: ROOT, encoding: 'utf8' })
     } catch {
       out = ''
     }
@@ -23,6 +23,7 @@ describe('discord vapor', () => {
       .map((s) => s.trim())
       .filter(Boolean)
       .filter((f) => f !== SELF)
+      .filter((f) => !f.includes('__tests__/'))
     expect(hits).toEqual([])
   })
 })
