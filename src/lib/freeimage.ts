@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { logger } from './logger'
 
 /**
  * FreeImage.host server relay (SERVER-ONLY — the API key never leaves here).
@@ -8,6 +9,59 @@ import { createHash } from 'node:crypto'
  */
 
 const FREEIMAGE_ENDPOINT = 'https://freeimage.host/api/1/upload'
+
+// ── Circuit breaker ──────────────────────────────────────────
+const CB_FAILURE_THRESHOLD = 5
+const CB_WINDOW_MS = 60_000
+const CB_OPEN_DURATION_MS = 60_000
+
+let cbFailureTimestamps: number[] = []
+let cbOpenUntil = 0
+
+export function isCircuitOpen(): boolean {
+  if (Date.now() < cbOpenUntil) return true
+  return false
+}
+
+function recordFailure(): void {
+  const now = Date.now()
+  cbFailureTimestamps.push(now)
+  cbFailureTimestamps = cbFailureTimestamps.filter((t) => now - t < CB_WINDOW_MS)
+  if (cbFailureTimestamps.length >= CB_FAILURE_THRESHOLD) {
+    cbOpenUntil = now + CB_OPEN_DURATION_MS
+    cbFailureTimestamps = []
+  }
+}
+
+function resetCircuit(): void {
+  cbFailureTimestamps = []
+  cbOpenUntil = 0
+}
+
+/** Reset circuit breaker state — exported for tests only. */
+export function __resetCircuitForTests(): void {
+  resetCircuit()
+}
+
+// ── Arabic error map ─────────────────────────────────────────
+function freeImageArabicError(status: number, isTimeout = false): string {
+  if (isTimeout) return 'FREEIMAGE: انتهت المهلة'
+  switch (status) {
+    case 401:
+    case 403:
+      return 'FREEIMAGE: مفتاح API غير صالح'
+    case 413:
+      return 'FREEIMAGE: الملف يتجاوز الحد الأقصى'
+    case 429:
+      return 'FREEIMAGE: تم تجاوز حد الطلبات'
+    default:
+      return `FREEIMAGE: فشل الرفع (${status})`
+  }
+}
+
+function freeImageNetworkError(): string {
+  return 'FREEIMAGE: خطأ في الشبكة'
+}
 
 export function getFreeImageKey(): string {
   return (process.env.FREEIMAGE_API_KEY || '').trim()
@@ -67,24 +121,66 @@ export async function uploadToFreeImage(
   const key = getFreeImageKey()
   if (!key) throw new Error('FreeImage غير مُكوَّن — FREEIMAGE_API_KEY مفقود')
 
+  if (isCircuitOpen()) {
+    throw new Error('FREEIMAGE: تم تعطيل الخدمة مؤقتاً — حاول لاحقاً')
+  }
+
+  const masked = key.length > 8 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '****'
+  logger.info({ keyPrefix: masked }, 'FreeImage upload starting')
+
   const form = new FormData()
   form.append('key', key)
   form.append('action', 'upload')
   form.append('format', 'json')
   form.append('source', new Blob([new Uint8Array(buffer)], { type: mime }), filename)
 
-  const res = await fetch(FREEIMAGE_ENDPOINT, {
-    method: 'POST',
-    body: form,
-    signal: AbortSignal.timeout(timeoutMs),
-  })
-  const json = await res.json().catch(() => null)
-  if (!res.ok) {
-    const msg =
-      (json as { status_txt?: unknown; error?: { message?: unknown } } | null)?.status_txt ??
-      (json as { error?: { message?: unknown } } | null)?.error?.message
-    throw new Error(typeof msg === 'string' && msg ? `FreeImage: ${msg}` : `FreeImage upload failed (${res.status})`)
+  const doFetch = async () => {
+    const res = await fetch(FREEIMAGE_ENDPOINT, {
+      method: 'POST',
+      body: form,
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    const json = await res.json().catch(() => null)
+    return { res, json }
   }
-  const parsed = parseFreeImageResponse(json)
-  return { ...parsed, sha256: sha256Hex(buffer) }
+
+  try {
+    const { res, json } = await doFetch()
+    if (!res.ok) {
+      // Only retry on 5xx (never 4xx — 401/403/413/429 are permanent)
+      if (res.status >= 500) {
+        recordFailure()
+        logger.warn({ status: res.status }, 'FreeImage 5xx — retrying once')
+        try {
+          const retry = await doFetch()
+          if (!retry.res.ok) {
+            recordFailure()
+            throw new Error(freeImageArabicError(retry.res.status))
+          }
+          resetCircuit()
+          const parsed = parseFreeImageResponse(retry.json)
+          return { ...parsed, sha256: sha256Hex(buffer) }
+        } catch (retryErr) {
+          if (retryErr instanceof Error && retryErr.message.startsWith('FREEIMAGE:')) throw retryErr
+          recordFailure()
+          throw new Error(freeImageNetworkError())
+        }
+      }
+      recordFailure()
+      throw new Error(freeImageArabicError(res.status))
+    }
+    resetCircuit()
+    const parsed = parseFreeImageResponse(json)
+    return { ...parsed, sha256: sha256Hex(buffer) }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('FREEIMAGE:')) throw err
+    // Timeout or network error
+    const isTimeout = (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError' || err.message.includes('timeout') || err.message.includes('aborted')))
+    if (isTimeout) {
+      recordFailure()
+      throw new Error(freeImageArabicError(0, true))
+    }
+    recordFailure()
+    throw new Error(freeImageNetworkError())
+  }
 }

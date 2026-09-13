@@ -35,6 +35,12 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 
+interface WorkerHealthState {
+  ok: boolean
+  cache: 'available' | 'unavailable' | 'unconfigured'
+  configured: boolean
+}
+
 interface HealthData {
   currentWeek: number
   currentPlatform: string
@@ -86,6 +92,7 @@ export default function ImageHealthPage() {
   const [isChecking, setIsChecking] = useState(false)
   const [data, setData] = useState<HealthData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [workerHealth, setWorkerHealth] = useState<WorkerHealthState | null>(null)
 
   const fetchHealthData = useCallback(async () => {
     try {
@@ -103,9 +110,22 @@ export default function ImageHealthPage() {
     }
   }, [toast])
 
+  const fetchWorkerHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/worker-health', { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        setWorkerHealth(json.data)
+      }
+    } catch {
+      // Silent — worker health is informational
+    }
+  }, [])
+
   useEffect(() => {
     fetchHealthData()
-  }, [fetchHealthData])
+    fetchWorkerHealth()
+  }, [fetchHealthData, fetchWorkerHealth])
 
   const handleManualCheck = async () => {
     setIsChecking(true)
@@ -643,6 +663,14 @@ export default function ImageHealthPage() {
             {cloudinaryStatus === 'connected' && <Badge variant="default">متصل</Badge>}
             {cloudinaryStatus === 'unconfigured' && <Badge variant="secondary">غير مُكوَّن</Badge>}
             {cloudinaryStatus === 'unavailable' && <Badge variant="destructive">غير متاح</Badge>}
+            <span className="mx-1 text-muted-foreground">|</span>
+            <span className="text-sm font-normal text-muted-foreground">عامل الصور:</span>
+            {workerHealth === null && <Badge variant="outline">جاري التحقق...</Badge>}
+            {workerHealth?.ok === true && <Badge className="bg-green-600 hover:bg-green-700">متصل</Badge>}
+            {workerHealth?.configured === false && <Badge variant="secondary">غير مُكوَّن</Badge>}
+            {workerHealth?.ok === false && workerHealth?.configured === true && (
+              <Badge variant="destructive">معطل</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
