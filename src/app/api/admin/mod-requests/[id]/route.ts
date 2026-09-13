@@ -58,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       })
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
 
     // إشعار الطالب
     try {

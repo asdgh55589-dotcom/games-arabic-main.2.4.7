@@ -94,8 +94,8 @@ export default function SessionsView() {
         const m = document.cookie.match(/(?:^|;\s*)ga_session_ledger=([^;]+)/)
         currentToken = m ? decodeURIComponent(m[1]) : null
       } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort sessions operation
-} }
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort sessions operation
+      }
       const mapped: Session[] = (list as any[]).map((s: any) => ({
         ...s,
         isCurrent: currentToken ? s.token === currentToken : false,

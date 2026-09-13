@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       })
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
 
     // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
     analyzeReportFraud(report.id).catch((err) => {

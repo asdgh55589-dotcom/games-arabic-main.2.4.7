@@ -86,6 +86,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         })
       } catch {
         // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+      }
     }
 
     return ok({ success: true })

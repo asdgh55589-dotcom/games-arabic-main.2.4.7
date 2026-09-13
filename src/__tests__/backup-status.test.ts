@@ -73,14 +73,14 @@ describe('backup status (SA-3)', () => {
         for (const f of readdirSync(dir)) {
           if (f.startsWith('db-backup-')) {
             try { unlinkSync(pjoin(dir, f)); } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
-} }
+              // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
+            }
           }
         }
       }
     } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
-} }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort test cleanup
+    }
   });
 
   it('pg_dump success → completed', async () => {

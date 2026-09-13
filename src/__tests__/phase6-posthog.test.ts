@@ -93,7 +93,7 @@ describe('posthog client', () => {
   })
 
   it('initPostHog no-ops when key missing', () => {
-    const original = process.env.NEXT_PUBLIC_POSTHOG_KEY
+    const original = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? ''
     delete (process.env as Record<string, string>).NEXT_PUBLIC_POSTHOG_KEY
 
     const { initPostHog } = require('@/lib/analytics/posthog')
@@ -127,7 +127,7 @@ describe('posthog server', () => {
   })
 
   it('getPostHogServer returns null when key missing', () => {
-    const original = process.env.POSTHOG_API_KEY
+    const original = process.env.POSTHOG_API_KEY ?? ''
     delete (process.env as Record<string, string>).POSTHOG_API_KEY
 
     jest.doMock('posthog-node', () => ({

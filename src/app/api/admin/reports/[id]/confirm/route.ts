@@ -162,6 +162,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         })
       } catch {
         // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+      }
     } else if (report.reporterId) {
       // حالة عدم وجود هدف للإشعار (مثل تعليق ضيف بدون حساب) — نبلغ المراسل فقط بنتيجة التأكيد
       try {
@@ -186,6 +187,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         })
       } catch {
         // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+      }
     }
 
     return ok({ success: true })

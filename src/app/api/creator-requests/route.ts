@@ -45,6 +45,7 @@ async function resolveUser(): Promise<SessionUser> {
       await setRoleCookie(dbUser.id, dbUser.role as UserRole, dbUser.tokenVersion, false, dbUser.onboardingCompleted)
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
     return {
       id: dbUser.id,
       username: dbUser.username,

@@ -80,8 +80,8 @@ export function NotificationsPage() {
         setUnreadCount(responseData.meta?.unreadCount || 0)
       }
     } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
-} } finally {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
+    } finally {
       setLoading(false)
     }
   }, [page, filter])
@@ -98,8 +98,8 @@ export function NotificationsPage() {
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
-} }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
+    }
   }
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -118,8 +118,8 @@ export function NotificationsPage() {
       setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })))
       setUnreadCount(0)
     } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
-} }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
+    }
   }
 
   const deleteNotification = async (id: string) => {
@@ -127,8 +127,8 @@ export function NotificationsPage() {
       await fetch(`/api/notifications/${id}`, { method: 'DELETE' })
       setNotifications((prev) => prev.filter((n) => n.id !== id))
     } catch {
-}   // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
-} }
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notifications
+    }
   }
 
   return (

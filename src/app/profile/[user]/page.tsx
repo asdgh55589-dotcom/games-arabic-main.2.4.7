@@ -59,6 +59,7 @@ export default async function ProfileRoutePage({ params }: ProfilePageProps) {
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort view tracking
+  }
   // Fallback to minimal data if API fails — still generate valid Person schema in Arabic
   const personData = userData || {
     username,

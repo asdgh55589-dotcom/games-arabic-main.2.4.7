@@ -92,6 +92,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       revalidatePath('/platform/' + gamePlatform)
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     return ok({ success: true })
   } catch (err) {

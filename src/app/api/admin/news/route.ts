@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       revalidatePath('/')
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     return ok(news)
   } catch (err) {

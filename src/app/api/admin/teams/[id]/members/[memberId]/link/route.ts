@@ -96,6 +96,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     })
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort operation
+  }
 
   try {
     await db.notification.create({
@@ -177,6 +178,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     })
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort operation
+  }
 
   if (oldUserId) {
     try {

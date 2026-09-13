@@ -25,8 +25,9 @@ export function initOtlp(): void {
     const headers = parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS)
 
     const logExporter = new OTLPLogExporter({ url: endpoint, headers })
-    loggerProvider = new LoggerProvider()
-    loggerProvider.addLogRecordProcessor(new SimpleLogRecordProcessor(logExporter))
+    loggerProvider = new LoggerProvider({
+      processors: [new SimpleLogRecordProcessor({ exporter: logExporter })],
+    })
 
     const metricExporter = new OTLPMetricExporter({ url: endpoint, headers })
     meterProvider = new MeterProvider({
