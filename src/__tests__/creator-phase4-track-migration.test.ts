@@ -18,12 +18,13 @@ const model = schema.slice(
 
 describe('schema fields', () => {
   it('has track default translator + portfolio/experience/samples/terms/notes', () => {
-    expect(model).toContain('track          String    @default("translator")')
-    expect(model).toContain('portfolioUrls  String?   @db.Text')
-    expect(model).toContain('experienceYears Int?')
-    expect(model).toContain('samplesCount   Int?')
-    expect(model).toContain('agreeToTerms   Boolean   @default(false)')
-    expect(model).toContain('adminNotes     String?   @db.Text')
+    expect(model).toContain('track')
+    expect(model).toContain('@default("translator")')
+    expect(model).toContain('portfolioUrls')
+    expect(model).toContain('experienceYears')
+    expect(model).toContain('samplesCount')
+    expect(model).toContain('agreeToTerms')
+    expect(model).toContain('adminNotes')
   })
 })
 

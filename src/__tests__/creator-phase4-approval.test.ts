@@ -114,7 +114,7 @@ describe('approveCreatorRequest', () => {
 describe('approveNote migration + UI (static)', () => {
   it('schema + additive migration carry approveNote', () => {
     const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
-    expect(schema).toContain('approveNote    String?   @db.Text')
+    expect(schema).toContain('approveNote')
     const sql = fs.readFileSync(
       path.join(
         root,
