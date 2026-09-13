@@ -1,17 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { requireCronAuth } from '@/lib/cron-auth'
 import { db } from '@/lib/db'
 import type { UserRole } from '@/lib/roles'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierLabel } from '@/lib/tiers'
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
-  const authHeader = req.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
+  const authErr = await requireCronAuth(req)
+  if (authErr) return authErr
 
   const eligibleRoles: UserRole[] = ['creator', 'publisher', 'moderator']
 
