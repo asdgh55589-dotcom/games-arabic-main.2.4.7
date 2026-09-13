@@ -1,62 +1,35 @@
 /**
  * lib/scheduler.ts — خدمة الجدولة والمهام المؤجلة
  *
- * تفحص المهام المعلقة كل دقيقة وتنفذها في الوقت المحدد.
+ * نسخة Phase 7: أُزيل جسيم polling (startScheduler / stopScheduler /
+ * processPendingJobs).  المهام الآن تُستدعى مباشرة عبر API routes
+ * أو cron external scheduler مع طبقة idempotency (cron-ledger.ts).
  */
 
 import { db } from './db'
+import { logger } from './logger'
 import { sendToChannel } from './telegram-bot'
 import { formatPost, getDefaultTemplate } from './telegram-templates'
 
-const POLL_INTERVAL = 60_000 // 1 دقيقة
-let intervalId: NodeJS.Timeout | null = null
-
 /**
- * بدء خدمة الجدولة
+ * @deprecated Phase 7 — polling removed. Use API-route-triggered execution
+ * with cron-ledger claimRun/completeRun for idempotency.
  */
 export function startScheduler(): void {
-  if (intervalId) return
-  console.log('[scheduler] Starting scheduler service...')
-  intervalId = setInterval(processPendingJobs, POLL_INTERVAL)
+  logger.warn('[scheduler] startScheduler is deprecated in Phase 7 — no-op')
 }
 
 /**
- * إيقاف خدمة الجدولة
+ * @deprecated Phase 7 — polling removed.
  */
 export function stopScheduler(): void {
-  if (intervalId) {
-    clearInterval(intervalId)
-    intervalId = null
-    console.log('[scheduler] Stopped scheduler service.')
-  }
-}
-
-/**
- * معالجة المهام المعلقة
- */
-async function processPendingJobs(): Promise<void> {
-  try {
-    const pendingJobs = await db.scheduledJob.findMany({
-      where: {
-        status: 'pending',
-        scheduledAt: { lte: new Date() },
-      },
-      orderBy: { scheduledAt: 'asc' },
-      take: 10,
-    })
-
-    for (const job of pendingJobs) {
-      await executeJob(job.id)
-    }
-  } catch (err) {
-    console.error('[scheduler] Error processing pending jobs:', err)
-  }
+  logger.warn('[scheduler] stopScheduler is deprecated in Phase 7 — no-op')
 }
 
 /**
  * تنفيذ مهمة واحدة
  */
-async function executeJob(jobId: string): Promise<void> {
+export async function executeJob(jobId: string): Promise<void> {
   const job = await db.scheduledJob.findUnique({ where: { id: jobId } })
   if (!job || job.status !== 'pending') return
 
@@ -77,6 +50,9 @@ async function executeJob(jobId: string): Promise<void> {
       case 'cleanup':
         await executeCleanup(job)
         break
+      case 'backup':
+        logger.warn(`[scheduler] Backup job ${jobId} is a no-op in Phase 7`)
+        break
       default:
         throw new Error(`Unknown job type: ${job.type}`)
     }
@@ -87,10 +63,10 @@ async function executeJob(jobId: string): Promise<void> {
       data: { status: 'completed', executedAt: new Date() },
     })
 
-    console.log(`[scheduler] Job ${jobId} completed successfully`)
+    logger.info(`[scheduler] Job ${jobId} completed successfully`)
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
-    console.error(`[scheduler] Job ${jobId} failed:`, errorMsg)
+    logger.error(`[scheduler] Job ${jobId} failed: ${errorMsg}`)
 
     const newRetries = job.retries + 1
     const newStatus = newRetries >= job.maxRetries ? 'failed' : 'pending'
@@ -101,7 +77,6 @@ async function executeJob(jobId: string): Promise<void> {
         status: newStatus,
         error: errorMsg,
         retries: newRetries,
-        // Retry in 5 minutes if not maxed out
         ...(newStatus === 'pending' ? { scheduledAt: new Date(Date.now() + 5 * 60_000) } : {}),
       },
     })
@@ -156,7 +131,7 @@ async function executeTelegramPost(job: {
  */
 async function executeNotification(job: { id: string; payload: any }): Promise<void> {
   // Placeholder for notification execution
-  console.log(`[scheduler] Executing notification job ${job.id}`)
+  logger.info(`[scheduler] Executing notification job ${job.id}`)
 }
 
 /**
@@ -164,7 +139,7 @@ async function executeNotification(job: { id: string; payload: any }): Promise<v
  */
 async function executeCleanup(job: { id: string; payload: any }): Promise<void> {
   // Clean up old files, temp data, etc.
-  console.log(`[scheduler] Executing cleanup job ${job.id}`)
+  logger.info(`[scheduler] Executing cleanup job ${job.id}`)
 }
 
 /**

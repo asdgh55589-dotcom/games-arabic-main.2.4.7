@@ -140,7 +140,7 @@ model User {
   ticketMessages         TicketMessage[]
   savedSearches          SavedSearch[]
   modViews               ModView[]
-  commentSectionClicks CommentSectionClick[]
+  commentSectionClicks   CommentSectionClick[]
   adClicks               AdClick[]
   newsViews              NewsView[]
   newsClicks             NewsClick[]
@@ -160,30 +160,30 @@ model User {
 
 // ===== طلبات الترقية لمُعَرِّب =====
 model CreatorRequest {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  experience     String?   @db.Text
-  preferredGames String?   @db.Text
-  portfolioLinks String?   @db.Text
-  reason         String?   @db.Text
-  status         String    @default("pending") // pending | approved | rejected
-  track          String    @default("translator") // publisher | translator
-  portfolioUrls  String?   @db.Text
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experience      String?   @db.Text
+  preferredGames  String?   @db.Text
+  portfolioLinks  String?   @db.Text
+  reason          String?   @db.Text
+  status          String    @default("pending") // pending | approved | rejected
+  track           String    @default("translator") // publisher | translator
+  portfolioUrls   String?   @db.Text
   experienceYears Int?
-  samplesCount   Int?
-  agreeToTerms   Boolean   @default(false)
-  adminNotes     String?   @db.Text
-  approveNote    String?   @db.Text
-  reviewedBy     String?
-  reviewedAt     DateTime?
-  rejectReason   String?   @db.Text
-  twitterUrl     String?
-  youtubeUrl     String?
-  discordHandle  String?
-  websiteUrl     String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  samplesCount    Int?
+  agreeToTerms    Boolean   @default(false)
+  adminNotes      String?   @db.Text
+  approveNote     String?   @db.Text
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectReason    String?   @db.Text
+  twitterUrl      String?
+  youtubeUrl      String?
+  discordHandle   String?
+  websiteUrl      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([status])
   @@index([userId])
@@ -280,91 +280,91 @@ model Category {
 }
 
 model Mod {
-  id                  String           @id @default(cuid())
-  slug                String           @unique
-  name                String
-  summary             String
-  description         String
-  changelog           String           @default("") // سجل التغييرات (markdown)
-  installGuide        String           @default("") // دليل التركيب (markdown)
-  arabicTitle         String           @default("") // الاسم بالعربي
-  translationScope    String           @default("") // نطاق التعريب
-  compatibility       String           @default("") // التوافق
-  authorId            String
-  author              User             @relation("AuthoredMods", fields: [authorId], references: [id])
-  gameId              String
-  game                Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  categoryId          String?
-  category            Category?        @relation(fields: [categoryId], references: [id])
-  thumbnailUrl        String
-  imageUrl            String
-  galleryUrls         String // comma-separated
-  version             String
-  fileSize            String
-  fileFormat          String // 7z | zip | rar
-  downloads           Int              @default(0)
-  endorsements        Int              @default(0)
-  views               Int              @default(0)
-  comments            Int              @default(0)
-  rating              Float            @default(0)
-  ratingCount         Int              @default(0)
-  tags                String // comma-separated
-  series              String           @default("") // اسم السلسلة (مثل God of War) — للتوافق العكسي
-  seriesId            String? // ربط بالسلسلة الجديدة
-  translationTeam     String           @default("") // فريق التعريب أو المترجم المستقل — للتوافق العكسي
-  teamId              String? // ربط بالفريق الجديد
-  sectionId           String? // ربط بالقسم الرئيسي
-  isFeatured          Boolean          @default(false)
-  isTrending          Boolean          @default(false)
-  isLatest            Boolean          @default(true)
-  translationType     String           @default("unofficial") // official | unofficial
-  isOriginalWork      Boolean          @default(true)
-  originalSource      String?          @db.Text
-  originalAuthor      String?
-  releaseDate         DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  createdAt           DateTime         @default(now())
-  seriesRelation      Series?          @relation(fields: [seriesId], references: [id])
-  teamRelation        Team?            @relation(fields: [teamId], references: [id])
-  sectionRelation     Section?         @relation(fields: [sectionId], references: [id])
-  endorsementRecords  Endorsement[]
-  files               ModFile[]
-  videoGroups         ModVideoGroup[]
-  teamMembers         ModTeamMember[]
-  contactLinks        ModContactLink[]
-  customTabs          ModCustomTab[]
-  commentsRecords     ModComment[]
-  reports             Report[]
-  bookmarks           Bookmark[]
-  downloadClicks      DownloadClick[]
-  modViews            ModView[]
+  id                   String                @id @default(cuid())
+  slug                 String                @unique
+  name                 String
+  summary              String
+  description          String
+  changelog            String                @default("") // سجل التغييرات (markdown)
+  installGuide         String                @default("") // دليل التركيب (markdown)
+  arabicTitle          String                @default("") // الاسم بالعربي
+  translationScope     String                @default("") // نطاق التعريب
+  compatibility        String                @default("") // التوافق
+  authorId             String
+  author               User                  @relation("AuthoredMods", fields: [authorId], references: [id])
+  gameId               String
+  game                 Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  categoryId           String?
+  category             Category?             @relation(fields: [categoryId], references: [id])
+  thumbnailUrl         String
+  imageUrl             String
+  galleryUrls          String // comma-separated
+  version              String
+  fileSize             String
+  fileFormat           String // 7z | zip | rar
+  downloads            Int                   @default(0)
+  endorsements         Int                   @default(0)
+  views                Int                   @default(0)
+  comments             Int                   @default(0)
+  rating               Float                 @default(0)
+  ratingCount          Int                   @default(0)
+  tags                 String // comma-separated
+  series               String                @default("") // اسم السلسلة (مثل God of War) — للتوافق العكسي
+  seriesId             String? // ربط بالسلسلة الجديدة
+  translationTeam      String                @default("") // فريق التعريب أو المترجم المستقل — للتوافق العكسي
+  teamId               String? // ربط بالفريق الجديد
+  sectionId            String? // ربط بالقسم الرئيسي
+  isFeatured           Boolean               @default(false)
+  isTrending           Boolean               @default(false)
+  isLatest             Boolean               @default(true)
+  translationType      String                @default("unofficial") // official | unofficial
+  isOriginalWork       Boolean               @default(true)
+  originalSource       String?               @db.Text
+  originalAuthor       String?
+  releaseDate          DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  createdAt            DateTime              @default(now())
+  seriesRelation       Series?               @relation(fields: [seriesId], references: [id])
+  teamRelation         Team?                 @relation(fields: [teamId], references: [id])
+  sectionRelation      Section?              @relation(fields: [sectionId], references: [id])
+  endorsementRecords   Endorsement[]
+  files                ModFile[]
+  videoGroups          ModVideoGroup[]
+  teamMembers          ModTeamMember[]
+  contactLinks         ModContactLink[]
+  customTabs           ModCustomTab[]
+  commentsRecords      ModComment[]
+  reports              Report[]
+  bookmarks            Bookmark[]
+  downloadClicks       DownloadClick[]
+  modViews             ModView[]
   commentSectionClicks CommentSectionClick[]
-  scheduledJobs       ScheduledJob[]
-  workflowStatus      String           @default("DRAFT") // DRAFT|IN_REVIEW|APPROVED|PUBLISHED|ARCHIVED|REJECTED
-  workflowHistory     WorkflowEntry[]
-  submittedAt         DateTime?
-  reviewedAt          DateTime?
-  publishedAt         DateTime?
-  archivedAt          DateTime?
-  rejectionReason     String?
-  reviewerId          String?
-  reviewer            User?            @relation("ModReviewer", fields: [reviewerId], references: [id])
-  qualityScore        Float            @default(0)
-  qualityRatingsCount Int              @default(0)
-  qualityRatingsTotal Float            @default(0)
-  qualityRating       Float? // computed average cache
-  ratings             ModRating[]
-  versionHistory      ModVersion[]
-  brokenImages        BrokenImage[]
-  isLatestVersion     Boolean          @default(true)
-  previousVersionId   String?
-  previousVersion     Mod?             @relation("ModVersionChain", fields: [previousVersionId], references: [id])
-  nextVersions        Mod[]            @relation("ModVersionChain")
-  scheduledAt         DateTime? // وقت النشر المجدول
-  scheduledPost       String? // المنشور المولد للنشر
-  scheduledSent       Boolean          @default(false)
-  scheduledSentAt     DateTime?
-  requests            ModRequest[]
+  scheduledJobs        ScheduledJob[]
+  workflowStatus       String                @default("DRAFT") // DRAFT|IN_REVIEW|APPROVED|PUBLISHED|ARCHIVED|REJECTED
+  workflowHistory      WorkflowEntry[]
+  submittedAt          DateTime?
+  reviewedAt           DateTime?
+  publishedAt          DateTime?
+  archivedAt           DateTime?
+  rejectionReason      String?
+  reviewerId           String?
+  reviewer             User?                 @relation("ModReviewer", fields: [reviewerId], references: [id])
+  qualityScore         Float                 @default(0)
+  qualityRatingsCount  Int                   @default(0)
+  qualityRatingsTotal  Float                 @default(0)
+  qualityRating        Float? // computed average cache
+  ratings              ModRating[]
+  versionHistory       ModVersion[]
+  brokenImages         BrokenImage[]
+  isLatestVersion      Boolean               @default(true)
+  previousVersionId    String?
+  previousVersion      Mod?                  @relation("ModVersionChain", fields: [previousVersionId], references: [id])
+  nextVersions         Mod[]                 @relation("ModVersionChain")
+  scheduledAt          DateTime? // وقت النشر المجدول
+  scheduledPost        String? // المنشور المولد للنشر
+  scheduledSent        Boolean               @default(false)
+  scheduledSentAt      DateTime?
+  requests             ModRequest[]
 
   @@index([authorId])
   @@index([gameId])
@@ -757,15 +757,15 @@ model News {
   clicksCount Int         @default(0)
   publishAt   DateTime    @default(now()) // جدولة النشر
   expiresAt   DateTime? // انتهاء العرض
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   newsViews   NewsView[]
   newsClicks  NewsClick[]
   // Phase 3: creator-authored rows (nullable — legacy staff rows have none).
   // Creator rows REQUIRE authorId (enforced in the creator API, not the DB,
   // so staff tooling keeps working unchanged).
-  authorId String?
-  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId    String?
+  author      User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([type, visible])
   @@index([publishAt])
@@ -839,24 +839,24 @@ model ModComment {
 
 // ===== طلبات التعريب =====
 model ModRequest {
-  id               String    @id @default(cuid())
-  userId           String
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameName         String
-  platform         String
-  storeLink        String?   @db.Text // deprecated — استخدم storeLinks
-  storeLinks       String?   @db.Text // JSON array: ["https://...","https://..."]
-  translationType  String? // deprecated — لم يعد مستخدماً
-  notes            String?   @db.Text
-  status           String    @default("open") // open | accepted | completed | cancelled
-  acceptedBy       String?
-  acceptedUser     User?     @relation("AcceptedRequests", fields: [acceptedBy], references: [id], onDelete: SetNull)
-  acceptedAt       DateTime?
-  modId            String?
-  mod              Mod?      @relation(fields: [modId], references: [id], onDelete: SetNull)
-  interestCount    Int       @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameName        String
+  platform        String
+  storeLink       String?   @db.Text // deprecated — استخدم storeLinks
+  storeLinks      String?   @db.Text // JSON array: ["https://...","https://..."]
+  translationType String? // deprecated — لم يعد مستخدماً
+  notes           String?   @db.Text
+  status          String    @default("open") // open | accepted | completed | cancelled
+  acceptedBy      String?
+  acceptedUser    User?     @relation("AcceptedRequests", fields: [acceptedBy], references: [id], onDelete: SetNull)
+  acceptedAt      DateTime?
+  modId           String?
+  mod             Mod?      @relation(fields: [modId], references: [id], onDelete: SetNull)
+  interestCount   Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([status])
   @@index([userId])
@@ -864,7 +864,7 @@ model ModRequest {
   @@index([gameName])
 }
 
-  // ===== سجل النشاطات (Audit Log) =====
+// ===== سجل النشاطات (Audit Log) =====
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
@@ -1094,7 +1094,7 @@ model Report {
   reporterId String?
   reporter   User?   @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
 
-  targetType      ReportType   // migrated from String
+  targetType      ReportType // migrated from String
   targetModId     String?
   targetMod       Mod?        @relation(fields: [targetModId], references: [id], onDelete: Cascade)
   targetCommentId String?
@@ -1107,9 +1107,9 @@ model Report {
   description  String?
   evidenceUrls Json? // مصفوفة روابط ["url1","url2"] — يمنع مشاكل الفاصلة ويُستخدم مع تحقق XSS
 
-  status       ReportStatus   @default(new)
+  status       ReportStatus @default(new)
   assignedToId String?
-  assignedTo   User?     @relation("ReportsAssigned", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedTo   User?        @relation("ReportsAssigned", fields: [assignedToId], references: [id], onDelete: SetNull)
   resolution   String?
   resolvedAt   DateTime?
 
@@ -1157,16 +1157,16 @@ model ReportFraudSignal {
 
 // ===== سجل تغييرات حالة البلاغ =====
 model ReportStatusHistory {
-  id         String   @id @default(cuid())
+  id         String        @id @default(cuid())
   reportId   String
-  report     Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report     Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
   fromStatus ReportStatus?
   toStatus   ReportStatus
   action     ReportAction? // migrated from String
   resolution String?
   actorId    String?
-  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
 
   @@index([reportId])
   @@index([createdAt])
@@ -1277,6 +1277,7 @@ model CommentSectionClick {
 model ScheduledJob {
   id          String    @id @default(cuid())
   type        String // 'telegram_post', 'backup', 'notification', 'cleanup'
+  windowKey   String? // Idempotency window key (e.g. '2026-09-13', '2026-W37', '2026-09')
   modId       String?
   mod         Mod?      @relation(fields: [modId], references: [id], onDelete: Cascade)
   payload     Json      @default("{}")
@@ -1289,6 +1290,7 @@ model ScheduledJob {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@unique([type, windowKey])
   @@index([status])
   @@index([scheduledAt])
   @@index([type])
@@ -1478,9 +1480,9 @@ model BrokenImage {
   fixedAt    DateTime?
   status     String    @default("detected") // detected | fixed | ignored
 
+  @@unique([modId, imageUrl])
   @@index([modId])
   @@index([status])
-  @@unique([modId, imageUrl])
 }
 
 model ImageHealthLog {
@@ -1526,8 +1528,8 @@ model UploadAsset {
   id          String   @id @default(cuid())
   userId      String
   modId       String?
-  kind        String   // image | file
-  provider    String   // freeimage | ia
+  kind        String // image | file
+  provider    String // freeimage | ia
   originalUrl String
   wrappedUrl  String?
   storageKey  String?
@@ -1581,10 +1583,10 @@ model UploadUsageDaily {
 
 // Lifetime storage footprint per creator (updated transactionally on upload).
 model CreatorStorage {
-  userId      String   @unique
-  totalBytes  BigInt   @default(0)
-  filesCount  Int      @default(0)
-  updatedAt   DateTime @updatedAt
+  userId     String   @unique
+  totalBytes BigInt   @default(0)
+  filesCount Int      @default(0)
+  updatedAt  DateTime @updatedAt
 
   @@index([userId])
 }
