@@ -428,32 +428,6 @@ body {
   touch-action: manipulation;
 }
 
-/* ===== Mod Detail Page — Design Pilot ===== */
-.mod-detail-card {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.mod-detail-card:hover {
-  border-color: oklch(1 0 0 / 0.12);
-}
-.mod-detail-shadow {
-  box-shadow: 0 1px 3px oklch(0 0 0 / 0.12), 0 1px 2px oklch(0 0 0 / 0.08);
-}
-.mod-detail-shadow-lg {
-  box-shadow: 0 4px 12px oklch(0 0 0 / 0.15), 0 2px 4px oklch(0 0 0 / 0.1);
-}
-.mod-detail-hero-overlay {
-  background: linear-gradient(
-    to bottom,
-    oklch(0.15 0.02 250 / 0.1) 0%,
-    oklch(0.15 0.02 250 / 0.3) 40%,
-    oklch(0.15 0.02 250 / 0.8) 80%,
-    oklch(0.15 0.02 250) 100%
-  );
-}
-
 /* ===== Creator studio: scoped official shadcn (zinc light) theme =====
    Isolates dashboard-01 from the site's custom dark tokens. Only vars
    consumed by the block + official-ui primitives are overridden. */
