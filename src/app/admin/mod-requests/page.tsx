@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { hasRoleAtLeast } from '@/lib/roles'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'طلبات التعريب | لوحة الإدارة',
   description: 'جميع طلبات التعريب من المستخدمين',

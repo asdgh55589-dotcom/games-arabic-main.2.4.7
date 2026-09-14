@@ -6,6 +6,8 @@ import { getStudioLocale } from '@/lib/studio-i18n/server'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getStudioLocale()
   const t = locale === 'en' ? en : ar

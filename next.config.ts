@@ -110,7 +110,6 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   silent: true,
-  disableLogger: true,
   // NOTE: `hideSourceMaps` does not exist in @sentry/nextjs v10 (verified:
   // zero hits across node_modules/@sentry/** .d.ts). v10 equivalent that
   // keeps .map files out of the deployed output:

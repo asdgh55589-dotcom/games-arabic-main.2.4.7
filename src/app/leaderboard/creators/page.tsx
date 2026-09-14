@@ -9,6 +9,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { db } from '@/lib/db'
 import { getTierLabel } from '@/lib/tiers'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'لوحة صدارة المُعَرِّبين | Games Arabic',
   description: 'أفضل المُعَرِّبين في المنصة حسب المستوى والتقييم والتحميلات',
