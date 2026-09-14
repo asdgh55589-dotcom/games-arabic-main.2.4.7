@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   ArrowUpCircleIcon,
   BarChartIcon,
+  BookOpenIcon,
   FolderIcon,
   HeartIcon,
   LayoutDashboardIcon,
@@ -50,6 +51,7 @@ export function AppSidebar({
       ? [{ title: dict.nav.news, url: "/creator/news", icon: NewspaperIcon }]
       : []),
     { title: dict.nav.reports, url: "/creator/reports", icon: ShieldAlertIcon },
+    { title: "الدليل", url: "/creator/docs", icon: BookOpenIcon },
   ]
   const navSecondary = [
     { title: dict.nav.settings, url: "/creator/settings", icon: SettingsIcon },
