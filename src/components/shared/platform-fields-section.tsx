@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { PLATFORMS } from '@/lib/constants'
+import { PLATFORM_ARABIC } from '@/lib/constants'
 import { Field, Section } from '@/components/creator/mod-form/primitives'
 
 export interface PlatformFieldsValues {
@@ -39,6 +40,8 @@ export interface PlatformFieldsValues {
   setMinAndroidVersion: (v: string) => void
   compatibility: string
   setCompatibility: (v: string) => void
+  /** When true, the platform dropdown is hidden (platform chosen in wizard step 1). */
+  hidePlatformSelect?: boolean
 }
 
 const XBOX_FORMATS = ['GOD', 'JTAG', 'RGH', 'ISO', 'XEX']
@@ -52,30 +55,36 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
     <Section title="حقول المنصة">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          اختر المنصة لرؤية الحقول المطلوبة.
-          <Link
-            href="/creator/docs"
-            className="me-1 text-primary underline-offset-2 hover:underline"
-          >
-            اقرأ الدليل الكامل
-          </Link>
+          {p.hidePlatformSelect ? (
+            <>المنصة: <span className="font-bold text-foreground">{PLATFORM_ARABIC[pl] || pl}</span></>
+          ) : (
+            <>اختر المنصة لرؤية الحقول المطلوبة.
+            <Link
+              href="/creator/docs"
+              className="me-1 text-primary underline-offset-2 hover:underline"
+            >
+              اقرأ الدليل الكامل
+            </Link></>
+          )}
         </p>
       </div>
 
-      <Field label="المنصة" hint="اختر منصة اللعبة لإظهار الحقول المناسبة">
-        <select
-          value={p.platform}
-          onChange={(e) => p.setPlatform(e.target.value)}
-          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">— اختر المنصة —</option>
-          {PLATFORMS.map((p) => (
-            <option key={p.key} value={p.key}>
-              {p.arabicLabel}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {!p.hidePlatformSelect && (
+        <Field label="المنصة" hint="اختر منصة اللعبة لإظهار الحقول المناسبة">
+          <select
+            value={p.platform}
+            onChange={(e) => p.setPlatform(e.target.value)}
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+          >
+            <option value="">— اختر المنصة —</option>
+            {PLATFORMS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.arabicLabel}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
 
       {/* طريقة التعريب — كل المنصات */}
       <Field label="طريقة التعريب" hint="بشري / آلي / مختلط">
@@ -93,7 +102,7 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
 
       {/* ===== PS1 / PS2 ===== */}
       {(pl === 'PS1' || pl === 'PS2') && (
-        <Field label="معرّف اللعبة (Game ID)">
+        <Field label="معرّف اللعبة">
           <Input
             value={p.platformGameId}
             onChange={(e) => p.setPlatformGameId(e.target.value)}
@@ -105,14 +114,14 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== PS3 ===== */}
       {pl === 'PS3' && (
         <>
-          <Field label="معرّف اللعبة (Game ID)">
+          <Field label="معرّف اللعبة">
             <Input
               value={p.platformGameId}
               onChange={(e) => p.setPlatformGameId(e.target.value)}
               placeholder="مثال: BCES-01719"
             />
           </Field>
-          <Field label="رقم تحديث اللعبة المتوافق">
+          <Field label="رقم تحديث اللعبة">
             <Input
               value={p.gameUpdateVersion}
               onChange={(e) => p.setGameUpdateVersion(e.target.value)}
@@ -125,21 +134,21 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== PS4 ===== */}
       {pl === 'PS4' && (
         <>
-          <Field label="معرّف اللعبة (CUSA)">
+          <Field label="معرّف اللعبة">
             <Input
               value={p.cusaId}
               onChange={(e) => p.setCusaId(e.target.value)}
               placeholder="مثال: CUSA-00123"
             />
           </Field>
-          <Field label="تحديث النظام المتوافق">
+          <Field label="تحديث النظام">
             <Input
               value={p.systemFirmware}
               onChange={(e) => p.setSystemFirmware(e.target.value)}
               placeholder="مثال: 11.00"
             />
           </Field>
-          <Field label="رقم تحديث اللعبة المتوافق">
+          <Field label="رقم تحديث اللعبة">
             <Input
               value={p.gameUpdateVersion}
               onChange={(e) => p.setGameUpdateVersion(e.target.value)}
@@ -152,21 +161,21 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== PS5 ===== */}
       {pl === 'PS5' && (
         <>
-          <Field label="معرّف اللعبة (PPSA)">
+          <Field label="معرّف اللعبة">
             <Input
               value={p.ppsaId}
               onChange={(e) => p.setPpsaId(e.target.value)}
               placeholder="مثال: PPSA-00001"
             />
           </Field>
-          <Field label="تحديث النظام المتوافق">
+          <Field label="تحديث النظام">
             <Input
               value={p.systemFirmware}
               onChange={(e) => p.setSystemFirmware(e.target.value)}
               placeholder="مثال: 11.00"
             />
           </Field>
-          <Field label="رقم تحديث اللعبة المتوافق">
+          <Field label="رقم تحديث اللعبة">
             <Input
               value={p.gameUpdateVersion}
               onChange={(e) => p.setGameUpdateVersion(e.target.value)}
@@ -179,7 +188,7 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== Switch ===== */}
       {pl === 'NS' && (
         <>
-          <Field label="اصدار اللعبه (Title ID)">
+          <Field label="إصدار اللعبة">
             <Input
               value={p.titleId}
               onChange={(e) => p.setTitleId(e.target.value)}
@@ -193,7 +202,7 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
               placeholder="مثال: NS1"
             />
           </Field>
-          <Field label="رقم التحديث المتوافق">
+          <Field label="رقم التحديث">
             <Input
               value={p.gameUpdateVersion}
               onChange={(e) => p.setGameUpdateVersion(e.target.value)}
@@ -206,21 +215,21 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== Xbox 360 ===== */}
       {pl === 'X360' && (
         <>
-          <Field label="معرّف اللعبة (Title ID)">
+          <Field label="معرّف اللعبة">
             <Input
               value={p.titleId}
               onChange={(e) => p.setTitleId(e.target.value)}
               placeholder="مثال: 584111F7"
             />
           </Field>
-          <Field label="معرّف الوسائط (Media ID)">
+          <Field label="معرّف الوسائط">
             <Input
               value={p.mediaId}
               onChange={(e) => p.setMediaId(e.target.value)}
               placeholder="مثال: D06D12ED"
             />
           </Field>
-          <Field label="صيغة اللعبة المدعومة">
+          <Field label="الصيغة">
             <select
               value={p.supportedFormat}
               onChange={(e) => p.setSupportedFormat(e.target.value)}
@@ -247,7 +256,7 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
       {/* ===== Android ===== */}
       {pl === 'ANDROID' && (
         <>
-          <Field label="نوع ملف التثبيت">
+          <Field label="نوع التثبيت">
             <select
               value={p.installType}
               onChange={(e) => p.setInstallType(e.target.value)}
@@ -261,7 +270,7 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
               ))}
             </select>
           </Field>
-          <Field label="بنية المعالج المتوافقة">
+          <Field label="بنية المعالج">
             <select
               value={p.cpuArch}
               onChange={(e) => p.setCpuArch(e.target.value)}
@@ -275,14 +284,14 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
               ))}
             </select>
           </Field>
-          <Field label="رقم إصدار اللعبة المتوافق">
+          <Field label="إصدار اللعبة">
             <Input
               value={p.gameVersion}
               onChange={(e) => p.setGameVersion(e.target.value)}
               placeholder="مثال: 2.5.1"
             />
           </Field>
-          <Field label="الحد الأدنى لنظام الأندرويد">
+          <Field label="الحد الأدنى للأندرويد">
             <Input
               value={p.minAndroidVersion}
               onChange={(e) => p.setMinAndroidVersion(e.target.value)}

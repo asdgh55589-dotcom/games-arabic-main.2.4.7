@@ -3,7 +3,7 @@
 
 'use client'
 
-import { ChevronRight, Clock, FileArchive, Loader2, Plus } from 'lucide-react'
+import { ChevronRight, Clock, FileArchive, Loader2, Plus, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -25,6 +25,17 @@ import { ModFormFiles } from './mod-form/files'
 import { ModFormMedia } from './mod-form/media'
 import { ModFormSettings } from './mod-form/settings'
 import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
+import { PlatformSelector } from './mod-form/platform-selector'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   EMPTY_CONTACT,
   EMPTY_FILE,
@@ -63,6 +74,11 @@ export default function ModForm({ modId }: ModFormProps) {
   const [versionHistory, setVersionHistory] = useState<any[]>([])
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
   const [userRole, setUserRole] = useState('member')
+
+  // Wizard step: 1 = platform selection, 2 = full form
+  const [step, setStep] = useState(isEdit ? 2 : 1)
+  const [platformChangeDialogOpen, setPlatformChangeDialogOpen] = useState(false)
+  const [pendingPlatform, setPendingPlatform] = useState('')
 
   const [name, setName] = useState('')
   const [summary, setSummary] = useState('')
@@ -396,6 +412,40 @@ export default function ModForm({ modId }: ModFormProps) {
     setCropperOpen(true)
   }
 
+  // Handle platform selection from step 1
+  const handlePlatformSelect = (key: string) => {
+    setPlatform(key)
+    setStep(2)
+  }
+
+  // Handle going back to step 1 from step 2
+  const handleBackToStep1 = () => {
+    setPendingPlatform('')
+    setPlatformChangeDialogOpen(true)
+  }
+
+  // Confirm platform change: clear platform-specific fields and go to step 1
+  const confirmPlatformChange = () => {
+    setPlatformChangeDialogOpen(false)
+    // Clear platform-specific fields
+    setTranslationMethod('')
+    setPlatformGameId('')
+    setCusaId('')
+    setPpsaId('')
+    setTitleId('')
+    setMediaId('')
+    setSupportedFormat('')
+    setSystemFirmware('')
+    setGameUpdateVersion('')
+    setDeviceModel('')
+    setInstallType('')
+    setCpuArch('')
+    setGameVersion('')
+    setMinAndroidVersion('')
+    setCompatibility('')
+    setStep(1)
+  }
+
   // ===== Save =====
   const onSave = async () => {
     // Defense in depth: never persist base64 — block save while a crop
@@ -559,6 +609,50 @@ export default function ModForm({ modId }: ModFormProps) {
         </div>
       </div>
 
+      {/* Step indicator for new mods */}
+      {!isEdit && (
+        <div className="flex items-center gap-3 text-sm">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>1</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            اختيار المنصة
+          </span>
+          <span className="text-muted-foreground">←</span>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>2</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            بيانات التعريب
+          </span>
+        </div>
+      )}
+
+      {/* Step 1: Platform Selection */}
+      {step === 1 && (
+        <div className="rounded-xl border border-border bg-card/30 p-6">
+          <PlatformSelector
+            selected={platform}
+            onSelect={handlePlatformSelect}
+          />
+        </div>
+      )}
+
+      {/* Step 2: Full Mod Form */}
+      {step === 2 && (
+        <>
+          {/* Back button for new mods */}
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={handleBackToStep1}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowRight className="h-4 w-4" />
+              تغيير المنصة
+            </button>
+          )}
+
       <ModFormBasicInfo
         name={name}
         setName={setName}
@@ -620,6 +714,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setMinAndroidVersion={setMinAndroidVersion}
         compatibility={compatibility}
         setCompatibility={setCompatibility}
+        hidePlatformSelect={!isEdit}
       />
 
       {/* أزرار تغيير الحالة */}
@@ -753,6 +848,30 @@ export default function ModForm({ modId }: ModFormProps) {
       )}
 
       <ModFormActions saving={saving} isEdit={isEdit} onSave={onSave} />
+
+      {/* End step 2 wrapper */}
+        </>
+      )}
+
+      {/* Platform change warning dialog */}
+      <AlertDialog open={platformChangeDialogOpen} onOpenChange={setPlatformChangeDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
+            <AlertDialogDescription>
+              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
+              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (اسم التعريب،
+              الاسم بالعربي، الوصف) لن تتأثر.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPlatformChange}>
+              تغيير ومسح الحقول
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
