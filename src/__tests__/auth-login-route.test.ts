@@ -71,10 +71,10 @@ const mockCreate = jest.fn()
 jest.mock('@/lib/db', () => ({
   db: {
     user: {
-      findUnique: (...a: Array<never>) => mockFindUnique(...a),
-      findFirst: (...a: Array<never>) => mockFindFirst(...a),
-      update: (...a: Array<never>) => mockUpdate(...a),
-      create: (...a: Array<never>) => mockCreate(...a),
+      findUnique: (...a: Array<any>) => mockFindUnique(...a),
+      findFirst: (...a: Array<any>) => mockFindFirst(...a),
+      update: (...a: Array<any>) => mockUpdate(...a),
+      create: (...a: Array<any>) => mockCreate(...a),
     },
   },
 }))
@@ -84,7 +84,7 @@ jest.mock('@/lib/auth', () => {
   const actual = jest.requireActual('@/lib/auth')
   return {
     ...actual,
-    createSupabaseAuthUser: (...a: Array<never>) => mockCreateSupabaseAuthUser(...a),
+    createSupabaseAuthUser: (...a: Array<any>) => mockCreateSupabaseAuthUser(...a),
     setRoleCookie: jest.fn().mockResolvedValue(undefined),
     hashPassword: jest.fn().mockResolvedValue('hashed-pw'),
   }
@@ -99,7 +99,7 @@ import { checkRateLimit } from '@/lib/ratelimit'
 import { NextRequest } from 'next/server'
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
-const mockBcryptCompare = bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>
+const mockBcryptCompare = bcrypt.compare as unknown as jest.Mock
 const mockVerifySecurityKey = verifySecurityKey as jest.MockedFunction<typeof verifySecurityKey>
 const mockIsSecurityKeyExpired = isSecurityKeyExpired as jest.MockedFunction<typeof isSecurityKeyExpired>
 const mockRateLimit = rateLimitFn as jest.MockedFunction<typeof rateLimitFn>

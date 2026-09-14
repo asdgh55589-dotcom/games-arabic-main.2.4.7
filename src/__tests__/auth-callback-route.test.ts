@@ -41,18 +41,18 @@ const mockTransaction = jest.fn()
 jest.mock('@/lib/db', () => ({
   db: {
     user: {
-      findFirst: (...a: Array<never>) => mockFindFirst(...a),
-      findUnique: (...a: Array<never>) => mockFindUnique(...a),
-      update: (...a: Array<never>) => mockUpdate(...a),
-      create: (...a: Array<never>) => mockCreate(...a),
+      findFirst: (...a: Array<any>) => mockFindFirst(...a),
+      findUnique: (...a: Array<any>) => mockFindUnique(...a),
+      update: (...a: Array<any>) => mockUpdate(...a),
+      create: (...a: Array<any>) => mockCreate(...a),
     },
     oAuthAccount: {
-      findUnique: (...a: Array<never>) => mockFindUnique(...a),
-      create: (...a: Array<never>) => mockCreate(...a),
+      findUnique: (...a: Array<any>) => mockFindUnique(...a),
+      create: (...a: Array<any>) => mockCreate(...a),
     },
-    $transaction: (...a: Array<never>) => mockTransaction(...a),
+    $transaction: (...a: Array<any>) => mockTransaction(...a),
     session: {
-      create: (...a: Array<never>) => mockCreate(...a),
+      create: (...a: Array<any>) => mockCreate(...a),
     },
     notificationPreference: {
       create: jest.fn().mockResolvedValue({}),
@@ -166,7 +166,7 @@ describe('GET /api/auth/callback', () => {
       const tx = {
         user: { create: jest.fn().mockResolvedValue(newUser) },
         oAuthAccount: { create: jest.fn().mockResolvedValue({}) },
-        notificationPreference: { create: jest.fn().mockResolvedValue({}).catch(() => {}) },
+        notificationPreference: { create: jest.fn().mockResolvedValue({}) },
       }
       return fn(tx)
     })
@@ -287,7 +287,7 @@ describe('GET /api/auth/callback', () => {
   it('يستخدم generateUsernameFromEmail عندما لا يوجد username في metadata', async () => {
     const noUsernameUser = {
       ...SUPABASE_USER,
-      user_metadata: { full_name: '', avatar_url: '' },
+      user_metadata: { full_name: '', avatar_url: '', username: '' },
     }
     mockSupabaseSession(noUsernameUser)
     mockFindFirst.mockResolvedValue(null)
@@ -298,7 +298,7 @@ describe('GET /api/auth/callback', () => {
       const tx = {
         user: { create: jest.fn().mockResolvedValue(NEON_USER) },
         oAuthAccount: { create: jest.fn().mockResolvedValue({}) },
-        notificationPreference: { create: jest.fn().mockResolvedValue({}).catch(() => {}) },
+        notificationPreference: { create: jest.fn().mockResolvedValue({}) },
       }
       return fn(tx)
     })
@@ -367,7 +367,7 @@ describe('GET /api/auth/callback', () => {
       const tx = {
         user: { create: jest.fn().mockResolvedValue(NEON_USER) },
         oAuthAccount: { create: jest.fn().mockResolvedValue({}) },
-        notificationPreference: { create: jest.fn().mockResolvedValue({}).catch(() => {}) },
+        notificationPreference: { create: jest.fn().mockResolvedValue({}) },
       }
       return fn(tx)
     })
