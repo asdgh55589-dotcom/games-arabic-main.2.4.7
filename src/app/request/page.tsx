@@ -108,7 +108,9 @@ function parseStoreLinks(r: { storeLinks?: string | null; storeLink?: string | n
     try {
       const arr = JSON.parse(r.storeLinks)
       if (Array.isArray(arr)) return arr.filter((s) => typeof s === 'string' && s.trim())
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort request operation
+    }
   }
   if (r.storeLink) return [r.storeLink]
   return []
@@ -194,7 +196,9 @@ export default function RequestPage() {
       const res = await fetch('/api/mod-requests', { cache: 'no-store' })
       const json = await res.json()
       if (res.ok) setRequests(json.data?.requests || [])
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort request operation
+    }
     setLoading(false)
   }, [])
 
@@ -348,7 +352,9 @@ export default function RequestPage() {
           variant: 'destructive',
         })
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort request operation
+    }
   }
 
   return (

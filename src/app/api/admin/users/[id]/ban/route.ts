@@ -131,7 +131,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         banType: type === 'temp' ? 'temp_ban' : 'perm_ban',
         durationDays: type === 'temp' ? Number(body.days) || 7 : undefined,
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ban notification
+    }
 
     return ok({
       success: true,

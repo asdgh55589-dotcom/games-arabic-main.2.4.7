@@ -10,6 +10,8 @@ import type { UserRole } from '@/lib/roles'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierConfig, getTierLabel } from '@/lib/tiers'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({
   params,
 }: {

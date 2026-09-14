@@ -12,6 +12,7 @@ jest.mock('@/lib/db', () => ({
   db: {
     mod: { findUnique: jest.fn(), update: jest.fn() },
     modComment: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
+    $transaction: jest.fn(async (ops: any) => Promise.all(ops)),
   },
 }));
 
@@ -154,14 +155,21 @@ describe('3.4.1 huge payload: zod max(2000) rejects before DB ✅ (transport: Ne
 describe('4.1 error-message language audit (static)', () => {
   const routesDir = path.join(process.cwd(), 'src/app/api');
   const read = (p: string) => fs.readFileSync(path.join(routesDir, p), 'utf8');
-  it('public comment routes contain English user-facing strings ❌', () => {
+  it('public comment routes are fully Arabic ✅ (FIXED Phase 4)', () => {
     const mods = read('mods/[slug]/comments/route.ts');
     const cid = read('comments/[id]/route.ts');
-    expect(mods).toMatch(/Mod not found/);
-    expect(mods).toMatch(/Login required to comment/);
-    expect(mods).toMatch(/Failed to create comment/);
-    expect(cid).toMatch(/Comment not found/);
-    expect(cid).toMatch(/Failed to (update|delete) comment/);
+    const reaction = read('comments/[id]/reaction/route.ts');
+    expect(mods).toMatch(/التعريب غير موجود/);
+    expect(mods).toMatch(/يجب تسجيل الدخول للتعليق/);
+    expect(mods).toMatch(/فشل نشر التعليق/);
+    expect(cid).toMatch(/التعليق غير موجود/);
+    expect(cid).toMatch(/فشل تعديل التعليق/);
+    expect(cid).toMatch(/فشل حذف التعليق/);
+    expect(cid).toMatch(/ليس لديك صلاحية/);
+    expect(reaction).toMatch(/التعليق غير موجود/);
+    for (const src of [mods, cid, reaction]) {
+      expect(src).not.toMatch(/Mod not found|Login required to comment|Failed to (create|update|delete) comment|Comment not found/);
+    }
   });
   it('creator + admin routes are Arabic with real status codes ✅ (FIXED)', () => {
     const creator = read('creator/comments/[id]/route.ts');
@@ -177,7 +185,7 @@ describe('4.1 error-message language audit (static)', () => {
     expect(eb).not.toMatch(/حدث خطأ|عذراً|حاول مجدداً/);
   });
   it('UI toasts are Arabic ✅', () => {
-    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/mod-comments.tsx'), 'utf8');
+    const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/comments/use-comments.ts'), 'utf8');
     expect(ui).toMatch(/تم نشر التعليق/);
     expect(ui).toMatch(/سجّل الدخول/);
   });

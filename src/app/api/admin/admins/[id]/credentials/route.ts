@@ -59,7 +59,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
           if (!error && data?.user?.id) {
             updateData.supabaseId = data.user.id
           }
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort credential rotation
+        }
       }
       auditReason += 'تغيير كلمة المرور؛ '
     }

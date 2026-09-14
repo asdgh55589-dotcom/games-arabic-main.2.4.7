@@ -20,6 +20,7 @@ jest.mock('@/lib/db', () => ({
       update: jest.fn(),
       count: jest.fn(),
     },
+    $transaction: jest.fn(async (ops: any) => Promise.all(ops)),
   },
 }))
 jest.mock('@/lib/auth', () => ({
@@ -56,6 +57,7 @@ beforeEach(() => {
   ;(rateLimit as jest.Mock).mockResolvedValue({ success: true, remaining: 4, resetAt: 0, limit: 5 })
   ;(getOptionalSession as jest.Mock).mockResolvedValue({ id: 'u1', username: 'م', role: 'member' })
   ;(db.mod.findUnique as jest.Mock).mockResolvedValue({ id: 'mod-1', name: 'م', authorId: 'a1' })
+  ;(db.$transaction as jest.Mock).mockImplementation(async (ops: any) => Promise.all(ops))
 })
 
 describe('7.1 entity-bypass XSS: stored verbatim, render layer has no decoder', () => {
@@ -217,8 +219,7 @@ describe('7.2/7.4 output-encoding + gate inventory (static)', () => {
     expect(
       src('src/app/api/comments/[id]/route.ts').match(/getOptionalSession/g)!.length,
     ).toBeGreaterThanOrEqual(2)
-    expect(src('src/app/api/comments/[id]/like/route.ts')).toMatch(/getOptionalSession/)
-    expect(src('src/app/api/comments/[id]/dislike/route.ts')).toMatch(/getOptionalSession/)
+    expect(src('src/app/api/comments/[id]/reaction/route.ts')).toMatch(/getOptionalSession/)
     expect(src('src/app/api/admin/comments/route.ts')).toMatch(/requireModerator/)
     expect(src('src/app/api/creator/comments/[id]/route.ts')).toMatch(/requireCreatorStudio/)
   })

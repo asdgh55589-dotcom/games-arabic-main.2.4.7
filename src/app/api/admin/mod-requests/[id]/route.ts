@@ -56,7 +56,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         entityId: id,
         details: JSON.stringify({ from: request.status, to: status, reason }),
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+    }
 
     // إشعار الطالب
     try {

@@ -160,7 +160,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           resolution,
           moderatorId: moderator.id,
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+      }
     } else if (report.reporterId) {
       // حالة عدم وجود هدف للإشعار (مثل تعليق ضيف بدون حساب) — نبلغ المراسل فقط بنتيجة التأكيد
       try {
@@ -183,7 +185,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             resolution,
           },
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+      }
     }
 
     return ok({ success: true })

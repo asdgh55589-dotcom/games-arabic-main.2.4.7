@@ -1,0 +1,14 @@
+name = "games-arabic-image-proxy"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Deploy: npx wrangler login && npx wrangler deploy  (from workers/image-proxy/)
+# Custom domain: attach IMG route (e.g. img.gamesarabic.com/*) in the
+# Cloudflare dashboard (Workers Routes), then set in the main app env:
+#   IMG_WORKER_DOMAIN=img.gamesarabic.com
+# Without the env var the app transparently falls back to original URLs.
+
+[vars]
+# Optional comma-separated extra upstream hosts (default allowlist already
+# covers iili.io + freeimage.host):
+# ALLOWED_UPSTREAM_HOSTS = "cdn.example.com"

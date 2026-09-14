@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
         id: true,
         role: true,
         tokenVersion: true,
+        onboardingCompleted: true,
         recoveryCodes: true,
         recoveryCodesUsed: true,
       },
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     })
 
     // بعد التحقق، نسجل الدخول مع MFA موثق
-    await setRoleCookie(user.id, user.role as never, user.tokenVersion, true)
+    await setRoleCookie(user.id, user.role as never, user.tokenVersion, true, user.onboardingCompleted)
 
     return ok({ success: true, remainingCodes: 10 - newUsedIndices.length })
   } catch (err) {

@@ -3,6 +3,7 @@ import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
 import { recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/mods/[slug] - single mod by slug
 //
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   // Only unique views increment the counter and write a ModView row.
   if (!isPrefetch) {
     recordModView(mod.id, req, db).catch((err) => {
-      console.error('[mods/:slug] failed to record view:', err)
+      logger.error({ err }, '[mods/:slug] failed to record view')
     })
   }
 

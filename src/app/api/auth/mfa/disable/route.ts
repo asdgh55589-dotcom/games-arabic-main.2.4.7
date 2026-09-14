@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
         mfaEnabledAt: null as any,
         webauthnCredentials: null as any,
       },
-      select: { id: true, role: true, tokenVersion: true },
+      select: { id: true, role: true, tokenVersion: true, onboardingCompleted: true },
     })
 
     // تحديث الكوكيز لإزالة mfaVerified
     const { setRoleCookie } = await import('@/lib/auth')
-    await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, false)
+    await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, false, updatedUser.onboardingCompleted)
 
     return ok({ success: true, message: 'تم تعطيل المصادقة الثنائية' })
   } catch (err) {

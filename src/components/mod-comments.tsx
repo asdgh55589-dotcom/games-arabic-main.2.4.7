@@ -1,391 +1,59 @@
 'use client'
 
-import {
-  Bold,
-  ChevronLeft,
-  ChevronRight,
-  Edit2,
-  Flag,
-  Heading2,
-  Heart,
-  Italic,
-  Loader2,
-  MessageSquare,
-  MoreVertical,
-  Palette,
-  Pin,
-  Reply,
-  Send,
-  Smile,
-  Strikethrough,
-  ThumbsUp,
-  Type,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, MessageSquare, Send } from 'lucide-react'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { CreatorBadge } from '@/components/creator-badge'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
-import { ReportButton } from '@/components/report-button'
-import { RoleBadge } from '@/components/role-badge'
-import { TierBadge } from '@/components/tier-badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { CommentCard } from '@/components/comments/comment-card'
+import { CommentSkeleton } from '@/components/comments/comment-skeleton'
+import { CommentToolbar } from '@/components/comments/comment-toolbar'
+import { SORT_OPTIONS, useComments } from '@/components/comments/use-comments'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useAuth } from '@/contexts/auth-context'
-import { useToast } from '@/hooks/use-toast'
-import type { SessionUser } from '@/lib/auth'
-import { formatNumber, timeAgo } from '@/lib/format'
-import type { ModCommentType } from '@/lib/types'
+import { formatNumber } from '@/lib/format'
 
 interface ModCommentsProps {
   modSlug: string
   modOwnerName?: string
 }
 
-type SortMode = 'newest' | 'popular' | 'oldest'
-
-const PAGE_SIZE = 20
-const MAX_DEPTH = 5
-
-const EMOJIS = [
-  '😀',
-  '😁',
-  '😂',
-  '🤣',
-  '😍',
-  '😘',
-  '🥰',
-  '😎',
-  '🤩',
-  '🥳',
-  '😢',
-  '😭',
-  '😡',
-  '🤔',
-  '👍',
-  '👏',
-  '❤️',
-  '🔥',
-  '🎉',
-  '✨',
-  '🙏',
-  '💯',
-  '😅',
-  '🤗',
-  '🫡',
-  '👌',
-]
-
-const COLORS = [
-  { name: 'أحمر', value: '#ef4444' },
-  { name: 'أزرق', value: '#3b82f6' },
-  { name: 'أخضر', value: '#22c55e' },
-  { name: 'برتقالي', value: '#f97316' },
-  { name: 'بنفسجي', value: '#a855f7' },
-  { name: 'وردي', value: '#ec4899' },
-]
-
-function wrapSelection(
-  textarea: HTMLTextAreaElement | null,
-  setValue: (v: string) => void,
-  prefix: string,
-  suffix: string,
-  placeholder = 'نص',
-) {
-  if (!textarea) return
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const value = textarea.value
-  const selected = value.slice(start, end) || placeholder
-  const newValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end)
-  setValue(newValue)
-  // إعادة التركيز وتحديد النص الجديد
-  requestAnimationFrame(() => {
-    textarea.focus()
-    textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
-  })
-}
-
-function insertAtCursor(
-  textarea: HTMLTextAreaElement | null,
-  setValue: (v: string) => void,
-  text: string,
-) {
-  if (!textarea) {
-    setValue(text)
-    return
-  }
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const value = textarea.value
-  const newValue = value.slice(0, start) + text + value.slice(end)
-  setValue(newValue)
-  requestAnimationFrame(() => {
-    textarea.focus()
-    const pos = start + text.length
-    textarea.setSelectionRange(pos, pos)
-  })
-}
-
 export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
-  const { toast } = useToast()
-  const { user: currentUser, loading: authLoading } = useAuth()
-  const [comments, setComments] = useState<ModCommentType[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [sortMode, setSortMode] = useState<SortMode>('newest')
-  const [page, setPage] = useState(1)
-  // مكدس cursor للتنقل: cursors[i] هو cursor صفحة i+1 (null للأولى)
-  const [cursors, setCursors] = useState<(string | null)[]>([null])
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [totalRoots, setTotalRoots] = useState(0)
-  const [newComment, setNewComment] = useState('')
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
-  const [replyingTo, setReplyingTo] = useState<string | null>(null)
-  const [replyText, setReplyText] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const newCommentRef = useRef<HTMLTextAreaElement>(null)
-  const replyRef = useRef<HTMLTextAreaElement>(null)
-  const [showEmojiNew, setShowEmojiNew] = useState(false)
-  const [showEmojiReply, setShowEmojiReply] = useState(false)
-  const [showColorNew, setShowColorNew] = useState(false)
-  const [showColorReply, setShowColorReply] = useState(false)
-
-  // ترقيم خادمي: كل صفحة = limit جذور + ردودها (لا مزيد من slice محلياً)
-  const fetchPage = useCallback(
-    async (cursor: string | null) => {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-      try {
-        const params = new URLSearchParams({ sort: sortMode, limit: String(PAGE_SIZE) })
-        if (cursor) params.set('cursor', cursor)
-        const res = await fetch(`/api/mods/${modSlug}/comments?${params.toString()}`, {
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const responseData = await res.json()
-        setComments(responseData.data?.comments || [])
-        setTotalCount(responseData.data?.total || 0)
-        setTotalRoots(responseData.data?.totalRoots || 0)
-        setNextCursor(responseData.data?.nextCursor ?? null)
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          toast({ title: 'انتهت مهلة التحميل', description: 'تحقق من اتصالك وحاول مجدداً', variant: 'destructive' })
-        } else {
-          toast({ title: 'تعذّر تحميل التعليقات', description: 'حاول مجدداً', variant: 'destructive' })
-        }
-      } finally {
-        clearTimeout(timeout)
-        setLoading(false)
-      }
-    },
-    [modSlug, sortMode, toast],
-  )
-
-  const fetchComments = useCallback(() => {
-    return fetchPage(cursors[cursors.length - 1] ?? null)
-  }, [fetchPage, cursors])
-
-  useEffect(() => {
-    setLoading(true)
-    setPage(1)
-    setCursors([null])
-    fetchPage(null)
-  }, [modSlug, sortMode, fetchPage])
-
-  const totalPages = Math.max(1, Math.ceil(totalRoots / PAGE_SIZE))
-
-  const goNext = () => {
-    if (!nextCursor) return
-    setCursors((c) => [...c, nextCursor])
-    setPage((p) => p + 1)
-    setLoading(true)
-    fetchPage(nextCursor)
-  }
-
-  const goPrev = () => {
-    if (page <= 1) return
-    const prev = cursors.length > 1 ? cursors.slice(0, -1) : [null]
-    setCursors(prev)
-    setPage((p) => p - 1)
-    setLoading(true)
-    fetchPage(prev[prev.length - 1] ?? null)
-  }
-
-  const updateLikesInTree = useCallback(
-    (nodes: ModCommentType[], targetId: string, delta: number): ModCommentType[] => {
-      return nodes.map((node) => {
-        if (node.id === targetId) {
-          return { ...node, likes: Math.max(0, (node.likes || 0) + delta) }
-        }
-        if (node.replies && node.replies.length > 0) {
-          return { ...node, replies: updateLikesInTree(node.replies, targetId, delta) }
-        }
-        return node
-      })
-    },
-    [],
-  )
-
-  const toggleLike = (id: string) => {
-    const isLiked = likedIds.has(id)
-    const delta = isLiked ? -1 : 1
-    setLikedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-    // تحديث بصري فوري للعداد — مع إعادة ترتيب لو الفلترة "الأكثر إعجاباً"
-    const sortPopular = (nodes: ModCommentType[]) =>
-      [...nodes].sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1
-        if (!a.isPinned && b.isPinned) return 1
-        return (b.likes || 0) - (a.likes || 0)
-      })
-    setComments((prev) => {
-      const updated = updateLikesInTree(prev, id, delta)
-      return sortMode === 'popular' ? sortPopular(updated) : updated
-    })
-    fetch(`/api/comments/${id}/like`, { method: 'POST' }).catch((error) => {
-      console.error('[mod-comments] like toggle failed:', error)
-      // rollback بصري عند الفشل
-      setLikedIds((prev) => {
-        const next = new Set(prev)
-        if (isLiked) next.add(id)
-        else next.delete(id)
-        return next
-      })
-      setComments((prev) => {
-        const reverted = updateLikesInTree(prev, id, -delta)
-        return sortMode === 'popular' ? sortPopular(reverted) : reverted
-      })
-    })
-  }
-
-  const onSubmitComment = async () => {
-    if (!newComment.trim() || submitting) return
-    if (!currentUser) {
-      toast({
-        title: 'سجّل الدخول',
-        description: 'يجب تسجيل الدخول للتعليق',
-        variant: 'destructive',
-      })
-      return
-    }
-    setSubmitting(true)
-    try {
-      const res = await fetch(`/api/mods/${modSlug}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newComment.trim() }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        if (res.status === 429 || data.error?.code === 'RATE_LIMITED') {
-          toast({
-            title: 'انتظر قليلاً',
-            description: 'انتظر قليلاً قبل التعليق مرة أخرى',
-            variant: 'destructive',
-          })
-          return
-        }
-        if (data.code === 'AUTH_REQUIRED') {
-          toast({
-            title: 'سجّل الدخول',
-            description: 'يجب تسجيل الدخول للتعليق',
-            variant: 'destructive',
-          })
-          return
-        }
-        throw new Error(data?.error?.message || 'فشل النشر')
-      }
-      setNewComment('')
-      toast({ title: 'تم نشر التعليق', description: 'تعليقك تم نشره بنجاح' })
-      await fetchComments()
-    } catch (err) {
-      toast({
-        title: 'خطأ',
-        description: err instanceof Error ? err.message : 'فشل النشر',
-        variant: 'destructive',
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const onSubmitReply = async (parentId: string) => {
-    if (!replyText.trim() || submitting) return
-    if (!currentUser) {
-      toast({ title: 'سجّل الدخول', description: 'يجب تسجيل الدخول للرد', variant: 'destructive' })
-      return
-    }
-    setSubmitting(true)
-    try {
-      const res = await fetch(`/api/mods/${modSlug}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyText.trim(), parentId }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        if (res.status === 429 || data.error?.code === 'RATE_LIMITED') {
-          toast({
-            title: 'انتظر قليلاً',
-            description: 'انتظر قليلاً قبل التعليق مرة أخرى',
-            variant: 'destructive',
-          })
-          return
-        }
-        if (data.code === 'AUTH_REQUIRED') {
-          toast({
-            title: 'سجّل الدخول',
-            description: 'يجب تسجيل الدخول للرد',
-            variant: 'destructive',
-          })
-          return
-        }
-        throw new Error(data?.error?.message || 'فشل النشر')
-      }
-      setReplyText('')
-      setReplyingTo(null)
-      toast({ title: 'تم نشر الرد', description: 'ردك تم نشره بنجاح' })
-      await fetchComments()
-    } catch (err) {
-      toast({
-        title: 'خطأ',
-        description: err instanceof Error ? err.message : 'فشل النشر',
-        variant: 'destructive',
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const onReport = (name: string) => {
-    toast({
-      title: 'تم إرسال البلاغ',
-      description: `سيتم مراجعة بلاغك على تعليق ${name}.`,
-    })
-  }
-
-  const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-    { value: 'newest', label: 'الأحدث' },
-    { value: 'popular', label: 'الأكثر إعجاباً' },
-    { value: 'oldest', label: 'الأقدم' },
-  ]
+  const {
+    currentUser,
+    authLoading,
+    comments,
+    totalCount,
+    totalPages,
+    page,
+    sortMode,
+    setSortMode,
+    newComment,
+    setNewComment,
+    likedIds,
+    replyingTo,
+    replyText,
+    setReplyText,
+    submitting,
+    loading,
+    loadError,
+    retry,
+    newCommentRef,
+    replyRef,
+    fetchComments,
+    goNext,
+    goPrev,
+    nextCursor,
+    toggleLike,
+    onSubmitComment,
+    onSubmitReply,
+    onReply,
+    onCancelReply,
+  } = useComments(modSlug)
 
   return (
     <div>
       {/* رأس القسم — حد سميك وأبيض أكثر */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b-[4px] border-white/30 pb-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b-[4px] border-border pb-4">
         <h2 className="flex items-center gap-2 text-xl font-bold">
           <MessageSquare className="h-5 w-5 text-primary" />
           التعليقات
@@ -396,15 +64,17 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
 
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">ترتيب:</span>
-          <div className="flex gap-1 rounded-md border border-white/15 bg-card/40 p-0.5">
+          <div className="flex gap-1 rounded-md border border-border/60 bg-card/40 p-0.5">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
+                type="button"
                 onClick={() => setSortMode(opt.value)}
+                aria-pressed={sortMode === opt.value}
                 className={`rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   sortMode === opt.value
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
                 }`}
               >
                 {opt.label}
@@ -426,126 +96,20 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
             </div>
           ) : currentUser ? (
             <div className="overflow-hidden rounded-lg border border-border bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
-              {/* شريط تنسيق — يظهر عند تحديد نص */}
-              <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    wrapSelection(newCommentRef.current, setNewComment, '**', '**', 'نص عريض')
-                  }
-                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                  title="عريض **نص**"
-                >
-                  <Bold className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    wrapSelection(newCommentRef.current, setNewComment, '*', '*', 'نص مائل')
-                  }
-                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                  title="مائل *نص*"
-                >
-                  <Italic className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    wrapSelection(newCommentRef.current, setNewComment, '~~', '~~', 'نص مشطوب')
-                  }
-                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                  title="مشطوب ~~نص~~"
-                >
-                  <Strikethrough className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    wrapSelection(newCommentRef.current, setNewComment, '## ', '', 'عنوان كبير')
-                  }
-                  className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                  title="تكبير ## عنوان"
-                >
-                  <Heading2 className="h-3.5 w-3.5" />
-                </button>
-                <span className="mx-1 h-4 w-px bg-white/10" aria-hidden />
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowColorNew(!showColorNew)}
-                    className={`grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 transition-colors ${showColorNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    title="لون النص"
-                  >
-                    <Palette className="h-3.5 w-3.5" />
-                  </button>
-                  {showColorNew && (
-                    <div className="absolute top-8 start-0 z-20 flex gap-1 rounded-lg border border-border bg-card p-2 shadow-xl">
-                      {COLORS.map((c) => (
-                        <button
-                          key={c.value}
-                          title={c.name}
-                          onClick={() => {
-                            wrapSelection(
-                              newCommentRef.current,
-                              setNewComment,
-                              `<span style="color:${c.value}">`,
-                              `</span>`,
-                              'نص ملون',
-                            )
-                            setShowColorNew(false)
-                          }}
-                          className="h-6 w-6 rounded-full border-2 border-white/20 hover:scale-110 transition-transform"
-                          style={{ backgroundColor: c.value }}
-                        />
-                      ))}
-                      <button
-                        onClick={() => setShowColorNew(false)}
-                        className="ms-1 text-[10px] text-muted-foreground hover:text-foreground px-1"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiNew(!showEmojiNew)}
-                    className={`grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 transition-colors ${showEmojiNew ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    title="إيموجي"
-                  >
-                    <Smile className="h-3.5 w-3.5" />
-                  </button>
-                  {showEmojiNew && (
-                    <div className="absolute top-8 start-0 z-20 grid grid-cols-7 gap-1 rounded-lg border border-border bg-card p-2 shadow-xl w-56">
-                      {EMOJIS.map((e) => (
-                        <button
-                          key={e}
-                          onClick={() => {
-                            insertAtCursor(newCommentRef.current, setNewComment, e)
-                            setShowEmojiNew(false)
-                          }}
-                          className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded hover:bg-white/10 text-base leading-none"
-                        >
-                          {e}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <span className="ms-auto hidden sm:inline text-[10px] text-muted-foreground/50">
-                  حدد نص ثم اختر تنسيق
-                </span>
-              </div>
+              <CommentToolbar textareaRef={newCommentRef} setValue={setNewComment} />
               <textarea
                 ref={newCommentRef}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') onSubmitComment()
+                }}
                 placeholder="اكتب تعليقك هنا... حدد جملة ثم استخدم الأزرار للتكبير أو التلوين أو الشطب"
+                aria-label="اكتب تعليقك"
                 rows={3}
-                className="w-full resize-none border-0 bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                className="w-full resize-none border-0 bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary"
               />
-              <div className="flex justify-end border-t border-white/5 bg-white/[0.01] p-2">
+              <div className="flex justify-end border-t border-border/40 bg-muted/20 p-2">
                 <Button
                   onClick={onSubmitComment}
                   disabled={!newComment.trim() || submitting}
@@ -576,8 +140,13 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
 
       {/* قائمة التعليقات */}
       {loading ? (
-        <div className="grid place-items-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <CommentSkeleton rows={3} />
+      ) : loadError ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={retry}>
+            إعادة المحاولة
+          </Button>
         </div>
       ) : comments.length === 0 ? (
         <EmptyState
@@ -589,7 +158,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
         <>
           <div className="space-y-4">
             {comments.map((comment) => (
-              <CommentItem
+              <CommentCard
                 key={comment.id}
                 comment={comment}
                 depth={0}
@@ -600,19 +169,11 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
                 setReplyText={setReplyText}
                 currentUser={currentUser}
                 onLike={toggleLike}
-                onReply={(id) => setReplyingTo(replyingTo === id ? null : id)}
+                onReply={onReply}
                 onSubmitReply={onSubmitReply}
-                onCancelReply={() => {
-                  setReplyingTo(null)
-                  setReplyText('')
-                }}
-                onReport={onReport}
+                onCancelReply={onCancelReply}
                 onRefresh={fetchComments}
                 replyRef={replyRef}
-                showEmojiReply={showEmojiReply}
-                setShowEmojiReply={setShowEmojiReply}
-                showColorReply={showColorReply}
-                setShowColorReply={setShowColorReply}
               />
             ))}
           </div>
@@ -648,588 +209,5 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
         </>
       )}
     </div>
-  )
-}
-
-/** عنصر تعليق واحد — مع ردود متداخلة (עד 5 مستويات) */
-function CommentItem({
-  comment,
-  depth,
-  modOwnerName,
-  replyToName,
-  likedIds,
-  replyingTo,
-  replyText,
-  setReplyText,
-  currentUser,
-  onLike,
-  onReply,
-  onSubmitReply,
-  onCancelReply,
-  onReport,
-  onRefresh,
-  replyRef,
-  showEmojiReply,
-  setShowEmojiReply,
-  showColorReply,
-  setShowColorReply,
-}: {
-  comment: ModCommentType
-  depth: number
-  modOwnerName?: string
-  replyToName?: string
-  likedIds: Set<string>
-  replyingTo: string | null
-  replyText: string
-  setReplyText: (s: string) => void
-  currentUser: SessionUser | null
-  onLike: (id: string) => void
-  onReply: (id: string) => void
-  onSubmitReply: (parentId: string) => void
-  onCancelReply: () => void
-  onReport: (name: string) => void
-  onRefresh: () => void
-  replyRef?: React.RefObject<HTMLTextAreaElement | null>
-  showEmojiReply?: boolean
-  setShowEmojiReply?: (v: boolean) => void
-  showColorReply?: boolean
-  setShowColorReply?: (v: boolean) => void
-}) {
-  const liked = likedIds.has(comment.id)
-  const isNested = depth > 0
-  const avatarSize = isNested ? 'h-8 w-8 min-h-[44px] min-w-[44px]' : 'h-10 w-10'
-  const canReply = depth < MAX_DEPTH
-  const displayName = comment.user?.username || comment.guestName || 'مستخدم'
-  const displayAvatar = comment.user?.avatarUrl || comment.guestAvatar
-  const isOwner = currentUser?.id === comment.user?.id
-  const isAdmin = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState(comment.text)
-  const [saving, setSaving] = useState(false)
-  const [showAllReplies, setShowAllReplies] = useState(false)
-  const editRef = useRef<HTMLTextAreaElement>(null)
-  const [showEmojiEdit, setShowEmojiEdit] = useState(false)
-  const [showColorEdit, setShowColorEdit] = useState(false)
-  const { toast } = useToast()
-
-  const handleEdit = async () => {
-    if (!editText.trim() || editText === comment.text) {
-      setIsEditing(false)
-      return
-    }
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/comments/${comment.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: editText.trim() }),
-      })
-      if (res.ok) {
-        toast({ title: 'تم التعديل' })
-        setIsEditing(false)
-        onRefresh()
-      } else {
-        const data = await res.json()
-        toast({
-          title: 'خطأ',
-          description: data.error?.message || 'فشل التعديل',
-          variant: 'destructive',
-        })
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
-    }
-    setSaving(false)
-  }
-
-  const handleDelete = async () => {
-    if (!confirm('هل أنت متأكد من حذف هذا التعليق؟')) return
-    try {
-      const res = await fetch(`/api/comments/${comment.id}`, { method: 'DELETE' })
-      if (res.ok) {
-        toast({ title: 'تم الحذف' })
-        onRefresh()
-      } else {
-        const data = await res.json()
-        toast({
-          title: 'خطأ',
-          description: data.error?.message || 'فشل الحذف',
-          variant: 'destructive',
-        })
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'حدث خطأ', variant: 'destructive' })
-    }
-  }
-
-  // خلفيات متدرجة — متوافقة مع بطاقات الموقع الجديدة (border-border/40 + gradient خفيف)
-  const depthColors = [
-    { bg: 'bg-card', border: 'border-border/40' },
-    { bg: 'bg-card/80', border: 'border-border/30' },
-    { bg: 'bg-primary/[0.04]', border: 'border-primary/15' },
-    { bg: 'bg-primary/[0.06]', border: 'border-primary/20' },
-    { bg: 'bg-primary/[0.08]', border: 'border-primary/25' },
-  ] as const
-  const depthStyle = depthColors[Math.min(depth, depthColors.length - 1)]
-
-  return (
-    <>
-      <div
-        className={`rounded-none border-[1.5px] shadow-[1.5px_1.5px_0_0_var(--border)] transition-all ${depthStyle.bg} ${depthStyle.border} ${isNested ? 'p-2' : 'p-2.5'}`}
-      >
-        <div
-          className={`flex gap-2 ${comment.isPinned ? 'rounded-none border border-primary/30 bg-primary/5 p-2 -m-1' : ''}`}
-        >
-          <Avatar className={`${avatarSize} shrink-0 ring-2 ring-background`}>
-            <AvatarImage src={displayAvatar || undefined} alt={displayName} />
-            <AvatarFallback>{displayName[0]}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            {/* رأس التعليق — خط عريض وأبيض موحد مع باقي البطاقات */}
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span
-                className={`font-bold text-foreground flex flex-wrap items-center gap-1 ${isNested ? 'text-sm' : 'text-sm'}`}
-              >
-                {displayName}
-                {(comment.user as unknown as { role?: string })?.role && (
-                  <RoleBadge role={(comment.user as unknown as { role: string }).role} size="sm" />
-                )}
-                {(comment.user as unknown as { tier?: number; role?: string })?.tier !==
-                  undefined && (
-                  <TierBadge
-                    tier={(comment.user as unknown as { tier: number }).tier}
-                    role={(comment.user as unknown as { role?: string })?.role}
-                    size="sm"
-                  />
-                )}
-                {(comment.user as unknown as { role?: string; specialRoles?: string })?.role && (
-                  <CreatorBadge
-                    role={(comment.user as unknown as { role: string }).role}
-                    specialRoles={
-                      (comment.user as unknown as { specialRoles?: string }).specialRoles
-                    }
-                    size={14}
-                  />
-                )}
-              </span>
-              {replyToName && (
-                <span className="text-xs font-bold text-foreground">
-                  رد على <span className="font-bold text-foreground">{replyToName}</span>
-                </span>
-              )}
-              {comment.isPinned && (
-                <Badge variant="secondary" className="gap-1 bg-primary/15 text-primary">
-                  <Pin className="h-3 w-3" />
-                  مثبّت
-                </Badge>
-              )}
-              {modOwnerName && displayName === modOwnerName && (
-                <Badge variant="secondary" className="gap-1 bg-amber-500/15 text-amber-500">
-                  <Heart className="h-3 w-3" />
-                  المؤلف
-                </Badge>
-              )}
-              <span className="text-xs text-muted-foreground">{timeAgo(comment.createdAt)}</span>
-              {comment.isEdited && (
-                <span className="text-[11px] text-muted-foreground/70">(تم التعديل)</span>
-              )}
-            </div>
-
-            {/* نص التعليق */}
-            {isEditing ? (
-              <div className="mb-2 overflow-hidden rounded-md border border-border bg-background">
-                <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      wrapSelection(editRef.current, setEditText, '**', '**', 'نص عريض')
-                    }
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Bold className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => wrapSelection(editRef.current, setEditText, '*', '*', 'مائل')}
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Italic className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => wrapSelection(editRef.current, setEditText, '~~', '~~', 'مشطوب')}
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Strikethrough className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => wrapSelection(editRef.current, setEditText, '## ', '', 'عنوان')}
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Heading2 className="h-3 w-3" />
-                  </button>
-                  <span className="mx-1 h-3 w-px bg-white/10" />
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowColorEdit(!showColorEdit)}
-                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                    >
-                      <Palette className="h-3 w-3" />
-                    </button>
-                    {showColorEdit && (
-                      <div className="absolute top-7 start-0 z-20 flex gap-1 rounded-lg border border-border bg-card p-1.5 shadow-xl">
-                        {COLORS.map((c) => (
-                          <button
-                            key={c.value}
-                            onClick={() => {
-                              wrapSelection(
-                                editRef.current,
-                                setEditText,
-                                `<span style="color:${c.value}">`,
-                                `</span>`,
-                                'ملون',
-                              )
-                              setShowColorEdit(false)
-                            }}
-                            className="h-5 w-5 rounded-full border-2 border-white/20"
-                            style={{ backgroundColor: c.value }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiEdit(!showEmojiEdit)}
-                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                    >
-                      <Smile className="h-3 w-3" />
-                    </button>
-                    {showEmojiEdit && (
-                      <div className="absolute top-7 start-0 z-20 grid grid-cols-6 gap-1 rounded-lg border border-border bg-card p-2 shadow-xl w-48">
-                        {EMOJIS.slice(0, 18).map((e) => (
-                          <button
-                            key={e}
-                            onClick={() => {
-                              insertAtCursor(editRef.current, setEditText, e)
-                              setShowEmojiEdit(false)
-                            }}
-                            className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm"
-                          >
-                            {e}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <textarea
-                  ref={editRef}
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full resize-none border-0 bg-transparent p-2.5 text-sm focus:outline-none"
-                  rows={3}
-                />
-                <div className="flex gap-2 border-t border-white/5 bg-white/[0.01] p-2">
-                  <Button
-                    size="sm"
-                    className="min-h-[44px] touch-manipulation"
-                    onClick={handleEdit}
-                    disabled={saving || !editText.trim()}
-                  >
-                    {saving ? 'جاري الحفظ...' : 'حفظ'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="min-h-[44px] touch-manipulation"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false)
-                      setEditText(comment.text)
-                    }}
-                  >
-                    إلغاء
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`${isNested ? 'text-sm' : 'mb-2 text-sm'} leading-relaxed font-medium text-foreground`}
-              >
-                <MarkdownRenderer content={comment.text} />
-              </div>
-            )}
-
-            {/* أزرار التفاعل */}
-            <div className="mt-2 flex items-center gap-1 border-t border-white/20 pt-2">
-              <button
-                onClick={() => onLike(comment.id)}
-                className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition-colors border shadow-sm cursor-pointer ${
-                  liked
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
-                }`}
-                aria-pressed={liked}
-              >
-                <ThumbsUp className={`h-3.5 w-3.5 ${liked ? 'fill-current' : ''}`} />
-                {formatNumber(comment.likes)}
-              </button>
-              {canReply && (
-                <>
-                  <span className="mx-0.5 h-3 w-px bg-border/50" />
-                  <button
-                    onClick={() => onReply(comment.id)}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
-                  >
-                    <Reply className="h-3.5 w-3.5" />
-                    رد
-                  </button>
-                </>
-              )}
-              <div className="me-auto">
-                <ReportButton targetType="comment" targetId={comment.id} />
-              </div>
-              {isOwner && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="grid h-7 w-7 min-h-[44px] min-w-[44px] place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      aria-label="خيارات"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setIsEditing(true)
-                        setEditText(comment.text)
-                      }}
-                    >
-                      <Edit2 className="ml-2 h-4 w-4" />
-                      تعديل
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-red-500 focus:text-red-500"
-                    >
-                      <Flag className="ml-2 h-4 w-4" />
-                      حذف
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-
-            {/* صندوق الرد — مع شريط تنسيق وإيموجي */}
-            {replyingTo === comment.id && (
-              <div className="mt-3 overflow-hidden rounded-lg border border-primary/20 bg-card">
-                <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.02] p-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replyRef?.current &&
-                      wrapSelection(replyRef.current, setReplyText, '**', '**', 'عريض')
-                    }
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Bold className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replyRef?.current &&
-                      wrapSelection(replyRef.current, setReplyText, '*', '*', 'مائل')
-                    }
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Italic className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replyRef?.current &&
-                      wrapSelection(replyRef.current, setReplyText, '~~', '~~', 'مشطوب')
-                    }
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Strikethrough className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      replyRef?.current &&
-                      wrapSelection(replyRef.current, setReplyText, '## ', '', 'عنوان')
-                    }
-                    className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                  >
-                    <Heading2 className="h-3 w-3" />
-                  </button>
-                  <span className="mx-1 h-3 w-px bg-white/10" />
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowColorReply?.(!showColorReply)}
-                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                    >
-                      <Palette className="h-3 w-3" />
-                    </button>
-                    {showColorReply && (
-                      <div className="absolute top-7 start-0 z-20 flex gap-1 rounded-lg border border-border bg-card p-1.5 shadow-xl">
-                        {COLORS.map((c) => (
-                          <button
-                            key={c.value}
-                            onClick={() => {
-                              replyRef?.current &&
-                                wrapSelection(
-                                  replyRef.current,
-                                  setReplyText,
-                                  `<span style="color:${c.value}">`,
-                                  `</span>`,
-                                  'ملون',
-                                )
-                              setShowColorReply?.(false)
-                            }}
-                            className="h-5 w-5 rounded-full border-2 border-white/20"
-                            style={{ backgroundColor: c.value }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiReply?.(!showEmojiReply)}
-                      className="grid h-6 w-6 place-items-center rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
-                    >
-                      <Smile className="h-3 w-3" />
-                    </button>
-                    {showEmojiReply && (
-                      <div className="absolute top-7 start-0 z-20 grid grid-cols-6 gap-1 rounded-lg border border-border bg-card p-2 shadow-xl w-48">
-                        {EMOJIS.slice(0, 18).map((e) => (
-                          <button
-                            key={e}
-                            onClick={() => {
-                              replyRef?.current && insertAtCursor(replyRef.current, setReplyText, e)
-                              setShowEmojiReply?.(false)
-                            }}
-                            className="h-6 w-6 grid place-items-center rounded hover:bg-white/10 text-sm"
-                          >
-                            {e}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className="ms-auto text-[10px] text-muted-foreground/40 hidden sm:inline">
-                    حدد نص للتنسيق
-                  </span>
-                </div>
-                <div className="flex gap-2 p-2">
-                  <Avatar className="h-8 w-8 min-h-[44px] min-w-[44px] shrink-0">
-                    <AvatarFallback>{currentUser?.username?.[0] || 'ز'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <textarea
-                      ref={replyRef as any}
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder={`الرد على ${displayName}...`}
-                      rows={2}
-                      autoFocus
-                      className="w-full resize-none rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <div className="mt-1.5 flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="min-h-[44px] touch-manipulation"
-                        onClick={onCancelReply}
-                      >
-                        إلغاء
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="min-h-[44px] touch-manipulation"
-                        onClick={() => onSubmitReply(comment.id)}
-                        disabled={!replyText.trim()}
-                      >
-                        <Send className="ml-1.5 h-3.5 w-3.5" />
-                        نشر الرد
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* الردود المتداخلة — مسطحة (لا صناديق داخل بعضها) + تتعامل مع 5 ردود */}
-      {comment.replies &&
-        comment.replies.length > 0 &&
-        depth < MAX_DEPTH &&
-        (() => {
-          const visibleCount = 5
-          const hasMultiple = comment.replies.length > visibleCount
-          const visibleReplies =
-            showAllReplies || !hasMultiple
-              ? comment.replies
-              : comment.replies.slice(0, visibleCount)
-          const hiddenCount = comment.replies.length - visibleReplies.length
-          return (
-            <div className="mt-3 space-y-2">
-              {visibleReplies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  depth={depth + 1}
-                  modOwnerName={modOwnerName}
-                  replyToName={displayName}
-                  likedIds={likedIds}
-                  replyingTo={replyingTo}
-                  replyText={replyText}
-                  setReplyText={setReplyText}
-                  currentUser={currentUser}
-                  onLike={onLike}
-                  onReply={onReply}
-                  onSubmitReply={onSubmitReply}
-                  onCancelReply={onCancelReply}
-                  onReport={onReport}
-                  onRefresh={onRefresh}
-                  replyRef={replyRef}
-                  showEmojiReply={showEmojiReply}
-                  setShowEmojiReply={setShowEmojiReply}
-                  showColorReply={showColorReply}
-                  setShowColorReply={setShowColorReply}
-                />
-              ))}
-              {hasMultiple && !showAllReplies && (
-                <button
-                  onClick={() => setShowAllReplies(true)}
-                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
-                >
-                  <ChevronLeft className="h-3 w-3 rotate-90" />
-                  عرض {hiddenCount} ردود إضافية
-                </button>
-              )}
-              {hasMultiple && showAllReplies && (
-                <button
-                  onClick={() => setShowAllReplies(false)}
-                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-border/40 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ChevronRight className="h-3 w-3 rotate-90" />
-                  إخفاء الردود
-                </button>
-              )}
-            </div>
-          )
-        })()}
-    </>
   )
 }

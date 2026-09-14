@@ -62,7 +62,6 @@ interface ProfileData {
   tiktokUrl: string | null
   youtubeUrl: string | null
   githubUrl: string | null
-  discordUrl: string | null
   accentColor: string | null
   hideJoinDate?: boolean
   profileVisibility?: string
@@ -530,7 +529,6 @@ export function ProfilePage() {
                       tiktokUrl={profile.tiktokUrl}
                       youtubeUrl={profile.youtubeUrl}
                       githubUrl={profile.githubUrl}
-                      discordUrl={profile.discordUrl}
                     />
                   </div>
 

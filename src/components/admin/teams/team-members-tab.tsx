@@ -506,7 +506,9 @@ export function TeamMembersTab({ teamId, memberships, onMembersChange }: TeamMem
             const data = await res.json()
             const team = data?.data ?? data?.team
             if (team?.memberships) onMembersChange(team.memberships)
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort team members
+          }
           setLinkDialogOpen(false)
         }}
       />

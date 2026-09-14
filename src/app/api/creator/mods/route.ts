@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { canCreateMod } from '@/lib/permissions'
+import { canCreateMod, canTranslateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
 import { slugify } from '@/lib/utils'
 
@@ -76,6 +77,14 @@ export async function POST(req: NextRequest) {
   if (error) return error
   if (!user) return error!
 
+  // 5 creations/hour per creator (spam guard for mod submissions).
+  const limited = await rateLimitMiddleware(req, {
+    limit: 5,
+    window: 3600,
+    keyPrefix: `creator:mod-create:${user.id}`,
+  })
+  if (limited) return limited
+
   const body = await req.json()
   const { action, ...modData } = body as { action?: string; [key: string]: unknown }
 
@@ -98,6 +107,11 @@ export async function POST(req: NextRequest) {
       return forbidden('المُعَرِّب يمكنه فقط إنشاء تعريبات من ترجمته الخاصة')
     }
     return forbidden('الناشر يمكنه فقط نشر تعريبات من مصادر خارجية')
+  }
+
+  // مسار المعرّب: العمل المترجم الخاص يتطلب صلاحية الترجمة explicitly.
+  if (isOriginalWork && !canTranslateMod(user.role)) {
+    return forbidden('لا تملك صلاحية الترجمة')
   }
 
   if (!isOriginalWork && !(data.originalSource as unknown as string)?.trim()) {
@@ -156,7 +170,9 @@ export async function POST(req: NextRequest) {
           },
         })
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification to admins
+    }
   }
 
   return ok(

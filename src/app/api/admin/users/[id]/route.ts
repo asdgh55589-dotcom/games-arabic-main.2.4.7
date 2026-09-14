@@ -145,7 +145,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           }),
           request: req,
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+      }
     }
 
     // ===== معالجة تغيير كلمة المرور (FIX #1) =====
@@ -190,7 +192,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
                 })
               }
             } catch {
-              // ignore — كلمة المرور المحلية كافية
+              // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase provisioning, local password is sufficient
             }
           }
         } else {
@@ -198,7 +200,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           try {
             const hashed = await hashPassword(newPassword)
             await db.user.update({ where: { id }, data: { password: hashed } as any })
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort local password hash sync
+          }
         }
 
         await logUserAction({

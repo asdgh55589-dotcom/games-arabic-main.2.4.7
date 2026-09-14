@@ -21,7 +21,7 @@ interface ImageUploadProps {
   accept?: string
   maxSizeMB?: number
   folder?: string
-  modId?: string // لصور التعديلات فقط — يُستخدم مع Cloudinary
+  modId?: string // لصور التعديلات فقط — يُستخدم في سجل الاستهلاك
 }
 
 export function ImageUpload({
@@ -68,15 +68,10 @@ export function ImageUpload({
       setError(null)
 
       try {
-        // صور التعديلات → Cloudinary (صور الغلاف، البانر، لقطات الشاشة)
-        // باقي الصور (أفاتار، بنر المستخدم، شعار الفريق) → تبقى على Supabase Storage
+        // صور التعديلات → FreeImage relay (صور الغلاف، البانر، لقطات الشاشة).
+        // Owner rule: Cloudinary حصراً لأفاتار/بانر المستخدم — صور التعديلات
+        // لا تمر بـ Cloudinary أبداً. باقي الصور → Supabase Storage.
         if (bucket === 'mods') {
-          const typeMap: Record<string, string> = {
-            banners: 'banner',
-            thumbnails: 'cover',
-            gallery: 'screenshot',
-          }
-          const imageType = typeMap[folder] || (folder === 'gallery' ? 'screenshot' : 'cover')
           // حاول استخراج modId من الـ prop أو من الـ URL
           let effectiveModId = modId
           if (!effectiveModId && typeof window !== 'undefined') {
@@ -88,17 +83,16 @@ export function ImageUpload({
 
           const formData = new FormData()
           formData.append('file', file)
-          formData.append('type', imageType)
           formData.append('modId', effectiveModId)
 
-          const res = await fetch('/api/storage/upload-mod-image', {
+          const res = await fetch('/api/storage/upload-image', {
             method: 'POST',
             body: formData,
           })
           const data = await res.json().catch(() => null)
           if (!res.ok) {
             const msg =
-              data?.error?.message || data?.error?.details || 'فشل رفع الصورة إلى Cloudinary'
+              data?.error?.message || data?.error?.details || 'فشل رفع الصورة'
             throw new Error(msg)
           }
           const publicUrl = data?.data?.url

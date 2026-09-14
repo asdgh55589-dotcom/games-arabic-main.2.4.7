@@ -1,21 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { runDailyHealthCheck } from '@/lib/image-health-check'
+import { requireCronAuth } from '@/lib/cron-auth'
 
 // محمي بـ CRON_SECRET — للاستخدام مع خدمة cron خارجية (cron-job.org)
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('x-cron-secret')
-  const expected = process.env.CRON_SECRET
-
-  // إذا لم يتم تعيين CRON_SECRET، اسمح فقط في التطوير لتسهيل الاختبار
-  if (!expected) {
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ error: 'CRON_SECRET غير مُكوَّن' }, { status: 500 })
-    }
-    // في التطوير، اسمح بدون تحقق لتسهيل الاختبار اليدوي
-    console.warn('[Cron] CRON_SECRET غير مُكوَّن — السماح في وضع التطوير')
-  } else if (secret !== expected) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authErr = await requireCronAuth(req)
+  if (authErr) return authErr
 
   try {
     const result = await runDailyHealthCheck()

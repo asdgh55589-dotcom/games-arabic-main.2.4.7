@@ -1,10 +1,9 @@
 /**
- * STEP 3 — Scenarios 3,4,5,11,14,15
- * Tests PATCH/DELETE /api/comments/[id] + like/dislike toggles (mocked db/auth).
+ * STEP 3 — Scenarios 3,4,5,11,14,15 (+ STEP 8: unified /reaction endpoint)
+ * Tests PATCH/DELETE /api/comments/[id] + reaction toggles (mocked db/auth).
  */
 import { DELETE, PATCH } from '../[id]/route';
-import { POST as likePOST } from '../[id]/like/route';
-import { POST as dislikePOST } from '../[id]/dislike/route';
+import { POST as reactionPOST } from '../[id]/reaction/route';
 
 jest.mock('@/lib/db', () => ({
   db: {
@@ -102,6 +101,10 @@ describe('4. Delete Own Comment (+ cascade counter)', () => {
     expect(db.modComment.deleteMany as jest.Mock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: { in: expect.arrayContaining(['c1', 'r1', 'r2', 'r3']) } } }),
     );
+    // the counter is decremented on the MOD (not on a comment row)
+    expect(db.mod.update as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { comments: { decrement: 4 } } }),
+    );
   });
 });
 
@@ -119,34 +122,44 @@ describe('15. Unauthorized Delete', () => {
   });
 });
 
-describe('5. Like/Dislike Toggle', () => {
+describe('5. Reaction Toggle (unified /reaction endpoint)', () => {
   const idParams = { params: Promise.resolve({ id: 'c1' }) } as any;
+  const react = (value: string) => reactionPOST(req({ value }), idParams);
   beforeEach(() => {
     (db.modComment.findUnique as jest.Mock).mockResolvedValue({ id: 'c1', likes: 5, dislikes: 1 });
   });
   it('like with no prior reaction creates CommentLike + increments', async () => {
     (db.commentLike.findUnique as jest.Mock).mockResolvedValue(null);
-    const res = await likePOST(req(), idParams);
+    const res = await react('like');
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data?.liked).toBe(true);
-    expect(db.commentLike.create as jest.Mock).toHaveBeenCalled();
+    expect(body.data?.value).toBe('like');
+    expect(db.commentLike.create as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ value: 'like' }) }),
+    );
   });
   it('like when already liked removes it (toggle off)', async () => {
     (db.commentLike.findUnique as jest.Mock).mockResolvedValue({ id: 'l1', value: 'like' });
-    const res = await likePOST(req(), idParams);
+    const res = await react('like');
     const body = await res.json();
     expect(body.data?.liked).toBe(false);
+    expect(body.data?.value).toBeNull();
     expect(db.commentLike.delete as jest.Mock).toHaveBeenCalled();
   });
   it('dislike switches like -> dislike with both counters', async () => {
     (db.commentLike.findUnique as jest.Mock).mockResolvedValue({ id: 'l1', value: 'like' });
-    const res = await dislikePOST(req(), idParams);
+    const res = await react('dislike');
     const body = await res.json();
     expect(body.data?.disliked).toBe(true);
     expect(db.commentLike.update as jest.Mock).toHaveBeenCalledWith(
       expect.objectContaining({ data: { value: 'dislike' } }),
     );
+  });
+  it('invalid value → 422', async () => {
+    const res = await react('love');
+    expect(res.status).toBe(422);
+    expect(db.commentLike.create as jest.Mock).not.toHaveBeenCalled();
   });
 });
 

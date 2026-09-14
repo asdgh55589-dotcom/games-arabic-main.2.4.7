@@ -72,7 +72,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         action: 'SPECIAL_ROLE_ADDED',
         details: JSON.stringify({ role, roleNameAr: SPECIAL_ROLES[role].nameAr }),
       } as unknown as Parameters<typeof logUserAction>[0])
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     // Notify user
     try {
@@ -86,7 +88,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           data: { role, roleNameAr: SPECIAL_ROLES[role].nameAr },
         },
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort user notification
+    }
 
     return ok({ success: true, specialRoles: currentRoles })
   } catch (err) {
@@ -145,7 +149,9 @@ export async function DELETE(
         action: 'SPECIAL_ROLE_REMOVED',
         details: JSON.stringify({ role: specialRole }),
       } as unknown as Parameters<typeof logUserAction>[0])
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
 
     // Optional notification on removal
     try {
@@ -159,7 +165,9 @@ export async function DELETE(
           data: { role: specialRole },
         },
       })
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort user notification
+    }
 
     return ok({ success: true, specialRoles: newRoles })
   } catch (err) {

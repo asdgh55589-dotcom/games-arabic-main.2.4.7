@@ -3,6 +3,8 @@ import { TeamsClient } from '@/components/admin/teams/TeamsClient'
 import { getSession } from '@/lib/auth'
 import { hasRoleAtLeast } from '@/lib/roles'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'فرق التعريب — الإدارة | Games Arabic',
   description: 'إدارة فرق التعريب مع الأعضاء والتعريبات',

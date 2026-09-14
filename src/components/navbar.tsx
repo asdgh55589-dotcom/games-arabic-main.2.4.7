@@ -106,7 +106,9 @@ function pushRecent(query: string) {
   try {
     const next = [query, ...loadRecent().filter((x) => x !== query)].slice(0, 5)
     localStorage.setItem(RECENT_KEY, JSON.stringify(next))
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort navbar operation
+  }
 }
 
 interface SectionItem {
@@ -792,7 +794,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {['creator', 'publisher'].includes(currentUser.role) && (
+                {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
                   <DropdownMenuItem asChild>
                     <Link
                       href="/creator"
@@ -923,7 +925,7 @@ export function Navbar({ games, currentView }: NavbarProps) {
                               تعريباتي
                             </MobileLink>
                           )}
-                          {['creator', 'publisher'].includes(currentUser.role) && (
+                          {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
                             <MobileLink href="/creator" onClick={() => setMobileOpen(false)}>
                               <Activity className="h-3.5 w-3.5" />
                               لوحة التحكم

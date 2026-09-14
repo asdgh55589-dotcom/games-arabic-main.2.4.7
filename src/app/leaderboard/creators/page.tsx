@@ -9,6 +9,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { db } from '@/lib/db'
 import { getTierLabel } from '@/lib/tiers'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'لوحة صدارة المُعَرِّبين | Games Arabic',
   description: 'أفضل المُعَرِّبين في المنصة حسب المستوى والتقييم والتحميلات',
@@ -65,7 +67,7 @@ export default async function CreatorsLeaderboard() {
           icon="users"
           title="لا يوجد مُعَرِّبون بعد"
           description="كن أول مُعَرِّب ينضم للمنصة!"
-          action={{ label: 'كن معرّباً', href: '/become-creator' }}
+          action={{ label: 'انضم لبرنامج منشئ المحتوى', href: '/become-creator/apply' }}
         />
       ) : (
         <div className="space-y-4">

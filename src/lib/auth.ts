@@ -2,7 +2,7 @@
  * lib/auth.ts — نظام المصادقة (Supabase Auth + Neon DB).
  *
  * يستخدم:
- *   - Supabase Auth للمصادقة عبر OAuth (Google, Discord, Telegram)
+ *   - Supabase Auth للمصادقة عبر OAuth (Google, Telegram)
  *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *
@@ -64,6 +64,7 @@ export interface SessionUser {
   email: string
   role: UserRole
   avatarUrl: string | null
+  onboardingCompleted: boolean
 }
 
 // ===== Password helpers =====
@@ -90,8 +91,9 @@ export async function getSession(): Promise<SessionUser | null> {
           return apiKeyResult.user
         }
       }
-    } catch {
+    } catch (err) {
       // headers() قد تفشل في بعض السياقات — نكمل مع الأ_other methods
+      logger.warn({ err, context: 'auth-getSession-headers' }, 'headers() failed in getSession')
     }
 
     // 1. محاولة Supabase Auth أولاً
@@ -102,8 +104,9 @@ export async function getSession(): Promise<SessionUser | null> {
         data: { user },
       } = await supabase.auth.getUser()
       supabaseUser = user
-    } catch {
+    } catch (err) {
       // Supabase غير متاح — نكمل مع role cookie
+      logger.warn({ err, context: 'auth-getSession-supabase' }, 'Supabase session lookup failed')
     }
 
     if (supabaseUser) {
@@ -122,6 +125,7 @@ export async function getSession(): Promise<SessionUser | null> {
           bannedUntil: true,
           banReason: true,
           tokenVersion: true,
+          onboardingCompleted: true,
         },
       })
 
@@ -155,7 +159,8 @@ export async function getSession(): Promise<SessionUser | null> {
         } else if (user.tokenVersion > 0) {
           return null
         }
-      } catch {
+      } catch (err) {
+        logger.warn({ err, context: 'auth-getSession-tokenVersion' }, 'tokenVersion verification failed')
         return null
       }
 
@@ -165,6 +170,7 @@ export async function getSession(): Promise<SessionUser | null> {
         email: user.email,
         role: user.role as UserRole,
         avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
       }
     }
 
@@ -195,6 +201,7 @@ export async function getSession(): Promise<SessionUser | null> {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -215,22 +222,25 @@ export async function getSession(): Promise<SessionUser | null> {
       email: user.email,
       role: user.role as UserRole,
       avatarUrl: user.avatarUrl,
+      onboardingCompleted: user.onboardingCompleted,
     }
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getSession' }, 'getSession failed unexpectedly')
     return null
   }
 }
 
 // ===== Role cookie helpers =====
 
-/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa في httpOnly cookie موقّع */
+/** إنشاء role cookie — بيحط الـ userId + role + tokenVersion + mfa + ob في httpOnly cookie موقّع */
 export async function setRoleCookie(
   userId: string,
   role: UserRole,
   tokenVersion?: number,
   mfaVerified: boolean = false,
+  onboarded: boolean = true,
 ): Promise<void> {
-  const payload: Record<string, unknown> = { userId, role }
+  const payload: Record<string, unknown> = { userId, role, ob: onboarded }
   if (tokenVersion !== undefined) payload.tv = tokenVersion
   if (mfaVerified) payload.mfa = true
 
@@ -322,17 +332,17 @@ export async function requireCreatorStudio(
 ): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
-    const CREATOR_ONLY = ['creator', 'publisher']
+    const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(user.role)) {
       const { forbidden } = await import('@/lib/api-response')
-      return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+      return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والإدارة فقط') }
     }
     return { user, error: null }
   } catch (err) {
     const status = (err as { status?: number })?.status || 401
     const { unauthorized, forbidden: forbiddenResp } = await import('@/lib/api-response')
     if (status === 401) return { user: null, error: unauthorized('يجب تسجيل الدخول') }
-    return { user: null, error: forbiddenResp('هذه الصفحة متاحة للمُعَرِّبين والناشرين فقط') }
+    return { user: null, error: forbiddenResp('هذه الصفحة متاحة للمُعَرِّبين والإدارة فقط') }
   }
 }
 
@@ -341,6 +351,16 @@ export async function requireManager(): Promise<SessionUser> {
   const user = await requireAuth()
   if (!hasRoleAtLeast(user.role, 'manager')) {
     throw new AuthError('Forbidden — manager access required', 403)
+  }
+  return user
+}
+
+/** يتأكد إن العضو أكمل إعداد حسابه (D.6) — غير الأعضاء يتجاوزون دائماً.
+ *  المصدر: User.onboardingCompleted في DB ( sessions الـ Edge تستخدم ob claim كإشارة فقط ) */
+export async function requireOnboarded(): Promise<SessionUser> {
+  const user = await requireAuth()
+  if (user.role === 'member' && !user.onboardingCompleted) {
+    throw new AuthError('Onboarding required — أكمل إعداد حسابك أولاً', 403)
   }
   return user
 }
@@ -451,7 +471,8 @@ export async function getUserIdFromRequestCookies(req: Request): Promise<string 
     if (!match?.[1]) return null
     const { payload } = await jwtVerify(match[1], JWT_SECRET)
     return typeof payload.userId === 'string' ? payload.userId : null
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getUserIdFromCookies' }, 'Failed to extract userId from cookies')
     return null
   }
 }
@@ -487,7 +508,9 @@ export async function createSupabaseAuthUser(
     if (!res.ok) return null
     const data = await res.json()
     return data.id as string
-  } catch {
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase provisioning, safe to ignore
+    logger.warn({ err, context: 'auth-createSupabaseUser' }, 'Failed to create Supabase auth user')
     return null
   }
 }
@@ -498,7 +521,56 @@ export async function createSupabaseAuthUser(
 export async function getOptionalSession(): Promise<SessionUser | null> {
   try {
     return await getSession()
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getOptionalSession' }, 'getOptionalSession failed')
+    return null
+  }
+}
+
+// ===== Ban info helper (for the suspended page) =====
+
+export interface BanInfo {
+  banned: boolean
+  type: 'temp' | 'perm' | null
+  reason: string | null
+  expiresAt: Date | null
+  username: string
+}
+
+/**
+ * Return ban details for the current Supabase-logged-in user, EVEN when
+ * banned (getSession returns null for banned users, so the suspended page
+ * cannot use it). Returns null when logged out or not banned.
+ * Additive helper — does not change getSession behavior.
+ */
+export async function getBanInfo(): Promise<BanInfo | null> {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser()
+    if (!supabaseUser) return null
+
+    const row = await db.user.findFirst({
+      where: {
+        OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
+      },
+      select: { username: true, banStatus: true, bannedUntil: true, banReason: true },
+    })
+    if (!row) return null
+
+    const ban = getBanStatus(row)
+    if (!ban.banned) return null
+
+    return {
+      banned: true,
+      type: ban.type,
+      reason: ban.reason,
+      expiresAt: ban.expiresAt,
+      username: row.username,
+    }
+  } catch (err) {
+    logger.warn({ err, context: 'auth-getBanInfo' }, 'getBanInfo failed')
     return null
   }
 }

@@ -22,6 +22,7 @@ import {
   Users,
   Video,
   Youtube,
+  ArrowRight,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -41,7 +42,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import {
+  isDataUrl,
+  uploadCroppedDataUrl,
+} from '@/lib/upload-cropped'
 import { formatArabicDate, formatNumber } from '@/lib/format'
+import {
+  PlatformFieldsSection,
+  type PlatformFieldsValues,
+} from '@/components/shared/platform-fields-section'
+import { PlatformSelector } from '@/components/creator/mod-form/platform-selector'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // ===== Types =====
 interface FileLink {
@@ -161,6 +181,10 @@ export default function ModForm({ modId }: ModFormProps) {
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
   const [userRole, setUserRole] = useState('member')
 
+  // Wizard step: 1 = platform selection, 2 = full form
+  const [step, setStep] = useState(isEdit ? 2 : 1)
+  const [platformChangeDialogOpen, setPlatformChangeDialogOpen] = useState(false)
+
   // ===== Form state =====
   const [name, setName] = useState('')
   const [summary, setSummary] = useState('')
@@ -187,6 +211,23 @@ export default function ModForm({ modId }: ModFormProps) {
   const [isTrending, setIsTrending] = useState(false)
   const [isLatest, setIsLatest] = useState(true)
 
+  // Platform-specific fields
+  const [platform, setPlatform] = useState('')
+  const [translationMethod, setTranslationMethod] = useState('')
+  const [platformGameId, setPlatformGameId] = useState('')
+  const [cusaId, setCusaId] = useState('')
+  const [ppsaId, setPpsaId] = useState('')
+  const [titleId, setTitleId] = useState('')
+  const [mediaId, setMediaId] = useState('')
+  const [supportedFormat, setSupportedFormat] = useState('')
+  const [systemFirmware, setSystemFirmware] = useState('')
+  const [gameUpdateVersion, setGameUpdateVersion] = useState('')
+  const [deviceModel, setDeviceModel] = useState('')
+  const [installType, setInstallType] = useState('')
+  const [cpuArch, setCpuArch] = useState('')
+  const [gameVersion, setGameVersion] = useState('')
+  const [minAndroidVersion, setMinAndroidVersion] = useState('')
+
   const [files, setFiles] = useState<DownloadFile[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [contactLinks, setContactLinks] = useState<ContactLink[]>([])
@@ -199,6 +240,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [cropperTarget, setCropperTarget] = useState<
     'imageUrl' | 'thumbnailUrl' | 'gallery' | null
   >(null)
+  // True while a cropped image is being uploaded — save is blocked meanwhile
+  // so a data: URL can never land in the DB.
+  const [cropUploading, setCropUploading] = useState(false)
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
 
@@ -269,6 +313,21 @@ export default function ModForm({ modId }: ModFormProps) {
         setIsFeatured(m.isFeatured || false)
         setIsTrending(m.isTrending || false)
         setIsLatest(m.isLatest !== false)
+        setPlatform(m.game?.platform || '')
+        setTranslationMethod((m as any).translationMethod || '')
+        setPlatformGameId((m as any).platformGameId || '')
+        setCusaId((m as any).cusaId || '')
+        setPpsaId((m as any).ppsaId || '')
+        setTitleId((m as any).titleId || '')
+        setMediaId((m as any).mediaId || '')
+        setSupportedFormat((m as any).supportedFormat || '')
+        setSystemFirmware((m as any).systemFirmware || '')
+        setGameUpdateVersion((m as any).gameUpdateVersion || '')
+        setDeviceModel((m as any).deviceModel || '')
+        setInstallType((m as any).installType || '')
+        setCpuArch((m as any).cpuArch || '')
+        setGameVersion((m as any).gameVersion || '')
+        setMinAndroidVersion((m as any).minAndroidVersion || '')
         setWorkflowStatus(m.workflowStatus || 'DRAFT')
         setWorkflowHistory(m.workflowHistory || [])
         setVersionHistory(m.versionHistory || [])
@@ -425,10 +484,28 @@ export default function ModForm({ modId }: ModFormProps) {
     e.target.value = ''
   }
 
-  const handleCropComplete = (croppedImage: string) => {
-    if (cropperTarget === 'imageUrl') setImageUrl(croppedImage)
-    else if (cropperTarget === 'thumbnailUrl') setThumbnailUrl(croppedImage)
-    else if (cropperTarget === 'gallery') setGalleryUrls((prev) => [...prev, croppedImage])
+  // Crop → Blob → server upload → https URL. The data: URL is NEVER
+  // stored in state (it would otherwise land in the DB as multi-MB base64).
+  const handleCropComplete = async (croppedImage: string) => {
+    const target = cropperTarget
+    if (!target) return
+    if (!isDataUrl(croppedImage)) {
+      if (target === 'imageUrl') setImageUrl(croppedImage)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(croppedImage)
+      else setGalleryUrls((prev) => [...prev, croppedImage])
+      return
+    }
+    setCropUploading(true)
+    try {
+      const url = await uploadCroppedDataUrl(croppedImage, modId)
+      if (target === 'imageUrl') setImageUrl(url)
+      else if (target === 'thumbnailUrl') setThumbnailUrl(url)
+      else setGalleryUrls((prev) => [...prev, url])
+    } catch {
+      toast({ title: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى', variant: 'destructive' })
+    } finally {
+      setCropUploading(false)
+    }
   }
 
   const handleUrlCrop = (url: string, target: 'imageUrl' | 'thumbnailUrl', aspect: number) => {
@@ -442,8 +519,53 @@ export default function ModForm({ modId }: ModFormProps) {
     setCropperOpen(true)
   }
 
+  // Handle platform selection from step 1
+  const handlePlatformSelect = (key: string) => {
+    setPlatform(key)
+    setStep(2)
+  }
+
+  // Handle going back to step 1 from step 2
+  const handleBackToStep1 = () => {
+    setPlatformChangeDialogOpen(true)
+  }
+
+  // Confirm platform change: clear platform-specific fields and go to step 1
+  const confirmPlatformChange = () => {
+    setPlatformChangeDialogOpen(false)
+    setTranslationMethod('')
+    setPlatformGameId('')
+    setCusaId('')
+    setPpsaId('')
+    setTitleId('')
+    setMediaId('')
+    setSupportedFormat('')
+    setSystemFirmware('')
+    setGameUpdateVersion('')
+    setDeviceModel('')
+    setInstallType('')
+    setCpuArch('')
+    setGameVersion('')
+    setMinAndroidVersion('')
+    setCompatibility('')
+    setStep(1)
+  }
+
   // ===== Save =====
   const onSave = async () => {
+    // Defense in depth: never persist base64.
+    if (cropUploading) {
+      toast({ title: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ', variant: 'destructive' })
+      return
+    }
+    if (
+      isDataUrl(thumbnailUrl) ||
+      isDataUrl(imageUrl) ||
+      galleryUrls.some((u) => isDataUrl(u))
+    ) {
+      toast({ title: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى', variant: 'destructive' })
+      return
+    }
     if (loadError) {
       toast({
         title: 'تنبيه',
@@ -504,6 +626,20 @@ export default function ModForm({ modId }: ModFormProps) {
       isFeatured,
       isTrending,
       isLatest,
+      translationMethod: translationMethod || null,
+      platformGameId: platformGameId || null,
+      cusaId: cusaId || null,
+      ppsaId: ppsaId || null,
+      titleId: titleId || null,
+      mediaId: mediaId || null,
+      supportedFormat: supportedFormat || null,
+      systemFirmware: systemFirmware || null,
+      gameUpdateVersion: gameUpdateVersion || null,
+      deviceModel: deviceModel || null,
+      installType: installType || null,
+      cpuArch: cpuArch || null,
+      gameVersion: gameVersion || null,
+      minAndroidVersion: minAndroidVersion || null,
       files: files.filter((f) => f.title),
       teamMembers: teamMembers.filter((m) => m.name),
       contactLinks: contactLinks.filter((c) => c.url),
@@ -588,17 +724,57 @@ export default function ModForm({ modId }: ModFormProps) {
           <Button asChild variant="outline">
             <Link href="/admin/mods">إلغاء</Link>
           </Button>
-          <Button onClick={onSave} disabled={saving || !!loadError}>
-            {saving ? (
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="ml-2 h-4 w-4" />
-            )}
-            {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
-          </Button>
+          {step === 2 && !isEdit && (
+            <Button variant="ghost" onClick={handleBackToStep1}>
+              <ArrowRight className="ml-1 h-4 w-4" />
+              تغيير المنصة
+            </Button>
+          )}
+          {step === 2 && (
+            <Button onClick={onSave} disabled={saving || !!loadError}>
+              {saving ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* Step indicator for new mods */}
+      {!isEdit && (
+        <div className="flex items-center gap-3 text-sm">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>1</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            اختيار المنصة
+          </span>
+          <span className="text-muted-foreground">←</span>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>2</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            بيانات التعريب
+          </span>
+        </div>
+      )}
+
+      {/* Step 1: Platform Selection */}
+      {step === 1 && (
+        <div className="rounded-xl border border-border bg-card/30 p-6">
+          <PlatformSelector
+            selected={platform}
+            onSelect={handlePlatformSelect}
+          />
+        </div>
+      )}
+
+      {/* Step 2: Full Form */}
+      {step === 2 && (
+        <>
       {/* أزرار تغيير الحالة */}
       {isEdit && (
         <WorkflowActions
@@ -634,7 +810,7 @@ export default function ModForm({ modId }: ModFormProps) {
             placeholder="مثال: باتش سكايرم غير الرسمي"
           />
         </Field>
-        <Field label="نطاق التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
+        <Field label="محتوى التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
           <Input
             value={translationScope}
             onChange={(e) => setTranslationScope(e.target.value)}
@@ -668,6 +844,43 @@ export default function ModForm({ modId }: ModFormProps) {
           />
         </Field>
       </Section>
+
+      {/* ===== 1b. Platform-specific fields ===== */}
+      <PlatformFieldsSection
+        platform={platform}
+        setPlatform={setPlatform}
+        translationMethod={translationMethod}
+        setTranslationMethod={setTranslationMethod}
+        platformGameId={platformGameId}
+        setPlatformGameId={setPlatformGameId}
+        cusaId={cusaId}
+        setCusaId={setCusaId}
+        ppsaId={ppsaId}
+        setPpsaId={setPpsaId}
+        titleId={titleId}
+        setTitleId={setTitleId}
+        mediaId={mediaId}
+        setMediaId={setMediaId}
+        supportedFormat={supportedFormat}
+        setSupportedFormat={setSupportedFormat}
+        systemFirmware={systemFirmware}
+        setSystemFirmware={setSystemFirmware}
+        gameUpdateVersion={gameUpdateVersion}
+        setGameUpdateVersion={setGameUpdateVersion}
+        deviceModel={deviceModel}
+        setDeviceModel={setDeviceModel}
+        installType={installType}
+        setInstallType={setInstallType}
+        cpuArch={cpuArch}
+        setCpuArch={setCpuArch}
+        gameVersion={gameVersion}
+        setGameVersion={setGameVersion}
+        minAndroidVersion={minAndroidVersion}
+        setMinAndroidVersion={setMinAndroidVersion}
+        compatibility={compatibility}
+        setCompatibility={setCompatibility}
+        hidePlatformSelect={!isEdit}
+      />
 
       {/* ===== 2. الصور — Supabase Storage (mods bucket) + قص اختياري ===== */}
       <Section title="الصور">
@@ -1159,7 +1372,6 @@ export default function ModForm({ modId }: ModFormProps) {
                     <option value="telegram">تيليجرام</option>
                     <option value="twitter">تويتر</option>
                     <option value="youtube">يوتيوب</option>
-                    <option value="discord">ديسكورد</option>
                   </select>
                   <Input
                     value={c.label}
@@ -1574,6 +1786,28 @@ export default function ModForm({ modId }: ModFormProps) {
           {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
         </Button>
       </div>
+        </>
+      )}
+
+      {/* Platform change warning dialog */}
+      <AlertDialog open={platformChangeDialogOpen} onOpenChange={setPlatformChangeDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
+            <AlertDialogDescription>
+              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
+              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (اسم التعريب،
+              الاسم بالعربي، الوصف) لن تتأثر.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPlatformChange}>
+              تغيير ومسح الحقول
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

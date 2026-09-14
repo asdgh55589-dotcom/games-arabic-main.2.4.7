@@ -3,6 +3,8 @@ import { internalError, ok, unauthorized, validationFail } from '@/lib/api-respo
 import { logAction } from '@/lib/audit'
 import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { ChangePasswordSchema } from '@/lib/schemas'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -26,15 +28,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { password, currentPassword } = body
-
-    if (!currentPassword) {
-      return validationFail({ currentPassword: 'كلمة المرور الحالية مطلوبة' })
+    const parsed = ChangePasswordSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
     }
 
-    if (!password || password.length < 6) {
-      return validationFail({ password: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل' })
-    }
+    const { newPassword: password, currentPassword } = parsed.data
 
     // تحقق من كلمة المرور الحالية عبر محاولة تسجيل دخول صامتة
     if (supabaseUser.email) {
@@ -61,15 +60,18 @@ export async function POST(req: NextRequest) {
         role: string
         tokenVersion: number
         email: string
+        onboardingCompleted: boolean
       } | null
       try {
         neonUser = await db.user.findFirst({
           where: {
             OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
           },
-          select: { id: true, username: true, role: true, tokenVersion: true, email: true },
+          select: { id: true, username: true, role: true, tokenVersion: true, email: true, onboardingCompleted: true },
         })
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: DB lookup fallback, will use Supabase user
+      }
 
       if (neonUser) {
         const newTokenVersion = await invalidateUserSessions(neonUser.id)
@@ -83,9 +85,9 @@ export async function POST(req: NextRequest) {
               select: { totpEnabled: true },
             })
             const mfaVerified = !!fullUser?.totpEnabled
-            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified)
+            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified, neonUser.onboardingCompleted)
           } catch (e) {
-            console.error('[ChangePassword] setRoleCookie failed:', e)
+            logger.error({ err: e }, '[ChangePassword] setRoleCookie failed')
           }
         }
 
@@ -102,16 +104,18 @@ export async function POST(req: NextRequest) {
               allOtherSessionsInvalidated: true,
             }),
           })
-        } catch {}
+        } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+      }
       }
     } catch (e) {
-      console.error('[ChangePassword] session invalidation failed:', e)
+      logger.error({ err: e }, '[ChangePassword] session invalidation failed')
       // لا نفشل الطلب — تغيير كلمة المرور نجح حتى لو فشل الإبطال
     }
 
     return ok({ success: true, message: 'تم تغيير كلمة المرور بنجاح' })
   } catch (err) {
-    console.error('[change-password POST] failed:', err)
+    logger.error({ err }, '[change-password POST] failed')
     return internalError('Failed')
   }
 }

@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface RequestItem {
   id: string
@@ -27,11 +27,16 @@ interface RequestItem {
 
 export function RequestsManager() {
   const { toast } = useToast()
+  const { dict, locale } = useStudioLanguage()
+  const t = dict.requestsMgr
   const [filter, setFilter] = useState<'all' | 'open' | 'mine' | 'completed'>('open')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [completeModId, setCompleteModId] = useState<Record<string, string>>({})
+  const [myMods, setMyMods] = useState<{ id: string; name: string }[]>([])
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
@@ -39,42 +44,66 @@ export function RequestsManager() {
       const params = new URLSearchParams()
       if (filter !== 'all') params.set('status', filter)
       // For mine filter, API expects status=mine
+      params.set('page', String(page))
+      params.set('limit', '20')
       const res = await fetch(`/api/creator/requests?${params.toString()}`, { cache: 'no-store' })
       const json = await res.json()
-      if (res.ok) setRequests(json.data?.requests || [])
-    } catch {}
+      if (res.ok) {
+        setRequests(json.data?.requests || [])
+        setTotalPages(json.data?.pagination?.totalPages || 1)
+      }
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort requests operation
+    }
     setLoading(false)
-  }, [filter])
+  }, [filter, page])
 
   useEffect(() => {
     fetchRequests()
   }, [fetchRequests])
 
-  const handleAccept = async (id: string) => {
+  // Own mods for the link-on-complete dropdown (server enforces ownership).
+  useEffect(() => {
+    fetch('/api/creator/mods?limit=100', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const mods = json?.data?.mods
+        if (Array.isArray(mods)) setMyMods(mods.map((m: { id: string; name: string }) => ({ id: m.id, name: m.name })))
+      })
+      .catch(() => {})
+  }, [])
+
+  const patchRequest = async (id: string, body: Record<string, string>, okMsg: string) => {
     setActionLoading(id)
     try {
       const res = await fetch(`/api/creator/requests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'accept' }),
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: 'تم قبول الطلب' })
+        toast({ title: json.data?.message || okMsg })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || t.failedToast, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: t.unexpectedError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
 
+  const handleAccept = (id: string) => patchRequest(id, { action: 'accept' }, t.acceptedToast)
+
+  const handleCancel = (id: string) => patchRequest(id, { action: 'cancel' }, t.cancelledToast)
+
+  const handleBoost = (id: string) => patchRequest(id, { action: 'boost' }, t.boostedToast)
+
   const handleComplete = async (id: string) => {
     const modId = completeModId[id]?.trim()
     if (!modId) {
-      toast({ title: 'يرجى إدخال معرف التعريب', variant: 'destructive' })
+      toast({ title: t.enterModId, variant: 'destructive' })
       return
     }
     setActionLoading(id)
@@ -86,13 +115,13 @@ export function RequestsManager() {
       })
       const json = await res.json()
       if (res.ok) {
-        toast({ title: 'تم إكمال الطلب' })
+        toast({ title: t.completedToast })
         fetchRequests()
       } else {
-        toast({ title: json.error?.message || 'فشل', variant: 'destructive' })
+        toast({ title: json.error?.message || (typeof json.error === 'string' ? json.error : null) || t.failedToast, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: t.unexpectedError, variant: 'destructive' })
     }
     setActionLoading(null)
   }
@@ -101,16 +130,19 @@ export function RequestsManager() {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {[
-          { value: 'open', label: 'متاح' },
-          { value: 'mine', label: 'قبلته أنا' },
-          { value: 'completed', label: 'مكتمل' },
-          { value: 'all', label: 'الكل' },
+          { value: 'open', label: t.open },
+          { value: 'mine', label: t.mine },
+          { value: 'completed', label: t.completed },
+          { value: 'all', label: t.all },
         ].map((f) => (
           <Button
             key={f.value}
             variant={filter === f.value ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setFilter(f.value as never)}
+            onClick={() => {
+              setFilter(f.value as never)
+              setPage(1)
+            }}
           >
             {f.label}
           </Button>
@@ -125,8 +157,8 @@ export function RequestsManager() {
         <Card>
           <CardContent className="py-12 text-center">
             <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-medium">لا توجد طلبات</h3>
-            <p className="text-sm text-muted-foreground mt-1">عندما يطلب أحد تعريباً، ستظهر هنا</p>
+            <h3 className="font-medium">{t.emptyTitle}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{t.emptyDesc}</p>
           </CardContent>
         </Card>
       ) : (
@@ -151,11 +183,11 @@ export function RequestsManager() {
                         }
                       >
                         {r.status === 'open'
-                          ? 'مفتوح'
+                          ? t.statusOpen
                           : r.status === 'accepted'
-                            ? 'مقبول'
+                            ? t.statusAccepted
                             : r.status === 'completed'
-                              ? 'مكتمل'
+                              ? t.statusCompleted
                               : r.status}
                       </Badge>
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -169,7 +201,7 @@ export function RequestsManager() {
                       </Avatar>
                       <span>{r.user.username}</span>
                       <span>•</span>
-                      <span>{timeAgo(r.createdAt)}</span>
+                      <span>{timeAgo(r.createdAt, locale)}</span>
                     </div>
                     {r.notes && (
                       <p className="text-sm mt-2 whitespace-pre-wrap bg-muted/50 rounded p-2">
@@ -178,7 +210,7 @@ export function RequestsManager() {
                     )}
                     {r.mod && (
                       <div className="text-xs mt-2">
-                        مرتبط بـ:{' '}
+                        {t.linkedTo}{' '}
                         <Link href={`/mod/${r.mod.slug}`} className="text-primary hover:underline">
                           {r.mod.name}
                         </Link>
@@ -187,30 +219,48 @@ export function RequestsManager() {
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
                     {r.status === 'open' && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(r.id)}
-                        disabled={actionLoading === r.id}
-                      >
-                        {actionLoading === r.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                        ) : (
-                          <Check className="h-4 w-4 ml-1" />
-                        )}
-                        قبول
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAccept(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          {actionLoading === r.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin me-1" />
+                          ) : (
+                            <Check className="h-4 w-4 me-1" />
+                          )}
+                          {t.accept}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBoost(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          <Heart className="h-4 w-4 me-1" />
+                          {t.boost}
+                        </Button>
+                      </>
                     )}
                     {r.status === 'accepted' && (
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1">
-                          <Input
-                            placeholder="معرّف التعريب"
+                          <select
                             value={completeModId[r.id] || ''}
                             onChange={(e) =>
                               setCompleteModId((p) => ({ ...p, [r.id]: e.target.value }))
                             }
-                            className="h-8 w-28 text-xs"
-                          />
+                            className="h-8 w-28 text-xs rounded-md border border-border bg-background px-1"
+                            aria-label={t.linkMod}
+                          >
+                            <option value="">{t.linkMod}</option>
+                            {myMods.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
                           <Button
                             size="sm"
                             onClick={() => handleComplete(r.id)}
@@ -223,7 +273,15 @@ export function RequestsManager() {
                             )}
                           </Button>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">أدخل modId للربط</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-muted-foreground"
+                          onClick={() => handleCancel(r.id)}
+                          disabled={actionLoading === r.id}
+                        >
+                          {t.cancel}
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -231,6 +289,30 @@ export function RequestsManager() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            {t.prev}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {t.page} {page} {t.pageOf} {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            {t.next}
+          </Button>
         </div>
       )}
     </div>

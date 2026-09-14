@@ -323,27 +323,59 @@ export async function getHealthStatus() {
     }
   }
 
-  // استخدام Cloudinary (مع fallback)
+  // استخدام Cloudinary (probe حقيقي — لا يُخفي الفشل كأصفار)
+  // SA-3 SENTINEL CONTRACT (per src/lib/cloudinary.ts docblock): getCloudinaryUsage()
+  // تُرجع { usage:-1, limit:-1, percentUsed:-1 } عند ANY failure (API error OR
+  // missing config). الفحص هنا: usage<0 OR percentUsed<0 OR حقل error OR استثناء
+  // → unavailable=true مع تطبيع الأصفار للعرض (الشارة 'غير متاح' تُميّزها عن
+  // الصفر الحقيقي). configured من isCloudinaryConfigured() للتمييز بين
+  // غير مُكوَّن وغير متاح. تُستهلك في /admin/images/health لشارة
+  // متصل/غير مُكوَّن/غير متاح.
   let cloudinaryUsage: {
     storage: number
     storagePercent: number
     bandwidth?: number
     transformations?: number
+    unavailable?: boolean
+    configured?: boolean
   } = {
     storage: 0,
     storagePercent: 0,
+    unavailable: false,
+    configured: false,
   }
   try {
-    const { getCloudinaryUsage } = await import('@/lib/cloudinary')
+    const { getCloudinaryUsage, isCloudinaryConfigured } = await import('@/lib/cloudinary')
+    const configured =
+      typeof isCloudinaryConfigured === 'function' ? isCloudinaryConfigured() : false
     const usage = await getCloudinaryUsage()
-    cloudinaryUsage = {
-      storage: usage.usage,
-      storagePercent: Math.round(usage.percentUsed * 10) / 10,
-      bandwidth: 0,
-      transformations: 0,
+    const usageRecord = usage as { usage?: number; percentUsed?: number; error?: unknown }
+    const failedProbe =
+      (typeof usageRecord.usage === 'number' && usageRecord.usage < 0) ||
+      (typeof usageRecord.percentUsed === 'number' && usageRecord.percentUsed < 0) ||
+      usageRecord.error != null
+    if (failedProbe) {
+      cloudinaryUsage = {
+        storage: 0,
+        storagePercent: 0,
+        bandwidth: 0,
+        transformations: 0,
+        unavailable: true,
+        configured,
+      }
+    } else {
+      cloudinaryUsage = {
+        storage: usage.usage,
+        storagePercent: Math.round(usage.percentUsed * 10) / 10,
+        bandwidth: 0,
+        transformations: 0,
+        unavailable: false,
+        configured,
+      }
     }
   } catch {
-    // تجاهل — سيظهر 0
+    // فشل الـ probe — لا تُخفيه كأصفار: unavailable=true
+    cloudinaryUsage = { ...cloudinaryUsage, unavailable: true }
   }
 
   return {

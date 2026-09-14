@@ -4,12 +4,14 @@ import {
   Award,
   BarChart3,
   Bell,
+  BookOpen,
   Clock,
   Crown,
   Database,
   ExternalLink,
   FileText,
   Flag,
+  HardDrive,
   HeartPulse,
   History,
   Image as ImageIcon,
@@ -73,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/ads', label: 'الإعلانات', icon: Megaphone },
       { href: '/admin/news', label: 'الأخبار', icon: Newspaper },
       { href: '/admin/images/health', label: 'صحة الصور', icon: ImageIcon },
+      { href: '/admin/docs', label: 'الدليل', icon: BookOpen },
     ],
   },
   {
@@ -127,6 +130,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/notifications/history', label: 'سجل الإشعارات', icon: Bell, adminOnly: true },
       { href: '/admin/sessions', label: 'الجلسات النشطة', icon: Shield, adminOnly: true },
       { href: '/admin/scheduler', label: 'الجدولة', icon: Clock, adminOnly: true },
+      { href: '/admin/quotas', label: 'حصص الرفع', icon: HardDrive, adminOnly: true },
       { href: '/admin/backup', label: 'النسخ الاحتياطي', icon: Database, ownerOnly: true },
       { href: '/admin/settings', label: 'الإعدادات', icon: Settings, ownerOnly: true },
       { href: '/admin/audit', label: 'سجل النشاطات', icon: ScrollText, ownerOnly: true },
@@ -270,9 +274,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               const c = j.pagination?.total ?? j.data?.length ?? 0
               if (!cancelled) setPendingModRequestsCount(c)
             }
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort admin layout
+          }
         }
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort admin layout
+      }
     }
     fetchPending()
     const id = setInterval(fetchPending, 60000)

@@ -16,6 +16,12 @@ function getBaseUrl(req: NextRequest): string {
 // GET /api/auth/callback — استقبال callback من Supabase بعد نجاح OAuth
 export async function GET(req: NextRequest) {
   try {
+    // Audit D.2: rate-limit the OAuth entry point (code-exchange abuse).
+    const { rateLimit } = await import('@/lib/rate-limit')
+    const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'auth:callback' })
+    if (!rl.success) {
+      return new NextResponse('Too many requests', { status: 429 })
+    }
     const { searchParams } = new URL(req.url)
     const code = searchParams.get('code')
     const rawNext = searchParams.get('next') || '/'
@@ -83,6 +89,7 @@ export async function GET(req: NextRequest) {
         bannedUntil: true,
         banReason: true,
         tokenVersion: true,
+        onboardingCompleted: true,
       },
     })
 
@@ -102,6 +109,7 @@ export async function GET(req: NextRequest) {
             bannedUntil: true,
             banReason: true,
             tokenVersion: true,
+            onboardingCompleted: true,
           },
         })
       }
@@ -153,6 +161,7 @@ export async function GET(req: NextRequest) {
               bannedUntil: true,
               banReason: true,
               tokenVersion: true,
+              onboardingCompleted: true,
             },
           })
 
@@ -198,7 +207,7 @@ export async function GET(req: NextRequest) {
     }
 
     // إنشاء role cookie مع tokenVersion
-    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion)
+    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion, false, neonUser.onboardingCompleted)
 
     // تحديث lastLoginAt + loginCount
     await db.user.update({

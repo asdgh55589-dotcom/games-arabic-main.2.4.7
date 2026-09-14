@@ -19,7 +19,7 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
       }
       if (body?.error?.message) message = body.error.message
     } catch {
-      // Response body wasn't JSON — keep the default HTTP message
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort API client
     }
     throw new ApiError(message, res.status)
   }

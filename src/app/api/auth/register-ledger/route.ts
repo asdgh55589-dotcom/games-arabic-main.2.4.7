@@ -1,13 +1,24 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+
+const RegisterLedgerSchema = z.object({
+  supabaseId: z.string().min(1),
+  username: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+  displayName: z.string().max(50).optional(),
+  email: z.string().email(),
+})
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null)
-    const { supabaseId, username, displayName, email } = body || {}
-    if (!supabaseId || !username || !email) {
-      return NextResponse.json({ error: 'missing fields' }, { status: 400 })
+    const parsed = RegisterLedgerSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
     }
+
+    const { supabaseId, username, displayName, email } = parsed.data
     // تحقق تفرد username
     const existing = await db.user.findUnique({ where: { username } })
     if (existing && existing.supabaseId !== supabaseId) {
@@ -34,7 +45,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ data: user })
   } catch (err) {
-    console.error('[register-ledger] failed', err)
+    logger.error({ err }, '[register-ledger] failed')
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
 }

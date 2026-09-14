@@ -27,6 +27,6 @@ export async function logAuthFailure(code: string, context?: Record<string, unkn
     const { logger } = await import('@/lib/logger')
     logger.warn({ code, ...context }, 'auth failure')
   } catch {
-    // logger unavailable (edge) — no-op
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: logger unavailable (edge) — no-op
   }
 }

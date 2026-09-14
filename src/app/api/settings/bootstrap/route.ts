@@ -26,7 +26,6 @@ export async function GET() {
         tiktokUrl: true,
         youtubeUrl: true,
         githubUrl: true,
-        discordUrl: true,
         accentColor: true,
         avatarUrl: true,
         bannerUrl: true,

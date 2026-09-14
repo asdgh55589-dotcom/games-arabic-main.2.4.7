@@ -17,6 +17,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { logger } from '@/lib/logger'
+import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
 import { updateSession } from '@/lib/supabase/middleware'
@@ -39,10 +40,19 @@ interface RoleCookiePayload {
   tv?: number // tokenVersion
   tvVerified: boolean
   mfaVerified?: boolean
+  onboarded?: boolean // ob claim — absent on legacy cookies (fail-open)
 }
 
-/** قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible) */
-async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | null> {
+/**
+ * قراءة الـ userId + role + tokenVersion من الـ role cookie (Edge-compatible).
+ * Exported for tier tests. Audit D.2 tiers: strictTv=true (admin/MFA paths)
+ * fails CLOSED when tv is present but the cache is unverifiable; default
+ * false keeps member pages fail-open (DB check in getSession is truth).
+ */
+export async function getRoleFromCookie(
+  req: NextRequest,
+  opts?: { strictTv?: boolean },
+): Promise<RoleCookiePayload | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
   try {
@@ -51,6 +61,7 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
     const mfaVerified = payload.mfa === true
+    const onboarded = typeof payload.ob === 'boolean' ? (payload.ob as boolean) : undefined
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
     // الأمن الحقيقي في getSession() عبر DB — Edge هنا دفاع إضافي فقط، لذا FAIL-OPEN عند عدم وجود Redis
@@ -67,8 +78,10 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
         )
 
         if (cachedTv === null) {
-          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss) — FAIL-OPEN، getSession() سيتحقق عبر DB
-          tvVerified = true
+          // لا يمكن التحقق (لا Redis / Redis متعطل / cache miss).
+          // strictTv (admin/MFA): fail-CLOSED — tvVerified=false.
+          // default (member pages): FAIL-OPEN — getSession() سيتحقق عبر DB.
+          tvVerified = opts?.strictTv !== true
         } else if (cachedTv !== tv) {
           // تباين مؤكد → الجلسة أُبطلت → رفض
           return null
@@ -77,14 +90,30 @@ async function getRoleFromCookie(req: NextRequest): Promise<RoleCookiePayload | 
         }
       } catch {
         tvVerified = false
+        fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+          method: 'POST',
+          body: JSON.stringify({
+            message: 'token version cache check failed',
+            route: req.nextUrl.pathname,
+            requestId: req.headers.get('x-request-id') ?? undefined,
+          }),
+        }).catch(() => {})
       }
     } else {
       tvVerified = false
     }
 
-    return { userId, role, tv, tvVerified, mfaVerified }
+    return { userId, role, tv, tvVerified, mfaVerified, onboarded }
   } catch (err) {
     logger.warn('[middleware] invalid role cookie', err)
+    fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+      method: 'POST',
+      body: JSON.stringify({
+        message: ((err as Error)?.message ?? 'invalid role cookie').slice(0, 500),
+        route: req.nextUrl.pathname,
+        requestId: req.headers.get('x-request-id') ?? undefined,
+      }),
+    }).catch(() => {})
     return null
   }
 }
@@ -96,8 +125,24 @@ function copyCookies(from: NextResponse, to: NextResponse): void {
   }
 }
 
+/**
+ * SA-3: request correlation ID Plumbing (Edge-safe — Web Crypto only).
+ * Reuses the incoming `x-request-id` when present (upstream/CDN propagation),
+ * otherwise generates one. Attach to every response via `withRequestId` so
+ * clients and logs can correlate a single request end-to-end.
+ */
+export function getOrCreateRequestId(req: Pick<NextRequest, 'headers'>): string {
+  return req.headers.get('x-request-id') ?? crypto.randomUUID()
+}
+
+export function withRequestId<T extends NextResponse>(res: T, requestId: string): T {
+  res.headers.set('x-request-id', requestId)
+  return res
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
+  const requestId = getOrCreateRequestId(req)
 
   // ===== SPA → File-based route redirects (301) =====
   const view = req.nextUrl.searchParams.get('view')
@@ -131,7 +176,7 @@ export async function proxy(req: NextRequest) {
       }
     }
     if (destination) {
-      return NextResponse.redirect(new URL(destination, req.url), 301)
+      return withRequestId(NextResponse.redirect(new URL(destination, req.url), 301), requestId)
     }
   }
 
@@ -154,6 +199,7 @@ export async function proxy(req: NextRequest) {
           'x-forwarded-for': req.headers.get('x-forwarded-for') || '',
           'user-agent': req.headers.get('user-agent') || '',
           cookie: req.headers.get('cookie') || '',
+          'x-request-id': requestId,
         },
         body: JSON.stringify({
           source: utmSource,
@@ -183,7 +229,18 @@ export async function proxy(req: NextRequest) {
     // Supabase unreachable/timeout — continue without session.
     // Public routes work normally; admin routes تعتمد على role cookie كـ fallback.
     if ((err as Error)?.message !== 'Supabase timeout') {
-      logger.error('[Middleware] Supabase session error', err)
+      logger.error(
+        { event: 'proxy_supabase_session_error', requestId, err },
+        '[Middleware] Supabase session error',
+      )
+      fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: ((err as Error)?.message ?? 'supabase session error').slice(0, 500),
+          route: pathname,
+          requestId,
+        }),
+      }).catch(() => {})
     }
   }
 
@@ -202,7 +259,10 @@ export async function proxy(req: NextRequest) {
             fetch(
               `${req.nextUrl.origin}/api/auth/ledger-check?token=${encodeURIComponent(ledgerToken)}`,
               {
-                headers: { cookie: `ga_session_ledger=${ledgerToken}` },
+                headers: {
+                  cookie: `ga_session_ledger=${ledgerToken}`,
+                  'x-request-id': requestId,
+                },
                 cache: 'no-store',
               },
             )
@@ -229,13 +289,15 @@ export async function proxy(req: NextRequest) {
           res.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
           res.cookies.set('ga_admin_role', '', { path: '/', maxAge: 0 })
           copyCookies(supabaseResponse, res)
-          return res
+          return withRequestId(res, requestId)
         } else {
           supabaseResponse.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
         }
       }
     }
-  } catch {}
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort proxy operation
+  }
 
   // ===== IP ban check (ONLY for write/sensitive paths) =====
   // Read-only operations (GET /api/mods, /api/games, etc.) are NOT checked.
@@ -254,15 +316,29 @@ export async function proxy(req: NextRequest) {
       if (ip) {
         const ipBan = await getIpBanCache(ip)
         if (ipBan?.banned) {
-          return NextResponse.json(
-            { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-            { status: 403 },
+          return withRequestId(
+            NextResponse.json(
+              { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
+              { status: 403 },
+            ),
+            requestId,
           )
         }
       }
     } catch (err) {
       // If Redis/cache fails, allow the request (don't block all users)
-      logger.error('[Middleware] IP ban check failed', err)
+      logger.error(
+        { event: 'proxy_ip_ban_check_failed', requestId, err },
+        '[Middleware] IP ban check failed',
+      )
+      fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: ((err as Error)?.message ?? 'ip ban check failed').slice(0, 500),
+          route: pathname,
+          requestId,
+        }),
+      }).catch(() => {})
     }
   }
 
@@ -278,13 +354,27 @@ export async function proxy(req: NextRequest) {
         async () => null,
       )
       if (rl && !rl.success) {
-        return NextResponse.json(
-          { error: 'محاولات كتير جداً، استنى شوية', code: 'RATE_LIMITED' },
-          { status: 429, headers: rateLimitHeaders(rl) },
+        return withRequestId(
+          NextResponse.json(
+            { error: 'محاولات كتير جداً، استنى شوية', code: 'RATE_LIMITED' },
+            { status: 429, headers: rateLimitHeaders(rl) },
+          ),
+          requestId,
         )
       }
     } catch (err) {
-      logger.error('[Middleware] auth rate limit failed', err)
+      logger.error(
+        { event: 'proxy_auth_rate_limit_failed', requestId, err },
+        '[Middleware] auth rate limit failed',
+      )
+      fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: ((err as Error)?.message ?? 'auth rate limit failed').slice(0, 500),
+          route: pathname,
+          requestId,
+        }),
+      }).catch(() => {})
     }
   }
 
@@ -310,21 +400,62 @@ export async function proxy(req: NextRequest) {
           async () => null,
         )
         if (ipBan?.banned) {
-          return NextResponse.json(
-            { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-            { status: 403 },
+          return withRequestId(
+            NextResponse.json(
+              { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
+              { status: 403 },
+            ),
+            requestId,
           )
         }
       }
     } catch (err) {
-      logger.error('[Middleware] session ban check failed', err)
+      logger.error(
+        { event: 'proxy_session_ban_check_failed', requestId, err },
+        '[Middleware] session ban check failed',
+      )
+      fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: ((err as Error)?.message ?? 'session ban check failed').slice(0, 500),
+          route: pathname,
+          requestId,
+        }),
+      }).catch(() => {})
+    }
+  }
+
+  // ===== Onboarding gate (D.6-a) — members with ob===false funnel to /onboarding =====
+  // Edge has no DB access: the ob claim in ga_admin_role carries the flag.
+  // Missing claim (legacy cookies) = fail-open; server-side DB flag is truth.
+  // Pages → 302, API calls → 403 JSON (so fetch() callers can route client-side).
+  {
+    const rolePayload = await getRoleFromCookie(req)
+    const decision = getOnboardingGate(rolePayload?.role, rolePayload?.onboarded, pathname)
+    if (decision === 'redirect') {
+      const onboardingUrl = new URL(ONBOARDING_PATH, req.url)
+      onboardingUrl.searchParams.set('from', pathname)
+      const redirectRes = NextResponse.redirect(onboardingUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'onboarding_required')
+      return withRequestId(redirectRes, requestId)
+    }
+    if (decision === 'json') {
+      return withRequestId(
+        NextResponse.json(
+          { error: 'أكمل إعداد حسابك أولاً', code: 'ONBOARDING_REQUIRED' },
+          { status: 403 },
+        ),
+        requestId,
+      )
     }
   }
 
   // حماية /admin/* (مش /admin/login) — تحقق من role cookie فقط
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
   if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
@@ -337,7 +468,7 @@ export async function proxy(req: NextRequest) {
       if (req.cookies.has(ROLE_COOKIE_NAME) && !rolePayload?.role) {
         redirectRes.headers.set('x-auth-reason', 'invalid_jwt')
       }
-      return redirectRes
+      return withRequestId(redirectRes, requestId)
     }
     if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
       const loginUrl = new URL('/admin/login', req.url)
@@ -349,22 +480,25 @@ export async function proxy(req: NextRequest) {
         path: pathname,
         userId: rolePayload.userId,
       })
-      return redirectRes
+      return withRequestId(redirectRes, requestId)
     }
-    // TOTP اختياري — غير مفعلة افتراضياً — لا نفرض MFA (اختياري فقط)
-    // if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
-    //   const securityUrl = new URL('/admin/security', req.url)
-    //   securityUrl.searchParams.set('mfa_required', '1')
-    //   const redirectRes = NextResponse.redirect(securityUrl)
-    //   copyCookies(supabaseResponse, redirectRes)
-    //   redirectRes.headers.set('x-auth-reason', 'mfa_required')
-    //   return redirectRes
-    // }
+    // Audit D.2: MFA enforced for staff pages. /admin/security stays
+    // exempt so unenrolled staff can enroll; verify re-issues the cookie
+    // with mfa=true (see mfa/verify route).
+    if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
+      const securityUrl = new URL('/admin/security', req.url)
+      securityUrl.searchParams.set('mfa_required', '1')
+      const redirectRes = NextResponse.redirect(securityUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'mfa_required')
+      return withRequestId(redirectRes, requestId)
+    }
   }
 
   // حماية /api/admin/* — تحقق من role cookie فقط
   if (pathname.startsWith('/api/admin')) {
-    const rolePayload = await getRoleFromCookie(req)
+    // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
+    const rolePayload = await getRoleFromCookie(req, { strictTv: true })
     if (
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
@@ -376,24 +510,31 @@ export async function proxy(req: NextRequest) {
       if (req.cookies.has(ROLE_COOKIE_NAME)) {
         res.headers.set('x-auth-reason', 'invalid_jwt')
       }
-      return res
+      return withRequestId(res, requestId)
     }
     if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
-      return NextResponse.json(
-        { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
-        { status: 503 },
+      return withRequestId(
+        NextResponse.json(
+          { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
+          { status: 503 },
+        ),
+        requestId,
       )
     }
-    // TOTP اختياري — لا نفرض MFA لـ API أيضاً
-    // if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
-    //   return NextResponse.json(
-    //     { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
-    //     { status: 403 }
-    //   )
-    // }
+    // Audit D.2: MFA enforced for staff APIs (mfa/* stays open for the
+    // verify/login handshake itself).
+    if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
+      return withRequestId(
+        NextResponse.json(
+          { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
+          { status: 403 },
+        ),
+        requestId,
+      )
+    }
   }
 
-  // حماية /creator/* — creator/publisher فقط (moderator+ يُمنع)
+  // حماية /creator/* — كل الأدوار ما عدا member (المعرّبون + الإدارة)
   if (pathname.startsWith('/creator')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
@@ -401,29 +542,63 @@ export async function proxy(req: NextRequest) {
       loginUrl.searchParams.set('next', pathname)
       const redirectRes = NextResponse.redirect(loginUrl)
       copyCookies(supabaseResponse, redirectRes)
-      return redirectRes
+      return withRequestId(redirectRes, requestId)
     }
-    const CREATOR_ONLY = ['creator', 'publisher']
+    const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
-      const becomeUrl = new URL('/become-creator', req.url)
+      const becomeUrl = new URL('/become-creator/apply', req.url)
       const redirectRes = NextResponse.redirect(becomeUrl)
       copyCookies(supabaseResponse, redirectRes)
-      return redirectRes
+      return withRequestId(redirectRes, requestId)
     }
   }
 
-  // حماية /api/creator/* — creator/publisher فقط
-  if (pathname.startsWith('/api/creator')) {
+  // حماية /api/creator/* — كل الأدوار ما عدا member (المعرّبون + الإدارة)
+  // ملاحظة: المطابقة على حدّ المقطع (/api/creator/) حتى لا تبتلع
+  // مسار /api/creator-requests المخصّص للأعضاء العاديين.
+  if (pathname === '/api/creator' || pathname.startsWith('/api/creator/')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return withRequestId(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), requestId)
     }
-    const CREATOR_ONLY = ['creator', 'publisher']
+    const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
-      return NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 })
+      return withRequestId(
+        NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 }),
+        requestId,
+      )
+    }
+    // Track gate (Phase 4): news.create is publisher-only — translators
+    // (creator role) get 403 even though they pass the studio gate above.
+    // Role IS the track post-approval (translator→creator, publisher→publisher).
+    if (pathname === '/api/creator/news' || pathname.startsWith('/api/creator/news/')) {
+      const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
+      if (!NEWS_PUBLISHERS.includes(rolePayload.role)) {
+        return withRequestId(
+          NextResponse.json(
+            { error: 'Forbidden — publisher track required' },
+            { status: 403 },
+          ),
+          requestId,
+        )
+      }
     }
   }
 
+  // Track gate (Phase 4): /creator/news page is publisher-only — translators
+  // fall back to the dashboard (the page itself also renders a notice).
+  if (pathname === '/creator/news' || pathname.startsWith('/creator/news/')) {
+    const rolePayload = await getRoleFromCookie(req)
+    const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
+    if (rolePayload?.role && !NEWS_PUBLISHERS.includes(rolePayload.role)) {
+      const dashboardUrl = new URL('/creator', req.url)
+      const redirectRes = NextResponse.redirect(dashboardUrl)
+      copyCookies(supabaseResponse, redirectRes)
+      return withRequestId(redirectRes, requestId)
+    }
+  }
+
+  supabaseResponse.headers.set('x-request-id', requestId)
   return addSecurityHeaders(supabaseResponse)
 }
 

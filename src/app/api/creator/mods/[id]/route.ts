@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/ap
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { CreateModSchema } from '@/lib/schemas'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -14,12 +15,19 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (error) return error
     if (!user) return forbidden('يجب تسجيل الدخول')
 
+    // 10 edits/hour per creator.
+    const limited = await rateLimitMiddleware(req, {
+      limit: 10,
+      window: 3600,
+      keyPrefix: `creator:mod-edit:${user.id}`,
+    })
+    if (limited) return limited
+
     const { id } = await params
     const mod = await db.mod.findUnique({ where: { id } })
     if (!mod) return notFound('التعريب غير موجود')
 
-    const isAdmin = ['admin', 'manager', 'owner'].includes(user.role)
-    if (mod.authorId !== user.id && !isAdmin) {
+    if (mod.authorId !== user.id) {
       return forbidden('لا تملك صلاحية تعديل هذا التعريب')
     }
 
@@ -79,8 +87,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     })
     if (!mod) return notFound('التعريب غير موجود')
 
-    const isAdmin = ['admin', 'manager', 'owner'].includes(user.role)
-    if (mod.authorId !== user.id && !isAdmin) {
+    if (mod.authorId !== user.id) {
       return forbidden('لا تملك صلاحية عرض هذا التعريب')
     }
 

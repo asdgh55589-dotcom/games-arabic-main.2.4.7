@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     try {
       return ok(await searchViaMeili(args))
     } catch {
-      // fall through to Prisma
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort search fallback
     }
   }
 

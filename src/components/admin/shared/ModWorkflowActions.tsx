@@ -372,7 +372,9 @@ export function ModWorkflowActions({
         const data = await res.json()
         setWorkflowHistory(data?.data || data?.history || [])
       }
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort workflow action
+    }
   }
 
   return (

@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -24,14 +26,30 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return validationFail('هذا الطلب لم يعد متاحاً')
     }
 
-    await db.modRequest.update({
-      where: { id },
+    // Optional linked mod must belong to the accepter (prevent steal-by-link).
+    if (modId) {
+      const mod = await db.mod.findUnique({
+        where: { id: modId },
+        select: { id: true, authorId: true },
+      })
+      if (!mod || mod.authorId !== user.id) {
+        return validationFail('التعريب غير موجود أو ليس لك')
+      }
+    }
+
+    // Atomic claim: only one accepter can win a race on the same request.
+    const claimed = await db.modRequest.updateMany({
+      where: { id, status: 'open' },
       data: {
         status: 'accepted',
         acceptedBy: user.id,
         acceptedAt: new Date(),
+        ...(modId ? { modId } : {}),
       },
     })
+    if (claimed.count === 0) {
+      return validationFail('هذا الطلب لم يعد متاحاً')
+    }
 
     try {
       await db.notification.create({
@@ -44,7 +62,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           data: { requestId: id, gameName: request.gameName },
         },
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: accept notify is best-effort — the atomic claim above is already committed
+      // intentional: expected+handled (claim won; notify is advisory)
+      logger.warn(
+        { event: 'creator_request_accept_notify_failed', action: 'accept', err },
+        'accept notify failed',
+      )
+    }
 
     return ok({ message: 'تم قبول الطلب بنجاح' })
   }
@@ -85,12 +110,28 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           data: { requestId: id, modId, gameName: request.gameName },
         },
       })
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: complete notify is best-effort — the completed status above is already committed
+      // intentional: expected+handled (request completed; notify is advisory)
+      logger.warn(
+        { event: 'creator_request_complete_notify_failed', action: 'complete', err },
+        'complete notify failed',
+      )
+    }
 
     return ok({ message: 'تم إكمال الطلب' })
   }
 
   if (action === 'cancel') {
+    // Requester or staff can always cancel. The accepter may release the
+    // request back to open while work has not started (not completed).
+    if (request.acceptedBy === user.id && request.status === 'accepted') {
+      await db.modRequest.update({
+        where: { id },
+        data: { status: 'open', acceptedBy: null, acceptedAt: null },
+      })
+      return ok({ message: 'تم إلغاء قبول الطلب وإعادته للطلبات المتاحة' })
+    }
     if (request.userId !== user.id && !['admin', 'manager', 'owner'].includes(user.role)) {
       return forbidden('لا تملك صلاحية إلغاء هذا الطلب')
     }
@@ -102,6 +143,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   if (action === 'boost') {
+    // 1 boost/hour per user per request (spam guard).
+    const limited = await rateLimitMiddleware(req, {
+      limit: 1,
+      window: 3600,
+      keyPrefix: `creator:boost:${user.id}:${id}`,
+    })
+    if (limited) return limited
+
     await db.modRequest.update({
       where: { id },
       data: { interestCount: { increment: 1 } },

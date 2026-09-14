@@ -4,6 +4,7 @@ import { internalError, notFound, ok, rateLimited, unauthorized } from '@/lib/ap
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clearHomeCache } from '@/lib/home-cache'
+import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 // GET /api/mods/[slug]/endorse — check if current user has endorsed
@@ -135,7 +136,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
               modSlug: slug,
               milestone: result.endorsements,
             })
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort endorsement
+          }
         }
       }
     }
@@ -143,7 +146,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     // Invalidate home cache for real-time stats
     try {
       clearHomeCache()
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort endorsement
+    }
 
     return ok({
       endorsed: result.endorsed,
@@ -169,7 +174,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         endorsements: freshMod?.endorsements ?? 0,
       })
     }
-    console.error('[endorse] failed:', err)
+    logger.error({ err }, '[endorse] failed')
     return internalError('Failed to endorse mod')
   }
 }

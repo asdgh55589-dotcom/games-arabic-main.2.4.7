@@ -14,6 +14,7 @@
 
 import { getUserIdFromRequestCookies } from './auth'
 import { clearHomeCache } from './home-cache'
+import { logger } from './logger'
 import { redisSetNX } from './redis'
 
 const HOUR = 3600
@@ -40,6 +41,16 @@ function hashUA(userAgent: string): string {
   let h = 0
   for (let i = 0; i < userAgent.length && i < 120; i++) {
     h = ((h << 5) - h + userAgent.charCodeAt(i)) | 0
+  }
+  return (h >>> 0).toString(36)
+}
+
+/** Privacy hash for guest identifiers (stored instead of raw IP). */
+export function hashIdentity(s: string): string {
+  let h = 0
+  const input = s.slice(0, 200)
+  for (let i = 0; i < input.length; i++) {
+    h = ((h << 5) - h + input.charCodeAt(i)) | 0
   }
   return (h >>> 0).toString(36)
 }
@@ -133,7 +144,14 @@ export async function recordModView(modId: string, req: Request, db: any): Promi
   }
   try {
     clearHomeCache()
-  } catch {}
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the view is already counted, stale homepage self-heals on TTL
+    // intentional: expected+handled (count already committed, no rollback)
+    logger.warn(
+      { event: 'home_cache_clear_failed', action: 'record_mod_view', err },
+      'home cache clear failed',
+    )
+  }
   return { counted: true }
 }
 
@@ -150,6 +168,34 @@ export async function recordTeamView(teamId: string, req: Request, db: any): Pro
   await db.team.update({
     where: { id: teamId },
     data: { views: { increment: 1 } },
+  })
+  return { counted: true }
+}
+
+/**
+ * Wave B Task 5 — تسجيل فتح قسم التعليقات (funnel: view → download → click).
+ * نفس سياسة المشاهدات (bot-excluded + Redis dedup). يُرجع counted=false
+ * للمكرر أو الـ bots. لا يوجد عدّاد تراكمي — التجميع من الجدول مباشرة.
+ */
+export async function recordCommentSectionClick(
+  modId: string,
+  req: Request,
+  db: any,
+): Promise<RecordResult> {
+  const userAgent = req.headers.get('user-agent')
+  if (isBot(userAgent)) return { counted: false }
+
+  const { fresh, identity } = await shouldCount(`csc:mod:${modId}`, req)
+  if (!fresh) return { counted: false }
+
+  const ip = getClientIP(req)
+  await db.commentSectionClick.create({
+    data: {
+      modId,
+      userId: identity.authenticated ? identity.identity.slice(2) : null,
+      ipHash: identity.authenticated ? null : hashIdentity(`${ip}:${userAgent || 'unknown'}`),
+      userAgent: userAgent?.substring(0, 200) || null,
+    },
   })
   return { counted: true }
 }
@@ -217,7 +263,14 @@ export async function recordDownload(
             data: { totalDownloads: { increment: 1 } },
           })
         }
-      } catch {}
+      } catch (err) {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: Game/Series cascade is best-effort — the Mod count + DownloadClick row are already committed in the same tx
+        // intentional: expected+handled (partial cascade converges on next download; no rollback of the primary count)
+        logger.warn(
+          { event: 'download_cascade_failed', action: 'record_download_tx', err },
+          'download game/series cascade failed',
+        )
+      }
     })
   } else {
     await Promise.all([
@@ -256,11 +309,25 @@ export async function recordDownload(
             data: { totalDownloads: { increment: 1 } },
           })
       }
-    } catch {}
+    } catch (err) {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: non-transactional cascade is best-effort — primary Mod count + DownloadClick already written
+      // intentional: expected+handled (converges on next download; no rollback)
+      logger.warn(
+        { event: 'download_cascade_failed', action: 'record_download_fallback', err },
+        'download game/series cascade failed',
+      )
+    }
   }
   try {
     clearHomeCache()
-  } catch {}
+  } catch (err) {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the download is already counted, stale homepage self-heals on TTL
+    // intentional: expected+handled (count already committed, no rollback)
+    logger.warn(
+      { event: 'home_cache_clear_failed', action: 'record_download', err },
+      'home cache clear failed',
+    )
+  }
   return { counted: true }
 }
 

@@ -31,6 +31,8 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import type { StudioDict } from '@/lib/studio-i18n/types'
 import { cn } from '@/lib/utils'
 
 interface ModItem {
@@ -52,26 +54,45 @@ interface ModItem {
   game: { id: string; name: string; slug: string } | null
 }
 
-const STATUS_CONFIG: Record<
+const STATUS_META: Record<
   string,
-  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+  { icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
-  DRAFT: { label: 'مسودة', icon: FileText, color: 'bg-gray-500' },
-  IN_REVIEW: { label: 'بانتظار المراجعة', icon: Clock, color: 'bg-yellow-500' },
-  APPROVED: { label: 'موافق عليه', icon: CheckCircle, color: 'bg-blue-500' },
-  PUBLISHED: { label: 'منشور', icon: CheckCircle, color: 'bg-green-500' },
-  ARCHIVED: { label: 'مؤرشف', icon: Archive, color: 'bg-gray-400' },
-  REJECTED: { label: 'مرفوض', icon: XCircle, color: 'bg-red-500' },
+  DRAFT: { icon: FileText, color: 'bg-gray-500' },
+  IN_REVIEW: { icon: Clock, color: 'bg-yellow-500' },
+  APPROVED: { icon: CheckCircle, color: 'bg-blue-500' },
+  PUBLISHED: { icon: CheckCircle, color: 'bg-green-500' },
+  ARCHIVED: { icon: Archive, color: 'bg-gray-400' },
+  REJECTED: { icon: XCircle, color: 'bg-red-500' },
 }
 
-const STATUS_FILTERS = [
-  { value: 'all', label: 'الكل' },
-  { value: 'PUBLISHED', label: 'منشور' },
-  { value: 'DRAFT', label: 'مسودة' },
-  { value: 'IN_REVIEW', label: 'بانتظار المراجعة' },
-  { value: 'REJECTED', label: 'مرفوض' },
-  { value: 'ARCHIVED', label: 'مؤرشف' },
-]
+function statusLabel(workflowStatus: string, mods: StudioDict['mods']): string {
+  switch (workflowStatus) {
+    case 'PUBLISHED':
+      return mods.published
+    case 'IN_REVIEW':
+      return mods.inReview
+    case 'APPROVED':
+      return mods.approved
+    case 'REJECTED':
+      return mods.rejected
+    case 'ARCHIVED':
+      return mods.archived
+    default:
+      return mods.draft
+  }
+}
+
+function statusFilters(mods: StudioDict['mods']): { value: string; label: string }[] {
+  return [
+    { value: 'all', label: mods.all },
+    { value: 'PUBLISHED', label: mods.published },
+    { value: 'DRAFT', label: mods.draft },
+    { value: 'IN_REVIEW', label: mods.inReview },
+    { value: 'REJECTED', label: mods.rejected },
+    { value: 'ARCHIVED', label: mods.archived },
+  ]
+}
 
 export function ModsListClient({
   initialStatus,
@@ -82,6 +103,8 @@ export function ModsListClient({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const { dict, locale } = useStudioLanguage()
+  const tag = locale === 'ar' ? 'ar-EG' : 'en-US'
 
   const [status, setStatus] = useState(initialStatus || 'all')
   const [query, setQuery] = useState(initialQuery || '')
@@ -147,9 +170,9 @@ export function ModsListClient({
     }
 
     const confirmMessages: Record<string, string> = {
-      submit: 'هل أنت متأكد من إرسال هذا التعريب للمراجعة؟',
-      archive: 'هل أنت متأكد من أرشفة هذا التعريب؟',
-      delete: 'هل أنت متأكد من حذف هذا التعريب؟ لا يمكن التراجع.',
+      submit: dict.mods.confirmSubmit,
+      archive: dict.mods.confirmArchive,
+      delete: dict.mods.confirmDelete,
     }
     if (confirmMessages[action] && !confirm(confirmMessages[action])) return
 
@@ -161,16 +184,16 @@ export function ModsListClient({
       })
       const data = await res.json()
       if (res.ok) {
-        toast({ title: data.data?.message || 'تم بنجاح' })
+        toast({ title: data.data?.message || dict.mods.actionDone })
         fetchMods(page)
       } else {
         toast({
-          title: data.error?.message || data.error?.details || 'فشل الإجراء',
+          title: data.error?.message || data.error?.details || dict.mods.actionFailed,
           variant: 'destructive',
         })
       }
     } catch {
-      toast({ title: 'حدث خطأ', variant: 'destructive' })
+      toast({ title: dict.mods.unexpectedError, variant: 'destructive' })
     }
   }
 
@@ -178,7 +201,7 @@ export function ModsListClient({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((filter) => (
+        {statusFilters(dict.mods).map((filter) => (
           <Button
             key={filter.value}
             variant={status === filter.value ? 'default' : 'outline'}
@@ -192,28 +215,28 @@ export function ModsListClient({
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="ابحث في تعريباتك..."
+          placeholder={dict.mods.searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pr-10"
+          className="ps-10"
         />
       </div>
 
       {/* Mods list */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
+        <div className="text-center py-12 text-muted-foreground">{dict.mods.loading}</div>
       ) : mods.length === 0 ? (
         <EmptyState
           icon="inbox"
-          title="لا توجد تعريبات بعد"
+          title={dict.mods.emptyTitle}
           description={
             query
-              ? 'لم يتم العثور على نتائج مطابقة لبحثك'
-              : 'ابدأ بإنشاء أول تعريب لك وشاركه مع المجتمع'
+              ? dict.mods.emptySearch
+              : dict.mods.emptyCreate
           }
-          action={{ label: 'إنشاء تعريب جديد', href: '/creator/mods/new' }}
+          action={{ label: dict.mods.createNew, href: '/creator/mods/new' }}
         />
       ) : (
         <div className="space-y-3">
@@ -232,10 +255,10 @@ export function ModsListClient({
             disabled={page <= 1}
             onClick={() => fetchMods(page - 1)}
           >
-            السابق
+            {dict.mods.prev}
           </Button>
           <span className="flex items-center px-3 text-sm text-muted-foreground">
-            صفحة {pagination.page} من {pagination.totalPages}
+            {dict.mods.page} {pagination.page} {dict.mods.pageOf} {pagination.totalPages}
           </span>
           <Button
             variant="outline"
@@ -243,7 +266,7 @@ export function ModsListClient({
             disabled={page >= pagination.totalPages}
             onClick={() => fetchMods(page + 1)}
           >
-            التالي
+            {dict.mods.next}
           </Button>
         </div>
       )}
@@ -258,8 +281,10 @@ function ModCard({
   mod: ModItem
   onAction: (id: string, action: string) => void
 }) {
-  const statusConfig = STATUS_CONFIG[mod.workflowStatus] || STATUS_CONFIG.DRAFT
-  const StatusIcon = statusConfig.icon
+  const { dict, locale } = useStudioLanguage()
+  const tag = locale === 'ar' ? 'ar-EG' : 'en-US'
+  const meta = STATUS_META[mod.workflowStatus] || STATUS_META.DRAFT
+  const StatusIcon = meta.icon
 
   return (
     <Card>
@@ -284,30 +309,30 @@ function ModCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-medium truncate">{mod.name}</h3>
-              <Badge className={cn('text-white', statusConfig.color)}>
-                <StatusIcon className="h-3 w-3 ml-1" />
-                {statusConfig.label}
+              <Badge className={cn('text-white', meta.color)}>
+                <StatusIcon className="h-3 w-3 me-1" />
+                {statusLabel(mod.workflowStatus, dict.mods)}
               </Badge>
               {mod.isOriginalWork === false && (
                 <Badge variant="outline" className="text-amber-500 border-amber-500">
-                  من مصدر خارجي
+                  {dict.mods.externalSource}
                 </Badge>
               )}
             </div>
 
             <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-              {mod.game?.name && <span>لعبة: {mod.game.name}</span>}
+              {mod.game?.name && <span>{dict.mods.game}: {mod.game.name}</span>}
               <span className="hidden sm:inline">•</span>
-              <span>{new Date(mod.createdAt).toLocaleDateString('ar-EG')}</span>
+              <span>{new Date(mod.createdAt).toLocaleDateString(tag)}</span>
             </div>
 
             {mod.workflowStatus === 'PUBLISHED' && (
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" /> {(mod.views || 0).toLocaleString('ar-EG')}
+                  <Eye className="h-4 w-4" /> {(mod.views || 0).toLocaleString(tag)}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Download className="h-4 w-4" /> {(mod.downloads || 0).toLocaleString('ar-EG')}
+                  <Download className="h-4 w-4" /> {(mod.downloads || 0).toLocaleString(tag)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500" /> {(mod.rating || 0).toFixed(1)}
@@ -318,37 +343,37 @@ function ModCard({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="إجراءات">
+              <Button variant="ghost" size="icon" aria-label={dict.mods.actions}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onAction(mod.id, 'view')}>
-                <Eye className="h-4 w-4 ml-2" /> عرض
+                <Eye className="h-4 w-4 me-2" /> {dict.mods.view}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onAction(mod.id, 'edit')}>
-                <Edit className="h-4 w-4 ml-2" /> تعديل
+                <Edit className="h-4 w-4 me-2" /> {dict.mods.edit}
               </DropdownMenuItem>
               {mod.workflowStatus === 'DRAFT' && (
                 <DropdownMenuItem onClick={() => onAction(mod.id, 'submit')}>
-                  <Send className="h-4 w-4 ml-2" /> إرسال للمراجعة
+                  <Send className="h-4 w-4 me-2" /> {dict.mods.submitReview}
                 </DropdownMenuItem>
               )}
               {mod.workflowStatus === 'REJECTED' && (
                 <DropdownMenuItem onClick={() => onAction(mod.id, 'resubmit')}>
-                  <Send className="h-4 w-4 ml-2" /> 🔄 إعادة إرسال
+                  <Send className="h-4 w-4 me-2" /> {dict.mods.resubmit}
                 </DropdownMenuItem>
               )}
               {mod.workflowStatus === 'PUBLISHED' && (
                 <DropdownMenuItem onClick={() => onAction(mod.id, 'archive')}>
-                  <Archive className="h-4 w-4 ml-2" /> أرشفة
+                  <Archive className="h-4 w-4 me-2" /> {dict.mods.archive}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
                 onClick={() => onAction(mod.id, 'delete')}
                 className="text-red-600 focus:text-red-600"
               >
-                <Trash2 className="h-4 w-4 ml-2" /> حذف
+                <Trash2 className="h-4 w-4 me-2" /> {dict.mods.remove}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

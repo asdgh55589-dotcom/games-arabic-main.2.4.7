@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Cpu,
   Crown,
   Download,
   ExternalLink,
@@ -26,6 +27,7 @@ import {
   MessageSquare,
   Send,
   Shield,
+  Smartphone,
   Star,
   Tag,
   ThumbsUp,
@@ -40,6 +42,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { ModComments } from '@/components/mod-comments'
+import { CommentSectionBeacon } from '@/components/comment-section-beacon'
 import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
@@ -65,6 +68,7 @@ import {
   parseTags,
   timeAgo,
 } from '@/lib/format'
+import { getModTitles } from '@/lib/platform-titles'
 import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 import { ModDetailMobile } from './mod-detail-mobile'
 
@@ -125,11 +129,15 @@ export function ModDetailPage() {
     if (!slug) return
     try {
       if (localStorage.getItem(`ga_endorsed_${slug}`) === '1') setEndorsed(true)
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+    }
     if (mod?.id) {
       try {
         if (localStorage.getItem(`ga_reported_mod_${mod.id}`) === '1') setHasReported(true)
-      } catch {}
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+      }
     }
     fetch(`/api/mods/${slug}/endorse`)
       .then((r) => r.json())
@@ -138,7 +146,9 @@ export function ModDetailPage() {
           setEndorsed(true)
           try {
             localStorage.setItem(`ga_endorsed_${slug}`, '1')
-          } catch {}
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+          }
         }
       })
       .catch(() => {})
@@ -215,7 +225,9 @@ export function ModDetailPage() {
       if (result.data.endorsed) {
         try {
           localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+        }
         toast({
           title: 'تم التأييد',
           description: 'شكراً لدعمك لمؤلف هذا التعريب',
@@ -223,7 +235,9 @@ export function ModDetailPage() {
       } else {
         try {
           localStorage.removeItem(`ga_endorsed_${mod.slug}`)
-        } catch {}
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+        }
         toast({
           title: 'تم إلغاء التأييد',
           description: 'تمت إزالة إعجابك',
@@ -276,21 +290,20 @@ export function ModDetailPage() {
   return (
     <>
       <div className="hidden lg:block">
-        <div>
+        <main>
           {loading ? (
             <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6">
-              <div className="aspect-[21/9] animate-pulse rounded-lg bg-muted" />
-              <div className="mt-4 sm:mt-6 h-16 sm:h-24 animate-pulse rounded bg-muted" />
-              <div className="mt-3 sm:mt-4 h-8 sm:h-10 animate-pulse rounded bg-muted" />
+              <div className="aspect-[21/9] animate-pulse rounded-xl bg-muted" />
+              <div className="mt-4 sm:mt-6 h-16 sm:h-24 animate-pulse rounded-xl bg-muted" />
+              <div className="mt-3 sm:mt-4 h-8 sm:h-10 animate-pulse rounded-xl bg-muted" />
             </div>
           ) : mod ? (
             <>
-              {/* ===== HERO BANNER — standalone, fixed height ===== */}
-              <div
-                className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[520px]"
+              {/* ===== HERO BANNER ===== */}
+              <section
+                className="relative overflow-hidden h-[280px] sm:h-[360px] md:h-[440px]"
                 dir="rtl"
               >
-                {/* Backdrop image — تعتيم خفيف جداً */}
                 <div className="absolute inset-0">
                   {bannerImage ? (
                     <>
@@ -303,13 +316,7 @@ export function ModDetailPage() {
                           e.currentTarget.src = FALLBACK_GAME_IMAGE
                         }}
                       />
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.06) 30%, transparent 55%)',
-                        }}
-                      />
+                      <div className="mod-detail-hero-overlay absolute inset-0" />
                     </>
                   ) : (
                     <div
@@ -323,50 +330,49 @@ export function ModDetailPage() {
                   )}
                 </div>
 
-                {/* Breadcrumb — top-start with spacing from edge */}
+                {/* Breadcrumb */}
                 <nav
-                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-10 flex flex-wrap items-center gap-1.5 sm:gap-2 text-start text-[10px] sm:text-xs text-muted-foreground/80"
+                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-10 flex flex-wrap items-center gap-2 text-xs text-muted-foreground/80"
                   aria-label="مسار التنقل"
                 >
                   <button
                     onClick={() => router.back()}
-                    className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20 cursor-pointer"
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-background/50 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/70 hover:text-foreground cursor-pointer"
                     aria-label="العودة للصفحة السابقة"
                   >
-                    <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-background/50 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/70 hover:text-foreground"
                   >
-                    <span className="text-[8px] sm:text-[10px] opacity-60">«</span>
+                    <span className="text-[10px] opacity-60">«</span>
                     الرئيسية
                   </Link>
                   <span className="text-primary/60 text-[10px]">‹</span>
                   <Link
                     href={`/platform/${mod.game.platform}`}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:border-white/20 whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-background/50 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/70 whitespace-nowrap"
                     style={{ color: platformColor }}
                   >
                     ARABIC {mod.game.platform}
                   </Link>
                   <span className="text-primary/60 text-[10px]">‹</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 font-medium text-foreground">
                     {mod.name}
                   </span>
                 </nav>
-              </div>
+              </section>
 
-              {/* ===== CONTENT ROW — poster right, text left, overlaps banner ===== */}
-              <div
+              {/* ===== CONTENT — poster + info grid ===== */}
+              <section
                 dir="rtl"
-                className="relative z-10 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 -mt-[160px] sm:-mt-[280px] md:-mt-[360px]"
+                className="relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6 -mt-[120px] sm:-mt-[200px] md:-mt-[280px]"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
-                  {/* POSTER COLUMN — RIGHT side in RTL */}
+                <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
+                  {/* Poster */}
                   <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
-                    {/* Poster image */}
-                    <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
+                    <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-secondary mod-detail-shadow-lg">
                       {mod.imageUrl ? (
                         <img
                           src={mod.imageUrl}
@@ -378,15 +384,15 @@ export function ModDetailPage() {
                         />
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-                          <Gamepad2 className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />
-                          <span className="text-[10px] sm:text-xs text-muted-foreground/40">
+                          <Gamepad2 className="h-10 w-10 text-muted-foreground/40" />
+                          <span className="text-xs text-muted-foreground/40">
                             {mod.game.name}
                           </span>
                         </div>
                       )}
                       {mod.game?.platform && (
                         <span
-                          className="absolute top-1.5 sm:top-2 start-1.5 sm:start-2 inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-black uppercase leading-none text-white"
+                          className="absolute top-2 start-2 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white"
                           style={{ background: platformColor || 'var(--primary)' }}
                         >
                           {mod.game.platform}
@@ -395,36 +401,25 @@ export function ModDetailPage() {
                     </div>
                   </div>
 
-                  {/* TEXT COLUMN — beside poster */}
+                  {/* Info */}
                   <div className="text-right">
-                    {/* Badges row */}
-                    <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
+                    {/* Badges */}
+                    <div className="mb-3 flex items-center gap-2 justify-end">
                       {mod.isTrending && (
-                        <span className="inline-flex items-center gap-1 rounded-none border-2 border-black/50 bg-status-updated px-2 py-0.5 text-xs font-black uppercase leading-none text-status-updated-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-bold text-primary">
                           رائج
                         </span>
                       )}
                       {mod.isFeatured && (
-                        <span className="inline-flex items-center gap-1 rounded-none border-2 border-black/50 bg-gold px-2 py-0.5 text-xs font-black uppercase leading-none text-gold-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-gold/10 border border-gold/20 px-2.5 py-1 text-xs font-bold text-gold">
                           مميز
                         </span>
                       )}
                     </div>
 
-                    {/* Title + stats + data — shared blurred backdrop, faded edges */}
-                    <div
-                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-10 sm:pt-12 md:pt-14 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
-                      style={{
-                        maskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        WebkitMaskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        maskComposite: 'intersect',
-                        WebkitMaskComposite: 'source-in',
-                      }}
-                    >
-                      {/* Title */}
-                      <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
+                    {/* Title + Data */}
+                    <div className="ps-0 pe-0 pt-8 pb-6">
+                      <h1 className="text-2xl sm:text-3xl font-bold text-foreground md:text-4xl text-balance">
                         {mod.name}
                       </h1>
                       {(
@@ -434,7 +429,7 @@ export function ModDetailPage() {
                           originalAuthor?: string | null
                         }
                       ).isOriginalWork === false && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
                           <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                           <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
                             منشور من مصدر خارجي
@@ -472,191 +467,149 @@ export function ModDetailPage() {
                         </div>
                       )}
 
-                      {/* Data grid */}
-                      <div className="mt-6 sm:mt-8 md:mt-10 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
-                        <DataItem
-                          icon={<Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />}
-                          label="اسم اللعبة"
-                          value={mod.game.name}
-                        />
-                        {mod.arabicTitle && (
+                      {/* Data grid — per-platform titles */}
+                      <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                        {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem
-                            icon={<Languages className="h-4 w-4 text-emerald-500 shrink-0" />}
-                            label="الاسم بالعربي"
-                            value={mod.arabicTitle}
+                            key={item.key}
+                            icon={TITLE_ICONS[item.key]}
+                            label={item.label}
+                            value={item.value}
                           />
-                        )}
-                        <DataItem
-                          icon={<Shield className="h-4 w-4 text-purple-500 shrink-0" />}
-                          label="نوع التعريب"
-                          value={mod.translationType || 'غير محدد'}
-                        />
-                        {mod.translationScope && (
-                          <DataItem
-                            icon={<Globe className="h-4 w-4 text-sky-500 shrink-0" />}
-                            label="نطاق التعريب"
-                            value={mod.translationScope}
-                          />
-                        )}
-                        {mod.version && (
-                          <DataItem
-                            icon={<Tag className="h-4 w-4 text-amber-500 shrink-0" />}
-                            label="إصدار التعريب"
-                            value={`v${mod.version}`}
-                          />
-                        )}
-                        {mod.compatibility && (
-                          <DataItem
-                            icon={<CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />}
-                            label="توافق التعريب"
-                            value={mod.compatibility}
-                          />
-                        )}
-                        {mod.fileSize && mod.fileSize.trim() !== '' && (
-                          <DataItem
-                            icon={<FileArchive className="h-4 w-4 text-rose-500 shrink-0" />}
-                            label="حجم التعريب"
-                            value={`${mod.fileSize} .${mod.fileFormat}`}
-                          />
-                        )}
-                        <DataItem
-                          icon={<Calendar className="h-4 w-4 text-cyan-500 shrink-0" />}
-                          label="تاريخ الإصدار"
-                          value={formatArabicDate(mod.releaseDate)}
-                        />
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              {/* ===== صندوق البيانات — مائل بدون حواف ناعمة وبارز بخطوط عريضة ===== */}
-              <div
+              {/* ===== Stats Bar ===== */}
+              <section
                 dir="rtl"
-                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-8 sm:-mt-12 lg:-mt-14"
+                className="mx-auto max-w-[1200px] px-4 sm:px-6 mt-6"
               >
-                <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
-                  {/* السلسلة */}
+                <div className="mod-detail-card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
                   {mod.series && mod.series.trim() !== '' && (
                     <>
-                      <span className="flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-orange-500">
+                      <div className="flex items-center gap-2">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-orange-500/10 text-orange-500">
                           <Layers className="h-3.5 w-3.5" />
                         </span>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                          السلسلة
-                        </span>
-                        <span className="text-border font-black">|</span>
-                        <Link
-                          href={`/series/${encodeURIComponent(mod.series)}`}
-                          className="text-xs font-black text-gold hover:underline"
-                        >
-                          {mod.series}
-                        </Link>
-                      </span>
-                      <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                            السلسلة
+                          </div>
+                          <Link
+                            href={`/series/${encodeURIComponent(mod.series)}`}
+                            className="text-xs font-bold text-primary hover:underline truncate block max-w-[120px]"
+                          >
+                            {mod.series}
+                          </Link>
+                        </div>
+                      </div>
+                      <span className="hidden sm:block h-5 w-px bg-border" aria-hidden />
                     </>
                   )}
 
-                  {/* الفريق */}
                   {mod.translationTeam && mod.translationTeam.trim() !== '' && (
                     <>
-                      <span className="flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-indigo-500">
+                      <div className="flex items-center gap-2">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-500">
                           <Users className="h-3.5 w-3.5" />
                         </span>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                          الفريق
-                        </span>
-                        <span className="text-border font-black">|</span>
-                        <Link
-                          href={`/teams/${encodeURIComponent(mod.translationTeam)}`}
-                          className="text-xs font-black text-gold hover:underline"
-                        >
-                          {mod.translationTeam}
-                        </Link>
-                      </span>
-                      <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                            الفريق
+                          </div>
+                          <Link
+                            href={`/teams/${encodeURIComponent(mod.translationTeam)}`}
+                            className="text-xs font-bold text-primary hover:underline truncate block max-w-[120px]"
+                          >
+                            {mod.translationTeam}
+                          </Link>
+                        </div>
+                      </div>
+                      <span className="hidden sm:block h-5 w-px bg-border" aria-hidden />
                     </>
                   )}
 
-                  {/* اللايكات */}
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-primary">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                       <ThumbsUp className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                      اللايكات
-                    </span>
-                    <span className="text-border font-black">|</span>
-                    <span className="text-xs font-black tabular-nums text-gold">
-                      {formatNumber(shownEndorsements)}
-                    </span>
-                  </span>
-                  <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        اللايكات
+                      </div>
+                      <div className="text-xs font-bold tabular-nums text-foreground">
+                        {formatNumber(shownEndorsements)}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="hidden sm:block h-5 w-px bg-border" aria-hidden />
 
-                  {/* التحميلات */}
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-sky-500">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-sky-500/10 text-sky-500">
                       <BarChart3 className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                      التحميلات
-                    </span>
-                    <span className="text-border font-black">|</span>
-                    <span className="text-xs font-black tabular-nums text-gold">
-                      {formatNumber(shownDownloads)}
-                    </span>
-                  </span>
-                  <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        التحميلات
+                      </div>
+                      <div className="text-xs font-bold tabular-nums text-foreground">
+                        {formatNumber(shownDownloads)}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="hidden sm:block h-5 w-px bg-border" aria-hidden />
 
-                  {/* المشاهدات */}
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-emerald-500">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-500">
                       <Eye className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                      المشاهدات
-                    </span>
-                    <span className="text-border font-black">|</span>
-                    <span className="text-xs font-black tabular-nums text-gold">
-                      {formatNumber(shownViews)}
-                    </span>
-                  </span>
-                  <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        المشاهدات
+                      </div>
+                      <div className="text-xs font-bold tabular-nums text-foreground">
+                        {formatNumber(shownViews)}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="hidden sm:block h-5 w-px bg-border" aria-hidden />
 
-                  {/* تم النشر في */}
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-cyan-500">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-cyan-500/10 text-cyan-500">
                       <Calendar className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                      النشر
-                    </span>
-                    <span className="text-border font-black">|</span>
-                    <span className="text-xs font-black tabular-nums text-foreground">
-                      {formatArabicDate(mod.releaseDate)}
-                    </span>
-                  </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        النشر
+                      </div>
+                      <div className="text-xs font-bold tabular-nums text-foreground">
+                        {formatArabicDate(mod.releaseDate)}
+                      </div>
+                    </div>
+                  </div>
 
-                  {/* الأزرار — مجمّعة في جهة واحدة */}
-                  <div className="ms-auto flex items-center gap-2 skew-x-[0.4deg]">
+                  {/* Actions */}
+                  <div className="ms-auto flex items-center gap-2">
                     <Button
                       onClick={onEndorse}
-                      className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap ${
+                      className={`gap-1.5 py-1.5 px-3 font-bold transition-all text-xs rounded-lg whitespace-nowrap ${
                         endorsed
-                          ? 'bg-blue-600 text-white border-blue-600 cursor-pointer'
-                          : 'bg-primary text-primary-foreground border-primary hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
                       }`}
                     >
-                      <ThumbsUp className={`h-3 w-3 ${endorsed ? 'fill-current' : ''}`} />
+                      <ThumbsUp className={`h-3.5 w-3.5 ${endorsed ? 'fill-current' : ''}`} />
                       {endorsed ? 'تم الإعجاب' : 'أعجبني'}
                     </Button>
                     {hasReported ? (
                       <Button
                         variant="outline"
                         disabled
-                        className="gap-1.5 py-1.5 px-3 font-black border-[3px] rounded-none text-xs bg-green-600/10 text-green-600 border-green-600/30 cursor-not-allowed opacity-100"
+                        className="gap-1.5 py-1.5 px-3 font-bold rounded-lg text-xs bg-green-600/10 text-green-600 border-green-600/30 cursor-not-allowed opacity-100"
                       >
                         <Flag className="h-3.5 w-3.5" />
                         لقد تم استلام بلاغك
@@ -670,18 +623,20 @@ export function ModDetailPage() {
                           setHasReported(true)
                           try {
                             if (mod?.id) localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-                          } catch {}
+                          } catch {
+                            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+                          }
                         }}
                       />
                     )}
                   </div>
                 </div>
-              </div>
+              </section>
 
-              {/* ===== الأقسام (Tabs) — قسم مستقل بذاته ===== */}
-              <div
+              {/* ===== Tabs ===== */}
+              <section
                 dir="rtl"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8"
+                className="mx-auto max-w-[1200px] px-4 sm:px-6 mt-6"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList
@@ -784,7 +739,7 @@ export function ModDetailPage() {
                   </TabsList>
 
                   <TabsContent value="description" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <SectionHeading
                         icon={<FileText className="h-5 w-5" />}
                         title="عن هذا التعريب"
@@ -798,9 +753,9 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="changelog" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <SectionHeading icon={<Clock className="h-5 w-5" />} title="سجل التغييرات" />
-                      <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-white/15 bg-card/40 px-4 py-2.5">
+                      <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
                         <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
                         <span className="text-base font-bold tabular-nums text-foreground">
                           v{mod.version}
@@ -834,7 +789,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="install" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <SectionHeading icon={<Shield className="h-5 w-5" />} title="طريقة التركيب" />
                       {(mod as any).installGuide && (mod as any).installGuide.trim() !== '' ? (
                         <MarkdownRenderer content={(mod as any).installGuide} />
@@ -866,7 +821,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="translationTeam" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <ModTranslationTeam
                         teamMembers={mod.teamMembers || []}
                         contactLinks={mod.contactLinks || []}
@@ -875,7 +830,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="images" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <ModGallery
                         images={gallery.length > 0 ? gallery : [mod.imageUrl]}
                         modName={mod.name}
@@ -884,53 +839,54 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="videos" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <ModVideos videoGroups={mod.videoGroups || []} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="files" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
                       <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="comments" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
+                      <CommentSectionBeacon slug={mod.slug} />
                       <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
                     </Card>
                   </TabsContent>
 
-                  {mod.customTabs?.map((tab) => (
+                  {mod.customTabs?.map((ct) => (
                     <TabsContent
-                      key={tab.id}
-                      value={`custom-${tab.slug}`}
+                      key={ct.id}
+                      value={`custom-${ct.slug}`}
                       className="mt-0"
                       dir="rtl"
                     >
-                      <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
-                        <SectionHeading icon={<Layers className="h-5 w-5" />} title={tab.name} />
-                        <MarkdownRenderer content={tab.content} />
+                      <Card className="rounded-t-none border border-t-2 border-border border-t-primary bg-card p-5 sm:p-7">
+                        <SectionHeading icon={<Layers className="h-5 w-5" />} title={ct.name} />
+                        <MarkdownRenderer content={ct.content} />
                       </Card>
                     </TabsContent>
                   ))}
                 </Tabs>
-              </div>
+              </section>
 
-              {/* ===== تنقل التعريبات — السابق / التالي (دائري) — بحجم طبيعي ومسافة آمنة ===== */}
+              {/* ===== Prev / Next Navigation ===== */}
               {(prevMod || nextMod) && (
-                <div
+                <section
                   dir="rtl"
-                  className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8 mb-6 sm:mb-8 flex items-center justify-between gap-4"
+                  className="mx-auto max-w-[1200px] px-4 sm:px-6 mt-6 mb-6 flex items-center justify-between gap-4"
                 >
                   {prevMod ? (
                     <Link
                       href={`/mod/${prevMod.slug}`}
-                      className="group flex items-center gap-3 rounded-none border-[3px] border-border bg-card px-4 py-3 shadow-[4px_4px_0_0_var(--border)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)] cursor-pointer max-w-[320px]"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 mod-detail-shadow transition-all hover:mod-detail-shadow-lg cursor-pointer max-w-[320px]"
                     >
                       <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                       <div className="min-w-0 text-right">
-                        <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           التعريب السابق
                         </div>
                         <div className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
@@ -944,10 +900,10 @@ export function ModDetailPage() {
                   {nextMod ? (
                     <Link
                       href={`/mod/${nextMod.slug}`}
-                      className="group flex items-center gap-3 rounded-none border-[3px] border-border bg-card px-4 py-3 shadow-[4px_4px_0_0_var(--border)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)] cursor-pointer max-w-[320px]"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 mod-detail-shadow transition-all hover:mod-detail-shadow-lg cursor-pointer max-w-[320px]"
                     >
                       <div className="min-w-0 text-left">
-                        <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           التعريب التالي
                         </div>
                         <div className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
@@ -959,75 +915,83 @@ export function ModDetailPage() {
                   ) : (
                     <div />
                   )}
-                </div>
+                </section>
               )}
 
-              {/* ===== Related mods — قسم مستقل بذاته ===== */}
+              {/* ===== Related mods ===== */}
               {(() => {
                 const filteredRelated =
                   relatedData?.data?.filter((m) => m.id !== mod.id).slice(0, 4) || []
                 const hasRelated = filteredRelated.length > 0
                 if (!relatedLoading && !hasRelated) return null
                 return (
-                  <div
+                  <section
                     dir="rtl"
-                    className="px-4 sm:px-8 lg:px-16 xl:px-24 mt-8 sm:mt-10 mb-10 sm:mb-12 pb-8"
+                    className="mx-auto max-w-[1200px] px-4 sm:px-6 mt-8 mb-10"
                   >
-                    <h2 className="mb-5 sm:mb-6 text-lg sm:text-xl font-bold">قد يعجبك أيضاً</h2>
+                    <h2 className="mb-5 text-lg sm:text-xl font-bold">قد يعجبك أيضاً</h2>
                     {relatedLoading ? (
-                      <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                           <ModCardSkeleton key={i} />
                         ))}
                       </div>
                     ) : (
-                      <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
                         {filteredRelated.map((m) => (
                           <ModCard key={m.id} mod={m} />
                         ))}
                       </div>
                     )}
-                  </div>
+                  </section>
                 )
               })()}
             </>
           ) : null}
-        </div>
+        </main>
       </div>
       {mod && <ModDetailMobile mod={mod} />}
     </>
   )
 }
 
-/** عنصر إحصائية في صف الإحصائيات — أيقونة + تسمية + قيمة، بدون صندوق */
-function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1 sm:gap-1.5">
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="w-14 sm:w-20 shrink-0 text-[11px] sm:text-xs text-muted-foreground">
-        {label}
-      </span>
-      <span className="text-border">|</span>
-      <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
-    </div>
-  )
+/** Icons per platform-title key (owner-approved title lists). */
+const TITLE_ICONS: Record<string, React.ReactNode> = {
+  title: <Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />,
+  titleAr: <Languages className="h-4 w-4 text-emerald-500 shrink-0" />,
+  method: <User className="h-4 w-4 text-violet-500 shrink-0" />,
+  type: <Shield className="h-4 w-4 text-purple-500 shrink-0" />,
+  content: <Globe className="h-4 w-4 text-sky-500 shrink-0" />,
+  releaseDate: <Calendar className="h-4 w-4 text-cyan-500 shrink-0" />,
+  size: <FileArchive className="h-4 w-4 text-rose-500 shrink-0" />,
+  gameId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  cusa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  ppsa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  titleId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  mediaId: <HardDrive className="h-4 w-4 text-slate-500 shrink-0" />,
+  format: <FolderOpen className="h-4 w-4 text-orange-500 shrink-0" />,
+  firmware: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameUpdate: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  device: <Smartphone className="h-4 w-4 text-teal-500 shrink-0" />,
+  compat: <CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />,
+  installType: <FileText className="h-4 w-4 text-sky-500 shrink-0" />,
+  cpu: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameVersion: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  minAndroid: <Smartphone className="h-4 w-4 text-green-500 shrink-0" />,
 }
 
-/** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors">
       <span className="text-muted-foreground shrink-0">{icon}</span>
-      <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">
+      <span className="min-w-[80px] sm:min-w-[100px] shrink-0 text-xs sm:text-sm font-semibold text-muted-foreground">
         {label}
       </span>
-      <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
       <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
     </div>
   )
 }
 
-/** رأس قسم موحّد — أيقونة داخل مربّع هادئ + عنوان */
 function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="mb-5 flex items-center gap-3">
@@ -1039,7 +1003,6 @@ function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string 
   )
 }
 
-/** خطوة تركيب — رقم دائري + عنوان + وصف */
 function InstallStep({ n, title, desc }: { n: number; title: string; desc: string }) {
   return (
     <div className="flex gap-4">

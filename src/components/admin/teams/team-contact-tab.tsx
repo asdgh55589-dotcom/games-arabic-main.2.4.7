@@ -7,7 +7,6 @@ import type { TeamContactLinkInput } from './types'
 const TYPE_LABELS: Record<string, string> = {
   website: 'الموقع',
   mail: 'البريد الإلكتروني',
-  discord: 'ديسكورد',
   telegram: 'تيليجرام',
   twitter: 'X (تويتر)',
   youtube: 'يوتيوب',

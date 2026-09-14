@@ -1,0 +1,263 @@
+# Production migration sync runbook — baseline squash (from commit 3fe1c9a)
+
+> DOCS ONLY. Nothing here has been executed against production.
+> Run the steps below IN ORDER during a maintenance window. Estimated: 15 min.
+
+## Target: Aiven PostgreSQL (Phase 5 cutover)
+
+Production is migrating from Neon to **Aiven PostgreSQL**. This runbook
+covers migration sync and cutover verification. For Aiven connection
+setup, pool tuning, and `AIVEN_DATABASE_URL` details, see
+[AIVEN-CONFIG.md](./AIVEN-CONFIG.md).
+
+## RELEASE deploy — 9 additive migrations above baseline (this branch)
+
+> Production Neon already carries ONLY the `20260907000000_baseline` row
+> (synced live earlier). At deploy, `prisma migrate deploy` will apply
+> exactly the 9 additive migrations below — all additive-only
+> (`ADD COLUMN` / `CREATE TABLE` / `CREATE INDEX`, `IF NOT EXISTS` where
+> the author wrote raw SQL). No backfill touches user data except the
+> onboarding grandfathering `UPDATE` (sets `onboardingCompleted = true`
+> for pre-existing accounts — idempotent, one-time) and the API-key
+> hash backfill (computed inside the DB via pgcrypto — no rotation).
+>
+> **Aiven target:** After Neon baseline verification, set
+> `AIVEN_DATABASE_URL` on deploy to point `db.ts` at the Aiven replica.
+
+## R0. Safety FIRST — restore point (Neon / Aiven)
+
+1. Neon dashboard → project → Branches → **Create branch** from `main`
+   (name: `pre-release-YYYYMMDD`). Instant restore point — do NOT skip.
+2. `pg_dump` off-site as a second copy for releases that add tables.
+3. For Aiven: snapshot or logical backup via Aiven console before cutover.
+
+## R1. Pre-deploy verification (read-only, production)
+
+```sql
+SELECT migration_name, finished_at, rolled_back_at
+FROM "_prisma_migrations"
+ORDER BY migration_name;
+-- expected: exactly ONE row: 20260907000000_baseline
+-- (finished_at set, rolled_back_at NULL). Anything else — STOP.
+```
+
+Record the table count for the post-deploy delta check:
+
+```sql
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  AND table_name != '_prisma_migrations';
+-- expected pre-deploy: 73
+```
+
+## R2. What `migrate deploy` will apply (in order)
+
+| # | Migration | Effect |
+|---|-----------|--------|
+| 1 | `20260907000001_wave3a_likes_composite_indexes` | Composite indexes for creator-likes analytics (no tables/columns) |
+| 2 | `20260907000002_wave3a_news_author` | `News.authorId` column + index + FK |
+| 3 | `20260907000003_wave3b_comment_clicks` | NEW TABLE `CommentSectionClick` |
+| 4 | `20260907070000_add_creator_track_and_portfolio` | `CreatorRequest` track/portfolio/terms columns |
+| 5 | `20260907080000_add_creator_approve_note` | `CreatorRequest.approveNote` column |
+| 6 | `20260907090000_add_onboarding_completed` | `User.onboardingCompleted` + grandfathering UPDATE |
+| 7 | `20260907100000_add_password_reset_tokens` | NEW TABLE `PasswordResetToken` |
+| 8 | `20260907110000_add_ia_multipart_journal` | NEW TABLE `IaMultipartUpload` |
+| 9 | `20260907120000_api_keys_hash_at_rest` | `ApiKey.keyHash`/`keyPrefix` + pgcrypto backfill (raw kept nullable until cleanup) |
+
+Deploy: `prisma migrate deploy` (runs inside `bun run build`). If it
+reports anything OTHER than these 9 applying cleanly — STOP, restore
+from R0, investigate.
+
+## R3. Post-deploy verification (production)
+
+```sql
+-- 1. History: baseline + 9, in order
+SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name;
+-- expected: 10 rows (baseline + the 9 above)
+
+-- 2. Tables: 73 + 3 new = 76
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  AND table_name != '_prisma_migrations';
+-- expected: 76
+
+-- 3. New tables present
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('CommentSectionClick','PasswordResetToken','IaMultipartUpload');
+-- expected: 3 rows
+
+-- 4. New columns present
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND (
+  (table_name = 'User' AND column_name = 'onboardingCompleted') OR
+  (table_name = 'News' AND column_name = 'authorId') OR
+  (table_name = 'CreatorRequest' AND column_name IN ('track','portfolioUrls','approveNote'))
+);
+-- expected: 5 rows
+
+-- 5. App smoke: /login renders login-03, /creator gates hold,
+--    /onboarding funnel reachable, IA toggle still "soon" (flags off).
+```
+
+Rollback: promote the R0 Neon branch to primary (minutes of downtime
+at most). For Aiven: unset `AIVEN_DATABASE_URL` to fall back to
+`DATABASE_URL` (Neon). The 9 migrations are additive — rolling the app
+back to the previous build is safe even with the new tables/columns in
+place (old code ignores them).
+
+---
+
+## Background (baseline squash — historical, keep for archaeology)
+
+Migration history never contained the core `CREATE TABLE`s (history started
+mid-life with `ALTER TABLE "User"`), so `migrate deploy` can never provision
+a fresh database and `migrate dev` crashed on the shadow DB. Dev was fixed by
+squashing to a single proven baseline (`20260907000000_baseline`, verified:
+73/73 tables, zero column diffs vs dev). Production's `_prisma_migrations`
+still lists the 22 retired migrations — the next `migrate deploy` would fail
+with "applied migrations missing locally". This runbook aligns prod history
+with the squashed files. **No table is created, dropped, or altered.**
+
+## 0. Safety FIRST — restore point (Neon)
+
+1. Neon dashboard → project → Branches → **Create branch** from `main`
+   (name: `pre-baseline-squash-YYYYMMDD`). This is your instant restore point.
+2. Alternatively (or additionally): `pg_dump` the production database and
+   store the dump off-site. Do NOT skip this step.
+
+## 1. Inspect current prod history (read-only)
+
+```sql
+SELECT migration_name, finished_at, rolled_back_at
+FROM "_prisma_migrations"
+ORDER BY migration_name;
+```
+
+Expected: the 22 pre-squash rows (`20260720000000_add_tier_system` …
+`20260906000000_phase2_upload_providers_quotas`), all with `finished_at`
+set and `rolled_back_at` NULL. If any row is missing or rolled back —
+STOP and investigate before proceeding.
+
+## 2. Align history metadata (metadata only — zero user-data impact)
+
+```sql
+BEGIN;
+DELETE FROM "_prisma_migrations"
+WHERE migration_name != '20260907000000_baseline';
+INSERT INTO "_prisma_migrations"
+  ("id", "checksum", "finished_at", "migration_name", "logs",
+   "rolled_back_at", "started_at", "applied_steps_count")
+SELECT gen_random_uuid(), '', NOW(), '20260907000000_baseline', NULL, NULL, NOW(), 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM "_prisma_migrations" WHERE migration_name = '20260907000000_baseline'
+);
+COMMIT;
+```
+
+Verify exactly one row remains:
+
+```sql
+SELECT migration_name FROM "_prisma_migrations";
+-- expected: 20260907000000_baseline
+```
+
+## 3. Additive extras with IF NOT EXISTS guards (safe to re-run)
+
+Dev was found missing the 6 trigram perf indexes (created there during the
+squash). Apply the same to prod — all statements are idempotent:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS idx_user_username_trgm
+  ON "User" USING gin (username gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_user_email_trgm
+  ON "User" USING gin (email gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_user_display_name_trgm
+  ON "User" USING gin ("displayName" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mod_name_trgm
+  ON "Mod" USING gin (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mod_summary_trgm
+  ON "Mod" USING gin (summary gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mod_arabic_title_trgm
+  ON "Mod" USING gin ("arabicTitle" gin_trgm_ops);
+```
+
+## 4. Verification queries (table/column/index parity vs schema)
+
+```sql
+-- 73 user tables expected (excludes _prisma_migrations itself)
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  AND table_name != '_prisma_migrations';
+-- expected: 73
+
+-- Phase 2 tables present
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('UploadAsset','QuotaPolicy','QuotaOverride',
+                     'UploadUsageDaily','CreatorStorage');
+-- expected: 5 rows
+
+-- ModFileLink provider columns present
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'ModFileLink'
+  AND column_name IN ('provider','storageKey','wrappedUrl','bytes',
+                      'mime','checksum','uploadedBy');
+-- expected: 7 rows
+
+-- Trigram indexes present
+SELECT indexname FROM pg_indexes
+WHERE schemaname = 'public' AND indexname LIKE 'idx_%_trgm'
+ORDER BY 1;
+-- expected: 6 rows (see step 3 list)
+```
+
+Then, from a checkout of this branch with production env:
+
+```bash
+npx prisma migrate status
+# expected: "Database schema is up to date!"
+```
+
+## 5. Deploy order afterwards
+
+1. Run steps 0–4.
+2. Deploy the app (build runs `prisma migrate deploy` — no-op when in sync).
+3. Re-run the step-4 queries post-deploy as a smoke check.
+
+## 6. Rollback plan
+
+- **History-only problem** (wrong row deleted, typo in baseline name):
+  re-insert the deleted rows from the Neon branch created in step 0
+  (compare `_prisma_migrations`), or restore that branch as primary.
+  No user data is ever at risk from step 2 alone.
+- **Anything else looks wrong**: promote the step-0 Neon branch
+  (`pre-baseline-squash-YYYYMMDD`) to primary and re-point the app —
+  full database restore, minutes of downtime at most.
+- The retired migration files remain recoverable in git history
+  (commit `3fe1c9a^` and earlier) if per-change archaeology is ever needed.
+
+## 7. Known behaviors (not blockers)
+
+- **Trigram indexes are intentionally schema-invisible.** `gin_trgm_ops`
+  indexes cannot be modeled in `schema.prisma`, so they live ONLY in the
+  baseline SQL tail (fresh DBs) and step-3 extras (existing DBs) — never as
+  model indexes. Consequence: `prisma migrate diff` history-vs-schema is
+  empty and `migrate dev` runs silent.
+- **NEVER add `DROP INDEX idx_*_trgm` to a migration.** `migrate dev`
+  auto-generates those DROPs whenever the dev DB carries trgm indexes
+  (raw-SQL drift) — accepting them once deleted prod-grade search indexes
+  AND hard-blocked later `migrate dev` runs (Prisma state validation
+  P3006). If you see trgm DROPs in a generated migration, delete those
+  lines before applying.
+- **Post-baseline migrations must sort AFTER `20260907000000_baseline`.**
+  `migrate dev` names new dirs with the wall clock — the container clock
+  currently lags the baseline stamp, so RENAME the generated dir to
+  `2026090700000N_*` and mirror the rename in `_prisma_migrations` if it
+  already applied. Always verify with `migrate diff … --script` (expect:
+  `-- This is an empty migration.`) before committing a migration.
+- **Dev DB intentionally carries NO trgm indexes** (keeps `migrate dev`
+  drift-free); staging/prod get them via step 3. Fresh DBs get them via
+  the baseline tail.

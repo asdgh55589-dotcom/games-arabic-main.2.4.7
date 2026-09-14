@@ -1,12 +1,6 @@
-import { Resend } from 'resend'
 import { db } from '@/lib/db'
-
-let resend: Resend | null = null
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY)
-} else {
-  console.warn('[Resend] RESEND_API_KEY not configured — email sending disabled')
-}
+import { emitloProvider } from '@/lib/email/emitlo'
+import { emailFrom } from '@/lib/email/from'
 
 interface InactiveAlertData {
   inactiveUsers: Array<{
@@ -61,8 +55,8 @@ function generateAlertTemplate(data: InactiveAlertData): string {
 }
 
 export async function sendInactiveUserAlert(data: InactiveAlertData) {
-  if (!resend) {
-    console.warn('[Resend] Skipping email — API key not configured (sendInactiveUserAlert)')
+  if (!process.env.EMITLO_API_KEY) {
+    console.warn('[Emitlo] Skipping email — API key not configured (sendInactiveUserAlert)')
     return
   }
 
@@ -70,15 +64,39 @@ export async function sendInactiveUserAlert(data: InactiveAlertData) {
     where: { role: 'admin' },
   })
 
-  const html = generateAlertTemplate(data)
+  // SA-2 template path — inline fallback below is byte-identical to the
+  // previous copy. The require is inside try/catch so this sender survives
+  // templates.ts being absent.
+  let rendered: { subject: string; html: string; text?: string } | null = null
+  try {
+    const mod = require('@/lib/email/templates') as typeof import('@/lib/email/templates')
+    rendered =
+      mod.renderEmailTemplate('inactive-alert', 'ar', {
+        inactiveCount: String(data.inactiveUsers.length),
+        daysThreshold: String(data.daysThreshold),
+      }) ?? null
+  } catch {
+    rendered = null
+  }
+
+  const subject = rendered?.subject ?? `تنبيه: ${data.inactiveUsers.length} مستخدم خامل`
+  const html = rendered?.html ?? generateAlertTemplate(data)
 
   for (const admin of admins) {
-    await resend.emails.send({
-      from: 'alerts@yourdomain.com',
-      to: admin.email,
-      subject: `تنبيه: ${data.inactiveUsers.length} مستخدم خامل`,
-      html,
-    })
+    try {
+      const result = await emitloProvider.send({
+        from: emailFrom(),
+        to: [admin.email],
+        subject,
+        html,
+        ...(rendered?.text ? { text: rendered.text } : {}),
+      })
+      if (!result.ok) {
+        console.warn('[Emitlo] Skipping email — send failed (sendInactiveUserAlert)', result.reason)
+      }
+    } catch (err) {
+      console.error('[email] failed to send inactive alert email:', err)
+    }
   }
 
   await db.auditLog.create({

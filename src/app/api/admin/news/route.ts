@@ -79,7 +79,9 @@ export async function POST(req: NextRequest) {
     // ISR: revalidate public pages after news creation
     try {
       revalidatePath('/')
-    } catch {}
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
 
     return ok(news)
   } catch (err) {

@@ -223,7 +223,7 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
                       : 'border-transparent opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <Image src={img} alt="" fill sizes="80px" className="object-cover" unoptimized />
+                  <Image src={img} alt="" fill sizes="80px" className="object-cover" loading="lazy" quality={75} />
                 </button>
               ))}
             </div>

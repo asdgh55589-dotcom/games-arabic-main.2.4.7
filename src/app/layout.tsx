@@ -4,6 +4,9 @@ import { Suspense } from 'react'
 import { cairo } from './fonts'
 import './globals.css'
 import { AppShell } from '@/components/layout/app-shell'
+import { ClarityScript } from '@/components/clarity-script'
+import { ConsentBanner } from '@/components/consent-banner'
+import { PostHogProvider } from '@/components/posthog-provider'
 import { SeoUpdater } from '@/components/seo-updater'
 import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -79,18 +82,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={`dark ${cairo.variable}`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`dark ${cairo.variable} bg-background`}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} antialiased bg-background text-foreground`}
       >
+        <ClarityScript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
         />
+        <PostHogProvider>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
+          defaultTheme="system"
+          enableSystem
           disableTransitionOnChange
         >
           <AuthProvider>
@@ -103,9 +108,11 @@ export default function RootLayout({
                 </Suspense>
               </SmoothScrollProvider>
               <Toaster />
+              <ConsentBanner />
             </SettingsProvider>
           </AuthProvider>
         </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

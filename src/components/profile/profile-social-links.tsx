@@ -9,7 +9,6 @@ interface ProfileSocialLinksProps {
   tiktokUrl?: string | null
   youtubeUrl?: string | null
   githubUrl?: string | null
-  discordUrl?: string | null
 }
 
 const URL_MAP: Record<string, string | null | undefined> = {}
@@ -21,7 +20,6 @@ export function ProfileSocialLinks({
   tiktokUrl,
   youtubeUrl,
   githubUrl,
-  discordUrl,
 }: ProfileSocialLinksProps) {
   const urlMap: Record<string, string | null | undefined> = {
     websiteUrl,
@@ -30,7 +28,6 @@ export function ProfileSocialLinks({
     tiktokUrl,
     youtubeUrl,
     githubUrl,
-    discordUrl,
   }
 
   const links = PLATFORM_KEYS.map((key) => {
