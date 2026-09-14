@@ -207,7 +207,7 @@ describe('getSession', () => {
   })
 
   it('يستخدم API Key Authentication عند وجود Authorization header', async () => {
-    mockHeaderStore('Bearer sk_live_test12345678')
+    mockHeaderStore('Bearer test_api_key_12345678')
     mockAuthenticateApiKey.mockResolvedValue({
       valid: true,
       user: TEST_USER,
@@ -215,11 +215,11 @@ describe('getSession', () => {
     })
     const session = await getSession()
     expect(session).toEqual(TEST_USER)
-    expect(mockAuthenticateApiKey).toHaveBeenCalledWith('Bearer sk_live_test12345678')
+    expect(mockAuthenticateApiKey).toHaveBeenCalledWith('Bearer test_api_key_12345678')
   })
 
   it('يتجاهل API Key Authentication عندما يرجع null', async () => {
-    mockHeaderStore('Bearer sk_live_invalid')
+    mockHeaderStore('Bearer test_api_key_invalid')
     mockAuthenticateApiKey.mockResolvedValue(null)
     mockSupabaseUser({ id: 'supa-1', email: 'test@example.com' })
     mockDbUser(DB_USER_ROW)
