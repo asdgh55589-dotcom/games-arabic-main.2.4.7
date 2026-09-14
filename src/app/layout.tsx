@@ -82,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={`dark ${cairo.variable}`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`dark ${cairo.variable} bg-background`}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} antialiased bg-background text-foreground`}
       >
