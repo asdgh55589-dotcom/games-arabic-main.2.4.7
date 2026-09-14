@@ -24,6 +24,7 @@ import { ModFormBasicInfo } from './mod-form/basic-info'
 import { ModFormFiles } from './mod-form/files'
 import { ModFormMedia } from './mod-form/media'
 import { ModFormSettings } from './mod-form/settings'
+import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
 import {
   EMPTY_CONTACT,
   EMPTY_FILE,
@@ -90,6 +91,23 @@ export default function ModForm({ modId }: ModFormProps) {
   const [isOriginalWork, setIsOriginalWork] = useState(true)
   const [originalSource, setOriginalSource] = useState('')
   const [originalAuthor, setOriginalAuthor] = useState('')
+
+  // Platform-specific fields
+  const [platform, setPlatform] = useState('')
+  const [translationMethod, setTranslationMethod] = useState('')
+  const [platformGameId, setPlatformGameId] = useState('')
+  const [cusaId, setCusaId] = useState('')
+  const [ppsaId, setPpsaId] = useState('')
+  const [titleId, setTitleId] = useState('')
+  const [mediaId, setMediaId] = useState('')
+  const [supportedFormat, setSupportedFormat] = useState('')
+  const [systemFirmware, setSystemFirmware] = useState('')
+  const [gameUpdateVersion, setGameUpdateVersion] = useState('')
+  const [deviceModel, setDeviceModel] = useState('')
+  const [installType, setInstallType] = useState('')
+  const [cpuArch, setCpuArch] = useState('')
+  const [gameVersion, setGameVersion] = useState('')
+  const [minAndroidVersion, setMinAndroidVersion] = useState('')
 
   const [files, setFiles] = useState<DownloadFile[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -175,6 +193,21 @@ export default function ModForm({ modId }: ModFormProps) {
         setIsOriginalWork(m.isOriginalWork !== false)
         setOriginalSource(m.originalSource || '')
         setOriginalAuthor(m.originalAuthor || '')
+        setPlatform(m.game?.platform || '')
+        setTranslationMethod((m as any).translationMethod || '')
+        setPlatformGameId((m as any).platformGameId || '')
+        setCusaId((m as any).cusaId || '')
+        setPpsaId((m as any).ppsaId || '')
+        setTitleId((m as any).titleId || '')
+        setMediaId((m as any).mediaId || '')
+        setSupportedFormat((m as any).supportedFormat || '')
+        setSystemFirmware((m as any).systemFirmware || '')
+        setGameUpdateVersion((m as any).gameUpdateVersion || '')
+        setDeviceModel((m as any).deviceModel || '')
+        setInstallType((m as any).installType || '')
+        setCpuArch((m as any).cpuArch || '')
+        setGameVersion((m as any).gameVersion || '')
+        setMinAndroidVersion((m as any).minAndroidVersion || '')
         setWorkflowStatus(m.workflowStatus || 'DRAFT')
         setWorkflowHistory(m.workflowHistory || [])
         setVersionHistory(m.versionHistory || [])
@@ -445,6 +478,20 @@ export default function ModForm({ modId }: ModFormProps) {
       isOriginalWork: effectiveIsOriginalWork,
       originalSource: effectiveIsOriginalWork ? null : originalSource.trim(),
       originalAuthor: effectiveIsOriginalWork ? null : originalAuthor.trim() || null,
+      translationMethod: translationMethod || null,
+      platformGameId: platformGameId || null,
+      cusaId: cusaId || null,
+      ppsaId: ppsaId || null,
+      titleId: titleId || null,
+      mediaId: mediaId || null,
+      supportedFormat: supportedFormat || null,
+      systemFirmware: systemFirmware || null,
+      gameUpdateVersion: gameUpdateVersion || null,
+      deviceModel: deviceModel || null,
+      installType: installType || null,
+      cpuArch: cpuArch || null,
+      gameVersion: gameVersion || null,
+      minAndroidVersion: minAndroidVersion || null,
       files: files.filter((f) => f.title),
       teamMembers: teamMembers.filter((m) => m.name),
       contactLinks: contactLinks.filter((c) => c.url),
@@ -538,6 +585,41 @@ export default function ModForm({ modId }: ModFormProps) {
         originalAuthor={originalAuthor}
         setOriginalAuthor={setOriginalAuthor}
         userRole={userRole}
+      />
+
+      <PlatformFieldsSection
+        platform={platform}
+        setPlatform={setPlatform}
+        translationMethod={translationMethod}
+        setTranslationMethod={setTranslationMethod}
+        platformGameId={platformGameId}
+        setPlatformGameId={setPlatformGameId}
+        cusaId={cusaId}
+        setCusaId={setCusaId}
+        ppsaId={ppsaId}
+        setPpsaId={setPpsaId}
+        titleId={titleId}
+        setTitleId={setTitleId}
+        mediaId={mediaId}
+        setMediaId={setMediaId}
+        supportedFormat={supportedFormat}
+        setSupportedFormat={setSupportedFormat}
+        systemFirmware={systemFirmware}
+        setSystemFirmware={setSystemFirmware}
+        gameUpdateVersion={gameUpdateVersion}
+        setGameUpdateVersion={setGameUpdateVersion}
+        deviceModel={deviceModel}
+        setDeviceModel={setDeviceModel}
+        installType={installType}
+        setInstallType={setInstallType}
+        cpuArch={cpuArch}
+        setCpuArch={setCpuArch}
+        gameVersion={gameVersion}
+        setGameVersion={setGameVersion}
+        minAndroidVersion={minAndroidVersion}
+        setMinAndroidVersion={setMinAndroidVersion}
+        compatibility={compatibility}
+        setCompatibility={setCompatibility}
       />
 
       {/* أزرار تغيير الحالة */}
