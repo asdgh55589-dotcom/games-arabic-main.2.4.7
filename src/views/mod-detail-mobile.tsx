@@ -7,20 +7,26 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Cpu,
   Download,
   Eye,
   FileArchive,
   FileText,
   Flag,
+  FolderOpen,
   Gamepad2,
   Globe,
+  HardDrive,
+  Hash,
   Image as ImageIcon,
   Languages,
   Layers,
   MessageSquare,
   Shield,
+  Smartphone,
   Tag,
   ThumbsUp,
+  User,
   Users,
   Youtube,
 } from 'lucide-react'
@@ -44,11 +50,37 @@ import { apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { formatArabicDate, formatNumber, parseGalleryUrls } from '@/lib/format'
+import { getModTitles } from '@/lib/platform-titles'
 import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 
 interface PaginatedModsResponse {
   data: ModSummary[]
   pagination: { page: number; limit: number; total: number; totalPages: number }
+}
+
+/** Icons + box colors per platform-title key (matches desktop mapping). */
+const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2; box: string }> = {
+  title: { Icon: Gamepad2, box: 'bg-blue-500/10 text-blue-500' },
+  titleAr: { Icon: Languages, box: 'bg-emerald-500/10 text-emerald-500' },
+  method: { Icon: User, box: 'bg-violet-500/10 text-violet-500' },
+  type: { Icon: Shield, box: 'bg-purple-500/10 text-purple-500' },
+  content: { Icon: Globe, box: 'bg-sky-500/10 text-sky-500' },
+  releaseDate: { Icon: Calendar, box: 'bg-cyan-500/10 text-cyan-500' },
+  size: { Icon: FileArchive, box: 'bg-rose-500/10 text-rose-500' },
+  gameId: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
+  cusa: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
+  ppsa: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
+  titleId: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
+  mediaId: { Icon: HardDrive, box: 'bg-slate-500/10 text-slate-500' },
+  format: { Icon: FolderOpen, box: 'bg-orange-500/10 text-orange-500' },
+  firmware: { Icon: Cpu, box: 'bg-indigo-500/10 text-indigo-500' },
+  gameUpdate: { Icon: Tag, box: 'bg-amber-500/10 text-amber-500' },
+  device: { Icon: Smartphone, box: 'bg-teal-500/10 text-teal-500' },
+  compat: { Icon: CheckCircle, box: 'bg-teal-500/10 text-teal-500' },
+  installType: { Icon: FileText, box: 'bg-sky-500/10 text-sky-500' },
+  cpu: { Icon: Cpu, box: 'bg-indigo-500/10 text-indigo-500' },
+  gameVersion: { Icon: Tag, box: 'bg-amber-500/10 text-amber-500' },
+  minAndroid: { Icon: Smartphone, box: 'bg-green-500/10 text-green-500' },
 }
 
 export function ModDetailMobile({ mod }: { mod: ModDetail }) {
@@ -197,115 +229,31 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         </nav>
       </div>
 
-      {/* ===== صندوق المعلومات — نفس ستايل الصناديق 2×2 (box جنب box) ===== */}
+      {/* ===== صندوق المعلومات — عناوين حسب المنصة (مشتركة 7 + خاصة) ===== */}
       <div className="mx-2 mt-2 overflow-hidden rounded-none border-[2px] border-border bg-card shadow-[1px_1px_0_0_var(--border)]">
         <div className="divide-y divide-border text-[11px]">
-          {/* اسم اللعبه */}
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-blue-500/10 text-blue-500 shadow-[1px_1px_0_0_var(--border)]">
-                <Gamepad2 className="h-3 w-3" />
-              </span>
-              اسم اللعبه:
-            </span>
-            <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
-              {mod.game.name}
-            </span>
-          </div>
-          {/* الاسم بالعربي */}
-          {mod.arabicTitle && mod.arabicTitle.trim() !== '' && (
-            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
-              <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-emerald-500/10 text-emerald-500 shadow-[1px_1px_0_0_var(--border)]">
-                  <Languages className="h-3 w-3" />
+          {getModTitles(mod, formatArabicDate).map((item, i) => {
+            const meta = MOBILE_TITLE_ICONS[item.key] || MOBILE_TITLE_ICONS.title
+            const { Icon } = meta
+            return (
+              <div
+                key={item.key}
+                className={`flex items-center gap-2 px-2 py-1.5 ${i % 2 === 1 ? 'bg-muted/10' : ''}`}
+              >
+                <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
+                  <span
+                    className={`grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border shadow-[1px_1px_0_0_var(--border)] ${meta.box}`}
+                  >
+                    <Icon className="h-3 w-3" />
+                  </span>
+                  {item.label}:
                 </span>
-                الاسم بالعربي:
-              </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
-                {mod.arabicTitle}
-              </span>
-            </div>
-          )}
-          {/* نوع التعريب */}
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-purple-500/10 text-purple-500 shadow-[1px_1px_0_0_var(--border)]">
-                <Shield className="h-3 w-3" />
-              </span>
-              نوع التعريب:
-            </span>
-            <span className="text-xs font-black text-foreground">
-              {mod.translationType || 'غير محدد'}
-            </span>
-          </div>
-          {/* نطاق التعريب */}
-          {mod.translationScope && mod.translationScope.trim() !== '' && (
-            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
-              <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-sky-500/10 text-sky-500 shadow-[1px_1px_0_0_var(--border)]">
-                  <Globe className="h-3 w-3" />
+                <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
+                  {item.value}
                 </span>
-                نطاق التعريب:
-              </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
-                {mod.translationScope}
-              </span>
-            </div>
-          )}
-          {/* توافق التعريب */}
-          {mod.compatibility && mod.compatibility.trim() !== '' && (
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-teal-500/10 text-teal-500 shadow-[1px_1px_0_0_var(--border)]">
-                  <CheckCircle className="h-3 w-3" />
-                </span>
-                توافق التعريب:
-              </span>
-              <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
-                {mod.compatibility}
-              </span>
-            </div>
-          )}
-          {/* تاريخ الاصدار */}
-          <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
-            <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-              <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
-                <Calendar className="h-3 w-3" />
-              </span>
-              تاريخ الاصدار:
-            </span>
-            <span className="text-xs font-black text-foreground">
-              {formatArabicDate(mod.releaseDate)}
-            </span>
-          </div>
-          {/* اصدار التعريب */}
-          {mod.version && (
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-amber-500/10 text-amber-500 shadow-[1px_1px_0_0_var(--border)]">
-                  <Tag className="h-3 w-3" />
-                </span>
-                اصدار التعريب:
-              </span>
-              <span className="text-xs font-black tabular-nums text-foreground">
-                v{mod.version}
-              </span>
-            </div>
-          )}
-          {/* حجم التعريب */}
-          {mod.fileSize && mod.fileSize.trim() !== '' && (
-            <div className="flex items-center gap-2 bg-muted/10 px-2 py-1.5">
-              <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border bg-rose-500/10 text-rose-500 shadow-[1px_1px_0_0_var(--border)]">
-                  <FileArchive className="h-3 w-3" />
-                </span>
-                حجم التعريب:
-              </span>
-              <span className="text-xs font-black text-foreground">
-                {mod.fileSize} .{mod.fileFormat}
-              </span>
-            </div>
-          )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
