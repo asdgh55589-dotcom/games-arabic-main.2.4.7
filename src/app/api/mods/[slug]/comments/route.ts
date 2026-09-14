@@ -18,6 +18,7 @@ import {
 } from '@/lib/comments/repository'
 import { COMMENTS_CONFIG } from '@/lib/comments-config'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { CreateCommentSchema } from '@/lib/schemas'
 
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return ok(await listVisibleComments(mod.id, { sort, limit, cursor }))
   } catch (err) {
-    console.error('[comments GET] failed:', err)
+    logger.error({ err }, '[comments GET] failed')
     reportError(err, { route: 'GET /api/mods/[slug]/comments' })
     return internalError('فشل تحميل التعليقات')
   }
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok(comment)
   } catch (err) {
-    console.error('[comments POST] failed:', err)
+    logger.error({ err }, '[comments POST] failed')
     reportError(err, { route: 'POST /api/mods/[slug]/comments' })
     return internalError('فشل نشر التعليق')
   }

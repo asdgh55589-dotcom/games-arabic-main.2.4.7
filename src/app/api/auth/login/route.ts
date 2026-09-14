@@ -252,7 +252,7 @@ export async function POST(req: NextRequest) {
 
     // لو فشل → نحاول إنشاء المستخدم في Supabase Auth ثم نعيد المحاولة
     if (authError || !authData.user) {
-      console.error('[auth/login] Supabase Auth login failed for user:', neonUser.id)
+      logger.error({ userId: neonUser.id }, '[auth/login] Supabase Auth login failed')
 
       const supabaseId = await createSupabaseAuthUser(neonUser.email, password, neonUser.username)
       if (!supabaseId) {
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[auth/login] failed:', err)
+    logger.error({ err }, '[auth/login] failed')
     reportError(err, { route: 'POST /api/auth/login' })
     return internalError('Login failed')
   }

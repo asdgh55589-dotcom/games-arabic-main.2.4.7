@@ -3,7 +3,9 @@ import { fail, forbidden, internalError, ok, okPaginated, validationFail } from 
 import { parsePagination } from '@/lib/api-utils'
 import { hashPassword, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { CreateUserSchema } from '@/lib/schemas'
 import { canAssignRole } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import { reportError } from '@/lib/error-reporting'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[admin/users GET] failed:', err)
+    logger.error({ err }, '[admin/users GET] failed')
     reportError(err, { route: 'GET /api/admin/users' })
     return internalError('Failed')
   }
@@ -95,20 +97,20 @@ export async function POST(req: NextRequest) {
   try {
     const currentUser = await requireAdmin()
     const body = await req.json()
-
-    if (!body.email) {
-      return validationFail({ message: 'البريد مطلوب' })
+    const parsed = CreateUserSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
     }
 
-    // استخدام username المُعطى أو توليده من البريد
-    let username = body.username
+    const { email } = parsed.data
+    let username = parsed.data.username
     if (!username) {
       const { generateUsernameFromEmail } = await import('@/lib/username-generator')
-      username = await generateUsernameFromEmail(body.email)
+      username = await generateUsernameFromEmail(email)
     }
 
     const existing = await db.user.findFirst({
-      where: { OR: [{ username }, { email: body.email }] },
+      where: { OR: [{ username }, { email }] },
     })
     if (existing) {
       return validationFail({ message: 'اسم المستخدم أو البريد مستخدم بالفعل' })
@@ -122,12 +124,12 @@ export async function POST(req: NextRequest) {
     const user = await db.user.create({
       data: {
         username,
-        displayName: body.displayName || null,
-        firstName: body.firstName || null,
-        lastName: body.lastName || null,
-        email: body.email,
-        avatarUrl: body.avatarUrl || null,
-        bio: body.bio || null,
+        displayName: (body as Record<string, unknown>).displayName as string || null,
+        firstName: (body as Record<string, unknown>).firstName as string || null,
+        lastName: (body as Record<string, unknown>).lastName as string || null,
+        email,
+        avatarUrl: (body as Record<string, unknown>).avatarUrl as string || null,
+        bio: (body as Record<string, unknown>).bio as string || null,
         role,
       },
       select: {
@@ -141,9 +143,10 @@ export async function POST(req: NextRequest) {
     })
 
     // ===== إنشاء حساب Supabase (FIX #2) =====
-    if (body.password && typeof body.password === 'string' && body.password.trim()) {
-      const rawPassword = body.password.trim()
-      if (rawPassword.length < 8) {
+    const rawPassword = (body as Record<string, unknown>).password as string | undefined
+    if (rawPassword && typeof rawPassword === 'string' && rawPassword.trim()) {
+      const trimmedPassword = rawPassword.trim()
+      if (trimmedPassword.length < 8) {
         await db.user.delete({ where: { id: user.id } })
         return fail('VALIDATION_ERROR', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', 400)
       }
@@ -152,16 +155,16 @@ export async function POST(req: NextRequest) {
         try {
           const { data: supabaseUser, error: createError } =
             await adminClient.auth.admin.createUser({
-              email: body.email.toLowerCase(),
-              password: rawPassword,
+              email: email.toLowerCase(),
+              password: trimmedPassword,
               email_confirm: true,
               user_metadata: {
                 username,
-                display_name: body.displayName || username,
+                display_name: (body as Record<string, unknown>).displayName as string || username,
               },
             })
           if (createError) {
-            console.error('[admin/users POST] Supabase creation failed:', createError)
+            logger.error({ err: createError }, '[admin/users POST] Supabase creation failed')
             await db.user.delete({ where: { id: user.id } })
             return fail('INTERNAL_ERROR', 'فشل إنشاء حساب المصادقة: ' + createError.message, 500)
           }
@@ -173,20 +176,20 @@ export async function POST(req: NextRequest) {
           }
           // حفظ كلمة المرور مشفرة محلياً أيضاً للتوافق
           try {
-            const hashed = await hashPassword(rawPassword)
+            const hashed = await hashPassword(trimmedPassword)
             await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
           } catch {
             // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort local password hash sync
           }
         } catch (error) {
-          console.error('[admin/users POST] Supabase creation error:', error)
+          logger.error({ err: error }, '[admin/users POST] Supabase creation error')
           await db.user.delete({ where: { id: user.id } })
           return fail('INTERNAL_ERROR', 'خطأ في إنشاء حساب المصادقة', 500)
         }
       } else {
         // Supabase غير مُهيأ — fallback محلي فقط
         try {
-          const hashed = await hashPassword(rawPassword)
+          const hashed = await hashPassword(trimmedPassword)
           await db.user.update({ where: { id: user.id }, data: { password: hashed } as any })
         } catch {
           // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort local password hash
@@ -196,7 +199,7 @@ export async function POST(req: NextRequest) {
 
     return ok(user)
   } catch (err) {
-    console.error('[admin/users POST] failed:', err)
+    logger.error({ err }, '[admin/users POST] failed')
     reportError(err, { route: 'POST /api/admin/users' })
     return internalError('Failed to create user')
   }

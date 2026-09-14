@@ -4,7 +4,9 @@ import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
+import { CreateReportSchema } from '@/lib/schemas'
 import { REPORT_REASONS } from '@/lib/reports/constants'
 import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
 import { checkFraudSpike } from '@/lib/reports/fraud-spike'
@@ -24,7 +26,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { targetType, targetId, reason, description, evidenceUrls } = body
+    const parsed = CreateReportSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
+    }
+
+    const { targetType, reason, details: description } = parsed.data
+    const targetId = parsed.data.targetModId || parsed.data.targetCommentId || parsed.data.targetUserId || ''
+    const evidenceUrls = (body as Record<string, unknown>).evidenceUrls
 
     const validationError = await validateReport({
       reporterId: neonUser.id,
@@ -85,17 +94,17 @@ export async function POST(req: NextRequest) {
 
     // Phase 2: Analyze fraud signals (fire-and-forget, don't block response)
     analyzeReportFraud(report.id).catch((err) => {
-      console.error('[reports POST] fraud analysis failed:', err)
+      logger.error({ err }, '[reports POST] fraud analysis failed')
     })
 
     // Phase 2: Update reporter trust score
     recalculateTrustScore(neonUser.id).catch((err) => {
-      console.error('[reports POST] trust score update failed:', err)
+      logger.error({ err }, '[reports POST] trust score update failed')
     })
 
     return ok({ report }, { status: 201 })
   } catch (err) {
-    console.error('[reports POST] failed:', err)
+    logger.error({ err }, '[reports POST] failed')
     reportError(err, { route: 'POST /api/reports' })
     return internalError('فشل إرسال البلاغ')
   }

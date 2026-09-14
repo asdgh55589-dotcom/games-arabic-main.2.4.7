@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { UpdatePreferencesSchema } from '@/lib/schemas'
 
 const DEFAULT_PREFERENCES = {
@@ -35,7 +36,7 @@ export async function GET() {
     return ok(preferences)
   } catch (err) {
     if ((err as Error).message === 'AuthError') return unauthorized()
-    console.error('[notifications preferences GET] failed:', err)
+    logger.error({ err }, '[notifications preferences GET] failed')
     return internalError('Failed to load preferences')
   }
 }
@@ -81,7 +82,7 @@ export async function PUT(req: NextRequest) {
     return ok(preferences)
   } catch (err) {
     if ((err as Error).message === 'AuthError') return unauthorized()
-    console.error('[notifications preferences PUT] failed:', err)
+    logger.error({ err }, '[notifications preferences PUT] failed')
     return internalError('Failed to save preferences')
   }
 }

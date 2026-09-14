@@ -1,11 +1,22 @@
 import type { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { fail, forbidden, internalError, ok, validationFail } from '@/lib/api-response'
 import { logAction, logUserAction } from '@/lib/audit'
 import { hashPassword, invalidateUserSessions, requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { canAssignRole } from '@/lib/permissions'
 import { hashSecurityKey, validateSecurityKey } from '@/lib/security-key'
 import { createAdminClient } from '@/lib/supabase/server'
+
+const CreateAdminSchema = z.object({
+  username: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+  email: z.string().email(),
+  password: z.string().min(8),
+  securityKey: z.string().min(1),
+  role: z.string().min(1),
+  keyExpiryDays: z.union([z.string(), z.number()]).optional(),
+})
 
 // POST /api/admin/admins — إنشاء عضو فريق جديد مع 4 بيانات اعتماد
 export async function POST(req: NextRequest) {
@@ -13,18 +24,12 @@ export async function POST(req: NextRequest) {
     const currentUser = await requireOwner()
 
     const body = await req.json()
-    const { username, email, password, securityKey, role, keyExpiryDays } = body
-
-    // تحقق الحقول المطلوبة
-    if (!username || !email || !password || !securityKey || !role) {
-      return validationFail({
-        message: 'جميع الحقول مطلوبة: اسم المستخدم، البريد، كلمة المرور، مفتاح الأمان، الدور',
-      })
+    const parsed = CreateAdminSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
     }
 
-    if (password.length < 8) {
-      return fail('VALIDATION_ERROR', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', 400)
-    }
+    const { username, email, password, securityKey, role, keyExpiryDays } = parsed.data
 
     const keyCheck = validateSecurityKey(securityKey)
     if (!keyCheck.valid) {
@@ -82,11 +87,11 @@ export async function POST(req: NextRequest) {
             data: { supabaseId: supabaseUser.user.id } as any,
           })
         } else if (createError) {
-          console.error('[admin/admins POST] Supabase creation failed:', createError)
+          logger.error({ err: createError }, '[admin/admins POST] Supabase creation failed')
           // لا نحذف المستخدم — كلمة المرور المحلية كافية
         }
       } catch (e) {
-        console.error('[admin/admins POST] Supabase error:', e)
+        logger.error({ err: e }, '[admin/admins POST] Supabase error')
       }
     }
 
@@ -116,7 +121,7 @@ export async function POST(req: NextRequest) {
     if (status === 401 || status === 403) {
       return fail('FORBIDDEN', (err as Error).message, status)
     }
-    console.error('[admin/admins POST] failed:', err)
+    logger.error({ err }, '[admin/admins POST] failed')
     return internalError('فشل إنشاء العضو')
   }
 }
@@ -148,7 +153,7 @@ export async function GET(req: NextRequest) {
     if (status === 401 || status === 403) {
       return fail('FORBIDDEN', (err as Error).message, status)
     }
-    console.error('[admin/admins GET] failed:', err)
+    logger.error({ err }, '[admin/admins GET] failed')
     return internalError('فشل جلب الفريق')
   }
 }

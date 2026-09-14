@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getBanStatus, requireAuth, setRoleCookie, type SessionUser, type UserRole } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -217,7 +218,7 @@ export async function POST(req: NextRequest) {
         })
       }
     } catch (e) {
-      console.error('[creator-requests POST] admin notify failed:', e)
+      logger.error({ err: e }, '[creator-requests POST] admin notify failed')
     }
 
     return ok(created, { status: 201 })
@@ -225,7 +226,7 @@ export async function POST(req: NextRequest) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
     if (status === 403) return forbidden((err as Error).message)
-    console.error('[creator-requests POST] failed:', err)
+    logger.error({ err }, '[creator-requests POST] failed')
     return internalError('فشل إرسال الطلب')
   }
 }
@@ -245,7 +246,7 @@ export async function GET() {
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
-    console.error('[creator-requests GET] failed:', err)
+    logger.error({ err }, '[creator-requests GET] failed')
     return internalError('فشل جلب حالة الطلب')
   }
 }

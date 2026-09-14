@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { BookmarkSchema } from '@/lib/schemas'
 
 // POST /api/bookmarks — حفظ تعريب في المفضلة
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ bookmarked: true })
   } catch (err) {
-    console.error('[bookmarks POST] failed:', err)
+    logger.error({ err }, '[bookmarks POST] failed')
     return internalError('Failed to add bookmark')
   }
 }
@@ -121,7 +122,7 @@ export async function GET() {
 
     return ok(data)
   } catch (err) {
-    console.error('[bookmarks GET] failed:', err)
+    logger.error({ err }, '[bookmarks GET] failed')
     return internalError('Failed to fetch bookmarks')
   }
 }
@@ -146,7 +147,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ bookmarked: false })
   } catch (err) {
-    console.error('[bookmarks DELETE] failed:', err)
+    logger.error({ err }, '[bookmarks DELETE] failed')
     return internalError('Failed to remove bookmark')
   }
 }

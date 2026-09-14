@@ -13,6 +13,7 @@ import {
   getCommentOwnership,
   updateCommentText,
 } from '@/lib/comments/repository'
+import { logger } from '@/lib/logger'
 import { UpdateCommentSchema } from '@/lib/schemas'
 
 interface RouteParams {
@@ -46,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     return ok(await updateCommentText(id, parsed.data.text))
   } catch (err) {
-    console.error('[comment PATCH] failed:', err)
+    logger.error({ err }, '[comment PATCH] failed')
     return internalError('فشل تعديل التعليق')
   }
 }
@@ -75,7 +76,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok(await deleteCommentSubtree(id, comment.modId))
   } catch (err) {
-    console.error('[comment DELETE] failed:', err)
+    logger.error({ err }, '[comment DELETE] failed')
     return internalError('فشل حذف التعليق')
   }
 }
