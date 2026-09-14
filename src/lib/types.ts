@@ -204,6 +204,21 @@ export interface ModDetail extends ModSummary {
   arabicTitle: string
   translationScope: string
   compatibility: string
+  // Platform-specific localization fields (all optional, per-platform)
+  translationMethod?: string | null
+  platformGameId?: string | null
+  cusaId?: string | null
+  ppsaId?: string | null
+  titleId?: string | null
+  mediaId?: string | null
+  supportedFormat?: string | null
+  systemFirmware?: string | null
+  gameUpdateVersion?: string | null
+  deviceModel?: string | null
+  installType?: string | null
+  cpuArch?: string | null
+  gameVersion?: string | null
+  minAndroidVersion?: string | null
   author: Author
   game: GameSummary
   category: Category | null

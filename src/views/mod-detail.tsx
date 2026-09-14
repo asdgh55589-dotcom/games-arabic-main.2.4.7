@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Cpu,
   Crown,
   Download,
   ExternalLink,
@@ -26,6 +27,7 @@ import {
   MessageSquare,
   Send,
   Shield,
+  Smartphone,
   Star,
   Tag,
   ThumbsUp,
@@ -66,6 +68,7 @@ import {
   parseTags,
   timeAgo,
 } from '@/lib/format'
+import { getModTitles } from '@/lib/platform-titles'
 import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 import { ModDetailMobile } from './mod-detail-mobile'
 
@@ -483,58 +486,16 @@ export function ModDetailPage() {
                         </div>
                       )}
 
-                      {/* Data grid */}
+                      {/* Data grid — per-platform titles (shared 7 + platform extras) */}
                       <div className="mt-6 sm:mt-8 md:mt-10 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
-                        <DataItem
-                          icon={<Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />}
-                          label="اسم اللعبة"
-                          value={mod.game.name}
-                        />
-                        {mod.arabicTitle && (
+                        {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem
-                            icon={<Languages className="h-4 w-4 text-emerald-500 shrink-0" />}
-                            label="الاسم بالعربي"
-                            value={mod.arabicTitle}
+                            key={item.key}
+                            icon={TITLE_ICONS[item.key]}
+                            label={item.label}
+                            value={item.value}
                           />
-                        )}
-                        <DataItem
-                          icon={<Shield className="h-4 w-4 text-purple-500 shrink-0" />}
-                          label="نوع التعريب"
-                          value={mod.translationType || 'غير محدد'}
-                        />
-                        {mod.translationScope && (
-                          <DataItem
-                            icon={<Globe className="h-4 w-4 text-sky-500 shrink-0" />}
-                            label="نطاق التعريب"
-                            value={mod.translationScope}
-                          />
-                        )}
-                        {mod.version && (
-                          <DataItem
-                            icon={<Tag className="h-4 w-4 text-amber-500 shrink-0" />}
-                            label="إصدار التعريب"
-                            value={`v${mod.version}`}
-                          />
-                        )}
-                        {mod.compatibility && (
-                          <DataItem
-                            icon={<CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />}
-                            label="توافق التعريب"
-                            value={mod.compatibility}
-                          />
-                        )}
-                        {mod.fileSize && mod.fileSize.trim() !== '' && (
-                          <DataItem
-                            icon={<FileArchive className="h-4 w-4 text-rose-500 shrink-0" />}
-                            label="حجم التعريب"
-                            value={`${mod.fileSize} .${mod.fileFormat}`}
-                          />
-                        )}
-                        <DataItem
-                          icon={<Calendar className="h-4 w-4 text-cyan-500 shrink-0" />}
-                          label="تاريخ الإصدار"
-                          value={formatArabicDate(mod.releaseDate)}
-                        />
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1028,6 +989,31 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 }
 
 /** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
+/** Icons per platform-title key (owner-approved title lists). */
+const TITLE_ICONS: Record<string, React.ReactNode> = {
+  title: <Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />,
+  titleAr: <Languages className="h-4 w-4 text-emerald-500 shrink-0" />,
+  method: <User className="h-4 w-4 text-violet-500 shrink-0" />,
+  type: <Shield className="h-4 w-4 text-purple-500 shrink-0" />,
+  content: <Globe className="h-4 w-4 text-sky-500 shrink-0" />,
+  releaseDate: <Calendar className="h-4 w-4 text-cyan-500 shrink-0" />,
+  size: <FileArchive className="h-4 w-4 text-rose-500 shrink-0" />,
+  gameId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  cusa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  ppsa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  titleId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  mediaId: <HardDrive className="h-4 w-4 text-slate-500 shrink-0" />,
+  format: <FolderOpen className="h-4 w-4 text-orange-500 shrink-0" />,
+  firmware: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameUpdate: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  device: <Smartphone className="h-4 w-4 text-teal-500 shrink-0" />,
+  compat: <CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />,
+  installType: <FileText className="h-4 w-4 text-sky-500 shrink-0" />,
+  cpu: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameVersion: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  minAndroid: <Smartphone className="h-4 w-4 text-green-500 shrink-0" />,
+}
+
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-1.5">
