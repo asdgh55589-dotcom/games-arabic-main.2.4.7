@@ -1,6 +1,7 @@
 // PlatformFieldsSection — shared component for admin + creator mod forms.
 // Shows translationMethod (all platforms) + conditional platform-specific fields.
 
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { PLATFORMS } from '@/lib/constants'
 import { Field, Section } from '@/components/creator/mod-form/primitives'
@@ -49,6 +50,18 @@ export function PlatformFieldsSection(p: PlatformFieldsValues) {
 
   return (
     <Section title="حقول المنصة">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          اختر المنصة لرؤية الحقول المطلوبة.
+          <Link
+            href="/creator/docs"
+            className="me-1 text-primary underline-offset-2 hover:underline"
+          >
+            اقرأ الدليل الكامل
+          </Link>
+        </p>
+      </div>
+
       <Field label="المنصة" hint="اختر منصة اللعبة لإظهار الحقول المناسبة">
         <select
           value={p.platform}

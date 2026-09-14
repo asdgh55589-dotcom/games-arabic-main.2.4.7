@@ -4,6 +4,7 @@ import {
   Award,
   BarChart3,
   Bell,
+  BookOpen,
   Clock,
   Crown,
   Database,
@@ -74,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/ads', label: 'الإعلانات', icon: Megaphone },
       { href: '/admin/news', label: 'الأخبار', icon: Newspaper },
       { href: '/admin/images/health', label: 'صحة الصور', icon: ImageIcon },
+      { href: '/admin/docs', label: 'الدليل', icon: BookOpen },
     ],
   },
   {
