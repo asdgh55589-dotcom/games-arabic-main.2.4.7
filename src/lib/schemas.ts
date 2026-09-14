@@ -170,6 +170,21 @@ export const CreateModSchema = z.object({
   arabicTitle: z.string().optional(),
   translationScope: z.string().optional(),
   compatibility: z.string().optional(),
+  // Platform-specific localization fields (all optional, per-platform)
+  translationMethod: z.string().optional(),
+  platformGameId: z.string().optional(),
+  cusaId: z.string().optional(),
+  ppsaId: z.string().optional(),
+  titleId: z.string().optional(),
+  mediaId: z.string().optional(),
+  supportedFormat: z.string().optional(),
+  systemFirmware: z.string().optional(),
+  gameUpdateVersion: z.string().optional(),
+  deviceModel: z.string().optional(),
+  installType: z.string().optional(),
+  cpuArch: z.string().optional(),
+  gameVersion: z.string().optional(),
+  minAndroidVersion: z.string().optional(),
   galleryUrls: z.union([z.string(), z.array(z.string())]).optional(),
   files: z
     .array(
