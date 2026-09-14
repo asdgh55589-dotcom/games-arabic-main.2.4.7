@@ -366,6 +366,22 @@ model Mod {
   scheduledSentAt      DateTime?
   requests             ModRequest[]
 
+  // Platform-specific localization fields (all optional, per-platform)
+  translationMethod String? // طريقة التعريب (Human/AI/Mixed) — all platforms
+  platformGameId    String? // Game ID for PS1/PS2/PS3 (e.g. SCUS-94426) — NOT the FK gameId
+  cusaId            String? // CUSA ID — PS4/PS5
+  ppsaId            String? // PPSA ID — PS5
+  titleId           String? // Title ID — Switch / PS Vita style IDs
+  mediaId           String? // Media ID — Switch / PS
+  supportedFormat   String? // الصيغة المدعومة — PS4/PS5 (PKG etc.)
+  systemFirmware    String? // إصدار النظام — PS4/PS5/Switch
+  gameUpdateVersion String? // إصدار تحديث اللعبة — PS4/PS5/Switch
+  deviceModel       String? // موديل الجهاز — Switch / Android
+  installType       String? // طريقة التثبيت — Switch / Android
+  cpuArch           String? // معمارية المعالج — Android (arm64-v8a etc.)
+  gameVersion       String? // إصدار اللعبة — Android / Switch
+  minAndroidVersion String? // أقل إصدار أندرويد مدعوم — Android
+
   @@index([authorId])
   @@index([gameId])
   @@index([categoryId])
