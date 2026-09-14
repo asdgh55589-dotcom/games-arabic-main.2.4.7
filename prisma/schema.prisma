@@ -368,19 +368,19 @@ model Mod {
 
   // Platform-specific localization fields (all optional, per-platform)
   translationMethod String? // طريقة التعريب (Human/AI/Mixed) — all platforms
-  platformGameId    String? // Game ID for PS1/PS2/PS3 (e.g. SCUS-94426) — NOT the FK gameId
-  cusaId            String? // CUSA ID — PS4/PS5
-  ppsaId            String? // PPSA ID — PS5
-  titleId           String? // Title ID — Switch / PS Vita style IDs
-  mediaId           String? // Media ID — Switch / PS
-  supportedFormat   String? // الصيغة المدعومة — PS4/PS5 (PKG etc.)
-  systemFirmware    String? // إصدار النظام — PS4/PS5/Switch
-  gameUpdateVersion String? // إصدار تحديث اللعبة — PS4/PS5/Switch
-  deviceModel       String? // موديل الجهاز — Switch / Android
-  installType       String? // طريقة التثبيت — Switch / Android
-  cpuArch           String? // معمارية المعالج — Android (arm64-v8a etc.)
-  gameVersion       String? // إصدار اللعبة — Android / Switch
-  minAndroidVersion String? // أقل إصدار أندرويد مدعوم — Android
+  platformGameId    String? // معرّف اللعبة (Game ID) for PS1/PS2/PS3 (e.g. SCUS-94426) — NOT the FK gameId
+  cusaId            String? // معرّف اللعبة (CUSA) — PS4 only (e.g. CUSA-00123)
+  ppsaId            String? // معرّف اللعبة (PPSA) — PS5 only (e.g. PPSA-00001)
+  titleId           String? // Title ID — Switch (e.g. 010042D00D900000) + Xbox 360 (e.g. 545407E7)
+  mediaId           String? // معرّف الوسائط (Media ID) — Xbox 360 only
+  supportedFormat   String? // صيغة اللعبة المدعومة — Xbox 360 only (GOD/JTAG/RGH/ISO/XEX)
+  systemFirmware    String? // تحديث النظام المتوافق — PS4/PS5 only
+  gameUpdateVersion String? // رقم تحديث اللعبة المتوافق — PS3/PS4/PS5/Switch
+  deviceModel       String? // الجهاز — Switch only (e.g. NS1)
+  installType       String? // نوع ملف التثبيت — Android only (APK/OBB/Data)
+  cpuArch           String? // بنية المعالج المتوافقة — Android only (ARM64/ARMv7/x86)
+  gameVersion       String? // رقم إصدار اللعبة المتوافق — Android only
+  minAndroidVersion String? // الحد الأدنى لنظام الأندرويد — Android only
 
   @@index([authorId])
   @@index([gameId])
