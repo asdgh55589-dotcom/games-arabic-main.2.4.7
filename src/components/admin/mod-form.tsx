@@ -22,6 +22,7 @@ import {
   Users,
   Video,
   Youtube,
+  ArrowRight,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -50,6 +51,17 @@ import {
   PlatformFieldsSection,
   type PlatformFieldsValues,
 } from '@/components/shared/platform-fields-section'
+import { PlatformSelector } from '@/components/creator/mod-form/platform-selector'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // ===== Types =====
 interface FileLink {
@@ -168,6 +180,10 @@ export default function ModForm({ modId }: ModFormProps) {
   const [versionHistory, setVersionHistory] = useState<any[]>([])
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
   const [userRole, setUserRole] = useState('member')
+
+  // Wizard step: 1 = platform selection, 2 = full form
+  const [step, setStep] = useState(isEdit ? 2 : 1)
+  const [platformChangeDialogOpen, setPlatformChangeDialogOpen] = useState(false)
 
   // ===== Form state =====
   const [name, setName] = useState('')
@@ -503,6 +519,38 @@ export default function ModForm({ modId }: ModFormProps) {
     setCropperOpen(true)
   }
 
+  // Handle platform selection from step 1
+  const handlePlatformSelect = (key: string) => {
+    setPlatform(key)
+    setStep(2)
+  }
+
+  // Handle going back to step 1 from step 2
+  const handleBackToStep1 = () => {
+    setPlatformChangeDialogOpen(true)
+  }
+
+  // Confirm platform change: clear platform-specific fields and go to step 1
+  const confirmPlatformChange = () => {
+    setPlatformChangeDialogOpen(false)
+    setTranslationMethod('')
+    setPlatformGameId('')
+    setCusaId('')
+    setPpsaId('')
+    setTitleId('')
+    setMediaId('')
+    setSupportedFormat('')
+    setSystemFirmware('')
+    setGameUpdateVersion('')
+    setDeviceModel('')
+    setInstallType('')
+    setCpuArch('')
+    setGameVersion('')
+    setMinAndroidVersion('')
+    setCompatibility('')
+    setStep(1)
+  }
+
   // ===== Save =====
   const onSave = async () => {
     // Defense in depth: never persist base64.
@@ -676,17 +724,57 @@ export default function ModForm({ modId }: ModFormProps) {
           <Button asChild variant="outline">
             <Link href="/admin/mods">إلغاء</Link>
           </Button>
-          <Button onClick={onSave} disabled={saving || !!loadError}>
-            {saving ? (
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="ml-2 h-4 w-4" />
-            )}
-            {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
-          </Button>
+          {step === 2 && !isEdit && (
+            <Button variant="ghost" onClick={handleBackToStep1}>
+              <ArrowRight className="ml-1 h-4 w-4" />
+              تغيير المنصة
+            </Button>
+          )}
+          {step === 2 && (
+            <Button onClick={onSave} disabled={saving || !!loadError}>
+              {saving ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* Step indicator for new mods */}
+      {!isEdit && (
+        <div className="flex items-center gap-3 text-sm">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>1</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            اختيار المنصة
+          </span>
+          <span className="text-muted-foreground">←</span>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}>2</span>
+          <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
+            بيانات التعريب
+          </span>
+        </div>
+      )}
+
+      {/* Step 1: Platform Selection */}
+      {step === 1 && (
+        <div className="rounded-xl border border-border bg-card/30 p-6">
+          <PlatformSelector
+            selected={platform}
+            onSelect={handlePlatformSelect}
+          />
+        </div>
+      )}
+
+      {/* Step 2: Full Form */}
+      {step === 2 && (
+        <>
       {/* أزرار تغيير الحالة */}
       {isEdit && (
         <WorkflowActions
@@ -791,6 +879,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setMinAndroidVersion={setMinAndroidVersion}
         compatibility={compatibility}
         setCompatibility={setCompatibility}
+        hidePlatformSelect={!isEdit}
       />
 
       {/* ===== 2. الصور — Supabase Storage (mods bucket) + قص اختياري ===== */}
@@ -1697,6 +1786,28 @@ export default function ModForm({ modId }: ModFormProps) {
           {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
         </Button>
       </div>
+        </>
+      )}
+
+      {/* Platform change warning dialog */}
+      <AlertDialog open={platformChangeDialogOpen} onOpenChange={setPlatformChangeDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
+            <AlertDialogDescription>
+              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
+              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (اسم التعريب،
+              الاسم بالعربي، الوصف) لن تتأثر.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPlatformChange}>
+              تغيير ومسح الحقول
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
