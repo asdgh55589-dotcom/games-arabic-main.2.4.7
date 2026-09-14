@@ -328,7 +328,7 @@ export const ar: StudioDict = {
     modName: 'اسم التعريب *',
     arabicName: 'الاسم بالعربي',
     arabicNamePh: 'مثال: باتش سكايرم غير الرسمي',
-    scope: 'نطاق التعريب',
+    scope: 'محتوى التعريب',
     scopeHint: 'مثال: العالم العربي، الخليج، جميع الدول',
     scopePlaceholder: 'مثال: العالم العربي',
     fullDesc: 'الوصف الكامل *',
