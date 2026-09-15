@@ -118,13 +118,15 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+const databaseUrl = resolveDatabaseUrl()
+
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: ['error', 'warn'],
     datasources: {
       db: {
-        url: resolveDatabaseUrl(),
+        url: databaseUrl,
       },
     },
   })

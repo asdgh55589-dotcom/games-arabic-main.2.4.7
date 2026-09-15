@@ -49,7 +49,7 @@ function requireOwnerEnv() {
 // كاش لمنع ensureOwnerExists من الاستدعاء المتكرر في نفس البروسيس
 let ownerEnsured = false
 
-/** ضمان وجود حساب الـ owner في Neon DB و Supabase Auth */
+/** ضمان وجود حساب الـ owner في قاعدة البيانات و Supabase Auth */
 async function ensureOwnerExists() {
   if (ownerEnsured) return
 
@@ -118,7 +118,7 @@ async function ensureOwnerExists() {
 
   const { username, email, password, securityKey } = requireOwnerEnv()
 
-  // إنشاء الـ owner في Neon DB مع مفتاح الأمان
+  // إنشاء الـ owner في قاعدة البيانات مع مفتاح الأمان
   const hash = await hashPassword(password)
   const secHash = await hashSecurityKey(securityKey)
   const owner = await db.user.create({

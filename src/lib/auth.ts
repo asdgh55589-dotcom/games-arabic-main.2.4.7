@@ -1,9 +1,9 @@
 /**
- * lib/auth.ts — نظام المصادقة (Supabase Auth + Neon DB).
+ * lib/auth.ts — نظام المصادقة (Supabase Auth + Aiven DB).
  *
  * يستخدم:
  *   - Supabase Auth للمصادقة عبر OAuth (Google, Telegram)
- *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
+ *   - Aiven DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *
  * الصلاحيات (التسلسل: member < creator < publisher < moderator < admin < manager < owner):
@@ -110,7 +110,7 @@ export async function getSession(): Promise<SessionUser | null> {
     }
 
     if (supabaseUser) {
-      // يوجد Supabase session — البحث في Neon DB
+      // يوجد Supabase session — البحث في قاعدة البيانات
       const user = await db.user.findFirst({
         where: {
           OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
@@ -188,7 +188,7 @@ export async function getSession(): Promise<SessionUser | null> {
 
     if (!userId || !role) return null
 
-    // البحث عن المستخدم في Neon DB
+    // البحث عن المستخدم في قاعدة البيانات
     const user = await db.user.findUnique({
       where: { id: userId },
       select: {

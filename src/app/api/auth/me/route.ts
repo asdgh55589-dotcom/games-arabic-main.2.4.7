@@ -19,7 +19,7 @@ export async function GET() {
       } = await supabase.auth.getUser()
 
       if (!supabaseError && supabaseUser) {
-        // يوجد Supabase session — البحث في Neon DB
+        // يوجد Supabase session — البحث في قاعدة البيانات
         const user = await db.user.findFirst({
           where: {
             OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
@@ -107,7 +107,7 @@ export async function GET() {
       return ok({ user: null })
     }
 
-    // البحث عن المستخدم في Neon DB باستخدام userId
+    // البحث عن المستخدم في قاعدة البيانات باستخدام userId
     const user = await db.user.findUnique({
       where: { id: userId },
       select: {
