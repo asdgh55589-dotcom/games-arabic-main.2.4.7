@@ -13,6 +13,7 @@ export const en: StudioDict = {
   nav: {
     dashboard: 'Dashboard',
     myMods: 'My Mods',
+    myTeam: 'My Team',
     stats: 'Statistics',
     requests: 'Mod Requests',
     comments: 'Comments',
