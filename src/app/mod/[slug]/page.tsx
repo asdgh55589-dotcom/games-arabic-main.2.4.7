@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { modJsonLd } from '@/lib/seo/structured-data'
+import { breadcrumbJsonLd, modJsonLd } from '@/lib/seo/structured-data'
 import { ModDetailPage } from '@/views/mod-detail'
 
 export const revalidate = 300 // ISR: 5m — بيانات التعريب نادراً ما تتغير
@@ -104,6 +104,29 @@ export default async function ModRoutePage({ params }: ModPageProps) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(modJsonLd(mod)) }}
+        />
+      )}
+      {mod && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              breadcrumbJsonLd(
+                [
+                  { name: 'الرئيسية', url: 'https://games-arabic.com' },
+                  ...(mod.game?.slug
+                    ? [
+                        {
+                          name: mod.game.name,
+                          url: `https://games-arabic.com/games/${mod.game.slug}`,
+                        },
+                      ]
+                    : []),
+                  { name: mod.name, url: `https://games-arabic.com/mod/${mod.slug}` },
+                ],
+              ),
+            ),
+          }}
         />
       )}
       <ModDetailPage />
