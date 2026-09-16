@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   try {
     const neonUser = await getOptionalSession()
     if (!neonUser) {
-      return unauthorized('Login required to endorse')
+      return unauthorized('يجب تسجيل الدخول للإعجاب')
     }
 
     const userId = neonUser.id
