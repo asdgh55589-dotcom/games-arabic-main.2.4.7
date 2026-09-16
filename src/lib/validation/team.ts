@@ -41,3 +41,30 @@ export const UpdateMemberRoleSchema = z
   .strict()
 
 export type UpdateMemberRoleInput = z.infer<typeof UpdateMemberRoleSchema>
+
+// Phase 3 — invitations. Exactly one of username / email is required.
+export const InviteCreateSchema = z
+  .object({
+    username: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .regex(/^[a-zA-Z0-9_-]+$/, 'اسم مستخدم غير صالح')
+      .optional(),
+    email: z.string().trim().max(200).email('البريد الإلكتروني غير صالح').optional(),
+    role: AssignableTeamRoleSchema.default('member'),
+  })
+  .strict()
+  .refine((d) => Boolean(d.username || d.email), {
+    message: 'حدد اسم المستخدم أو البريد الإلكتروني',
+  })
+
+export const InviteTokenSchema = z
+  .object({
+    token: z.string().min(20, 'رمز الدعوة غير صالح').max(100, 'رمز الدعوة غير صالح'),
+  })
+  .strict()
+
+export type InviteCreateInput = z.infer<typeof InviteCreateSchema>
+export type InviteTokenInput = z.infer<typeof InviteTokenSchema>

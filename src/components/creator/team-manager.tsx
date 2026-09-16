@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/official-ui/tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CreateTeamForm } from '@/components/creator/create-team-form'
+import { TeamInvites } from '@/components/creator/team-invites'
 import { TeamMembersTable, type TeamMemberRow } from '@/components/creator/team-members-table'
 import { TeamSettingsForm } from '@/components/creator/team-settings-form'
 
@@ -115,6 +116,7 @@ export function TeamManager() {
       <TabsList>
         <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
         <TabsTrigger value="members">الأعضاء ({membershipCount})</TabsTrigger>
+        <TabsTrigger value="invites">الدعوات</TabsTrigger>
         <TabsTrigger value="settings">الإعدادات</TabsTrigger>
       </TabsList>
 
@@ -145,6 +147,10 @@ export function TeamManager() {
             fetchTeam()
           }}
         />
+      </TabsContent>
+
+      <TabsContent value="invites">
+        <TeamInvites />
       </TabsContent>
 
       <TabsContent value="settings">
