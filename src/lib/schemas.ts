@@ -131,6 +131,26 @@ export const ChangePasswordSchema = z.object({
   newPassword: z.string().min(8).max(200),
 })
 
+/** P0 setup-password (OAuth-only users): stricter policy than change-password. */
+export const SetupPasswordSchema = z
+  .object({
+    password: z.string().min(10, '١٠ أحرف على الأقل').max(128, 'كلمة المرور طويلة جداً').optional(),
+    confirmPassword: z.string().min(1, 'تأكيد كلمة المرور مطلوب').optional(),
+    email: EmailSchema.optional(),
+  })
+  .refine((d) => d.password !== undefined || d.email !== undefined, {
+    message: 'أدخل كلمة مرور أو بريداً إلكترونياً',
+    path: ['password'],
+  })
+  .refine((d) => d.password === undefined || d.confirmPassword !== undefined, {
+    message: 'تأكيد كلمة المرور مطلوب',
+    path: ['confirmPassword'],
+  })
+  .refine((d) => d.password === undefined || d.password === d.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين',
+    path: ['confirmPassword'],
+  })
+
 // ===== Mod Schemas =====
 
 export const CreateModSchema = z.object({

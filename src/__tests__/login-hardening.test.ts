@@ -115,14 +115,14 @@ describe('progressive delay', () => {
     expect([0, 1, 2, 3, 4, 5, 9].map(loginDelayFor)).toEqual([0, 1, 2, 4, 8, 8, 8])
   })
 
-  it('record/get/clear roundtrip per key', () => {
+  it('record/get/clear roundtrip per key', async () => {
     const k = 'test-key-' + Date.now()
-    expect(getLoginFailures(k)).toBe(0)
-    recordLoginFailure(k)
-    recordLoginFailure(k)
-    expect(getLoginFailures(k)).toBe(2)
-    clearLoginFailures(k)
-    expect(getLoginFailures(k)).toBe(0)
+    expect(await getLoginFailures(k)).toBe(0)
+    await recordLoginFailure(k)
+    await recordLoginFailure(k)
+    expect(await getLoginFailures(k)).toBe(2)
+    await clearLoginFailures(k)
+    expect(await getLoginFailures(k)).toBe(0)
   })
 })
 

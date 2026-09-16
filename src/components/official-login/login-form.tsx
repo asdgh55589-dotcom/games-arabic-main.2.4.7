@@ -151,6 +151,32 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     try {
       const supabase = createClient()
       if (mode === 'login') {
+        const identifier = email.trim()
+        if (!identifier.includes('@')) {
+          // Username login → server endpoint (Neon hash + role-cookie session).
+          // Email identifiers keep the existing Supabase client-side flow below.
+          try {
+            const res = await fetch('/api/auth/login-identifier', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ identifier, password }),
+            })
+            const j = await res.json().catch(() => null)
+            if (!res.ok) {
+              setError(
+                typeof j?.error === 'string' ? j.error : getAuthErrorMessage('WRONG_PASSWORD'),
+              )
+              setBusy(null)
+              return
+            }
+          } catch {
+            setError(getAuthErrorMessage('WRONG_PASSWORD'))
+            setBusy(null)
+            return
+          }
+          window.location.href = '/'
+          return
+        }
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
@@ -340,11 +366,13 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 </>
               )}
               <div className="grid gap-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">
+                  {mode === 'login' ? 'البريد الإلكتروني أو اسم المستخدم' : 'البريد الإلكتروني'}
+                </Label>
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="m@example.com"
+                  type={mode === 'login' ? 'text' : 'email'}
+                  placeholder={mode === 'login' ? 'm@example.com أو username' : 'm@example.com'}
                   required
                   dir="ltr"
                   className="text-left"

@@ -178,13 +178,13 @@ export async function POST(req: NextRequest) {
     // the SAME 401 message after a progressive per-IP+username delay.
     const fkey = failureKey(loginIp, typeof body?.username === 'string' ? body.username : '')
     const failClosed = async () => {
-      const fails = recordLoginFailure(fkey)
+      const fails = await recordLoginFailure(fkey)
       await sleep(loginDelayFor(fails) * 1000)
       return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
     }
 
     // Turnstile hook: required after 5 fails (placeholder when unconfigured).
-    if (captchaRequired(getLoginFailures(fkey))) {
+    if (captchaRequired(await getLoginFailures(fkey))) {
       const captchaToken = typeof body?.captchaToken === 'string' ? body.captchaToken : ''
       const verdict = await verifyCaptchaToken(captchaToken, loginIp)
       if (!verdict.ok) return failClosed()
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
       false,
       neonUser.onboardingCompleted,
     )
-    clearLoginFailures(fkey)
+    await clearLoginFailures(fkey)
 
     // تتبع تسجيل الدخول
     await db.user.update({
