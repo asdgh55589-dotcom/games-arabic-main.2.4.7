@@ -14,6 +14,7 @@ export const ar: StudioDict = {
   nav: {
     dashboard: 'لوحة التحكم',
     myMods: 'تعريباتي',
+    myTeam: 'فريقي',
     stats: 'الإحصائيات',
     requests: 'طلبات التعريب',
     comments: 'التعليقات',
