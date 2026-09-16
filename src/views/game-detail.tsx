@@ -2,6 +2,7 @@
 'use client'
 
 import { ArrowRight, ChevronLeft, Download, Filter, Package, Search, ThumbsUp } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -104,7 +105,7 @@ export function GameDetailPage() {
       {/* Banner */}
       <div className="relative h-[280px] overflow-hidden sm:h-[360px]">
         {game?.bannerUrl && (
-          <img src={game.bannerUrl} alt={game.name} className="h-full w-full object-cover" />
+          <Image src={game.bannerUrl} alt={game.name} fill sizes="100vw" className="object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
       </div>
@@ -114,7 +115,7 @@ export function GameDetailPage() {
         <div className="-mt-24 flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 border-border/60 bg-card shadow-2xl sm:h-40 sm:w-40">
             {game?.thumbnailUrl && (
-              <img src={game.thumbnailUrl} alt={game.name} className="h-full w-full object-cover" />
+              <Image src={game.thumbnailUrl} alt={game.name} width={160} height={160} className="h-full w-full object-cover" />
             )}
           </div>
           <div className="flex-1 pb-2">

@@ -2,6 +2,7 @@
 'use client'
 
 import { ArrowRight, Package, Search, Star } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -104,7 +105,7 @@ export function SeriesDetailPage() {
           {/* Banner */}
           {seriesInfo?.bannerUrl && (
             <div className="relative mb-6 h-48 overflow-hidden rounded-none">
-              <img src={seriesInfo.bannerUrl} alt="" className="h-full w-full object-cover" />
+              <Image src={seriesInfo.bannerUrl} alt="" fill sizes="100vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
             </div>
           )}

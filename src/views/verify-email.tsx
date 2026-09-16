@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckCircle, Clock, Loader2, Mail, XCircle } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -100,8 +101,7 @@ export default function VerifyEmailView() {
   return (
     <div className="relative min-h-screen overflow-hidden" dir="rtl">
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/login-bg.jpg" alt="" className="h-full w-full object-cover" />
+        <Image src="/login-bg.jpg" alt="" fill sizes="100vw" className="object-cover" />
       </div>
       <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px]" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/85" />

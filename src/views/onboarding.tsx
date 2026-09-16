@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowRight, Check, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
@@ -180,8 +181,7 @@ export function OnboardingPage() {
             <h2 className="text-lg font-semibold">تأكيد بياناتك</h2>
             <div className="flex items-center gap-4 rounded-xl border p-4">
               {user.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+                <Image src={user.avatarUrl} alt="" width={64} height={64} className="h-16 w-16 rounded-full object-cover" />
               ) : (
                 <div className="grid h-16 w-16 place-items-center rounded-full bg-muted text-xl font-bold">
                   {(displayName || username || '?')[0]}

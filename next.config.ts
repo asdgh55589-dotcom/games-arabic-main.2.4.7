@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const securityHeaders = [
@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
+  reactCompiler: true,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
   experimental: {
     optimizePackageImports: [

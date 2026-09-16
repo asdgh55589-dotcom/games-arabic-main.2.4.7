@@ -41,6 +41,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import NextImage from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -322,8 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       {/* Brand */}
       <div className="flex h-14 items-center gap-2.5 border-b border-border-light px-5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="ألعاب عربية" className="h-7 w-auto object-contain" />
+        <NextImage src="/logo.png" alt="ألعاب عربية" width={28} height={28} className="h-7 w-auto object-contain" />
       </div>
 
       {/* Navigation */}
@@ -446,8 +446,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }`}
       >
         <div className="flex h-14 items-center justify-between border-b border-border-light px-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="ألعاب عربية" className="h-7 w-auto object-contain" />
+          <NextImage src="/logo.png" alt="ألعاب عربية" width={28} height={28} className="h-7 w-auto object-contain" />
           <button
             onClick={() => setMobileOpen(false)}
             aria-label="إغلاق"
