@@ -12,7 +12,6 @@ import {
   Loader2,
   Lock,
   Save,
-  Shield,
   Upload,
   User,
   Users,
@@ -43,7 +42,6 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { ProfileUpdateSchema, SettingsPasswordSchema } from '@/lib/schemas'
 import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { NotificationSettings } from '@/views/notification-settings'
 import { SimpleNotificationSettings } from '@/views/simple-notification-settings'
 
@@ -391,85 +389,54 @@ export function SettingsPage() {
     let avatarUrl: string | null | undefined
 
     if (avatarFile) {
-      const extension = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+      // Upload avatar via Cloudinary endpoint (handles old image deletion + quota)
+      const formData = new FormData()
+      formData.append('file', avatarFile)
 
-      const signedRes = await fetch('/api/storage/upload-url', {
+      const res = await fetch(`/api/users/${encodeURIComponent(profile.username)}/avatar`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bucket: 'avatars',
-          extension,
-        }),
+        body: formData,
       })
 
-      if (!signedRes.ok) {
-        throw new Error('avatar_upload_failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error?.message || 'avatar_upload_failed')
       }
 
-      const signedData = await signedRes.json()
-
-      const supabase = createSupabaseBrowserClient()
-
-      const { error } = await supabase.storage
-        .from('avatars')
-        .uploadToSignedUrl(signedData.data.path, signedData.data.token, avatarFile)
-
-      if (error) {
-        throw new Error('avatar_upload_failed')
-      }
-
-      avatarUrl = signedData.data.publicUrl
-    } else if (
-      avatarPreview &&
-      typeof avatarPreview === 'string' &&
-      avatarPreview.startsWith('http') &&
-      avatarPreview !== profile.avatarUrl
-    ) {
-      // ImageUpload already uploaded to Supabase and returned public URL
-      avatarUrl = avatarPreview
+      const data = await res.json()
+      avatarUrl = data?.data?.url
     } else if (avatarRemoved) {
+      // Delete avatar via Cloudinary endpoint
+      await fetch(`/api/users/${encodeURIComponent(profile.username)}/avatar`, {
+        method: 'DELETE',
+      })
       avatarUrl = null
     }
 
     let bannerUrl: string | null | undefined
 
     if (bannerFile) {
-      const extension = bannerFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+      // Upload banner via Cloudinary endpoint (handles old image deletion + quota)
+      const formData = new FormData()
+      formData.append('file', bannerFile)
 
-      const signedRes = await fetch('/api/storage/upload-url', {
+      const res = await fetch(`/api/users/${encodeURIComponent(profile.username)}/banner`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bucket: 'banners',
-          extension,
-        }),
+        body: formData,
       })
 
-      if (!signedRes.ok) {
-        throw new Error('banner_upload_failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error?.message || 'banner_upload_failed')
       }
 
-      const signedData = await signedRes.json()
-
-      const supabase = createSupabaseBrowserClient()
-
-      const { error } = await supabase.storage
-        .from('banners')
-        .uploadToSignedUrl(signedData.data.path, signedData.data.token, bannerFile)
-
-      if (error) {
-        throw new Error('banner_upload_failed')
-      }
-
-      bannerUrl = signedData.data.publicUrl
-    } else if (
-      bannerPreview &&
-      typeof bannerPreview === 'string' &&
-      bannerPreview.startsWith('http') &&
-      bannerPreview !== profile.bannerUrl
-    ) {
-      bannerUrl = bannerPreview
+      const data = await res.json()
+      bannerUrl = data?.data?.url
     } else if (bannerRemoved) {
+      // Delete banner via Cloudinary endpoint
+      await fetch(`/api/users/${encodeURIComponent(profile.username)}/banner`, {
+        method: 'DELETE',
+      })
       bannerUrl = null
     }
 
@@ -486,12 +453,32 @@ export function SettingsPage() {
   }
 
   const finishSaveSuccess = async (username: string, message: string) => {
-    await refreshProfile(username)
+    const refreshedProfile = await refreshProfile(username)
     await refreshAuth()
     resetAssetState()
     setSaved(true)
     toast({ title: message })
     setTimeout(() => setSaved(false), 2000)
+
+    // Reset form with new profile values to prevent false dirty state
+    if (refreshedProfile) {
+      profileForm.reset({
+        username: refreshedProfile.username || '',
+        displayName: refreshedProfile.displayName || '',
+        bio: refreshedProfile.bio || '',
+      })
+      setFirstName(refreshedProfile.firstName || '')
+      setLastName(refreshedProfile.lastName || '')
+      setWebsiteUrl(refreshedProfile.websiteUrl || '')
+      setTwitterUrl(refreshedProfile.twitterUrl || '')
+      setInstagramUrl(refreshedProfile.instagramUrl || '')
+      setTiktokUrl(refreshedProfile.tiktokUrl || '')
+      setYoutubeUrl(refreshedProfile.youtubeUrl || '')
+      setGithubUrl(refreshedProfile.githubUrl || '')
+      setAccentColor(refreshedProfile.accentColor || '#ff8c00')
+      setProfileVisibility(refreshedProfile.profileVisibility || 'everyone')
+      setHideJoinDate(refreshedProfile.hideJoinDate || false)
+    }
 
     // إذا تغير اسم المستخدم، حدّث الـ URL فوراً لتجنب stale session
     if (profile && username !== profile.username) {
@@ -933,22 +920,6 @@ export function SettingsPage() {
                   />
                 </button>
               ))}
-              {/* الأجهزة المتصلة — Better Auth sessions */}
-              <Link
-                href="/settings/sessions"
-                className="group flex w-full items-center gap-3 rounded-none border-[3px] border-border bg-card px-4 py-3 text-start shadow-[4px_4px_0_0_var(--border)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] hover:bg-card-hover transition-all cursor-pointer"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-border bg-transparent text-muted-foreground">
-                  <Shield className="h-[18px] w-[18px]" />
-                </div>
-                <div className="min-w-0 text-start">
-                  <div className="text-sm font-bold text-foreground">الأجهزة المتصلة</div>
-                  <div className="text-[10px] font-medium text-muted-foreground">
-                    إدارة جلساتك النشطة
-                  </div>
-                </div>
-                <ChevronLeft className="ms-auto h-4 w-4 shrink-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
             </div>
           </nav>
 
@@ -1012,15 +983,15 @@ export function SettingsPage() {
                       <ImageUpload
                         bucket="banners"
                         value={displayBanner || ''}
-                        onChange={(url) => {
-                          // ImageUpload يرفع مباشرة ويعيد publicUrl — نستخدمه كـ preview ونحتفظ به للحفظ
-                          setBannerPreview(url)
-                          setBannerFile(null)
+                        onFileSelect={(file) => {
+                          setBannerFile(file)
+                          setBannerPreview(URL.createObjectURL(file))
                           setBannerRemoved(false)
                         }}
                         label="أو اسحب بانر جديد هنا (سحب وإفلات)"
                         hint="أعلى جودة — سيتم حفظ الرابط تلقائياً عند الضغط على حفظ"
                         folder="banners"
+                        skipUpload
                       />
                     </div>
                   </div>
@@ -1092,14 +1063,15 @@ export function SettingsPage() {
                           <ImageUpload
                             bucket="avatars"
                             value={displayAvatar || ''}
-                            onChange={(url) => {
-                              setAvatarPreview(url)
-                              setAvatarFile(null)
+                            onFileSelect={(file) => {
+                              setAvatarFile(file)
+                              setAvatarPreview(URL.createObjectURL(file))
                               setAvatarRemoved(false)
                             }}
                             label="أو اسحب صورة جديدة هنا (سحب وإفلات)"
                             hint="أعلى جودة — سيتم الحفظ تلقائياً"
                             folder="avatars"
+                            skipUpload
                           />
                         </div>
                       </div>

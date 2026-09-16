@@ -14,6 +14,7 @@ interface ImageUploadProps {
   values?: string[] // for gallery
   onChange?: (url: string) => void
   onValuesChange?: (urls: string[]) => void
+  onFileSelect?: (file: File) => void // New: return file without uploading
   label?: string
   hint?: string
   required?: boolean
@@ -22,6 +23,7 @@ interface ImageUploadProps {
   maxSizeMB?: number
   folder?: string
   modId?: string // لصور التعديلات فقط — يُستخدم في سجل الاستهلاك
+  skipUpload?: boolean // New: skip upload, just return file
 }
 
 export function ImageUpload({
@@ -30,6 +32,7 @@ export function ImageUpload({
   values,
   onChange,
   onValuesChange,
+  onFileSelect,
   label,
   hint,
   required,
@@ -38,6 +41,7 @@ export function ImageUpload({
   maxSizeMB = 10,
   folder = '',
   modId,
+  skipUpload = false,
 }: ImageUploadProps) {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -68,6 +72,15 @@ export function ImageUpload({
       setError(null)
 
       try {
+        // skipUpload: just return the file without uploading (for Cloudinary endpoints)
+        if (skipUpload) {
+          const previewUrl = URL.createObjectURL(file)
+          setPreview(previewUrl)
+          onFileSelect?.(file)
+          setUploading(false)
+          return
+        }
+
         // صور التعديلات → FreeImage relay (صور الغلاف، البانر، لقطات الشاشة).
         // Owner rule: Cloudinary حصراً لأفاتار/بانر المستخدم — صور التعديلات
         // لا تمر بـ Cloudinary أبداً. باقي الصور → Supabase Storage.

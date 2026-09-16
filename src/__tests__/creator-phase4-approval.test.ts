@@ -22,6 +22,9 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/notifications/email-service', () => ({
   sendCreatorApprovalEmail: jest.fn(),
 }))
+jest.mock('@/lib/auth', () => ({
+  invalidateUserSessions: jest.fn().mockResolvedValue(0),
+}))
 
 import { db } from '@/lib/db'
 import { sendCreatorApprovalEmail } from '@/lib/notifications/email-service'

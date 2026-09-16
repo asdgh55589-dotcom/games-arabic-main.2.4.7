@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { sendCreatorApprovalEmail } from '@/lib/notifications/email-service'
+import { invalidateUserSessions } from '@/lib/auth'
 
 interface CreatorRequestWithUser {
   id: string
@@ -49,6 +50,14 @@ export async function approveCreatorRequest(
       },
     })
   })
+
+  // Invalidate sessions to force re-authentication with new role
+  // This ensures the JWT cookie is updated with the new role
+  try {
+    await invalidateUserSessions(request.userId)
+  } catch (e) {
+    console.error('[creator-requests approve] session invalidation failed:', e)
+  }
 
   const message = note
     ? `تم قبول طلبك ك${label}. ملاحظة المراجعة: ${note}`
