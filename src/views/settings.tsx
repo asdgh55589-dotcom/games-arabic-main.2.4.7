@@ -45,6 +45,7 @@ import { ProfileUpdateSchema, SettingsPasswordSchema } from '@/lib/schemas'
 import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { NotificationSettings } from '@/views/notification-settings'
+import { SimpleNotificationSettings } from '@/views/simple-notification-settings'
 
 type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>
 type SettingsPasswordInput = z.infer<typeof SettingsPasswordSchema>
@@ -1476,7 +1477,12 @@ export function SettingsPage() {
             )}
 
             {/* ========== Notifications Section ========== */}
-            {activeSection === 'notifications' && <NotificationSettings />}
+            {activeSection === 'notifications' &&
+              (TRANSLATOR_ROLES.includes(user?.role) ? (
+                <NotificationSettings />
+              ) : (
+                <SimpleNotificationSettings />
+              ))}
 
             {/* ========== Privacy Section ========== */}
             {activeSection === 'privacy' && (

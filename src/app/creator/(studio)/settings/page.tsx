@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
+import { CreatorNotificationSettings } from '@/views/creator-notification-settings'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,12 +68,7 @@ export default async function CreatorSettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">{dict.settingsPage.manageNotifPrefs}</p>
-          <Link href="/settings?section=notifications">
-            <Button variant="outline" size="sm">
-              {dict.settingsPage.openNotifSettings}
-            </Button>
-          </Link>
+          <CreatorNotificationSettings />
         </CardContent>
       </Card>
     </div>
