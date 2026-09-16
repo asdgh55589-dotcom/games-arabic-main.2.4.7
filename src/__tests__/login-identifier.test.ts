@@ -152,4 +152,15 @@ describe('login-identifier success', () => {
     expect(status).toBe(200)
     expect((body.data as { user: { id: string } }).user.id).toBe('u-7')
   })
+
+  it('ignores smuggled role upgrades (role comes from DB, never the body)', async () => {
+    mockCompare.mockResolvedValueOnce(true)
+    const { status } = await unpack(
+      await identifierPOST(
+        idReq({ identifier: 'tguser', password: 'correct-horse-1', role: 'admin' }),
+      ),
+    )
+    expect(status).toBe(200)
+    expect(mockSetRoleCookie).toHaveBeenCalledWith('u-7', 'member', 3, false, true)
+  })
 })
