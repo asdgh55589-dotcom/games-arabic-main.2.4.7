@@ -1,6 +1,7 @@
 'use client'
 
 import { BadgeCheck, Download, Eye, Gamepad2, Layers, Link2, Users } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ModCard } from '@/components/mod-card'
 import { formatNumber } from '@/lib/format'
@@ -86,8 +87,7 @@ export function TeamDetailMobile({
       {/* 1. Banner/logo + team name + tagline stacked centered — banner h-[140px], logo centered, px-3 sm:px-4 */}
       <div className="relative h-[140px] w-full overflow-hidden bg-muted sm:h-48">
         {team.bannerUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={team.bannerUrl} alt="" className="h-full w-full object-cover" />
+          <Image src={team.bannerUrl} alt="" fill sizes="100vw" className="object-cover" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800" />
         )}
@@ -98,8 +98,7 @@ export function TeamDetailMobile({
       <div className="flex justify-center">
         <div className="relative -mt-10 z-10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border-4 border-background bg-card shadow-xl">
           {team.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={team.logoUrl} alt={team.name} className="h-full w-full object-cover" />
+            <Image src={team.logoUrl} alt={team.name} width={80} height={80} className="h-full w-full object-cover" />
           ) : (
             <Users className="h-8 w-8 text-muted-foreground/40" aria-hidden />
           )}

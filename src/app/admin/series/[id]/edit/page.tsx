@@ -2,6 +2,7 @@
 'use client'
 
 import { ArrowRight, Loader2, Save, Trash2 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -248,7 +249,7 @@ export default function SeriesEditPage() {
                 className="flex items-center justify-between rounded-md p-2 transition-colors hover:bg-accent/50"
               >
                 <div className="flex items-center gap-2">
-                  <img src={m.thumbnailUrl} alt="" className="h-8 w-12 rounded object-cover" />
+                  <Image src={m.thumbnailUrl} alt="" width={48} height={32} className="h-8 w-12 rounded object-cover" />
                   <span className="text-sm font-medium">{m.name}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{m.downloads} تحميل</span>

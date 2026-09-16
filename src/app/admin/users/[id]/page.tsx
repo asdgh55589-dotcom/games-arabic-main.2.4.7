@@ -10,6 +10,7 @@ import {
   Star,
   User as UserIcon,
 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -252,7 +253,7 @@ export default function UserDetailPage() {
       {/* Header */}
       <div className="flex items-start gap-4">
         {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+          <Image src={user.avatarUrl} alt="" width={80} height={80} className="h-20 w-20 rounded-full object-cover" />
         ) : (
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold">
             {user.username.charAt(0)}

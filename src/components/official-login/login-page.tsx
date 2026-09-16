@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { LoginForm } from '@/components/official-login/login-form'
 
 /**
@@ -14,8 +15,7 @@ export function OfficialLoginPage() {
       <div className="flex w-full max-w-sm flex-col gap-6">
         <a href="/" className="flex items-center gap-2 self-center font-medium">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="ألعاب بالعربي" className="h-8 w-8 object-contain" />
+            <Image src="/logo.png" alt="ألعاب بالعربي" width={32} height={32} className="h-8 w-8 object-contain" />
           </span>
           ألعاب بالعربي
         </a>

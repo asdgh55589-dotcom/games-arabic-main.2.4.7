@@ -13,6 +13,7 @@ import {
   Trash2,
   Youtube,
 } from 'lucide-react'
+import NextImage from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -323,15 +324,15 @@ export default function AdminAdsPage() {
                 {/* معاينة مصغّرة */}
                 <div className="h-16 w-28 shrink-0 overflow-hidden rounded-md bg-secondary">
                   {ad.type === 'youtube' && ad.url.includes('youtube') ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <NextImage
                       src={`https://i.ytimg.com/vi/${ad.url.match(/(?:v=|be\/|embed\/)([\w-]{11})/)?.[1] || ''}/mqdefault.jpg`}
                       alt=""
+                      width={112}
+                      height={63}
                       className="h-full w-full object-cover"
                     />
                   ) : ad.type === 'image' ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ad.url} alt="" className="h-full w-full object-cover" />
+                    <NextImage src={ad.url} alt="" width={112} height={63} className="h-full w-full object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center">
                       <Icon className="h-6 w-6 text-muted-foreground" />
