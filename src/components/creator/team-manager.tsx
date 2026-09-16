@@ -137,7 +137,14 @@ export function TeamManager() {
       </TabsContent>
 
       <TabsContent value="members">
-        <TeamMembersTable members={members} loading={membersLoading} />
+        <TeamMembersTable
+          members={members}
+          loading={membersLoading}
+          onChanged={() => {
+            fetchMembers()
+            fetchTeam()
+          }}
+        />
       </TabsContent>
 
       <TabsContent value="settings">

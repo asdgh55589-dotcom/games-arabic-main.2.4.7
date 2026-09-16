@@ -29,3 +29,15 @@ export const UpdateCreatorTeamSchema = CreateCreatorTeamSchema.partial().strict(
 
 export type CreateCreatorTeamInput = z.infer<typeof CreateCreatorTeamSchema>
 export type UpdateCreatorTeamInput = z.infer<typeof UpdateCreatorTeamSchema>
+
+// Phase 2 — owner-managed member roles. 'owner' is never assignable via invite or PATCH.
+export const AssignableTeamRoleSchema = z.enum(['admin', 'moderator', 'translator', 'member', 'tester'])
+
+export const UpdateMemberRoleSchema = z
+  .object({
+    memberId: z.string().min(1, 'memberId مطلوب'),
+    role: AssignableTeamRoleSchema,
+  })
+  .strict()
+
+export type UpdateMemberRoleInput = z.infer<typeof UpdateMemberRoleSchema>
