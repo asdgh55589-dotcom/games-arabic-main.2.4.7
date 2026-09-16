@@ -151,6 +151,8 @@ model User {
   acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
   sessions               Session[]
   passwordResetTokens    PasswordResetToken[]
+  sentTeamInvitations    TeamInvitation[]      @relation("SentTeamInvitations")
+  receivedTeamInvitations TeamInvitation[]
 
   @@index([role])
   @@index([joinedAt])
@@ -628,6 +630,7 @@ model Team {
   achievements       TeamAchievement[]
   points             TeamPoints?
   pointsTransactions PointsTransaction[]
+  invitations        TeamInvitation[]
 
   @@index([isFeatured])
   @@index([order])
@@ -686,6 +689,36 @@ model TeamCustomTab {
   team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@index([teamId])
+}
+
+// ===== دعوات الفريق (Phase 3 — creator-managed invitations) =====
+// Raw tokens are NEVER stored: only tokenHash (SHA-256 hex). The raw token
+// is returned once at creation and delivered via notification/email.
+model TeamInvitation {
+  id              String    @id @default(cuid())
+  teamId          String
+  team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  invitedUserId   String?
+  invitedUser     User?     @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
+  inviteeUsername String?
+  inviteeEmail    String?
+
+  role            String    @default("member") // admin | moderator | translator | member | tester (never owner)
+  tokenHash       String    @unique
+  status          String    @default("pending") // pending | accepted | declined | revoked | expired
+  expiresAt       DateTime
+  invitedBy       String
+  inviter         User      @relation("SentTeamInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
+  respondedAt     DateTime?
+  respondedBy     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([teamId])
+  @@index([teamId, status])
+  @@index([invitedUserId])
+  @@index([status, expiresAt])
 }
 
 // ===== إجراءات المستخدمين (Ban/Promote/Demote/etc) =====
