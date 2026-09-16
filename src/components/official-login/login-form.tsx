@@ -88,10 +88,18 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setBusy('telegram')
     setError(null)
     try {
+      const win = window.open('', '_blank')
       const res = await fetch('/api/auth/telegram', { method: 'POST' })
       const { data } = await res.json()
-      if (!res.ok || !data?.deepLink) throw new Error(data?.error?.message || 'Failed')
-      window.open(data.deepLink, '_blank')
+      if (!res.ok || !data?.deepLink) {
+        win?.close()
+        throw new Error(data?.error?.message || 'Failed')
+      }
+      if (win) {
+        win.location.href = data.deepLink
+      } else {
+        window.open(data.deepLink, '_blank')
+      }
       const poll = setInterval(async () => {
         try {
           const check = await fetch(`/api/auth/telegram/poll?token=${data.sessionToken}`)
