@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { WebVitalsReporter } from '@/components/web-vitals-reporter'
 import { AuthProvider } from '@/contexts/auth-context'
+import { PasswordSetupBanner } from '@/components/auth/password-setup-banner'
 import { SettingsProvider } from '@/contexts/settings-context'
 import { organizationJsonLd } from '@/lib/seo/structured-data'
 
@@ -99,6 +100,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <PasswordSetupBanner />
             <SettingsProvider>
               <SeoUpdater />
               <WebVitalsReporter />

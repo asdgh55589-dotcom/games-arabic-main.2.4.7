@@ -3,6 +3,7 @@ import { ok } from '@/lib/api-response'
 import { clearRoleCookie, getBanStatus, getJWTSecret, jwtVerify } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { needsSecuritySetup } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/server'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
@@ -28,6 +29,7 @@ export async function GET() {
             id: true,
             username: true,
             email: true,
+            password: true,
             role: true,
             avatarUrl: true,
             bannerUrl: true,
@@ -45,7 +47,15 @@ export async function GET() {
           if (ban.banned) {
             return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
           }
-          return ok({ user })
+          const { password: _pw, ...safeUser } = user
+          const hasPassword = !!_pw
+          return ok({
+            user: {
+              ...safeUser,
+              hasPassword,
+              needsSecuritySetup: needsSecuritySetup({ hasPassword, email: safeUser.email }),
+            },
+          })
         }
 
         // المستخدم جديد — أنشئ ملف شخصي (استخدم مولد موحد)
@@ -69,6 +79,8 @@ export async function GET() {
             role: newUser.role,
             avatarUrl: newUser.avatarUrl,
             onboardingCompleted: newUser.onboardingCompleted,
+            hasPassword: false,
+            needsSecuritySetup: true,
           },
         })
       }
@@ -114,6 +126,7 @@ export async function GET() {
         id: true,
         username: true,
         email: true,
+        password: true,
         role: true,
         avatarUrl: true,
         bannerUrl: true,
@@ -157,6 +170,11 @@ export async function GET() {
         role: user.role,
         avatarUrl: user.avatarUrl,
         onboardingCompleted: user.onboardingCompleted,
+        hasPassword: !!user.password,
+        needsSecuritySetup: needsSecuritySetup({
+          hasPassword: !!user.password,
+          email: user.email,
+        }),
       },
     })
   } catch (err) {

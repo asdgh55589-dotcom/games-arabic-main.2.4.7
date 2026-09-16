@@ -24,6 +24,7 @@ import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { CropModal } from '@/components/crop-modal'
+import { SetupPasswordCard } from '@/components/settings/setup-password-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -40,6 +41,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
+import { needsSecuritySetup } from '@/lib/onboarding'
 import { ProfileUpdateSchema, SettingsPasswordSchema } from '@/lib/schemas'
 import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
 import { NotificationSettings } from '@/views/notification-settings'
@@ -1295,6 +1297,11 @@ export function SettingsPage() {
             {/* ========== Account Section ========== */}
             {activeSection === 'account' && (
               <div className="space-y-6">
+                {/* P0-flexible: optional security setup (hidden once complete) */}
+                {user &&
+                  needsSecuritySetup({ hasPassword: user.hasPassword, email: user.email }) && (
+                    <SetupPasswordCard />
+                  )}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
                   <p className="text-xs text-muted-foreground mb-6">

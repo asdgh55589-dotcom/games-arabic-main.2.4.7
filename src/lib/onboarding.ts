@@ -15,6 +15,20 @@ export function isSyntheticTelegramEmail(email: string | null | undefined): bool
   return email.toLowerCase().endsWith('@telegram.local')
 }
 
+/**
+ * P0-flexible: does this user still need security setup?
+ * True when there is no password credential OR no real (recoverable) email.
+ * Fail-safe: unknown state prompts setup rather than hiding it.
+ */
+export function needsSecuritySetup(input: {
+  hasPassword?: boolean | null
+  email?: string | null
+}): boolean {
+  if (input.hasPassword !== true) return true
+  if (isSyntheticTelegramEmail(input.email)) return true
+  return false
+}
+
 /** Path prefixes that must stay reachable while onboarding is incomplete. */
 const EXEMPT_PREFIXES = [
   '/onboarding',
