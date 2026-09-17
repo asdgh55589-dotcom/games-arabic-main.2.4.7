@@ -10,6 +10,7 @@ import {
 } from '@/lib/api-response'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { checkInviteBinding, hashInviteToken, isInviteExpired } from '@/lib/team-invites'
 import { InviteTokenSchema } from '@/lib/validation/team'
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[team/invites/accept] audit log failed:', err)
+      logger.warn({ err }, '[team/invites/accept] audit log failed')
     }
 
     if (invite.invitedBy) {
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
           },
         })
       } catch (err) {
-        console.error('[team/invites/accept] notify failed:', err)
+        logger.warn({ err }, '[team/invites/accept] notify failed')
       }
     }
 
@@ -140,7 +141,7 @@ export async function POST(req: NextRequest) {
       message: 'تم الانضمام إلى الفريق بنجاح',
     })
   } catch (err) {
-    console.error('[team/invites/accept POST] failed:', err)
+    logger.error({ err }, '[team/invites/accept POST] failed')
     return internalError('فشل قبول الدعوة')
   }
 }

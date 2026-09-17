@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { checkInviteBinding, hashInviteToken, isInviteExpired } from '@/lib/team-invites'
 
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       eligible: true,
     })
   } catch (err) {
-    console.error('[team/invites/[token] GET] failed:', err)
+    logger.error({ err }, '[team/invites/[token] GET] failed')
     return internalError('فشل جلب الدعوة')
   }
 }

@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
@@ -50,12 +51,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team/invites] audit log failed:', err)
+      logger.warn({ err }, '[creator/team/invites] audit log failed')
     }
 
     return ok({ success: true, message: 'تم إلغاء الدعوة' })
   } catch (err) {
-    console.error('[creator/team/invites/revoke POST] failed:', err)
+    logger.error({ err }, '[creator/team/invites/revoke POST] failed')
     return internalError('فشل إلغاء الدعوة')
   }
 }

@@ -10,6 +10,7 @@ import {
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { can } from '@/lib/permissions'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { slugify } from '@/lib/utils'
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     return ok({ team, membershipCount, followsCount })
   } catch (err) {
-    console.error('[creator/team GET] failed:', err)
+    logger.error({ err }, '[creator/team GET] failed')
     return internalError('فشل جلب الفريق')
   }
 }
@@ -114,12 +115,12 @@ export async function POST(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team] audit log failed:', err)
+      logger.warn({ err }, '[creator/team] audit log failed')
     }
 
     return ok({ team, message: 'تم إنشاء الفريق بنجاح' }, { status: 201 })
   } catch (err) {
-    console.error('[creator/team POST] failed:', err)
+    logger.error({ err }, '[creator/team POST] failed')
     return internalError('فشل إنشاء الفريق')
   }
 }
@@ -177,12 +178,12 @@ export async function PATCH(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team] audit log failed:', err)
+      logger.warn({ err }, '[creator/team] audit log failed')
     }
 
     return ok({ team, message: 'تم حفظ إعدادات الفريق' })
   } catch (err) {
-    console.error('[creator/team PATCH] failed:', err)
+    logger.error({ err }, '[creator/team PATCH] failed')
     return internalError('فشل حفظ إعدادات الفريق')
   }
 }
