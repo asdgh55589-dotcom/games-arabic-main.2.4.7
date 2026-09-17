@@ -27,7 +27,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/official-ui/sidebar"
+} from "@/components/ui/sidebar"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 export function AppSidebar({

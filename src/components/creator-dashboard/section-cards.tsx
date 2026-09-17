@@ -3,14 +3,14 @@
 import * as React from "react"
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react"
 
-import { Badge } from "@/components/official-ui/badge"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/official-ui/card"
+} from "@/components/ui/card"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 interface Summary {

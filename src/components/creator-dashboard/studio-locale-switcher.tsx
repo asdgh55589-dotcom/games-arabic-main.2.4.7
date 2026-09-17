@@ -1,13 +1,13 @@
 'use client'
 
 import { LanguagesIcon } from 'lucide-react'
-import { Button } from '@/components/official-ui/button'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/official-ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 /** Opt-in AR/EN switch for the creator studio (Arabic default). */

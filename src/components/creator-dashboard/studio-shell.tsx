@@ -1,7 +1,7 @@
 'use client'
 
 import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
-import { SidebarInset, SidebarProvider } from '@/components/official-ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 /**
