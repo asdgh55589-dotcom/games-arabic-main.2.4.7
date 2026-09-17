@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
+import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { email: rawEmail },
-      select: { id: true, username: true, email: true, supabaseId: true },
+      select: { id: true, username: true, email: true, supabaseId: true, emailVerified: true },
     })
 
     // Eligible: real deliverable email + Supabase identity to reset.
@@ -50,6 +51,29 @@ export async function POST(req: NextRequest) {
       user && !isSyntheticTelegramEmail(user.email) && !!user.supabaseId
 
     if (eligible) {
+      // Verification gate: an address added via setup stays closed for
+      // recovery until the inbox is proven. Legacy rows (email-signup users
+      // with no verification history) keep working unchanged. Strangers get
+      // the generic ok (no oracle); the authenticated owner gets a clear
+      // verify-first message instead.
+      const everIssued = await db.emailVerificationToken
+        .count({ where: { userId: user.id } })
+        .catch(() => 0)
+      if (!user.emailVerified && everIssued > 0) {
+        const session = await getOptionalSession().catch(() => null)
+        if (session && session.id === user.id) {
+          return NextResponse.json(
+            {
+              error:
+                'بريدك الإلكتروني غير مؤكد — تحقق منه أولاً عبر الرابط المرسل إليك، أو أعد الإرسال من الإعدادات.',
+              code: 'EMAIL_UNVERIFIED',
+            },
+            { status: 403 },
+          )
+        }
+        return ok({ success: true })
+      }
+
       // Rotate: drop outstanding unused tokens so only the newest works.
       await db.passwordResetToken.deleteMany({
         where: { userId: user.id, usedAt: null },

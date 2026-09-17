@@ -1299,9 +1299,11 @@ export function SettingsPage() {
               <div className="space-y-6">
                 {/* P0-flexible: optional security setup (hidden once complete) */}
                 {user &&
-                  needsSecuritySetup({ hasPassword: user.hasPassword, email: user.email }) && (
-                    <SetupPasswordCard />
-                  )}
+                  needsSecuritySetup({
+                    hasPassword: user.hasPassword,
+                    email: user.email,
+                    emailVerified: user.emailVerified,
+                  }) && <SetupPasswordCard />}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
                   <p className="text-xs text-muted-foreground mb-6">

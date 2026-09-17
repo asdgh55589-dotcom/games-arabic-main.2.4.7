@@ -27,7 +27,15 @@ jest.mock('@/lib/auth', () => ({
 
 const mockDbUser = { findUnique: jest.fn(), update: jest.fn() }
 jest.mock('@/lib/db', () => ({
-  db: { user: mockDbUser },
+  db: {
+    user: mockDbUser,
+    emailVerificationToken: { create: jest.fn(), deleteMany: jest.fn() },
+  },
+}))
+
+jest.mock('@/lib/verification-email', () => ({
+  ...jest.requireActual('@/lib/verification-email'),
+  sendVerificationEmail: jest.fn(async () => true),
 }))
 
 const mockGetUser = jest.fn()

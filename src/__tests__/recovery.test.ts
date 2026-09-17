@@ -12,15 +12,18 @@ const mockTokenUpdate = jest.fn()
 const mockInvalidateSessions = jest.fn()
 const mockAdminUpdateUser = jest.fn()
 const mockSendResetEmail = jest.fn()
+const mockVerifyCount = jest.fn()
+const mockOptionalSession = jest.fn()
 
-jest.mock('@/lib/rate-limit', () => ({
-  rateLimit: (...args: unknown[]) => mockRateLimit(...args),
-  rateLimitHeaders: () => ({}),
+jest.mock('@/lib/auth', () => ({
+  invalidateUserSessions: (...args: unknown[]) => mockInvalidateSessions(...args),
+  getOptionalSession: (...args: unknown[]) => mockOptionalSession(...args),
 }))
 
 jest.mock('@/lib/db', () => ({
   db: {
     user: { findUnique: (...args: unknown[]) => mockFindUser(...args) },
+    emailVerificationToken: { count: (...args: unknown[]) => mockVerifyCount(...args) },
     passwordResetToken: {
       findUnique: (...args: unknown[]) => mockTokenFind(...args),
       create: (...args: unknown[]) => mockTokenCreate(...args),
@@ -67,6 +70,8 @@ describe('POST /api/auth/recover', () => {
     jest.clearAllMocks()
     mockRateLimit.mockResolvedValue({ success: true })
     mockSendResetEmail.mockResolvedValue(true)
+    mockVerifyCount.mockResolvedValue(0)
+    mockOptionalSession.mockResolvedValue(null)
   })
 
   it('returns generic ok for unknown emails without creating anything', async () => {

@@ -29,6 +29,7 @@ export async function GET() {
             id: true,
             username: true,
             email: true,
+            emailVerified: true,
             password: true,
             role: true,
             avatarUrl: true,
@@ -53,7 +54,11 @@ export async function GET() {
             user: {
               ...safeUser,
               hasPassword,
-              needsSecuritySetup: needsSecuritySetup({ hasPassword, email: safeUser.email }),
+              needsSecuritySetup: needsSecuritySetup({
+                hasPassword,
+                email: safeUser.email,
+                emailVerified: safeUser.emailVerified,
+              }),
             },
           })
         }
@@ -81,6 +86,7 @@ export async function GET() {
             onboardingCompleted: newUser.onboardingCompleted,
             hasPassword: false,
             needsSecuritySetup: true,
+            emailVerified: newUser.emailVerified,
           },
         })
       }
@@ -126,6 +132,7 @@ export async function GET() {
         id: true,
         username: true,
         email: true,
+        emailVerified: true,
         password: true,
         role: true,
         avatarUrl: true,
@@ -174,7 +181,9 @@ export async function GET() {
         needsSecuritySetup: needsSecuritySetup({
           hasPassword: !!user.password,
           email: user.email,
+          emailVerified: user.emailVerified,
         }),
+        emailVerified: user.emailVerified,
       },
     })
   } catch (err) {

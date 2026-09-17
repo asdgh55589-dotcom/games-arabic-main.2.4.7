@@ -39,6 +39,18 @@ describe('needsSecuritySetup helper', () => {
     expect(needsSecuritySetup({ hasPassword: true, email: 'g@mail.com' })).toBe(false)
   })
 
+  it('true when the real email is still unverified', () => {
+    expect(
+      needsSecuritySetup({ hasPassword: true, email: 'g@mail.com', emailVerified: false }),
+    ).toBe(true)
+  })
+
+  it('false once the real email is verified', () => {
+    expect(
+      needsSecuritySetup({ hasPassword: true, email: 'g@mail.com', emailVerified: true }),
+    ).toBe(false)
+  })
+
   it('fail-safe: unknown state prompts setup', () => {
     expect(needsSecuritySetup({})).toBe(true)
     expect(needsSecuritySetup({ hasPassword: undefined, email: undefined })).toBe(true)
@@ -86,6 +98,12 @@ describe('setup card contract (optional fields + warning)', () => {
 
   it('supports email-only mode (no password required when one exists)', () => {
     expect(CARD).toContain('hasPassword')
+  })
+
+  it('shows verification status with resend affordance', () => {
+    expect(CARD).toContain('غير مؤكد')
+    expect(CARD).toContain('/api/auth/verify-email/resend')
+    expect(CARD).toContain('تم إرسال رابط التحقق إلى بريدك الإلكتروني')
   })
 })
 

@@ -151,6 +151,7 @@ model User {
   acceptedRequests       ModRequest[]            @relation("AcceptedRequests")
   sessions               Session[]
   passwordResetTokens    PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   sentTeamInvitations    TeamInvitation[]      @relation("SentTeamInvitations")
   receivedTeamInvitations TeamInvitation[]
 
@@ -1645,6 +1646,25 @@ model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // SHA-256 hex of the raw token (raw token only ever emailed)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ipAddress String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ===== Email verification tokens (setup-added emails) — single-use, 24h expiry, hash at rest =====
+// Kept separate from PasswordResetToken so recovery rotation never cancels a
+// pending verification (and vice versa). A token is bound to the exact email
+// it was issued for; changing the address rotates (deletes) pending tokens.
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String // lowercase address this token verifies; must match user.email at consume time
   tokenHash String    @unique // SHA-256 hex of the raw token (raw token only ever emailed)
   expiresAt DateTime
   usedAt    DateTime?

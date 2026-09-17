@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import {
   fail,
@@ -14,6 +15,17 @@ import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { ProvisionError, provisionSupabasePassword } from '@/lib/password-setup'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { SetupPasswordSchema } from '@/lib/schemas'
+import {
+  VERIFICATION_TTL_MS,
+  buildVerifyLink,
+  sendVerificationEmail,
+} from '@/lib/verification-email'
+
+function getBaseUrl(req: NextRequest): string {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000'
+  const protocol = req.headers.get('x-forwarded-proto') || 'https'
+  return `${protocol}://${host}`
+}
 
 // POST /api/auth/setup-password — P0-flexible: optional security setup.
 // Self-only (the session user is the target — no userId parameter exists, so
@@ -107,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const data: { password?: string; supabaseId?: string; email?: string } = {}
+      const data: { password?: string; supabaseId?: string; email?: string; emailVerified?: boolean } = {}
 
       if (wantsPassword) {
         const provisioned = await provisionSupabasePassword({
@@ -127,12 +139,46 @@ export async function POST(req: NextRequest) {
         return validationFail({ email: 'لا يوجد ما يُحفظ' })
       }
 
+      // A freshly added address is unproven until the inbox owner clicks the
+      // verification link — recovery stays closed until then (see recover).
+      if (wantsEmail) data.emailVerified = false
+
       await db.user.update({ where: { id: neonUser.id }, data })
 
-      // Email verification limitation (documented): setup-added emails are NOT
-      // auto-verified here — provisioning uses email_confirm:true for
-      // determinism (same as onboarding PATCH). emailVerified is left
-      // untouched; a verification-mail step is a follow-up (see report).
+      // Issue the verification mail for the new address. A change of address
+      // rotates (deletes) any pending token first, so only the newest link
+      // works. Send failures do NOT fail the request — the settings UI offers
+      // resend (max 3/hour).
+      let verificationSent: boolean | undefined
+      if (wantsEmail) {
+        try {
+          await db.emailVerificationToken.deleteMany({
+            where: { userId: neonUser.id, usedAt: null },
+          })
+          const rawToken = randomBytes(32).toString('hex')
+          const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+          await db.emailVerificationToken.create({
+            data: {
+              userId: neonUser.id,
+              email: effectiveEmail,
+              tokenHash,
+              expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+              ipAddress:
+                req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                req.headers.get('x-real-ip') ||
+                null,
+            },
+          })
+          verificationSent = await sendVerificationEmail(
+            effectiveEmail,
+            buildVerifyLink(getBaseUrl(req), rawToken),
+          )
+        } catch (e) {
+          logger.warn({ err: e }, '[setup-password] verification issue failed')
+          verificationSent = false
+        }
+      }
+
       try {
         await logAction({
           userId: neonUser.id,
@@ -146,7 +192,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Deliberately no tokenVersion bump: OAuth sessions stay valid.
-      return ok({ success: true })
+      return ok({
+        success: true,
+        ...(wantsEmail ? { verificationSent: !!verificationSent, needsVerification: true } : {}),
+      })
     } catch (err) {
       if (err instanceof ProvisionError) {
         if (err.code === 'HAS_PASSWORD') {
