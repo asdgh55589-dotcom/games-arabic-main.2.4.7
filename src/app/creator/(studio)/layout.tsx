@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
 import { StudioShell } from '@/components/creator-dashboard/studio-shell'
-import { SidebarInset, SidebarProvider } from '@/components/official-ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { getBanInfo, getSession } from '@/lib/auth'
 import { StudioLanguageProvider } from '@/lib/studio-i18n/context'
 

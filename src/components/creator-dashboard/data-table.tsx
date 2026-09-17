@@ -57,9 +57,9 @@ import { z } from "zod"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 import type { StudioDict } from "@/lib/studio-i18n/types"
-import { Badge } from "@/components/official-ui/badge"
-import { Button } from "@/components/official-ui/button"
-import { Checkbox } from "@/components/official-ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -67,15 +67,15 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/official-ui/dropdown-menu"
-import { Label } from "@/components/official-ui/label"
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/official-ui/select"
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetClose,
@@ -85,7 +85,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/official-ui/sheet"
+} from "@/components/ui/sheet"
 import {
   Table,
   TableBody,
@@ -93,13 +93,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/official-ui/table"
+} from "@/components/ui/table"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/official-ui/tabs"
+} from "@/components/ui/tabs"
 
 export const schema = z.object({
   id: z.number(),

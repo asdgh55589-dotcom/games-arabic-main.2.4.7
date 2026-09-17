@@ -1,7 +1,7 @@
 'use client'
 
-import { Separator } from "@/components/official-ui/separator"
-import { SidebarTrigger } from "@/components/official-ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 import { StudioLocaleSwitcher } from "@/components/creator-dashboard/studio-locale-switcher"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
