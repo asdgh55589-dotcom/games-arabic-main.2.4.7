@@ -68,3 +68,51 @@ export const InviteTokenSchema = z
 
 export type InviteCreateInput = z.infer<typeof InviteCreateSchema>
 export type InviteTokenInput = z.infer<typeof InviteTokenSchema>
+
+// Phase 5 — mod link/unlink (own mods only; teamId derived server-side).
+export const ModLinkSchema = z
+  .object({
+    modId: z.string().min(1, 'modId مطلوب'),
+  })
+  .strict()
+
+export type ModLinkInput = z.infer<typeof ModLinkSchema>
+
+// Phase 5 — contact links (max 10 per team, enforced server-side).
+export const CONTACT_LINK_TYPES = ['mail', 'website', 'telegram', 'twitter', 'youtube'] as const
+
+export const ContactLinkCreateSchema = z
+  .object({
+    type: z.enum(CONTACT_LINK_TYPES),
+    url: z.string().trim().min(1, 'الرابط مطلوب').max(500, 'الرابط طويل جداً'),
+    label: z.string().trim().max(100, 'الحد الأقصى 100 حرف').optional().default(''),
+  })
+  .strict()
+
+export const ContactLinkUpdateSchema = ContactLinkCreateSchema.partial().strict()
+
+export type ContactLinkCreateInput = z.infer<typeof ContactLinkCreateSchema>
+export type ContactLinkUpdateInput = z.infer<typeof ContactLinkUpdateSchema>
+
+// Phase 5 — custom tabs (max 3 per team, enforced server-side).
+export const CustomTabCreateSchema = z
+  .object({
+    title: z.string().trim().min(1, 'العنوان مطلوب').max(100, 'الحد الأقصى 100 حرف'),
+    content: z.string().max(10000, 'المحتوى طويل جداً').optional().default(''),
+    visible: z.boolean().optional().default(true),
+  })
+  .strict()
+
+export const CustomTabUpdateSchema = CustomTabCreateSchema.partial().strict()
+
+export type CustomTabCreateInput = z.infer<typeof CustomTabCreateSchema>
+export type CustomTabUpdateInput = z.infer<typeof CustomTabUpdateSchema>
+
+// Phase 5 — ownership transfer (reuses TeamInvitation with role 'owner').
+export const TransferNominateSchema = z
+  .object({
+    memberId: z.string().min(1, 'memberId مطلوب'),
+  })
+  .strict()
+
+export type TransferNominateInput = z.infer<typeof TransferNominateSchema>

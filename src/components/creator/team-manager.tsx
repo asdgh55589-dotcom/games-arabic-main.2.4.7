@@ -8,7 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/official-
 import { EmptyState } from '@/components/ui/empty-state'
 import { CreateTeamForm } from '@/components/creator/create-team-form'
 import { TeamActivity } from '@/components/creator/team-activity'
+import { TeamContacts } from '@/components/creator/team-contacts'
+import { TeamCustomTabs } from '@/components/creator/team-custom-tabs'
 import { TeamInvites } from '@/components/creator/team-invites'
+import { TeamMods } from '@/components/creator/team-mods'
+import { TeamStats } from '@/components/creator/team-stats'
 import { TeamMembersTable, type TeamMemberRow } from '@/components/creator/team-members-table'
 import { TeamSettingsForm } from '@/components/creator/team-settings-form'
 
@@ -28,6 +32,7 @@ export function TeamManager() {
   const [team, setTeam] = useState<CreatorTeam | null>(null)
   const [members, setMembers] = useState<TeamMemberRow[]>([])
   const [membershipCount, setMembershipCount] = useState(0)
+  const [followsCount, setFollowsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [membersLoading, setMembersLoading] = useState(false)
   const [notFound, setNotFound] = useState(false)
@@ -42,6 +47,7 @@ export function TeamManager() {
       if (res.ok) {
         setTeam(json.data?.team ?? null)
         setMembershipCount(json.data?.membershipCount ?? 0)
+        setFollowsCount(json.data?.followsCount ?? 0)
         setNotFound(false)
       } else if (res.status === 404) {
         setTeam(null)
@@ -114,8 +120,10 @@ export function TeamManager() {
 
   return (
     <Tabs defaultValue="overview" className="space-y-4">
-      <TabsList>
+      <TabsList className="flex-wrap">
         <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+        <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
+        <TabsTrigger value="mods">المودات</TabsTrigger>
         <TabsTrigger value="members">الأعضاء ({membershipCount})</TabsTrigger>
         <TabsTrigger value="invites">الدعوات</TabsTrigger>
         <TabsTrigger value="activity">النشاط</TabsTrigger>
@@ -129,15 +137,33 @@ export function TeamManager() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p className="text-muted-foreground">{team.description || 'لا يوجد وصف بعد'}</p>
-            <p>
-              الأعضاء: <span className="font-medium">{membershipCount}</span> · التعريبات:{' '}
-              <span className="font-medium">{team.modCount}</span>
-            </p>
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-xl font-bold">{membershipCount}</p>
+                <p className="text-xs text-muted-foreground">الأعضاء</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-xl font-bold">{team.modCount}</p>
+                <p className="text-xs text-muted-foreground">التعريبات</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-xl font-bold">{followsCount}</p>
+                <p className="text-xs text-muted-foreground">المتابعون</p>
+              </div>
+            </div>
             <Link href={`/teams/${team.slug}`} className="text-primary hover:underline">
               عرض الصفحة العامة للفريق
             </Link>
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="stats">
+        <TeamStats />
+      </TabsContent>
+
+      <TabsContent value="mods">
+        <TeamMods />
       </TabsContent>
 
       <TabsContent value="members">
@@ -160,17 +186,21 @@ export function TeamManager() {
       </TabsContent>
 
       <TabsContent value="settings">
-        <TeamSettingsForm
-          initial={{
-            name: team.name,
-            description: team.description,
-            logoUrl: team.logoUrl,
-            bannerUrl: team.bannerUrl,
-            websiteUrl: team.websiteUrl,
-            telegramUrl: team.telegramUrl,
-          }}
-          onSaved={fetchTeam}
-        />
+        <div className="space-y-4">
+          <TeamSettingsForm
+            initial={{
+              name: team.name,
+              description: team.description,
+              logoUrl: team.logoUrl,
+              bannerUrl: team.bannerUrl,
+              websiteUrl: team.websiteUrl,
+              telegramUrl: team.telegramUrl,
+            }}
+            onSaved={fetchTeam}
+          />
+          <TeamContacts />
+          <TeamCustomTabs />
+        </div>
       </TabsContent>
     </Tabs>
   )
