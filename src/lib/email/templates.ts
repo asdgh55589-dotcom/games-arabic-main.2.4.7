@@ -125,3 +125,64 @@ export function renderEmailTemplate(
 ): { subject: string; html: string; text: string } | null {
   return null
 }
+
+// ===== Email verification — VERBATIM copy from verification-email.ts =====
+// (subject + html previously inline in sendVerificationEmail's fallback;
+//  text is the additive plain-text rendering of the same copy.)
+
+export function buildVerificationEmail(verifyLink: string): BuiltEmail {
+  const subject = 'تأكيد بريدك الإلكتروني — GAMES ARABIC'
+  const html = `
+        <div dir="rtl" lang="ar" style="font-family: Arial, sans-serif;">
+          <h2>تأكيد بريدك الإلكتروني</h2>
+          <p>أضفت هذا البريد إلى حسابك. الرابط صالح لمدة ٢٤ ساعة ولاستخدام واحد فقط.</p>
+          <p><a href="${verifyLink}">اضغط هنا لتأكيد بريدك الإلكتروني</a></p>
+          <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة.</p>
+        </div>`
+  const text = [
+    'تأكيد بريدك الإلكتروني',
+    'أضفت هذا البريد إلى حسابك. الرابط صالح لمدة ٢٤ ساعة ولاستخدام واحد فقط.',
+    `اضغط هنا لتأكيد بريدك الإلكتروني: ${verifyLink}`,
+    'إذا لم تطلب ذلك، تجاهل هذه الرسالة.',
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ===== Team invite — VERBATIM copy from invites/route.ts =====
+
+export function buildInviteEmail(vars: {
+  inviterUsername: string
+  teamName: string
+  acceptUrl: string
+}): BuiltEmail {
+  const subject = `دعوة للانضمام إلى فريق "${vars.teamName}"`
+  const html = `<p>مرحباً،</p><p>دعاك ${vars.inviterUsername} للانضمام إلى فريق "${vars.teamName}".</p><p><a href="${vars.acceptUrl}">قبول الدعوة</a> (صالحة لمدة 7 أيام)</p>`
+  const text = [
+    subject,
+    `دعاك ${vars.inviterUsername} للانضمام إلى فريق "${vars.teamName}".`,
+    `قبول الدعوة: ${vars.acceptUrl} (صالحة لمدة 7 أيام)`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ===== Ownership transfer nomination — VERBATIM copy from transfer/nominate/route.ts =====
+
+export function buildTransferEmail(vars: {
+  nomineeUsername: string
+  nominatorUsername: string
+  teamName: string
+  transferLink: string
+}): BuiltEmail {
+  const subject = `ترشيح لملكية فريق "${vars.teamName}"`
+  const html = `<p>مرحباً ${vars.nomineeUsername}،</p><p>رشحك ${vars.nominatorUsername} لتصبح مالك فريق "${vars.teamName}".</p><p><a href="${vars.transferLink}">مراجعة الترشيح</a> (صالح لمدة 7 أيام)</p>`
+  const text = [
+    subject,
+    `مرحباً ${vars.nomineeUsername}،`,
+    `رشحك ${vars.nominatorUsername} لتصبح مالك فريق "${vars.teamName}".`,
+    `مراجعة الترشيح: ${vars.transferLink} (صالح لمدة 7 أيام)`,
+  ].join('\n')
+
+  return { subject, html, text }
+}

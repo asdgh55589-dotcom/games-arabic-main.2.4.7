@@ -1,5 +1,5 @@
 import { emailFrom } from '@/lib/email/from'
-import { emitloProvider } from '@/lib/email/emitlo'
+import { emailProvider } from '@/lib/email'
 
 // ===== Creator Program Approval Email =====
 
@@ -48,7 +48,7 @@ export async function sendCreatorApprovalEmail(
     )
 
   try {
-    const result = await emitloProvider.send({
+    const result = await emailProvider.send({
       from: emailFrom(),
       to: [to],
       subject,

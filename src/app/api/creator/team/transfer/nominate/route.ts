@@ -109,13 +109,20 @@ export async function POST(req: NextRequest) {
 
     if (member.user.email) {
       try {
-        const { emitloProvider } = await import('@/lib/email/emitlo')
+        const { emailProvider } = await import('@/lib/email')
         const { emailFrom } = await import('@/lib/email/from')
-        await emitloProvider.send({
+        const { buildTransferEmail } = await import('@/lib/email/templates')
+        const built = buildTransferEmail({
+          nomineeUsername: member.user.username,
+          nominatorUsername: user.username,
+          teamName: owned.name,
+          transferLink: `${buildInviteAcceptUrl(token)}?transfer=1`,
+        })
+        await emailProvider.send({
           from: emailFrom(),
           to: [member.user.email],
-          subject: `ترشيح لملكية فريق "${owned.name}"`,
-          html: `<p>مرحباً ${member.user.username}،</p><p>رشحك ${user.username} لتصبح مالك فريق "${owned.name}".</p><p><a href="${buildInviteAcceptUrl(token)}?transfer=1">مراجعة الترشيح</a> (صالح لمدة 7 أيام)</p>`,
+          subject: built.subject,
+          html: built.html,
         })
       } catch (err) {
         logger.warn({ err }, '[creator/team/transfer] email failed')
