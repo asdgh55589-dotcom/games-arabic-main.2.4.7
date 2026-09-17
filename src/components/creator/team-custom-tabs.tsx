@@ -106,7 +106,7 @@ export function TeamCustomTabs() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm">
       <CardHeader>
         <CardTitle className="text-base">التبويبات المخصصة ({tabs.length}/{MAX_TABS})</CardTitle>
       </CardHeader>
@@ -117,7 +117,7 @@ export function TeamCustomTabs() {
           <div className="space-y-2">
             {tabs.length === 0 && <p className="text-sm text-muted-foreground">لا توجد تبويبات مخصصة بعد</p>}
             {tabs.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 rounded-lg border p-2">
+              <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border/60 p-2 transition-colors hover:bg-muted/40">
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.title}</span>
                 <span className="text-xs text-muted-foreground">{t.visible ? 'ظاهر' : 'مخفي'}</span>
                 <Button variant="outline" size="sm" disabled={busyId === t.id} onClick={() => toggleVisible(t)}>

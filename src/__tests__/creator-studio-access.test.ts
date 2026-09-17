@@ -59,16 +59,24 @@ describe('Studio guards admit owner/management (not only creator/publisher)', ()
 });
 
 describe('Navbar exposes /creator to management', () => {
-  it('every /creator link is gated with a condition mentioning owner/admin', () => {
+  it('every literal /creator link is gated with a condition mentioning owner/admin', () => {
     const code = src('src/components/navbar.tsx');
     const href = 'href="/creator"';
     let idx = code.indexOf(href);
-    expect(idx).toBeGreaterThan(-1);
+    // Zero literals is fine when links go through dashboardPathForRole (next test).
     while (idx !== -1) {
       const windowBefore = code.slice(Math.max(0, idx - 500), idx);
       expect(windowBefore).toMatch(/owner/);
       idx = code.indexOf(href, idx + href.length);
     }
+  });
+
+  it('role-based dashboard links go through dashboardPathForRole', () => {
+    const code = src('src/components/navbar.tsx');
+    expect(code).toMatch(/dashboardPathForRole/);
+    // Both desktop and mobile menus render only when a dashboard path exists.
+    const gated = code.match(/dashboardPathForRole\(currentUser\.role\) &&/g) || [];
+    expect(gated.length).toBeGreaterThanOrEqual(2);
   });
 });
 

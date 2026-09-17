@@ -89,10 +89,10 @@ export function TeamInvites() {
       ) : invites.length === 0 ? (
         <EmptyState icon="inbox" title="لا توجد دعوات" description="أنشئ دعوة من النموذج أعلاه" />
       ) : (
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardContent className="divide-y p-0">
             {invites.map((inv) => (
-              <div key={inv.id} className="flex flex-wrap items-center gap-3 p-3">
+              <div key={inv.id} className="flex flex-wrap items-center gap-3 p-3 transition-colors hover:bg-muted/40">
                 <div className="min-w-0 flex-1 basis-40">
                   <p className="truncate text-sm font-medium" dir="ltr">
                     {inv.inviteeUsername ? `@${inv.inviteeUsername}` : inv.inviteeEmailMasked}

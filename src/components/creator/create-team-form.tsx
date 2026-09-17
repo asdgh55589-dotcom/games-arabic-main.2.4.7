@@ -56,7 +56,7 @@ export function CreateTeamForm({ onCreated }: CreateTeamFormProps) {
   }
 
   return (
-    <Card className="max-w-2xl">
+    <Card className="max-w-2xl border-border/60 shadow-sm">
       <CardHeader>
         <CardTitle>أنشئ فريقك الأول</CardTitle>
       </CardHeader>

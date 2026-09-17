@@ -34,7 +34,7 @@ export default async function CreatorStatsPage() {
           <BarChart3 className="h-6 w-6 text-primary" />
           {dict.statsPage.title}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">{dict.statsPage.subtitle}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.statsPage.subtitle}</p>
       </div>
       <StatsClient />
     </div>

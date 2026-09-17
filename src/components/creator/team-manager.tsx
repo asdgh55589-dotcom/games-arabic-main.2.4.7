@@ -119,7 +119,7 @@ export function TeamManager() {
   }
 
   return (
-    <Tabs defaultValue="overview" className="space-y-4">
+    <Tabs defaultValue="overview" className="space-y-6">
       <TabsList className="flex-wrap">
         <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
         <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
@@ -135,20 +135,20 @@ export function TeamManager() {
           <CardHeader>
             <CardTitle>{team.name}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p className="text-muted-foreground">{team.description || 'لا يوجد وصف بعد'}</p>
+          <CardContent className="space-y-3 text-sm">
+            <p className="leading-relaxed text-muted-foreground">{team.description || 'لا يوجد وصف بعد'}</p>
             <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-xl font-bold">{membershipCount}</p>
-                <p className="text-xs text-muted-foreground">الأعضاء</p>
+              <div className="rounded-lg border border-border/60 bg-muted/50 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold">{membershipCount}</p>
+                <p className="mt-1 text-xs text-muted-foreground">الأعضاء</p>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-xl font-bold">{team.modCount}</p>
-                <p className="text-xs text-muted-foreground">التعريبات</p>
+              <div className="rounded-lg border border-border/60 bg-muted/50 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold">{team.modCount}</p>
+                <p className="mt-1 text-xs text-muted-foreground">التعريبات</p>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="text-xl font-bold">{followsCount}</p>
-                <p className="text-xs text-muted-foreground">المتابعون</p>
+              <div className="rounded-lg border border-border/60 bg-muted/50 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold">{followsCount}</p>
+                <p className="mt-1 text-xs text-muted-foreground">المتابعون</p>
               </div>
             </div>
             <Link href={`/teams/${team.slug}`} className="text-primary hover:underline">

@@ -101,7 +101,7 @@ export function TeamContacts() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm">
       <CardHeader>
         <CardTitle className="text-base">روابط التواصل ({links.length}/{MAX_LINKS})</CardTitle>
       </CardHeader>
@@ -112,7 +112,7 @@ export function TeamContacts() {
           <div className="space-y-2">
             {links.length === 0 && <p className="text-sm text-muted-foreground">لا توجد روابط بعد</p>}
             {links.map((l) => (
-              <div key={l.id} className="flex items-center gap-2">
+              <div key={l.id} className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-muted/40">
                 <span className="w-20 shrink-0 text-xs text-muted-foreground">
                   {TYPES.find((t) => t.value === l.type)?.label ?? l.type}
                 </span>

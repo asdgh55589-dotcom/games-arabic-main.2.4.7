@@ -142,7 +142,7 @@ export function TeamMods() {
         />
       </div>
 
-      <Card>
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">تعريبات الفريق ({mods.length})</CardTitle>
         </CardHeader>
@@ -160,7 +160,7 @@ export function TeamMods() {
             </div>
           )}
           {mods.map((m) => (
-            <div key={m.id} className="flex flex-wrap items-center gap-3 p-3">
+            <div key={m.id} className="flex flex-wrap items-center gap-3 p-3 transition-colors hover:bg-muted/40">
               <div className="min-w-0 flex-1 basis-40">
                 <Link href={`/mod/${m.slug}`} className="truncate text-sm font-medium text-primary hover:underline">
                   {m.name}
@@ -190,7 +190,7 @@ export function TeamMods() {
         </div>
       )}
 
-      <Card>
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">اربط تعريباً من تعريباتك</CardTitle>
         </CardHeader>
@@ -199,7 +199,7 @@ export function TeamMods() {
             <p className="p-3 text-sm text-muted-foreground">جميع تعريباتك مرتبطة بفرق بالفعل</p>
           )}
           {available.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 p-3">
+            <div key={m.id} className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
               <span className="min-w-0 flex-1 truncate text-sm">{m.name}</span>
               <Button size="sm" disabled={actionId === m.id} onClick={() => link(m.id)}>
                 {actionId === m.id ? '...' : 'ربط'}

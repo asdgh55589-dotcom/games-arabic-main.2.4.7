@@ -113,20 +113,20 @@ export function TeamStats() {
   ]
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {cards.map((c) => (
-          <Card key={c.label}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{c.label}</p>
-              <p className="mt-1 text-2xl font-bold">{c.value}</p>
+          <Card key={c.label} className="border-border/60 shadow-sm">
+            <CardContent className="p-4 md:p-5">
+              <p className="text-xs text-muted-foreground md:text-sm">{c.label}</p>
+              <p className="mt-1 text-2xl font-bold md:text-3xl">{c.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">التعريبات حسب الحالة</CardTitle>
           </CardHeader>
@@ -143,7 +143,7 @@ export function TeamStats() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">الأعلى تقييماً</CardTitle>
           </CardHeader>
@@ -158,7 +158,7 @@ export function TeamStats() {
       </div>
 
       {data.lowestMods.length > 0 && (
-        <Card>
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">يحتاج تحسيناً</CardTitle>
           </CardHeader>
