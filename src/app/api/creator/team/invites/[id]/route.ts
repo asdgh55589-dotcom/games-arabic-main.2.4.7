@@ -7,10 +7,12 @@ import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { checkInviteBinding, hashInviteToken, isInviteExpired } from '@/lib/team-invites'
 
 interface RouteParams {
-  params: Promise<{ token: string }>
+  // Segment is named `id` (Next.js requires one slug name per level);
+  // the value it carries is the raw invite token.
+  params: Promise<{ id: string }>
 }
 
-// GET /api/creator/team/invites/[token] — invite metadata for the accept page.
+// GET /api/creator/team/invites/[id] — invite metadata for the accept page.
 // Any authenticated user (invitees may hold the plain member role).
 // Never returns token material, hashes, or full emails.
 export async function GET(req: NextRequest, { params }: RouteParams) {
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   if (limited) return limited
 
   try {
-    const { token } = await params
+    const { id: token } = await params
     if (!token || token.length < 20 || token.length > 100) {
       return notFound('الدعوة غير صالحة أو منتهية')
     }
@@ -91,7 +93,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       eligible: true,
     })
   } catch (err) {
-    logger.error({ err }, '[team/invites/[token] GET] failed')
+    logger.error({ err }, '[team/invites/[id] GET] failed')
     return internalError('فشل جلب الدعوة')
   }
 }

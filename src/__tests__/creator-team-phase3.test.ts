@@ -5,7 +5,7 @@
 import { NextRequest } from 'next/server'
 import { GET as LIST_INVITES, POST as CREATE_INVITE } from '@/app/api/creator/team/invites/route'
 import { POST as REVOKE_INVITE } from '@/app/api/creator/team/invites/[id]/revoke/route'
-import { GET as INVITE_META } from '@/app/api/creator/team/invites/[token]/route'
+import { GET as INVITE_META } from '@/app/api/creator/team/invites/[id]/route'
 import { POST as ACCEPT_INVITE } from '@/app/api/creator/team/invites/accept/route'
 import { POST as DECLINE_INVITE } from '@/app/api/creator/team/invites/decline/route'
 
@@ -104,7 +104,7 @@ function req(method: string, body?: unknown, url = 'http://localhost/x'): NextRe
   })
 }
 const idParams = (id: string) => ({ params: Promise.resolve({ id }) })
-const tokenParams = (token: string) => ({ params: Promise.resolve({ token }) })
+const tokenParams = (token: string) => ({ params: Promise.resolve({ id: token }) })
 
 beforeEach(() => {
   jest.clearAllMocks()
