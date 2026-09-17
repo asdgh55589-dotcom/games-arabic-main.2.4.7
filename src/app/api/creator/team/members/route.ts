@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok, okPaginated, validationFail } f
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
 import { UpdateMemberRoleSchema } from '@/lib/validation/team'
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[creator/team/members GET] failed:', err)
+    logger.error({ err }, '[creator/team/members GET] failed')
     return internalError('فشل جلب أعضاء الفريق')
   }
 }
@@ -116,7 +117,7 @@ export async function PATCH(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team/members] audit log failed:', err)
+      logger.warn({ err }, '[creator/team/members] audit log failed')
     }
 
     if (member.userId) {
@@ -132,13 +133,13 @@ export async function PATCH(req: NextRequest) {
           },
         })
       } catch (err) {
-        console.error('[creator/team/members] notify failed:', err)
+        logger.warn({ err }, '[creator/team/members] notify failed')
       }
     }
 
     return ok({ member: updated, message: 'تم تحديث دور العضو' })
   } catch (err) {
-    console.error('[creator/team/members PATCH] failed:', err)
+    logger.error({ err }, '[creator/team/members PATCH] failed')
     return internalError('فشل تحديث دور العضو')
   }
 }
@@ -193,7 +194,7 @@ export async function DELETE(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team/members] audit log failed:', err)
+      logger.warn({ err }, '[creator/team/members] audit log failed')
     }
 
     if (member.userId) {
@@ -209,13 +210,13 @@ export async function DELETE(req: NextRequest) {
           },
         })
       } catch (err) {
-        console.error('[creator/team/members] notify failed:', err)
+        logger.warn({ err }, '[creator/team/members] notify failed')
       }
     }
 
     return ok({ success: true, message: 'تمت إزالة العضو' })
   } catch (err) {
-    console.error('[creator/team/members DELETE] failed:', err)
+    logger.error({ err }, '[creator/team/members DELETE] failed')
     return internalError('فشل إزالة العضو')
   }
 }

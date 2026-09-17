@@ -11,6 +11,7 @@ import {
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
 import {
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[creator/team/invites GET] failed:', err)
+    logger.error({ err }, '[creator/team/invites GET] failed')
     return internalError('فشل جلب الدعوات')
   }
 }
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
         request: req,
       })
     } catch (err) {
-      console.error('[creator/team/invites] audit log failed:', err)
+      logger.warn({ err }, '[creator/team/invites] audit log failed')
     }
 
     // Fail-open side effects: in-app notification + email (never block the 201).
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
           },
         })
       } catch (err) {
-        console.error('[creator/team/invites] notify failed:', err)
+        logger.warn({ err }, '[creator/team/invites] notify failed')
       }
     }
     if (inviteeEmail) {
@@ -231,7 +232,7 @@ export async function POST(req: NextRequest) {
           html: `<p>مرحباً،</p><p>دعاك ${user.username} للانضمام إلى فريق "${owned.name}".</p><p><a href="${acceptUrl}">قبول الدعوة</a> (صالحة لمدة 7 أيام)</p>`,
         })
       } catch (err) {
-        console.error('[creator/team/invites] email failed:', err)
+        logger.warn({ err }, '[creator/team/invites] email failed')
       }
     }
 
@@ -240,7 +241,7 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (err) {
-    console.error('[creator/team/invites POST] failed:', err)
+    logger.error({ err }, '[creator/team/invites POST] failed')
     return internalError('فشل إنشاء الدعوة')
   }
 }
