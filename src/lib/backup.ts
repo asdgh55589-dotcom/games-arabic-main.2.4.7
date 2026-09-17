@@ -71,7 +71,7 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
   const filepath = join(BACKUP_DIR, filename)
 
   // Ensure backup directory exists
-  if (!existsSync(BACKUP_DIR)) {
+  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) {
     mkdirSync(BACKUP_DIR, { recursive: true })
   }
 
@@ -296,14 +296,14 @@ async function createJsonBackup(filepath: string): Promise<void> {
  * تنظيف النسخ القديمة حسب سياسة الاحتفاظ
  */
 export async function cleanupOldBackups(): Promise<number> {
-  if (!existsSync(BACKUP_DIR)) return 0
+  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) return 0
 
-  const files = readdirSync(BACKUP_DIR)
+  const files = readdirSync(/*turbopackIgnore: true*/ BACKUP_DIR)
     .filter((f) => f.startsWith('db-backup-'))
     .map((f) => ({
       name: f,
-      path: join(BACKUP_DIR, f),
-      time: statSync(join(BACKUP_DIR, f)).mtime,
+      path: join(/*turbopackIgnore: true*/ BACKUP_DIR, f),
+      time: statSync(join(/*turbopackIgnore: true*/ BACKUP_DIR, f)).mtime,
     }))
     .sort((a, b) => b.time.getTime() - a.time.getTime())
 
@@ -354,12 +354,12 @@ function detectBackupStatus(filepath: string): 'completed' | 'partial' {
 }
 
 export function listBackups(): BackupInfo[] {
-  if (!existsSync(BACKUP_DIR)) return []
+  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) return []
 
-  return readdirSync(BACKUP_DIR)
+  return readdirSync(/*turbopackIgnore: true*/ BACKUP_DIR)
     .filter((f) => f.startsWith('db-backup-'))
     .map((f) => {
-      const stat = statSync(join(BACKUP_DIR, f))
+      const stat = statSync(join(/*turbopackIgnore: true*/ BACKUP_DIR, f))
       return {
         id: f.replace('db-backup-', '').replace('.sql.gz', ''),
         filename: f,
@@ -368,7 +368,7 @@ export function listBackups(): BackupInfo[] {
         // pg_dump and JSON-fallback share the .sql.gz name: peek inside.
         // JSON fallback payloads carry "partial":true; anything else (or
         // any read failure on legacy files) stays 'completed'.
-        status: detectBackupStatus(join(BACKUP_DIR, f)),
+        status: detectBackupStatus(join(/*turbopackIgnore: true*/ BACKUP_DIR, f)),
         createdAt: stat.mtime,
       }
     })
@@ -379,8 +379,8 @@ export function listBackups(): BackupInfo[] {
  * حذف نسخة احتياطية
  */
 export function deleteBackup(filename: string): boolean {
-  const filepath = join(BACKUP_DIR, filename)
-  if (!existsSync(filepath)) return false
+  const filepath = join(/*turbopackIgnore: true*/ BACKUP_DIR, filename)
+  if (!existsSync(/*turbopackIgnore: true*/ filepath)) return false
 
   try {
     const { unlinkSync } = require('fs')
@@ -395,9 +395,9 @@ export function deleteBackup(filename: string): boolean {
  * حجم النسخ الاحتياطية الكلي
  */
 export function getTotalBackupSize(): number {
-  if (!existsSync(BACKUP_DIR)) return 0
+  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) return 0
 
-  return readdirSync(BACKUP_DIR)
+  return readdirSync(/*turbopackIgnore: true*/ BACKUP_DIR)
     .filter((f) => f.startsWith('db-backup-'))
-    .reduce((total, f) => total + statSync(join(BACKUP_DIR, f)).size, 0)
+    .reduce((total, f) => total + statSync(join(/*turbopackIgnore: true*/ BACKUP_DIR, f)).size, 0)
 }

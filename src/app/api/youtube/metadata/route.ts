@@ -98,7 +98,7 @@ function runYtDlp(youtubeUrl: string, timeoutMs = 25_000): Promise<any> {
       youtubeUrl,
     ]
 
-    const child = spawn(YT_DLP_BIN, args, { windowsHide: true })
+    const child = spawn(/*turbopackIgnore: true*/ YT_DLP_BIN, args, { windowsHide: true })
 
     let stdout = ''
     let stderr = ''
