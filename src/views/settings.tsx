@@ -791,7 +791,7 @@ export function SettingsPage() {
         }),
       })
       if (res.ok) {
-        toast({ title: 'تم تغيير كلمة المرور بنجاح' })
+        toast({ title: '✅ تم تغيير كلمة المرور بنجاح' })
         passwordForm.reset()
       } else {
         const data = await res.json()
@@ -799,7 +799,9 @@ export function SettingsPage() {
         if (msg.includes('Current password') || msg.includes('غير صحيحة')) {
           passwordForm.setError('currentPassword', { message: 'كلمة المرور الحالية غير صحيحة' })
         } else {
-          passwordForm.setError('root', { message: msg || 'فشل التغيير' })
+          passwordForm.setError('root', {
+            message: msg || '⚠️ تعذر تغيير كلمة المرور — تحقق من كلمة المرور الحالية وحاول مجددًا',
+          })
         }
       }
     } catch {
@@ -1305,7 +1307,15 @@ export function SettingsPage() {
                     emailVerified: user.emailVerified,
                   }) && <SetupPasswordCard />}
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
-                  <h3 className="mb-2 text-sm font-bold">تغيير كلمة المرور</h3>
+                  <h3 className="mb-2 text-sm font-bold">
+                    {user?.hasPassword ? 'تغيير كلمة المرور' : 'كلمة المرور'}
+                  </h3>
+                  {!user?.hasPassword ? (
+                    <p className="text-xs text-muted-foreground">
+                      لم يتم تعيين كلمة مرور بعد — قم بتعيينها من قسم تأمين الحساب أعلاه.
+                    </p>
+                  ) : (
+                  <>
                   <p className="text-xs text-muted-foreground mb-6">
                     تأكد من استخدام كلمة مرور قوية (٨ أحرف على الأقل)
                   </p>
@@ -1395,6 +1405,8 @@ export function SettingsPage() {
                       </Button>
                     </form>
                   </Form>
+                  </>
+                  )}
                 </div>
                 <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
                   <h3 className="mb-2 text-sm font-bold">الحسابات المرتبطة</h3>
