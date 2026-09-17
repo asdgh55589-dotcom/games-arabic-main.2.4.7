@@ -13,6 +13,7 @@ export const en: StudioDict = {
   nav: {
     dashboard: 'Dashboard',
     myMods: 'My Mods',
+    files: 'My Files',
     myTeam: 'My Team',
     stats: 'Statistics',
     requests: 'Mod Requests',
@@ -336,8 +337,8 @@ export const en: StudioDict = {
     tags: 'Tags',
     tagsHint: 'Separate with commas',
     modType: 'Mod type',
-    modTypeHint: 'Any type: official, unofficial, UI, weapons, etc.',
-    modTypePlaceholder: 'Example: official mod - UI and templates',
+    modTypeHint: 'Choose the translation type: official or unofficial',
+    modTypePlaceholder: 'Select type',
     modSource: 'Mod source',
     externalYes: 'This mod is from an external source (publishers only publish from external sources)',
     ownYes: 'This is my own translation',

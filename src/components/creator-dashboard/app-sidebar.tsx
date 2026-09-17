@@ -41,6 +41,7 @@ export function AppSidebar({
   const navMain = [
     { title: dict.nav.dashboard, url: "/creator", icon: LayoutDashboardIcon },
     { title: dict.nav.myMods, url: "/creator/mods", icon: ListIcon },
+    { title: dict.nav.files, url: "/creator/files", icon: FolderIcon },
     { title: dict.nav.myTeam, url: "/creator/team", icon: UsersIcon },
     { title: dict.nav.stats, url: "/creator/stats", icon: BarChartIcon },
     { title: dict.nav.requests, url: "/creator/requests", icon: FolderIcon },

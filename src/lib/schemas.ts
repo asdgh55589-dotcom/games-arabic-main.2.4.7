@@ -22,6 +22,30 @@ export const SlugParamSchema = z
   .min(1)
   .max(200)
   .regex(/^[a-z0-9-]+$/)
+
+// ===== Translation type (P1: dropdown رسمية/غير رسمية) =====
+
+export const TRANSLATION_TYPE_VALUES = ['official', 'unofficial'] as const
+export type TranslationType = (typeof TRANSLATION_TYPE_VALUES)[number]
+
+export const TRANSLATION_TYPE_LABELS: Record<TranslationType, string> = {
+  official: 'رسمية',
+  unofficial: 'غير رسمية',
+}
+
+/**
+ * Normalize any stored/typed value to the enum. Legacy Arabic free-text
+ * (e.g. 'تعريب رسمي', 'رسمية') maps to the matching enum; anything
+ * unrecognized falls back to 'unofficial' (matches schema default).
+ */
+export function normalizeTranslationType(v: unknown): TranslationType {
+  if (v === 'official' || v === 'unofficial') return v
+  if (typeof v === 'string') {
+    const s = v.trim()
+    if (s === 'رسمية' || s === 'تعريب رسمي' || s === 'رسمي') return 'official'
+  }
+  return 'unofficial'
+}
 export const UsernameParamSchema = z
   .string()
   .min(1)
@@ -175,7 +199,9 @@ export const CreateModSchema = z.object({
   tags: z.union([z.string(), z.array(z.string())]).optional(),
   series: z.string().optional(),
   translationTeam: z.string().optional(),
-  translationType: z.enum(['official', 'unofficial']).default('unofficial'),
+  translationType: z
+    .preprocess(normalizeTranslationType, z.enum(['official', 'unofficial']))
+    .default('unofficial'),
   isOriginalWork: z.boolean().default(true),
   originalSource: z.string().optional(),
   originalAuthor: z.string().optional(),

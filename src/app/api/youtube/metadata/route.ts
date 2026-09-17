@@ -1,9 +1,63 @@
 import { spawn } from 'node:child_process'
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fail, internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
+
+// ===== P1: structured yt-dlp error classification (Arabic UX) =====
+
+export const VIDEO_ERROR_CODES = [
+  'VIDEO_PRIVATE',
+  'VIDEO_UNAVAILABLE',
+  'VIDEO_AGE_RESTRICTED',
+  'VIDEO_NOT_FOUND',
+  'VIDEO_RATE_LIMITED',
+  'VIDEO_TIMEOUT',
+  'BINARY_NOT_FOUND',
+  'VIDEO_FETCH_FAILED',
+] as const
+
+export type VideoErrorCode = (typeof VIDEO_ERROR_CODES)[number]
+
+export interface ClassifiedVideoError {
+  code: VideoErrorCode
+  message: string
+  status: number
+}
+
+/**
+ * Map raw yt-dlp stderr/exit text to a structured Arabic error.
+ * Exported for unit tests. Never exposes raw stderr to clients
+ * (may contain server paths) — stderr stays in server logs only.
+ */
+export function classifyYtDlpError(raw: unknown): ClassifiedVideoError {
+  const text = raw instanceof Error ? `${raw.message}` : String(raw ?? '')
+  const t = text.toLowerCase()
+
+  if (t.includes('private video')) {
+    return { code: 'VIDEO_PRIVATE', message: 'هذا الفيديو خاص ولا يمكن الوصول إليه', status: 422 }
+  }
+  if (t.includes('sign in to confirm your age') || /age[-_ ]?restricted/.test(t)) {
+    return { code: 'VIDEO_AGE_RESTRICTED', message: 'هذا الفيديو مقيّد بالعمر ولا يمكن جلب بياناته', status: 422 }
+  }
+  if (t.includes('video unavailable') || t.includes('has been removed') || t.includes('has been deleted')) {
+    return { code: 'VIDEO_UNAVAILABLE', message: 'الفيديو غير متاح أو تم حذفه', status: 422 }
+  }
+  if (t.includes('http error 404') || t.includes('not found')) {
+    return { code: 'VIDEO_NOT_FOUND', message: 'الفيديو غير موجود', status: 404 }
+  }
+  if (t.includes('http error 429') || t.includes('too many requests') || t.includes('rate-limit')) {
+    return { code: 'VIDEO_RATE_LIMITED', message: 'تم تجاوز حد الطلبات، حاول لاحقًا', status: 429 }
+  }
+  if (t.includes('yt-dlp timeout') || t.includes('timed out')) {
+    return { code: 'VIDEO_TIMEOUT', message: 'انتهت مهلة الاتصال، حاول مرة أخرى', status: 504 }
+  }
+  if ((raw as NodeJS.ErrnoException)?.code === 'ENOENT' || t.includes('enoent')) {
+    return { code: 'BINARY_NOT_FOUND', message: 'yt-dlp غير مثبّت على الخادم — تواصل مع الإدارة', status: 500 }
+  }
+  return { code: 'VIDEO_FETCH_FAILED', message: 'تعذّر جلب بيانات الفيديو — تحقق من الرابط وحاول مجددًا', status: 500 }
+}
 
 function extractYouTubeId(url: string): string | null {
   const patterns = [
@@ -187,7 +241,8 @@ export async function POST(req: NextRequest) {
       return ok(buildMetadata(data, videoId, youtubeUrl))
     } catch (err) {
       console.error('[youtube/metadata] yt-dlp failed:', err)
-      return internalError('تعذّر جلب بيانات الفيديو عبر yt-dlp. تأكد من تثبيت yt-dlp على الخادم.')
+      const classified = classifyYtDlpError(err)
+      return fail(classified.code, classified.message, classified.status, { url: youtubeUrl })
     }
   } catch (err) {
     console.error('[youtube/metadata] failed:', err)

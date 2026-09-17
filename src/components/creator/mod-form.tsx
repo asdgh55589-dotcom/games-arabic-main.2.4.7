@@ -14,6 +14,8 @@ import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
+import { extractVideoErrorMessage } from '@/lib/video-errors'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import {
   isDataUrl,
@@ -91,7 +93,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [tags, setTags] = useState('')
   const [series, setSeries] = useState('')
   const [translationTeam, setTranslationTeam] = useState('')
-  const [translationType, setTranslationType] = useState(t.unofficialDefault)
+  const [translationType, setTranslationType] = useState<TranslationType>('unofficial')
   const [seriesId, setSeriesId] = useState('')
   const [teamId, setTeamId] = useState('')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
@@ -193,7 +195,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setTags(m.tags || '')
         setSeries(m.series || '')
         setTranslationTeam(m.translationTeam || '')
-        setTranslationType(m.translationType || t.unofficialDefault)
+        setTranslationType(normalizeTranslationType(m.translationType))
         setSeriesId((m as any).seriesId || '')
         setTeamId((m as any).teamId || '')
         setThumbnailUrl(m.thumbnailUrl || '')
@@ -319,8 +321,9 @@ export default function ModForm({ modId }: ModFormProps) {
         body: JSON.stringify({ url: videoUrl }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || t.fetchFailed)
-
+      if (!res.ok) throw new Error(extractVideoErrorMessage(data) || t.fetchFailed)
+      // API wraps success as { data: metadata } — unwrap, tolerate raw shape.
+      const meta = (data?.data ?? data) as Record<string, any>
       setVideoGroups((prev) =>
         prev.map((g, gi) => {
           if (gi !== groupIdx) return g
@@ -330,22 +333,22 @@ export default function ModForm({ modId }: ModFormProps) {
               if (vi !== videoIdx) return v
               return {
                 ...v,
-                title: data.title || v.title,
-                channel: data.channel || v.channel,
-                thumbnail: data.thumbnail || v.thumbnail,
-                duration: data.duration || v.duration,
-                description: data.description || v.description,
-                views: data.views || v.views,
-                likes: data.likes || v.likes,
-                commentsCount: data.commentsCount || v.commentsCount,
-                publishedAt: data.publishedAt || v.publishedAt,
+                title: meta.title || v.title,
+                channel: meta.channel || v.channel,
+                thumbnail: meta.thumbnail || v.thumbnail,
+                duration: meta.duration || v.duration,
+                description: meta.description || v.description,
+                views: meta.views || v.views,
+                likes: meta.likes || v.likes,
+                commentsCount: meta.commentsCount || v.commentsCount,
+                publishedAt: meta.publishedAt || v.publishedAt,
               }
             }),
           }
         }),
       )
 
-      toast({ title: t.fetched, description: `${t.fetchedVideo}: ${data.title}` })
+      toast({ title: t.fetched, description: `${t.fetchedVideo}: ${meta.title}` })
     } catch (err) {
       toast({
         title: t.fetchError,

@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { calculateModQualityScore } from '@/lib/mod-quality'
 import { canCreateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
+import { parseIaUrl } from '@/lib/ia'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
@@ -266,12 +267,26 @@ export async function POST(req: NextRequest) {
             url: string
             label: string | null
             order: number
+            provider: string
+            storageKey: string | null
+            uploadedBy: string | null
           }> = []
           validFiles.forEach((f, idx) => {
             const fileId = createdFiles[idx]?.id
             if (!fileId || !Array.isArray(f.links)) return
             f.links.forEach((l, j) => {
-              if (l.url) allLinks.push({ fileId, url: l.url, label: l.label || null, order: j })
+              if (!l.url) return
+              // Provenance (P1): IA download URLs keep provider + storage key.
+              const ia = parseIaUrl(l.url)
+              allLinks.push({
+                fileId,
+                url: l.url,
+                label: l.label || null,
+                order: j,
+                provider: ia ? 'ia' : 'direct',
+                storageKey: ia ? `${ia.identifier}/${ia.key}` : null,
+                uploadedBy: ia ? user.id : null,
+              })
             })
           })
           if (allLinks.length > 0) {

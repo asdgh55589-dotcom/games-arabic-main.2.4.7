@@ -15,6 +15,7 @@ export interface StudioDict {
   nav: {
     dashboard: string
     myMods: string
+    files: string
     myTeam: string
     stats: string
     requests: string
