@@ -65,7 +65,7 @@ export function TeamSettingsForm({ initial, onSaved }: TeamSettingsFormProps) {
   }
 
   return (
-    <Card className="max-w-2xl">
+    <Card className="max-w-2xl border-border/60 shadow-sm">
       <CardHeader>
         <CardTitle>إعدادات الفريق</CardTitle>
       </CardHeader>

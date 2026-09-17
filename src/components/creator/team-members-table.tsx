@@ -238,7 +238,7 @@ export function TeamMembersTable({ members, loading, onChanged }: TeamMembersTab
             const locked = m.role === 'owner'
             const busy = actionId === m.id
             return (
-              <div key={m.id} className="flex flex-wrap items-center gap-3 p-3">
+              <div key={m.id} className="flex flex-wrap items-center gap-3 p-3 transition-colors hover:bg-muted/40">
                 <Avatar className="h-10 w-10">
                   {m.avatarUrl && <AvatarImage src={m.avatarUrl} alt={m.name} />}
                   <AvatarFallback>{m.name.slice(0, 1)}</AvatarFallback>

@@ -80,7 +80,7 @@ export function InviteForm({ onCreated }: InviteFormProps) {
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm">
       <CardHeader>
         <CardTitle>دعوة عضو جديد</CardTitle>
         <p className="text-xs text-muted-foreground">الحد الأقصى 50 عضواً لكل فريق</p>

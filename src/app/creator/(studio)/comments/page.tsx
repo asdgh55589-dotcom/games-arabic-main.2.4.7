@@ -32,7 +32,7 @@ export default async function CreatorCommentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">💬 {dict.commentsPage.title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">
           {dict.commentsPage.subtitle}
         </p>
       </div>

@@ -32,7 +32,7 @@ export default async function TeamJoinPage({ searchParams }: JoinPageProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{isTransfer ? 'نقل ملكية الفريق' : 'دعوة الفريق'}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">
           {isTransfer ? 'راجع تفاصيل الترشيح ثم اقبل أو ارفض' : 'راجع تفاصيل الدعوة ثم اقبل أو ارفض'}
         </p>
       </div>

@@ -42,7 +42,7 @@ export default async function CreatorSettingsPage() {
           <Settings className="h-6 w-6" />
           {dict.settingsPage.title}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">{dict.settingsPage.subtitle}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.settingsPage.subtitle}</p>
       </div>
 
       <Card>

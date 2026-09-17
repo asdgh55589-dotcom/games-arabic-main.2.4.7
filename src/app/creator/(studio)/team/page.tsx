@@ -32,7 +32,7 @@ export default async function CreatorTeamPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{dict.nav.myTeam}</h1>
-        <p className="text-sm text-muted-foreground mt-1">إدارة فريق التعريب الخاص بك</p>
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">إدارة فريق التعريب الخاص بك</p>
       </div>
       <TeamManager />
     </div>

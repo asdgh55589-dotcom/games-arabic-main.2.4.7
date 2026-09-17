@@ -31,7 +31,7 @@ export default async function CreatorLikesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">❤️ {dict.likes.title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{dict.likes.subtitle}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.likes.subtitle}</p>
       </div>
       <LikesClient />
     </div>

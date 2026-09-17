@@ -87,7 +87,7 @@ export function TeamActivity() {
       <Card>
         <CardContent className="divide-y p-0">
           {rows.map((r) => (
-            <div key={r.id} className="flex items-center justify-between gap-3 p-3">
+            <div key={r.id} className="flex items-center justify-between gap-3 p-3 transition-colors hover:bg-muted/40">
               <div className="min-w-0">
                 <p className="text-sm font-medium">{ACTION_LABELS[r.action] ?? r.action}</p>
                 <p className="truncate text-xs text-muted-foreground">بواسطة {r.username}</p>
