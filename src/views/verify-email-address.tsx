@@ -11,7 +11,7 @@ function readError(j: unknown): string {
   const d = j as { error?: string | { message?: string; details?: Record<string, string> } } | null
   const e = d?.error
   if (typeof e === 'string') return e
-  return (e?.details ? Object.values(e.details)[0] : e?.message) || 'رابط التحقق غير صالح أو منتهي الصلاحية'
+  return (e?.details ? Object.values(e.details)[0] : e?.message) || '⚠️ انتهت صلاحية رابط التحقق — اطلب رابطاً جديداً من صفحة الإعدادات.'
 }
 
 function VerifyEmailAddressInner() {
@@ -24,7 +24,7 @@ function VerifyEmailAddressInner() {
     started.current = true
     const token = searchParams.get('token')
     if (!token) {
-      setState({ kind: 'error', message: 'رابط التحقق غير صالح أو منتهي الصلاحية' })
+      setState({ kind: 'error', message: '⚠️ انتهت صلاحية رابط التحقق — اطلب رابطاً جديداً من صفحة الإعدادات.' })
       return
     }
     fetch('/api/auth/verify-email', {

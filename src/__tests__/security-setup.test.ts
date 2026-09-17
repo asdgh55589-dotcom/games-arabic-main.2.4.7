@@ -101,14 +101,13 @@ describe('setup card contract (optional fields + warning)', () => {
   })
 
   it('shows verification status with resend affordance', () => {
-    expect(CARD).toContain('غير مؤكد')
+    expect(CARD).toContain('بانتظار التأكيد')
     expect(CARD).toContain('/api/auth/verify-email/resend')
     expect(CARD).toContain('تم إرسال رابط التحقق إلى بريدك الإلكتروني')
   })
 })
 
-describe('username-or-email login wiring', () => {
-  const FORM = read('components/official-login/login-form.tsx')
+describe('username-or-email login wiring', () => {  const FORM = read('components/official-login/login-form.tsx')
   const ROUTE = read('app/api/auth/login-identifier/route.ts')
 
   it('login form routes non-email identifiers to the identifier endpoint', () => {
@@ -134,5 +133,57 @@ describe('username-or-email login wiring', () => {
 
   it('identifier endpoint has no member-role block (it IS the member password path)', () => {
     expect(ROUTE).not.toContain('Insufficient permissions')
+  })
+})
+
+describe('account settings UX contracts (clear labels + states)', () => {
+  const CARD = read('components/settings/setup-password-card.tsx')
+  const SETTINGS = read('views/settings.tsx')
+  const VERIFY_PAGE = read('views/verify-email-address.tsx')
+
+  it('email field is labeled as a required action with a why-helper', () => {
+    expect(CARD).toContain('قم بإضافة بريد إلكتروني')
+    expect(CARD).toContain('مطلوب لاسترجاع حسابك وتأمينه')
+    expect(CARD).toContain('required')
+  })
+
+  it('password block uses set-password labels for passwordless users', () => {
+    expect(CARD).toContain('قم بتعيين كلمة مرور')
+    expect(CARD).toContain('كلمة المرور الجديدة')
+    expect(CARD).toContain('تأكيد كلمة المرور')
+  })
+
+  it('shows the full success message after email send (inbox + spam guidance)', () => {
+    expect(CARD).toContain('تم إرسال رابط التحقق إلى بريدك الإلكتروني')
+    expect(CARD).toContain('الرسائل غير المرغوب فيها')
+  })
+
+  it('surfaces send failures instead of failing silently', () => {
+    expect(CARD).toContain('تعذر إرسال رسالة التحقق. يرجى المحاولة لاحقًا.')
+    expect(CARD).toContain('verificationSent')
+  })
+
+  it('resend has a 60s cooldown with countdown and confirmation', () => {
+    expect(CARD).toContain('لم تصلك الرسالة؟')
+    expect(CARD).toContain('RESEND_COOLDOWN_MS')
+    expect(CARD).toContain('بعد')
+    expect(CARD).toContain('تم إعادة إرسال رسالة التحقق')
+  })
+
+  it('covers every email state explicitly', () => {
+    expect(CARD).toContain('لم يتم إضافة بريد إلكتروني بعد')
+    expect(CARD).toContain('بانتظار التأكيد - تحقق من بريدك')
+    expect(CARD).toContain('بريدك الإلكتروني مؤكد')
+  })
+
+  it('change-password card is contextual with a no-password state', () => {
+    expect(SETTINGS).toContain('لم يتم تعيين كلمة مرور بعد')
+    expect(SETTINGS).toContain('تم تغيير كلمة المرور بنجاح')
+    expect(SETTINGS).toContain('تعذر تغيير كلمة المرور')
+    expect(SETTINGS).toContain('user?.hasPassword')
+  })
+
+  it('verify page names expiry explicitly', () => {
+    expect(VERIFY_PAGE).toContain('انتهت صلاحية رابط التحقق')
   })
 })
