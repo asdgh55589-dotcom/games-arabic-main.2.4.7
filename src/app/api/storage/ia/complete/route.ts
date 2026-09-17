@@ -1,7 +1,13 @@
 import type { NextRequest } from 'next/server'
 import { fail, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
-import { IA_COMING_SOON_MESSAGE, isIaEnabled, verifyIaObject } from '@/lib/ia'
+import {
+  IA_COMING_SOON_MESSAGE,
+  getIaConfig,
+  iaStorageKey,
+  isIaEnabled,
+  verifyIaObject,
+} from '@/lib/ia'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
 import { reportError } from '@/lib/error-reporting'
 
@@ -51,6 +57,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Provenance: persist identifier + key separately so file management
+    // can list, verify and delete IA objects later.
+    const identifier = getIaConfig().identifier
+    const storageKey = iaStorageKey(identifier, key)
+
     try {
       await recordUploadUsage({
         userId: user.id,
@@ -58,6 +69,7 @@ export async function POST(req: NextRequest) {
         kind: 'file',
         provider: 'ia',
         originalUrl: downloadUrl,
+        storageKey,
         bytes,
         mime,
       })
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
       console.error('[ia/complete] usage record failed:', usageError)
     }
 
-    return ok({ downloadUrl, key, bytes }, { status: 201 })
+    return ok({ downloadUrl, key, identifier, storageKey, bytes }, { status: 201 })
   } catch (err) {
     console.error('[ia/complete] failed:', err)
     reportError(err, { route: 'POST /api/storage/ia/complete' })

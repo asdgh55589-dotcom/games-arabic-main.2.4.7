@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/teams', label: 'فرق التعريب', icon: Users },
       { href: '/admin/ads', label: 'الإعلانات', icon: Megaphone },
       { href: '/admin/news', label: 'الأخبار', icon: Newspaper },
+      { href: '/admin/files', label: 'ملفات الرفع', icon: HardDrive },
       { href: '/admin/images/health', label: 'صحة الصور', icon: ImageIcon },
       { href: '/admin/docs', label: 'الدليل', icon: BookOpen },
     ],

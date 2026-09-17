@@ -3,9 +3,17 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { normalizeTranslationType, TRANSLATION_TYPE_LABELS, type TranslationType } from '@/lib/schemas'
 import { Field, Section } from './primitives'
 
 interface Props {
@@ -25,8 +33,8 @@ interface Props {
   setCompatibility: (v: string) => void
   tags: string
   setTags: (v: string) => void
-  translationType: string
-  setTranslationType: (v: string) => void
+  translationType: TranslationType
+  setTranslationType: (v: TranslationType) => void
   isOriginalWork: boolean
   setIsOriginalWork: (v: boolean) => void
   originalSource: string
@@ -84,11 +92,18 @@ export function ModFormBasicInfo(p: Props) {
           />
         </Field>
         <Field label={t.modType} hint={t.modTypeHint}>
-          <Input
-            value={p.translationType}
-            onChange={(e) => p.setTranslationType(e.target.value)}
-            placeholder={t.modTypePlaceholder}
-          />
+          <Select
+            value={normalizeTranslationType(p.translationType)}
+            onValueChange={(v) => p.setTranslationType(normalizeTranslationType(v))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t.modTypePlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unofficial">{TRANSLATION_TYPE_LABELS.unofficial}</SelectItem>
+              <SelectItem value="official">{TRANSLATION_TYPE_LABELS.official}</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
       </Section>
 

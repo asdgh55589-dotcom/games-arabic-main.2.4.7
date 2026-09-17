@@ -40,12 +40,25 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import {
   isDataUrl,
   uploadCroppedDataUrl,
 } from '@/lib/upload-cropped'
+import {
+  normalizeTranslationType,
+  TRANSLATION_TYPE_LABELS,
+  type TranslationType,
+} from '@/lib/schemas'
+import { extractVideoErrorMessage } from '@/lib/video-errors'
 import { formatArabicDate, formatNumber } from '@/lib/format'
 import {
   PlatformFieldsSection,
@@ -197,7 +210,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [tags, setTags] = useState('')
   const [series, setSeries] = useState('')
   const [translationTeam, setTranslationTeam] = useState('')
-  const [translationType, setTranslationType] = useState('تعريب غير رسمي')
+  const [translationType, setTranslationType] = useState<TranslationType>('unofficial')
   const [seriesId, setSeriesId] = useState('')
   const [teamId, setTeamId] = useState('')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
@@ -300,7 +313,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setTags(m.tags || '')
         setSeries(m.series || '')
         setTranslationTeam(m.translationTeam || '')
-        setTranslationType(m.translationType || 'تعريب غير رسمي')
+        setTranslationType(normalizeTranslationType(m.translationType))
         setSeriesId((m as any).seriesId || '')
         setTeamId((m as any).teamId || '')
         setThumbnailUrl(m.thumbnailUrl || '')
@@ -427,8 +440,10 @@ export default function ModForm({ modId }: ModFormProps) {
         body: JSON.stringify({ url: videoUrl }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error?.message || 'فشل الجلب')
+      if (!res.ok) throw new Error(extractVideoErrorMessage(data) || 'فشل الجلب')
 
+      // API wraps success as { data: metadata } — unwrap, tolerate raw shape.
+      const meta = (data?.data ?? data) as Record<string, any>
       setVideoGroups((prev) =>
         prev.map((g, gi) => {
           if (gi !== groupIdx) return g
@@ -438,22 +453,22 @@ export default function ModForm({ modId }: ModFormProps) {
               if (vi !== videoIdx) return v
               return {
                 ...v,
-                title: data.title || v.title,
-                channel: data.channel || v.channel,
-                thumbnail: data.thumbnail || v.thumbnail,
-                duration: data.duration || v.duration,
-                description: data.description || v.description,
-                views: data.views || v.views,
-                likes: data.likes || v.likes,
-                commentsCount: data.commentsCount || v.commentsCount,
-                publishedAt: data.publishedAt || v.publishedAt,
+                title: meta.title || v.title,
+                channel: meta.channel || v.channel,
+                thumbnail: meta.thumbnail || v.thumbnail,
+                duration: meta.duration || v.duration,
+                description: meta.description || v.description,
+                views: meta.views || v.views,
+                likes: meta.likes || v.likes,
+                commentsCount: meta.commentsCount || v.commentsCount,
+                publishedAt: meta.publishedAt || v.publishedAt,
               }
             }),
           }
         }),
       )
 
-      toast({ title: 'تم جلب البيانات', description: `تم جلب بيانات فيديو: ${data.title}` })
+      toast({ title: 'تم جلب البيانات', description: `تم جلب بيانات فيديو: ${meta.title}` })
     } catch (err) {
       toast({
         title: 'فشل الجلب',
@@ -836,12 +851,16 @@ export default function ModForm({ modId }: ModFormProps) {
             placeholder="Bugfix, UI, Gameplay"
           />
         </Field>
-        <Field label="نوع التعريب" hint="اكتب أي نوع: رسمي، غير رسمي، واجهة، أسلحة، إلخ">
-          <Input
-            value={translationType}
-            onChange={(e) => setTranslationType(e.target.value)}
-            placeholder="مثال: تعريب رسمي - واجهة وقوالب"
-          />
+        <Field label="نوع التعريب" hint="اختر نوع التعريب: رسمية أو غير رسمية">
+          <Select value={translationType} onValueChange={(v) => setTranslationType(normalizeTranslationType(v))}>
+            <SelectTrigger>
+              <SelectValue placeholder="اختر النوع" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unofficial">{TRANSLATION_TYPE_LABELS.unofficial}</SelectItem>
+              <SelectItem value="official">{TRANSLATION_TYPE_LABELS.official}</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
       </Section>
 

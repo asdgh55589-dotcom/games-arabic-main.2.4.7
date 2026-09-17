@@ -14,6 +14,7 @@ export const ar: StudioDict = {
   nav: {
     dashboard: 'لوحة التحكم',
     myMods: 'تعريباتي',
+    files: 'ملفاتي',
     myTeam: 'فريقي',
     stats: 'الإحصائيات',
     requests: 'طلبات التعريب',
@@ -337,8 +338,8 @@ export const ar: StudioDict = {
     tags: 'الوسوم',
     tagsHint: 'افصل بينها بفاصلة',
     modType: 'نوع التعريب',
-    modTypeHint: 'اكتب أي نوع: رسمي، غير رسمي، واجهة، أسلحة، إلخ',
-    modTypePlaceholder: 'مثال: تعريب رسمي - واجهة وقوالب',
+    modTypeHint: 'اختر نوع التعريب: رسمية أو غير رسمية',
+    modTypePlaceholder: 'اختر النوع',
     modSource: 'مصدر التعريب',
     externalYes: 'هذا التعريب من مصدر خارجي (الناشر ينشر من مصادر خارجية فقط)',
     ownYes: 'هذا التعريب من ترجمتي الخاصة',

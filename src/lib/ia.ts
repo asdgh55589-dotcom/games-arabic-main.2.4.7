@@ -25,10 +25,10 @@ export function isIaConfigured(): boolean {
 }
 
 /**
- * Phase 2.1 — Internet Archive is TEMPORARILY DISABLED (live diagnostics:
- * no presigned URLs (403), no Content-Range append, no multipart (404), no
- * tus). The adapter code stays for future use (R2 buffer → background IA);
- * all IA routes fail closed unless IA_ENABLED=true.
+ * Phase 2.1 note — query-presigned SigV4 URLs are PROVEN DEAD against live
+ * IA (see ../app/api/storage/ia/README.md: 403 InvalidAccessKeyId). The live
+ * paths are header-based SigV4 direct PUT and server relay. All IA routes
+ * fail closed unless IA_ENABLED=true (see docs/ia-setup.md).
  */
 export const IA_COMING_SOON_MESSAGE = 'قريبًا — رفع ملفات الأرشيف سيتوفر قريباً'
 
@@ -64,6 +64,33 @@ export function buildIaKey(userId: string, modSlug: string, filename: string, no
 
 export function iaDownloadUrl(identifier: string, key: string): string {
   return `https://archive.org/download/${identifier}/${key.split('/').map(encodeURIComponent).join('/')}`
+}
+
+/** True for public IA download URLs produced by iaDownloadUrl(). */
+export function isIaUrl(url: string): boolean {
+  return typeof url === 'string' && url.includes('archive.org/download/')
+}
+
+/**
+ * Split an IA download URL back into identifier + key.
+ * Returns null when the URL is not an IA download link.
+ */
+export function parseIaUrl(url: string): { identifier: string; key: string } | null {
+  if (!isIaUrl(url)) return null
+  try {
+    const u = new URL(url)
+    const parts = u.pathname.replace(/^\/download\//, '').split('/').filter(Boolean).map(decodeURIComponent)
+    if (parts.length < 2) return null
+    const [identifier, ...rest] = parts
+    return { identifier: identifier as string, key: rest.join('/') }
+  } catch {
+    return null
+  }
+}
+
+/** Storage-key format used in UploadAsset/ModFileLink rows: `<identifier>/<key>`. */
+export function iaStorageKey(identifier: string, key: string): string {
+  return `${identifier}/${key}`
 }
 
 export interface IaSignedUpload {
