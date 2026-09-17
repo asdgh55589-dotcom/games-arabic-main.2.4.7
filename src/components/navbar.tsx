@@ -49,6 +49,7 @@ import { useDebounced } from '@/hooks/use-debounced'
 import { highlightMatch } from '@/components/search-highlight'
 import { PLATFORM_COLORS, type PlatformKey } from '@/lib/constants/platforms'
 import { formatNumber } from '@/lib/format'
+import { dashboardPathForRole } from '@/lib/roles'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { SearchResponse } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -794,13 +795,13 @@ export function Navbar({ games, currentView }: NavbarProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
+                {dashboardPathForRole(currentUser.role) && (
                   <DropdownMenuItem asChild>
                     <Link
-                      href="/creator"
+                      href={dashboardPathForRole(currentUser.role) as string}
                       className="flex items-center gap-2 flex-row-reverse text-sm text-muted-foreground"
                     >
-                      لوحة التحكم
+                      {dashboardPathForRole(currentUser.role) === '/admin' ? 'لوحة الإدارة' : 'لوحة التحكم'}
                     </Link>
                   </DropdownMenuItem>
                 )}
@@ -925,10 +926,13 @@ export function Navbar({ games, currentView }: NavbarProps) {
                               تعريباتي
                             </MobileLink>
                           )}
-                          {['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'].includes(currentUser.role) && (
-                            <MobileLink href="/creator" onClick={() => setMobileOpen(false)}>
+                          {dashboardPathForRole(currentUser.role) && (
+                            <MobileLink
+                              href={dashboardPathForRole(currentUser.role) as string}
+                              onClick={() => setMobileOpen(false)}
+                            >
                               <Activity className="h-3.5 w-3.5" />
-                              لوحة التحكم
+                              {dashboardPathForRole(currentUser.role) === '/admin' ? 'لوحة الإدارة' : 'لوحة التحكم'}
                             </MobileLink>
                           )}
                           <MobileLink href="/notifications" onClick={() => setMobileOpen(false)}>

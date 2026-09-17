@@ -63,3 +63,15 @@ export function hasRoleAtLeast(role: string, minimum: UserRole): boolean {
   if (roleIndex === -1 || minIndex === -1) return false
   return roleIndex >= minIndex
 }
+
+/**
+ * Dashboard home for a role — used by profile menus so each role lands
+ * on the right dashboard. Staff (moderator+) go to /admin, creators and
+ * publishers go to /creator, everyone else gets null (stay on profile).
+ */
+export function dashboardPathForRole(role?: string | null): '/admin' | '/creator' | null {
+  if (!role) return null
+  if (hasRoleAtLeast(role, 'moderator')) return '/admin'
+  if (role === 'creator' || role === 'publisher') return '/creator'
+  return null
+}
