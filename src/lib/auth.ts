@@ -67,8 +67,10 @@ export interface SessionUser {
   onboardingCompleted: boolean
   /** P0: whether a password credential exists (/api/auth/me only — not set by getSession). */
   hasPassword?: boolean
-  /** P0-flexible: password missing OR email synthetic (/api/auth/me only). */
+  /** P0-flexible: password missing OR email synthetic/unverified (/api/auth/me only). */
   needsSecuritySetup?: boolean
+  /** Inbox proven via verification link (/api/auth/me only). */
+  emailVerified?: boolean
 }
 
 // ===== Password helpers =====

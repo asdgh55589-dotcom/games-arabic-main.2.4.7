@@ -23,9 +23,13 @@ export function isSyntheticTelegramEmail(email: string | null | undefined): bool
 export function needsSecuritySetup(input: {
   hasPassword?: boolean | null
   email?: string | null
+  emailVerified?: boolean | null
 }): boolean {
   if (input.hasPassword !== true) return true
   if (isSyntheticTelegramEmail(input.email)) return true
+  // Real address on file but inbox never proven → verification still pending.
+  // emailVerified undefined (legacy callers) preserves the old behavior.
+  if (input.emailVerified === false) return true
   return false
 }
 
@@ -35,6 +39,8 @@ const EXEMPT_PREFIXES = [
   '/login',
   '/admin/login',
   '/verify-email',
+  '/verify-email-address',
+  '/api/auth/verify-email',
   '/api/auth/callback',
   '/api/auth/telegram',
   '/api/auth/telegram-bridge',

@@ -29,12 +29,26 @@ export function SetupPasswordCard() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resending, setResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const hasPw = user?.hasPassword === true
   const needsEmail = isSyntheticEmail(user?.email)
+  const emailVerified = user?.emailVerified === true
+  const showStatus = !needsEmail && !!user?.email
   const canSubmit =
     !busy && (password.length > 0 || (needsEmail && email.trim().length > 0))
+
+  function readError(j: unknown, fallback: string): string {
+    const d = j as
+      | { error?: string | { message?: string; details?: Record<string, string> } }
+      | null
+      | undefined
+    const e = d?.error
+    if (typeof e === 'string') return e
+    return (e?.details ? Object.values(e.details)[0] : e?.message) || fallback
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,16 +68,11 @@ export function SetupPasswordCard() {
       })
       const j = await res.json().catch(() => null)
       if (!res.ok) {
-        const d = j?.error as
-          | string
-          | { message?: string; details?: Record<string, string> }
-          | undefined
-        const msg =
-          typeof d === 'string'
-            ? d
-            : (d?.details ? Object.values(d.details)[0] : d?.message) || 'فشل الحفظ'
-        setError(String(msg))
+        setError(readError(j, 'فشل الحفظ'))
         return
+      }
+      if ((j as { data?: { needsVerification?: boolean } })?.data?.needsVerification) {
+        setNotice('تم إرسال رابط التحقق إلى بريدك الإلكتروني — تحقق منه خلال ٢٤ ساعة.')
       }
       toast({ title: 'تم حفظ بيانات الأمان بنجاح' })
       setPassword('')
@@ -74,6 +83,29 @@ export function SetupPasswordCard() {
       setError('حدث خطأ أثناء الحفظ، تحقق من الاتصال')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function handleResend() {
+    setResending(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/verify-email/resend', { method: 'POST' })
+      const j = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(readError(j, 'فشل إعادة الإرسال'))
+        return
+      }
+      if ((j as { data?: { already?: boolean } })?.data?.already) {
+        setNotice('بريدك مؤكد بالفعل.')
+      } else {
+        setNotice('تم إرسال رابط التحقق إلى بريدك الإلكتروني — تحقق منه خلال ٢٤ ساعة.')
+      }
+      await refreshAuth()
+    } catch {
+      setError('حدث خطأ أثناء الإرسال، تحقق من الاتصال')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -98,6 +130,31 @@ export function SetupPasswordCard() {
         </span>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+        {showStatus && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">حالة البريد:</span>
+            {emailVerified ? (
+              <span className="font-bold text-green-600">مؤكد</span>
+            ) : (
+              <>
+                <span className="font-bold text-amber-600">غير مؤكد</span>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="underline underline-offset-2 hover:opacity-80 disabled:opacity-50"
+                >
+                  {resending ? 'جارٍ الإرسال…' : 'إعادة إرسال رابط التحقق'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        {notice && (
+          <p role="status" className="rounded-none border-2 border-green-600 bg-green-600/10 p-3 text-xs font-semibold text-green-700 dark:text-green-300">
+            {notice}
+          </p>
+        )}
         {needsEmail && (
           <div>
             <label className="mb-1 block text-sm text-muted-foreground" htmlFor="setup-email">
