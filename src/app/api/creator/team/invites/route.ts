@@ -66,8 +66,12 @@ export async function GET(req: NextRequest) {
     const page = parsed.success ? parsed.data.page : 1
     const limit = Math.min(parsed.success ? parsed.data.limit : 24, 100)
 
+    // Ownership-transfer nominations (role 'owner') live in their own UI
+    // surface and are hidden here to avoid mixing token flows.
     const where: Record<string, unknown> =
-      status === 'all' ? { teamId: owned.id } : { teamId: owned.id, status }
+      status === 'all'
+        ? { teamId: owned.id, role: { not: 'owner' } }
+        : { teamId: owned.id, status, role: { not: 'owner' } }
 
     const [total, rows] = await Promise.all([
       db.teamInvitation.count({ where }),

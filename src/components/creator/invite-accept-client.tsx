@@ -16,8 +16,9 @@ interface InviteMeta {
   reason?: string
 }
 
-export function InviteAcceptClient({ token }: { token: string }) {
+export function InviteAcceptClient({ token, mode = 'invite' }: { token: string; mode?: 'invite' | 'transfer' }) {
   const { toast } = useToast()
+  const base = mode === 'transfer' ? '/api/creator/team/transfer' : '/api/creator/team/invites'
   const [meta, setMeta] = useState<InviteMeta | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,7 +51,7 @@ export function InviteAcceptClient({ token }: { token: string }) {
   const act = async (action: 'accept' | 'decline') => {
     setActing(true)
     try {
-      const res = await fetch(`/api/creator/team/invites/${action}`, {
+      const res = await fetch(`${base}/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
@@ -59,9 +60,9 @@ export function InviteAcceptClient({ token }: { token: string }) {
       if (res.ok) {
         if (action === 'accept') {
           setDone({ teamSlug: json.data?.teamSlug, teamName: json.data?.teamName })
-          toast({ title: 'تم الانضمام إلى الفريق بنجاح' })
+          toast({ title: mode === 'transfer' ? 'تم نقل الملكية بنجاح' : 'تم الانضمام إلى الفريق بنجاح' })
         } else {
-          toast({ title: 'تم رفض الدعوة' })
+          toast({ title: mode === 'transfer' ? 'تم رفض نقل الملكية' : 'تم رفض الدعوة' })
           load()
         }
       } else {
@@ -95,7 +96,9 @@ export function InviteAcceptClient({ token }: { token: string }) {
     return (
       <Card className="max-w-xl">
         <CardContent className="space-y-3 p-6 text-center">
-          <p className="font-semibold">أهلاً بك في فريق {done.teamName}</p>
+          <p className="font-semibold">
+            {mode === 'transfer' ? `أنت الآن مالك فريق ${done.teamName}` : `أهلاً بك في فريق ${done.teamName}`}
+          </p>
           <Link href={`/teams/${done.teamSlug}`} className="text-primary hover:underline">
             عرض صفحة الفريق
           </Link>
@@ -107,11 +110,15 @@ export function InviteAcceptClient({ token }: { token: string }) {
   return (
     <Card className="max-w-xl">
       <CardHeader>
-        <CardTitle>دعوة للانضمام إلى {meta.teamName}</CardTitle>
+        <CardTitle>
+          {mode === 'transfer' ? `نقل ملكية فريق ${meta.teamName}` : `دعوة للانضمام إلى ${meta.teamName}`}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          الدور المقترح: {meta.role} · تنتهي {new Date(meta.expiresAt).toLocaleDateString('ar')}
+          {mode === 'transfer'
+            ? `ستصبح مالك الفريق بكل الصلاحيات · تنتهي ${new Date(meta.expiresAt).toLocaleDateString('ar')}`
+            : `الدور المقترح: ${meta.role} · تنتهي ${new Date(meta.expiresAt).toLocaleDateString('ar')}`}
         </p>
         {!meta.eligible && <p className="text-sm text-destructive">{meta.reason}</p>}
         <div className="flex gap-2">

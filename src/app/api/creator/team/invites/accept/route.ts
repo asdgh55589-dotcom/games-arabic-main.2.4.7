@@ -50,6 +50,12 @@ export async function POST(req: NextRequest) {
       return conflict('لم تعد هذه الدعوة معلقة')
     }
 
+    // Ownership moves exclusively through the transfer flow (nominate →
+    // accept with atomic role swap). Never mint memberships from it here.
+    if (invite.role === 'owner') {
+      return conflict('نقل الملكية يتم عبر صفحة الترشيح فقط')
+    }
+
     if (isInviteExpired(invite.expiresAt)) {
       await db.teamInvitation.updateMany({
         where: { id: invite.id, status: 'pending' },
