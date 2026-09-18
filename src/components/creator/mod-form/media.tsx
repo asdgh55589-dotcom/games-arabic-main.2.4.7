@@ -3,6 +3,7 @@
 
 import {
   CheckCircle2,
+  Clapperboard,
   ExternalLink,
   Eye,
   Loader2,
@@ -22,6 +23,7 @@ import { ImageUpload } from '@/components/admin/image-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatArabicDate, formatNumber } from '@/lib/format'
+import { isVimeoUrl } from '@/lib/oembed'
 import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { Section } from './primitives'
@@ -355,7 +357,7 @@ export function ModFormMedia(p: Props) {
                               onBlur={(e) => {
                                 maybeFetchOnBlur(i, j, e.target.value)
                               }}
-                              placeholder="https://youtube.com/watch?v=..."
+                              placeholder="https://youtube.com/watch?v=... أو https://vimeo.com/..."
                               className="flex-1"
                             />
                             {isFetching && (
@@ -414,7 +416,11 @@ export function ModFormMedia(p: Props) {
                                   />
                                 ) : (
                                   <div className="grid h-full place-items-center">
-                                    <Youtube className="h-6 w-6 text-muted-foreground" />
+                                    {isVimeoUrl(v.url) ? (
+                                      <Clapperboard className="h-6 w-6 text-muted-foreground" />
+                                    ) : (
+                                      <Youtube className="h-6 w-6 text-muted-foreground" />
+                                    )}
                                   </div>
                                 )}
                                 {v.duration && (

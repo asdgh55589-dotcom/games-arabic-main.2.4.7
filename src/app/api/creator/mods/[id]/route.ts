@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/ap
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { CreateModSchema } from '@/lib/schemas'
+import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
@@ -59,13 +60,23 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const updated = await db.mod.update({
       where: { id },
       data: {
-        ...data,
+        // P3: strip relation arrays (persisted via syncModRelations below).
+        ...stripModRelations(data),
         workflowStatus,
         ...(action === 'submit' && mod.workflowStatus === 'DRAFT'
           ? { submittedAt: new Date() }
           : {}),
       },
     })
+
+    // P3: replace relations sent in the payload; absent keys stay untouched.
+    try {
+      await syncModRelations(db, id, data as unknown as Parameters<typeof syncModRelations>[2], {
+        uploadedBy: user.id,
+      })
+    } catch (relErr) {
+      console.error('[creator/mods PATCH] relations failed:', relErr)
+    }
 
     return ok({ mod: updated, message: 'تم تحديث التعريب بنجاح' })
   } catch (err) {

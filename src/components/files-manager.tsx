@@ -58,11 +58,13 @@ export function FilesManager({
   deleteBase,
   showUploader,
   title,
+  embedEndpoint,
 }: {
   apiBase: string
   deleteBase: string
   showUploader: boolean
   title: string
+  embedEndpoint?: string
 }) {
   const { toast } = useToast()
   const [files, setFiles] = useState<ManagedFile[]>([])
@@ -71,6 +73,7 @@ export function FilesManager({
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [provider, setProvider] = useState('all')
+  const [fileType, setFileType] = useState('all')
   const [selected, setSelected] = useState<ManagedFile | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -81,6 +84,7 @@ export function FilesManager({
         const params = new URLSearchParams({ page: String(page), limit: '50' })
         if (query.trim()) params.set('search', query.trim())
         if (provider !== 'all') params.set('provider', provider)
+        if (fileType !== 'all') params.set('type', fileType)
         const res = await fetch(`${apiBase}?${params.toString()}`, { credentials: 'include' })
         const data = await res.json()
         if (!res.ok) throw new Error(data?.error?.message || 'فشل تحميل الملفات')
@@ -92,7 +96,7 @@ export function FilesManager({
         setLoading(false)
       }
     },
-    [apiBase, query, provider, toast],
+    [apiBase, query, provider, fileType, toast],
   )
 
   useEffect(() => {
@@ -134,6 +138,19 @@ export function FilesManager({
               <SelectItem value="direct">رابط مباشر</SelectItem>
               <SelectItem value="cloudinary">Cloudinary</SelectItem>
               <SelectItem value="supabase">Supabase</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={fileType} onValueChange={setFileType}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="النوع" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الأنواع</SelectItem>
+              <SelectItem value="image">صور</SelectItem>
+              <SelectItem value="video">فيديو</SelectItem>
+              <SelectItem value="archive">أرشيف</SelectItem>
+              <SelectItem value="audio">صوت</SelectItem>
+              <SelectItem value="other">أخرى</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setQuery(search)}>بحث</Button>
@@ -225,6 +242,7 @@ export function FilesManager({
         onOpenChange={setDrawerOpen}
         detailsBase={apiBase}
         deleteBase={deleteBase}
+        embedEndpoint={embedEndpoint}
         onDeleted={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
       />
     </div>

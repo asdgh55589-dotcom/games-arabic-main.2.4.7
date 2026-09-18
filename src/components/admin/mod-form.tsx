@@ -59,6 +59,7 @@ import {
   type TranslationType,
 } from '@/lib/schemas'
 import { extractVideoErrorMessage } from '@/lib/video-errors'
+import { isSupportedVideoUrl } from '@/lib/oembed'
 import { formatArabicDate, formatNumber } from '@/lib/format'
 import {
   PlatformFieldsSection,
@@ -415,16 +416,13 @@ export default function ModForm({ modId }: ModFormProps) {
     fetchMod()
   }, [modId])
 
-  // جلب بيانات فيديو يوتيوب تلقائياً
+  // جلب بيانات فيديو يوتيوب/فيميو تلقائياً
   const onFetchVideoMetadata = async (groupIdx: number, videoIdx: number, videoUrl: string) => {
     if (!videoUrl.trim()) return
-    const videoId = videoUrl.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?v=|youtube-nocookie\.com\/embed\/|youtube\.com\/live\/|youtube\.com\/v\/)([\w-]{11})/,
-    )?.[1]
-    if (!videoId) {
+    if (!isSupportedVideoUrl(videoUrl)) {
       toast({
         title: 'رابط غير صالح',
-        description: 'الرجاء إدخال رابط يوتيوب صحيح',
+        description: 'الرجاء إدخال رابط يوتيوب أو فيميو صحيح',
         variant: 'destructive',
       })
       return

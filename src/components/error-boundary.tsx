@@ -9,6 +9,8 @@ interface ErrorBoundaryProps {
   children: ReactNode
   /** Optional label for what's being guarded — appears in the error message. */
   label?: string
+  /** Optional URL for the "report issue" button (hidden when omitted). */
+  reportHref?: string
 }
 
 interface ErrorBoundaryState {
@@ -86,6 +88,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <Button asChild variant="outline">
               <Link href="/">العودة للرئيسية</Link>
             </Button>
+            {this.props.reportHref && (
+              <Button asChild variant="ghost">
+                <Link href={this.props.reportHref}>الإبلاغ عن مشكلة</Link>
+              </Button>
+            )}
           </div>
         </div>
       )

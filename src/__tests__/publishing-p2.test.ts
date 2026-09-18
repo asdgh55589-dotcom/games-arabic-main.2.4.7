@@ -20,6 +20,26 @@ import { platformDisplayName } from '@/lib/platform-names'
 
 jest.mock('@/lib/error-reporting', () => ({ reportError: jest.fn() }))
 
+// upload-image route pulls the real auth chain (module-level JWT check)
+jest.mock('@/lib/auth', () => ({
+  requireCreatorStudio: jest.fn(),
+  requireModerator: jest.fn(),
+  getSession: jest.fn(),
+}))
+
+const mockVideoCache = {
+  findUnique: jest.fn(),
+  delete: jest.fn(),
+  upsert: jest.fn(),
+}
+jest.mock('@/lib/db', () => ({
+  db: { videoMetadataCache: {
+    findUnique: (...a: unknown[]) => mockVideoCache.findUnique(...a),
+    delete: (...a: unknown[]) => mockVideoCache.delete(...a),
+    upsert: (...a: unknown[]) => mockVideoCache.upsert(...a),
+  } },
+}))
+
 const { NextRequest } = jest.requireActual('next/server') as typeof import('next/server')
 
 // ---------- 1. unified 60MB cap ----------
@@ -46,6 +66,7 @@ describe('fetchOEmbedData', () => {
       title: 'Big Buck Bunny',
       author_name: 'Blender',
       thumbnail_url: 'https://i.ytimg.com/vi/x/hq.jpg',
+      provider: 'youtube',
     })
   })
 
@@ -119,6 +140,11 @@ jest.mock('node:child_process', () => {
 
 describe('POST /api/youtube/metadata fallback', () => {
   const realFetch = global.fetch
+
+  beforeEach(() => {
+    mockVideoCache.findUnique.mockResolvedValue(null)
+    mockVideoCache.upsert.mockResolvedValue({})
+  })
 
   afterEach(() => {
     global.fetch = realFetch

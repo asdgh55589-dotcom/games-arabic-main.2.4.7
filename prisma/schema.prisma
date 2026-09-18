@@ -1594,6 +1594,30 @@ model UploadAsset {
   @@index([createdAt])
 }
 
+// P3 — video metadata cache (yt-dlp/oEmbed results, 7-day TTL).
+// Fresh (<24h) served directly; stale served + refreshed in background.
+model VideoMetadataCache {
+  id          String    @id @default(cuid())
+  url         String    @unique
+  provider    String // youtube | vimeo
+  videoId     String
+  title       String?
+  description String?   @db.Text
+  channel     String?
+  thumbnail   String?
+  duration    String?
+  views       Int?
+  likes       Int?
+  comments    Int?
+  publishedAt DateTime?
+  source      String    @default("yt-dlp") // yt-dlp | oembed
+  fetchedAt   DateTime  @default(now())
+  expiresAt   DateTime
+
+  @@index([provider])
+  @@index([expiresAt])
+}
+
 // Rank-based quota defaults. rank = role string (creator, publisher, ...).
 // Owner edits these from the admin panel — absolute control.
 model QuotaPolicy {
