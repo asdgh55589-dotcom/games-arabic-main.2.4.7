@@ -76,6 +76,9 @@ export default function SessionsView() {
   useDocumentTitle('الأجهزة المتصلة')
   const { toast } = useToast()
   const [sessions, setSessions] = useState<Session[]>([])
+  // Server-authoritative current-session id (null = could not be determined).
+  // Never guess from cookies: ga_session_ledger is httpOnly and invisible to JS.
+  const [currentKnown, setCurrentKnown] = useState(false)
   const [loading, setLoading] = useState(true)
   const [revoking, setRevoking] = useState<string | null>(null)
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -88,22 +91,17 @@ export default function SessionsView() {
       const j = await r.json().catch(() => null)
       const data = j?.data || j || []
       const list = Array.isArray(data) ? data : data?.sessions || []
-      // تحديد الجلسة الحالية عبر ledger cookie
-      let currentToken: string | null = null
-      try {
-        const m = document.cookie.match(/(?:^|;\s*)ga_session_ledger=([^;]+)/)
-        currentToken = m ? decodeURIComponent(m[1]) : null
-      } catch {
-        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort sessions operation
-      }
+      // الجلسة الحالية تُحدَّد من الخادم حصراً (currentSessionId) — الكوكيز httpOnly
+      // ولا يمكن قراءتها من المتصفح، والتخمين من الأحدث كان قد يطرد الجلسة الحالية.
+      const serverCurrentId: string | null =
+        typeof (j as any)?.currentSessionId === 'string'
+          ? (j as any).currentSessionId
+          : null
+      setCurrentKnown(serverCurrentId !== null)
       const mapped: Session[] = (list as any[]).map((s: any) => ({
         ...s,
-        isCurrent: currentToken ? s.token === currentToken : false,
+        isCurrent: serverCurrentId ? s.id === serverCurrentId : false,
       }))
-      if (!mapped.some((s) => s.isCurrent) && mapped.length) {
-        mapped.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        mapped[0].isCurrent = true
-      }
       setSessions(mapped)
     } catch (e) {
       toast({ title: 'خطأ', description: 'تعذر تحميل الجلسات', variant: 'destructive' })
@@ -268,10 +266,15 @@ export default function SessionsView() {
 
             {sessions.filter((s) => !s.isCurrent).length > 0 && (
               <div className="mt-6">
+                {!currentKnown && (
+                  <p className="mb-2 text-xs text-muted-foreground text-center">
+                    تعذر تحديد الجلسة الحالية — عطّلنا تسجيل الخروج الجماعي لحماية جلستك
+                  </p>
+                )}
                 <Button
                   variant="outline"
                   onClick={revokeOthers}
-                  disabled={bulkLoading}
+                  disabled={bulkLoading || !currentKnown}
                   className="w-full h-11 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
                   {bulkLoading ? (

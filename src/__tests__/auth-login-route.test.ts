@@ -44,14 +44,15 @@ jest.mock('@/lib/ratelimit', () => ({
 
 jest.mock('@/lib/login-defense', () => ({
   LOGIN_GENERIC_ERROR: 'بيانات الدخول غير صحيحة',
-  captchaRequired: jest.fn().mockReturnValue(false),
+  ACCOUNT_LOCKED_MESSAGE:
+    'تم قفل الحساب مؤقتًا بسبب محاولات متعددة فاشلة. يرجى المحاولة بعد 15 دقيقة.',
+  LOCKOUT_THRESHOLD: 10,
   clearLoginFailures: jest.fn(),
   failureKey: jest.fn().mockReturnValue('test-fkey'),
-  getLoginFailures: jest.fn().mockReturnValue(0),
+  getLockoutRemainingSeconds: jest.fn().mockResolvedValue(0),
   loginDelayFor: jest.fn().mockReturnValue(0),
   recordLoginFailure: jest.fn(),
   sleep: jest.fn().mockResolvedValue(undefined),
-  verifyCaptchaToken: jest.fn().mockResolvedValue({ ok: true, placeholder: true }),
 }))
 
 jest.mock('@/lib/security-key', () => ({
@@ -174,6 +175,8 @@ describe('POST /api/auth/login', () => {
     // Re-setup rate limit mocks after clearAllMocks
     mockRateLimit.mockResolvedValue({ success: true, remaining: 4, resetAt: Date.now() + 60000, limit: 5 })
     mockCheckRateLimit.mockResolvedValue(true)
+    // Default: no lockout (individual tests override per-case)
+    require('@/lib/login-defense').getLockoutRemainingSeconds.mockResolvedValue(0)
     // Setup ownerEnsured cache
     mockFindFirst.mockImplementation(async (args: any) => {
       if (args?.where?.role === 'owner') return baseUser()
@@ -440,29 +443,29 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401)
   })
 
-  it('يطلب captcha عندما يكون مطلوباً', async () => {
-    const { captchaRequired, getLoginFailures, verifyCaptchaToken } = require('@/lib/login-defense')
-    captchaRequired.mockReturnValue(true)
-    getLoginFailures.mockReturnValue(5)
-    verifyCaptchaToken.mockResolvedValue({ ok: false, placeholder: false })
+  it('يرجع 429 مع رسالة القفل العربية عندما تكون الجلسة مقفلة', async () => {
+    const { getLockoutRemainingSeconds } = require('@/lib/login-defense')
+    getLockoutRemainingSeconds.mockResolvedValue(640)
 
     const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
-    expect(res.status).toBe(401)
-    expect(verifyCaptchaToken).toHaveBeenCalled()
+    expect(res.status).toBe(429)
+    const body = await res.json()
+    expect(body.error.code).toBe('ACCOUNT_LOCKED')
+    expect(body.error.message).toMatch('تم قفل الحساب مؤقتًا')
+    expect(body.error.message).toMatch('15 دقيقة')
+    expect(res.headers.get('Retry-After')).toBe('640')
+    expect(mockFindUnique).not.toHaveBeenCalled()
   })
 
-  it('يتجاوز captcha عندما يكون verdict.ok = true', async () => {
-    const { captchaRequired, getLoginFailures, verifyCaptchaToken } = require('@/lib/login-defense')
-    captchaRequired.mockReturnValue(true)
-    getLoginFailures.mockReturnValue(5)
-    verifyCaptchaToken.mockResolvedValue({ ok: true, placeholder: false })
+  it('يتابع الدخول طبيعياً عندما لا يوجد قفل (غير مقفل)', async () => {
+    const { getLockoutRemainingSeconds } = require('@/lib/login-defense')
+    getLockoutRemainingSeconds.mockResolvedValue(0)
 
-    // After captcha passes, the login should proceed normally
-    // But user won't exist → 401
+    // No lock → login proceeds normally; user won't exist → 401
     mockFindUnique.mockResolvedValue(null)
     const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
     expect(res.status).toBe(401)
-    expect(verifyCaptchaToken).toHaveBeenCalled()
+    expect(getLockoutRemainingSeconds).toHaveBeenCalled()
   })
 
   it('يتعامل مع Temp ban ( banned_temp مع تاريخ منتهي)', async () => {

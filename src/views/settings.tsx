@@ -806,8 +806,9 @@ export function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          password: values.newPassword,
           currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
+          confirmPassword: values.confirmPassword,
         }),
       })
       if (res.ok) {

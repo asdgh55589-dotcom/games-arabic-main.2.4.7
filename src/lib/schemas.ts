@@ -150,10 +150,16 @@ export const LoginSchema = z.object({
   securityKey: z.string().min(1, 'مفتاح الأمان مطلوب').max(100).trim(),
 })
 
-export const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8).max(200),
-})
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(8).max(200),
+    confirmPassword: z.string().min(1, 'تأكيد كلمة المرور مطلوب'),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين',
+    path: ['confirmPassword'],
+  })
 
 /** P0 setup-password (OAuth-only users): stricter policy than change-password. */
 export const SetupPasswordSchema = z

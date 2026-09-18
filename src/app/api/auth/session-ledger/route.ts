@@ -9,8 +9,19 @@ import {
 } from '@/lib/session-ledger'
 import { createClient } from '@/lib/supabase/server'
 
-// GET /api/auth/session-ledger — list own sessions
+// GET /api/auth/session-ledger — list own sessions.
+// Response: { data: rows, currentSessionId: string | null }.
+// currentSessionId is resolved SERVER-SIDE from the httpOnly
+// ga_session_ledger cookie (JS can never read httpOnly cookies, so the
+// client must NOT guess — see settings-sessions.tsx).
 export async function GET(req: NextRequest) {
+  // The ledger cookie holds the current device's session TOKEN; resolve it
+  // to the row id (never expose the token itself as the identity signal).
+  const presentedToken = req.cookies.get('ga_session_ledger')?.value || null
+  const withCurrent = (rows: Array<{ id: string; token: string }>) => {
+    const current = presentedToken ? rows.find((r) => r.token === presentedToken) : undefined
+    return NextResponse.json({ data: rows, currentSessionId: current?.id ?? null })
+  }
   try {
     // Try Supabase first
     try {
@@ -24,7 +35,7 @@ export async function GET(req: NextRequest) {
         })
         if (u) {
           const rows = await listUserSessions(u.id)
-          return NextResponse.json({ data: rows })
+          return withCurrent(rows as Array<{ id: string; token: string }>)
         }
       }
     } catch {
@@ -34,7 +45,7 @@ export async function GET(req: NextRequest) {
     const u = await requireAuth().catch(() => null)
     if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const rows = await listUserSessions(u.id)
-    return NextResponse.json({ data: rows })
+    return withCurrent(rows as Array<{ id: string; token: string }>)
   } catch (err) {
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
