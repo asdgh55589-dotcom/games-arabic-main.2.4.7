@@ -451,7 +451,7 @@ export default function BecomeCreatorApplyPage() {
                     id="preferredGames"
                     value={preferredGames}
                     onChange={(e) => setPreferredGames(e.target.value)}
-                    placeholder="The Witcher 3, Elden Ring, God of War"
+                    placeholder="مثال: ذا ويتشر 3، إلدن رينغ"
                   />
                 </div>
               </div>

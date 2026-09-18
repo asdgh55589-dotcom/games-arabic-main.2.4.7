@@ -179,10 +179,12 @@ describe('4.1 error-message language audit (static)', () => {
     expect(admin).toMatch(/ليس لديك صلاحية/);
     expect(admin).not.toMatch(/Unauthorized or forbidden/);
   });
-  it('error boundary fallback is English-only ❌', () => {
+  it('error boundary fallback is Arabic ✅ (P2 translated)', () => {
     const eb = fs.readFileSync(path.join(process.cwd(), 'src/components/error-boundary.tsx'), 'utf8');
-    expect(eb).toMatch(/Something went wrong/);
-    expect(eb).not.toMatch(/حدث خطأ|عذراً|حاول مجدداً/);
+    expect(eb).toMatch(/حدث خطأ غير متوقع/);
+    expect(eb).toMatch(/إعادة المحاولة/);
+    expect(eb).toMatch(/العودة للرئيسية/);
+    expect(eb).not.toMatch(/Something went wrong/);
   });
   it('UI toasts are Arabic ✅', () => {
     const ui = fs.readFileSync(path.join(process.cwd(), 'src/components/comments/use-comments.ts'), 'utf8');

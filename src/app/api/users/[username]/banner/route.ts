@@ -84,9 +84,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return validationFail({ file: 'ملفات SVG غير مسموحة' })
     }
 
-    // فحص الحجم (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      return validationFail({ file: 'حجم الصورة كبير جداً — الحد الأقصى 5MB' })
+    // فحص الحجم (P2: unified 60MB — matches client)
+    if (file.size > 60 * 1024 * 1024) {
+      return validationFail({ file: 'حجم الصورة كبير جداً — الحد الأقصى 60MB (60 ميجابايت)' })
     }
 
     // قراءة الملف لفحص magic bytes

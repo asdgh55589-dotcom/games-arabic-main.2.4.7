@@ -232,11 +232,11 @@ describe('banner POST → Cloudinary', () => {
     )
   })
 
-  it('5MB+1B rejected with Arabic message + no upload call', async () => {
-    const res = await bannerPOST(postReq(jpegFile(5 * 1024 * 1024 + 1), 'banner'), bannerParams)
+  it('60MB+1B rejected with Arabic message + no upload call (P2 unified cap)', async () => {
+    const res = await bannerPOST(postReq(jpegFile(60 * 1024 * 1024 + 1), 'banner'), bannerParams)
     const body = await res.json()
     expect(res.status).toBe(422)
-    expect(JSON.stringify(body)).toMatch(/حجم الصورة كبير جداً — الحد الأقصى 5MB/)
+    expect(JSON.stringify(body)).toMatch(/حجم الصورة كبير جداً — الحد الأقصى 60MB/)
     expect(mockUpload).not.toHaveBeenCalled()
   })
 

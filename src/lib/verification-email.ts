@@ -8,7 +8,8 @@
  */
 
 import { emailFrom } from '@/lib/email/from'
-import { emitloProvider } from '@/lib/email/emitlo'
+import { emailProvider, hasEmailProvider } from '@/lib/email'
+import { buildVerificationEmail } from '@/lib/email/templates'
 import { logger } from '@/lib/logger'
 
 /** Verification links live 24h (friendlier than the 1h recovery window). */
@@ -24,12 +25,12 @@ export function buildVerifyLink(baseUrl: string, rawToken: string): string {
 
 export async function sendVerificationEmail(to: string, verifyLink: string): Promise<boolean> {
   try {
-    if (!process.env.EMITLO_API_KEY) {
+    if (!hasEmailProvider()) {
       if (process.env.NODE_ENV !== 'production') {
         // eslint-disable-next-line no-console
         console.log(`[verification:dev] verify link for ${to}: ${verifyLink}`)
       } else {
-        logger.warn('[verification] EMITLO_API_KEY not configured — verification email not sent')
+        logger.warn('[verification] no email provider configured — verification email not sent')
       }
       return false
     }
@@ -41,17 +42,9 @@ export async function sendVerificationEmail(to: string, verifyLink: string): Pro
     } catch {
       rendered = null
     }
-    const subject = rendered?.subject ?? 'تأكيد بريدك الإلكتروني — GAMES ARABIC'
-    const html =
-      rendered?.html ??
-      `
-        <div dir="rtl" lang="ar" style="font-family: Arial, sans-serif;">
-          <h2>تأكيد بريدك الإلكتروني</h2>
-          <p>أضفت هذا البريد إلى حسابك. الرابط صالح لمدة ٢٤ ساعة ولاستخدام واحد فقط.</p>
-          <p><a href="${verifyLink}">اضغط هنا لتأكيد بريدك الإلكتروني</a></p>
-          <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة.</p>
-        </div>`
-    const result = await emitloProvider.send({
+    const subject = rendered?.subject ?? buildVerificationEmail(verifyLink).subject
+    const html = rendered?.html ?? buildVerificationEmail(verifyLink).html
+    const result = await emailProvider.send({
       from: emailFrom(),
       to: [to],
       subject,

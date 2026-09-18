@@ -226,14 +226,20 @@ export async function POST(req: NextRequest) {
     }
     if (inviteeEmail) {
       try {
-        const { emitloProvider } = await import('@/lib/email/emitlo')
+        const { emailProvider } = await import('@/lib/email')
         const { emailFrom } = await import('@/lib/email/from')
+        const { buildInviteEmail } = await import('@/lib/email/templates')
         const acceptUrl = buildInviteAcceptUrl(token)
-        await emitloProvider.send({
+        const built = buildInviteEmail({
+          inviterUsername: user.username,
+          teamName: owned.name,
+          acceptUrl,
+        })
+        await emailProvider.send({
           from: emailFrom(),
           to: [inviteeEmail],
-          subject: `دعوة للانضمام إلى فريق "${owned.name}"`,
-          html: `<p>مرحباً،</p><p>دعاك ${user.username} للانضمام إلى فريق "${owned.name}".</p><p><a href="${acceptUrl}">قبول الدعوة</a> (صالحة لمدة 7 أيام)</p>`,
+          subject: built.subject,
+          html: built.html,
         })
       } catch (err) {
         logger.warn({ err }, '[creator/team/invites] email failed')

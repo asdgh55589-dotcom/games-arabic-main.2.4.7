@@ -306,6 +306,7 @@ export interface StudioDict {
     fetchedVideo: string
     fetchError: string
     fetchErrorDesc: string
+    partialData: string
     noImageLink: string
     missingName: string
     missingDesc: string

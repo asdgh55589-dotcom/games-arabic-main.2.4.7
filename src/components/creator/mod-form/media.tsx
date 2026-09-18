@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ImageCropper } from '@/components/admin/image-cropper'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ const UppyImagePanel = dynamic(
   },
 )
 
-const FREEIMAGE_MAX_BYTES = 64 * 1024 * 1024 // 64MB service cap (server enforces too)
+const FREEIMAGE_MAX_BYTES = 60 * 1024 * 1024 // 60MB unified cap (P2 — server enforces too)
 
 function FreeImagePanel({
   modId,
@@ -102,6 +102,18 @@ export function ModFormMedia(p: Props) {
   const toggleFi = (target: 'imageUrl' | 'thumbnailUrl' | 'gallery') =>
     setFiOpen((cur) => (cur === target ? null : target))
   const fiError = (message: string) => toast({ title: message, variant: 'destructive' })
+  // P2: blur auto-fetch compares against the last FETCHED url (not the render
+  // closure value, which is already updated by onChange and made the old
+  // `url !== v.url` check always false).
+  const lastFetchedVideoUrl = useRef<Record<string, string>>({})
+  const maybeFetchOnBlur = (groupIdx: number, videoIdx: number, url: string) => {
+    const trimmed = url.trim()
+    if (!trimmed) return
+    const key = `${groupIdx}-${videoIdx}`
+    if (lastFetchedVideoUrl.current[key] === trimmed) return
+    lastFetchedVideoUrl.current[key] = trimmed
+    p.onFetchVideoMetadata(groupIdx, videoIdx, trimmed)
+  }
   return (
     <>
       {/* ===== 2. images ===== */}
@@ -341,10 +353,7 @@ export function ModFormMedia(p: Props) {
                                 )
                               }
                               onBlur={(e) => {
-                                const url = e.target.value.trim()
-                                if (url && url !== v.url) {
-                                  p.onFetchVideoMetadata(i, j, url)
-                                }
+                                maybeFetchOnBlur(i, j, e.target.value)
                               }}
                               placeholder="https://youtube.com/watch?v=..."
                               className="flex-1"
@@ -356,7 +365,10 @@ export function ModFormMedia(p: Props) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => p.onFetchVideoMetadata(i, j, v.url)}
+                            onClick={() => {
+                              lastFetchedVideoUrl.current[fetchKey] = v.url.trim()
+                              p.onFetchVideoMetadata(i, j, v.url)
+                            }}
                             disabled={isFetching || !v.url.trim()}
                             className="shrink-0 min-h-[44px]"
                           >

@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Something went wrong</h1>
+          <h1 className="text-2xl font-bold tracking-tight">حدث خطأ غير متوقع</h1>
           <p className="mt-3 text-muted-foreground">
             {this.props.label
               ? `Failed to load ${this.props.label}. The error has been logged.`
@@ -82,9 +82,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </pre>
           )}
           <div className="mt-8 flex justify-center gap-3">
-            <Button onClick={this.handleReset}>Try Again</Button>
+            <Button onClick={this.handleReset}>إعادة المحاولة</Button>
             <Button asChild variant="outline">
-              <Link href="/">Back to Home</Link>
+              <Link href="/">العودة للرئيسية</Link>
             </Button>
           </div>
         </div>

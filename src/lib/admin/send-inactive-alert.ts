@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { emitloProvider } from '@/lib/email/emitlo'
+import { emailProvider, hasEmailProvider } from '@/lib/email'
 import { emailFrom } from '@/lib/email/from'
 
 interface InactiveAlertData {
@@ -55,8 +55,8 @@ function generateAlertTemplate(data: InactiveAlertData): string {
 }
 
 export async function sendInactiveUserAlert(data: InactiveAlertData) {
-  if (!process.env.EMITLO_API_KEY) {
-    console.warn('[Emitlo] Skipping email — API key not configured (sendInactiveUserAlert)')
+  if (!hasEmailProvider()) {
+    console.warn('[email] Skipping email — no provider configured (sendInactiveUserAlert)')
     return
   }
 
@@ -84,7 +84,7 @@ export async function sendInactiveUserAlert(data: InactiveAlertData) {
 
   for (const admin of admins) {
     try {
-      const result = await emitloProvider.send({
+      const result = await emailProvider.send({
         from: emailFrom(),
         to: [admin.email],
         subject,

@@ -419,7 +419,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const onFetchVideoMetadata = async (groupIdx: number, videoIdx: number, videoUrl: string) => {
     if (!videoUrl.trim()) return
     const videoId = videoUrl.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?v=|youtube-nocookie\.com\/embed\/|youtube\.com\/live\/|youtube\.com\/v\/)([\w-]{11})/,
     )?.[1]
     if (!videoId) {
       toast({
@@ -468,7 +468,13 @@ export default function ModForm({ modId }: ModFormProps) {
         }),
       )
 
-      toast({ title: 'تم جلب البيانات', description: `تم جلب بيانات فيديو: ${meta.title}` })
+      toast({
+        title: 'تم جلب البيانات',
+        description:
+          meta.source === 'oembed'
+            ? 'تم جلب البيانات الأساسية فقط (العنوان والقناة) — الإحصائيات غير متاحة'
+            : `تم جلب بيانات فيديو: ${meta.title}`,
+      })
     } catch (err) {
       toast({
         title: 'فشل الجلب',
@@ -815,7 +821,7 @@ export default function ModForm({ modId }: ModFormProps) {
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="مثال: Unofficial Skyrim Patch"
+            placeholder="مثال: ترجمة غير رسمية للعبة"
           />
         </Field>
         <Field label="الاسم بالعربي">
@@ -823,6 +829,7 @@ export default function ModForm({ modId }: ModFormProps) {
             value={arabicTitle}
             onChange={(e) => setArabicTitle(e.target.value)}
             placeholder="مثال: باتش سكايرم غير الرسمي"
+            dir="auto"
           />
         </Field>
         <Field label="محتوى التعريب" hint="مثال: العالم العربي، الخليج، جميع الدول">
@@ -830,6 +837,7 @@ export default function ModForm({ modId }: ModFormProps) {
             value={translationScope}
             onChange={(e) => setTranslationScope(e.target.value)}
             placeholder="مثال: العالم العربي"
+            dir="auto"
           />
         </Field>
         <Field
@@ -842,13 +850,14 @@ export default function ModForm({ modId }: ModFormProps) {
             onChange={(e) => setDescription(e.target.value)}
             rows={8}
             placeholder="## عن هذا التعريب\n\n..."
+            dir="auto"
           />
         </Field>
         <Field label="الوسوم" hint="افصل بينها بفاصلة">
           <Input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="Bugfix, UI, Gameplay"
+            placeholder="مثال: إصلاح أخطاء، واجهة، أسلوب لعب"
           />
         </Field>
         <Field label="نوع التعريب" hint="اختر نوع التعريب: رسمية أو غير رسمية">

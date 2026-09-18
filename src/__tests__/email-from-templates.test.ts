@@ -7,7 +7,14 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { buildApprovalEmail, buildResetEmail, renderEmailTemplate } from '@/lib/email/templates'
+import {
+  buildApprovalEmail,
+  buildInviteEmail,
+  buildResetEmail,
+  buildTransferEmail,
+  buildVerificationEmail,
+  renderEmailTemplate,
+} from '@/lib/email/templates'
 import { emailFrom } from '@/lib/email/from'
 
 const ROOT = process.cwd()
@@ -144,5 +151,67 @@ describe('renderEmailTemplate DB-row path (deferred, documented)', () => {
   it('returns null so SA-1 try/catch-require + inline fallback behaves identically', () => {
     expect(renderEmailTemplate('comment_reply', 'ar', { actorName: 'x' })).toBeNull()
     expect(renderEmailTemplate('nonexistent_type', 'ar', {})).toBeNull()
+  })
+})
+
+describe('reusable sender builders (verbatim copy, RTL, Brevo-safe HTML)', () => {
+  it('buildVerificationEmail mirrors verification-email.ts markup verbatim', () => {
+    const link = 'https://example.com/verify-email-address?token=abc'
+    const { subject, html, text } = buildVerificationEmail(link)
+    expect(subject).toBe('تأكيد بريدك الإلكتروني — GAMES ARABIC')
+    expect(html).toContain('تأكيد بريدك الإلكتروني')
+    expect(html).toContain(link)
+    expect(html).toContain('٢٤ ساعة')
+    expect(html).toContain('dir="rtl"')
+    expect(html).toContain('إذا لم تطلب ذلك، تجاهل هذه الرسالة.')
+    expect(typeof text).toBe('string')
+    expect(text).toContain(link)
+  })
+
+  it('buildInviteEmail mirrors invites/route.ts markup verbatim', () => {
+    const { subject, html, text } = buildInviteEmail({
+      inviterUsername: 'boss',
+      teamName: 'فريق النور',
+      acceptUrl: 'https://example.com/accept?t=1',
+    })
+    expect(subject).toBe('دعوة للانضمام إلى فريق "فريق النور"')
+    expect(html).toContain('دعاك boss للانضمام إلى فريق "فريق النور"')
+    expect(html).toContain('https://example.com/accept?t=1')
+    expect(html).toContain('قبول الدعوة')
+    expect(typeof text).toBe('string')
+  })
+
+  it('buildTransferEmail mirrors transfer/nominate/route.ts markup verbatim', () => {
+    const { subject, html, text } = buildTransferEmail({
+      nomineeUsername: 'sara',
+      nominatorUsername: 'boss',
+      teamName: 'فريق النور',
+      transferLink: 'https://example.com/accept?t=2&transfer=1',
+    })
+    expect(subject).toBe('ترشيح لملكية فريق "فريق النور"')
+    expect(html).toContain('مرحباً sara،')
+    expect(html).toContain('رشحك boss لتصبح مالك فريق "فريق النور"')
+    expect(html).toContain('https://example.com/accept?t=2&transfer=1')
+    expect(typeof text).toBe('string')
+  })
+
+  it('all builders emit Brevo-compatible markup (inline CSS, tables-free, no scripts)', () => {
+    const samples = [
+      buildVerificationEmail('https://example.com/v?t=1').html,
+      buildResetEmail('https://example.com/r?t=1').html,
+      buildInviteEmail({ inviterUsername: 'a', teamName: 'b', acceptUrl: 'https://example.com' }).html,
+      buildTransferEmail({
+        nomineeUsername: 'a',
+        nominatorUsername: 'b',
+        teamName: 'c',
+        transferLink: 'https://example.com',
+      }).html,
+    ]
+    for (const html of samples) {
+      expect(html).not.toMatch(/<script/i)
+      expect(html).not.toMatch(/<iframe/i)
+      expect(html).not.toMatch(/javascript:/i)
+      expect(html.length).toBeLessThan(1024 * 1024)
+    }
   })
 })

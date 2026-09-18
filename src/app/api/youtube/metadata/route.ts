@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import type { NextRequest } from 'next/server'
 import { fail, internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fetchOEmbedData } from '@/lib/oembed'
 import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -59,12 +60,16 @@ export function classifyYtDlpError(raw: unknown): ClassifiedVideoError {
   return { code: 'VIDEO_FETCH_FAILED', message: 'تعذّر جلب بيانات الفيديو — تحقق من الرابط وحاول مجددًا', status: 500 }
 }
 
-function extractYouTubeId(url: string): string | null {
+export function extractYouTubeId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
     /(?:youtu\.be\/)([\w-]{11})/,
     /(?:youtube\.com\/embed\/)([\w-]{11})/,
     /(?:youtube\.com\/shorts\/)([\w-]{11})/,
+    /(?:music\.youtube\.com\/watch\?v=)([\w-]{11})/,
+    /(?:youtube-nocookie\.com\/embed\/)([\w-]{11})/,
+    /(?:youtube\.com\/live\/)([\w-]{11})/,
+    /(?:youtube\.com\/v\/)([\w-]{11})/,
   ]
   for (const pattern of patterns) {
     const match = url.match(pattern)
@@ -85,6 +90,7 @@ interface VideoMetadata {
   publishedAt: string | null
   videoId: string
   url: string
+  source: 'yt-dlp' | 'oembed'
 }
 
 /** مسار تنفيذ yt-dlp (قابل للتخصيص عبر متغير البيئة YT_DLP_PATH). */
@@ -212,6 +218,29 @@ function buildMetadata(data: any, videoId: string, youtubeUrl: string): VideoMet
     publishedAt: resolvePublishedAt(data.timestamp, data.upload_date),
     videoId,
     url: youtubeUrl,
+    source: 'yt-dlp',
+  }
+}
+
+/** Partial metadata from oEmbed (no stats/duration/publish date). */
+export function buildOEmbedMetadata(
+  data: { title: string; author_name: string; thumbnail_url: string },
+  videoId: string,
+  youtubeUrl: string,
+): VideoMetadata {
+  return {
+    title: data.title || '',
+    channel: data.author_name || '',
+    thumbnail: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    duration: '',
+    views: 0,
+    likes: 0,
+    commentsCount: 0,
+    description: '',
+    publishedAt: null,
+    videoId,
+    url: youtubeUrl,
+    source: 'oembed',
   }
 }
 
@@ -235,12 +264,17 @@ export async function POST(req: NextRequest) {
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-    // الاعتماد الكامل على yt-dlp لجلب كل البيانات
+    // yt-dlp first (full metadata); oEmbed fallback (basic fields only).
     try {
       const data = await runYtDlp(youtubeUrl)
       return ok(buildMetadata(data, videoId, youtubeUrl))
     } catch (err) {
       console.error('[youtube/metadata] yt-dlp failed:', err)
+      const oembed = await fetchOEmbedData(youtubeUrl)
+      if (oembed) {
+        console.info('[youtube/metadata] oEmbed fallback succeeded')
+        return ok(buildOEmbedMetadata(oembed, videoId, youtubeUrl))
+      }
       const classified = classifyYtDlpError(err)
       return fail(classified.code, classified.message, classified.status, { url: youtubeUrl })
     }

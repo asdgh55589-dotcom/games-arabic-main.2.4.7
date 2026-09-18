@@ -80,8 +80,9 @@ jest.mock('@/lib/team-helpers', () => ({
   syncTeamCounts: jest.fn().mockResolvedValue(undefined),
 }))
 
-jest.mock('@/lib/email/emitlo', () => ({
-  emitloProvider: { send: jest.fn().mockResolvedValue({ ok: true }) },
+jest.mock('@/lib/email', () => ({
+  emailProvider: { send: jest.fn().mockResolvedValue({ ok: true }) },
+  hasEmailProvider: jest.fn().mockReturnValue(true),
 }))
 
 jest.mock('@/lib/email/from', () => ({
