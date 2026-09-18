@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const { rateLimit } = await import('@/lib/rate-limit')
     const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'auth:callback' })
     if (!rl.success) {
-      return new NextResponse('Too many requests', { status: 429 })
+      return new NextResponse('طلبات كثيرة جداً، انتظر قليلاً وحاول مجدداً', { status: 429 })
     }
     const { searchParams } = new URL(req.url)
     const code = searchParams.get('code')

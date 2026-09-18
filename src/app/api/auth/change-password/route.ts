@@ -1,21 +1,18 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { ChangePasswordSchema } from '@/lib/schemas'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   // Rate limiting: 5 attempts per 60 seconds
   const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:change-password' })
   if (!rl.success) {
-    return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-      status: 429,
-      headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-    })
+    return rateLimited()
   }
 
   try {
@@ -116,6 +113,6 @@ export async function POST(req: NextRequest) {
     return ok({ success: true, message: 'تم تغيير كلمة المرور بنجاح' })
   } catch (err) {
     logger.error({ err }, '[change-password POST] failed')
-    return internalError('Failed')
+    return internalError('حدث خطأ، حاول مجدداً')
   }
 }

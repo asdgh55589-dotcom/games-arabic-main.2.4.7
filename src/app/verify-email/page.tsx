@@ -1,12 +1,10 @@
-import type { Metadata } from 'next'
-import VerifyEmailView from '@/views/verify-email'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'تأكيد البريد — Games Arabic',
-  description: 'فعّل حسابك عبر رابط التأكيد',
-  robots: { index: false, follow: false },
-}
-
+/**
+ * Phase 4C merge: /verify-email (legacy Supabase/Better-Auth info page) is
+ * folded into /verify-email-address (custom token backend + Supabase resend
+ * section). Legacy tokens are dead — redirect canonically.
+ */
 export default function VerifyEmailPage() {
-  return <VerifyEmailView />
+  redirect('/verify-email-address')
 }

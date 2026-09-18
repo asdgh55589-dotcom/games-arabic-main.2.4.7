@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs'
 import type { NextRequest } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { DisableMfaSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
@@ -13,10 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:mfa-disable' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

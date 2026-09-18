@@ -40,6 +40,22 @@ export async function POST(req: NextRequest) {
       data: { lastLoginAt: new Date(), loginCount: { increment: 1 } },
     })
 
+    // Phase 4C: feeds "last MFA verification" in settings (best-effort).
+    try {
+      const { logAction } = await import('@/lib/audit')
+      const u = await db.user.findUnique({ where: { id: user.id }, select: { username: true } })
+      await logAction({
+        userId: user.id,
+        username: u?.username || 'unknown',
+        action: 'mfa_login_success',
+        entity: 'user',
+        entityId: user.id,
+        request: req,
+      })
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
+
     return ok({ success: true })
   } catch (err) {
     console.error('[mfa login] failed:', err)

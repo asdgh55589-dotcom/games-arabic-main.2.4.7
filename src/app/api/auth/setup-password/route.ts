@@ -4,6 +4,7 @@ import {
   fail,
   internalError,
   ok,
+  rateLimited,
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
@@ -13,7 +14,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { ProvisionError, provisionSupabasePassword } from '@/lib/password-setup'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { SetupPasswordSchema } from '@/lib/schemas'
 import {
   VERIFICATION_TTL_MS,
@@ -38,10 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 5, window: 60, keyPrefix: 'auth:setup-password' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

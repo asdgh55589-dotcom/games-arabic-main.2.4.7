@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAuth, setRoleCookie, type UserRole } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { UsernameSchema } from '@/lib/schemas'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -17,10 +17,7 @@ export async function POST(_req?: NextRequest) {
       keyPrefix: 'auth:onboarding-complete',
     }).catch(() => null)
     if (rl && !rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

@@ -60,6 +60,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  // Phase 4C: optional-MFA second step (identifier + Supabase login paths).
+  const [mfaPending, setMfaPending] = useState(false)
+  const [mfaToken, setMfaToken] = useState('')
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaMode, setMfaMode] = useState<'identifier' | 'supabase'>('identifier')
 
   const telegramEnabled = !!getTelegramBotUsername()
 
@@ -146,6 +151,52 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     return getAuthErrorMessage('WRONG_PASSWORD')
   }
 
+  // Phase 4C: optional-MFA second step. Tries the TOTP code first, then a
+  // backup recovery code (same code field, mirrors admin login).
+  async function handleMfa(e: React.FormEvent) {
+    e.preventDefault()
+    if (!mfaCode || mfaCode.trim().length < 6) {
+      setError('أدخل رمز التحقق المكون من 6 أرقام')
+      return
+    }
+    setBusy('mfa')
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/mfa/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mfaToken, code: mfaCode.trim() }),
+      })
+      const j = await res.json().catch(() => null)
+      if (!res.ok) {
+        const rec = await fetch('/api/auth/mfa/recovery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mfaToken, code: mfaCode.trim() }),
+        })
+        const rj = await rec.json().catch(() => null)
+        if (!rec.ok) {
+          const msg =
+            (j?.error as { message?: string } | undefined)?.message ||
+            (rj?.error as { message?: string } | undefined)?.message ||
+            'رمز التحقق غير صحيح'
+          setError(typeof msg === 'string' ? msg : 'رمز التحقق غير صحيح')
+          setBusy(null)
+          return
+        }
+      }
+      try {
+        await fetch('/api/auth/session-ledger', { method: 'POST' })
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+      }
+      window.location.href = '/'
+    } catch {
+      setError('تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+      setBusy(null)
+    }
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault()
     setBusy('email')
@@ -171,10 +222,24 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               setBusy(null)
               return
             }
+            // Phase 4C: optional MFA — password passed but TOTP still required.
+            if (j?.data?.mfaRequired && j?.data?.mfaToken) {
+              setMfaToken(j.data.mfaToken)
+              setMfaMode('identifier')
+              setMfaPending(true)
+              setError(null)
+              setBusy(null)
+              return
+            }
           } catch {
             setError(getAuthErrorMessage('WRONG_PASSWORD'))
             setBusy(null)
             return
+          }
+          try {
+            await fetch('/api/auth/session-ledger', { method: 'POST' })
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
           }
           window.location.href = '/'
           return
@@ -191,6 +256,31 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           return
         }
         if (authData.user) {
+          // Phase 4C: optional MFA for the Supabase path. If TOTP is enabled,
+          // kill the bypass session immediately and finish via mfa/login.
+          try {
+            const st = await fetch('/api/auth/mfa/status', { cache: 'no-store' })
+            const sj = await st.json().catch(() => null)
+            if (st.ok && sj?.data?.totpEnabled) {
+              const ch = await fetch('/api/auth/mfa/challenge', { method: 'POST' })
+              const cj = await ch.json().catch(() => null)
+              if (ch.ok && cj?.data?.mfaToken) {
+                try {
+                  await supabase.auth.signOut()
+                } catch {
+                  // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+                }
+                setMfaToken(cj.data.mfaToken)
+                setMfaMode('supabase')
+                setMfaPending(true)
+                setError(null)
+                setBusy(null)
+                return
+              }
+            }
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: status check fail-soft — normal login continues
+          }
           try {
             await fetch('/api/auth/session-ledger', { method: 'POST' })
           } catch {
@@ -352,7 +442,46 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
               <span className="relative z-10 bg-card px-2 text-muted-foreground">أو تابع بالبريد</span>
             </div>
-            <form onSubmit={handleEmail} className="grid gap-6">
+            <form onSubmit={mfaPending ? handleMfa : handleEmail} className="grid gap-6">
+              {mfaPending ? (
+                <div className="grid gap-4">
+                  <p className="text-center text-sm text-muted-foreground leading-7">
+                    حسابك محمي بالمصادقة الثنائية — أدخل الرمز من تطبيق المصادقة (أو أحد رموز
+                    الاسترداد الاحتياطية)
+                  </p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="mfaCode">رمز التحقق</Label>
+                    <Input
+                      id="mfaCode"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      dir="ltr"
+                      className="text-center tracking-[0.3em]"
+                      placeholder="000000"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value)}
+                    />
+                  </div>
+                  {error && <p className="text-center text-sm text-destructive">{error}</p>}
+                  <Button type="submit" className="w-full" disabled={busy !== null}>
+                    {busy === 'mfa' ? 'جارٍ التحقق…' : 'تحقق وادخل'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="text-center text-sm underline underline-offset-4"
+                    onClick={() => {
+                      setMfaPending(false)
+                      setMfaToken('')
+                      setMfaCode('')
+                      setError(null)
+                    }}
+                  >
+                    رجوع لتسجيل الدخول
+                  </button>
+                </div>
+              ) : (
+                <>
               {mode === 'register' && (
                 <>
                   <div className="grid gap-2">
@@ -417,6 +546,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               <Button type="submit" className="w-full" disabled={busy !== null}>
                 {busy === 'email' ? 'جارٍ…' : mode === 'login' ? 'دخول' : 'إنشاء الحساب'}
               </Button>
+                </>
+              )}
             </form>
             <div className="text-center text-sm">
               {mode === 'login' ? (

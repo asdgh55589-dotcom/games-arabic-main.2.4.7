@@ -117,9 +117,38 @@ export async function POST(req: NextRequest) {
     if (ban.banned) {
       const msg =
         ban.type === 'perm'
-          ? 'Your account has been permanently banned.'
-          : `Your account has been temporarily banned. Ban expires on ${neonUser.bannedUntil!.toLocaleDateString('en')}`
+          ? 'تم حظر حسابك نهائياً.'
+          : `تم حظر حسابك مؤقتاً. ينتهي الحظر بتاريخ ${neonUser.bannedUntil!.toLocaleDateString('ar-EG')}`
       return forbidden(msg)
+    }
+
+    // Phase 4C: optional MFA challenge. If the user enabled TOTP, factor one
+    // (password) is NOT enough — return a short-lived challenge token and NO
+    // session. The client completes via POST /api/auth/mfa/login (or
+    // /mfa/recovery with a backup code). Users without MFA proceed unchanged.
+    if (neonUser.totpEnabled && neonUser.totpSecret) {
+      const { generateMFAToken } = await import('@/lib/mfa-token')
+      const mfaToken = await generateMFAToken(neonUser.id)
+      const used = Array.isArray(neonUser.recoveryCodesUsed)
+        ? (neonUser.recoveryCodesUsed as unknown[]).length
+        : 0
+      try {
+        await logAction({
+          userId: neonUser.id,
+          username: neonUser.username,
+          action: 'mfa_challenge_issued',
+          entity: 'user',
+          entityId: neonUser.id,
+          request: req,
+        })
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+      }
+      return ok({
+        mfaRequired: true,
+        mfaToken,
+        recoveryCodesCount: Math.max(0, 10 - used),
+      })
     }
 
     // Role-cookie + ledger session (no Supabase — same class as Telegram logins).
@@ -183,6 +212,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error({ err }, '[login-identifier POST] failed')
     reportError(err, { route: 'POST /api/auth/login-identifier' })
-    return internalError('Login failed')
+    return internalError('حدث خطأ، حاول مجدداً')
   }
 }
