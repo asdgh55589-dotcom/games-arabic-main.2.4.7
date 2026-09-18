@@ -19,6 +19,10 @@ export default function SecurityClient() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Phase 4B step-up: disabling MFA requires proof (password or fresh TOTP).
+  const [disableArmed, setDisableArmed] = useState(false)
+  const [disablePassword, setDisablePassword] = useState('')
+  const [disableTotp, setDisableTotp] = useState('')
 
   const fetchStatus = async () => {
     try {
@@ -90,18 +94,42 @@ export default function SecurityClient() {
   }
 
   const handleDisable = async () => {
-    if (!confirm('هل أنت متأكد من تعطيل المصادقة الثنائية؟ سيقل مستوى أمان حسابك.')) return
+    // Two-step: first click arms the proof form, second submits it.
+    if (!disableArmed) {
+      setDisableArmed(true)
+      setError(null)
+      return
+    }
+    if (!disablePassword && disableTotp.trim().length < 6) {
+      setError('قدّم كلمة المرور أو رمز المصادقة المكوّن من 6 أرقام')
+      return
+    }
     setActionLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/auth/mfa/disable', { method: 'POST' })
+      const res = await fetch('/api/auth/mfa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(disablePassword ? { password: disablePassword } : {}),
+          ...(disableTotp.trim() ? { totpCode: disableTotp.trim() } : {}),
+        }),
+      })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(data?.error?.message || 'فشل تعطيل المصادقة')
+        const details = (data?.error as { details?: Record<string, string> } | undefined)?.details
+        setError(
+          (details && Object.values(details)[0]) ||
+            (typeof data?.error === 'string' ? data.error : data?.error?.message) ||
+            'فشل تعطيل المصادقة',
+        )
         return
       }
       setTotpEnabled(false)
       setRecoveryCodes([])
+      setDisableArmed(false)
+      setDisablePassword('')
+      setDisableTotp('')
       setSuccess('تم تعطيل المصادقة الثنائية')
       fetchStatus()
     } catch {
@@ -178,15 +206,55 @@ export default function SecurityClient() {
               <div className="text-sm text-muted-foreground">
                 الرموز المتبقية: <span className="font-bold">{recoveryRemaining} / 10</span>
               </div>
-              <Button
-                variant="destructive"
-                onClick={handleDisable}
-                disabled={actionLoading}
-                className="min-h-[44px]"
-              >
-                {actionLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-                تعطيل المصادقة الثنائية
-              </Button>
+              {disableArmed && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-sm font-bold">
+                    لتأكيد التعطيل، قدّم كلمة المرور (أو رمز المصادقة إذا لم يكن لديك كلمة مرور)
+                  </p>
+                  <Input
+                    type="password"
+                    placeholder="كلمة المرور الحالية"
+                    value={disablePassword}
+                    onChange={(e) => setDisablePassword(e.target.value)}
+                    className="min-h-[44px]"
+                    dir="ltr"
+                  />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="رمز المصادقة (6 أرقام) — للحسابات بدون كلمة مرور"
+                    value={disableTotp}
+                    onChange={(e) => setDisableTotp(e.target.value)}
+                    className="min-h-[44px]"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleDisable}
+                  disabled={actionLoading}
+                  className="min-h-[44px]"
+                >
+                  {actionLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
+                  {disableArmed ? 'تأكيد التعطيل' : 'تعطيل المصادقة الثنائية'}
+                </Button>
+                {disableArmed && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDisableArmed(false)
+                      setDisablePassword('')
+                      setDisableTotp('')
+                      setError(null)
+                    }}
+                    disabled={actionLoading}
+                    className="min-h-[44px]"
+                  >
+                    إلغاء
+                  </Button>
+                )}
+              </div>
             </div>
           ) : setupPhase === 'idle' ? (
             <div className="space-y-3">

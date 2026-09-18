@@ -71,6 +71,8 @@ export interface SessionUser {
   needsSecuritySetup?: boolean
   /** Inbox proven via verification link (/api/auth/me only). */
   emailVerified?: boolean
+  /** Phase 4B: outstanding two-step email-change address, if any (/api/auth/me only). */
+  pendingEmail?: string | null
 }
 
 // ===== Password helpers =====

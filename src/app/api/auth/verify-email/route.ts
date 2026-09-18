@@ -1,10 +1,12 @@
 import { createHash } from 'crypto'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
+import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const VerifySchema = z.object({
@@ -51,16 +53,77 @@ export async function POST(req: NextRequest) {
       return validationFail({ token: INVALID })
     }
 
-    // The token is bound to the address it was issued for: if the user has
-    // since changed address, this link is dead — resend from settings.
-    if (!row.user || row.user.email.toLowerCase() !== row.email.toLowerCase()) {
+    if (!row.user) {
       return validationFail({ token: INVALID })
+    }
+
+    // Phase 4B two-step email change: the token carries the NEW address while
+    // user.email is still the old (synthetic) primary. Clicking promotes the
+    // new address — after a consume-time uniqueness re-check (the address
+    // could have been taken between issue and click; the UNIQUE constraint
+    // is the final backstop).
+    const newEmail = row.email.toLowerCase()
+    const isEmailChange = row.user.email.toLowerCase() !== newEmail
+
+    if (isEmailChange) {
+      const taken = await db.user.findUnique({
+        where: { email: newEmail },
+        select: { id: true },
+      })
+      if (taken && taken.id !== row.userId) {
+        return validationFail({ token: INVALID })
+      }
     }
 
     await db.emailVerificationToken.update({
       where: { id: row.id },
       data: { usedAt: new Date() },
     })
+
+    if (isEmailChange) {
+      const oldEmail = row.user.email
+      try {
+        await db.user.update({
+          where: { id: row.userId },
+          data: { email: newEmail, emailVerified: true },
+        })
+      } catch {
+        // UNIQUE race lost after the re-check — generic invalid, no oracle.
+        return validationFail({ token: INVALID })
+      }
+
+      try {
+        await logAction({
+          userId: row.userId,
+          username: row.user.username,
+          action: 'email_changed',
+          entity: 'user',
+          entityId: row.userId,
+          details: JSON.stringify({ verified: true }),
+        })
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+      }
+
+      // Notify the OLD address (best-effort; synthetic Telegram addresses
+      // are undeliverable and skipped — never fail the verification).
+      if (!isSyntheticTelegramEmail(oldEmail)) {
+        try {
+          const { sendEmail } = await import('@/lib/email')
+          await sendEmail({
+            to: [oldEmail],
+            subject: 'تم تغيير بريدك الإلكتروني',
+            text: `تم تغيير البريد الإلكتروني المرتبط بحسابك (${row.user.username}) إلى ${newEmail}. إذا لم تطلب ذلك، تواصل مع الدعم فوراً.`,
+            html: `<div dir="rtl"><p>تم تغيير البريد الإلكتروني المرتبط بحسابك إلى <b>${newEmail}</b>. إذا لم تطلب ذلك، تواصل مع الدعم فوراً.</p></div>`,
+          })
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
+        }
+      }
+
+      return ok({ success: true, emailChanged: true })
+    }
+
     await db.user.update({
       where: { id: row.userId },
       data: { emailVerified: true },
@@ -81,6 +144,37 @@ export async function POST(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     logger.error({ err }, '[verify-email POST] failed')
+    return internalError('حدث خطأ')
+  }
+}
+
+// DELETE /api/auth/verify-email — cancel a pending email change (Phase 4B).
+// Self-only: drops the caller's outstanding unused tokens so the old primary
+// stays. The 24h expiry clears them anyway; this is the explicit option.
+export async function DELETE() {
+  try {
+    const session = await requireAuth().catch(() => null)
+    if (!session) return unauthorized()
+
+    const cleared = await db.emailVerificationToken.deleteMany({
+      where: { userId: session.id, usedAt: null },
+    })
+
+    try {
+      await logAction({
+        userId: session.id,
+        action: 'email_change_cancelled',
+        entity: 'user',
+        entityId: session.id,
+        details: JSON.stringify({ cleared: cleared.count }),
+      })
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
+
+    return ok({ success: true, cleared: cleared.count })
+  } catch (err) {
+    logger.error({ err }, '[verify-email DELETE] failed')
     return internalError('حدث خطأ')
   }
 }

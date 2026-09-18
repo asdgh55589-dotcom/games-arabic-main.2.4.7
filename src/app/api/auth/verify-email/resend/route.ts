@@ -46,15 +46,20 @@ export async function POST(req: NextRequest) {
     })
     if (!neonUser) return unauthorized()
 
-    if (isSyntheticTelegramEmail(neonUser.email)) {
+    // Phase 4B two-step: while an email change is pending, user.email is
+    // still the old (synthetic) primary — resend to the PENDING address from
+    // the outstanding token, not to the synthetic primary.
+    const pendingToken = await db.emailVerificationToken.findFirst({
+      where: { userId: neonUser.id, usedAt: null, expiresAt: { gt: new Date() } },
+      select: { id: true, email: true },
+    })
+    const targetEmail = (pendingToken?.email || neonUser.email).toLowerCase()
+
+    if (isSyntheticTelegramEmail(targetEmail)) {
       return validationFail({ email: 'أضف بريداً إلكترونياً حقيقياً أولاً من الإعدادات' })
     }
 
-    const pending = await db.emailVerificationToken.findFirst({
-      where: { userId: neonUser.id, usedAt: null, expiresAt: { gt: new Date() } },
-      select: { id: true },
-    })
-    if (neonUser.emailVerified && !pending) {
+    if (neonUser.emailVerified && !pendingToken) {
       return ok({ success: true, already: true })
     }
 
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
     await db.emailVerificationToken.create({
       data: {
         userId: neonUser.id,
-        email: neonUser.email.toLowerCase(),
+        email: targetEmail,
         tokenHash,
         expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
         ipAddress:
@@ -89,7 +94,7 @@ export async function POST(req: NextRequest) {
     })
 
     const verificationSent = await sendVerificationEmail(
-      neonUser.email,
+      targetEmail,
       buildVerifyLink(getBaseUrl(req), rawToken),
     )
 

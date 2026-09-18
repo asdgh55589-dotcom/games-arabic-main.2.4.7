@@ -119,9 +119,13 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const data: { password?: string; supabaseId?: string; email?: string; emailVerified?: boolean } = {}
-
+      // Phase 4B two-step email change: the new address is NEVER written to
+      // user.email here. It lives only inside the verification token until
+      // the inbox owner clicks the link (verify-email promotes it). The old
+      // (synthetic) address stays primary meanwhile, so a typo can't lock
+      // the user out.
       if (wantsPassword) {
+        const data: { password?: string; supabaseId?: string } = {}
         const provisioned = await provisionSupabasePassword({
           username: neonUser.username,
           email: effectiveEmail,
@@ -132,18 +136,9 @@ export async function POST(req: NextRequest) {
         // OAuthAccount changes, so existing OAuth logins keep working.
         data.password = await hashPassword(password)
         if (provisioned.supabaseId) data.supabaseId = provisioned.supabaseId
+
+        await db.user.update({ where: { id: neonUser.id }, data })
       }
-      if (wantsEmail) data.email = effectiveEmail
-
-      if (Object.keys(data).length === 0) {
-        return validationFail({ email: 'لا يوجد ما يُحفظ' })
-      }
-
-      // A freshly added address is unproven until the inbox owner clicks the
-      // verification link — recovery stays closed until then (see recover).
-      if (wantsEmail) data.emailVerified = false
-
-      await db.user.update({ where: { id: neonUser.id }, data })
 
       // Issue the verification mail for the new address. A change of address
       // rotates (deletes) any pending token first, so only the newest link
@@ -194,7 +189,9 @@ export async function POST(req: NextRequest) {
       // Deliberately no tokenVersion bump: OAuth sessions stay valid.
       return ok({
         success: true,
-        ...(wantsEmail ? { verificationSent: !!verificationSent, needsVerification: true } : {}),
+        ...(wantsEmail
+          ? { verificationSent: !!verificationSent, needsVerification: true, pendingEmail: effectiveEmail }
+          : {}),
       })
     } catch (err) {
       if (err instanceof ProvisionError) {

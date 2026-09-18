@@ -42,6 +42,9 @@ export function SetupPasswordCard() {
   const hasPw = user?.hasPassword === true
   const needsEmail = isSyntheticEmail(user?.email)
   const emailVerified = user?.emailVerified === true
+  // Phase 4B two-step: the new address is pending until the inbox link is
+  // clicked — the synthetic primary stays meanwhile.
+  const pendingEmail = typeof user?.pendingEmail === 'string' ? user.pendingEmail : null
   const showStatus = !needsEmail && !!user?.email
 
   useEffect(() => {
@@ -108,6 +111,26 @@ export function SetupPasswordCard() {
       await refreshAuth()
     } catch {
       setError('حدث خطأ أثناء الحفظ، تحقق من الاتصال')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleCancelPending() {
+    if (!confirm('هل تريد إلغاء تغيير البريد الإلكتروني المعلق؟')) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/verify-email', { method: 'DELETE' })
+      if (!res.ok) {
+        setError('تعذر الإلغاء، حاول مجدداً')
+        return
+      }
+      setNotice('تم إلغاء تغيير البريد المعلق')
+      setMailState('idle')
+      await refreshAuth()
+    } catch {
+      setError('حدث خطأ أثناء الإلغاء، تحقق من الاتصال')
     } finally {
       setBusy(false)
     }
@@ -205,6 +228,30 @@ export function SetupPasswordCard() {
               </p>
             )}
             {!emailVerified && resendRow}
+          </div>
+        )}
+        {needsEmail && pendingEmail && (
+          <div
+            role="status"
+            className="rounded-none border-2 border-amber-400 bg-amber-400/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-300"
+          >
+            <p>
+              ⏳ بانتظار تأكيد البريد الجديد: <span dir="ltr">{pendingEmail}</span>
+            </p>
+            <p className="mt-1 font-normal">
+              لن يصبح بريدك الأساسي حتى تضغط رابط التحقق المرسل إليه (صالح ٢٤ ساعة).
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {resendRow}
+              <button
+                type="button"
+                onClick={handleCancelPending}
+                disabled={busy}
+                className="font-bold underline underline-offset-2 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                إلغاء التغيير المعلق
+              </button>
+            </div>
           </div>
         )}
         {needsEmail && (

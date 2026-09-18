@@ -105,3 +105,21 @@ describe('Arabic + real-auth wiring', () => {
     expect(ROUTE).toContain('index: false')
   })
 })
+
+describe('signup username oracle closed (Phase 4B Fix 3)', () => {
+  it('performs no pre-signup username-existence probe', () => {
+    // The old fetch(`/api/users/${...}/profile`) let anyone enumerate names.
+    expect(FORM).not.toMatch(/api\/users\/.*\/profile/)
+    expect(FORM).not.toMatch(/\/api\/users\//)
+  })
+
+  it('handles server-side 409 conflicts after a real signup attempt', () => {
+    expect(FORM).toMatch(/register-ledger/)
+    expect(FORM).toMatch(/status === 409/)
+    expect(FORM).toMatch(/USERNAME_TAKEN/)
+  })
+
+  it('conflict warning is generic and actionable (no reason oracle)', () => {
+    expect(FORM).toMatch(/يمكنك تغييره لاحقاً من الإعدادات/)
+  })
+})

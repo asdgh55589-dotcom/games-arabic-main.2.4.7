@@ -8,6 +8,21 @@ import { createClient } from '@/lib/supabase/server'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
 
+// Phase 4B: latest still-pending verification address (two-step email
+// change). Null when none — best-effort, never fails the request.
+async function getPendingEmail(userId: string): Promise<string | null> {
+  try {
+    const row = await db.emailVerificationToken.findFirst({
+      where: { userId, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      select: { email: true },
+    })
+    return row?.email ?? null
+  } catch {
+    return null
+  }
+}
+
 // GET /api/auth/me — المستخدم الحالي
 export async function GET() {
   try {
@@ -54,6 +69,7 @@ export async function GET() {
             user: {
               ...safeUser,
               hasPassword,
+              pendingEmail: await getPendingEmail(user.id),
               needsSecuritySetup: needsSecuritySetup({
                 hasPassword,
                 email: safeUser.email,
@@ -85,6 +101,7 @@ export async function GET() {
             avatarUrl: newUser.avatarUrl,
             onboardingCompleted: newUser.onboardingCompleted,
             hasPassword: false,
+            pendingEmail: null,
             needsSecuritySetup: true,
             emailVerified: newUser.emailVerified,
           },
@@ -178,6 +195,7 @@ export async function GET() {
         avatarUrl: user.avatarUrl,
         onboardingCompleted: user.onboardingCompleted,
         hasPassword: !!user.password,
+        pendingEmail: await getPendingEmail(user.id),
         needsSecuritySetup: needsSecuritySetup({
           hasPassword: !!user.password,
           email: user.email,
