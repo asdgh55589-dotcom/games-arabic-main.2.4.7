@@ -7,6 +7,7 @@ import {
   rateLimited,
   unauthorized,
   validationFail,
+  accountLocked,
 } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import {
@@ -18,15 +19,15 @@ import {
 } from '@/lib/auth'
 import { db } from '@/lib/db'
 import {
+  ACCOUNT_LOCKED_MESSAGE,
+  LOCKOUT_THRESHOLD,
   LOGIN_GENERIC_ERROR,
-  captchaRequired,
   clearLoginFailures,
   failureKey,
-  getLoginFailures,
+  getLockoutRemainingSeconds,
   loginDelayFor,
   recordLoginFailure,
   sleep,
-  verifyCaptchaToken,
 } from '@/lib/login-defense'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { LoginSchema } from '@/lib/schemas'
@@ -176,18 +177,34 @@ export async function POST(req: NextRequest) {
 
     // Audit D.2: anti-enumeration — every credential failure below returns
     // the SAME 401 message after a progressive per-IP+username delay.
+    // Phase 4A: 10 failures in 15 minutes hard-lock the composite key for
+    // 15 minutes (429 ACCOUNT_LOCKED + Retry-After).
     const fkey = failureKey(loginIp, typeof body?.username === 'string' ? body.username : '')
-    const failClosed = async () => {
-      const fails = await recordLoginFailure(fkey)
-      await sleep(loginDelayFor(fails) * 1000)
-      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
+
+    const lockedSeconds = await getLockoutRemainingSeconds(fkey)
+    if (lockedSeconds > 0) {
+      return accountLocked(ACCOUNT_LOCKED_MESSAGE, lockedSeconds)
     }
 
-    // Turnstile hook: required after 5 fails (placeholder when unconfigured).
-    if (captchaRequired(await getLoginFailures(fkey))) {
-      const captchaToken = typeof body?.captchaToken === 'string' ? body.captchaToken : ''
-      const verdict = await verifyCaptchaToken(captchaToken, loginIp)
-      if (!verdict.ok) return failClosed()
+    const failClosed = async () => {
+      const fails = await recordLoginFailure(fkey)
+      // Log ONLY the activation (once per lockout — never per blocked hit,
+      // so attackers can't spam the audit table).
+      if (fails === LOCKOUT_THRESHOLD) {
+        try {
+          await logAction({
+            username: typeof body?.username === 'string' ? body.username : 'unknown',
+            action: 'account_locked',
+            entity: 'user',
+            details: JSON.stringify({ reason: 'repeated_login_failures' }),
+            request: req,
+          })
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+        }
+      }
+      await sleep(loginDelayFor(fails) * 1000)
+      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
     }
 
     // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)

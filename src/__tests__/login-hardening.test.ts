@@ -1,17 +1,18 @@
 /**
  * Audit D.2 login hardening: one generic Arabic error for every credential
  * failure (no enumeration), progressive delay per IP+username (0,1,2,4,8s
- * cap), rate-limited OAuth callback, Turnstile hook placeholder after 5
- * fails.
+ * cap), rate-limited OAuth callback, Phase 4A hard lockout (10 fails in
+ * 15 min → 15-min 429) replacing the removed CAPTCHA placeholder.
  */
 import {
+  ACCOUNT_LOCKED_MESSAGE,
   LOGIN_GENERIC_ERROR,
-  captchaRequired,
+  activateLockout,
+  getLockoutRemainingSeconds,
   loginDelayFor,
   recordLoginFailure,
   getLoginFailures,
   clearLoginFailures,
-  verifyCaptchaToken,
 } from '@/lib/login-defense'
 
 const mockDbUser = { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() }
@@ -126,17 +127,48 @@ describe('progressive delay', () => {
   })
 })
 
-describe('captcha hook (Turnstile placeholder)', () => {
-  it('required after 5 fails, not before', () => {
-    expect(captchaRequired(4)).toBe(false)
-    expect(captchaRequired(5)).toBe(true)
+describe('hard lockout (Phase 4A — replaces CAPTCHA placeholder)', () => {
+  it('10 failures activate the lock; 9 do not', async () => {
+    const k = 'lock-route-' + Date.now()
+    for (let i = 0; i < 9; i++) await recordLoginFailure(k)
+    expect(await getLockoutRemainingSeconds(k)).toBe(0)
+    await recordLoginFailure(k)
+    expect(await getLockoutRemainingSeconds(k)).toBeGreaterThan(0)
+    await clearLoginFailures(k)
   })
 
-  it('placeholder: unconfigured secret never blocks (explicit placeholder flag)', async () => {
-    delete process.env.TURNSTILE_SECRET_KEY
-    const out = await verifyCaptchaToken('any-token', '9.9.9.9')
-    expect(out.placeholder).toBe(true)
-    expect(out.ok).toBe(true)
+  it('activateLockout → remaining > 0 → clearLoginFailures unlocks', async () => {
+    const k = 'lock-unit-' + Date.now()
+    expect(await getLockoutRemainingSeconds(k)).toBe(0)
+    await activateLockout(k)
+    const remaining = await getLockoutRemainingSeconds(k)
+    expect(remaining).toBeGreaterThan(14 * 60)
+    expect(remaining).toBeLessThanOrEqual(15 * 60)
+    expect(ACCOUNT_LOCKED_MESSAGE).toMatch('تم قفل الحساب مؤقتًا')
+    await clearLoginFailures(k)
+    expect(await getLockoutRemainingSeconds(k)).toBe(0)
+  })
+
+  it('route serves 429 with Arabic message once the composite key is locked', async () => {
+    process.env.OWNER_USERNAME = 'boss-owner'
+    process.env.OWNER_EMAIL = 'owner@x.io'
+    process.env.OWNER_PASSWORD = 'owner-pass-12345'
+    mockDbUser.findFirst.mockResolvedValue({ username: 'boss-owner', email: 'owner@x.io', securityKey: 'x' })
+    const ip = '9.9.7.8'
+    // 10 recorded failures on THIS composite key (real shared store)…
+    const { failureKey } = await import('@/lib/login-defense')
+    const fkey = failureKey(ip, 'boss')
+    for (let i = 0; i < 10; i++) await recordLoginFailure(fkey)
+    mockDbUser.findUnique.mockResolvedValue(baseUser())
+    const res = await loginPOST(loginReq(GOOD_SHAPE, ip))
+    expect(res.status).toBe(429)
+    const body = await res.json()
+    expect(body.error.code).toBe('ACCOUNT_LOCKED')
+    expect(body.error.message).toMatch('تم قفل الحساب مؤقتًا')
+    expect(res.headers.get('Retry-After')).toMatch(/^\d+$/)
+    // …then a successful login clears it (unit-level unlock proof)
+    await clearLoginFailures(fkey)
+    expect(await getLockoutRemainingSeconds(fkey)).toBe(0)
   })
 })
 

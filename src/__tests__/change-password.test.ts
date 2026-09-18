@@ -61,7 +61,11 @@ describe('POST /api/auth/change-password gate', () => {
   it('wrong current password → 422, sessions untouched', async () => {
     mockSignIn.mockResolvedValue({ error: { message: 'Invalid login credentials' } })
     const res = await changePOST(
-      changeReq({ currentPassword: 'wrong-pass-1', newPassword: 'brand-new-pass-2' }),
+      changeReq({
+        currentPassword: 'wrong-pass-1',
+        newPassword: 'brand-new-pass-2',
+        confirmPassword: 'brand-new-pass-2',
+      }),
     )
     expect(res.status).toBe(422)
     expect(mockUpdateUser).not.toHaveBeenCalled()
@@ -72,10 +76,53 @@ describe('POST /api/auth/change-password gate', () => {
     mockSignIn.mockResolvedValue({ error: null })
     mockUpdateUser.mockResolvedValue({ error: null })
     const res = await changePOST(
-      changeReq({ currentPassword: 'old-correct-1', newPassword: 'brand-new-pass-2' }),
+      changeReq({
+        currentPassword: 'old-correct-1',
+        newPassword: 'brand-new-pass-2',
+        confirmPassword: 'brand-new-pass-2',
+      }),
     )
     expect(res.status).toBe(200)
     expect(mockInvalidate).toHaveBeenCalledWith('u-3')
     expect(mockSetRole).toHaveBeenCalledWith('u-3', 'member', 5, expect.anything(), true)
+  })
+
+  it('UI-shaped submission {currentPassword,newPassword,confirmPassword} → 200 (contract)', async () => {
+    // Mirrors EXACTLY what src/views/settings.tsx handleChangePassword sends.
+    mockSignIn.mockResolvedValue({ error: null })
+    mockUpdateUser.mockResolvedValue({ error: null })
+    const uiBody = {
+      currentPassword: 'old-correct-1',
+      newPassword: 'ui-shaped-pass-3',
+      confirmPassword: 'ui-shaped-pass-3',
+    }
+    const res = await changePOST(changeReq(uiBody))
+    expect(res.status).toBe(200)
+    expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'ui-shaped-pass-3' })
+  })
+
+  it('mismatched confirmPassword → 422 server-side, nothing changes', async () => {
+    mockSignIn.mockResolvedValue({ error: null })
+    const res = await changePOST(
+      changeReq({
+        currentPassword: 'old-correct-1',
+        newPassword: 'brand-new-pass-2',
+        confirmPassword: 'different-pass-9',
+      }),
+    )
+    expect(res.status).toBe(422)
+    const body = await res.json()
+    expect(JSON.stringify(body)).toMatch('confirmPassword')
+    expect(mockSignIn).not.toHaveBeenCalled()
+    expect(mockUpdateUser).not.toHaveBeenCalled()
+    expect(mockInvalidate).not.toHaveBeenCalled()
+  })
+
+  it('missing confirmPassword (legacy UI shape) → 422', async () => {
+    const res = await changePOST(
+      changeReq({ currentPassword: 'old-correct-1', newPassword: 'brand-new-pass-2' }),
+    )
+    expect(res.status).toBe(422)
+    expect(mockUpdateUser).not.toHaveBeenCalled()
   })
 })

@@ -39,6 +39,9 @@ jest.mock('@/lib/redis', () => ({
   redisDel: jest.fn(async (key: string) => {
     mockStore.delete(key)
   }),
+  redisSet: jest.fn(async (key: string, value: unknown, ttlSeconds: number) => {
+    mockStore.set(key, { value: JSON.stringify(value), expires: Date.now() + ttlSeconds * 1000 })
+  }),
 }))
 
 import { redisDel, redisGet, redisIncr } from '@/lib/redis'
@@ -100,5 +103,64 @@ describe('distributed failure counters', () => {
   it('failureKey normalizes identifiers (trim + lowercase username)', async () => {
     const { failureKey } = await import('@/lib/login-defense')
     expect(failureKey(' 1.2.3.4 ', '  Boss ')).toBe(failureKey('1.2.3.4', 'boss'))
+  })
+})
+
+describe('hard lockout (Phase 4A)', () => {
+  it('not locked before 10 failures; locked at 10 with ~15min remaining', async () => {
+    const { recordLoginFailure, getLockoutRemainingSeconds, LOCKOUT_THRESHOLD } =
+      await import('@/lib/login-defense')
+    const k = 'lockout-key-' + Date.now()
+    expect(LOCKOUT_THRESHOLD).toBe(10)
+
+    for (let i = 0; i < 9; i++) {
+      await recordLoginFailure(k)
+      expect(await getLockoutRemainingSeconds(k)).toBe(0)
+    }
+    await recordLoginFailure(k) // 10th → activation
+    const remaining = await getLockoutRemainingSeconds(k)
+    expect(remaining).toBeGreaterThan(14 * 60)
+    expect(remaining).toBeLessThanOrEqual(15 * 60)
+  })
+
+  it('lock key is namespaced and hashed (no raw identifier leaks)', async () => {
+    const mod = await import('@/lib/login-defense')
+    const { redisSet } = await import('@/lib/redis')
+    const k = 'lock-ns-' + Date.now()
+    for (let i = 0; i < 10; i++) await mod.recordLoginFailure(k)
+    const setCalls = (redisSet as jest.Mock).mock.calls
+    expect(setCalls.length).toBeGreaterThan(0)
+    const [usedKey, , ttl] = setCalls[setCalls.length - 1] as [string, unknown, number]
+    expect(usedKey.startsWith('auth:lock:')).toBe(true)
+    expect(usedKey).not.toContain(k)
+    expect(ttl).toBe(15 * 60)
+  })
+
+  it('sustained failures refresh the lock (sliding)', async () => {
+    const { recordLoginFailure, getLockoutRemainingSeconds } =
+      await import('@/lib/login-defense')
+    const k = 'lock-slide-' + Date.now()
+    for (let i = 0; i < 10; i++) await recordLoginFailure(k)
+    const first = await getLockoutRemainingSeconds(k)
+    expect(first).toBeGreaterThan(0)
+    await recordLoginFailure(k) // 11th → refresh, still locked
+    expect(await getLockoutRemainingSeconds(k)).toBeGreaterThan(0)
+  })
+
+  it('clearLoginFailures removes the lock (successful login unlocks)', async () => {
+    const { recordLoginFailure, clearLoginFailures, getLockoutRemainingSeconds } =
+      await import('@/lib/login-defense')
+    const k = 'lock-clear-' + Date.now()
+    for (let i = 0; i < 10; i++) await recordLoginFailure(k)
+    expect(await getLockoutRemainingSeconds(k)).toBeGreaterThan(0)
+    await clearLoginFailures(k)
+    expect(await getLockoutRemainingSeconds(k)).toBe(0)
+  })
+
+  it('lockout message is the exact Arabic string', async () => {
+    const { ACCOUNT_LOCKED_MESSAGE } = await import('@/lib/login-defense')
+    expect(ACCOUNT_LOCKED_MESSAGE).toBe(
+      'تم قفل الحساب مؤقتًا بسبب محاولات متعددة فاشلة. يرجى المحاولة بعد 15 دقيقة.',
+    )
   })
 })

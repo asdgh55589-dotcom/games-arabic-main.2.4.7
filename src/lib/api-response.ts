@@ -86,9 +86,21 @@ export const forbidden = (msg = 'Forbidden') => fail('FORBIDDEN', msg, 403)
 export const validationFail = (details?: unknown) =>
   fail('VALIDATION_ERROR', 'Invalid input', 422, details)
 
-/** 429 — Rate limited */
-export const rateLimited = (msg = 'طلبات كثيرة جداً، انتظر قليلاً وحاول مجدداً') =>
-  fail('RATE_LIMITED', msg, 429)
+/** 429 — Rate limited (optional Retry-After seconds for honest clients). */
+export const rateLimited = (msg = 'طلبات كثيرة جداً، انتظر قليلاً وحاول مجدداً', retryAfterSeconds?: number) => {
+  const res = fail('RATE_LIMITED', msg, 429)
+  if (retryAfterSeconds !== undefined) {
+    res.headers.set('Retry-After', String(Math.max(1, Math.floor(retryAfterSeconds))))
+  }
+  return res
+}
+
+/** 429 — Account temporarily locked after repeated failures (Phase 4A). */
+export function accountLocked(message: string, retryAfterSeconds: number): NextResponse {
+  const res = fail('ACCOUNT_LOCKED', message, 429)
+  res.headers.set('Retry-After', String(Math.max(1, Math.floor(retryAfterSeconds))))
+  return res
+}
 
 /** 409 — Resource conflict */
 export const conflict = (msg = 'Resource already exists') => fail('CONFLICT', msg, 409)

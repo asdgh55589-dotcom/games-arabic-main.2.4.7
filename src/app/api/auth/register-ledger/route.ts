@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const RegisterLedgerSchema = z.object({
   supabaseId: z.string().min(1),
@@ -9,6 +10,29 @@ const RegisterLedgerSchema = z.object({
   displayName: z.string().max(50).optional(),
   email: z.string().email(),
 })
+
+// Phase 4A: 5 registrations/hour/IP + 3/hour per (IP, email domain).
+// The domain cap is deliberately IP-scoped (not global) so one abuser
+// can't deny gmail.com to everyone — it stops a single IP mass-minting
+// accounts on one domain.
+const REGISTER_IP_LIMIT = 5
+const REGISTER_DOMAIN_LIMIT = 3
+const REGISTER_WINDOW_SECONDS = 3600
+const REGISTER_LIMIT_MESSAGE = 'عدد كبير من محاولات التسجيل، حاول مرة أخرى لاحقاً'
+
+function limited(limit: number, resetAt: number, retryAfterSeconds: number) {
+  return NextResponse.json(
+    { error: REGISTER_LIMIT_MESSAGE, code: 'RATE_LIMITED' },
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        ...rateLimitHeaders({ success: false, remaining: 0, resetAt, limit }),
+        'Retry-After': String(Math.max(1, Math.floor(retryAfterSeconds))),
+      },
+    },
+  )
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +43,33 @@ export async function POST(req: NextRequest) {
     }
 
     const { supabaseId, username, displayName, email } = parsed.data
+
+    const ipRl = await rateLimit(req, {
+      limit: REGISTER_IP_LIMIT,
+      window: REGISTER_WINDOW_SECONDS,
+      keyPrefix: 'auth:register',
+    })
+    if (!ipRl.success) {
+      return limited(
+        REGISTER_IP_LIMIT,
+        ipRl.resetAt,
+        Math.ceil((ipRl.resetAt - Date.now()) / 1000),
+      )
+    }
+
+    const domain = String(email).split('@')[1]?.toLowerCase() || 'unknown'
+    const domainRl = await rateLimit(req, {
+      limit: REGISTER_DOMAIN_LIMIT,
+      window: REGISTER_WINDOW_SECONDS,
+      keyPrefix: `auth:register-domain:${domain}`,
+    })
+    if (!domainRl.success) {
+      return limited(
+        REGISTER_DOMAIN_LIMIT,
+        domainRl.resetAt,
+        Math.ceil((domainRl.resetAt - Date.now()) / 1000),
+      )
+    }
     // تحقق تفرد username
     const existing = await db.user.findUnique({ where: { username } })
     if (existing && existing.supabaseId !== supabaseId) {

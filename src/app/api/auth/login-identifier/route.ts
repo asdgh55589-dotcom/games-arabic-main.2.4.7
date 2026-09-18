@@ -6,6 +6,7 @@ import {
   ok,
   rateLimited,
   validationFail,
+  accountLocked,
 } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
@@ -13,15 +14,15 @@ import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 import {
+  ACCOUNT_LOCKED_MESSAGE,
+  LOCKOUT_THRESHOLD,
   LOGIN_GENERIC_ERROR,
-  captchaRequired,
   clearLoginFailures,
   failureKey,
-  getLoginFailures,
+  getLockoutRemainingSeconds,
   loginDelayFor,
   recordLoginFailure,
   sleep,
-  verifyCaptchaToken,
 } from '@/lib/login-defense'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { createSessionLedger } from '@/lib/session-ledger'
@@ -30,7 +31,6 @@ import { z } from 'zod'
 const IdentifierLoginSchema = z.object({
   identifier: z.string().trim().min(1, 'أدخل اسم المستخدم أو البريد').max(100),
   password: z.string().min(1, 'كلمة المرور مطلوبة').max(200),
-  captchaToken: z.string().optional(),
 })
 
 // POST /api/auth/login-identifier — username-or-email + password login.
@@ -39,14 +39,15 @@ const IdentifierLoginSchema = z.object({
 // same first-class role-cookie + ledger session Telegram logins use — no
 // Supabase involvement, so password-only Telegram users can log in by
 // username. Anti-enumeration: every credential failure returns the SAME 401
-// after a progressive composite (identifier+IP) delay. No hard lockouts.
+// after a progressive composite (identifier+IP) delay. Phase 4A: 10 failures
+// in 15 minutes hard-lock the composite key for 15 minutes (429
+// ACCOUNT_LOCKED + Retry-After) — replaces the removed CAPTCHA placeholder.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const parsed = IdentifierLoginSchema.safeParse({
       identifier: typeof body?.identifier === 'string' ? body.identifier : undefined,
       password: typeof body?.password === 'string' ? body.password : undefined,
-      captchaToken: typeof body?.captchaToken === 'string' ? body.captchaToken : undefined,
     })
     if (!parsed.success) {
       return validationFail(parsed.error.flatten())
@@ -69,16 +70,32 @@ export async function POST(req: NextRequest) {
     }
 
     const fkey = failureKey(loginIp, identifier)
-    const failClosed = async () => {
-      const fails = await recordLoginFailure(fkey)
-      await sleep(loginDelayFor(fails) * 1000)
-      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
+
+    // Phase 4A hard lockout: 10 failures in 15 min → 429 for 15 min.
+    const lockedSeconds = await getLockoutRemainingSeconds(fkey)
+    if (lockedSeconds > 0) {
+      return accountLocked(ACCOUNT_LOCKED_MESSAGE, lockedSeconds)
     }
 
-    // Turnstile hook: required after 5 fails (placeholder when unconfigured).
-    if (captchaRequired(await getLoginFailures(fkey))) {
-      const verdict = await verifyCaptchaToken(parsed.data.captchaToken || '', loginIp)
-      if (!verdict.ok) return failClosed()
+    const failClosed = async () => {
+      const fails = await recordLoginFailure(fkey)
+      // Log ONLY the activation (once per lockout — never per blocked hit,
+      // so attackers can't spam the audit table).
+      if (fails === LOCKOUT_THRESHOLD) {
+        try {
+          await logAction({
+            username: identifier,
+            action: 'account_locked',
+            entity: 'user',
+            details: JSON.stringify({ identifier, reason: 'repeated_login_failures' }),
+            request: req,
+          })
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+        }
+      }
+      await sleep(loginDelayFor(fails) * 1000)
+      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
     }
 
     const isEmail = identifier.includes('@')
