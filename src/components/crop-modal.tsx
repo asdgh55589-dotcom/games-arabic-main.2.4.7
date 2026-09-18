@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useToast } from '@/hooks/use-toast'
 
 interface CropModalProps {
   isOpen: boolean
@@ -111,6 +112,7 @@ export function CropModal({
   cropShape = 'rect',
   title = 'قص الصورة',
 }: CropModalProps) {
+  const { toast } = useToast()
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
@@ -141,6 +143,7 @@ export function CropModal({
       onClose()
     } catch (error) {
       console.error('Crop failed:', error)
+      toast({ title: 'فشل قص الصورة، حاول مرة أخرى', variant: 'destructive' })
     } finally {
       setProcessing(false)
     }

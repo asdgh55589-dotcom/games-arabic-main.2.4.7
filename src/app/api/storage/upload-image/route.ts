@@ -6,8 +6,8 @@ import { wrapImageUrl } from '@/lib/image-worker'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
 import { reportError } from '@/lib/error-reporting'
 
-// Owner decision (FINAL): FreeImage service cap for mod images.
-const MAX_IMAGE_BYTES = 64 * 1024 * 1024 // 64MB
+// Owner decision (P2): unified 60MB cap for all image uploads (FreeImage real limit).
+export const MAX_IMAGE_BYTES = 60 * 1024 * 1024 // 60MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
 
 // POST /api/storage/upload-image — creator mod images via FreeImage (server key).
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return validationFail('نوع الملف غير مدعوم — يُسمح بصور JPG, PNG, WebP, GIF فقط')
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      return validationFail('حجم الصورة كبير جداً — الحد الأقصى 64MB')
+      return validationFail('حجم الصورة كبير جداً — الحد الأقصى 60MB (60 ميجابايت)')
     }
 
     // Quota gate (Arabic reason on deny).

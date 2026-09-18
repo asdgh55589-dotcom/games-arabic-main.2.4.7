@@ -300,7 +300,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const onFetchVideoMetadata = async (groupIdx: number, videoIdx: number, videoUrl: string) => {
     if (!videoUrl.trim()) return
     const videoId = videoUrl.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?v=|youtube-nocookie\.com\/embed\/|youtube\.com\/live\/|youtube\.com\/v\/)([\w-]{11})/,
     )?.[1]
     if (!videoId) {
       toast({
@@ -348,7 +348,10 @@ export default function ModForm({ modId }: ModFormProps) {
         }),
       )
 
-      toast({ title: t.fetched, description: `${t.fetchedVideo}: ${meta.title}` })
+      toast({
+        title: t.fetched,
+        description: meta.source === 'oembed' ? t.partialData : `${t.fetchedVideo}: ${meta.title}`,
+      })
     } catch (err) {
       toast({
         title: t.fetchError,

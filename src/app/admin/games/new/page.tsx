@@ -120,7 +120,7 @@ export default function NewGamePage() {
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="The Witcher 3"
+            placeholder="مثال: ذا ويتشر 3"
           />
         </div>
         <div>
@@ -211,7 +211,7 @@ export default function NewGamePage() {
                   .filter(Boolean),
               )
             }
-            placeholder="Saves, Gameplay, Characters"
+            placeholder="مثال: ملفات حفظ، أسلوب لعب، شخصيات"
           />
         </div>
         <label className="flex items-center gap-2 text-sm">

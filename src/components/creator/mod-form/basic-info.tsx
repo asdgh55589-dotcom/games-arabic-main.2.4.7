@@ -55,7 +55,7 @@ export function ModFormBasicInfo(p: Props) {
           <Input
             value={p.name}
             onChange={(e) => p.setName(e.target.value)}
-            placeholder="Unofficial Skyrim Patch"
+            placeholder="مثال: ترجمة غير رسمية للعبة"
           />
         </Field>
         <Field label={t.arabicName}>
@@ -63,6 +63,7 @@ export function ModFormBasicInfo(p: Props) {
             value={p.arabicTitle}
             onChange={(e) => p.setArabicTitle(e.target.value)}
             placeholder={t.arabicNamePh}
+            dir="auto"
           />
         </Field>
         <Field label={t.scope} hint={t.scopeHint}>
@@ -70,6 +71,7 @@ export function ModFormBasicInfo(p: Props) {
             value={p.translationScope}
             onChange={(e) => p.setTranslationScope(e.target.value)}
             placeholder={t.scopePlaceholder}
+            dir="auto"
           />
         </Field>
         <Field
@@ -82,13 +84,14 @@ export function ModFormBasicInfo(p: Props) {
             onChange={(e) => p.setDescription(e.target.value)}
             rows={8}
             placeholder="## ..."
+            dir="auto"
           />
         </Field>
         <Field label={t.tags} hint={t.tagsHint}>
           <Input
             value={p.tags}
             onChange={(e) => p.setTags(e.target.value)}
-            placeholder="Bugfix, UI, Gameplay"
+            placeholder="مثال: إصلاح أخطاء، واجهة، أسلوب لعب"
           />
         </Field>
         <Field label={t.modType} hint={t.modTypeHint}>

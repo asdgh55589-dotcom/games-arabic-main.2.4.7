@@ -38,7 +38,7 @@ export function ImageUpload({
   required,
   multiple = false,
   accept = 'image/*',
-  maxSizeMB = 10,
+  maxSizeMB = 60,
   folder = '',
   modId,
   skipUpload = false,
@@ -46,6 +46,7 @@ export function ImageUpload({
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [previewModal, setPreviewModal] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -59,6 +60,7 @@ export function ImageUpload({
 
   const uploadFile = useCallback(
     async (file: File) => {
+      setWarning(null)
       if (file.size > maxSizeMB * 1024 * 1024) {
         setError(`الملف كبير جداً — الحد الأقصى ${maxSizeMB}MB`)
         return
@@ -67,6 +69,16 @@ export function ImageUpload({
         setError('الملف يجب أن يكون صورة')
         return
       }
+      // P2: dimension validation (min 200×200; banner recommendation is advisory).
+      const { getImageDimensions, checkImageDimensions } = await import('@/lib/image-dims')
+      const dims = await getImageDimensions(file)
+      const role = folder === 'banners' ? 'banner' : 'general'
+      const dimCheck = checkImageDimensions(dims, role)
+      if (!dimCheck.ok) {
+        setError(dimCheck.error || 'الصورة صغيرة جدًا')
+        return
+      }
+      setWarning(dimCheck.warning || null)
 
       setUploading(true)
       setError(null)
@@ -417,6 +429,12 @@ export function ImageUpload({
         <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+      {warning && !error && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{warning}</span>
         </div>
       )}
 

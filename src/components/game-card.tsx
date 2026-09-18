@@ -11,8 +11,13 @@ import type { GameSummary } from '@/lib/types'
 
 export type GameCardData = GameSummary
 
+/** P2: game detail route — slug-based (platform keys collide across games). */
+export function getGameHref(game: Pick<GameSummary, 'slug'>): string {
+  return `/games/${game.slug}`
+}
+
 export function GameCard({ game }: { game: GameCardData }) {
-  const href = `/platform/${game.platform}`
+  const href = getGameHref(game)
   const badgeStatus = getModBadgeStatus(game.createdAt, game.updatedAt)
 
   return (
@@ -21,7 +26,7 @@ export function GameCard({ game }: { game: GameCardData }) {
       dir="rtl"
     >
       {/* صورة landscape — مقاس 1920×1080 (16:9) */}
-      <Link href={`/platform/${game.platform}`} className="relative block">
+      <Link href={href} className="relative block">
         <div className="relative z-0 flex aspect-video items-center justify-center overflow-hidden rounded-t bg-secondary">
           <Image
             unoptimized
@@ -36,18 +41,18 @@ export function GameCard({ game }: { game: GameCardData }) {
         {/* شارة المنصة — يسار */}
         <Badge
           variant="outline"
-          className="absolute left-2 top-2 border-border bg-background/80 backdrop-blur"
+          className="absolute start-2 top-2 border-border bg-background/80 backdrop-blur"
         >
           {game.platform}
         </Badge>
         {/* شارة جديد/محدّث — يمين (بدون شارة مميز) */}
         {badgeStatus && (
-          <div className="absolute right-2 top-2">
+          <div className="absolute end-2 top-2">
             <StatusBadge status={badgeStatus} />
           </div>
         )}
         {/* اسم اللعبة تحت الصورة */}
-        <div className="absolute bottom-0 right-0 left-0 p-3">
+        <div className="absolute bottom-0 start-0 end-0 p-3">
           <h3 className="text-base font-bold leading-tight text-foreground">{game.name}</h3>
           <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{game.tagline}</p>
         </div>
@@ -76,7 +81,7 @@ export function GameCard({ game }: { game: GameCardData }) {
 
       {/* الشريط السفلي */}
       <Link
-        href={`/platform/${game.platform}`}
+        href={href}
         className="mt-auto flex min-h-9 items-center justify-center gap-x-1 rounded-b bg-secondary/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
       >
         تصفح التعديلات

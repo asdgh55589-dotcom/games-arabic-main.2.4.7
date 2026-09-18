@@ -69,6 +69,7 @@ export function CreateTeamForm({ onCreated }: CreateTeamFormProps) {
             onChange={(e) => setName(e.target.value)}
             placeholder="مثال: فريق التعريب الذهبي"
             maxLength={80}
+            dir="auto"
           />
         </div>
         <div className="space-y-2">
@@ -79,6 +80,7 @@ export function CreateTeamForm({ onCreated }: CreateTeamFormProps) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="نبذة قصيرة عن الفريق"
             maxLength={1000}
+            dir="auto"
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

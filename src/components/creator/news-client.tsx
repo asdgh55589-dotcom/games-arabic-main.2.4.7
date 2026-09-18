@@ -199,7 +199,7 @@ export function NewsClient() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="news-title">{t.postTitle}</Label>
-              <Input id="news-title" value={form.title} onChange={(e) => set('title')(e.target.value)} placeholder={t.postTitlePh} />
+              <Input id="news-title" value={form.title} onChange={(e) => set('title')(e.target.value)} placeholder={t.postTitlePh} dir="auto" />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -216,16 +216,16 @@ export function NewsClient() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="news-category">{t.category}</Label>
-                <Input id="news-category" value={form.category} onChange={(e) => set('category')(e.target.value)} placeholder="general" dir="ltr" className="text-left" />
+                <Input id="news-category" value={form.category} onChange={(e) => set('category')(e.target.value)} placeholder="عام" dir="ltr" className="text-left" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="news-summary">{t.summary}</Label>
-              <Input id="news-summary" value={form.summary} onChange={(e) => set('summary')(e.target.value)} placeholder={t.summaryPh} />
+                <Label htmlFor="news-summary">{t.summary}</Label>
+                <Input id="news-summary" value={form.summary} onChange={(e) => set('summary')(e.target.value)} placeholder={t.summaryPh} dir="auto" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="news-content">{t.content}</Label>
-              <Textarea id="news-content" value={form.content} onChange={(e) => set('content')(e.target.value)} placeholder={t.contentPh} rows={6} />
+                <Label htmlFor="news-content">{t.content}</Label>
+                <Textarea id="news-content" value={form.content} onChange={(e) => set('content')(e.target.value)} placeholder={t.contentPh} rows={6} dir="auto" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="news-image">{t.imageUrl}</Label>
@@ -240,7 +240,7 @@ export function NewsClient() {
                   <UppyImagePanel
                     endpoint="/api/storage/upload-image"
                     allowedFileTypes={['image/*']}
-                    maxFileSize={64 * 1024 * 1024}
+                    maxFileSize={60 * 1024 * 1024}
                     maxNumberOfFiles={1}
                     onComplete={(files) => {
                       if (files[0]) set('imageUrl')(files[0].url)

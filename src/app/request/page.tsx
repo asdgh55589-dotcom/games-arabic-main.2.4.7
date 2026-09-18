@@ -38,30 +38,32 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
+import { platformDisplayName } from '@/lib/platform-names'
 
 // ===== منصاتنا المدعومة — fallback مطابق للأقسام =====
+// القيم الإنجليزية ثابتة (DB) — العرض فقط ثنائي اللغة عبر platformDisplayName.
 const FALLBACK_PLATFORMS: { value: string; label: string; icon: React.ElementType }[] = [
-  { value: 'PC', label: 'PC', icon: Monitor },
-  { value: 'PS1', label: 'PlayStation 1', icon: Gamepad2 },
-  { value: 'PS2', label: 'PlayStation 2', icon: Gamepad2 },
-  { value: 'PS3', label: 'PlayStation 3', icon: Gamepad2 },
-  { value: 'PS4', label: 'PlayStation 4', icon: Gamepad2 },
-  { value: 'PS5', label: 'PlayStation 5', icon: Gamepad2 },
-  { value: 'X360', label: 'Xbox 360', icon: Gamepad2 },
-  { value: 'NS', label: 'Nintendo Switch', icon: Gamepad2 },
-  { value: 'Android', label: 'Android', icon: Smartphone },
+  { value: 'PC', label: platformDisplayName('PC'), icon: Monitor },
+  { value: 'PS1', label: platformDisplayName('PS1'), icon: Gamepad2 },
+  { value: 'PS2', label: platformDisplayName('PS2'), icon: Gamepad2 },
+  { value: 'PS3', label: platformDisplayName('PS3'), icon: Gamepad2 },
+  { value: 'PS4', label: platformDisplayName('PS4'), icon: Gamepad2 },
+  { value: 'PS5', label: platformDisplayName('PS5'), icon: Gamepad2 },
+  { value: 'X360', label: platformDisplayName('X360'), icon: Gamepad2 },
+  { value: 'NS', label: platformDisplayName('NS'), icon: Gamepad2 },
+  { value: 'Android', label: platformDisplayName('Android'), icon: Smartphone },
 ]
 
 const LABEL_MAP: Record<string, string> = {
-  PC: 'PC',
-  PS1: 'PlayStation 1',
-  PS2: 'PlayStation 2',
-  PS3: 'PlayStation 3',
-  PS4: 'PlayStation 4',
-  PS5: 'PlayStation 5',
-  X360: 'Xbox 360',
-  NS: 'Nintendo Switch',
-  Android: 'Android',
+  PC: platformDisplayName('PC'),
+  PS1: platformDisplayName('PS1'),
+  PS2: platformDisplayName('PS2'),
+  PS3: platformDisplayName('PS3'),
+  PS4: platformDisplayName('PS4'),
+  PS5: platformDisplayName('PS5'),
+  X360: platformDisplayName('X360'),
+  NS: platformDisplayName('NS'),
+  Android: platformDisplayName('Android'),
 }
 
 const EXCLUDED_PLATFORMS = new Set(['XONE', 'XSX', 'iOS'])
@@ -396,7 +398,7 @@ export default function RequestPage() {
                         id="gameName"
                         value={gameName}
                         onChange={(e) => handleGameNameChange(e.target.value)}
-                        placeholder="مثال: The Witcher 3"
+                        placeholder="مثال: ذا ويتشر 3"
                         required
                         autoComplete="off"
                       />
@@ -509,7 +511,7 @@ export default function RequestPage() {
                       </Button>
                     )}
                     <p className="text-[11px] text-muted-foreground">
-                      اختياري — حتى 5 روابط: Steam, PlayStation Store, Xbox, Nintendo eShop, Epic...
+                      اختياري — حتى 5 روابط: مثال: ستيم، متجر بلايستيشن، إكس بوكس، ننتندو، إيبك...
                     </p>
                   </div>
 

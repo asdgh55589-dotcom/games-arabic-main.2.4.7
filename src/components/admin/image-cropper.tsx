@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Slider } from '@/components/ui/slider'
+import { useToast } from '@/hooks/use-toast'
 
 interface Area {
   x: number
@@ -72,6 +73,7 @@ export function ImageCropper({
   aspectRatio = 16 / 9,
   title = 'قص الصورة',
 }: ImageCropperProps) {
+  const { toast } = useToast()
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
@@ -94,6 +96,7 @@ export function ImageCropper({
       setRotation(0)
     } catch (e) {
       console.error('Crop failed:', e)
+      toast({ title: 'فشل قص الصورة، حاول مرة أخرى', variant: 'destructive' })
     } finally {
       setSaving(false)
     }

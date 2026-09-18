@@ -93,7 +93,7 @@ export function InviteForm({ onCreated }: InviteFormProps) {
               id="invite-username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="username"
+              placeholder="اسم المستخدم"
               dir="ltr"
               maxLength={50}
             />
@@ -104,7 +104,7 @@ export function InviteForm({ onCreated }: InviteFormProps) {
               id="invite-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@mail.com"
+              placeholder="example@mail.com"
               dir="ltr"
               maxLength={200}
             />

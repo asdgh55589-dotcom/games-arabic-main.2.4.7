@@ -42,6 +42,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { needsSecuritySetup } from '@/lib/onboarding'
+import { getImageDimensions, checkImageDimensions } from '@/lib/image-dims'
 import { ProfileUpdateSchema, SettingsPasswordSchema } from '@/lib/schemas'
 import { PLATFORM_KEYS, SOCIAL_PLATFORMS } from '@/lib/social-platforms'
 import { NotificationSettings } from '@/views/notification-settings'
@@ -516,34 +517,53 @@ export function SettingsPage() {
         })
         return
       }
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        setCropImageSrc(ev.target?.result as string)
-        setCropType('avatar')
-        setCropModalOpen(true)
-      }
-      reader.readAsDataURL(file)
+      // P2: min 200×200px
+      void getImageDimensions(file).then((dims) => {
+        const check = checkImageDimensions(dims, 'avatar')
+        if (!check.ok) {
+          toast({ title: 'الصورة صغيرة جدًا', description: check.error, variant: 'destructive' })
+          return
+        }
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          setCropImageSrc(ev.target?.result as string)
+          setCropType('avatar')
+          setCropModalOpen(true)
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 60 * 1024 * 1024) {
         toast({
           title: 'الملف كبير جداً',
-          description: 'الحد الأقصى 10 ميجابايت',
+          description: 'الحد الأقصى 60 ميجابايت',
           variant: 'destructive',
         })
         return
       }
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        setCropImageSrc(ev.target?.result as string)
-        setCropType('banner')
-        setCropModalOpen(true)
-      }
-      reader.readAsDataURL(file)
+      // P2: min 200×200px error; below 1200×630 recommendation warns only.
+      void getImageDimensions(file).then((dims) => {
+        const check = checkImageDimensions(dims, 'banner')
+        if (!check.ok) {
+          toast({ title: 'الصورة صغيرة جدًا', description: check.error, variant: 'destructive' })
+          return
+        }
+        if (check.warning) {
+          toast({ title: 'تنبيه', description: check.warning })
+        }
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          setCropImageSrc(ev.target?.result as string)
+          setCropType('banner')
+          setCropModalOpen(true)
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
