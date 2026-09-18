@@ -161,6 +161,17 @@ export const ChangePasswordSchema = z
     path: ['confirmPassword'],
   })
 
+/** Phase 4B: step-up proof required to disable MFA (Fix 1). */
+export const DisableMfaSchema = z
+  .object({
+    password: z.string().min(1).max(200).optional(),
+    totpCode: z.string().trim().min(6).max(10).optional(),
+  })
+  .refine((d) => d.password !== undefined || d.totpCode !== undefined, {
+    message: 'قدّم كلمة المرور أو رمز المصادقة',
+    path: ['password'],
+  })
+
 /** P0 setup-password (OAuth-only users): stricter policy than change-password. */
 export const SetupPasswordSchema = z
   .object({

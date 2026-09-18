@@ -53,6 +53,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [mode, setMode] = useState<Mode>('login')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Phase 4B: survives the switch to the pending-email view (error does not).
+  const [signupWarning, setSignupWarning] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -197,16 +199,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         }
         window.location.href = '/'
       } else {
-        try {
-          const chk = await fetch(`/api/users/${encodeURIComponent(username.trim())}/profile`)
-          if (chk.ok) {
-            setError(AUTH_ERRORS.USERNAME_TAKEN)
-            setBusy(null)
-            return
-          }
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
-        }
+        // Phase 4B: NO pre-signup username probe (it was a username oracle —
+        // anyone could enumerate registered names via the public profile API).
+        // Conflicts surface server-side at register-ledger (409) after a real
+        // signup attempt; the name can then be fixed in onboarding/settings.
+        let ledgerConflict = false
         const { data: authData, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -233,7 +230,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         try {
           const supabaseId = authData.user?.id
           if (supabaseId) {
-            await fetch('/api/auth/register-ledger', {
+            const ledgerRes = await fetch('/api/auth/register-ledger', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -242,10 +239,17 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 displayName: displayName.trim(),
                 email: email.trim(),
               }),
-            }).catch(() => {})
+            }).catch(() => null)
+            // Server-side conflict (409 USERNAME_TAKEN): the Supabase account
+            // already exists, so keep going — the name can be fixed later.
+            // Flag it so the success view carries the warning.
+            if (ledgerRes && ledgerRes.status === 409) ledgerConflict = true
           }
         } catch {
           // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
+        }
+        if (ledgerConflict) {
+          setSignupWarning(`${AUTH_ERRORS.USERNAME_TAKEN} — يمكنك تغييره لاحقاً من الإعدادات`)
         }
         setPendingEmail(email.trim())
         setBusy(null)
@@ -265,6 +269,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             {pendingEmail}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">أرسلنا لك رابط التأكيد — افحص بريدك</p>
+          {signupWarning && (
+            <p className="mt-2 text-sm font-semibold text-amber-600">{signupWarning}</p>
+          )}
           <div className="mt-4 grid gap-2">
             <Button
               className="w-full"
@@ -296,7 +303,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             >
               {busy === 'resend' ? 'جارٍ الإرسال…' : 'إعادة إرسال الرابط'}
             </Button>
-            <Button className="w-full" variant="outline" onClick={() => setPendingEmail(null)}>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => {
+                setPendingEmail(null)
+                setSignupWarning(null)
+              }}
+            >
               رجوع
             </Button>
           </div>

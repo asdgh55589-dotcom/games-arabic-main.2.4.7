@@ -62,6 +62,10 @@ export function RecoverPage() {
       <Button className="w-full" disabled={saving || !email.includes('@')} onClick={submit}>
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إرسال رابط الاستعادة'}
       </Button>
+      <p className="text-xs text-muted-foreground">
+        دخلت بتيليجرام بدون بريد إلكتروني وفقدت الوصول؟ تواصل مع الدعم مع إثبات ملكية الحساب
+        (اسم المستخدم + تاريخ التقارب) — يمكن للإدارة إصدار كلمة مرور مؤقتة لك.
+      </p>
     </div>
   )
 }

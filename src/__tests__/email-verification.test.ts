@@ -67,7 +67,7 @@ jest.mock('@/lib/supabase/server', () => ({
 }))
 
 import { POST as setupPOST } from '@/app/api/auth/setup-password/route'
-import { POST as verifyPOST } from '@/app/api/auth/verify-email/route'
+import { DELETE as verifyDELETE, POST as verifyPOST } from '@/app/api/auth/verify-email/route'
 import { POST as resendPOST } from '@/app/api/auth/verify-email/resend/route'
 import { POST as recoverPOST } from '@/app/api/auth/recover/route'
 
@@ -124,7 +124,7 @@ function sha(token: string) {
 }
 
 describe('setup-password email path issues verification', () => {
-  it('adding an email creates a token, sends mail, marks unverified', async () => {
+  it('adding an email creates a token + sends mail but does NOT change primary (two-step)', async () => {
     mockDbUser.findUnique.mockResolvedValueOnce(telegramUser()).mockResolvedValueOnce(null)
     const { status, body } = await unpack(
       await setupPOST(req('/api/auth/setup-password', { ...VALID_PW, email: 'real-tg@mail.com' })),
@@ -141,12 +141,22 @@ describe('setup-password email path issues verification', () => {
       'real-tg@mail.com',
       expect.stringContaining('/verify-email-address?token='),
     )
-    expect(mockDbUser.update).toHaveBeenCalledWith({
-      where: { id: 'u-1' },
-      data: expect.objectContaining({ email: 'real-tg@mail.com', emailVerified: false }),
-    })
+    // Phase 4B: primary stays synthetic until the link is clicked.
+    const updateCalls = mockDbUser.update.mock.calls as Array<
+      [{ where: unknown; data: Record<string, unknown> }]
+    >
+    expect(updateCalls.length).toBeGreaterThan(0) // password path still persists
+    for (const c of updateCalls) {
+      expect(c[0].data).not.toHaveProperty('email')
+      expect(c[0].data).not.toHaveProperty('emailVerified')
+    }
     expect(body.data).toEqual(
-      expect.objectContaining({ success: true, verificationSent: true, needsVerification: true }),
+      expect.objectContaining({
+        success: true,
+        verificationSent: true,
+        needsVerification: true,
+        pendingEmail: 'real-tg@mail.com',
+      }),
     )
   })
 
@@ -218,16 +228,36 @@ describe('POST /api/auth/verify-email', () => {
     expect(mockDbVerify.update).not.toHaveBeenCalled()
   })
 
-  it('token for a stale address is rejected after the user changed email', async () => {
+  it('token for a newer address promotes it (two-step change), old primary replaced', async () => {
+    // Phase 4B: user.email is still the old synthetic primary; the token
+    // carries the requested new address → clicking promotes it.
     mockDbVerify.findUnique.mockResolvedValue(
-      row({ user: { id: 'u-1', username: 'tguser', email: 'newer@mail.com' } }),
+      row({ user: { id: 'u-1', username: 'tguser', email: 'telegram_123@telegram.local' } }),
     )
+    mockDbUser.findUnique.mockResolvedValue(null) // not taken
+    mockDbUser.update.mockResolvedValue({ id: 'u-1' })
+    const { status, body } = await unpack(
+      await verifyPOST(req('/api/auth/verify-email', { token: 'raw-token-abc-1234567890abcdef' })),
+    )
+    expect(status).toBe(200)
+    expect(mockDbUser.update).toHaveBeenCalledWith({
+      where: { id: 'u-1' },
+      data: { email: 'real-tg@mail.com', emailVerified: true },
+    })
+    expect(mockLogAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'email_changed' }))
+    expect(body.data).toEqual(expect.objectContaining({ success: true, emailChanged: true }))
+  })
+
+  it('change token for an address taken meanwhile is rejected (no takeover)', async () => {
+    mockDbVerify.findUnique.mockResolvedValue(
+      row({ user: { id: 'u-1', username: 'tguser', email: 'telegram_123@telegram.local' } }),
+    )
+    mockDbUser.findUnique.mockResolvedValue({ id: 'u-other' }) // taken by another user
     const { status } = await unpack(
       await verifyPOST(req('/api/auth/verify-email', { token: 'raw-token-abc-1234567890abcdef' })),
     )
     expect(status).toBe(422)
     expect(mockDbUser.update).not.toHaveBeenCalled()
-    expect(mockDbVerify.update).not.toHaveBeenCalled()
   })
 })
 
@@ -300,5 +330,52 @@ describe('recover respects pending verification', () => {
     )
     expect(status).toBe(200)
     expect(body.data).toEqual(expect.objectContaining({ success: true }))
+  })
+})
+
+describe('two-step email change extras (Phase 4B)', () => {
+  it('resend targets the pending address while primary is still synthetic', async () => {
+    mockDbUser.findUnique.mockResolvedValue({
+      id: 'u-1', username: 'tguser', email: 'telegram_123@telegram.local', emailVerified: false,
+    })
+    mockDbVerify.findFirst.mockResolvedValue({ id: 'evt-1', email: 'pending@mail.com' })
+    mockDbVerify.count.mockResolvedValue(0)
+    const { status } = await unpack(await resendPOST(req('/api/auth/verify-email/resend', {})))
+    expect(status).toBe(200)
+    expect(mockDbVerify.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'u-1', email: 'pending@mail.com' }),
+    })
+    expect(mockSendVerification).toHaveBeenCalledWith(
+      'pending@mail.com',
+      expect.stringContaining('/verify-email-address?token='),
+    )
+  })
+
+  it('synthetic primary with NO pending token still gets add-first message', async () => {
+    mockDbUser.findUnique.mockResolvedValue({
+      id: 'u-1', username: 'tguser', email: 'telegram_123@telegram.local', emailVerified: false,
+    })
+    mockDbVerify.findFirst.mockResolvedValue(null)
+    const { status } = await unpack(await resendPOST(req('/api/auth/verify-email/resend', {})))
+    expect(status).toBe(422)
+    expect(mockSendVerification).not.toHaveBeenCalled()
+  })
+
+  it('cancel drops pending tokens and audits (self-only)', async () => {
+    mockDbVerify.deleteMany.mockResolvedValue({ count: 2 })
+    const res = await verifyDELETE()
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data).toEqual(expect.objectContaining({ success: true, cleared: 2 }))
+    expect(mockDbVerify.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u-1', usedAt: null } })
+    expect(mockLogAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'email_change_cancelled' }),
+    )
+  })
+
+  it('cancel requires authentication', async () => {
+    mockRequireAuth.mockRejectedValueOnce(new Error('Unauthorized'))
+    const res = await verifyDELETE()
+    expect(res.status).toBe(401)
   })
 })

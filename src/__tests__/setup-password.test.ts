@@ -270,16 +270,15 @@ describe('setup-password success paths', () => {
 describe('setup-password optional fields (flexible setup / skip-able)', () => {
   it('accepts email-only setup for a Telegram user (no password)', async () => {
     mockDbUser.findUnique.mockResolvedValueOnce(telegramUser())
-    const { status } = await unpack(await setupPOST(setupReq({ email: 'real-tg@mail.com' })))
+    const { status, body } = await unpack(await setupPOST(setupReq({ email: 'real-tg@mail.com' })))
     expect(status).toBe(200)
-    const updateData = mockDbUser.update.mock.calls[0][0].data as Record<string, unknown>
-    expect(updateData.email).toBe('real-tg@mail.com')
-    expect(updateData).not.toHaveProperty('password')
-    expect(updateData).not.toHaveProperty('supabaseId')
+    // Phase 4B two-step: no user-row write at all until the link is clicked.
+    expect(mockDbUser.update).not.toHaveBeenCalled()
     expect(mockAdminCreateUser).not.toHaveBeenCalled()
     expect(mockLogAction).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'email_setup', entityId: 'u-1' }),
     )
+    expect(body.data).toEqual(expect.objectContaining({ pendingEmail: 'real-tg@mail.com' }))
   })
 
   it('rejects an empty submission (neither password nor email)', async () => {
@@ -294,8 +293,10 @@ describe('setup-password optional fields (flexible setup / skip-able)', () => {
       ...telegramUser(),
       password: 'already-hashed',
     })
-    const { status } = await unpack(await setupPOST(setupReq({ email: 'real-tg@mail.com' })))
+    const { status, body } = await unpack(await setupPOST(setupReq({ email: 'real-tg@mail.com' })))
     expect(status).toBe(200)
-    expect(mockDbUser.update).toHaveBeenCalled()
+    // Phase 4B two-step: address pending until verified, primary untouched.
+    expect(mockDbUser.update).not.toHaveBeenCalled()
+    expect(body.data).toEqual(expect.objectContaining({ pendingEmail: 'real-tg@mail.com' }))
   })
 })
