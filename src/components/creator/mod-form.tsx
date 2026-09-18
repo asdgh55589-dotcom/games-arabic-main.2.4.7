@@ -15,6 +15,7 @@ import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-bad
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
+import { isSupportedVideoUrl } from '@/lib/oembed'
 import { extractVideoErrorMessage } from '@/lib/video-errors'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import {
@@ -296,13 +297,10 @@ export default function ModForm({ modId }: ModFormProps) {
       .finally(() => setLoadingMod(false))
   }, [modId])
 
-  // جلب بيانات فيديو يوتيوب تلقائياً
+  // جلب بيانات فيديو يوتيوب/فيميو تلقائياً
   const onFetchVideoMetadata = async (groupIdx: number, videoIdx: number, videoUrl: string) => {
     if (!videoUrl.trim()) return
-    const videoId = videoUrl.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?v=|youtube-nocookie\.com\/embed\/|youtube\.com\/live\/|youtube\.com\/v\/)([\w-]{11})/,
-    )?.[1]
-    if (!videoId) {
+    if (!isSupportedVideoUrl(videoUrl)) {
       toast({
         title: t.invalidLink,
         description: t.invalidLinkDesc,

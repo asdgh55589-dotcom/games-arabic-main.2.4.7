@@ -4,17 +4,20 @@ import { parsePagination } from '@/lib/api-utils'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { fileCategoryWhere, type FileCategory } from '@/lib/file-types'
 
 const PROVIDERS = ['freeimage', 'ia', 'direct', 'cloudinary', 'supabase'] as const
+const CATEGORIES: FileCategory[] = ['image', 'video', 'archive', 'audio', 'other']
 
 // GET /api/admin/files — كل ملفات الرفع (إدارة: الكل)
-// Query: page, limit (default 50, max 100), provider, search (filename/url/username), userId, from, to
+// Query: page, limit (default 50, max 100), provider, type, search, userId, from, to
 export async function GET(req: NextRequest) {
   try {
     await requireModerator()
 
     const { searchParams } = new URL(req.url)
     const provider = searchParams.get('provider')?.trim() || null
+    const type = searchParams.get('type')?.trim() || null
     const search = searchParams.get('search')?.trim() || null
     const userId = searchParams.get('userId')?.trim() || null
     const from = searchParams.get('from')?.trim() || null
@@ -27,6 +30,9 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = {}
     if (provider && (PROVIDERS as readonly string[]).includes(provider)) {
       where.provider = provider
+    }
+    if (type && (CATEGORIES as string[]).includes(type)) {
+      Object.assign(where, fileCategoryWhere(type as FileCategory))
     }
     if (userId) where.userId = userId
     if (from || to) {

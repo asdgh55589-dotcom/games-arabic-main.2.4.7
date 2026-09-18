@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
+import { Check, Copy, ExternalLink, Loader2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,7 @@ export function FileDetailsDrawer({
   detailsBase,
   deleteBase,
   onDeleted,
+  embedEndpoint,
 }: {
   file: ManagedFile | null
   open: boolean
@@ -79,11 +80,14 @@ export function FileDetailsDrawer({
   /** DELETE base, e.g. /api/admin/files */
   deleteBase: string
   onDeleted: (id: string) => void
+  /** POST embed endpoint (creator scope) — hidden when omitted. */
+  embedEndpoint?: string
 }) {
   const { toast } = useToast()
   const [linked, setLinked] = useState<LinkedRef[] | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open || !file) {
@@ -98,6 +102,31 @@ export function FileDetailsDrawer({
   }, [open, file, detailsBase])
 
   if (!file) return null
+
+  const handleCopyEmbed = async (format: 'html' | 'markdown' | 'bbcode') => {
+    if (!embedEndpoint || !file) return
+    try {
+      const res = await fetch(embedEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ fileId: file.id, format }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || typeof data?.data?.code !== 'string') {
+        throw new Error(data?.error?.message || 'فشل إنشاء كود التضمين')
+      }
+      await navigator.clipboard.writeText(data.data.code)
+      setCopiedFormat(format)
+      toast({ title: 'تم نسخ كود التضمين' })
+    } catch (err) {
+      toast({
+        title: 'فشل نسخ الكود',
+        description: err instanceof Error ? err.message : 'حاول مرة أخرى',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const handleDelete = async () => {
     if (!confirming) {
@@ -181,6 +210,31 @@ export function FileDetailsDrawer({
               فتح رابط التحميل
             </a>
           </Button>
+
+          {embedEndpoint && (
+            <div>
+              <h4 className="mb-2 font-semibold">نسخ كود التضمين</h4>
+              <div className="flex gap-2">
+                {(['html', 'markdown', 'bbcode'] as const).map((format) => (
+                  <Button
+                    key={format}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 font-mono"
+                    dir="ltr"
+                    onClick={() => handleCopyEmbed(format)}
+                  >
+                    {copiedFormat === format ? (
+                      <Check className="me-1 h-3.5 w-3.5" />
+                    ) : (
+                      <Copy className="me-1 h-3.5 w-3.5" />
+                    )}
+                    {format === 'html' ? 'HTML' : format === 'markdown' ? 'MD' : 'BBCode'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <h4 className="mb-2 font-semibold">مستخدم في المودات</h4>

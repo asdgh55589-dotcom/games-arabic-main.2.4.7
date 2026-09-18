@@ -27,6 +27,7 @@ export default async function CreatorFilesPage() {
       deleteBase="/api/creator/files"
       showUploader={false}
       title="ملفاتي"
+      embedEndpoint="/api/creator/files/embed-code"
     />
   )
 }

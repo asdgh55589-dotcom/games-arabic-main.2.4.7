@@ -107,13 +107,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const buffer = Buffer.from(arrayBuffer)
 
     // حذف البانر القديم قبل الرفع (best-effort — لا يحجب الرفع عند الفشل)
+    // P3: verify result + log the publicId when remote delete fails.
     try {
       const existing = await db.user.findUnique({
         where: { id: neonUser.id },
         select: { bannerPublicId: true },
       })
       if (existing?.bannerPublicId) {
-        await deleteFromCloudinary(existing.bannerPublicId).catch(() => {})
+        const result = await deleteFromCloudinary(existing.bannerPublicId).catch(() => null)
+        if (!result?.ok) {
+          console.warn('[banner upload] old asset cleanup unverified', {
+            publicId: existing.bannerPublicId,
+          })
+        }
       }
     } catch {
       console.warn('[banner upload] old asset cleanup failed')

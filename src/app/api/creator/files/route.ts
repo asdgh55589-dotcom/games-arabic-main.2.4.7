@@ -4,8 +4,10 @@ import { parsePagination } from '@/lib/api-utils'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { fileCategoryWhere, type FileCategory } from '@/lib/file-types'
 
 const PROVIDERS = ['freeimage', 'ia', 'direct', 'cloudinary', 'supabase'] as const
+const CATEGORIES: FileCategory[] = ['image', 'video', 'archive', 'audio', 'other']
 
 // GET /api/creator/files — ملفاتي فقط (المستخدم يرى ملفاته فقط)
 export async function GET(req: NextRequest) {
@@ -16,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const provider = searchParams.get('provider')?.trim() || null
+    const type = searchParams.get('type')?.trim() || null
     const search = searchParams.get('search')?.trim() || null
     const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
       limit: 50,
@@ -25,6 +28,9 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = { userId: user.id }
     if (provider && (PROVIDERS as readonly string[]).includes(provider)) {
       where.provider = provider
+    }
+    if (type && (CATEGORIES as string[]).includes(type)) {
+      Object.assign(where, fileCategoryWhere(type as FileCategory))
     }
     if (search) {
       where.OR = [

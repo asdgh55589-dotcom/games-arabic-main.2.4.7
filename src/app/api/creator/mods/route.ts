@@ -5,6 +5,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canCreateMod, canTranslateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
+import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { slugify } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
@@ -137,7 +138,9 @@ export async function POST(req: NextRequest) {
 
   const mod = await db.mod.create({
     data: {
-      ...(data as unknown as Record<string, unknown>),
+      // P3: relation arrays are persisted explicitly below (Prisma rejects
+      // them inline) — stripModRelations keeps only scalar fields here.
+      ...stripModRelations(data as unknown as Record<string, unknown>),
       gameId: effectiveGameId,
       authorId: user.id,
       workflowStatus,
@@ -150,6 +153,15 @@ export async function POST(req: NextRequest) {
         : (data as unknown as { tags?: string }).tags || '',
     } as unknown as Parameters<typeof db.mod.create>[0]['data'],
   })
+
+  // P3: persist files/videos/members/links/tabs as real relations.
+  try {
+    await syncModRelations(db, mod.id, data as unknown as Parameters<typeof syncModRelations>[2], {
+      uploadedBy: user.id,
+    })
+  } catch (relErr) {
+    console.error('[creator/mods POST] relations failed:', relErr)
+  }
 
   // Notify admins if submitted for review
   if (action === 'submit') {

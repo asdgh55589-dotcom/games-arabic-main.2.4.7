@@ -298,7 +298,6 @@ export interface StudioDict {
     topMods: string
   }
   form: {
-    unofficialDefault: string
     invalidLink: string
     invalidLinkDesc: string
     fetchFailed: string
