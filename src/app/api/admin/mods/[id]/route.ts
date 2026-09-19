@@ -130,17 +130,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'teamId',
       'sectionId',
       'translationType',
-      'isFeatured',
-      'isTrending',
-      'isLatest',
       'releaseDate',
     ]
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'releaseDate') {
           updateData[field] = body[field] ? new Date(body[field]) : new Date()
-        } else if (['isFeatured', 'isTrending', 'isLatest'].includes(field)) {
-          updateData[field] = Boolean(body[field])
         } else if (field === 'tags' && Array.isArray(body.tags)) {
           updateData[field] = body.tags.join(',')
         } else if (field === 'galleryUrls') {

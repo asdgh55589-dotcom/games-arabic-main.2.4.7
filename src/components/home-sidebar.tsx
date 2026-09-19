@@ -4,7 +4,7 @@ import { Download, Eye, Flame, Heart, ThumbsUp, Zap } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { forwardRef } from 'react'
-import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
+import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
@@ -20,7 +20,7 @@ function SidebarItem({
   variant: SidebarVariant
   rank?: number
 }) {
-  const badgeStatus = getModBadgeStatus(mod.createdAt, mod.updatedAt)
+  const badges = getModBadges(mod)
   const platformKey = mod.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
 
@@ -70,7 +70,8 @@ function SidebarItem({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-muted-foreground">
           {variant === 'latest' && (
             <>
-              {badgeStatus && <StatusBadge status={badgeStatus} />}
+              <ModTimeBadge result={badges} />
+              <ModPerformanceBadge result={badges} />
               <span className="flex items-center gap-0.5" title="التحميلات">
                 <Download className="h-3.5 w-3.5 text-blue-500" />
                 {formatNumber(mod.downloads)}

@@ -220,9 +220,10 @@ export async function POST(req: NextRequest) {
           isOriginalWork: isOriginalWork,
           originalSource: originalSource?.trim() || null,
           originalAuthor: originalAuthor?.trim() || null,
-          isFeatured: Boolean(data.isFeatured),
-          isTrending: Boolean(data.isTrending),
-          isLatest: data.isLatest !== undefined ? Boolean(data.isLatest) : true,
+          // الشارات نظامية (تُحسب من الأداء/الوقت) — أي قيم مرسلة تُتجاهل
+          isFeatured: false,
+          isTrending: false,
+          isLatest: true,
           releaseDate: data.releaseDate ? new Date(data.releaseDate) : new Date(),
           qualityScore,
         },

@@ -320,6 +320,14 @@ model Mod {
   isFeatured           Boolean               @default(false)
   isTrending           Boolean               @default(false)
   isLatest             Boolean               @default(true)
+  // ===== نظام الشارات التلقائي (تُدار من النظام + لوحة الأدمن، ليست يدوية) =====
+  featuredLevel        Int? // مستوى التميز 1-5
+  featuredUntil        DateTime? // انتهاء شارة مميز
+  trendingUntil        DateTime? // انتهاء شارة رائج (تجاوز يدوي من الأدمن)
+  popularUntil         DateTime? // انتهاء شارة شائع (تجاوز يدوي من الأدمن)
+  hiddenBadges         String                @default("") // شارات الأداء المخفية من الأدمن (CSV: featured,trending,popular)
+  dailyDownloads       Int                   @default(0) // عداد التحميلات اليومي
+  lastDownloadDate     DateTime? // آخر يوم حُسب فيه العداد اليومي
   translationType      String                @default("unofficial") // official | unofficial
   isOriginalWork       Boolean               @default(true)
   originalSource       String?               @db.Text
@@ -1288,6 +1296,33 @@ model DownloadClick {
   @@index([modId])
   @@index([createdAt])
   @@index([createdAt, modId])
+}
+
+// ===== إعدادات نظام الشارات (صف واحد، القيم الافتراضية عند غيابه) =====
+model BadgeSettings {
+  id                  String   @id @default("default")
+  trendingThreshold   Int      @default(50)
+  popularThreshold    Int      @default(20)
+  newDurationHours    Int      @default(48)
+  updatedDurationHours Int     @default(24)
+  featuredTiers       Json? // [{ downloads, durationDays }] — null يعني الافتراضي
+  badgesEnabled       Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ===== سجل تدقيق الشارات (كل تغيير يدوي من الأدمن أو إعادة حساب) =====
+model BadgeAuditLog {
+  id          String   @id @default(cuid())
+  modId       String
+  action      String // GRANT_FEATURED | REVOKE_FEATURED | GRANT_TRENDING | ... | RECALCULATE | RESET_COUNTER | HIDE | SHOW
+  oldValue    String?
+  newValue    String?
+  changedById String?
+  createdAt   DateTime @default(now())
+
+  @@index([modId])
+  @@index([createdAt])
 }
 
 // ===== مشاهدات التعريبات (صف لكل مشاهدة فريدة بعد dedup عبر Redis) =====

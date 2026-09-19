@@ -21,7 +21,7 @@ import { CreatorBadge } from '@/components/creator-badge'
 import { ReportDialog } from '@/components/report-dialog'
 import { RoleBadge } from '@/components/role-badge'
 import { highlightMatch } from '@/components/search-highlight'
-import { getModBadgeStatus, StatusBadge } from '@/components/status-badge'
+import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
 import { TierBadge } from '@/components/tier-badge'
 import {
   DropdownMenu,
@@ -44,7 +44,7 @@ interface ModCardProps {
 }
 
 export function ModCard({ mod, priority = false, variant = 'full', query }: ModCardProps) {
-  const badgeStatus = getModBadgeStatus(mod.createdAt, mod.updatedAt)
+  const badges = getModBadges(mod)
   const platformKey = mod.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
   const router = useRouter()
@@ -93,16 +93,19 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
               }
             }}
           />
-          {/* Platform badge — top start */}
-          <span
-            className="absolute top-2 start-2 inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1.5 py-0.5 text-[10px] font-black uppercase leading-none text-white"
-            style={{ background: platformColor || 'var(--primary)' }}
-          >
-            {mod.game?.platform || 'N/A'}
-          </span>
-          {/* Status badge + kebab — top end, unified container */}
+          {/* Platform badge + time badge — top start (right in RTL) */}
+          <div className="absolute top-2 start-2 z-20 flex flex-col items-start gap-1">
+            <span
+              className="inline-flex items-center gap-1 rounded-none border-2 border-black/50 px-1.5 py-0.5 text-[10px] font-black uppercase leading-none text-white"
+              style={{ background: platformColor || 'var(--primary)' }}
+            >
+              {mod.game?.platform || 'N/A'}
+            </span>
+            <ModTimeBadge result={badges} />
+          </div>
+          {/* Performance badge + kebab — top end (left in RTL) */}
           <div className="absolute top-2 end-2 z-20 flex items-center gap-1">
-            {badgeStatus && <StatusBadge status={badgeStatus} />}
+            <ModPerformanceBadge result={badges} />
             {variant !== 'compact' && (
               <span className="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100">
                 <DropdownMenu>

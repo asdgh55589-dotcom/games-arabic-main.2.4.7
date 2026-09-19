@@ -13,6 +13,7 @@
  */
 
 import { getUserIdFromRequestCookies } from './auth'
+import { refreshBadgesOnDownload } from './badges'
 import { clearHomeCache } from './home-cache'
 import { logger } from './logger'
 import { redisSetNX } from './redis'
@@ -318,6 +319,8 @@ export async function recordDownload(
       )
     }
   }
+  // تحديث تدريجي لشارات التعريب (best-effort — لا يكسر العدّ عند الفشل)
+  await refreshBadgesOnDownload(db, opts.modId).catch(() => {})
   try {
     clearHomeCache()
   } catch (err) {

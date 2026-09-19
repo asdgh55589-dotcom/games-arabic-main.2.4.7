@@ -40,6 +40,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { ModComments } from '@/components/mod-comments'
 import { CommentSectionBeacon } from '@/components/comment-section-beacon'
@@ -406,6 +407,13 @@ export function ModDetailPage() {
                           {mod.game.platform}
                         </span>
                       )}
+                      {/* Automatic badges: performance left, time right */}
+                      <div className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2">
+                        <ModPerformanceBadge result={getModBadges(mod)} />
+                      </div>
+                      <div className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2">
+                        <ModTimeBadge result={getModBadges(mod)} />
+                      </div>
                     </div>
                   </div>
 
@@ -413,16 +421,8 @@ export function ModDetailPage() {
                   <div className="text-right">
                     {/* Badges row */}
                     <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
-                      {mod.isTrending && (
-                        <span className="inline-flex items-center gap-1 rounded-none border-2 border-black/50 bg-status-updated px-2 py-0.5 text-xs font-black uppercase leading-none text-status-updated-foreground">
-                          رائج
-                        </span>
-                      )}
-                      {mod.isFeatured && (
-                        <span className="inline-flex items-center gap-1 rounded-none border-2 border-black/50 bg-gold px-2 py-0.5 text-xs font-black uppercase leading-none text-gold-foreground">
-                          مميز
-                        </span>
-                      )}
+                      <ModPerformanceBadge result={getModBadges(mod)} />
+                      <ModTimeBadge result={getModBadges(mod)} />
                     </div>
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}

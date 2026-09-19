@@ -104,9 +104,6 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState('')
-  const [isFeatured, setIsFeatured] = useState(false)
-  const [isTrending, setIsTrending] = useState(false)
-  const [isLatest, setIsLatest] = useState(true)
   const [isOriginalWork, setIsOriginalWork] = useState(true)
   const [originalSource, setOriginalSource] = useState('')
   const [originalAuthor, setOriginalAuthor] = useState('')
@@ -206,9 +203,6 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
-        setIsFeatured(m.isFeatured || false)
-        setIsTrending(m.isTrending || false)
-        setIsLatest(m.isLatest !== false)
         setIsOriginalWork(m.isOriginalWork !== false)
         setOriginalSource(m.originalSource || '')
         setOriginalAuthor(m.originalAuthor || '')
@@ -526,9 +520,6 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
-      isFeatured,
-      isTrending,
-      isLatest,
       isOriginalWork: effectiveIsOriginalWork,
       originalSource: effectiveIsOriginalWork ? null : originalSource.trim(),
       originalAuthor: effectiveIsOriginalWork ? null : originalAuthor.trim() || null,
@@ -774,12 +765,6 @@ export default function ModForm({ modId }: ModFormProps) {
         setCompatibility={setCompatibility}
         releaseDate={releaseDate}
         isEdit={isEdit}
-        isFeatured={isFeatured}
-        setIsFeatured={setIsFeatured}
-        isTrending={isTrending}
-        setIsTrending={setIsTrending}
-        isLatest={isLatest}
-        setIsLatest={setIsLatest}
         files={files}
         setFiles={setFiles}
         addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}

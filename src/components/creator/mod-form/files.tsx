@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import { Field, Section, Toggle, type DownloadFile } from './primitives'
+import { Field, Section, type DownloadFile } from './primitives'
 
 // Code-split: Uppy + IA vendor chunk loads only when the panel opens.
 const IaUploadPanel = dynamic(
@@ -35,12 +35,6 @@ interface Props {
   setCompatibility: (v: string) => void
   releaseDate: string
   isEdit: boolean
-  isFeatured: boolean
-  setIsFeatured: (v: boolean) => void
-  isTrending: boolean
-  setIsTrending: (v: boolean) => void
-  isLatest: boolean
-  setIsLatest: (v: boolean) => void
   files: DownloadFile[]
   setFiles: (v: DownloadFile[] | ((p: DownloadFile[]) => DownloadFile[])) => void
   addEmptyFile: () => void
@@ -101,11 +95,6 @@ export function ModFormFiles(p: Props) {
             <Input type="date" value={p.releaseDate} disabled className="opacity-60" />
           </Field>
         )}
-        <div className="flex flex-wrap gap-4">
-          <Toggle label={t.featured} checked={p.isFeatured} onChange={p.setIsFeatured} />
-          <Toggle label={t.trending} checked={p.isTrending} onChange={p.setIsTrending} />
-          <Toggle label={t.latest} checked={p.isLatest} onChange={p.setIsLatest} />
-        </div>
       </Section>
 
       {/* ===== 5. download files ===== */}

@@ -84,6 +84,12 @@ export interface ModSummary {
   isFeatured: boolean
   isTrending: boolean
   isLatest: boolean
+  // حقول نظام الشارات التلقائي (اختيارية — تُملأ من الـ APIs المحدّثة)
+  featuredLevel?: number | null
+  featuredUntil?: string | Date | null
+  trendingUntil?: string | Date | null
+  popularUntil?: string | Date | null
+  hiddenBadges?: string | null
   releaseDate: string | Date
   updatedAt: string | Date
   createdAt: string | Date

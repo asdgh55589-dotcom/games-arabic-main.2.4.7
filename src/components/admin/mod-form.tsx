@@ -221,9 +221,6 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState('')
-  const [isFeatured, setIsFeatured] = useState(false)
-  const [isTrending, setIsTrending] = useState(false)
-  const [isLatest, setIsLatest] = useState(true)
 
   // Platform-specific fields
   const [platform, setPlatform] = useState('')
@@ -324,9 +321,6 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
-        setIsFeatured(m.isFeatured || false)
-        setIsTrending(m.isTrending || false)
-        setIsLatest(m.isLatest !== false)
         setPlatform(m.game?.platform || '')
         setTranslationMethod((m as any).translationMethod || '')
         setPlatformGameId((m as any).platformGameId || '')
@@ -642,9 +636,6 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
-      isFeatured,
-      isTrending,
-      isLatest,
       translationMethod: translationMethod || null,
       platformGameId: platformGameId || null,
       cusaId: cusaId || null,
@@ -1052,11 +1043,9 @@ export default function ModForm({ modId }: ModFormProps) {
             <Input type="date" value={releaseDate} disabled className="opacity-60" />
           </Field>
         )}
-        <div className="flex flex-wrap gap-4">
-          <Toggle label="مميّز" checked={isFeatured} onChange={setIsFeatured} />
-          <Toggle label="رائج" checked={isTrending} onChange={setIsTrending} />
-          <Toggle label="أحدث" checked={isLatest} onChange={setIsLatest} />
-        </div>
+        <p className="text-xs text-muted-foreground">
+          الشارات (مميّز / رائج / شائع / جديد / محدّث) تُحسب تلقائياً من الأداء والوقت — تُدار من صفحة الشارات.
+        </p>
       </Section>
 
       {/* ===== 4. العلاقات — السلسلة وفريق التعريب (تظهر أي سلسلة/فريق جديد تلقائياً) ===== */}
@@ -1884,27 +1873,5 @@ function Field({
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
-  )
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string
-  checked: boolean
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-border"
-      />
-      {label}
-    </label>
   )
 }
