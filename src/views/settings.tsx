@@ -11,7 +11,9 @@ import {
   Eye,
   Loader2,
   Lock,
+  MonitorSmartphone,
   Save,
+  ShieldCheck,
   Upload,
   User,
   Users,
@@ -24,6 +26,8 @@ import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { CropModal } from '@/components/crop-modal'
+import { MfaManage, type MfaStatus } from '@/components/settings/mfa-manage'
+import { MfaSetup } from '@/components/settings/mfa-setup'
 import { SetupPasswordCard } from '@/components/settings/setup-password-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -72,7 +76,7 @@ interface ProfileData {
   role: string
 }
 
-type SettingsSection = 'profile' | 'account' | 'notifications' | 'privacy' | 'translation'
+type SettingsSection = 'profile' | 'account' | 'security' | 'notifications' | 'privacy' | 'translation'
 
 const SECTIONS: {
   key: SettingsSection
@@ -91,6 +95,12 @@ const SECTIONS: {
     label: 'الحساب',
     icon: <Lock className="h-[18px] w-[18px]" />,
     description: 'كلمة المرور والأمان',
+  },
+  {
+    key: 'security',
+    label: 'الأمان',
+    icon: <ShieldCheck className="h-[18px] w-[18px]" />,
+    description: 'المصادقة الثنائية والجلسات النشطة',
   },
   {
     key: 'notifications',
@@ -199,6 +209,35 @@ export function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(true)
   const [dailySummary, setDailySummary] = useState(true)
+
+  // Phase 4C: user-facing MFA status (Settings → Security tab).
+  const [mfaStatus, setMfaStatus] = useState<MfaStatus | null>(null)
+  const [mfaLoading, setMfaLoading] = useState(false)
+  const fetchMfaStatus = async () => {
+    setMfaLoading(true)
+    try {
+      const res = await fetch('/api/auth/mfa/status', { cache: 'no-store' })
+      const j = await res.json().catch(() => null)
+      if (res.ok && j?.data) {
+        setMfaStatus({
+          totpEnabled: !!j.data.totpEnabled,
+          mfaEnabledAt: j.data.mfaEnabledAt ?? null,
+          lastMfaLoginAt: j.data.lastMfaLoginAt ?? null,
+          recoveryCodesRemaining: j.data.recoveryCodesRemaining ?? 0,
+        })
+      } else {
+        setMfaStatus(null)
+      }
+    } catch {
+      setMfaStatus(null)
+    } finally {
+      setMfaLoading(false)
+    }
+  }
+  useEffect(() => {
+    if (activeSection === 'security') fetchMfaStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection])
 
   const [profileVisibility, setProfileVisibility] = useState('everyone')
   const [hideJoinDate, setHideJoinDate] = useState(false)
@@ -1487,6 +1526,45 @@ export function SettingsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ========== Security Section (Phase 4C) ========== */}
+            {activeSection === 'security' && (
+              <div className="space-y-6">
+                <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
+                    <MonitorSmartphone className="h-4 w-4 text-primary" />
+                    الجلسات النشطة
+                  </h3>
+                  <p className="mb-4 text-xs leading-6 text-muted-foreground">
+                    راجع الأجهزة المتصلة بحسابك واطرد أي جهاز لا تعرفه.
+                  </p>
+                  <Button asChild variant="outline" className="min-h-[44px]">
+                    <Link href="/settings/sessions">عرض الأجهزة المتصلة</Link>
+                  </Button>
+                </div>
+
+                {mfaLoading ? (
+                  <div className="flex items-center justify-center rounded-none border-[3px] border-border bg-card p-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : mfaStatus?.totpEnabled ? (
+                  <MfaManage
+                    status={mfaStatus}
+                    hasPassword={user?.hasPassword === true}
+                    onChanged={fetchMfaStatus}
+                  />
+                ) : (
+                  <>
+                    <div className="rounded-none border-[3px] border-border bg-card p-6 shadow-[4px_4px_0_0_var(--border)]">
+                      <p className="text-sm text-muted-foreground">
+                        المصادقة الثنائية غير مفعلة — تفعيلها اختياري ويزيد حماية حسابك.
+                      </p>
+                    </div>
+                    <MfaSetup onEnabled={fetchMfaStatus} />
+                  </>
+                )}
               </div>
             )}
 

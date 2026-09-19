@@ -4,6 +4,10 @@ import { CheckCircle2, Loader2, MailWarning, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/use-toast'
+import { createClient } from '@/lib/supabase/client'
 
 type State = { kind: 'verifying' } | { kind: 'ok' } | { kind: 'error'; message: string }
 
@@ -16,8 +20,52 @@ function readError(j: unknown): string {
 
 function VerifyEmailAddressInner() {
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [state, setState] = useState<State>({ kind: 'verifying' })
   const started = useRef(false)
+  // Phase 4C merge: legacy /verify-email Supabase-resend folded in here.
+  const [sbEmail, setSbEmail] = useState('')
+  const [sbCooldown, setSbCooldown] = useState(0)
+  const [sbBusy, setSbBusy] = useState(false)
+
+  useEffect(() => {
+    if (sbCooldown > 0) {
+      const t = setTimeout(() => setSbCooldown((c) => c - 1), 1000)
+      return () => clearTimeout(t)
+    }
+  }, [sbCooldown])
+
+  async function resendSupabaseSignup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!sbEmail.trim() || sbCooldown > 0 || sbBusy) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sbEmail.trim())) {
+      toast({ title: 'خطأ', description: 'البريد الإلكتروني غير صحيح', variant: 'destructive' })
+      return
+    }
+    setSbBusy(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: sbEmail.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+      })
+      if (error) {
+        if (error.message.toLowerCase().includes('already confirmed')) {
+          toast({ title: 'تم التأكيد مسبقاً', description: 'بريدك مُفعّل بالفعل — سجّل دخولك' })
+        } else {
+          toast({ title: 'خطأ', description: 'تعذر الإرسال، حاول لاحقاً', variant: 'destructive' })
+        }
+      } else {
+        toast({ title: 'تم الإرسال', description: `أرسلنا رابطاً جديداً إلى ${sbEmail.trim()}` })
+        setSbCooldown(60)
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'تعذر الإرسال، تحقق من الاتصال', variant: 'destructive' })
+    } finally {
+      setSbBusy(false)
+    }
+  }
 
   useEffect(() => {
     if (started.current) return
@@ -39,11 +87,12 @@ function VerifyEmailAddressInner() {
           return
         }
         setState({ kind: 'ok' })
+        toast({ title: 'تم التأكيد', description: 'تم تأكيد بريدك الإلكتروني بنجاح' })
       })
       .catch(() => {
         setState({ kind: 'error', message: 'حدث خطأ أثناء التحقق، تحقق من الاتصال' })
       })
-  }, [searchParams])
+  }, [searchParams, toast])
 
   return (
     <div dir="rtl" className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center px-4 py-10">
@@ -58,7 +107,7 @@ function VerifyEmailAddressInner() {
           <>
             <CheckCircle2 className="mx-auto h-8 w-8 text-green-600" />
             <h1 className="mt-4 text-lg font-bold">تم تأكيد بريدك الإلكتروني بنجاح</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
               يمكنك الآن استخدامه لتسجيل الدخول واستعادة حسابك عند الحاجة.
             </p>
             <div className="mt-6 flex justify-center gap-2">
@@ -72,7 +121,7 @@ function VerifyEmailAddressInner() {
           <>
             <XCircle className="mx-auto h-8 w-8 text-destructive" />
             <h1 className="mt-4 text-lg font-bold">تعذّر تأكيد البريد</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{state.message}</p>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">{state.message}</p>
             <div className="mt-4 flex items-start justify-center gap-2 text-xs text-muted-foreground">
               <MailWarning className="h-4 w-4 shrink-0" />
               <span>اطلب رابطاً جديداً من صفحة الإعدادات (قسم الحساب).</span>
@@ -85,6 +134,31 @@ function VerifyEmailAddressInner() {
           </>
         )}
       </div>
+
+      {/* Legacy Supabase-signup resend (folded in from /verify-email merge) */}
+      <details className="mt-4 w-full rounded-none border-[3px] border-border bg-card p-4 text-start shadow-[4px_4px_0_0_var(--border)]">
+        <summary className="cursor-pointer text-sm font-bold">
+          سجلت بالبريد ولم يصلك رابط التفعيل؟
+        </summary>
+        <form onSubmit={resendSupabaseSignup} className="mt-3 space-y-3">
+          <p className="text-xs leading-6 text-muted-foreground">
+            أدخل بريد التسجيل وسنعيد إرسال رابط التفعيل (روابط التسجيل بالبريد فقط — روابط تغيير
+            البريد تُطلب من الإعدادات).
+          </p>
+          <Input
+            type="email"
+            required
+            dir="ltr"
+            className="text-left"
+            placeholder="you@mail.com"
+            value={sbEmail}
+            onChange={(e) => setSbEmail(e.target.value)}
+          />
+          <Button type="submit" disabled={sbBusy || sbCooldown > 0} className="min-h-[44px] w-full">
+            {sbBusy ? 'جارٍ الإرسال…' : sbCooldown > 0 ? `إعادة الإرسال (بعد ${sbCooldown} ث)` : 'إعادة إرسال رابط التفعيل'}
+          </Button>
+        </form>
+      </details>
     </div>
   )
 }

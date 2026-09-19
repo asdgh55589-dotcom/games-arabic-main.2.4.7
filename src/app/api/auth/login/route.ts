@@ -250,14 +250,14 @@ export async function POST(req: NextRequest) {
     if (ban.banned) {
       const msg =
         ban.type === 'perm'
-          ? 'Your account has been permanently banned.'
-          : `Your account has been temporarily banned. Ban expires on ${neonUser.bannedUntil!.toLocaleDateString('en')}`
+          ? 'تم حظر حسابك نهائياً.'
+          : `تم حظر حسابك مؤقتاً. ينتهي الحظر بتاريخ ${neonUser.bannedUntil!.toLocaleDateString('ar-EG')}`
       return forbidden(msg)
     }
 
     // فحص الصلاحية BEFORE تسجيل الدخول — مش مسموح لـ member الدخول
     if (neonUser.role === 'member') {
-      return forbidden('Insufficient permissions')
+      return forbidden('صلاحيات غير كافية')
     }
 
     // تسجيل الدخول عبر Supabase Auth
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
 
       const supabaseId = await createSupabaseAuthUser(neonUser.email, password, neonUser.username)
       if (!supabaseId) {
-        return unauthorized('Account not found in auth system')
+        return unauthorized('تعذر العثور على الحساب في نظام الدخول')
       }
 
       // ربط الحساب في Neon DB
@@ -291,7 +291,7 @@ export async function POST(req: NextRequest) {
       authError = retry.error
 
       if (authError || !authData.user) {
-        return unauthorized('Login failed after account creation')
+        return unauthorized('تعذر تسجيل الدخول، حاول مجدداً')
       }
     }
 
@@ -359,6 +359,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error({ err }, '[auth/login] failed')
     reportError(err, { route: 'POST /api/auth/login' })
-    return internalError('Login failed')
+    return internalError('حدث خطأ، حاول مجدداً')
   }
 }

@@ -1,10 +1,10 @@
 import { createHash } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { invalidateUserSessions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { PasswordSchema } from '@/lib/schemas'
 import { createAdminClient } from '@/lib/supabase/server'
 import { z } from 'zod'
@@ -23,10 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'auth:reset-password' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

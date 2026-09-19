@@ -259,7 +259,8 @@ describe('emitlo provider', () => {
     const files = [
       '../app/api/auth/send-verification-email/route.ts',
       '../components/official-login/login-form.tsx',
-      '../views/verify-email.tsx',
+      // Phase 4C merge: legacy views/verify-email.tsx folded into -address.
+      '../views/verify-email-address.tsx',
     ]
     for (const rel of files) {
       const content = fs.readFileSync(path.join(__dirname, rel), 'utf8')

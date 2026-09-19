@@ -35,6 +35,7 @@ function ResetPasswordForm() {
         })
         return
       }
+      toast({ title: 'تم بنجاح', description: 'تم تعيين كلمة المرور الجديدة — سجّل دخولك بها' })
       setDone(true)
     } finally {
       setSaving(false)
@@ -45,8 +46,8 @@ function ResetPasswordForm() {
     return (
       <div dir="rtl" className="mx-auto max-w-md px-4 py-10 text-center">
         <h1 className="text-xl font-bold">رابط غير صالح</h1>
-        <p className="mt-2 text-sm text-muted-foreground">اطلب رابط استعادة جديداً من صفحة الدخول</p>
-        <Button className="mt-6" onClick={() => (window.location.href = '/login')}>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">اطلب رابط استعادة جديداً من صفحة الدخول</p>
+        <Button className="mt-6 min-h-[44px]" onClick={() => (window.location.href = '/login')}>
           إلى الدخول
         </Button>
       </div>
@@ -57,8 +58,8 @@ function ResetPasswordForm() {
     return (
       <div dir="rtl" className="mx-auto max-w-md px-4 py-10 text-center">
         <h1 className="text-xl font-bold">تم تعيين كلمة المرور</h1>
-        <p className="mt-2 text-sm text-muted-foreground">سجّل دخولك بالكلمة الجديدة</p>
-        <Button className="mt-6" onClick={() => (window.location.href = '/login')}>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">سجّل دخولك بالكلمة الجديدة</p>
+        <Button className="mt-6 min-h-[44px]" onClick={() => (window.location.href = '/login')}>
           إلى الدخول
         </Button>
       </div>
@@ -96,7 +97,7 @@ function ResetPasswordForm() {
           className="text-left"
         />
       </div>
-      <Button className="w-full" disabled={!valid || saving} onClick={submit}>
+      <Button className="w-full min-h-[44px]" disabled={!valid || saving} onClick={submit}>
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تعيين'}
       </Button>
     </div>

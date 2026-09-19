@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { rateLimit } from '@/lib/rate-limit'
 import { EmailSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 
@@ -12,10 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 5, window: 600, keyPrefix: 'auth:resend-verify' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

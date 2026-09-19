@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { DisplayNameSchema, EmailSchema, PasswordSchema, UsernameSchema } from '@/lib/schemas'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername } from '@/lib/username-generator'
@@ -26,10 +26,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'auth:onboarding' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: rate limit fail-open

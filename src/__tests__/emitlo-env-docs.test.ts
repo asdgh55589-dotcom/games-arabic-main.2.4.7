@@ -99,6 +99,7 @@ describe('supabase.auth.resend whitelist (MUST remain — do NOT touch)', () => 
   })
 
   it('verify-email view keeps supabase.auth.resend', () => {
-    expect(read('src/views/verify-email.tsx')).toContain('supabase.auth.resend(')
+    // Phase 4C merge: legacy views/verify-email.tsx folded into -address.
+    expect(read('src/views/verify-email-address.tsx')).toContain('supabase.auth.resend(')
   })
 })

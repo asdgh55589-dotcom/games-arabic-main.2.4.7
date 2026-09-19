@@ -1,11 +1,11 @@
 import { createHash, randomBytes } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { buildResetLink, sendPasswordResetEmail } from '@/lib/recovery-email'
 import { reportError } from '@/lib/error-reporting'
 import { EmailSchema } from '@/lib/schemas'
@@ -24,10 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const rl = await rateLimit(req, { limit: 5, window: 900, keyPrefix: 'auth:recover' })
     if (!rl.success) {
-      return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-      })
+      return rateLimited()
     }
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort rate limit fail-open
