@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   reactCompiler: true,
+  // Server-only heavy deps stay external (never bundled into route chunks).
+  // Constraint: none of these may ALSO be in optimizePackageImports.
   serverExternalPackages: [
     "@prisma/client",
     "bcryptjs",
@@ -29,6 +31,12 @@ const nextConfig: NextConfig = {
     "sharp",
   ],
   experimental: {
+    // NOTE: packages listed in serverExternalPackages MUST NOT appear here —
+    // Turbopack treats optimizePackageImports as transpilePackages and panics
+    // on the overlap (build FATAL). Server-only deps (cloudinary, handlebars)
+    // live in serverExternalPackages only; client-only @uppy/* live here only.
+    // @sentry/nextjs is managed by withSentryConfig — keep it out of both
+    // optimization lists to avoid the same conflict.
     optimizePackageImports: [
       'lucide-react',
       '@radix-ui/react-icons',
@@ -42,9 +50,6 @@ const nextConfig: NextConfig = {
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',
-      'cloudinary',
-      'handlebars',
-      '@sentry/nextjs',
       '@uppy/core',
       '@uppy/dashboard',
       '@uppy/xhr-upload',
