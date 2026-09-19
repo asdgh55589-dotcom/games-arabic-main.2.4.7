@@ -97,15 +97,20 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data as unknown as {
     isOriginalWork?: boolean
-    originalSource?: string
+    originalSource?: string | null
+    originalAuthor?: string | null
     name: string
     [key: string]: unknown
   }
 
-  // المصدر يُحدَّد تلقائياً من دور المستخدم — تُتجاهل أي قيمة مرسلة
-  // (مسار المترجم = creator → عمل أصلي، مسار الناشر = publisher → خارجي)
+  // المصدر يُحدَّد تلقائياً من دور المستخدم — تُتجاهل أي قيمة مرسلة.
+  // الناشر لا يُطالَب بمصدر: يُنشأ التعريب بدونه، والأدمن يضيفه لاحقاً.
   const isOriginalWork = user.role !== 'publisher'
   ;(data as Record<string, unknown>).isOriginalWork = isOriginalWork
+  if (!isOriginalWork) {
+    data.originalSource = null
+    data.originalAuthor = null
+  }
 
   if (!canCreateMod(user.role, isOriginalWork)) {
     if (isOriginalWork) {
@@ -117,10 +122,6 @@ export async function POST(req: NextRequest) {
   // مسار المعرّب: العمل المترجم الخاص يتطلب صلاحية الترجمة explicitly.
   if (isOriginalWork && !canTranslateMod(user.role)) {
     return forbidden('لا تملك صلاحية الترجمة')
-  }
-
-  if (!isOriginalWork && !(data.originalSource as unknown as string)?.trim()) {
-    return validationFail('يجب على الناشر ذكر المصدر الأصلي للتعريب')
   }
 
   const workflowStatus = action === 'submit' ? 'IN_REVIEW' : 'DRAFT'

@@ -385,13 +385,14 @@ describe('POST /api/creator/mods', () => {
     expect(res.status).toBe(403)
   })
 
-  it('يُ退回 422 عندما لا يذكر الناشر المصدر الأصلي', async () => {
-    // الدور يحدد المصدر تلقائياً — قيمة الجسم تُتجاهل، والناشر بلا مصدر يُرفض
+  it('ينشئ الناشر بدون مصدر بنجاح مع قيم null', async () => {
+    // الناشر لا يُطالَب بمصدر: الدور يحدد المصدر تلقائياً (false + null)
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: publisherUser, error: null })
     ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
       data: { ...validModData, isOriginalWork: true, originalSource: '' },
     })
+    ;(db.mod.create as jest.Mock).mockResolvedValue({ id: 'mod1' })
     const res = await POST(
       makeReq('http://localhost/api/creator/mods', 'POST', {
         ...validModData,
@@ -399,7 +400,11 @@ describe('POST /api/creator/mods', () => {
         originalSource: '',
       }),
     )
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(201)
+    const data = (db.mod.create as jest.Mock).mock.calls[0][0].data
+    expect(data.isOriginalWork).toBe(false)
+    expect(data.originalSource).toBeNull()
+    expect(data.originalAuthor).toBeNull()
   })
 
   it('يُ退回 422 عندما لا توجد لعبة في قاعدة البيانات', async () => {

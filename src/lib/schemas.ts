@@ -220,8 +220,8 @@ export const CreateModSchema = z.object({
     .preprocess(normalizeTranslationType, z.enum(['official', 'unofficial']))
     .default('unofficial'),
   isOriginalWork: z.boolean().default(true),
-  originalSource: z.string().optional(),
-  originalAuthor: z.string().optional(),
+  originalSource: z.string().optional().nullable(),
+  originalAuthor: z.string().optional().nullable(),
   sectionId: z.string().optional(),
   isFeatured: z.boolean().optional(),
   isTrending: z.boolean().optional(),
