@@ -186,3 +186,28 @@ export function buildTransferEmail(vars: {
 
   return { subject, html, text }
 }
+
+// ===== Password-changed notification (Telegram-first backup leg) =====
+
+export function buildPasswordChangedEmail(vars: {
+  username: string
+  changedAt: string
+  ip: string | null
+}): BuiltEmail {
+  const subject = 'تم تغيير كلمة المرور الخاصة بك — GAMES ARABIC'
+  const html = `
+        <div dir="rtl" lang="ar" style="font-family: Arial, sans-serif;">
+          <h2>تم تغيير كلمة المرور</h2>
+          <p>مرحباً ${vars.username}،</p>
+          <p>تم تغيير كلمة المرور الخاصة بحسابك بتاريخ ${vars.changedAt}${vars.ip ? ` من العنوان ${vars.ip}` : ''}.</p>
+          <p>إذا لم تقم بهذا التغيير، تواصل مع الدعم فوراً وسجّل الدخول لتأمين حسابك.</p>
+        </div>`
+  const text = [
+    'تم تغيير كلمة المرور الخاصة بك',
+    `مرحباً ${vars.username}،`,
+    `تم تغيير كلمة المرور الخاصة بحسابك بتاريخ ${vars.changedAt}${vars.ip ? ` من العنوان ${vars.ip}` : ''}.`,
+    'إذا لم تقم بهذا التغيير، تواصل مع الدعم فوراً وسجّل الدخول لتأمين حسابك.',
+  ].join('\n')
+
+  return { subject, html, text }
+}

@@ -6,6 +6,7 @@ import { invalidateUserSessions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { PasswordSchema } from '@/lib/schemas'
+import { routeNotification } from '@/lib/notification-router'
 import { createAdminClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
@@ -94,6 +95,20 @@ export async function POST(req: NextRequest) {
       })
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+    }
+
+    // Telegram-first: linked users get the bot confirmation; the (real)
+    // inbox gets a backup copy. Fail-open, never blocks.
+    {
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        req.headers.get('x-real-ip') ||
+        null
+      void routeNotification({
+        userId: row.userId,
+        type: 'password_changed',
+        data: { at: new Date().toISOString(), ip },
+      })
     }
 
     return ok({ success: true })

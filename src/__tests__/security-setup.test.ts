@@ -89,7 +89,8 @@ describe('setup card contract (optional fields + warning)', () => {
   const CARD = read('components/settings/setup-password-card.tsx')
 
   it('shows the recovery warning regardless of input', () => {
-    expect(CARD).toContain('بدون بريد إلكتروني مؤكد، لن تستطيع استرجاع حسابك')
+    expect(CARD).toContain('للاسترجاع فقط')
+    expect(CARD).toContain('لن تستطيع استرجاع حسابك')
   })
 
   it('states the setup is optional and skippable', () => {
@@ -141,9 +142,9 @@ describe('account settings UX contracts (clear labels + states)', () => {
   const SETTINGS = read('views/settings.tsx')
   const VERIFY_PAGE = read('views/verify-email-address.tsx')
 
-  it('email field is labeled as a required action with a why-helper', () => {
-    expect(CARD).toContain('قم بإضافة بريد إلكتروني')
-    expect(CARD).toContain('مطلوب لاسترجاع حسابك وتأمينه')
+  it('email field is labeled as optional-secondary with a why-helper', () => {
+    expect(CARD).toContain('البريد الإلكتروني (اختياري — للاسترجاع فقط)')
+    expect(CARD).toContain('لن تصلك إشعارات على البريد')
     expect(CARD).toContain('required')
   })
 

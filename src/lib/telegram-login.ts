@@ -105,6 +105,7 @@ export async function performTelegramLogin(
 
     // Step 1: reuse the user behind an existing telegram link.
     let neonUser: CanonicalUser | null = null
+    let isNewAccount = false
     const existingOAuth = await db.oAuthAccount.findUnique({
       where: {
         provider_providerAccountId: { provider: TELEGRAM_PROVIDER, providerAccountId },
@@ -114,17 +115,36 @@ export async function performTelegramLogin(
 
     if (existingOAuth) {
       neonUser = existingOAuth.user as CanonicalUser
-      if (!neonUser.avatarUrl || neonUser.avatarUrl !== avatarUrl) {
-        try {
+      // Phase Telegram-first (P3): identity is the NUMERIC providerAccountId
+      // (lookup above) — never the username. Refresh DISPLAY fields only:
+      // username changes must not break linking, and the new handle/name
+      // propagate automatically.
+      try {
+        const updates: { avatarUrl?: string | null; displayName?: string } = {}
+        if (avatarUrl && neonUser.avatarUrl !== avatarUrl) updates.avatarUrl = avatarUrl
+        if (username && existingOAuth.providerUsername !== username) {
+          updates.displayName =
+            [firstName, lastName].filter(Boolean).join(' ') || username
+        }
+        await db.oAuthAccount.update({
+          where: {
+            provider_providerAccountId: { provider: TELEGRAM_PROVIDER, providerAccountId },
+          },
+          data: {
+            ...(username ? { providerUsername: username } : {}),
+            ...(avatarUrl ? { avatarUrl } : {}),
+          },
+        })
+        if (Object.keys(updates).length > 0) {
           neonUser = (await db.user.update({
             where: { id: neonUser.id },
-            data: { avatarUrl },
+            data: updates,
             select: userSelect,
           })) as CanonicalUser
-        } catch {
+        }
+      } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Telegram login
     }
-      }
     } else {
       // Step 2: reuse the synthetic-email user, ensuring exactly one link row.
       const emailUser = (await db.user.findUnique({
@@ -153,6 +173,7 @@ export async function performTelegramLogin(
         }
       } else {
         // Step 3: create user + link.
+        isNewAccount = true
         const baseUsername = username || displayName.toLowerCase().replace(/\s+/g, '_')
         const finalUsername = await generateUniqueUsername(baseUsername)
 
@@ -241,6 +262,35 @@ export async function performTelegramLogin(
       entity: 'user',
       entityId: neonUser.id,
     })
+
+    // Phase Telegram-first (P4/P5): welcome on creation, password-setup
+    // prompt while passwordless, new-device alert. All advisory fail-open.
+    try {
+      const { routeNotification, maybeSendLoginAlert, siteUrl } = await import(
+        '@/lib/notification-router'
+      )
+      const display = displayName || neonUser.username
+      if (isNewAccount) {
+        void routeNotification({ userId: neonUser.id, type: 'welcome', data: { displayName: display } })
+      }
+      const cred = await db.user
+        .findUnique({ where: { id: neonUser.id }, select: { password: true } })
+        .catch(() => null)
+      if (!cred?.password) {
+        void routeNotification({
+          userId: neonUser.id,
+          type: 'password_setup_prompt',
+          data: { displayName: display, setupUrl: `${siteUrl()}/settings?setup-password=true` },
+        })
+      }
+      void maybeSendLoginAlert(neonUser.id, {
+        ip: ctx.ipAddress ?? null,
+        userAgent: ctx.userAgent ?? null,
+        currentToken: ledgerToken,
+      })
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: notifications advisory
+    }
 
     return {
       ok: true,

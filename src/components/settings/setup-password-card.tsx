@@ -19,7 +19,8 @@ function isSyntheticEmail(email: string | undefined): boolean {
  *
  * Contextual, actionable labels based on user state:
  * - No password yet → "قم بتعيين كلمة مرور" (new + confirm fields).
- * - Synthetic identity → required "قم بإضافة بريد إلكتروني" (needed for recovery).
+ * - Synthetic identity → optional "البريد الإلكتروني (اختياري — للاسترجاع فقط)"
+ *   (Telegram is primary; email is secondary recovery only).
  * - Password set but email unverified → verification status + resend.
  *
  * Email verification states: none added → sent → pending → verified/failed,
@@ -55,9 +56,10 @@ export function SetupPasswordCard() {
   const cooldownLeft =
     cooldownUntil === null ? 0 : Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
 
-  // Email is required whenever the field is shown; otherwise a password is required.
+  // Email is secondary (Telegram is primary); either a password or an email
+  // satisfies setup — mirrors SetupPasswordSchema (password XOR email).
   const canSubmit =
-    !busy && (needsEmail ? email.trim().length > 0 : password.length > 0)
+    !busy && (password.length > 0 || email.trim().length > 0)
 
   const title = !hasPw ? 'قم بتعيين كلمة مرور' : 'تأكيد بريدك الإلكتروني'
 
@@ -186,7 +188,7 @@ export function SetupPasswordCard() {
         {title}
       </h3>
       <p className="text-xs text-muted-foreground mb-4">
-        {!hasPw && needsEmail && 'أضف بريدك الإلكتروني وعيّن كلمة مرور لتأمين حسابك.'}
+        {!hasPw && needsEmail && 'أضف بريدك الإلكتروني (اختياري — للاسترجاع فقط) وعيّن كلمة مرور لتأمين حسابك.'}
         {!hasPw && !needsEmail && 'عيّن كلمة مرور لحسابك لتتمكن من تسجيل الدخول بها.'}
         {hasPw && 'أكمل تأمين حسابك بتأكيد بريدك الإلكتروني.'}
       </p>
@@ -196,8 +198,8 @@ export function SetupPasswordCard() {
       >
         <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
         <span>
-          ⚠️ تنبيه: بدون بريد إلكتروني مؤكد، لن تستطيع استرجاع حسابك إذا فقدت الوصول إلى
-          تليجرام أو نسيت كلمة المرور.
+          ⚠️ تنبيه: إشعارات حسابك تصل عبر تليجرام. البريد الإلكتروني للاسترجاع فقط —
+          بدونه لن تستطيع استرجاع حسابك إذا فقدت الوصول إلى تليجرام أو نسيت كلمة المرور.
         </span>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
@@ -258,15 +260,15 @@ export function SetupPasswordCard() {
           <div>
             <p className="mb-2 text-xs text-muted-foreground">لم يتم إضافة بريد إلكتروني بعد.</p>
             <label className="mb-1 block text-sm font-bold" htmlFor="setup-email">
-              قم بإضافة بريد إلكتروني <span aria-hidden>*</span>
+              البريد الإلكتروني (اختياري — للاسترجاع فقط)
             </label>
             <p className="mb-1 text-[11px] text-muted-foreground">
-              مطلوب لاسترجاع حسابك وتأمينه — سنرسل إليه رابط تحقق.
+              لن تصلك إشعارات على البريد — الإشعارات تصل عبر تليجرام. سنرسل إليه رابط تحقق.
             </p>
             <Input
               id="setup-email"
               type="email"
-              required
+              required={needsEmail && password.length === 0}
               dir="ltr"
               className="bg-background border-border text-left"
               placeholder="you@mail.com"

@@ -5,6 +5,7 @@ import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { ChangePasswordSchema } from '@/lib/schemas'
+import { routeNotification } from '@/lib/notification-router'
 import { rateLimit } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -104,6 +105,20 @@ export async function POST(req: NextRequest) {
         } catch {
         // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
       }
+
+        // Telegram-first: bot is primary for linked users; real inboxes get
+        // a backup copy (router decides). Fail-open, never blocks.
+        {
+          const ip =
+            req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+            req.headers.get('x-real-ip') ||
+            null
+          void routeNotification({
+            userId: neonUser.id,
+            type: 'password_changed',
+            data: { at: new Date().toISOString(), ip },
+          })
+        }
       }
     } catch (e) {
       logger.error({ err: e }, '[ChangePassword] session invalidation failed')
