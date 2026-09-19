@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
       updatedAt: true,
       isOriginalWork: true,
       originalSource: true,
+      scheduledAt: true,
       thumbnailUrl: true,
       game: { select: { id: true, name: true, slug: true } },
     },
@@ -101,7 +102,10 @@ export async function POST(req: NextRequest) {
     [key: string]: unknown
   }
 
-  const isOriginalWork = (data.isOriginalWork as unknown as boolean) ?? true
+  // المصدر يُحدَّد تلقائياً من دور المستخدم — تُتجاهل أي قيمة مرسلة
+  // (مسار المترجم = creator → عمل أصلي، مسار الناشر = publisher → خارجي)
+  const isOriginalWork = user.role !== 'publisher'
+  ;(data as Record<string, unknown>).isOriginalWork = isOriginalWork
 
   if (!canCreateMod(user.role, isOriginalWork)) {
     if (isOriginalWork) {
@@ -134,6 +138,24 @@ export async function POST(req: NextRequest) {
   }
   if (!effectiveGameId) {
     return validationFail('لا توجد لعبة في قاعدة البيانات — أنشئ لعبة افتراضية أولاً')
+  }
+
+  // التحقق من التصنيف والقسم عند إرسالهما
+  const categoryId = (data as unknown as { categoryId?: string | null }).categoryId
+  if (categoryId) {
+    const exists = await db.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true },
+    })
+    if (!exists) return validationFail('التصنيف المحدد غير موجود')
+  }
+  const sectionId = (data as unknown as { sectionId?: string | null }).sectionId
+  if (sectionId) {
+    const exists = await db.section.findUnique({
+      where: { id: sectionId },
+      select: { id: true },
+    })
+    if (!exists) return validationFail('القسم المحدد غير موجود')
   }
 
   const mod = await db.mod.create({

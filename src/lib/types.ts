@@ -90,6 +90,8 @@ export interface ModSummary {
   trendingUntil?: string | Date | null
   popularUntil?: string | Date | null
   hiddenBadges?: string | null
+  scheduledAt?: string | Date | null
+  workflowStatus?: string
   releaseDate: string | Date
   updatedAt: string | Date
   createdAt: string | Date

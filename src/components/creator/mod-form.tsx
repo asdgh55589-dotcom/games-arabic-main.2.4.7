@@ -107,9 +107,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState('')
-  const [isOriginalWork, setIsOriginalWork] = useState(true)
-  const [originalSource, setOriginalSource] = useState('')
-  const [originalAuthor, setOriginalAuthor] = useState('')
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null)
 
   // Platform-specific fields
   const [platform, setPlatform] = useState('')
@@ -220,9 +218,9 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
-        setIsOriginalWork(m.isOriginalWork !== false)
-        setOriginalSource(m.originalSource || '')
-        setOriginalAuthor(m.originalAuthor || '')
+        setScheduledAt(
+          (m as any).scheduledAt ? new Date((m as any).scheduledAt).toISOString() : null,
+        )
         setPlatform(m.game?.platform || '')
         setTranslationMethod((m as any).translationMethod || '')
         setPlatformGameId((m as any).platformGameId || '')
@@ -500,17 +498,6 @@ export default function ModForm({ modId }: ModFormProps) {
       return
     }
 
-    // Publisher must provide source when not original work
-    const effectiveIsOriginalWork = userRole === 'publisher' ? false : isOriginalWork
-    if (!effectiveIsOriginalWork && !originalSource.trim()) {
-      toast({
-        title: t.sourceRequired,
-        description: t.sourceRequiredDesc,
-        variant: 'destructive',
-      })
-      return
-    }
-
     setSaving(true)
     const payload = {
       name: _name,
@@ -539,9 +526,7 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
-      isOriginalWork: effectiveIsOriginalWork,
-      originalSource: effectiveIsOriginalWork ? null : originalSource.trim(),
-      originalAuthor: effectiveIsOriginalWork ? null : originalAuthor.trim() || null,
+      scheduledAt: scheduledAt || null,
       translationMethod: translationMethod || null,
       platformGameId: platformGameId || null,
       cusaId: cusaId || null,
@@ -686,18 +671,12 @@ export default function ModForm({ modId }: ModFormProps) {
         setArabicTitle={setArabicTitle}
         translationScope={translationScope}
         setTranslationScope={setTranslationScope}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
         tags={tags}
         setTags={setTags}
         translationType={translationType}
         setTranslationType={setTranslationType}
-        isOriginalWork={isOriginalWork}
-        setIsOriginalWork={setIsOriginalWork}
-        originalSource={originalSource}
-        setOriginalSource={setOriginalSource}
-        originalAuthor={originalAuthor}
-        setOriginalAuthor={setOriginalAuthor}
+        summary={summary}
+        setSummary={setSummary}
         userRole={userRole}
       />
 
@@ -786,10 +765,10 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize={setFileSize}
         fileFormat={fileFormat}
         setFileFormat={setFileFormat}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
         releaseDate={releaseDate}
         isEdit={isEdit}
+        scheduledAt={scheduledAt}
+        setScheduledAt={setScheduledAt}
         files={files}
         setFiles={setFiles}
         addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}

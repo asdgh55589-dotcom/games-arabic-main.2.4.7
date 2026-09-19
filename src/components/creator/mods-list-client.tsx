@@ -50,6 +50,7 @@ interface ModItem {
   updatedAt: string
   isOriginalWork: boolean | null
   originalSource: string | null
+  scheduledAt: string | null
   thumbnailUrl: string | null
   game: { id: string; name: string; slug: string } | null
 }
@@ -166,6 +167,28 @@ export function ModsListClient({
     }
     if (action === 'edit') {
       router.push(`/creator/mods/${modId}/edit`)
+      return
+    }
+    if (action === 'unschedule') {
+      try {
+        const res = await fetch(`/api/creator/mods/${modId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledAt: null }),
+        })
+        if (res.ok) {
+          toast({ title: dict.mods.actionDone })
+          fetchMods(page)
+        } else {
+          const data = await res.json().catch(() => null)
+          toast({
+            title: data?.error?.message || dict.mods.actionFailed,
+            variant: 'destructive',
+          })
+        }
+      } catch {
+        toast({ title: dict.mods.unexpectedError, variant: 'destructive' })
+      }
       return
     }
 
@@ -318,6 +341,12 @@ function ModCard({
                   {dict.mods.externalSource}
                 </Badge>
               )}
+              {mod.scheduledAt && (
+                <Badge variant="outline" className="text-amber-600 border-amber-500">
+                  ⏰ {dict.mods.scheduledUntil}{' '}
+                  {new Date(mod.scheduledAt).toLocaleDateString(tag)}
+                </Badge>
+              )}
             </div>
 
             <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
@@ -367,6 +396,11 @@ function ModCard({
               {mod.workflowStatus === 'PUBLISHED' && (
                 <DropdownMenuItem onClick={() => onAction(mod.id, 'archive')}>
                   <Archive className="h-4 w-4 me-2" /> {dict.mods.archive}
+                </DropdownMenuItem>
+              )}
+              {mod.scheduledAt && (
+                <DropdownMenuItem onClick={() => onAction(mod.id, 'unschedule')}>
+                  <XCircle className="h-4 w-4 me-2" /> {dict.mods.unschedule}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
