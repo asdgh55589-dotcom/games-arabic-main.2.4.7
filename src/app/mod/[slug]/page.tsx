@@ -1,8 +1,27 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import { breadcrumbJsonLd, modJsonLd } from '@/lib/seo/structured-data'
 import { ModDetailPage } from '@/views/mod-detail'
 
 export const revalidate = 300 // ISR: 5m — بيانات التعريب نادراً ما تتغير
+
+// Single fetch shared by generateMetadata + page component (React cache
+// dedupes within the request — one self-fetch per render, not two).
+const getModData = cache(async (slug: string) => {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
+    if (!res.ok) return null
+    const { data } = await res.json()
+    return data ?? null
+  } catch {
+    return null
+  }
+})
 
 export async function generateStaticParams() {
   try {
@@ -28,15 +47,7 @@ export async function generateMetadata({ params }: ModPageProps): Promise<Metada
   const { slug } = await params
 
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
-      {
-        next: { revalidate: 300 },
-      },
-    )
-    if (!res.ok) return { title: 'تعريب غير موجود | Games Arabic' }
-    const { data: mod } = await res.json()
-
+    const mod = await getModData(slug)
     if (!mod) return { title: 'تعريب غير موجود | Games Arabic' }
 
     const ratingText = mod.rating ? `تقييم ${mod.rating}/5` : ''
@@ -85,16 +96,7 @@ export default async function ModRoutePage({ params }: ModPageProps) {
   let mod: any = null
   try {
     const { slug } = await params
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
-      {
-        next: { revalidate: 300 },
-      },
-    )
-    if (res.ok) {
-      const json = await res.json()
-      mod = json.data
-    }
+    mod = await getModData(slug)
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod page operation
   }

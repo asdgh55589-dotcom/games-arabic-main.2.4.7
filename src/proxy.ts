@@ -250,6 +250,7 @@ export async function proxy(req: NextRequest) {
     if (
       ledgerToken &&
       !pathname.startsWith('/api/auth/ledger-check') &&
+      !pathname.startsWith('/api/health') &&
       !pathname.startsWith('/_next') &&
       !pathname.startsWith('/api/auth/callback')
     ) {
@@ -661,6 +662,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/api/admin/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // Static assets bypass the proxy entirely (no Supabase/ledger/rate-limit cost).
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|eot|otf|mp4|webm|txt|xml|webmanifest|json|css|js)$).*)',
   ],
 }
