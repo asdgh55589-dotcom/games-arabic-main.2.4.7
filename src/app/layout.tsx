@@ -8,7 +8,6 @@ import { ClarityScript } from '@/components/clarity-script'
 import { ConsentBanner } from '@/components/consent-banner'
 import { PostHogProvider } from '@/components/posthog-provider'
 import { SeoUpdater } from '@/components/seo-updater'
-import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { WebVitalsReporter } from '@/components/web-vitals-reporter'
@@ -104,11 +103,9 @@ export default function RootLayout({
             <SettingsProvider>
               <SeoUpdater />
               <WebVitalsReporter />
-              <SmoothScrollProvider>
-                <Suspense fallback={null}>
-                  <AppShell>{children}</AppShell>
-                </Suspense>
-              </SmoothScrollProvider>
+              <Suspense fallback={null}>
+                <AppShell>{children}</AppShell>
+              </Suspense>
               <Toaster />
               <ConsentBanner />
             </SettingsProvider>

@@ -8,6 +8,7 @@ import {
   FileArchive,
   Flag,
   History,
+  Loader2,
   MoreVertical,
   Package,
   ThumbsUp,
@@ -16,7 +17,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { CreatorBadge } from '@/components/creator-badge'
 import { ReportDialog } from '@/components/report-dialog'
 import { RoleBadge } from '@/components/role-badge'
@@ -30,7 +31,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useBookmarks } from '@/contexts/bookmarks-context'
+import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
+import { ApiError, apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { formatNumber } from '@/lib/format'
@@ -51,12 +54,86 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
 
   const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const [bookmarkPending, setBookmarkPending] = useState(false)
 
   useEffect(() => {
     registerModIds([mod.id])
   }, [mod.id, registerModIds])
 
   const bookmarked = isBookmarked(mod.id)
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (bookmarkPending) return
+    // Guest pre-check: immediate feedback instead of a silent 401.
+    if (!user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول لحفظ المفضلة',
+        variant: 'destructive',
+      })
+      router.push('/login')
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+    setBookmarkPending(true)
+    try {
+      if (bookmarked) {
+        await apiFetch(`/api/bookmarks?modId=${mod.id}`, {
+          method: 'DELETE',
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تمت الإزالة من المفضلة', description: mod.name })
+      } else {
+        await apiFetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modId: mod.id }),
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تم الحفظ في المفضلة', description: mod.name })
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          toast({
+            title: 'سجّل الدخول',
+            description: 'انتهت الجلسة — سجّل الدخول ثم حاول مجدداً',
+            variant: 'destructive',
+          })
+          router.push('/login')
+        } else if (err.status === 409) {
+          // Server says already bookmarked but local state disagrees — sync it.
+          if (!bookmarked) toggleBookmark(mod.id)
+          toast({ title: 'موجود بالفعل في المفضلة', description: mod.name })
+        } else if (err.status === 429) {
+          toast({
+            title: 'حاول مرة أخرى لاحقاً',
+            description: 'تجاوزت حد المحاولات',
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'خطأ', description: err.message, variant: 'destructive' })
+        }
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        toast({
+          title: 'خطأ في الاتصال',
+          description: 'انتهت المهلة — تحقق من اتصالك',
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'خطأ', description: 'حدث خطأ أثناء الحفظ', variant: 'destructive' })
+      }
+    } finally {
+      clearTimeout(timeout)
+      setBookmarkPending(false)
+    }
+  }
 
   return (
     <Link href={`/mod/${mod.slug}`} className="group block h-full">
@@ -128,39 +205,19 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
                     className="w-48 border-[3px] border-border shadow-[4px_4px_0_0_var(--border)]"
                   >
                     <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        const method = bookmarked ? 'DELETE' : 'POST'
-                        const body = bookmarked ? undefined : JSON.stringify({ modId: mod.id })
-                        const url = bookmarked ? `/api/bookmarks?modId=${mod.id}` : '/api/bookmarks'
-                        fetch(url, {
-                          method,
-                          headers: body ? { 'Content-Type': 'application/json' } : undefined,
-                          body,
-                        })
-                          .then((res) => {
-                            if (res.ok) {
-                              toggleBookmark(mod.id)
-                              toast({
-                                title: bookmarked
-                                  ? 'تمت الإزالة من المفضلة'
-                                  : 'تم الحفظ في المفضلة',
-                                description: mod.name,
-                              })
-                            }
-                          })
-                          .catch(() => {
-                            toast({
-                              title: 'خطأ',
-                              description: 'حدث خطأ أثناء الحفظ',
-                              variant: 'destructive',
-                            })
-                          })
-                      }}
+                      disabled={bookmarkPending}
+                      onClick={handleBookmark}
                     >
-                      <Bookmark className={`ms-2 h-4 w-4 ${bookmarked ? 'fill-current' : ''}`} />
-                      {bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+                      {bookmarkPending ? (
+                        <Loader2 className="ms-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Bookmark className={`ms-2 h-4 w-4 ${bookmarked ? 'fill-current' : ''}`} />
+                      )}
+                      {bookmarkPending
+                        ? 'جاري الحفظ...'
+                        : bookmarked
+                          ? 'إزالة من المفضلة'
+                          : 'حفظ في المفضلة'}
                     </DropdownMenuItem>
                     <ReportDialog targetType="mod" targetId={mod.id}>
                       <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

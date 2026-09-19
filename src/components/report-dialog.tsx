@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Flag, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
@@ -26,6 +27,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { REPORT_REASONS, type ReportTargetType } from '@/lib/reports/constants'
 import { ReportFormSchema } from '@/lib/schemas'
+import { useAuth } from '@/contexts/auth-context'
 
 interface ReportDialogProps {
   targetType: ReportTargetType
@@ -39,13 +41,41 @@ type ReportFormInput = z.input<typeof ReportFormSchema>
 export function ReportDialog({ targetType, targetId, children, onSuccess }: ReportDialogProps) {
   const [open, setOpen] = useState(false)
   const { toast } = useToast()
+  const { user } = useAuth()
+  const router = useRouter()
 
   const form = useForm<ReportFormInput>({
     resolver: zodResolver(ReportFormSchema),
     defaultValues: { reason: undefined as unknown as ReportFormInput['reason'], description: '' },
   })
 
+  // Auth gate: guests get feedback + login redirect instead of a dead dialog.
+  const handleOpenChange = (v: boolean) => {
+    if (v && !user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
+        variant: 'destructive',
+      })
+      router.push('/login')
+      return
+    }
+    setOpen(v)
+    if (!v) form.reset()
+  }
+
   const handleSubmit = async (data: ReportFormInput) => {
+    if (!user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
+        variant: 'destructive',
+      })
+      router.push('/login')
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
     try {
       const res = await fetch('/api/reports', {
         method: 'POST',
@@ -56,12 +86,26 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
           reason: data.reason,
           description: data.description,
         }),
+        signal: controller.signal,
       })
 
-      const resData = await res.json()
+      const resData = await res.json().catch(() => null)
 
       if (!res.ok) {
-        const msg = resData.error?.message || 'فشل إرسال البلاغ'
+        if (res.status === 401) {
+          toast({
+            title: 'سجّل الدخول',
+            description: 'انتهت الجلسة — سجّل الدخول ثم حاول مجدداً',
+            variant: 'destructive',
+          })
+          router.push('/login')
+          return
+        }
+        if (res.status === 429) {
+          toast({ title: 'حاول مرة أخرى لاحقاً', description: 'تجاوزت حد المحاولات', variant: 'destructive' })
+          return
+        }
+        const msg = resData?.error?.message || 'فشل إرسال البلاغ'
         form.setError('root', { message: msg })
         toast({ title: msg, variant: 'destructive' })
         return
@@ -71,19 +115,23 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
       onSuccess?.()
       setOpen(false)
       form.reset()
-    } catch {
-      form.setError('root', { message: 'حدث خطأ أثناء إرسال البلاغ' })
-      toast({ title: 'حدث خطأ أثناء إرسال البلاغ', variant: 'destructive' })
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        form.setError('root', { message: 'انتهت المهلة — تحقق من اتصالك' })
+        toast({ title: 'خطأ في الاتصال', description: 'انتهت المهلة — تحقق من اتصالك', variant: 'destructive' })
+      } else {
+        form.setError('root', { message: 'حدث خطأ أثناء إرسال البلاغ' })
+        toast({ title: 'حدث خطأ أثناء إرسال البلاغ', variant: 'destructive' })
+      }
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(v) => {
-        setOpen(v)
-        if (!v) form.reset()
-      }}
+      onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
         {children || (
