@@ -34,6 +34,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { ChangelogDisplay } from '@/components/changelog-display'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { ModComments } from '@/components/mod-comments'
 import { CommentSectionBeacon } from '@/components/comment-section-beacon'
@@ -42,6 +43,7 @@ import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
 import { ReportDialog } from '@/components/report-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useFetch } from '@/hooks/use-fetch'
@@ -49,7 +51,14 @@ import { useToast } from '@/hooks/use-toast'
 import { apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
-import { formatArabicDate, formatNumber, parseGalleryUrls } from '@/lib/format'
+import { formatArabicDate, formatNumber, parseGalleryUrls, parseTags } from '@/lib/format'
+import {
+  formatRatingText,
+  getDisplaySummary,
+  getSeriesDisplay,
+  getTeamDisplay,
+  shouldShowScheduledBanner,
+} from '@/lib/mod-detail-helpers'
 import { getModTitles } from '@/lib/platform-titles'
 import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 
@@ -87,12 +96,32 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   const router = useRouter()
   const { toast } = useToast()
   const gallery = parseGalleryUrls(mod.galleryUrls)
+  const tags = parseTags(mod.tags)
+  const displaySummary = getDisplaySummary(mod)
+  const seriesDisplay = getSeriesDisplay(mod as any)
+  const teamDisplay = getTeamDisplay(mod as any)
+  const ratingText = formatRatingText(mod.rating, mod.ratingCount)
   const bannerImage = gallery[0] || mod.imageUrl || FALLBACK_GAME_IMAGE
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
   const [endorsed, setEndorsed] = useState(false)
   const [endorsementCount, setEndorsementCount] = useState<number | null>(null)
   const [hasReported, setHasReported] = useState(false)
+  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const u = j?.data ?? j?.user ?? null
+        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
+      })
+      .catch(() => {})
+  }, [])
+  const showScheduled =
+    shouldShowScheduledBanner(mod as any) &&
+    !!viewer &&
+    (viewer.id === mod.author?.id ||
+      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
 
   const relatedUrl = useMemo(() => {
     if (!mod?.game?.slug) return null
@@ -229,6 +258,72 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         </nav>
       </div>
 
+      {/* ===== العنوان + الملخص + الشارات (3a/3d/3i/3j/3k) ===== */}
+      <div className="mx-2 mt-2 rounded-none border-[2px] border-border bg-card px-3 py-3 shadow-[1px_1px_0_0_var(--border)]">
+        <h1 className="text-lg font-black leading-snug text-foreground">{mod.name}</h1>
+        {displaySummary !== '' && (
+          <p className="mt-1.5 text-[13px] font-medium leading-[1.8] text-foreground/90">
+            {displaySummary}
+          </p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <Badge variant="outline" className="text-[11px] font-black tabular-nums">
+            v{mod.version}
+          </Badge>
+          {ratingText && (
+            <Badge
+              variant="outline"
+              className="border-amber-500/30 bg-amber-500/10 text-[11px] font-black tabular-nums"
+            >
+              ★ {ratingText}
+            </Badge>
+          )}
+          {mod.category?.name && (
+            <Badge variant="secondary" className="text-[11px] font-bold">
+              {mod.category.name}
+            </Badge>
+          )}
+          {(mod as any).sectionRelation?.name && (
+            <Badge variant="secondary" className="text-[11px] font-bold">
+              {(mod as any).sectionRelation.name}
+            </Badge>
+          )}
+        </div>
+        {tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {tags.map((t) => (
+              <Badge key={t} variant="outline" className="text-[11px] font-bold">
+                #{t}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {showScheduled && (
+          <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+            <span aria-hidden>⏰</span>
+            <span>مجدول للنشر في: {formatArabicDate((mod as any).scheduledAt)}</span>
+          </div>
+        )}
+        {(mod as any).isOriginalWork === false && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+              منشور من مصدر خارجي
+            </span>
+            {(mod as any).originalAuthor && (
+              <span className="text-[11px] text-muted-foreground">
+                • {(mod as any).originalAuthor}
+              </span>
+            )}
+            {(mod as any).originalSource && (
+              <span className="max-w-full truncate text-[11px] text-muted-foreground">
+                — {(mod as any).originalSource}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ===== صندوق المعلومات — عناوين حسب المنصة (مشتركة 7 + خاصة) ===== */}
       <div className="mx-2 mt-2 overflow-hidden rounded-none border-[2px] border-border bg-card shadow-[1px_1px_0_0_var(--border)]">
         <div className="divide-y divide-border text-[11px]">
@@ -310,7 +405,13 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">الفريق</div>
             <div className="truncate text-[11px] font-black leading-none text-foreground">
-              {mod.translationTeam && mod.translationTeam.trim() !== '' ? mod.translationTeam : '—'}
+              {teamDisplay ? (
+                <Link href={teamDisplay.href} className="hover:underline">
+                  {teamDisplay.name}
+                </Link>
+              ) : (
+                '—'
+              )}
             </div>
           </div>
         </div>
@@ -321,7 +422,13 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-black tracking-widest text-foreground/60">سلسلة</div>
             <div className="truncate text-[11px] font-black leading-none text-foreground">
-              {mod.series && mod.series.trim() !== '' ? mod.series : '—'}
+              {seriesDisplay ? (
+                <Link href={seriesDisplay.href} className="hover:underline">
+                  {seriesDisplay.name}
+                </Link>
+              ) : (
+                '—'
+              )}
             </div>
           </div>
         </div>
@@ -382,8 +489,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           iconBg="bg-emerald-500/10 text-emerald-500"
           defaultOpen
         >
-          {mod.summary && (
-            <p className="mb-3 text-sm font-bold leading-relaxed text-foreground">{mod.summary}</p>
+          {displaySummary !== '' && (
+            <p className="mb-3 text-sm font-bold leading-[1.8] text-foreground">
+              {getDisplaySummary(mod)}
+            </p>
           )}
           {mod.description ? (
             <MarkdownRenderer content={mod.description} />
@@ -403,7 +512,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
             <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
             <span className="text-sm font-bold tabular-nums text-foreground">v{mod.version}</span>
           </div>
-          {mod.changelog ? (
+          {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
+            <ChangelogDisplay changelogs={(mod as any).changelogs} />
+          ) : mod.changelog ? (
             <MarkdownRenderer content={mod.changelog} />
           ) : (
             <ul className="space-y-2 text-sm font-bold text-foreground">

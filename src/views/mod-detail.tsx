@@ -39,6 +39,7 @@ import {
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { ChangelogDisplay } from '@/components/changelog-display'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
@@ -70,6 +71,13 @@ import {
   timeAgo,
 } from '@/lib/format'
 import { getModTitles } from '@/lib/platform-titles'
+import {
+  formatRatingText,
+  getDisplaySummary,
+  getSeriesDisplay,
+  getTeamDisplay,
+  shouldShowScheduledBanner,
+} from '@/lib/mod-detail-helpers'
 import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 import { ModDetailMobile } from './mod-detail-mobile'
 
@@ -104,6 +112,7 @@ export function ModDetailPage() {
 
   const [lastSlug, setLastSlug] = useState(slug)
   const [hasReported, setHasReported] = useState(false)
+  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
   if (slug !== lastSlug) {
     setLastSlug(slug)
     setActiveImage(0)
@@ -112,6 +121,16 @@ export function ModDetailPage() {
     setDownloadCount(null)
     setHasReported(false)
   }
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const u = j?.data ?? j?.user ?? null
+        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -196,6 +215,16 @@ export function ModDetailPage() {
 
   const gallery = mod ? parseGalleryUrls(mod.galleryUrls) : []
   const tags = mod ? parseTags(mod.tags) : []
+  const displaySummary = mod ? getDisplaySummary(mod) : ''
+  const seriesDisplay = mod ? getSeriesDisplay(mod as any) : null
+  const teamDisplay = mod ? getTeamDisplay(mod as any) : null
+  const ratingText = mod ? formatRatingText(mod.rating, mod.ratingCount) : null
+  const showScheduled =
+    !!mod &&
+    shouldShowScheduledBanner(mod as any) &&
+    !!viewer &&
+    (viewer.id === mod.author?.id ||
+      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
   const safeActiveImage = Math.min(activeImage, Math.max(0, gallery.length - 1))
   // Banner = first gallery image (the header image in nexusmods)
   const bannerImage = gallery[0] || mod?.imageUrl || ''
@@ -441,6 +470,59 @@ export function ModDetailPage() {
                       <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
                         {mod.name}
                       </h1>
+                      {/* 3a — summary below title with description fallback */}
+                      {displaySummary !== '' && (
+                        <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
+                          {displaySummary}
+                        </p>
+                      )}
+                      {/* 3j — version + rating, 3d — category + section */}
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums"
+                        >
+                          v{mod.version}
+                        </Badge>
+                        {ratingText && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500/30 bg-amber-500/10 text-xs font-black tabular-nums"
+                          >
+                            ★ {ratingText}
+                          </Badge>
+                        )}
+                        {mod.category?.name && (
+                          <Badge variant="secondary" className="text-xs font-bold">
+                            {mod.category.name}
+                          </Badge>
+                        )}
+                        {(mod as any).sectionRelation?.name && (
+                          <Badge variant="secondary" className="text-xs font-bold">
+                            {(mod as any).sectionRelation.name}
+                          </Badge>
+                        )}
+                      </div>
+                      {/* 3g — scheduled publishing indicator (owner/admin only) */}
+                      {showScheduled && (
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+                          <span aria-hidden>⏰</span>
+                          <span>
+                            مجدول للنشر في:{' '}
+                            {formatArabicDate((mod as any).scheduledAt)}
+                          </span>
+                        </div>
+                      )}
+                      {/* tags */}
+                      {tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                          {tags.map((t) => (
+                            <Badge key={t} variant="outline" className="text-[11px] font-bold">
+                              #{t}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       {(
                         mod as unknown as {
                           isOriginalWork?: boolean
@@ -508,8 +590,8 @@ export function ModDetailPage() {
                 className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-8 sm:-mt-12 lg:-mt-14"
               >
                 <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
-                  {/* السلسلة */}
-                  {mod.series && mod.series.trim() !== '' && (
+                  {/* السلسلة — يفضّل seriesRelation ثم الاسم القديم */}
+                  {seriesDisplay && (
                     <>
                       <span className="flex items-center gap-1.5 whitespace-nowrap">
                         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-orange-500">
@@ -520,18 +602,18 @@ export function ModDetailPage() {
                         </span>
                         <span className="text-border font-black">|</span>
                         <Link
-                          href={`/series/${encodeURIComponent(mod.series)}`}
+                          href={seriesDisplay.href}
                           className="text-xs font-black text-gold hover:underline"
                         >
-                          {mod.series}
+                          {seriesDisplay.name}
                         </Link>
                       </span>
                       <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
                     </>
                   )}
 
-                  {/* الفريق */}
-                  {mod.translationTeam && mod.translationTeam.trim() !== '' && (
+                  {/* الفريق — يفضّل teamRelation ثم الاسم القديم */}
+                  {teamDisplay && (
                     <>
                       <span className="flex items-center gap-1.5 whitespace-nowrap">
                         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-indigo-500">
@@ -542,10 +624,10 @@ export function ModDetailPage() {
                         </span>
                         <span className="text-border font-black">|</span>
                         <Link
-                          href={`/teams/${encodeURIComponent(mod.translationTeam)}`}
+                          href={teamDisplay.href}
                           className="text-xs font-black text-gold hover:underline"
                         >
-                          {mod.translationTeam}
+                          {teamDisplay.name}
                         </Link>
                       </span>
                       <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
@@ -763,9 +845,11 @@ export function ModDetailPage() {
                         icon={<FileText className="h-5 w-5" />}
                         title="عن هذا التعريب"
                       />
-                      <p className="mb-5 leading-relaxed font-bold text-foreground">
-                        {mod.summary}
-                      </p>
+                      {displaySummary !== '' && (
+                        <p className="mb-5 leading-[1.8] font-bold text-foreground">
+                          {displaySummary}
+                        </p>
+                      )}
                       <Separator className="my-5 bg-border/50" />
                       <MarkdownRenderer content={mod.description} />
                     </Card>
@@ -780,7 +864,9 @@ export function ModDetailPage() {
                           v{mod.version}
                         </span>
                       </div>
-                      {mod.changelog ? (
+                      {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
+                        <ChangelogDisplay changelogs={(mod as any).changelogs} />
+                      ) : mod.changelog ? (
                         <div className="prose prose-invert max-w-none">
                           <MarkdownRenderer content={mod.changelog} />
                         </div>

@@ -205,6 +205,21 @@ export interface ModCommentType {
   replies?: ModCommentType[]
 }
 
+export interface ModChangelogEntry {
+  id: string
+  type: string
+  title: string
+  description: string
+  changedByRole: string
+  createdAt: string | Date
+  changedBy: {
+    id: string
+    username: string
+    avatarUrl: string | null
+    role: string
+  }
+}
+
 export interface ModDetail extends ModSummary {
   description: string
   changelog: string
@@ -230,6 +245,10 @@ export interface ModDetail extends ModSummary {
   author: Author
   game: GameSummary
   category: Category | null
+  seriesRelation?: { id: string; name: string; slug: string } | null
+  teamRelation?: { id: string; name: string; slug: string; logoUrl: string | null } | null
+  sectionRelation?: { id: string; name: string; slug: string; key: string } | null
+  changelogs?: ModChangelogEntry[]
   files: ModFile[]
   teamMembers: ModTeamMember[]
   contactLinks: ModContactLink[]
