@@ -22,6 +22,12 @@ interface Props {
   teamId: string
   setTeamId: (v: string) => void
   teamsList: TeamOpt[]
+  categoryId: string
+  setCategoryId: (v: string) => void
+  categoriesList: { id: string; name: string }[]
+  sectionId: string
+  setSectionId: (v: string) => void
+  sectionsList: { id: string; name: string }[]
   teamMembers: TeamMember[]
   setTeamMembers: (v: TeamMember[] | ((p: TeamMember[]) => TeamMember[])) => void
   addEmptyMember: () => void
@@ -66,6 +72,36 @@ export function ModFormSettings(p: Props) {
               {p.teamsList.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="التصنيف" hint="اختياري — تصنيف التعريب">
+            <select
+              value={p.categoryId}
+              onChange={(e) => p.setCategoryId(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— بدون تصنيف —</option>
+              {p.categoriesList.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="القسم" hint="اختياري — القسم الرئيسي">
+            <select
+              value={p.sectionId}
+              onChange={(e) => p.setSectionId(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— بدون قسم —</option>
+              {p.sectionsList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>

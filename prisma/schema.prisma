@@ -127,6 +127,7 @@ model User {
   reviewedMods           Mod[]                   @relation("ModReviewer")
   workflowChanges        WorkflowEntry[]
   createdVersions        ModVersion[]
+  changelogsMade         ModChangelog[]
   following              Follow[]                @relation("Following")
   followers              Follow[]                @relation("Followers")
   bookmarks              Bookmark[]
@@ -344,6 +345,7 @@ model Mod {
   teamMembers          ModTeamMember[]
   contactLinks         ModContactLink[]
   customTabs           ModCustomTab[]
+  changelogs           ModChangelog[]
   commentsRecords      ModComment[]
   reports              Report[]
   bookmarks            Bookmark[]
@@ -448,6 +450,22 @@ model ModVersion {
 
   @@index([modId])
   @@index([createdAt])
+}
+
+model ModChangelog {
+  id            String   @id @default(cuid())
+  modId         String
+  mod           Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  type          String   @default("edit") // release | update | edit
+  title         String
+  description   String   @default("")
+  changedById   String
+  changedBy     User     @relation(fields: [changedById], references: [id])
+  changedByRole String   @default("member") // admin | publisher | translator | member
+  createdAt     DateTime @default(now())
+
+  @@index([modId])
+  @@index([modId, createdAt])
 }
 
 model Endorsement {
