@@ -157,8 +157,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* CSS-only smooth scroll (replaces the removed JS wheel hijack).
+     Respects reduced-motion via the no-preference block below. */
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
   body {
     @apply bg-background text-foreground;
@@ -264,10 +266,15 @@ article[style*="--card-platform"]:hover {
   box-shadow: 0 0 10px color-mix(in srgb, var(--link-glow, var(--primary)) 25%, transparent);
 }
 
-/* Smooth scroll capture */
+/* Smooth scroll (CSS-only) — auto when user prefers reduced motion */
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 

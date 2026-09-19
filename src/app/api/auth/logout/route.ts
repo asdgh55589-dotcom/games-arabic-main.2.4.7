@@ -14,6 +14,14 @@ function clearLedgerCookie(res: NextResponse): void {
 export async function POST(req: NextRequest) {
   const presentedLedger = req.cookies.get('ga_session_ledger')?.value || null
 
+  // Invalidate the /api/auth/me cache entry immediately (fail-open).
+  try {
+    const { invalidateAuthMeCache } = await import('@/app/api/auth/me/route')
+    await invalidateAuthMeCache(req.cookies.get('ga_admin_role')?.value || '')
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort invalidation — 60s TTL converges anyway
+  }
+
   let user: Awaited<ReturnType<typeof getSession>>
   try {
     user = await requireAuth()

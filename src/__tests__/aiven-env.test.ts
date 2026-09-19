@@ -94,14 +94,14 @@ describe('ensureSslmode — sslmode=require enforcement (SA-4 reuse)', () => {
     expect(new URL(out).searchParams.get('sslmode')).toBe('require')
   })
 
-  it('injects connect_timeout=10 if missing', () => {
+  it('injects connect_timeout=30 if missing', () => {
     const out = ensureSslmode(`${base}?sslmode=require`)
-    expect(new URL(out).searchParams.get('connect_timeout')).toBe('10')
+    expect(new URL(out).searchParams.get('connect_timeout')).toBe('30')
   })
 
   it('preserves existing connect_timeout', () => {
-    const out = ensureSslmode(`${base}?sslmode=require&connect_timeout=30`)
-    expect(new URL(out).searchParams.get('connect_timeout')).toBe('30')
+    const out = ensureSslmode(`${base}?sslmode=require&connect_timeout=10`)
+    expect(new URL(out).searchParams.get('connect_timeout')).toBe('10')
   })
 })
 

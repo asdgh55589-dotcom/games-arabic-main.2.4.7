@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { ok, validationFail } from '@/lib/api-response'
+import { reportError } from '@/lib/error-reporting'
 import { redisSet } from '@/lib/redis'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
@@ -141,7 +142,8 @@ export async function GET(req: NextRequest) {
     // لا يزال في انتظار تأكيد المستخدم عبر Telegram — الـ webhook هو المسؤول عن استقبال /start
     return ok({ status: 'pending' })
   } catch (err) {
-    console.error('[telegram poll] failed:', err instanceof Error ? err.message : 'unknown error')
+    // Still return pending (client keeps polling) but make the failure visible.
+    reportError(err, { route: 'GET /api/auth/telegram/poll' })
     return ok({ status: 'pending' })
   }
 }

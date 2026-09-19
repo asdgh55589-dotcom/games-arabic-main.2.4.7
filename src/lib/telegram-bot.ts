@@ -65,7 +65,10 @@ async function apiCall(method: string, body: object): Promise<TelegramResponse> 
     }
     return await res.json()
   } catch (err) {
-    console.error(`[telegram-bot] ${method} failed:`, err)
+    const { reportError } = await import('@/lib/error-reporting').catch(() => ({
+      reportError: () => 'skipped' as const,
+    }))
+    reportError(err, { route: `telegram-bot:${method}` })
     return { ok: false, description: String(err) }
   }
 }

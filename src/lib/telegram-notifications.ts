@@ -10,6 +10,7 @@
  * - token is read from env inside telegram-bot.ts; never logged here
  */
 
+import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 import { sendMessage } from '@/lib/telegram-bot'
 
@@ -91,11 +92,21 @@ export async function sendTelegramNotification(
     })
     if (!result.ok) {
       // 429 / blocked-bot / chat-not-found all land here — advisory only.
+      // 403 (blocked / never-started bot) is user-caused → warn only.
+      // Anything else (400, 5xx, network) is a bot/config problem → Sentry.
+      const blocked = result.error_code === 403
       logger.warn('[telegram-notifications] send failed', {
         chatId: String(chatId),
         description: result.description,
         error_code: result.error_code,
+        blocked,
       })
+      if (!blocked) {
+        reportError(
+          new Error(`[telegram-notifications] send failed: ${result.description || 'unknown'}`),
+          { route: 'telegram-notifications:send' },
+        )
+      }
       return { ok: false, error: result.description || 'send failed' }
     }
     logger.info('[telegram-notifications] sent', { chatId: String(chatId) })

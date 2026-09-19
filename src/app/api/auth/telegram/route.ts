@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
+import { reportError } from '@/lib/error-reporting'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import {
   createTelegramSession,
@@ -10,12 +11,18 @@ import {
 export async function POST(req: NextRequest) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
+    // Bot username must match the token's bot. NEXT_PUBLIC_* is readable
+    // server-side; TELEGRAM_BOT_NAME is kept as a secondary source so existing
+    // deployments that set the server-only var keep working. There is NO
+    // hardcoded fallback — a wrong bot would swallow /start updates silently.
     const botName =
-      process.env.TELEGRAM_BOT_NAME ||
-      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
-      'GAMES_ARABIC_BOT'
+      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || process.env.TELEGRAM_BOT_NAME
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
       console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured')
+      return internalError('خدمة Telegram غير مهيأة حالياً')
+    }
+    if (!botName) {
+      console.error('[Telegram] bot username not configured (NEXT_PUBLIC_TELEGRAM_BOT_USERNAME)')
       return internalError('خدمة Telegram غير مهيأة حالياً')
     }
 
@@ -96,10 +103,7 @@ export async function GET(req: NextRequest) {
     }
     return res
   } catch (err) {
-    console.error(
-      '[auth/telegram GET] failed:',
-      err instanceof Error ? err.message : 'unknown error',
-    )
+    reportError(err, { route: 'GET /api/auth/telegram' })
     return internalError('حدث خطأ')
   }
 }

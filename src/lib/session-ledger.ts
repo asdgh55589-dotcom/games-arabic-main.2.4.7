@@ -1,9 +1,18 @@
-import { randomUUID } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import { db } from '@/lib/db'
 import { maskId } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
+import { redisDel, redisGet, redisSet } from '@/lib/redis'
 
 const SESSION_TTL_DAYS = 7
+
+/** Ledger liveness cache TTL (seconds). Revoke paths invalidate eagerly. */
+const LEDGER_CACHE_TTL_S = 120
+
+/** Never use the raw token as a Redis key — hash it. */
+function ledgerCacheKey(token: string): string {
+  return `session:active:${createHash('sha256').update(token).digest('hex')}`
+}
 
 export interface CreateLedgerOpts {
   ip: string | null
@@ -37,10 +46,24 @@ export async function createSessionLedger(userId: string, opts: CreateLedgerOpts
 
 export async function isSessionActive(token: string): Promise<boolean> {
   if (!token) return false
+  const cacheKey = ledgerCacheKey(token)
+  // Fast path: Redis (120s TTL). The proxy hits this on EVERY authenticated
+  // request — without the cache each pageview costs a Postgres query.
+  try {
+    const cached = await redisGet<boolean>(cacheKey)
+    if (cached !== null) return cached
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: cache miss → DB below
+  }
   try {
     const s = await db.session.findUnique({ where: { token } as any, select: { expiresAt: true } })
-    if (!s) return false
-    return new Date((s as any).expiresAt) > new Date()
+    if (!s) {
+      await redisSet(cacheKey, false, LEDGER_CACHE_TTL_S).catch(() => {})
+      return false
+    }
+    const active = new Date((s as any).expiresAt) > new Date()
+    await redisSet(cacheKey, active, LEDGER_CACHE_TTL_S).catch(() => {})
+    return active
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: fail-open liveness check — DB down means "not verifiable", caller treats false as signed-out
     // intentional: expected+handled (fail-open to signed-out), keep return shape
@@ -53,6 +76,8 @@ export async function revokeSession(token: string): Promise<void> {
   if (!token) return
   try {
     await db.session.deleteMany({ where: { token } as any })
+    // Invalidate the liveness cache so logout takes effect immediately.
+    await redisDel(ledgerCacheKey(token)).catch(() => {})
     logger.warn({ token: maskId(token) }, 'session revoked')
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort revoke — row may already be gone; nothing to retry

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
+import { reportError } from '@/lib/error-reporting'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
     return res
   } catch (err) {
-    console.error('[Telegram callback] failed:', err instanceof Error ? err.message : 'unknown')
+    reportError(err, { route: 'GET /api/auth/telegram/callback' })
     return internalError('حدث خطأ أثناء تسجيل الدخول')
   }
 }

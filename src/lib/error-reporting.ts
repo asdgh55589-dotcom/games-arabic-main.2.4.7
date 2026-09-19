@@ -65,9 +65,21 @@ function prune(now: number): void {
  * Returns 'skipped' (no DSN), 'deduped' (same message+route within 60s),
  * 'error' (telemetry itself failed), or the Sentry event id.
  */
+let warnedMissingDsn = false
 export function reportError(err: unknown, ctx: ReportContext = {}): string {
   try {
     if (!process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      // One-time boot-style warning so a missing DSN is visible in logs
+      // without spamming per error. Dev also gets the raw error on console.
+      if (!warnedMissingDsn) {
+        warnedMissingDsn = true
+        // eslint-disable-next-line no-console
+        console.warn('[error-reporting] SENTRY_DSN not configured — errors are log-only')
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.error(`[error-reporting:dev] ${ctx.route ?? 'unknown'}:`, err)
+      }
       return 'skipped'
     }
     const route = ctx.route ?? 'unknown'
