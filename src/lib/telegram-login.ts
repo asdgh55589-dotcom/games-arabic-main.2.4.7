@@ -305,7 +305,10 @@ export async function performTelegramLogin(
       ledgerExpires,
     }
   } catch (err) {
-    console.error('[performTelegramLogin] failed:', err)
+    const { reportError } = await import('@/lib/error-reporting').catch(() => ({
+      reportError: () => 'skipped' as const,
+    }))
+    reportError(err, { route: 'performTelegramLogin' })
     return { ok: false, status: 'error', error: 'حدث خطأ أثناء تسجيل الدخول' }
   }
 }

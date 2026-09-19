@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
+import { reportError } from '@/lib/error-reporting'
 import { redisGet, redisSet } from '@/lib/redis'
 
 export async function POST(req: NextRequest) {
@@ -8,8 +9,13 @@ export async function POST(req: NextRequest) {
     const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
     const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
     if (!expectedSecret) {
-      console.error('[telegram webhook] TELEGRAM_WEBHOOK_SECRET not configured')
-      return ok({ ok: true })
+      // Fail-closed: a missing secret means updates would be silently dropped.
+      // Return 500 (not 200) so the misconfiguration is visible in Telegram's
+      // getWebhookInfo (last_error_message) and in our error tracking.
+      reportError(new Error('[telegram webhook] TELEGRAM_WEBHOOK_SECRET not configured'), {
+        route: 'POST /api/auth/telegram/webhook',
+      })
+      return internalError('خدمة Telegram غير مهيأة حالياً')
     }
     if (!secretToken || secretToken !== expectedSecret) {
       console.warn('[telegram webhook] Invalid secret token')
@@ -20,7 +26,9 @@ export async function POST(req: NextRequest) {
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
-      console.error('[Telegram webhook] TELEGRAM_BOT_TOKEN not configured')
+      reportError(new Error('[telegram webhook] TELEGRAM_BOT_TOKEN not configured'), {
+        route: 'POST /api/auth/telegram/webhook',
+      })
       return internalError('خدمة Telegram غير مهيأة حالياً')
     }
 
@@ -130,10 +138,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ ok: true })
   } catch (err) {
-    console.error(
-      '[telegram webhook] failed:',
-      err instanceof Error ? err.message : 'unknown error',
-    )
+    reportError(err, { route: 'POST /api/auth/telegram/webhook' })
     return ok({ ok: true })
   }
 }
@@ -143,9 +148,11 @@ export async function GET() {
 }
 
 // دالة مساعدة لإرسال رسائل Telegram
+// 403 (blocked / never-started bot) is user-caused → warn only.
+// Any other failure (400, 5xx, network) is a bot/config problem → Sentry.
 async function sendMessage(botToken: string, chatId: number, text: string): Promise<void> {
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -154,7 +161,24 @@ async function sendMessage(botToken: string, chatId: number, text: string): Prom
         parse_mode: 'HTML',
       }),
     })
+    const data = (await res.json().catch(() => null)) as {
+      ok?: boolean
+      description?: string
+      error_code?: number
+    } | null
+    if (data && data.ok === false) {
+      const blocked = data.error_code === 403
+      const err = new Error(`[telegram sendMessage] failed: ${data.description || 'unknown'}`)
+      if (blocked) {
+        console.warn('[telegram sendMessage] user blocked bot or never started it', {
+          chatId,
+          error_code: data.error_code,
+        })
+      } else {
+        reportError(err, { route: 'POST /api/auth/telegram/webhook', action: 'sendMessage' })
+      }
+    }
   } catch (err) {
-    console.error('[telegram sendMessage] failed:', err)
+    reportError(err, { route: 'POST /api/auth/telegram/webhook', action: 'sendMessage' })
   }
 }

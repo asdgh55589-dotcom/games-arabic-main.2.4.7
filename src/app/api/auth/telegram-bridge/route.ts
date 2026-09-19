@@ -112,6 +112,10 @@ export async function POST(req: NextRequest) {
     return res
   } catch (err) {
     logger.error({ route: 'telegram-bridge', err }, 'telegram bridge failed')
+    const { reportError } = await import('@/lib/error-reporting').catch(() => ({
+      reportError: () => 'skipped' as const,
+    }))
+    reportError(err, { route: 'POST /api/auth/telegram-bridge' })
     return NextResponse.json(
       { error: AUTH_ERRORS.TELEGRAM_FAILED, code: 'TELEGRAM_FAILED' },
       { status: 500 },
