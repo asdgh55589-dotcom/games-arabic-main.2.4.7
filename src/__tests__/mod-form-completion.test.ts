@@ -168,7 +168,7 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     ;(db.mod.findUnique as jest.Mock).mockResolvedValue({ id: 'm1', authorId: 'u1', workflowStatus: 'DRAFT' })
   })
 
-  it('passes body source through and forces creator=true', async () => {
+  it('ignores body source fields and forces creator=true (admin values preserved)', async () => {
     const res = await creatorPATCH(
       patchReq('http://x/api/creator/mods/m1', { name: 'New', isOriginalWork: false, originalSource: 'x', originalAuthor: 'y' }),
       paramsOf('m1'),
@@ -176,8 +176,8 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     expect(res.status).toBe(200)
     const data = (db.mod.update as jest.Mock).mock.calls[0][0].data
     expect(data.isOriginalWork).toBe(true)
-    expect(data.originalSource).toBe('x')
-    expect(data.originalAuthor).toBe('y')
+    expect(data).not.toHaveProperty('originalSource')
+    expect(data).not.toHaveProperty('originalAuthor')
   })
 
   it('forces publisher=false', async () => {
@@ -191,7 +191,7 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     expect((db.mod.update as jest.Mock).mock.calls[0][0].data.isOriginalWork).toBe(false)
   })
 
-  it('publisher edit without source does not 422 and nulls source', async () => {
+  it('publisher edit without source leaves source untouched (no null, no 422)', async () => {
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({
       user: PUBLISHER,
       error: null,
@@ -200,8 +200,26 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     const res = await creatorPATCH(patchReq('http://x/api/creator/mods/m1', { name: 'New' }), paramsOf('m1'))
     expect(res.status).toBe(200)
     const data = (db.mod.update as jest.Mock).mock.calls[0][0].data
-    expect(data.originalSource).toBeNull()
-    expect(data.originalAuthor).toBeNull()
+    expect(data.isOriginalWork).toBe(false)
+    expect(data).not.toHaveProperty('originalSource')
+    expect(data).not.toHaveProperty('originalAuthor')
+  })
+
+  it('publisher edit with source in body ignores it (admin values preserved)', async () => {
+    ;(requireCreatorStudio as jest.Mock).mockResolvedValue({
+      user: PUBLISHER,
+      error: null,
+    })
+    ;(db.mod.findUnique as jest.Mock).mockResolvedValue({ id: 'm1', authorId: 'u2', workflowStatus: 'DRAFT' })
+    const res = await creatorPATCH(
+      patchReq('http://x/api/creator/mods/m1', { name: 'New', originalSource: 'x', originalAuthor: 'y' }),
+      paramsOf('m1'),
+    )
+    expect(res.status).toBe(200)
+    const data = (db.mod.update as jest.Mock).mock.calls[0][0].data
+    expect(data.isOriginalWork).toBe(false)
+    expect(data).not.toHaveProperty('originalSource')
+    expect(data).not.toHaveProperty('originalAuthor')
   })
 
   it('clears scheduledAt (unschedule)', async () => {
