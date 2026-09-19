@@ -49,11 +49,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const data = parsed.data as Record<string, unknown>
-    // المصدر يُحدَّد تلقائياً من الدور — تُتجاهل قيم الجسم المرسلة
-    delete data.isOriginalWork
-    delete data.originalSource
-    delete data.originalAuthor
+    // المصدر يُحدَّد من الدور ولا يُشترط: الغائب يُترك null، والمرسل يُحفظ كما هو
     data.isOriginalWork = user.role !== 'publisher'
+    if (data.originalSource === undefined) data.originalSource = null
+    if (data.originalAuthor === undefined) data.originalAuthor = null
     // التحقق من التصنيف والقسم عند إرسالهما
     if (typeof data.categoryId === 'string' && data.categoryId) {
       const exists = await db.category.findUnique({

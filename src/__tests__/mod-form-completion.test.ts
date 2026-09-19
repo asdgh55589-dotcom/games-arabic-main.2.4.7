@@ -100,11 +100,26 @@ describe('POST /api/creator/mods — source auto-set', () => {
     expect(data.isOriginalWork).toBe(false)
   })
 
-  it('publisher without originalSource is rejected', async () => {
+  it('publisher without source creates successfully with nulls', async () => {
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: PUBLISHER, error: null })
     const res = await creatorPOST(postReq('http://x/api/creator/mods', BASE_BODY))
-    expect(res.status).toBe(422)
-    expect(db.mod.create).not.toHaveBeenCalled()
+    expect(res.status).toBe(201)
+    const data = (db.mod.create as jest.Mock).mock.calls[0][0].data
+    expect(data.isOriginalWork).toBe(false)
+    expect(data.originalSource).toBeNull()
+    expect(data.originalAuthor).toBeNull()
+  })
+
+  it('publisher body source is ignored (forced to null)', async () => {
+    ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: PUBLISHER, error: null })
+    const res = await creatorPOST(
+      postReq('http://x/api/creator/mods', { ...BASE_BODY, originalSource: 'https://src.test', originalAuthor: 'X' }),
+    )
+    expect(res.status).toBe(201)
+    const data = (db.mod.create as jest.Mock).mock.calls[0][0].data
+    expect(data.isOriginalWork).toBe(false)
+    expect(data.originalSource).toBeNull()
+    expect(data.originalAuthor).toBeNull()
   })
 })
 
@@ -153,7 +168,7 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     ;(db.mod.findUnique as jest.Mock).mockResolvedValue({ id: 'm1', authorId: 'u1', workflowStatus: 'DRAFT' })
   })
 
-  it('strips body source fields and forces creator=true', async () => {
+  it('passes body source through and forces creator=true', async () => {
     const res = await creatorPATCH(
       patchReq('http://x/api/creator/mods/m1', { name: 'New', isOriginalWork: false, originalSource: 'x', originalAuthor: 'y' }),
       paramsOf('m1'),
@@ -161,8 +176,8 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     expect(res.status).toBe(200)
     const data = (db.mod.update as jest.Mock).mock.calls[0][0].data
     expect(data.isOriginalWork).toBe(true)
-    expect(data).not.toHaveProperty('originalSource')
-    expect(data).not.toHaveProperty('originalAuthor')
+    expect(data.originalSource).toBe('x')
+    expect(data.originalAuthor).toBe('y')
   })
 
   it('forces publisher=false', async () => {
@@ -174,6 +189,19 @@ describe('PATCH /api/creator/mods/[id] — source strip + schedule', () => {
     const res = await creatorPATCH(patchReq('http://x/api/creator/mods/m1', { name: 'New', isOriginalWork: true }), paramsOf('m1'))
     expect(res.status).toBe(200)
     expect((db.mod.update as jest.Mock).mock.calls[0][0].data.isOriginalWork).toBe(false)
+  })
+
+  it('publisher edit without source does not 422 and nulls source', async () => {
+    ;(requireCreatorStudio as jest.Mock).mockResolvedValue({
+      user: PUBLISHER,
+      error: null,
+    })
+    ;(db.mod.findUnique as jest.Mock).mockResolvedValue({ id: 'm1', authorId: 'u2', workflowStatus: 'DRAFT' })
+    const res = await creatorPATCH(patchReq('http://x/api/creator/mods/m1', { name: 'New' }), paramsOf('m1'))
+    expect(res.status).toBe(200)
+    const data = (db.mod.update as jest.Mock).mock.calls[0][0].data
+    expect(data.originalSource).toBeNull()
+    expect(data.originalAuthor).toBeNull()
   })
 
   it('clears scheduledAt (unschedule)', async () => {
