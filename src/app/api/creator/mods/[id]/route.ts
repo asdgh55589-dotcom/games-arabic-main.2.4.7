@@ -49,6 +49,26 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const data = parsed.data as Record<string, unknown>
+    // المصدر يُحدَّد تلقائياً من الدور — تُتجاهل قيم الجسم المرسلة
+    delete data.isOriginalWork
+    delete data.originalSource
+    delete data.originalAuthor
+    data.isOriginalWork = user.role !== 'publisher'
+    // التحقق من التصنيف والقسم عند إرسالهما
+    if (typeof data.categoryId === 'string' && data.categoryId) {
+      const exists = await db.category.findUnique({
+        where: { id: data.categoryId },
+        select: { id: true },
+      })
+      if (!exists) return validationFail('التصنيف المحدد غير موجود')
+    }
+    if (typeof data.sectionId === 'string' && data.sectionId) {
+      const exists = await db.section.findUnique({
+        where: { id: data.sectionId },
+        select: { id: true },
+      })
+      if (!exists) return validationFail('القسم المحدد غير موجود')
+    }
     // Handle galleryUrls/tags arrays
     if (Array.isArray(data.galleryUrls)) {
       data.galleryUrls = (data.galleryUrls as string[]).join(',')

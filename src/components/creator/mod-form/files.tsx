@@ -31,10 +31,10 @@ interface Props {
   setFileSize: (v: string) => void
   fileFormat: string
   setFileFormat: (v: string) => void
-  compatibility: string
-  setCompatibility: (v: string) => void
   releaseDate: string
   isEdit: boolean
+  scheduledAt: string | null
+  setScheduledAt: (v: string | null) => void
   files: DownloadFile[]
   setFiles: (v: DownloadFile[] | ((p: DownloadFile[]) => DownloadFile[])) => void
   addEmptyFile: () => void
@@ -83,18 +83,66 @@ export function ModFormFiles(p: Props) {
             </select>
           </Field>
         </div>
-        <Field label={t.compatibility}>
-          <Input
-            value={p.compatibility}
-            onChange={(e) => p.setCompatibility(e.target.value)}
-            placeholder={t.compatPlaceholder}
-          />
-        </Field>
         {p.isEdit && (
           <Field label={t.publishDate} hint={t.publishDateHint}>
             <Input type="date" value={p.releaseDate} disabled className="opacity-60" />
           </Field>
         )}
+        {/* ===== النشر المجدول ===== */}
+        <div className="space-y-3 rounded-lg border border-border bg-card/40 p-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={!!p.scheduledAt}
+              onChange={(e) => {
+                if (!e.target.checked) {
+                  p.setScheduledAt(null)
+                } else {
+                  // افتراضي: غداً في نفس الوقت
+                  const d = new Date(Date.now() + 24 * 60 * 60 * 1000)
+                  p.setScheduledAt(d.toISOString())
+                }
+              }}
+              className="h-4 w-4 rounded border-border"
+            />
+            {t.scheduledPublish}
+          </label>
+          {!!p.scheduledAt && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label={t.scheduledDate}>
+                  <Input
+                    type="date"
+                    value={p.scheduledAt.slice(0, 10)}
+                    onChange={(e) => {
+                      if (!e.target.value) return
+                      const time = p.scheduledAt ? p.scheduledAt.slice(11, 16) : '12:00'
+                      p.setScheduledAt(new Date(`${e.target.value}T${time}:00`).toISOString())
+                    }}
+                  />
+                </Field>
+                <Field label={t.scheduledTime}>
+                  <Input
+                    type="time"
+                    value={p.scheduledAt ? p.scheduledAt.slice(11, 16) : '12:00'}
+                    onChange={(e) => {
+                      if (!e.target.value || !p.scheduledAt) return
+                      const date = p.scheduledAt.slice(0, 10)
+                      p.setScheduledAt(new Date(`${date}T${e.target.value}:00`).toISOString())
+                    }}
+                  />
+                </Field>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t.scheduledPreview}{' '}
+                {new Date(p.scheduledAt).toLocaleString('ar-EG', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </p>
+            </>
+          )}
+        </div>
       </Section>
 
       {/* ===== 5. download files ===== */}

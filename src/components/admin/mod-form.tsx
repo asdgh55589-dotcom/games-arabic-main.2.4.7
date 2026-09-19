@@ -40,6 +40,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -221,6 +222,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState('')
+  const [isOriginalWork, setIsOriginalWork] = useState(true)
+  const [originalSource, setOriginalSource] = useState('')
+  const [originalAuthor, setOriginalAuthor] = useState('')
 
   // Platform-specific fields
   const [platform, setPlatform] = useState('')
@@ -321,6 +325,9 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
+        setIsOriginalWork(m.isOriginalWork !== false)
+        setOriginalSource(m.originalSource || '')
+        setOriginalAuthor(m.originalAuthor || '')
         setPlatform(m.game?.platform || '')
         setTranslationMethod((m as any).translationMethod || '')
         setPlatformGameId((m as any).platformGameId || '')
@@ -636,6 +643,9 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
+      isOriginalWork,
+      originalSource: isOriginalWork ? null : originalSource.trim() || null,
+      originalAuthor: isOriginalWork ? null : originalAuthor.trim() || null,
       translationMethod: translationMethod || null,
       platformGameId: platformGameId || null,
       cusaId: cusaId || null,
@@ -1046,6 +1056,38 @@ export default function ModForm({ modId }: ModFormProps) {
         <p className="text-xs text-muted-foreground">
           الشارات (مميّز / رائج / شائع / جديد / محدّث) تُحسب تلقائياً من الأداء والوقت — تُدار من صفحة الشارات.
         </p>
+      </Section>
+
+      {/* ===== مصدر التعريب ===== */}
+      <Section title="مصدر التعريب">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="admin-isOriginalWork"
+            checked={isOriginalWork}
+            onCheckedChange={setIsOriginalWork}
+          />
+          <Label htmlFor="admin-isOriginalWork" className="cursor-pointer">
+            هل هذا عمل أصلي؟
+          </Label>
+        </div>
+        {!isOriginalWork && (
+          <div className="space-y-4">
+            <Field label="المصدر الأصلي" required>
+              <Input
+                value={originalSource}
+                onChange={(e) => setOriginalSource(e.target.value)}
+                placeholder="رابط أو اسم المصدر الأصلي"
+              />
+            </Field>
+            <Field label="اسم المترجم الأصلي">
+              <Input
+                value={originalAuthor}
+                onChange={(e) => setOriginalAuthor(e.target.value)}
+                placeholder="اسم المترجم الأصلي"
+              />
+            </Field>
+          </div>
+        )}
       </Section>
 
       {/* ===== 4. العلاقات — السلسلة وفريق التعريب (تظهر أي سلسلة/فريق جديد تلقائياً) ===== */}

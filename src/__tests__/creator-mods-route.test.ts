@@ -386,14 +386,16 @@ describe('POST /api/creator/mods', () => {
   })
 
   it('يُ退回 422 عندما لا يذكر الناشر المصدر الأصلي', async () => {
+    // الدور يحدد المصدر تلقائياً — قيمة الجسم تُتجاهل، والناشر بلا مصدر يُرفض
+    ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: publisherUser, error: null })
     ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
-      data: { ...validModData, isOriginalWork: false, originalSource: '' },
+      data: { ...validModData, isOriginalWork: true, originalSource: '' },
     })
     const res = await POST(
       makeReq('http://localhost/api/creator/mods', 'POST', {
         ...validModData,
-        isOriginalWork: false,
+        isOriginalWork: true,
         originalSource: '',
       }),
     )

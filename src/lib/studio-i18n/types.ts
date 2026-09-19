@@ -172,6 +172,8 @@ export interface StudioDict {
     actions: string
     externalSource: string
     game: string
+    unschedule: string
+    scheduledUntil: string
   }
   commentsMgr: {
     all: string
@@ -394,6 +396,13 @@ export interface StudioDict {
     featured: string
     trending: string
     latest: string
+    scheduledPublish: string
+    scheduledDate: string
+    scheduledTime: string
+    scheduledPreview: string
+    summaryLabel: string
+    summaryHint: string
+    summaryPlaceholder: string
     downloadFiles: string
     addFile: string
     noFiles: string

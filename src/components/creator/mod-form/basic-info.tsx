@@ -2,7 +2,6 @@
 // Presentational only; all state lives in the ModForm orchestrator.
 
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -10,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { normalizeTranslationType, TRANSLATION_TYPE_LABELS, type TranslationType } from '@/lib/schemas'
@@ -29,18 +27,12 @@ interface Props {
   setArabicTitle: (v: string) => void
   translationScope: string
   setTranslationScope: (v: string) => void
-  compatibility: string
-  setCompatibility: (v: string) => void
   tags: string
   setTags: (v: string) => void
   translationType: TranslationType
   setTranslationType: (v: TranslationType) => void
-  isOriginalWork: boolean
-  setIsOriginalWork: (v: boolean) => void
-  originalSource: string
-  setOriginalSource: (v: string) => void
-  originalAuthor: string
-  setOriginalAuthor: (v: string) => void
+  summary: string
+  setSummary: (v: string) => void
   userRole: string
 }
 
@@ -57,6 +49,19 @@ export function ModFormBasicInfo(p: Props) {
             onChange={(e) => p.setName(e.target.value)}
             placeholder="مثال: ترجمة غير رسمية للعبة"
           />
+        </Field>
+        <Field label={t.summaryLabel} hint={t.summaryHint}>
+          <Textarea
+            value={p.summary}
+            onChange={(e) => p.setSummary(e.target.value.slice(0, 150))}
+            rows={3}
+            maxLength={150}
+            placeholder={t.summaryPlaceholder}
+            dir="auto"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {p.summary.length}/150
+          </p>
         </Field>
         <Field label={t.arabicName}>
           <Input
@@ -108,49 +113,6 @@ export function ModFormBasicInfo(p: Props) {
             </SelectContent>
           </Select>
         </Field>
-      </Section>
-
-      {/* ===== mod source — creator vs publisher ===== */}
-      <Section title={t.modSource}>
-        <div className="flex items-center gap-3">
-          <Switch
-            id="isOriginalWork"
-            checked={p.userRole === 'publisher' ? false : p.isOriginalWork}
-            onCheckedChange={(v) => {
-              if (p.userRole === 'publisher') return
-              p.setIsOriginalWork(v)
-            }}
-            disabled={p.userRole === 'publisher'}
-          />
-          <Label htmlFor="isOriginalWork" className="cursor-pointer">
-            {p.userRole === 'publisher'
-              ? t.externalYes
-              : p.isOriginalWork
-                ? t.ownYes
-                : t.ownNo}
-          </Label>
-        </div>
-        {(p.userRole === 'publisher' ? true : !p.isOriginalWork) && (
-          <div className="space-y-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <p className="text-sm text-amber-600">
-              {t.externalWarn}
-            </p>
-            <Field label={t.origSource} required>
-              <Input
-                value={p.originalSource}
-                onChange={(e) => p.setOriginalSource(e.target.value)}
-                placeholder={t.origSourcePlaceholder}
-              />
-            </Field>
-            <Field label={t.origAuthor}>
-              <Input
-                value={p.originalAuthor}
-                onChange={(e) => p.setOriginalAuthor(e.target.value)}
-                placeholder={t.origAuthorPlaceholder}
-              />
-            </Field>
-          </div>
-        )}
       </Section>
 
       {/* ===== 9. changelog ===== */}

@@ -227,6 +227,11 @@ export const CreateModSchema = z.object({
   isTrending: z.boolean().optional(),
   isLatest: z.boolean().optional(),
   releaseDate: z.string().optional(),
+  scheduledAt: z
+    .string()
+    .refine((v) => !Number.isNaN(Date.parse(v)), 'تاريخ النشر المجدول غير صالح')
+    .optional()
+    .nullable(),
   slug: z.string().optional(),
   changelog: z.string().optional(),
   installGuide: z.string().optional(),

@@ -130,12 +130,17 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'teamId',
       'sectionId',
       'translationType',
+      'isOriginalWork',
+      'originalSource',
+      'originalAuthor',
       'releaseDate',
     ]
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'releaseDate') {
           updateData[field] = body[field] ? new Date(body[field]) : new Date()
+        } else if (field === 'isOriginalWork') {
+          updateData[field] = Boolean(body[field])
         } else if (field === 'tags' && Array.isArray(body.tags)) {
           updateData[field] = body.tags.join(',')
         } else if (field === 'galleryUrls') {

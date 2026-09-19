@@ -102,6 +102,11 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
               {mod.game?.platform || 'N/A'}
             </span>
             <ModTimeBadge result={badges} />
+            {mod.scheduledAt && mod.workflowStatus !== 'PUBLISHED' && (
+              <span className="inline-flex items-center gap-1 rounded border border-amber-600 bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-950 shadow-md">
+                ⏰ مجدول
+              </span>
+            )}
           </div>
           {/* Performance badge + kebab — top end (left in RTL) */}
           <div className="absolute top-2 end-2 z-20 flex items-center gap-1">
