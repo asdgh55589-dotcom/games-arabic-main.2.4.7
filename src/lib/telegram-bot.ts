@@ -5,8 +5,6 @@
  * photos, and inline keyboards.
  */
 
-import { telegramPolicy } from '@/lib/resilience/policies'
-
 const TELEGRAM_API = 'https://api.telegram.org/bot'
 
 interface TelegramResponse {
@@ -45,16 +43,26 @@ async function apiCall(method: string, body: object): Promise<TelegramResponse> 
     return { ok: false, description: 'Bot token not configured' }
   }
 
+  const run = () =>
+    fetch(`${TELEGRAM_API}${token}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
   try {
     // Retry network failures via cockatiel (2 attempts, fast backoff).
-    // Behavior unchanged: any failure still resolves to { ok: false }.
-    const res = await telegramPolicy.execute(() =>
-      fetch(`${TELEGRAM_API}${token}/${method}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
-    )
+    // Lazily imported: cockatiel ships ESM-only, which breaks Jest's CJS
+    // transform at load time — and the policy is optional hardening, not a
+    // correctness requirement. Any failure (import or network) still
+    // resolves to { ok: false } via the fallback plain fetch below.
+    let res: Response
+    try {
+      const { telegramPolicy } = await import('@/lib/resilience/policies')
+      res = await telegramPolicy.execute(run)
+    } catch {
+      res = await run()
+    }
     return await res.json()
   } catch (err) {
     console.error(`[telegram-bot] ${method} failed:`, err)

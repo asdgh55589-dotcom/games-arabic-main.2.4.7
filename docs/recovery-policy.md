@@ -52,3 +52,26 @@ How each account type recovers access. Public responses stay generic
 Every recovery event is logged: `password_recovery_requested`,
 `account_locked`, `mfa_recovery_used/failed`, `mfa_disabled`,
 `email_changed`, `email_change_cancelled`, `admin_account_recovery`.
+
+## 6. Telegram-first notifications (owner policy)
+
+- Telegram-linked users get ALL account notifications via the bot:
+  welcome, password-setup prompt, password reset (button link),
+  password change, new-device login, MFA enable/disable, email change,
+  recovery notices. Routing: `lib/notification-router.ts`.
+- Primary identity is the NUMERIC Telegram ID (`OAuthAccount`
+  `provider=telegram`, `providerAccountId=<numeric id>`); the synthetic
+  email is `telegram_<id>@telegram.local` (underscore form — canonical).
+  Usernames are display-only: a handle change updates `providerUsername` +
+  `displayName` on next login and never breaks linking.
+- Email is SECONDARY: only critical events (password reset link, password
+  change) also mail a VERIFIED inbox; change notifications (no secret) mail
+  any real address. Email-only users keep the existing Brevo flow.
+- Password reset for Telegram users: `POST /api/auth/recover` mints the
+  standard single-use token and delivers it through the bot (generic
+  response preserved — no oracle). First login without a password triggers
+  an in-bot setup prompt (optional, settings card remains).
+- Without bot config (`TELEGRAM_BOT_TOKEN`) every Telegram send resolves
+  fail-open — auth flows continue on email/ledger alone.
+- Lost Telegram + no verified email → admin-assisted recovery (§3) is the
+  only path; documented in Settings and on the recover page.

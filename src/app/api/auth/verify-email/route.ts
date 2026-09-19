@@ -118,6 +118,16 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Telegram-first: linked users get the masked new-address notice.
+      {
+        const { routeNotification } = await import('@/lib/notification-router')
+        void routeNotification({
+          userId: row.userId,
+          type: 'email_change',
+          data: { newEmail },
+        })
+      }
+
       return ok({ success: true, emailChanged: true })
     }
 

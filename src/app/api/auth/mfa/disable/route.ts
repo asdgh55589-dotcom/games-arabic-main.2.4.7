@@ -129,6 +129,12 @@ export async function POST(req: NextRequest) {
     const { setRoleCookie } = await import('@/lib/auth')
     await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, false, updatedUser.onboardingCompleted)
 
+    // Telegram-first: linked users get the disable confirmation via bot.
+    {
+      const { routeNotification } = await import('@/lib/notification-router')
+      void routeNotification({ userId: user.id, type: 'mfa_change', data: { action: 'disabled' } })
+    }
+
     return ok({ success: true, message: 'تم تعطيل المصادقة الثنائية' })
   } catch (err) {
     console.error('[mfa disable] failed:', err)

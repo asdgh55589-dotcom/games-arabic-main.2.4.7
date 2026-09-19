@@ -208,6 +208,12 @@ export async function POST(req: NextRequest) {
         expires: ledgerExpires,
       })
     }
+    // Telegram-first: new-device alert for linked users (no-op otherwise).
+    {
+      const { maybeSendLoginAlert } = await import('@/lib/notification-router')
+      const ua = req.headers.get('user-agent') || null
+      void maybeSendLoginAlert(neonUser.id, { ip: loginIp, userAgent: ua, currentToken: ledgerToken })
+    }
     return res
   } catch (err) {
     logger.error({ err }, '[login-identifier POST] failed')

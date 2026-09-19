@@ -347,6 +347,13 @@ export async function POST(req: NextRequest) {
       request: req,
     })
 
+    // Telegram-first: new-device alert for linked users (no-op otherwise).
+    {
+      const { maybeSendLoginAlert } = await import('@/lib/notification-router')
+      const ua = req.headers.get('user-agent') || null
+      void maybeSendLoginAlert(neonUser.id, { ip: loginIp, userAgent: ua })
+    }
+
     return ok({
       user: {
         id: neonUser.id,
