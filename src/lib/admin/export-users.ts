@@ -1,4 +1,3 @@
-import ExcelJS from 'exceljs'
 import { parse } from 'json2csv'
 import { db } from '@/lib/db'
 
@@ -79,6 +78,9 @@ export async function exportUsersToCSV(filters: ExportFilters) {
 export async function exportUsersToExcel(filters: ExportFilters) {
   const users = await getUsersWithStats(filters)
 
+  // Route-level dynamic import: exceljs stays out of the route bundle
+  // until an admin actually runs an export.
+  const { default: ExcelJS } = await import('exceljs')
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet('المستخدمون')
 

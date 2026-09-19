@@ -1,8 +1,27 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import { gameJsonLd } from '@/lib/seo/structured-data'
 import { GameDetailPage } from '@/views/game-detail'
 
 export const revalidate = 300 // ISR: 5m — بيانات الألعاب نادرة التغير
+
+// Single fetch shared by generateMetadata + page component (React cache
+// dedupes within the request — one self-fetch per render, not two).
+const getGameData = cache(async (slug: string) => {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`,
+      {
+        next: { revalidate: 300 },
+      },
+    )
+    if (!res.ok) return null
+    const { data } = await res.json()
+    return data ?? null
+  } catch {
+    return null
+  }
+})
 
 export async function generateStaticParams() {
   try {
@@ -27,15 +46,7 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
   const { slug } = await params
 
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`,
-      {
-        next: { revalidate: 300 },
-      },
-    )
-    if (!res.ok) return { title: 'لعبة غير موجودة | Games Arabic' }
-    const { data: game } = await res.json()
-
+    const game = await getGameData(slug)
     if (!game) return { title: 'لعبة غير موجودة | Games Arabic' }
 
     const title = `${game.name} - تعريبات عربية | Games Arabic`
@@ -86,16 +97,7 @@ export default async function GameDetailRoutePage({ params }: GamePageProps) {
   let game: any = null
   try {
     const { slug } = await params
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/games/${slug}`,
-      {
-        next: { revalidate: 300 },
-      },
-    )
-    if (res.ok) {
-      const json = await res.json()
-      game = json.data
-    }
+    game = await getGameData(slug)
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort view tracking
   }

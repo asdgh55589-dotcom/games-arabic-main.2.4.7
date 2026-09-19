@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateUnreadCache } from '@/lib/notification-cache'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -29,6 +30,8 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
       where: { id },
       data: { isRead: true, readAt: new Date() },
     })
+
+    await invalidateUnreadCache(user.id)
 
     return ok({ success: true })
   } catch (err) {

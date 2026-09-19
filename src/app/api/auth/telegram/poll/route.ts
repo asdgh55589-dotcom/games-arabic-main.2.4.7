@@ -1,12 +1,18 @@
 import type { NextRequest } from 'next/server'
-import { ok, validationFail } from '@/lib/api-response'
+import { ok, rateLimited, validationFail } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
+import { rateLimit } from '@/lib/rate-limit'
 import { redisSet } from '@/lib/redis'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import { getTelegramSession, updateTelegramSession } from '@/lib/telegram-sessions'
 
 export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 30 polls/min per IP (login clients poll every 2s).
+    const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'telegram:poll' })
+    if (!rl.success) {
+      return rateLimited('تم تجاوز الحد المسموح. حاول مرة أخرى لاحقاً.', 60)
+    }
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     if (!BOT_TOKEN) {
       console.error('[Telegram poll] TELEGRAM_BOT_TOKEN not configured')

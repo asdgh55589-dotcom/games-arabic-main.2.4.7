@@ -1,10 +1,12 @@
 /**
  * lib/export/excel.ts — تصدير البيانات بصيغة Excel
  *
- * يستخدم exceljs لإنشاء ملفات Excel احترافية مع تنسيق عربي.
+ * exceljs is loaded via dynamic import inside toExcelMulti (server-only,
+ * on export action) so the 23MB dependency never joins any route bundle
+ * at import time. Types come from a type-only import (erased at build).
  */
 
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
 
 export interface ExcelColumn<T = any> {
   key: string
@@ -35,7 +37,8 @@ export async function toExcel<T extends Record<string, any>>(
 export async function toExcelMulti<T extends Record<string, any>>(
   sheets: ExcelSheet<T>[],
 ): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook()
+  const { default: ExcelJSRuntime } = await import('exceljs')
+  const workbook = new ExcelJSRuntime.Workbook()
   workbook.creator = 'GAMES ARABIC'
   workbook.created = new Date()
 

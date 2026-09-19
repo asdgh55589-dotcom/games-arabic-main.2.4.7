@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars/dist/cjs/handlebars.js'
+import Handlebars from 'handlebars'
 import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'

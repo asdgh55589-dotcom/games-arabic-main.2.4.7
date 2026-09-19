@@ -7,7 +7,7 @@
 // نقطة الدخول الافتراضية تسجّل require.extensions['.handlebars'] و '.hbs' لتحميل
 // ملفات القوالب في Node، وهي ميزة لا يدعمها webpack/turbopack وتطلق تحذيراً.
 // نحن نمرّر نصوص القوالب كـ strings ولا نحمّل ملفات، لذا البناء المباشر كافٍ وأنظف.
-import Handlebars from 'handlebars/dist/cjs/handlebars.js'
+import Handlebars from 'handlebars'
 import type {
   NotificationChannel,
   NotificationType,

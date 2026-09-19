@@ -4,23 +4,13 @@ import bundleAnalyzer from "@next/bundle-analyzer";
 
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
-  // X-Frame-Options removed — managed solely in src/middleware.ts (DENY) to avoid conflict
+  // X-Frame-Options removed — managed solely in src/proxy.ts (DENY) to avoid conflict
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://m.stripe.network https://telegram.org https://oauth.telegram.org",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://img.youtube.com https://i.ytimg.com https://*.ytimg.com https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.supabase.co https://res.cloudinary.com https://telegram.org https://t.me https://iili.io https://freeimage.host https://*.freeimage.host https://img.gamesarabic.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://www.youtube.com https://www.youtube-nocookie.com https://*.youtube.com https://*.googlevideo.com https://*.ytimg.com https://www.youtube.com/oembed https://api.telegram.org",
-      "frame-src 'self' https://js.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com https://youtu.be https://m.youtube.com https://music.youtube.com https://*.youtube.com https://*.youtube-nocookie.com https://oauth.telegram.org https://telegram.org",
-      "media-src 'self' https://*.supabase.co https://*.youtube.com https://*.googlevideo.com https://*.ytimg.com",
-    ].join('; '),
-  },
+  // NOTE: Content-Security-Policy is set ONLY in src/proxy.ts addSecurityHeaders
+  // (single source — the two definitions had drifted). Static-asset responses
+  // served without the proxy don't need a document CSP.
 ]
 
 const nextConfig: NextConfig = {
@@ -28,7 +18,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   reactCompiler: true,
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "bcryptjs",
+    "exceljs",
+    "cloudinary",
+    "handlebars",
+    "@sentry/nextjs",
+    "@aws-sdk/client-s3",
+    "sharp",
+  ],
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -43,6 +42,12 @@ const nextConfig: NextConfig = {
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',
+      'cloudinary',
+      'handlebars',
+      '@sentry/nextjs',
+      '@uppy/core',
+      '@uppy/dashboard',
+      '@uppy/xhr-upload',
     ],
   },
   images: {

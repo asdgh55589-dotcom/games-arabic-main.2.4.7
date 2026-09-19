@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
+import { rateLimit } from '@/lib/rate-limit'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import {
   createTelegramSession,
@@ -10,6 +11,11 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 session-creations/min per IP (brute-forceable oracle).
+    const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'telegram:session' })
+    if (!rl.success) {
+      return rateLimited('تم تجاوز الحد المسموح. حاول مرة أخرى لاحقاً.', 60)
+    }
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     // Bot username must match the token's bot. NEXT_PUBLIC_* is readable
     // server-side; TELEGRAM_BOT_NAME is kept as a secondary source so existing
@@ -44,6 +50,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 30 login-completions/min per IP (poll clients hit this).
+    const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'telegram:login' })
+    if (!rl.success) {
+      return rateLimited('تم تجاوز الحد المسموح. حاول مرة أخرى لاحقاً.', 60)
+    }
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
       console.error('[Telegram] TELEGRAM_BOT_TOKEN not configured')

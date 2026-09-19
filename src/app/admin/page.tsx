@@ -19,13 +19,25 @@ import {
   Users,
 } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { AdminDashboardSkeleton } from '@/components/admin/admin-dashboard-skeleton'
-import { GrowthChart } from '@/components/admin/charts/growth-chart'
-import { PlatformDonut } from '@/components/admin/charts/platform-donut'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatNumber, timeAgo } from '@/lib/format'
+
+// Code-split recharts: these pull the full chart vendor chunk, loaded only
+// when the dashboard mounts (same pattern as admin/analytics).
+const GrowthChart = dynamic(
+  () => import('@/components/admin/charts/growth-chart').then((m) => ({ default: m.GrowthChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
+const PlatformDonut = dynamic(
+  () =>
+    import('@/components/admin/charts/platform-donut').then((m) => ({ default: m.PlatformDonut })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
 
 interface DashboardData {
   stats: {

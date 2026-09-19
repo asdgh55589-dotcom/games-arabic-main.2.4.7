@@ -14,7 +14,8 @@ describe('CSP img-src contains worker hosts', () => {
   let csp: string
 
   beforeAll(() => {
-    const configPath = join(ROOT, 'next.config.ts')
+    // CSP is single-sourced in src/proxy.ts (removed from next.config.ts).
+    const configPath = join(ROOT, 'src/proxy.ts')
     expect(existsSync(configPath)).toBe(true)
     const raw = readFileSync(configPath, 'utf-8')
     // Extract the img-src line from the CSP array

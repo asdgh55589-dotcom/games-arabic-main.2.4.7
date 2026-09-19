@@ -1,11 +1,17 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, validationFail } from '@/lib/api-response'
+import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
+import { rateLimit } from '@/lib/rate-limit'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 widget-logins/min per IP.
+    const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'telegram:callback' })
+    if (!rl.success) {
+      return rateLimited('تم تجاوز الحد المسموح. حاول مرة أخرى لاحقاً.', 60)
+    }
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {
       console.error('[Telegram callback] TELEGRAM_BOT_TOKEN not configured')

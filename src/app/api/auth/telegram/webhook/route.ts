@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok } from '@/lib/api-response'
+import { internalError, ok, rateLimited } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
+import { rateLimit } from '@/lib/rate-limit'
 import { redisGet, redisSet } from '@/lib/redis'
 
 export async function POST(req: NextRequest) {
@@ -20,6 +21,13 @@ export async function POST(req: NextRequest) {
     if (!secretToken || secretToken !== expectedSecret) {
       console.warn('[telegram webhook] Invalid secret token')
       return ok({ ok: true }) // Return 200 to prevent Telegram from retrying
+    }
+
+    // Rate limit: 100 updates/min per IP (Telegram sends bursts; fail-open).
+    // Checked AFTER secret verification so junk never consumes the budget.
+    const rl = await rateLimit(req, { limit: 100, window: 60, keyPrefix: 'telegram:webhook' })
+    if (!rl.success) {
+      return rateLimited('تم تجاوز الحد المسموح. حاول مرة أخرى لاحقاً.', 60)
     }
 
     const body = await req.json()

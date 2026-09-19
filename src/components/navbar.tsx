@@ -736,8 +736,8 @@ export function Navbar({ games, currentView }: NavbarProps) {
           )}
         </div>
 
-        {/* Right actions — موسّع */}
-        <div className="hidden items-center gap-1.5 sm:flex shrink-0 ml-auto">
+        {/* Right actions — موسّع (desktop only: mobile has its own bell below) */}
+        <div className="hidden items-center gap-1.5 lg:flex shrink-0 ml-auto">
           <NotificationBell currentUser={currentUser} />
 
           {currentUser ? (
@@ -1040,7 +1040,9 @@ export function Navbar({ games, currentView }: NavbarProps) {
 
                 <div className="p-3">
                   <div className="flex justify-center">
-                    <NotificationBell currentUser={currentUser} />
+                    <MobileLink href="/notifications" onClick={() => setMobileOpen(false)}>
+                      <span className="text-base leading-none">🔔</span> الإشعارات
+                    </MobileLink>
                   </div>
                 </div>
               </nav>

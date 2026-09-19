@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateUnreadCache } from '@/lib/notification-cache'
 
 async function markAllAsRead() {
   const neonUser = await getOptionalSession()
@@ -13,6 +14,8 @@ async function markAllAsRead() {
     where: { userId: neonUser.id, readAt: null },
     data: { isRead: true, readAt: new Date() },
   })
+
+  await invalidateUnreadCache(neonUser.id)
 
   return ok({ success: true })
 }
