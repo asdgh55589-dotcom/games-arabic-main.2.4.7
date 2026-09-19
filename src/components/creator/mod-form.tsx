@@ -27,6 +27,7 @@ import { ModFormBasicInfo } from './mod-form/basic-info'
 import { ModFormFiles } from './mod-form/files'
 import { ModFormMedia } from './mod-form/media'
 import { ModFormSettings } from './mod-form/settings'
+import { ChangeTypeDialog, type ChangeType } from './mod-form/change-type-dialog'
 import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
 import { PlatformSelector } from './mod-form/platform-selector'
 import {
@@ -97,6 +98,8 @@ export default function ModForm({ modId }: ModFormProps) {
   const [translationType, setTranslationType] = useState<TranslationType>('unofficial')
   const [seriesId, setSeriesId] = useState('')
   const [teamId, setTeamId] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [sectionId, setSectionId] = useState('')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
@@ -142,6 +145,10 @@ export default function ModForm({ modId }: ModFormProps) {
   const [cropUploading, setCropUploading] = useState(false)
   const [existingSeries, setExistingSeries] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<string[]>([])
+  const [categoriesList, setCategoriesList] = useState<{ id: string; name: string }[]>([])
+  const [sectionsList, setSectionsList] = useState<{ id: string; name: string }[]>([])
+  const [changeTypeDialogOpen, setChangeTypeDialogOpen] = useState(false)
+  const [savingChangelog, setSavingChangelog] = useState(false)
 
   // تحميل السلاسل والفرق — للعلاقات (dropdown) + للإكمال التلقائي
   useEffect(() => {
@@ -149,8 +156,10 @@ export default function ModForm({ modId }: ModFormProps) {
     Promise.all([
       fetch('/api/series').then((r) => r.json()),
       fetch('/api/teams').then((r) => r.json()),
+      fetch('/api/categories').then((r) => r.json()),
+      fetch('/api/sections').then((r) => r.json()),
     ])
-      .then(([seriesData, teamsData]) => {
+      .then(([seriesData, teamsData, categoriesData, sectionsData]) => {
         if (seriesData?.data) {
           setSeriesList(seriesData.data.map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })))
           setExistingSeries(seriesData.data.map((s: any) => s.name))
@@ -158,6 +167,12 @@ export default function ModForm({ modId }: ModFormProps) {
         if (teamsData?.data) {
           setTeamsList(teamsData.data.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })))
           setExistingTeams(teamsData.data.map((t: any) => t.name))
+        }
+        if (categoriesData?.data) {
+          setCategoriesList(categoriesData.data.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+        if (sectionsData?.data) {
+          setSectionsList(sectionsData.data.map((s: any) => ({ id: s.id, name: s.name })))
         }
       })
       .catch(() => {})
@@ -196,6 +211,8 @@ export default function ModForm({ modId }: ModFormProps) {
         setTranslationType(normalizeTranslationType(m.translationType))
         setSeriesId((m as any).seriesId || '')
         setTeamId((m as any).teamId || '')
+        setCategoryId((m as any).categoryId || '')
+        setSectionId((m as any).sectionId || '')
         setThumbnailUrl(m.thumbnailUrl || '')
         setImageUrl(m.imageUrl || '')
         setGalleryUrls(m.galleryUrls ? m.galleryUrls.split(',').filter(Boolean) : [])
@@ -513,6 +530,8 @@ export default function ModForm({ modId }: ModFormProps) {
       translationType,
       seriesId: seriesId || null,
       teamId: teamId || null,
+      categoryId: categoryId || null,
+      sectionId: sectionId || null,
       thumbnailUrl,
       imageUrl,
       galleryUrls,
@@ -569,8 +588,14 @@ export default function ModForm({ modId }: ModFormProps) {
         title: t.saved,
         description: isEdit ? t.updated : t.publishedOk,
       })
-      router.push('/creator/mods')
-      router.refresh()
+
+      // Show changelog dialog when editing an existing mod
+      if (isEdit && modId) {
+        setChangeTypeDialogOpen(true)
+      } else {
+        router.push('/creator/mods')
+        router.refresh()
+      }
     } catch (err) {
       toast({
         title: t.errorTitle,
@@ -777,6 +802,12 @@ export default function ModForm({ modId }: ModFormProps) {
         teamId={teamId}
         setTeamId={setTeamId}
         teamsList={teamsList}
+        categoryId={categoryId}
+        setCategoryId={setCategoryId}
+        categoriesList={categoriesList}
+        sectionId={sectionId}
+        setSectionId={setSectionId}
+        sectionsList={sectionsList}
         teamMembers={teamMembers}
         setTeamMembers={setTeamMembers}
         addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
@@ -834,6 +865,41 @@ export default function ModForm({ modId }: ModFormProps) {
         <Section title={t.statusHistory} icon={<Clock className="h-4 w-4" />}>
           <WorkflowHistory history={workflowHistory} />
         </Section>
+      )}
+
+      {/* Changelog dialog for edits */}
+      {isEdit && modId && (
+        <ChangeTypeDialog
+          open={changeTypeDialogOpen}
+          onOpenChange={setChangeTypeDialogOpen}
+          saving={savingChangelog}
+          onSave={async ({ type, title, description: desc }) => {
+            setSavingChangelog(true)
+            try {
+              const res = await fetch(`/api/creator/mods/${modId}/changelog`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, title, description: desc }),
+              })
+              if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
+              }
+              toast({ title: 'تم حفظ سجل التغييرات' })
+              setChangeTypeDialogOpen(false)
+              router.push('/creator/mods')
+              router.refresh()
+            } catch (err) {
+              toast({
+                title: 'خطأ',
+                description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
+                variant: 'destructive',
+              })
+            } finally {
+              setSavingChangelog(false)
+            }
+          }}
+        />
       )}
 
       <ModFormActions saving={saving} isEdit={isEdit} onSave={onSave} />
