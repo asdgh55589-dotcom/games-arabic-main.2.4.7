@@ -20,6 +20,19 @@ interface UseNotificationPollingReturn {
   markAllAsRead: () => Promise<void>
 }
 
+/** Abort hung notification fetches instead of piling up connections. */
+const FETCH_TIMEOUT_MS = 10_000
+
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export function useNotificationPolling(
   options: UseNotificationPollingOptions,
 ): UseNotificationPollingReturn {
@@ -37,7 +50,7 @@ export function useNotificationPolling(
   const fetchNotifications = useCallback(async () => {
     if (!userId) return
     try {
-      const res = await fetch(`/api/notifications?limit=${maxNotifications}`)
+      const res = await fetchWithTimeout(`/api/notifications?limit=${maxNotifications}`)
       if (!res.ok) throw new Error('Failed to fetch notifications')
       const data = await res.json()
       setNotifications(data.data ?? [])
@@ -52,7 +65,7 @@ export function useNotificationPolling(
   const fetchUnreadCount = useCallback(async () => {
     if (!userId) return
     try {
-      const res = await fetch('/api/notifications/unread-count')
+      const res = await fetchWithTimeout('/api/notifications/unread-count')
       if (!res.ok) throw new Error('Failed to fetch unread count')
       const data = await res.json()
       const count = data.data?.count ?? 0
@@ -115,7 +128,7 @@ export function useNotificationPolling(
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'POST' })
+      await fetchWithTimeout(`/api/notifications/${id}/read`, { method: 'POST' })
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
       )
@@ -127,7 +140,7 @@ export function useNotificationPolling(
 
   const markAllAsRead = useCallback(async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST' })
+      await fetchWithTimeout('/api/notifications/read-all', { method: 'POST' })
       setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })))
       setUnreadCount(0)
     } catch {
