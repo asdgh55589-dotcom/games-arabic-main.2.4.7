@@ -626,7 +626,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://oauth.telegram.org",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https: https://img.youtube.com https://i.ytimg.com https://*.ytimg.com https://res.cloudinary.com https://telegram.org https://t.me",
+      "img-src 'self' data: https: https://img.youtube.com https://i.ytimg.com https://*.ytimg.com https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.supabase.co https://*.supabase.in https://res.cloudinary.com https://telegram.org https://t.me https://iili.io https://freeimage.host https://*.freeimage.host https://img.gamesarabic.com",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.youtube.com https://www.youtube-nocookie.com https://*.youtube.com https://*.googlevideo.com https://*.ytimg.com https://api.telegram.org",
       "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com https://youtu.be https://m.youtube.com https://music.youtube.com https://*.youtube.com https://*.youtube-nocookie.com https://oauth.telegram.org https://telegram.org",
