@@ -51,7 +51,7 @@ export async function sendPasswordResetEmail(to: string, resetLink: string): Pro
       ...(rendered?.text ? { text: rendered.text } : {}),
     })
     if (!result.ok) {
-      logger.warn('[recovery] emitlo send failed', { message: result.reason })
+      logger.warn('[recovery] email send failed', { message: result.reason })
       return false
     }
     return true

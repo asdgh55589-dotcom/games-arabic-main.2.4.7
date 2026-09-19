@@ -19,9 +19,9 @@ export function getDatabaseUrl(): string {
 /**
  * Ensure Aiven-required URL params:
  * - sslmode=require (inject if missing, throw if explicitly disable/allow or non-require)
- * - connect_timeout=10 if missing
- * - connection_limit=5 if missing (Aiven pool size 5)
- * - pool_timeout=10 if missing
+ * - connect_timeout=30 if missing
+ * - connection_limit=20 if missing
+ * - pool_timeout=60 if missing
  * Preserves all other params/values.
  */
 export function ensureSslmode(url: string): string {
@@ -51,13 +51,13 @@ export function ensureSslmode(url: string): string {
 
   // Pool tuning — inject defaults only if missing, do not override existing values
   if (!params.has('connect_timeout')) {
-    params.set('connect_timeout', '10')
+    params.set('connect_timeout', '30')
   }
   if (!params.has('connection_limit')) {
-    params.set('connection_limit', '5')
+    params.set('connection_limit', '20')
   }
   if (!params.has('pool_timeout')) {
-    params.set('pool_timeout', '10')
+    params.set('pool_timeout', '60')
   }
 
   return parsed.toString()
@@ -131,4 +131,7 @@ export const db =
     },
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+// Singleton in ALL envs (including production): without this, standalone
+// production creates a new PrismaClient per importing module instance and
+// exhausts the connection pool under concurrent requests.
+globalForPrisma.prisma = db

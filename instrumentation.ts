@@ -51,6 +51,26 @@ export async function register(): Promise<void> {
     installGlobalErrorHandlers()
   }
 
+  // Telegram webhook registration (production only, fail-open — never blocks boot).
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    try {
+      const { setupTelegramWebhook } = await import('./src/lib/telegram-webhook-setup')
+      void setupTelegramWebhook()
+    } catch {
+      // fail-open
+    }
+  }
+
+  // Brevo sender verification (fail-open — misconfiguration pages Sentry).
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    try {
+      const { verifyBrevoSender } = await import('./src/lib/email/brevo')
+      void verifyBrevoSender()
+    } catch {
+      // fail-open
+    }
+  }
+
   // OpenObserve OTLP — fail-open, only on node runtime
   if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT && process.env.NEXT_RUNTIME !== 'edge') {
     try {

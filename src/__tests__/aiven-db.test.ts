@@ -78,22 +78,22 @@ describe('ensureSslmode — sslmode=require enforcement', () => {
     expect(parsed.searchParams.get('connection_limit')).toBe('5')
   })
 
-  it('injects connect_timeout=10 if missing, preserves existing value if present', () => {
-    const without = ensureSslmode(`${base}?sslmode=require&connection_limit=5&pool_timeout=10`)
-    expect(new URL(without).searchParams.get('connect_timeout')).toBe('10')
+  it('injects connect_timeout=30 if missing, preserves existing value if present', () => {
+    const without = ensureSslmode(`${base}?sslmode=require&connection_limit=20&pool_timeout=60`)
+    expect(new URL(without).searchParams.get('connect_timeout')).toBe('30')
 
     const withExisting = ensureSslmode(
-      `${base}?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=30`,
+      `${base}?sslmode=require&connection_limit=20&pool_timeout=60&connect_timeout=10`,
     )
-    expect(new URL(withExisting).searchParams.get('connect_timeout')).toBe('30')
+    expect(new URL(withExisting).searchParams.get('connect_timeout')).toBe('10')
   })
 
   it('injects connection_limit and pool_timeout defaults if missing', () => {
     const out = ensureSslmode(`${base}?sslmode=require`)
     const p = new URL(out)
-    expect(p.searchParams.get('connection_limit')).toBe('5')
-    expect(p.searchParams.get('pool_timeout')).toBe('10')
-    expect(p.searchParams.get('connect_timeout')).toBe('10')
+    expect(p.searchParams.get('connection_limit')).toBe('20')
+    expect(p.searchParams.get('pool_timeout')).toBe('60')
+    expect(p.searchParams.get('connect_timeout')).toBe('30')
   })
 
   it('does not override existing connection_limit / pool_timeout values', () => {

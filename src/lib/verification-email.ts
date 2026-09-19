@@ -52,7 +52,7 @@ export async function sendVerificationEmail(to: string, verifyLink: string): Pro
       ...(rendered?.text ? { text: rendered.text } : {}),
     })
     if (!result.ok) {
-      logger.warn('[verification] emitlo send failed', { message: result.reason })
+      logger.warn('[verification] email send failed', { message: result.reason })
       return false
     }
     return true

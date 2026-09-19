@@ -1,12 +1,34 @@
+import { createHash } from 'crypto'
 import { NextResponse } from 'next/server'
 import { ok } from '@/lib/api-response'
 import { clearRoleCookie, getBanStatus, getJWTSecret, jwtVerify } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { needsSecuritySetup } from '@/lib/onboarding'
+import { redisDel, redisGet, redisSet } from '@/lib/redis'
 import { createClient } from '@/lib/supabase/server'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
+
+/** /api/auth/me payload cache TTL (seconds) — SWR-style, invalidated on logout. */
+const ME_CACHE_TTL_S = 60
+/** Abort slow Supabase Auth calls instead of hanging the request. */
+const SUPABASE_TIMEOUT_MS = 3_000
+
+/** Cache key for the role-cookie path (token hashed, never raw). */
+export function authMeCacheKey(roleToken: string): string {
+  return `auth:me:${createHash('sha256').update(roleToken).digest('hex')}`
+}
+
+/** Invalidate a user's /me cache entry (call on logout / token rotation). */
+export async function invalidateAuthMeCache(roleToken: string): Promise<void> {
+  if (!roleToken) return
+  try {
+    await redisDel(authMeCacheKey(roleToken))
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort invalidation — 60s TTL converges anyway
+  }
+}
 
 // Phase 4B: latest still-pending verification address (two-step email
 // change). Null when none — best-effort, never fails the request.
@@ -26,13 +48,18 @@ async function getPendingEmail(userId: string): Promise<string | null> {
 // GET /api/auth/me — المستخدم الحالي
 export async function GET() {
   try {
-    // 1. محاولة Supabase Auth أولاً
+    // 1. محاولة Supabase Auth أولاً (بمهلة 3 ثوانٍ — لا تعلّق الطلب)
     try {
       const supabase = await createClient()
       const {
         data: { user: supabaseUser },
         error: supabaseError,
-      } = await supabase.auth.getUser()
+      } = (await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase getUser timeout')), SUPABASE_TIMEOUT_MS),
+        ),
+      ])) as Awaited<ReturnType<typeof supabase.auth.getUser>>
 
       if (!supabaseError && supabaseUser) {
         // يوجد Supabase session — البحث في قاعدة البيانات
@@ -120,6 +147,15 @@ export async function GET() {
       return ok({ user: null })
     }
 
+    // Fast path: cached payload (60s TTL, invalidated on logout).
+    const meCacheKey = authMeCacheKey(roleToken)
+    try {
+      const cached = await redisGet<Record<string, unknown>>(meCacheKey)
+      if (cached !== null) return ok(cached)
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: cache miss → DB below
+    }
+
     // التحقق من الـ JWT token
     const JWT_SECRET = getJWTSecret()
     let payload: Record<string, unknown>
@@ -183,10 +219,12 @@ export async function GET() {
     // فحص حالة الحظر
     const ban = getBanStatus(user)
     if (ban.banned) {
-      return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
+      const bannedPayload = { user: null, banned: true, banReason: ban.reason, banType: ban.type }
+      await redisSet(meCacheKey, bannedPayload, ME_CACHE_TTL_S).catch(() => {})
+      return ok(bannedPayload)
     }
 
-    return ok({
+    const mePayload = {
       user: {
         id: user.id,
         username: user.username,
@@ -203,7 +241,9 @@ export async function GET() {
         }),
         emailVerified: user.emailVerified,
       },
-    })
+    }
+    await redisSet(meCacheKey, mePayload, ME_CACHE_TTL_S).catch(() => {})
+    return ok(mePayload)
   } catch (err) {
     logger.error('[auth/me] failed', err)
     // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع

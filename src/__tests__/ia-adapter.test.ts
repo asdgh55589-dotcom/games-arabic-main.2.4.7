@@ -90,41 +90,20 @@ describe('IA key helpers (pure)', () => {
 describe('POST /api/storage/ia/sign', () => {
   const good = { filename: 'patch.zip', mime: 'application/zip', bytes: 1024, modSlug: 'skyrim', title: 'Skyrim patch' }
 
-  it('signs a PUT with quota gate (keys stay server-side)', async () => {
+  it('returns 503 while IA is disabled', async () => {
+    delete process.env.IA_ENABLED
+    const res = await signPOST(jsonReq('http://x/api/storage/ia/sign', good))
+    expect(res.status).toBe(503)
+    expect(mockPresign).not.toHaveBeenCalled()
+  })
+
+  it('returns 501 DEPRECATED when enabled (dead presign path — use relay)', async () => {
     const res = await signPOST(jsonReq('http://x/api/storage/ia/sign', good))
     const body = await res.json()
-    expect(res.status).toBe(201)
-    expect(body.data.uploadUrl).toBe('https://s3.us.archive.org/signed-put-url')
-    expect(body.data.downloadUrl).toMatch(/^https:\/\/archive\.org\/download\/games-arabic-mods-test\//)
-    expect(body.data.key).toMatch(/^u-9\//)
-    expect(mockCheck).toHaveBeenCalledWith('u-9', 'creator', 1024)
-    expect(mockPresign).toHaveBeenCalled()
-    expect(JSON.stringify(body)).not.toMatch(/AK|SK/)
-  })
-
-  it('rejects bad extensions / mime before signing', async () => {
-    const badExt = await signPOST(jsonReq('http://x/', { ...good, filename: 'patch.exe' }))
-    expect(badExt.status).toBe(422)
-    const badMime = await signPOST(jsonReq('http://x/', { ...good, mime: 'video/mp4' }))
-    expect(badMime.status).toBe(422)
+    expect(res.status).toBe(501)
+    expect(JSON.stringify(body)).toMatch(/relay/)
     expect(mockPresign).not.toHaveBeenCalled()
-  })
-
-  it('quota deny short-circuits signing (Arabic reason)', async () => {
-    mockCheck.mockResolvedValue({
-      allowed: false, reason: 'حجم الملف يتجاوز الحد الأقصى', quota: {},
-      usedToday: 0, usedBytesToday: 0, usedTotalBytes: 0,
-    })
-    const res = await signPOST(jsonReq('http://x/', good))
-    expect(res.status).toBe(422)
-    expect(JSON.stringify(await res.json())).toMatch(/الحد الأقصى/)
-    expect(mockPresign).not.toHaveBeenCalled()
-  })
-
-  it('fails closed without IA keys', async () => {
-    delete process.env.IA_ACCESS_KEY
-    const res = await signPOST(jsonReq('http://x/', good))
-    expect(res.status).toBe(500)
+    expect(mockCheck).not.toHaveBeenCalled()
   })
 })
 

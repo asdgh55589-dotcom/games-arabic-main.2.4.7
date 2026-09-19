@@ -241,11 +241,16 @@ function failWith(
     latencyMs: Date.now() - startMs,
     ...logCtx,
   })
-  // Unexpected classes only: 5xx/timeout/network — never 4xx/missing-key.
+  // Unexpected + auth/misconfig classes: 5xx/timeout/network, plus 401
+  // (bad key) and 400 validation-error (usually an unverified sender).
+  // These page Sentry because they indicate config problems, not user errors.
+  // 429/402 (quota) stay warn-only — expected under load.
   if (
     reason === 'server-error' ||
     reason === 'timeout' ||
-    reason === 'network-error'
+    reason === 'network-error' ||
+    reason === 'unauthorized' ||
+    reason === 'validation-error'
   ) {
     reportError(thrown && err instanceof Error ? err : new Error(`[brevo] send failed: ${reason}`), {
       route: 'brevo:send',
@@ -253,4 +258,64 @@ function failWith(
     })
   }
   return { ok: false, reason }
+}
+
+/**
+ * Boot-time verification (fail-open): checks the API key via GET /v3/account
+ * and confirms BREVO_SENDER_EMAIL is in the verified senders list
+ * (GET /v3/senders). Misconfiguration is reported to Sentry — it never
+ * throws and never blocks boot.
+ */
+export async function verifyBrevoSender(): Promise<{ ok: boolean; reason?: string }> {
+  try {
+    const key = process.env.BREVO_API_KEY || ''
+    if (!key) {
+      logger.warn('[brevo] BREVO_API_KEY not configured — skipping sender verification')
+      return { ok: false, reason: 'not-configured' }
+    }
+    const sender = senderConfig()
+    const headers = { accept: 'application/json', 'api-key': key }
+
+    const accountRes = await fetch('https://api.brevo.com/v3/account', { headers })
+    if (accountRes.status === 401) {
+      reportError(new Error('[brevo] API key rejected (401) — check BREVO_API_KEY'), {
+        route: 'brevo:verify',
+      })
+      return { ok: false, reason: 'unauthorized' }
+    }
+    if (!accountRes.ok) {
+      logger.warn('[brevo] account check failed', { status: accountRes.status })
+      return { ok: false, reason: `http-${accountRes.status}` }
+    }
+
+    const sendersRes = await fetch('https://api.brevo.com/v3/senders', { headers })
+    if (!sendersRes.ok) {
+      logger.warn('[brevo] senders check failed', { status: sendersRes.status })
+      return { ok: false, reason: `senders-http-${sendersRes.status}` }
+    }
+    const senders = (await sendersRes.json().catch(() => null)) as {
+      senders?: Array<{ email?: string; active?: boolean }>
+    } | null
+    const match = senders?.senders?.find(
+      (s) => s.email?.toLowerCase() === sender.email.toLowerCase(),
+    )
+    if (!match) {
+      reportError(
+        new Error(`[brevo] sender not verified in Brevo dashboard: ${sender.email}`),
+        { route: 'brevo:verify' },
+      )
+      return { ok: false, reason: 'sender-not-verified' }
+    }
+    if (match.active === false) {
+      reportError(new Error(`[brevo] sender inactive in Brevo dashboard: ${sender.email}`), {
+        route: 'brevo:verify',
+      })
+      return { ok: false, reason: 'sender-inactive' }
+    }
+    logger.info('[brevo] sender verified', { sender: maskRecipient(sender.email) })
+    return { ok: true }
+  } catch (err) {
+    logger.warn('[brevo] sender verification failed open', err)
+    return { ok: false, reason: 'network-error' }
+  }
 }
