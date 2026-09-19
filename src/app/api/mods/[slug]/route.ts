@@ -27,6 +27,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       author: true,
       game: true,
       category: true,
+      seriesRelation: { select: { id: true, name: true, slug: true } },
+      teamRelation: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      sectionRelation: { select: { id: true, name: true, slug: true, key: true } },
+      changelogs: {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          changedBy: { select: { id: true, username: true, avatarUrl: true, role: true } },
+        },
+      },
       files: {
         orderBy: { order: 'asc' },
         include: { links: { orderBy: { order: 'asc' } } },
