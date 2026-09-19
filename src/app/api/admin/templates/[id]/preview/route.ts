@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars/dist/cjs/handlebars.js'
+import Handlebars from 'handlebars'
 import type { NextRequest } from 'next/server'
 import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
 import { internalError, notFound, ok } from '@/lib/api-response'

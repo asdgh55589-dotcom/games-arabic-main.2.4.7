@@ -1,10 +1,9 @@
 'use client'
 
 import Uppy from '@uppy/core'
+import type { Locale } from '@uppy/core/utils'
 import Dashboard from '@uppy/dashboard'
 import XHRUpload from '@uppy/xhr-upload'
-import ar_SA from '@uppy/locales/lib/ar_SA'
-import en_US from '@uppy/locales/lib/en_US'
 import '@uppy/core/css/style.css'
 import '@uppy/dashboard/css/style.css'
 import * as React from 'react'
@@ -60,10 +59,24 @@ export function UppyUploader({
   const metaKey = JSON.stringify(meta ?? {})
   const typesKey = (allowedFileTypes ?? []).join(',')
 
+  // Uppy locale strings load on demand (one locale chunk, not both).
+  // Uppy falls back to built-in English until the strings arrive.
+  const [uppyStrings, setUppyStrings] = React.useState<Locale | undefined>(undefined)
+  React.useEffect(() => {
+    let live = true
+    setUppyStrings(undefined)
+    import(`@uppy/locales/lib/${locale === 'ar' ? 'ar_SA' : 'en_US'}`).then((m) => {
+      if (live) setUppyStrings((m.default ?? m) as Locale)
+    })
+    return () => {
+      live = false
+    }
+  }, [locale])
+
   React.useEffect(() => {
     const uppy = new Uppy({
       autoProceed: false,
-      locale: locale === 'ar' ? ar_SA : en_US,
+      locale: uppyStrings,
       meta: meta ? JSON.parse(metaKey) : undefined,
       restrictions: {
         maxFileSize: maxFileSize ?? undefined,
@@ -133,7 +146,7 @@ export function UppyUploader({
     }
     // Rebuilt when endpoint/meta/locale/limits change (fresh Dashboard copy).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, metaKey, typesKey, maxFileSize, maxNumberOfFiles, locale, height, note])
+  }, [endpoint, metaKey, typesKey, maxFileSize, maxNumberOfFiles, locale, uppyStrings, height, note])
 
   return <div ref={targetRef} dir={locale === 'ar' ? 'rtl' : 'ltr'} />
 }

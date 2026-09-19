@@ -28,7 +28,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   reactCompiler: true,
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "bcryptjs",
+    "exceljs",
+    "cloudinary",
+    "handlebars",
+    "@sentry/nextjs",
+    "@aws-sdk/client-s3",
+    "sharp",
+  ],
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -43,6 +52,12 @@ const nextConfig: NextConfig = {
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',
+      'cloudinary',
+      'handlebars',
+      '@sentry/nextjs',
+      '@uppy/core',
+      '@uppy/dashboard',
+      '@uppy/xhr-upload',
     ],
   },
   images: {

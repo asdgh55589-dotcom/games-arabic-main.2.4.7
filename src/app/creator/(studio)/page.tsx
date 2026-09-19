@@ -1,12 +1,23 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import * as React from 'react'
-import { ChartAreaInteractive } from '@/components/creator-dashboard/chart-area-interactive'
 import { DataTable, schema } from '@/components/creator-dashboard/data-table'
 import { SectionCards } from '@/components/creator-dashboard/section-cards'
 import { SiteHeader } from '@/components/creator-dashboard/site-header'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import type { z } from 'zod'
+
+// Code-split recharts: the interactive area chart loads only with the studio
+// dashboard instead of joining the initial studio bundle.
+const ChartAreaInteractive = dynamic(
+  () =>
+    import('@/components/creator-dashboard/chart-area-interactive').then((m) => ({
+      default: m.ChartAreaInteractive,
+    })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full rounded-lg" /> },
+)
 
 type Row = z.infer<typeof schema>
 

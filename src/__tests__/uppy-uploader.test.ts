@@ -76,10 +76,11 @@ describe('component wiring (static)', () => {
     expect(componentSrc).not.toMatch(/onUploadProgress/)
   })
 
-  it('selects ar_SA default / en_US by studio locale and destroys on unmount', () => {
+  it('loads one locale on demand by studio locale and destroys on unmount', () => {
     expect(componentSrc).toMatch(/ar_SA/)
     expect(componentSrc).toMatch(/en_US/)
-    expect(componentSrc).toMatch(/locale === 'ar' \? ar_SA : en_US/)
+    expect(componentSrc).toMatch(/locale === 'ar' \? 'ar_SA' : 'en_US'/)
+    expect(componentSrc).not.toMatch(/from '@uppy\/locales/)
     expect(componentSrc).toMatch(/uppy\.destroy\(\)/)
   })
 

@@ -1,10 +1,9 @@
 'use client'
 
 import Uppy from '@uppy/core'
+import type { Locale } from '@uppy/core/utils'
 import Dashboard from '@uppy/dashboard'
 import XHRUpload from '@uppy/xhr-upload'
-import ar_SA from '@uppy/locales/lib/ar_SA'
-import en_US from '@uppy/locales/lib/en_US'
 import '@uppy/core/css/style.css'
 import '@uppy/dashboard/css/style.css'
 import * as React from 'react'
@@ -63,12 +62,26 @@ export function IaUploader({
   const propsRef = React.useRef({ modId, modSlug, title, mode })
   propsRef.current = { modId, modSlug, title, mode }
 
+  // Uppy locale strings load on demand (one locale chunk, not both).
+  // Uppy falls back to built-in English until the strings arrive.
+  const [uppyStrings, setUppyStrings] = React.useState<Locale | undefined>(undefined)
+  React.useEffect(() => {
+    let live = true
+    setUppyStrings(undefined)
+    import(`@uppy/locales/lib/${locale === 'ar' ? 'ar_SA' : 'en_US'}`).then((m) => {
+      if (live) setUppyStrings((m.default ?? m) as Locale)
+    })
+    return () => {
+      live = false
+    }
+  }, [locale])
+
   React.useEffect(() => {
     const pending = new Map<string, Promise<IaUploadedFile | null>>()
 
     const uppy = new Uppy({
       autoProceed: false,
-      locale: locale === 'ar' ? ar_SA : en_US,
+      locale: uppyStrings,
       restrictions: {
         maxFileSize: maxFileSize ?? undefined,
         maxNumberOfFiles,
@@ -243,7 +256,7 @@ export function IaUploader({
       uppy.destroy()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale, maxFileSize, maxNumberOfFiles])
+  }, [locale, uppyStrings, maxFileSize, maxNumberOfFiles])
 
   return <div ref={targetRef} dir={locale === 'ar' ? 'rtl' : 'ltr'} />
 }
