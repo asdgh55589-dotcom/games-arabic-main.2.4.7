@@ -17,10 +17,12 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { BrokenCard } from '@/components/broken-card'
 import { CreatorBadge } from '@/components/creator-badge'
 import { ReportDialog } from '@/components/report-dialog'
 import { RoleBadge } from '@/components/role-badge'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { highlightMatch } from '@/components/search-highlight'
 import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
 import { TierBadge } from '@/components/tier-badge'
@@ -46,8 +48,22 @@ interface ModCardProps {
   query?: string
 }
 
-export function ModCard({ mod, priority = false, variant = 'full', query }: ModCardProps) {
-  const badges = getModBadges(mod)
+function formatArDate(value: string | Date): string {
+  return new Date(value).toLocaleDateString('ar-EG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCardProps) {
+  const badges = useMemo(() => getModBadges(mod), [mod])
+  const createdStr = useMemo(() => formatArDate(mod.createdAt), [mod.createdAt])
+  const updatedStr = useMemo(() => formatArDate(mod.updatedAt), [mod.updatedAt])
+  const showUpdated = useMemo(
+    () => new Date(mod.updatedAt).getTime() !== new Date(mod.createdAt).getTime(),
+    [mod.updatedAt, mod.createdAt],
+  )
   const platformKey = mod.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
   const router = useRouter()
@@ -256,14 +272,10 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
                   </span>
                   <span className="text-border">|</span>
                   <span className="text-xs font-bold leading-[1.3] text-foreground">
-                    {new Date(mod.createdAt).toLocaleDateString('ar-EG', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    {createdStr}
                   </span>
                 </div>
-                {new Date(mod.updatedAt).getTime() !== new Date(mod.createdAt).getTime() && (
+                {showUpdated && (
                   <div className="flex items-center gap-1">
                     <History className="h-3.5 w-3.5 text-muted-foreground/70" />
                     <span className="w-12 shrink-0 text-[11px] leading-[1.3] text-muted-foreground">
@@ -271,11 +283,7 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
                     </span>
                     <span className="text-border">|</span>
                     <span className="text-xs font-bold leading-[1.3] text-foreground">
-                      {new Date(mod.updatedAt).toLocaleDateString('ar-EG', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {updatedStr}
                     </span>
                   </div>
                 )}
@@ -374,11 +382,7 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
                   </span>
                   <span className="text-border">|</span>
                   <span className="text-xs font-bold leading-[1.3] text-foreground">
-                    {new Date(mod.createdAt).toLocaleDateString('ar-EG', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    {createdStr}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -388,11 +392,7 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
                   </span>
                   <span className="text-border">|</span>
                   <span className="text-xs font-bold leading-[1.3] text-foreground">
-                    {new Date(mod.updatedAt).toLocaleDateString('ar-EG', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    {updatedStr}
                   </span>
                 </div>
                 {mod.translationTeam && (
@@ -453,6 +453,18 @@ export function ModCard({ mod, priority = false, variant = 'full', query }: ModC
         </div>
       </article>
     </Link>
+  )
+}
+
+const MemoModCardInner = memo(ModCardInner)
+
+// Per-card error isolation (one bad row can no longer white-screen the grid)
+// + memo (grid toggles skip cards whose mod object is unchanged).
+export function ModCard(props: ModCardProps) {
+  return (
+    <ErrorBoundary label="mod card" fallback={<BrokenCard />}>
+      <MemoModCardInner {...props} />
+    </ErrorBoundary>
   )
 }
 
