@@ -5,6 +5,7 @@ import { FileArchive, Plus, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { TrustedLinkHint } from '@/components/trusted-link-hint'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -324,7 +325,8 @@ export function ModFormFiles(p: Props) {
                       const info = link.url ? getPlatformInfo(link.url) : null
                       const isIaLink = link.url.includes('archive.org/download/')
                       return (
-                        <div key={j} className="flex items-center gap-2">
+                        <div key={j} className="space-y-1">
+                          <div className="flex items-center gap-2">
                           {isIaLink ? (
                             <Badge variant="secondary" className="h-9 shrink-0 place-items-center px-2 text-[11px]">
                               {t.iaBadge}
@@ -373,6 +375,8 @@ export function ModFormFiles(p: Props) {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          </div>
+                          <TrustedLinkHint url={link.url} />
                         </div>
                       )
                     })}

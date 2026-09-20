@@ -12,10 +12,15 @@ import {
   HardDrive,
   PackageX,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import {
+  DEFAULT_WARNING_MESSAGE,
+  isTrustedDownloadUrl,
+  type TrustedHostService,
+} from '@/lib/download-trust'
 import { formatArabicDate, timeAgo } from '@/lib/format'
 import type { ModFile } from '@/lib/types'
 
@@ -30,6 +35,24 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
   )
   const [warningUrl, setWarningUrl] = useState<string | null>(null)
   const [warningLinkId, setWarningLinkId] = useState<string | null>(null)
+  const [warningSize, setWarningSize] = useState<string | null>(null)
+  const [trust, setTrust] = useState<{
+    services: TrustedHostService[]
+    warningMessage: string
+  } | null>(null)
+
+  // قائمة الخدمات الموثوقة + رسالة التحذير (تُدار من لوحة الأدمن).
+  useEffect(() => {
+    fetch('/api/download-settings')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const data = json?.data
+        if (data && Array.isArray(data.services) && typeof data.warningMessage === 'string') {
+          setTrust({ services: data.services, warningMessage: data.warningMessage })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -40,9 +63,28 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
     })
   }
 
-  const handleDownloadClick = (url: string, linkId: string) => {
+  const openDownload = async (url: string, linkId: string) => {
+    try {
+      const response = await fetch(`/api/mods/${modSlug}/download/${linkId}`)
+      if (!response.ok) throw new Error('Download failed')
+      const json = await response.json()
+      const finalUrl = json?.data?.url || url
+      window.open(finalUrl, '_blank', 'noopener,noreferrer')
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const handleDownloadClick = (url: string, linkId: string, fileSize: string) => {
+    // رابط موثوق (خدمات التخزين المعتمدة) → تحميل مباشر بدون أي رسالة.
+    if (trust && isTrustedDownloadUrl(url, trust.services)) {
+      openDownload(url, linkId)
+      return
+    }
+    // أي رابط آخر (روابط مختصرة/إعلانات) → نافذة تحذير.
     setWarningUrl(url)
     setWarningLinkId(linkId)
+    setWarningSize(fileSize)
   }
 
   const confirmDownload = async () => {
@@ -50,22 +92,18 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
     const fallbackUrl = warningUrl
     const linkId = warningLinkId
     try {
-      const response = await fetch(`/api/mods/${modSlug}/download/${linkId}`)
-      if (!response.ok) throw new Error('Download failed')
-      const json = await response.json()
-      const url = json?.data?.url || fallbackUrl
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } catch {
-      window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
+      await openDownload(fallbackUrl, linkId)
     } finally {
       setWarningUrl(null)
       setWarningLinkId(null)
+      setWarningSize(null)
     }
   }
 
   const cancelDownload = () => {
     setWarningUrl(null)
     setWarningLinkId(null)
+    setWarningSize(null)
   }
 
   if (!files || files.length === 0) {
@@ -173,7 +211,13 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                         return (
                           <button
                             key={link.id}
-                            onClick={() => handleDownloadClick(link.url, link.id)}
+                            onClick={() =>
+                              handleDownloadClick(
+                                link.url,
+                                link.id,
+                                `${file.fileSize} .${file.fileFormat}`,
+                              )
+                            }
                             className="group flex items-center gap-3 rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 text-right transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/5"
                           >
                             <div
@@ -218,9 +262,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                   <AlertTriangle className="h-5 w-5 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">تحذير — موقع خارجي</h3>
+                  <h3 className="text-sm font-bold text-foreground">تنبيه — رابط إعلانات</h3>
                   <p className="text-[11px] text-muted-foreground/60">
-                    أنت على وشك الانتقال لموقع خارجي
+                    هذا الرابط ليس من خدمات التخزين المعتمدة
                   </p>
                 </div>
               </div>
@@ -228,9 +272,18 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
 
             {/* المحتوى */}
             <div className="px-5 py-4">
-              <p className="mb-3 text-[11px] text-muted-foreground/70">
-                نحن غير مسؤولين عن محتوى الموقع الخارجي. تأكد من ثقتك بالموقع قبل المتابعة.
+              <p className="mb-3 text-xs font-bold leading-relaxed text-amber-100">
+                {trust?.warningMessage || DEFAULT_WARNING_MESSAGE}
               </p>
+
+              {warningSize && (
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/30 bg-background/50 px-3 py-2">
+                  <HardDrive className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <p className="text-[11px] font-bold text-foreground">
+                    الحجم المتوقع للملف: <span className="tabular-nums">{warningSize}</span>
+                  </p>
+                </div>
+              )}
 
               <div className="mb-5 rounded-lg border border-border/30 bg-background/50 p-3">
                 <p className="break-all text-[10px] font-mono leading-relaxed text-primary/80">

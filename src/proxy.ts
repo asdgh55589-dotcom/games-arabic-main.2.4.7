@@ -15,6 +15,12 @@
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import {
+  ADMIN_PAGES_FLAT,
+  apiPathToAdminPath,
+  findPageForPath,
+  isPathAllowedByPagesClaim,
+} from '@/lib/admin-pages'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { logger } from '@/lib/logger'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
@@ -41,6 +47,7 @@ interface RoleCookiePayload {
   tvVerified: boolean
   mfaVerified?: boolean
   onboarded?: boolean // ob claim — absent on legacy cookies (fail-open)
+  pages?: string[] // صلاحيات الصفحات المخصصة — غائب = النظام الافتراضي حسب الرتبة
 }
 
 /**
@@ -62,6 +69,9 @@ export async function getRoleFromCookie(
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
     const mfaVerified = payload.mfa === true
     const onboarded = typeof payload.ob === 'boolean' ? (payload.ob as boolean) : undefined
+    const pages = Array.isArray(payload.pages)
+      ? (payload.pages as unknown[]).filter((k): k is string => typeof k === 'string')
+      : undefined
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
     // الأمن الحقيقي في getSession() عبر DB — Edge هنا دفاع إضافي فقط، لذا FAIL-OPEN عند عدم وجود Redis
@@ -103,7 +113,7 @@ export async function getRoleFromCookie(
       tvVerified = false
     }
 
-    return { userId, role, tv, tvVerified, mfaVerified, onboarded }
+    return { userId, role, tv, tvVerified, mfaVerified, onboarded, pages }
   } catch (err) {
     logger.warn('[middleware] invalid role cookie', err)
     fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
@@ -483,10 +493,33 @@ export async function proxy(req: NextRequest) {
       })
       return withRequestId(redirectRes, requestId)
     }
-    // Audit D.2: MFA enforced for staff pages. /admin/security stays
-    // exempt so unenrolled staff can enroll; verify re-issues the cookie
+    // صلاحيات الصفحات المخصصة — claim موجود + غير مالك ⇒ لازم تطابق.
+    // غير المسموح يُحوَّل لأول صفحة مسموحة (المستخدم مصادق عليه — ليست مشكلة دخول).
+    if (
+      rolePayload.role !== 'owner' &&
+      Array.isArray(rolePayload.pages) &&
+      rolePayload.pages.length > 0 &&
+      !isPathAllowedByPagesClaim(pathname, rolePayload.pages, rolePayload.role as string)
+    ) {
+      const allowedHrefs = ADMIN_PAGES_FLAT.filter((d) =>
+        (rolePayload.pages as string[]).includes(d.key),
+      ).map((d) => d.href)
+      const target = allowedHrefs[0] ?? '/admin/login'
+      const redirectRes = NextResponse.redirect(new URL(target, req.url))
+      copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', 'page_forbidden')
+      return withRequestId(redirectRes, requestId)
+    }
+    // Audit D.2: MFA enforced for staff pages ONLY when explicitly enabled.
+    // Default OFF — set MFA_ENFORCED=1 to require 2FA. /admin/security stays
+    // exempt so staff can enroll; verify re-issues the cookie
     // with mfa=true (see mfa/verify route).
-    if (!rolePayload.mfaVerified && pathname !== '/admin/security' && !pathname.startsWith('/admin/security')) {
+    if (
+      process.env.MFA_ENFORCED === '1' &&
+      !rolePayload.mfaVerified &&
+      pathname !== '/admin/security' &&
+      !pathname.startsWith('/admin/security')
+    ) {
       const securityUrl = new URL('/admin/security', req.url)
       securityUrl.searchParams.set('mfa_required', '1')
       const redirectRes = NextResponse.redirect(securityUrl)
@@ -522,9 +555,29 @@ export async function proxy(req: NextRequest) {
         requestId,
       )
     }
-    // Audit D.2: MFA enforced for staff APIs (mfa/* stays open for the
-    // verify/login handshake itself).
-    if (!rolePayload.mfaVerified && !pathname.startsWith('/api/auth/mfa')) {
+    // صلاحيات الصفحات المخصصة على الـ API (‎/api/admin/X ← صفحة ‎/admin/X).
+    if (
+      rolePayload.role !== 'owner' &&
+      Array.isArray(rolePayload.pages) &&
+      rolePayload.pages.length > 0
+    ) {
+      const adminPath = apiPathToAdminPath(pathname)
+      const pageDef = adminPath ? findPageForPath(adminPath) : null
+      if (!pageDef || !(rolePayload.pages as string[]).includes(pageDef.key)) {
+        return withRequestId(
+          NextResponse.json({ error: 'غير مصرح لهذه الصفحة', code: 'PAGE_FORBIDDEN' }, { status: 403 }),
+          requestId,
+        )
+      }
+    }
+    // Audit D.2: MFA enforced for staff APIs ONLY when explicitly enabled
+    // (MFA_ENFORCED=1, default OFF). mfa/* stays open for the
+    // verify/login handshake itself.
+    if (
+      process.env.MFA_ENFORCED === '1' &&
+      !rolePayload.mfaVerified &&
+      !pathname.startsWith('/api/auth/mfa')
+    ) {
       return withRequestId(
         NextResponse.json(
           { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },

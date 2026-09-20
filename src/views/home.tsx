@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AdSection } from '@/components/ad-section'
 import { CreatorLeaderboardCard } from '@/components/creator-leaderboard-card'
 import { HeroSlider } from '@/components/hero-slider'
@@ -138,6 +138,26 @@ export function HomePage() {
   const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
 
   const homeData = data?.data
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // Sticky متأخر: يقيس طول الشريط الفعلي ويظبط نقطة الوقفة تلقائياً —
+  // لو الشريط أطول من الشاشة يقف عند آخر قسم، ولو أقصر يقف تحت النافبار.
+  useEffect(() => {
+    const el = sidebarRef.current
+    if (!el) return
+    const update = () => {
+      const top = Math.min(60, window.innerHeight - el.offsetHeight - 16)
+      el.style.top = `${top}px`
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    window.addEventListener('resize', update)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [])
 
   const { data: teamsData, loading: teamsLoading } = useFetch<{ data: TeamSummary[] }>('/api/teams')
 
@@ -172,8 +192,11 @@ export function HomePage() {
             className="mx-auto flex max-w-[1840px] flex-col gap-6 py-4 px-4 lg:flex-row lg:gap-6 lg:px-4"
             dir="rtl"
           >
-            {/* ===== اليمين: الإعلانات فوق + الشريط الجانبي تحت ===== */}
-            <div className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0">
+            {/* ===== اليمين: الشريط الجانبي (sticky متأخر — نقطة الوقفة تُحسب تلقائياً) ===== */}
+            <div
+              ref={sidebarRef}
+              className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0 lg:sticky lg:top-[60px] lg:self-start"
+            >
               <AdSection />
               <SiteTeamCard />
               <CreatorLeaderboardCard />
@@ -203,9 +226,8 @@ export function HomePage() {
                 return sections.map((section) => {
                   const mods = homeData?.modsByPlatform?.[section.key] || []
                   const isEmpty = mods.length === 0
-                  // تم تعطيل الإخفاء — إظهار كل الأقسام حتى الفارغة (PS5/ANDROID) مع رسالة "لا توجد تعريبات"
-                  // const allEmpty = !loading && sections.every((s) => (homeData?.modsByPlatform?.[s.key] || []).length === 0)
-                  // if (isEmpty && !loading && !allEmpty) return null
+                  // إخفاء القسم الفارغ — لو ما فيش حاجة منشورة في القسم ما يظهرش
+                  if (isEmpty && !loading) return null
                   const showDivider = firstSectionRendered
                   firstSectionRendered = true
                   const Icon = getSectionIcon(section.icon)

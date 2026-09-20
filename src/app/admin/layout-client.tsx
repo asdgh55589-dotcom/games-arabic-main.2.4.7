@@ -19,6 +19,7 @@ import {
   Key,
   Layers,
   LayoutDashboard,
+  Link2,
   Loader2,
   LogOut,
   Megaphone,
@@ -45,6 +46,7 @@ import NextImage from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { findPageForPath } from '@/lib/admin-pages'
 import type { SessionUser } from '@/lib/auth'
 
 interface NavGroup {
@@ -133,6 +135,12 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/sessions', label: 'الجلسات النشطة', icon: Shield, adminOnly: true },
       { href: '/admin/scheduler', label: 'الجدولة', icon: Clock, adminOnly: true },
       { href: '/admin/quotas', label: 'حصص الرفع', icon: HardDrive, adminOnly: true },
+      {
+        href: '/admin/download-settings',
+        label: 'روابط التحميل الموثوقة',
+        icon: Link2,
+        adminOnly: true,
+      },
       { href: '/admin/backup', label: 'النسخ الاحتياطي', icon: Database, ownerOnly: true },
       { href: '/admin/settings', label: 'الإعدادات', icon: Settings, ownerOnly: true },
       { href: '/admin/audit', label: 'سجل النشاطات', icon: ScrollText, ownerOnly: true },
@@ -172,6 +180,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pendingCreatorCount, setPendingCreatorCount] = useState(0)
   const [pendingPublicationCount, setPendingPublicationCount] = useState(0)
   const [pendingModRequestsCount, setPendingModRequestsCount] = useState(0)
+  // الصفحات المخصصة لهذا الإداري (null = النظام الافتراضي حسب الرتبة).
+  const [allowedPages, setAllowedPages] = useState<string[] | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -221,6 +231,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     setMobileOpen(false)
   }, [pathname])
+
+  // الصفحات المخصصة للإداري الحالي (مرة واحدة بعد الدخول).
+  useEffect(() => {
+    if (!user || !['moderator', 'admin', 'manager', 'owner'].includes(user.role)) return
+    let cancelled = false
+    fetch('/api/admin/my-pages', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled) return
+        const pages = json?.data?.pages
+        setAllowedPages(Array.isArray(pages) && pages.length > 0 ? pages : null)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     // CRITICAL: Don't fetch if on login page
@@ -317,6 +344,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isItemVisible = (item: NavItem) => {
     if (item.ownerOnly && user.role !== 'owner') return false
     if (item.adminOnly && !['admin', 'manager', 'owner'].includes(user.role)) return false
+    // تخصيص الصفحات: المالك دائماً كامل، وغيره يُرشَّح حسب القائمة البيضاء.
+    if (user.role !== 'owner' && allowedPages && allowedPages.length > 0) {
+      const def = findPageForPath(item.href)
+      if (!def) return true
+      return allowedPages.includes(def.key)
+    }
     return true
   }
 

@@ -43,6 +43,8 @@ export function CreatorLeaderboardCard() {
       .finally(() => setLoading(false))
   }, [])
 
+  if (!loading && entries.length === 0) return null
+
   return (
     <div
       className="border-[3px] border-border bg-card shadow-[4px_4px_0_0_var(--border)]"

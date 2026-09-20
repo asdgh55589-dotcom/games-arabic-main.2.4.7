@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تصميم مقترح للصفحة الرئيسية - Games Arabic</title>
+    <style>
+        /* متغيرات ألوان متوافقة مع الثيم الداكن الحالي */
+        :root {
+            --background: #0f172a; /* داكن أزرق للغاية */
+            --foreground: #f8fafc; /* أبيض casi */
+            --primary: #0ea5e9; /* أزرق سماوي */
+            --primary-foreground: #ffffff;
+            --secondary: #64748b; /* رمادي أزرق */
+            --muted: #334155;
+            --muted-foreground: #94a3b8;
+            --border: #475569;
+            --card: #1e293b;
+            --card-foreground: #f8fafc;
+            --radius: 0.5rem;
+        }
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+        }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        header { padding: 2rem; text-align: center; }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        p.lead { font-size: 1.25rem; color: var(--muted-foreground); max-width: 600px; margin: 0 auto 2rem; }
+        .hero { 
+            background: linear-gradient(135deg, var(--background), #1e293b);
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230ea5e9"/><path d="M0,0 L100,100 M100,0 L0,100" stroke="%23ffffff" stroke-width="2" opacity="0.05"/></svg>') repeat;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+        .hero-content { max-width: 800px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero-buttons { margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid;
+            transition: all 0.2s ease;
+        }
+        .btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+        .btn-primary:hover { background: #0284c7; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,132,199,0.3); }
+        .btn-outline { background: transparent; color: var(--primary); border-color: var(--primary); }
+        .btn-outline:hover { background: rgba(14,165,233,0.1); }
+        .section { padding: 3rem 2rem; }
+        .section-title { font-size: 2rem; text-align: center; margin-bottom: 2rem; position: relative; }
+        .section-title::after {
+            content: "";
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--primary);
+            margin: 0.5rem auto 0;
+            border-radius: 2px;
+        }
+        .features { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .feature-icon { width: 48px; height: 48px; margin: 0 auto 1rem; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; }
+        .feature-card h3 { margin: 1rem 0 0.5rem; font-size: 1.25rem; }
+        .feature-card p { color: var(--muted-foreground); font-size: 0.95rem; }
+        .cta { background: #1e293b; padding: 4rem 2rem; text-align: center; margin-top: 3rem; }
+        .cta h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+        .cta .btn { margin: 0.5rem; }
+        footer { text-align: center; padding: 2rem; color: var(--muted-foreground); font-size: 0.9rem; border-top: 1px solid var(--border); margin-top: 3rem; }
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .hero { padding: 3rem 1rem; }
+            .section { padding: 2rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Games Arabic</h1>
+        <p class="lead">أكبر منصة عربية لتعريب الألعاب — حمل أحدث التعريبات وشارك مع مجتمع نشط من اللاعبين والمترجمين.</p>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h2>تعريب احترافي لكل الألعاب</h2>
+            <p>منصة موثوقة توفر تعريبات عالية الجودة لألعاب الكمبيوتر والكونسول، مع دعم مستمر ومجتمع يساعدك في كل خطوة.</p>
+            <div class="hero-buttons">
+                <a href="/explore" class="btn btn-primary">استعرض التعريبات</a>
+                <a href="/onboarding" class="btn btn-outline">ابدأ كمترجم</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">لماذا تختار Games Arabic?</h2>
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🎮</div>
+                <h3>مكتبة ضخمة</h3>
+                <p>آلاف التعريبات لألعاب متنوعة من جميع الأنواع والمنصات، محدثة باستمرار.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>مجتمع نشط</h3>
+                <p>تواصل مع مترجمين ولاعبين، اطلب مساعدة، وشارك خبراتك في التعريب.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>جودة مضمونة</h3>
+                <p>كل تعريب يمر بمراجعة دقيقة لضمان الدقة والسلامة من الأخطاء.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>تنزيلات سريعة</h3>
+                <p>خوادم سريعة لتنزيل الملفات دون انتظار، مع دعم للاستئناف.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" style="background: #1e293b;">
+        <h2 class="section-title" style="color: #f8fafc;">انضم الآن</h2>
+        <p style="color: #94a3b8; max-width: 600px; margin: 0 auto 2rem;">سواء كنت لاعبًا يبحث عن تعريبات أو مترجمًا يريد مشاركة عمله، نحن نرحب بك.</p>
+        <div class="hero-buttons">
+            <a href="/register" class="btn btn-primary">سجل حساب مجاني</a>
+            <a href="/login" class="btn btn-outline">تسجيل الدخول</a>
+        </div>
+    </section>
+
+    <footer>
+        © 2026 Games Arabic — جميع الحقوق محفوظة.<br>
+        <a href="/terms">شروط الاستخدام</a> | <a href="/privacy">سياسة الخصوصية</a>
+    </footer>
+</body>
+</html>

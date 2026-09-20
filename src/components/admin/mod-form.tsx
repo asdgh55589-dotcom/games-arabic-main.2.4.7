@@ -36,6 +36,7 @@ import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
 import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
+import { TrustedLinkHint } from '@/components/trusted-link-hint'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1254,7 +1255,8 @@ export default function ModForm({ modId }: ModFormProps) {
                     {file.links.map((link, j) => {
                       const info = link.url ? getPlatformInfo(link.url) : null
                       return (
-                        <div key={j} className="flex items-center gap-2">
+                        <div key={j} className="space-y-1">
+                          <div className="flex items-center gap-2">
                           <div
                             className="grid h-9 w-9 shrink-0 place-items-center rounded-md p-1.5 text-white"
                             style={{ backgroundColor: info?.color || '#4b5563' }}
@@ -1297,6 +1299,8 @@ export default function ModForm({ modId }: ModFormProps) {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          </div>
+                          <TrustedLinkHint url={link.url} />
                         </div>
                       )
                     })}

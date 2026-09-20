@@ -71,6 +71,8 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
         {sections.map((section) => {
           const mods = homeData?.modsByPlatform?.[section.key] || []
           const isEmpty = mods.length === 0
+          // إخفاء القسم الفارغ على الموبايل أيضاً
+          if (isEmpty && !loading) return null
           const Icon = getSectionIcon(section.icon)
           return (
             <section key={section.id} className="pt-2">

@@ -1,0 +1,171 @@
+/**
+ * Swiss Theme — design tokens + utilities, scoped to .swiss-scope.
+ *
+ * SCOPE NOTE: every rule lives under `.swiss-scope` (plus print rules)
+ * so the experimental preview can never leak into the production theme.
+ *
+ * Tokens:
+ *  bg #ffffff/#000000 · text #000000/#ffffff · secondary #525252/#a3a3a3
+ *  borders #e5e5e5/#262626 · hover bg #f5f5f5/#0a0a0a · accent #0066ff (sparingly)
+ * Spacing: 4/8/16/24/32/48/64/96 (8pt grid) · radius 0 (2px max)
+ * Type: 12/14/16/20/24/32/48/64 · weights 400/500/600/700
+ */
+
+.swiss-scope {
+  --swiss-bg: #ffffff;
+  --swiss-text: #000000;
+  --swiss-text-2: #525252;
+  --swiss-border: #e5e5e5;
+  --swiss-hover: #f5f5f5;
+  --swiss-mute: #a3a3a3;
+  --swiss-accent: #0066ff;
+
+  --swiss-xs: 4px;
+  --swiss-sm: 8px;
+  --swiss-md: 16px;
+  --swiss-lg: 24px;
+  --swiss-xl: 32px;
+  --swiss-2xl: 48px;
+  --swiss-3xl: 64px;
+  --swiss-4xl: 96px;
+
+  background: var(--swiss-bg);
+  color: var(--swiss-text);
+
+  /* Arabic-first stack: Cairo (self-hosted via next/font) → system → Plex fallback */
+  font-family:
+    var(--font-cairo),
+    'IBM Plex Sans Arabic',
+    'Tajawal',
+    'Cairo',
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+
+  /* Arabic body rhythm */
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .swiss-scope {
+  --swiss-bg: #000000;
+  --swiss-text: #ffffff;
+  --swiss-text-2: #a3a3a3;
+  --swiss-border: #262626;
+  --swiss-hover: #0a0a0a;
+  --swiss-mute: #525252;
+}
+
+/* Headings stay tight even in RTL Arabic */
+.swiss-scope h1,
+.swiss-scope h2,
+.swiss-scope h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* Mono elements: file paths, indices, stats */
+.swiss-scope .font-mono,
+.swiss-scope code,
+.swiss-scope kbd,
+.swiss-scope time {
+  font-family:
+    var(--font-geist-mono),
+    'JetBrains Mono',
+    ui-monospace,
+    monospace;
+}
+
+/* Subtle hairline grid backdrop for the hero (no color, no image) */
+.swiss-scope .swiss-grid-bg {
+  background-image:
+    linear-gradient(to left, rgb(0 0 0 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+}
+
+.dark .swiss-scope .swiss-grid-bg {
+  background-image:
+    linear-gradient(to left, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+}
+
+/* Accessible focus ring — 2px solid, never removed */
+.swiss-scope :focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.dark .swiss-scope :focus-visible {
+  outline-color: #fff;
+}
+
+/* Thin minimal spinner (if ever needed in preview) */
+.swiss-scope .swiss-spinner {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--swiss-border);
+  border-top-color: var(--swiss-text);
+  border-radius: 9999px;
+  animation: swiss-spin 0.8s linear infinite;
+}
+
+@keyframes swiss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton — subtle pulse, monochrome */
+.swiss-scope .swiss-skeleton {
+  background: var(--swiss-hover);
+  animation: swiss-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes swiss-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Logical-property helpers (RTL-safe by construction) */
+.swiss-scope .swiss-rule {
+  height: 1px;
+  background: var(--swiss-border);
+}
+
+/* Respect reduced motion — kill the (already minimal) animation */
+@media (prefers-reduced-motion: reduce) {
+  .swiss-scope *,
+  .swiss-scope *::before,
+  .swiss-scope *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print: black on white, links underlined, no dark backgrounds */
+@media print {
+  .swiss-scope {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .swiss-scope .swiss-grid-bg,
+  .swiss-scope header {
+    display: none !important;
+  }
+  .swiss-scope a {
+    text-decoration: underline;
+    color: #000 !important;
+  }
+  .swiss-scope section {
+    break-inside: avoid;
+  }
+}

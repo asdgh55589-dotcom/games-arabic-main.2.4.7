@@ -477,7 +477,7 @@ export function ModDetailPage() {
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}
                     <div
-                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-10 sm:pt-12 md:pt-14 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
+                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
                       style={{
                         maskImage:
                           'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
@@ -497,32 +497,48 @@ export function ModDetailPage() {
                           {displaySummary}
                         </p>
                       )}
-                      {/* 3j — version + rating, 3d — category + section */}
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {/* 3j — version + rating, 3d — category + section — سطر واحد بدون لف */}
+                      <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
                         <Badge
                           variant="outline"
-                          className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums"
+                          className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
                         >
                           v{mod.version}
                         </Badge>
                         {ratingText && (
                           <Badge
                             variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-xs font-black tabular-nums"
+                            className="border-amber-500/30 bg-amber-500/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
                           >
                             ★ {ratingText}
                           </Badge>
                         )}
                         {mod.category?.name && (
-                          <Badge variant="secondary" className="text-xs font-bold">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs font-bold shrink-0 whitespace-nowrap"
+                          >
                             {mod.category.name}
                           </Badge>
                         )}
                         {(mod as any).sectionRelation?.name && (
-                          <Badge variant="secondary" className="text-xs font-bold">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs font-bold shrink-0 whitespace-nowrap"
+                          >
                             {(mod as any).sectionRelation.name}
                           </Badge>
                         )}
+                        {tags.length > 0 &&
+                          tags.map((t) => (
+                            <Badge
+                              key={t}
+                              variant="outline"
+                              className="text-[11px] font-bold shrink-0 whitespace-nowrap"
+                            >
+                              #{t}
+                            </Badge>
+                          ))}
                       </div>
                       {/* 3g — scheduled publishing indicator (owner/admin only) */}
                       {showScheduled && (
@@ -534,16 +550,7 @@ export function ModDetailPage() {
                           </span>
                         </div>
                       )}
-                      {/* tags */}
-                      {tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          {tags.map((t) => (
-                            <Badge key={t} variant="outline" className="text-[11px] font-bold">
-                              #{t}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      {/* tags مدمجة في سطر الأوسمة فوق */}
                       {(
                         mod as unknown as {
                           isOriginalWork?: boolean
@@ -590,7 +597,7 @@ export function ModDetailPage() {
                       )}
 
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
-                      <div className="mt-6 sm:mt-8 md:mt-10 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
+                      <div className="mt-4 sm:mt-5 md:mt-6 pb-2 sm:pb-4 lg:pb-6 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
                         {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem
                             key={item.key}
@@ -1126,7 +1133,7 @@ function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string
     <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">
-        {label}
+        {label}:
       </span>
       <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
       <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>

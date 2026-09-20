@@ -153,6 +153,7 @@ model User {
   sessions               Session[]
   passwordResetTokens    PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  staffPageAccess        StaffPageAccess[]
   sentTeamInvitations    TeamInvitation[]      @relation("SentTeamInvitations")
   receivedTeamInvitations TeamInvitation[]
 
@@ -957,6 +958,20 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action, createdAt])
+}
+
+// ===== صلاحيات صفحات لوحة الأدمن (قائمة بيضاء لكل إداري) =====
+// من ليس له أي صفوف هنا يعمل بالنظام الافتراضي حسب رتبته (توافق خلفي).
+// أي تعديل يستلزم تسجيل دخول جديد (عبر invalidateUserSessions).
+model StaffPageAccess {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      String // مفتاح الصفحة من سجل ADMIN_PAGES (مثل mods, teams, series)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, page])
+  @@index([userId])
 }
 
 // ===== إعدادات الموقع =====

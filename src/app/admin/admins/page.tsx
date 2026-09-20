@@ -102,7 +102,7 @@ export default async function AdminsPage({ searchParams }: PageProps) {
       where: {
         entity: 'user',
         action: {
-          in: ['STAFF_CREATED', 'PROMOTED', 'DEMOTED', 'ROLE_CHANGED', 'CREDENTIALS_UPDATED'],
+          in: ['STAFF_CREATED', 'PROMOTED', 'DEMOTED', 'ROLE_CHANGED', 'CREDENTIALS_UPDATED', 'PAGES_UPDATED'],
         },
       },
       orderBy: { createdAt: 'desc' },

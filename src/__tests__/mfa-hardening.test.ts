@@ -1,7 +1,7 @@
 /**
  * Audit D.2 MFA hardening: no hardcoded fallback secret, real AES-256-GCM
  * for TOTP secrets at rest (env-derived key, legacy base64 readable),
- * proxy MFA enforcement active for /admin* + /api/admin*.
+ * proxy MFA enforcement present but OPT-IN via MFA_ENFORCED=1 (default OFF).
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -66,11 +66,17 @@ describe('TOTP secret encryption (AES-256-GCM)', () => {
   })
 })
 
-describe('proxy MFA enforcement (static)', () => {
-  it('admin pages redirect unverified staff to setup (not commented)', () => {
+describe('proxy MFA enforcement (static, opt-in)', () => {
+  it('admin pages redirect unverified staff to setup when MFA_ENFORCED=1 (not commented)', () => {
     const proxy = read('proxy.ts')
+    expect(proxy).toMatch(/MFA_ENFORCED/)
     expect(proxy).toMatch(/mfa_required/)
     expect(proxy).not.toMatch(/\/\/\s*if\s*\(!rolePayload\.mfaVerified/)
+  })
+
+  it('enforcement is OFF by default (opt-in flag)', () => {
+    const proxy = read('proxy.ts')
+    expect(proxy).toMatch(/MFA_ENFORCED === '1'/)
   })
 
   it('admin API rejects unverified callers with MFA_REQUIRED (not commented)', () => {

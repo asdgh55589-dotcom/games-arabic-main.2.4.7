@@ -25,6 +25,7 @@ import {
   type StatItem,
 } from '@/components/admin/shared/AdminDataTable'
 import { UserActions } from '@/components/admin/shared/UserActions'
+import { StaffPagesButton } from '@/components/admin/admins/StaffPagesButton'
 import { RoleBadge } from '@/components/role-badge'
 import { TierBadge } from '@/components/tier-badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -301,6 +302,11 @@ export function AdminsClient({
             currentUser={currentUser as never}
             onActionComplete={() => router.refresh()}
           />
+          <StaffPagesButton
+            user={u as never}
+            currentUserRole={currentUser.role}
+            onSaved={() => router.refresh()}
+          />
         </div>
       ),
       width: '120px',
@@ -460,6 +466,11 @@ export function AdminsClient({
                     user={user as never}
                     currentUser={currentUser as never}
                     onActionComplete={() => router.refresh()}
+                  />
+                  <StaffPagesButton
+                    user={user as never}
+                    currentUserRole={currentUser.role}
+                    onSaved={() => router.refresh()}
                   />
                 </div>
               </div>

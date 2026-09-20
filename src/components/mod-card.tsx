@@ -19,13 +19,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { BrokenCard } from '@/components/broken-card'
-import { CreatorBadge } from '@/components/creator-badge'
 import { ReportDialog } from '@/components/report-dialog'
-import { RoleBadge } from '@/components/role-badge'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { highlightMatch } from '@/components/search-highlight'
 import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
-import { TierBadge } from '@/components/tier-badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -359,16 +356,6 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
                   )}
                   <span className="text-[11px] font-bold text-foreground flex flex-wrap items-center gap-1">
                     {mod.author.username}
-                    <RoleBadge role={mod.author.role} size="sm" />
-                    <TierBadge tier={mod.author.tier} role={mod.author.role} size="sm" />
-                    <CreatorBadge
-                      role={mod.author.role}
-                      specialRoles={mod.author.specialRoles}
-                      size={12}
-                    />
-                  </span>
-                  <span className="ms-auto text-[10px] font-bold text-amber-400">
-                    عرض ملف المؤلف
                   </span>
                 </span>
               )}

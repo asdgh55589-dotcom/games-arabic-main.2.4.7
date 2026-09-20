@@ -22,7 +22,7 @@
 import { jwtVerify, SignJWT } from 'jose'
 import type { NextRequest, NextResponse } from 'next/server'
 import { hasRoleAtLeast } from '@/lib/roles'
-
+import { ADMIN_PAGES_FLAT } from './admin-pages'
 // Re-export for use in other modules
 export { jwtVerify }
 
@@ -252,6 +252,23 @@ export async function setRoleCookie(
   if (tokenVersion !== undefined) payload.tv = tokenVersion
   if (mfaVerified) payload.mfa = true
 
+  // صلاحيات الصفحات المخصصة — تُقرأ من DB عند كل إصدار للكوكي (وتُبطل معه عبر
+  // invalidateUserSessions عند أي تغيير). غياب الصفوف = النظام الافتراضي حسب
+  // الرتبة (لا claim) — توافق خلفي كامل مع الكوكيز القديمة.
+  if (role !== 'owner' && ['moderator', 'admin', 'manager'].includes(role)) {
+    try {
+      const validKeys = new Set(ADMIN_PAGES_FLAT.map((d) => d.key))
+      const rows = await db.staffPageAccess.findMany({
+        where: { userId },
+        select: { page: true },
+      })
+      const keys = [...new Set(rows.map((r) => r.page))].filter((k) => validKeys.has(k))
+      if (keys.length > 0) payload.pages = keys
+    } catch {
+      // best-effort: بدون claim يعمل النظام الافتراضي حسب الرتبة
+    }
+  }
+
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -267,6 +284,16 @@ export async function setRoleCookie(
     maxAge: ROLE_COOKIE_DURATION,
     domain: process.env.COOKIE_DOMAIN || undefined,
   })
+
+  // Warm the Edge tv cache so strictTv admin checks pass immediately after login.
+  // (Previously only invalidateUserSessions warmed it → fresh logins bounced with token_check_failed.)
+  if (tokenVersion !== undefined) {
+    try {
+      await setTokenVersionCache(userId, tokenVersion)
+    } catch {
+      // best-effort: member paths verify via DB (fail-open)
+    }
+  }
 }
 
 /** مسح الـ role cookie — يجب أن يطابق EXACT نفس خيارات setRoleCookie */
