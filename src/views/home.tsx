@@ -134,7 +134,7 @@ const FALLBACK_SECTIONS: SectionItem[] = [
 
 export function HomePage() {
   useDocumentTitle(null)
-  const { data, loading } = useFetch<{ data: HomeData }>('/api/home')
+  const { data, loading, showSkeleton } = useFetch<{ data: HomeData }>('/api/home')
   const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
 
   const homeData = data?.data
@@ -158,7 +158,7 @@ export function HomePage() {
         <div dir="rtl" className="overflow-x-clip">
           <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
           {/* ===== Hero Slider — شريط متحرك يعرض أحدث التعريبات ===== */}
-          {loading ? (
+          {showSkeleton ? (
             <div className="h-[clamp(360px,52vh,580px)] w-full animate-pulse bg-secondary" />
           ) : homeData?.latestMods && homeData.latestMods.length > 0 ? (
             <HeroSlider slides={homeData.latestMods} />
@@ -177,7 +177,7 @@ export function HomePage() {
               <AdSection />
               <SiteTeamCard />
               <CreatorLeaderboardCard />
-              {loading ? (
+              {showSkeleton ? (
                 <div className="space-y-4">
                   <div className="h-64 animate-pulse rounded-lg bg-secondary" />
                   <div className="h-64 animate-pulse rounded-lg bg-secondary" />
@@ -240,7 +240,7 @@ export function HomePage() {
                         </Button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5">
-                        {loading ? (
+                        {showSkeleton ? (
                           Array.from({ length: 10 }).map((_, i) => <ModCardSkeleton key={i} />)
                         ) : isEmpty ? (
                           <div className="col-span-full py-8 text-center text-sm text-muted-foreground">

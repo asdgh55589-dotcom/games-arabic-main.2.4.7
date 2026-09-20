@@ -133,23 +133,20 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   )
   const filteredRelated = relatedData?.data?.filter((m) => m.id !== mod.id).slice(0, 4) || []
 
-  const navUrl = useMemo(() => {
-    if (!mod?.game?.slug) return null
-    return `/api/games/${mod.game.slug}/mods?sort=oldest&limit=100`
-  }, [mod?.game?.slug])
-  const { data: navData } = useFetch<PaginatedModsResponse>(navUrl, [navUrl])
-  const { prevMod, nextMod } = useMemo(() => {
-    if (!navData?.data || !mod)
-      return { prevMod: null as ModSummary | null, nextMod: null as ModSummary | null }
-    const idx = navData.data.findIndex((m) => m.id === mod.id)
-    if (idx === -1) return { prevMod: null, nextMod: null }
-    const len = navData.data.length
-    if (len <= 1) return { prevMod: null, nextMod: null }
-    return {
-      prevMod: navData.data[(idx - 1 + len) % len],
-      nextMod: navData.data[(idx + 1) % len],
-    }
-  }, [navData, mod])
+  // Neighbor navigation via the lightweight endpoint (2 rows, circular).
+  interface NeighborLink {
+    slug: string
+    name: string
+  }
+  const neighborsUrl = useMemo(() => {
+    if (!mod?.slug) return null
+    return `/api/mods/${mod.slug}/neighbors`
+  }, [mod?.slug])
+  const { data: neighborsData } = useFetch<{
+    data: { previous: NeighborLink | null; next: NeighborLink | null }
+  }>(neighborsUrl, [neighborsUrl])
+  const prevMod = neighborsData?.data?.previous ?? null
+  const nextMod = neighborsData?.data?.next ?? null
 
   useEffect(() => {
     if (!mod?.slug) return

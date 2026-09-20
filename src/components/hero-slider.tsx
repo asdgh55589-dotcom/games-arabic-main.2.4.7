@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP, type PlatformKey } from '@/lib/constants/platforms'
+import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import type { ModSummary } from '@/lib/types'
 
 /** Derive a 3-stop palette from a single brand color for hero gradients. */
@@ -107,9 +108,11 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             src={slide.imageUrl}
             alt={slide.name}
             fill
-            priority
+            priority={active === 0}
             sizes="100vw"
-            quality={100}
+            quality={75}
+            placeholder="blur"
+            blurDataURL={BLUR_PLACEHOLDER}
             className="object-cover"
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }

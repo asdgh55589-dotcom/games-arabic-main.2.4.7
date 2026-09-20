@@ -6,11 +6,9 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { Footer } from '@/components/footer'
 import { Navbar } from '@/components/navbar'
 import { ScrollToTop } from '@/components/scroll-to-top'
-import { useAuth } from '@/contexts/auth-context'
 import { BookmarksProvider } from '@/contexts/bookmarks-context'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
   const pathname = usePathname()
   const isAdmin = pathname?.startsWith('/admin')
   // Creator studio renders its own standalone shell (official dashboard-01):
@@ -34,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           تخطي إلى المحتوى الرئيسي
         </a>
-        <Navbar key={user?.username} />
+        <Navbar />
         <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
           <ErrorBoundary label="this page">{children}</ErrorBoundary>
         </main>

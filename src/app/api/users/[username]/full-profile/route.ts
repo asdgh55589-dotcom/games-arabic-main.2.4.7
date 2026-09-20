@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { calculateUserTier } from '@/lib/tier-engine'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -149,10 +150,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         })
       : Promise.resolve(null)
 
-    const [[followersCount, followingCount, commentsOnMods], follow] = await Promise.all([
-      countsPromise,
-      followPromise,
-    ])
+    const [[followersCount, followingCount, commentsOnMods], follow, tierProgress] =
+      await Promise.all([
+        countsPromise,
+        followPromise,
+        // Single comprehensive call: tier progress rides along for eligible
+        // roles instead of a second client round-trip.
+        ['creator', 'publisher', 'moderator'].includes(user.role)
+          ? calculateUserTier(user.id).catch(() => null)
+          : Promise.resolve(null),
+      ])
 
     const isFollowing = Boolean(follow)
 
@@ -230,6 +237,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         follow: {
           isFollowing,
         },
+        tierProgress,
       },
       {
         headers: {

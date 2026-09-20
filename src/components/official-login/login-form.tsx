@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/components/official-ui/utils'
 import { Button } from '@/components/official-ui/button'
 import {
@@ -68,6 +68,16 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
   const telegramEnabled = !!getTelegramBotUsername()
 
+  // Telegram poll lifecycle: interval + in-flight request are torn down on
+  // unmount so an abandoned login tab stops polling instead of running 5min.
+  const pollCleanupRef = useRef<(() => void) | null>(null)
+  useEffect(() => {
+    return () => {
+      pollCleanupRef.current?.()
+      pollCleanupRef.current = null
+    }
+  }, [])
+
   async function handleGoogle() {
     setBusy('google')
     setError(null)
@@ -107,9 +117,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       } else {
         window.open(data.deepLink, '_blank')
       }
+      const aborter = new AbortController()
       const poll = setInterval(async () => {
         try {
-          const check = await fetch(`/api/auth/telegram/poll?token=${data.sessionToken}`)
+          const check = await fetch(`/api/auth/telegram/poll?token=${data.sessionToken}`, {
+            signal: aborter.signal,
+          })
           const { data: d } = await check.json()
           if (d?.status === 'success') {
             clearInterval(poll)
@@ -128,12 +141,20 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             setError('انتهت صلاحية الرابط. حاول مرة أخرى.')
             setBusy(null)
           }
-        } catch {
+        } catch (err) {
+          // Abort on unmount/timeout is expected — anything else is transient.
+          if (err instanceof Error && err.name === 'AbortError') return
           // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort login form
         }
       }, 2000)
-      setTimeout(() => {
+      const stopPolling = () => {
         clearInterval(poll)
+        aborter.abort()
+      }
+      pollCleanupRef.current = stopPolling
+      setTimeout(() => {
+        stopPolling()
+        if (pollCleanupRef.current === stopPolling) pollCleanupRef.current = null
         setBusy(null)
       }, 5 * 60 * 1000)
     } catch {

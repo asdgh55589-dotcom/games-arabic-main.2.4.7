@@ -11,6 +11,8 @@ interface ErrorBoundaryProps {
   label?: string
   /** Optional URL for the "report issue" button (hidden when omitted). */
   reportHref?: string
+  /** Optional compact fallback (e.g. per-card). Defaults to the page fallback. */
+  fallback?: ReactNode
 }
 
 interface ErrorBoundaryState {
@@ -54,6 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return <>{this.props.fallback}</>
       return (
         <div className="mx-auto max-w-2xl px-4 py-20 text-center">
           <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-destructive/15 text-destructive">

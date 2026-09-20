@@ -22,12 +22,19 @@ interface UseFetchState<T> {
  * just recompute a value. ESLint's `react-hooks/set-state-in-effect` rule
  * catches this case but it's a false positive for fetch hooks.
  */
+/**
+ * Delay before a loading spinner/skeleton appears (ms). Fetches faster than
+ * this never flash a skeleton — kills the <100ms spinner flicker.
+ */
+const SKELETON_DELAY_MS = 200
+
 export function useFetch<T>(url: string | null, deps: ReadonlyArray<unknown> = []) {
   const [state, setState] = useState<UseFetchState<T>>({
     data: null,
     loading: !!url,
     error: null,
   })
+  const [showSkeleton, setShowSkeleton] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const urlRef = useRef(url)
   urlRef.current = url
@@ -68,9 +75,20 @@ export function useFetch<T>(url: string | null, deps: ReadonlyArray<unknown> = [
     }
   }, [url, ...deps])
 
+  // Delayed skeleton: only advertise loading UI when the fetch outlives the
+  // delay. `loading` semantics are unchanged for existing callers.
+  useEffect(() => {
+    if (!state.loading) {
+      setShowSkeleton(false)
+      return
+    }
+    const timer = setTimeout(() => setShowSkeleton(true), SKELETON_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [state.loading])
+
   const refetch = useCallback(() => {
     fetchData()
   }, [fetchData])
 
-  return { ...state, refetch }
+  return { ...state, showSkeleton, refetch }
 }

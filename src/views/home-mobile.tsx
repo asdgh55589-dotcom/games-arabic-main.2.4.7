@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { HeroSlider } from '@/components/hero-slider'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
@@ -9,6 +10,7 @@ import { NewsFeatured } from '@/components/news-featured'
 import { NewsTicker } from '@/components/news-ticker'
 import { Button } from '@/components/ui/button'
 import { formatNumber } from '@/lib/format'
+import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'
 
@@ -154,11 +156,16 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                   className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
                 >
                   {s.thumbnailUrl ? (
-                    <img
+                    <Image
                       src={s.thumbnailUrl}
                       alt=""
+                      fill
+                      sizes="100vw"
+                      quality={75}
                       loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover opacity-55"
+                      placeholder="blur"
+                      blurDataURL={BLUR_PLACEHOLDER}
+                      className="object-cover opacity-55"
                     />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
@@ -209,11 +216,16 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                 className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
               >
                 {t.bannerUrl || t.logoUrl ? (
-                  <img
+                  <Image
                     src={t.bannerUrl || t.logoUrl}
                     alt=""
+                    fill
+                    sizes="100vw"
+                    quality={75}
                     loading="lazy"
-                    className="absolute inset-0 h-full w-full object-cover opacity-55"
+                    placeholder="blur"
+                    blurDataURL={BLUR_PLACEHOLDER}
+                    className="object-cover opacity-55"
                   />
                 ) : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
