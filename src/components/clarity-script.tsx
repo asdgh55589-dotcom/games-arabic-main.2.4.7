@@ -3,16 +3,35 @@
 import { useState, useEffect } from 'react'
 import { getConsent } from '@/lib/consent'
 
+// Clarity injects AFTER first paint (requestIdleCallback, 3s fallback) and
+// only with stored consent — the async tag never blocks initial render.
 export function ClarityScript() {
-  const [allowed, setAllowed] = useState(false)
+  const [inject, setInject] = useState(false)
 
   useEffect(() => {
-    setAllowed(getConsent() === 'granted')
+    if (getConsent() !== 'granted') return
+    if (!process.env.NEXT_PUBLIC_CLARITY_ID) return
+    const schedule: (cb: () => void) => number =
+      'requestIdleCallback' in window
+        ? (cb) => window.requestIdleCallback(cb)
+        : (cb) => window.setTimeout(cb, 3000)
+    const handle = schedule(() => setInject(true))
+    return () => {
+      if ('cancelIdleCallback' in window) {
+        try {
+          window.cancelIdleCallback(handle)
+          return
+        } catch {
+          // fall through to clearTimeout
+        }
+      }
+      clearTimeout(handle)
+    }
   }, [])
 
   const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID
 
-  if (!clarityId || !allowed) return null
+  if (!clarityId || !inject) return null
 
   return (
     <script
