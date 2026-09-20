@@ -4,7 +4,7 @@
 - Next.js 16 (App Router, standalone output)
 - React 19, TypeScript 5
 - Tailwind CSS 4 with shadcn/ui components (40+ primitives)
-- Prisma 6 + PostgreSQL (Neon, 53 models)
+- Prisma 6 + PostgreSQL (Aiven, 81 models)
 - Supabase Auth (OAuth: Google, Telegram Deep Link)
 - Zustand + `useFetch` + React Query for data fetching
 - Upstash Redis (IP ban cache + tokenVersion cache + rate limiting)
@@ -27,7 +27,7 @@
 File-based routing via Next.js App Router. Each route has `src/app/<route>/page.tsx` that imports a view from `src/views/` and exports `generateMetadata` for SEO. Dynamic routes use `useParams()` (e.g. `/mod/[slug]`, `/games/[slug]`, `/profile/[user]`, `/platform/[key]`). Legacy `?view=` URLs are 301-redirected via `next.config.ts` (static pages) and middleware (parametric pages).
 
 ### API Routes
-All under `src/app/api/` — standard Next.js Route Handlers (147 handlers). Admin routes require moderator+ role (moderator | manager | admin | owner).
+All under `src/app/api/` — standard Next.js Route Handlers (292 handlers, 117 pages). Admin routes require moderator+ role (moderator | manager | admin | owner).
 
 ### Authentication
 - **Supabase Auth** for OAuth login flows (+ Telegram Deep Link)
@@ -36,7 +36,7 @@ All under `src/app/api/` — standard Next.js Route Handlers (147 handlers). Adm
 - Middleware cannot use Prisma — uses `jose` for JWT + Redis (`ip-ban-cache`, `token-version-cache`) for Edge-safe checks. `tokenVersion` is validated against Redis with 1s timeout (fail-open).
 
 ### Database
-- Prisma schema at `prisma/schema.prisma` (53 models)
+- Prisma schema at `prisma/schema.prisma` (81 models)
 - Key models: User, Game, Mod, ModFile, Series, Team, Notification, Report, Ticket, Section, Achievement
 - Connection pool configured for serverless (5 connections, 30s timeout)
 - Models include OAuthAccount, WorkflowEntry, ModVersion, DownloadClick, ScheduledJob, NotificationJob, IpBan, UserTrustScore, TierRule, SpecialRole, News, HomepageAd, AuditLog
@@ -86,6 +86,12 @@ The app uses **Next.js App Router file-based routing** (migrated from legacy SPA
 - Schema changes: `npx prisma db push` (dev) or `npx prisma migrate dev --name <change>` (create migration)
 - After schema changes: `npx prisma generate`
 - Seed: `npx tsx scripts/seed.ts` (main) + `npx tsx prisma/seed-notification-templates.ts` (templates)
+
+## Performance Phases (1/2/3 — merged to main)
+- Phase 1 (critical): Telegram fail-closed webhook + setWebhook boot registration, no scroll hijack (CSS-only), bookmark/report auth gates, ledger + auth/me Redis caches, Prisma singleton in all envs, auth SWR cache, Brevo sender verification, IA presign 501.
+- Phase 2 (important): single notification channel (polling only, SSE 501), bundle diet (externals + code-split charts/uppy/exceljs), ISR fetch dedupe, single CSP source (proxy), Telegram per-route rate limits, admin-only `/api/health/detailed`.
+- Phase 3 (polish): per-card ErrorBoundary + memo ModCard, lazy SearchBox, deferred PostHog/Clarity, image quality 75 + blur placeholders, neighbors endpoint, delayed skeletons.
+- Constraints learned the hard way: proxy.ts is Edge runtime (no Prisma imports); Turbopack panics when a package is in BOTH serverExternalPackages and optimizePackageImports; `.env` DATABASE_URL must be a single clean URL (Prisma P1013 rejects appended junk).
 
 ## Critical Rule — Do NOT Touch What You Weren't Asked To
 

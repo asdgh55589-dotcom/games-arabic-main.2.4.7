@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env
+.env.local
+*.dump
+gentelella-master
+coverage
+*.log
+dev.log
+server.log
+.opencode
