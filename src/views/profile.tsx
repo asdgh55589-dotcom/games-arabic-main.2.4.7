@@ -42,6 +42,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
 import { formatArabicDate, formatNumber } from '@/lib/format'
+import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { getRoleLabel } from '@/lib/roles'
 import { getTierLabel } from '@/lib/tiers'
 import type { ModSummary } from '@/lib/types'
@@ -430,10 +431,12 @@ export function ProfilePage() {
                 src={profile.bannerUrl}
                 alt="banner"
                 fill
-                quality={100}
+                quality={75}
                 sizes="100vw"
                 className="object-cover"
                 priority
+                placeholder="blur"
+                blurDataURL={BLUR_PLACEHOLDER}
               />
             ) : (
               <div

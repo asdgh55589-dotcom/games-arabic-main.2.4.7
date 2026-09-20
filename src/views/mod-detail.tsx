@@ -37,6 +37,7 @@ import {
   Youtube,
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ChangelogDisplay } from '@/components/changelog-display'
@@ -61,6 +62,7 @@ import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/hooks/use-toast'
 import { apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
+import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import {
   formatArabicDate,
@@ -338,13 +340,22 @@ export function ModDetailPage() {
                 <div className="absolute inset-0">
                   {bannerImage ? (
                     <>
-                      <img
+                      <Image
                         src={bannerImage}
                         alt=""
-                        className="h-full w-full object-cover"
-                        fetchPriority="high"
+                        fill
+                        sizes="100vw"
+                        quality={75}
+                        priority
+                        placeholder="blur"
+                        blurDataURL={BLUR_PLACEHOLDER}
+                        className="object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = FALLBACK_GAME_IMAGE
+                          const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+                          if (!img.dataset.fallback) {
+                            img.dataset.fallback = '1'
+                            img.src = FALLBACK_GAME_IMAGE
+                          }
                         }}
                       />
                       <div
@@ -412,12 +423,26 @@ export function ModDetailPage() {
                     {/* Poster image */}
                     <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
                       {mod.imageUrl ? (
-                        <img
+                        <Image
                           src={mod.imageUrl}
                           alt={mod.name}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="(max-width: 1024px) 240px, 280px"
+                          quality={75}
+                          loading="lazy"
+                          placeholder="blur"
+                          blurDataURL={BLUR_PLACEHOLDER}
+                          className="object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = FALLBACK_GAME_IMAGE
+                            const img = e.currentTarget as HTMLImageElement & {
+                              dataset: DOMStringMap
+                            }
+                            if (!img.dataset.fallback) {
+                              img.dataset.fallback = '1'
+                              img.src = FALLBACK_GAME_IMAGE
+                            } else {
+                              img.style.display = 'none'
+                            }
                           }}
                         />
                       ) : (

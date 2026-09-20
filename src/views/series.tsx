@@ -2,10 +2,12 @@
 'use client'
 
 import { Package, Star } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
+import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { SeriesMobile } from './series-mobile'
 
 interface SeriesItem {
@@ -60,11 +62,16 @@ export function SeriesPage() {
                   className="group relative flex h-24 items-center justify-between overflow-hidden rounded-lg border border-border bg-card p-4 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
                 >
                   {(s.bannerUrl || s.logoUrl) && (
-                    <img
+                    <Image
                       src={s.bannerUrl || s.logoUrl}
                       alt=""
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 33vw"
+                      quality={75}
                       loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity group-hover:opacity-50"
+                      placeholder="blur"
+                      blurDataURL={BLUR_PLACEHOLDER}
+                      className="object-cover opacity-35 transition-opacity group-hover:opacity-50"
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-r from-card via-card/75 to-card/40" />
