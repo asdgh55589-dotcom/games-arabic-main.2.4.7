@@ -225,6 +225,7 @@ export async function POST(req: NextRequest) {
           isTrending: false,
           isLatest: true,
           releaseDate: data.releaseDate ? new Date(data.releaseDate) : new Date(),
+          scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
           qualityScore,
         },
       })

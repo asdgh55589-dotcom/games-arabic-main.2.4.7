@@ -134,11 +134,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'originalSource',
       'originalAuthor',
       'releaseDate',
+      'scheduledAt',
     ]
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'releaseDate') {
           updateData[field] = body[field] ? new Date(body[field]) : new Date()
+        } else if (field === 'scheduledAt') {
+          updateData[field] = body[field] ? new Date(body[field]) : null
         } else if (field === 'isOriginalWork') {
           updateData[field] = Boolean(body[field])
         } else if (field === 'tags' && Array.isArray(body.tags)) {
