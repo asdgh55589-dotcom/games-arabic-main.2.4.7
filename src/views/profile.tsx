@@ -158,6 +158,7 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [activity, setActivity] = useState<ActivityData>({ comments: [], mods: [] })
   const [badges, setBadges] = useState<BadgeData[]>([])
+  const [tierProgress, setTierProgress] = useState<TierProgressData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isFollowing, setIsFollowing] = useState(false)
@@ -187,6 +188,7 @@ export function ProfilePage() {
           setProfile(payload.profile)
           setActivity(payload.activity || { comments: [], mods: [] })
           setBadges(payload.badges || [])
+          setTierProgress(payload.tierProgress ?? null)
           setIsFollowing(Boolean(payload.follow?.isFollowing))
           setError(null)
           setLoading(false)
@@ -204,6 +206,7 @@ export function ProfilePage() {
             setError('المستخدم غير موجود — تأكد من كتابة الاسم بشكل صحيح')
           }
           setProfile(null)
+          setTierProgress(null)
           setLoading(false)
           return false
         }
@@ -618,6 +621,7 @@ export function ProfilePage() {
             username={profile.username}
             role={profile.role}
             tier={(profile as unknown as { tier?: number }).tier || 0}
+            initial={tierProgress}
           />
 
           {/* ===== Tabs ===== */}
@@ -770,38 +774,48 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   )
 }
 
+interface TierProgressData {
+  currentTier: number
+  suggestedTier: number
+  shouldUpgrade: boolean
+  requiresAdminApproval: boolean
+  progress: {
+    publishedCount: number
+    averageRating: number
+    reviewsCount: number
+    monthsActive: number
+  }
+  nextTierRequirements: {
+    minPublishedCount?: number
+    minAverageRating?: number
+    minReviewsCount?: number
+    minMonthsActive?: number
+    requiresAdminApproval?: boolean
+  } | null
+}
+
 function TierProgressSection({
   username,
   role,
   tier,
+  initial = null,
 }: {
   username: string
   role: string
   tier: number
+  initial?: TierProgressData | null
 }) {
-  const [data, setData] = useState<null | {
-    currentTier: number
-    suggestedTier: number
-    shouldUpgrade: boolean
-    requiresAdminApproval: boolean
-    progress: {
-      publishedCount: number
-      averageRating: number
-      reviewsCount: number
-      monthsActive: number
-    }
-    nextTierRequirements: {
-      minPublishedCount?: number
-      minAverageRating?: number
-      minReviewsCount?: number
-      minMonthsActive?: number
-      requiresAdminApproval?: boolean
-    } | null
-  }>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<TierProgressData | null>(initial)
+  const [loading, setLoading] = useState(!initial)
 
   useEffect(() => {
     if (!['creator', 'publisher', 'moderator'].includes(role)) {
+      setLoading(false)
+      return
+    }
+    // Served by the single full-profile call — no second round-trip.
+    if (initial) {
+      setData(initial)
       setLoading(false)
       return
     }
@@ -812,7 +826,7 @@ function TierProgressSection({
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [username, role])
+  }, [username, role, initial])
 
   if (!['creator', 'publisher', 'moderator'].includes(role)) return null
   if (loading)
