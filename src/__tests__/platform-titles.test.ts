@@ -70,53 +70,103 @@ describe('per-platform title lists', () => {
       'حجم التعريب',
     ])
   })
-  it('PS1 and PS2 add معرّف اللعبة (Game ID)', () => {
-    expect(labels('PS1')).toEqual([...SHARED, 'معرّف اللعبة (Game ID)'])
-    expect(labels('PS2')).toEqual([...SHARED, 'معرّف اللعبة (Game ID)'])
+  it('PS1 and PS2 add معرّف اللعبة (Game ID) before size', () => {
+    const expected = [
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
+      'معرّف اللعبة (Game ID)',
+      'حجم التعريب',
+    ]
+    expect(labels('PS1')).toEqual(expected)
+    expect(labels('PS2')).toEqual(expected)
   })
-  it('PS3 adds Game ID + game update', () => {
-    expect(labels('PS3')).toEqual([...SHARED, 'معرّف اللعبة', 'رقم تحديث اللعبة المتوافق'])
+  it('PS3 adds Game ID + game update before size', () => {
+    expect(labels('PS3')).toEqual([
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
+      'معرّف اللعبة (Game ID)',
+      'رقم تحديث اللعبة المتوافق',
+      'حجم التعريب',
+    ])
   })
-  it('PS4 adds CUSA + firmware + game update', () => {
+  it('PS4 adds CUSA + firmware + game update before size', () => {
     expect(labels('PS4')).toEqual([
-      ...SHARED,
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
       'معرّف اللعبة (CUSA)',
       'تحديث النظام المتوافق',
       'رقم تحديث اللعبة المتوافق',
+      'حجم التعريب',
     ])
   })
-  it('PS5 adds PPSA + firmware + game update', () => {
+  it('PS5 adds PPSA + firmware + game update before size', () => {
     expect(labels('PS5')).toEqual([
-      ...SHARED,
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
       'معرّف اللعبة (PPSA)',
       'تحديث النظام المتوافق',
       'رقم تحديث اللعبة المتوافق',
+      'حجم التعريب',
     ])
   })
-  it('Switch adds Title ID + device + update number', () => {
+  it('Switch adds Title ID + device + update number before size', () => {
     expect(labels('NS')).toEqual([
-      ...SHARED,
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
       'إصدار اللعبة',
       'الجهاز',
       'رقم التحديث المتوافق',
+      'حجم التعريب',
     ])
   })
-  it('Xbox 360 adds Title ID + Media ID + format + compat', () => {
+  it('Xbox 360 adds Title ID + Media ID + format (+ compat) before size', () => {
     expect(labels('X360')).toEqual([
-      ...SHARED,
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
       'معرّف اللعبة (Title ID)',
       'معرّف الوسائط (Media ID)',
       'صيغة اللعبة المدعومة',
       'التوافق',
+      'حجم التعريب',
     ])
   })
-  it('Android adds install type + cpu + game version + min android', () => {
+  it('Android adds install type + cpu + game version + min android before size', () => {
     expect(labels('ANDROID')).toEqual([
-      ...SHARED,
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
       'نوع ملف التثبيت',
       'بنية المعالج المتوافقة',
       'رقم إصدار اللعبة المتوافق',
       'الحد الأدنى لنظام الأندرويد',
+      'حجم التعريب',
     ])
   })
   it('unknown platform falls back to 7 shared only', () => {

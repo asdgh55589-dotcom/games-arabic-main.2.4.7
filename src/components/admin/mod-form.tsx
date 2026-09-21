@@ -26,6 +26,7 @@ import { ModFormBasicInfo } from '@/components/creator/mod-form/basic-info'
 import { ModFormFiles, ModFormSchedule } from '@/components/creator/mod-form/files'
 import { ModFormMedia } from '@/components/creator/mod-form/media'
 import { ModFormSettings } from '@/components/creator/mod-form/settings'
+import { ChangeTypeDialog } from '@/components/creator/mod-form/change-type-dialog'
 import { PlatformSelector } from '@/components/creator/mod-form/platform-selector'
 import {
   EMPTY_CONTACT,
@@ -104,6 +105,8 @@ function ModFormInner({ modId }: ModFormProps) {
   const [workflowHistory, setWorkflowHistory] = useState<any[]>([])
   const [versionHistory, setVersionHistory] = useState<any[]>([])
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
+  const [changeTypeDialogOpen, setChangeTypeDialogOpen] = useState(false)
+  const [savingChangelog, setSavingChangelog] = useState(false)
   const [userRole, setUserRole] = useState('member')
 
   // Wizard step: 1 = platform selection, 2 = full form
@@ -543,6 +546,14 @@ function ModFormInner({ modId }: ModFormProps) {
       })
       return
     }
+    if (_description.length < 10) {
+      toast({
+        title: 'الوصف قصير جداً',
+        description: 'الوصف الكامل يحتاج 10 أحرف على الأقل',
+        variant: 'destructive',
+      })
+      return
+    }
     const _arabicTitle = formatArabicTitle(arabicTitle)
     const _summary = (summary || '').trim() || _description.slice(0, 150) || _name
     if (!(thumbnailUrl || '').trim() || !(imageUrl || '').trim()) {
@@ -564,6 +575,7 @@ function ModFormInner({ modId }: ModFormProps) {
       arabicTitle: _arabicTitle,
       translationScope,
       compatibility,
+      platform: platform || null,
       tags: tags
         .split(',')
         .map((t) => t.trim())
@@ -637,8 +649,13 @@ function ModFormInner({ modId }: ModFormProps) {
         title: 'تم الحفظ',
         description: isEdit ? 'تم تحديث التعريب' : 'تم نشر التعريب بنجاح',
       })
-      router.push('/admin/mods')
-      router.refresh()
+      // Show changelog dialog when editing an existing mod
+      if (isEdit && modId) {
+        setChangeTypeDialogOpen(true)
+      } else {
+        router.push('/admin/mods')
+        router.refresh()
+      }
     } catch (err) {
       toast({
         title: 'خطأ',
@@ -775,6 +792,33 @@ function ModFormInner({ modId }: ModFormProps) {
         setTranslationMethod={setTranslationMethod}
         compatibility={compatibility}
         setCompatibility={setCompatibility}
+        platform={platform}
+        platformGameId={platformGameId}
+        setPlatformGameId={setPlatformGameId}
+        cusaId={cusaId}
+        setCusaId={setCusaId}
+        ppsaId={ppsaId}
+        setPpsaId={setPpsaId}
+        titleId={titleId}
+        setTitleId={setTitleId}
+        mediaId={mediaId}
+        setMediaId={setMediaId}
+        supportedFormat={supportedFormat}
+        setSupportedFormat={setSupportedFormat}
+        deviceModel={deviceModel}
+        setDeviceModel={setDeviceModel}
+        installType={installType}
+        setInstallType={setInstallType}
+        cpuArch={cpuArch}
+        setCpuArch={setCpuArch}
+        gameVersion={gameVersion}
+        setGameVersion={setGameVersion}
+        minAndroidVersion={minAndroidVersion}
+        setMinAndroidVersion={setMinAndroidVersion}
+        systemFirmware={systemFirmware}
+        setSystemFirmware={setSystemFirmware}
+        gameUpdateVersion={gameUpdateVersion}
+        setGameUpdateVersion={setGameUpdateVersion}
         summary={summary}
         setSummary={setSummary}
         userRole={userRole}
@@ -957,6 +1001,41 @@ function ModFormInner({ modId }: ModFormProps) {
         <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
           <WorkflowHistory history={workflowHistory} />
         </Section>
+      )}
+
+      {/* Changelog dialog for edits */}
+      {isEdit && modId && (
+        <ChangeTypeDialog
+          open={changeTypeDialogOpen}
+          onOpenChange={setChangeTypeDialogOpen}
+          saving={savingChangelog}
+          onSave={async ({ type, title, description: desc }) => {
+            setSavingChangelog(true)
+            try {
+              const res = await fetch(`/api/admin/mods/${modId}/changelog`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, title, description: desc }),
+              })
+              if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
+              }
+              toast({ title: 'تم حفظ سجل التغييرات' })
+              setChangeTypeDialogOpen(false)
+              router.push('/admin/mods')
+              router.refresh()
+            } catch (err) {
+              toast({
+                title: 'خطأ',
+                description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
+                variant: 'destructive',
+              })
+            } finally {
+              setSavingChangelog(false)
+            }
+          }}
+        />
       )}
 
       <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background/80 p-4 backdrop-blur">

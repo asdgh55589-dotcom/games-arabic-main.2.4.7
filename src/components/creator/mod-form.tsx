@@ -3,7 +3,7 @@
 
 'use client'
 
-import { ChevronRight, Clock, FileArchive, Loader2, Plus, ArrowRight } from 'lucide-react'
+import { ChevronRight, Clock, FileArchive, Loader2, Plus, ArrowRight, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -73,6 +73,7 @@ export default function ModForm({ modId }: ModFormProps) {
 
   const [saving, setSaving] = useState(false)
   const [loadingMod, setLoadingMod] = useState(isEdit)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [seriesList, setSeriesList] = useState<SeriesOpt[]>([])
   const [teamsList, setTeamsList] = useState<TeamOpt[]>([])
   const [loadingMeta, setLoadingMeta] = useState(true)
@@ -193,10 +194,14 @@ export default function ModForm({ modId }: ModFormProps) {
   // لو تعديل: حمّل بيانات التعريب
   useEffect(() => {
     if (!modId) return
+    setLoadError(null)
     fetch(`/api/creator/mods/${modId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!data?.data) return
+        if (!data?.data) {
+          setLoadError(t.loadDataFailed)
+          return
+        }
         const m = data.data
         setName(m.name || '')
         setSummary(m.summary || '')
@@ -305,7 +310,9 @@ export default function ModForm({ modId }: ModFormProps) {
           })) || [],
         )
       })
-      .catch(() => {})
+      .catch(() => {
+        setLoadError(t.loadDataFailed)
+      })
       .finally(() => setLoadingMod(false))
   }, [modId])
 
@@ -478,6 +485,13 @@ export default function ModForm({ modId }: ModFormProps) {
       toast({ title: t.cropUploadFailed, variant: 'destructive' })
       return
     }
+    if (loadError) {
+      toast({
+        title: t.loadDataFailed,
+        variant: 'destructive',
+      })
+      return
+    }
     const _name = (name || '').trim()
     const _description = (description || '').trim()
     if (!_name || !_description) {
@@ -494,6 +508,10 @@ export default function ModForm({ modId }: ModFormProps) {
     // العنوان يجب أن ينتهي بسنة النشر بين قوسين — مثال: Resident Evil 6 (2013)
     if (!hasTitleYear(_name)) {
       toast({ title: t.titleYearRequired, variant: 'destructive' })
+      return
+    }
+    if (_description.length < 10) {
+      toast({ title: t.descTooShort, variant: 'destructive' })
       return
     }
     const _arabicTitle = formatArabicTitle(arabicTitle)
@@ -517,6 +535,7 @@ export default function ModForm({ modId }: ModFormProps) {
       arabicTitle: _arabicTitle,
       translationScope,
       compatibility,
+      platform: platform || null,
       tags: tags
         .split(',')
         .map((t) => t.trim())
@@ -609,6 +628,15 @@ export default function ModForm({ modId }: ModFormProps) {
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg" dir="rtl">
+        <h2 className="text-red-700 font-bold mb-2">⚠️ {loadError}</h2>
+        <Button onClick={() => window.location.reload()}>{t.retryBtn}</Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       {/* رأس */}
@@ -620,6 +648,21 @@ export default function ModForm({ modId }: ModFormProps) {
           <ChevronRight className={`h-4 w-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
           <span className="text-foreground">{isEdit ? t.editMod : t.newMod}</span>
           {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ms-2" />}
+        </div>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/creator/mods">{t.cancel}</Link>
+          </Button>
+          {step === 2 && (
+            <Button onClick={onSave} disabled={saving || !!loadError}>
+              {saving ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              {isEdit ? t.saveChanges : t.publishMod}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -688,6 +731,33 @@ export default function ModForm({ modId }: ModFormProps) {
         setTranslationMethod={setTranslationMethod}
         compatibility={compatibility}
         setCompatibility={setCompatibility}
+        platform={platform}
+        platformGameId={platformGameId}
+        setPlatformGameId={setPlatformGameId}
+        cusaId={cusaId}
+        setCusaId={setCusaId}
+        ppsaId={ppsaId}
+        setPpsaId={setPpsaId}
+        titleId={titleId}
+        setTitleId={setTitleId}
+        mediaId={mediaId}
+        setMediaId={setMediaId}
+        supportedFormat={supportedFormat}
+        setSupportedFormat={setSupportedFormat}
+        deviceModel={deviceModel}
+        setDeviceModel={setDeviceModel}
+        installType={installType}
+        setInstallType={setInstallType}
+        cpuArch={cpuArch}
+        setCpuArch={setCpuArch}
+        gameVersion={gameVersion}
+        setGameVersion={setGameVersion}
+        minAndroidVersion={minAndroidVersion}
+        setMinAndroidVersion={setMinAndroidVersion}
+        systemFirmware={systemFirmware}
+        setSystemFirmware={setSystemFirmware}
+        gameUpdateVersion={gameUpdateVersion}
+        setGameUpdateVersion={setGameUpdateVersion}
         summary={summary}
         setSummary={setSummary}
         userRole={userRole}

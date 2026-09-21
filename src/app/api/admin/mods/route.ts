@@ -148,6 +148,16 @@ export async function POST(req: NextRequest) {
     // fallback للـ gameId — لم يعد مطلوباً في الواجهة (استُبدل بـ seriesId/teamId)
     // نحافظ على توافق قاعدة البيانات (gameId NOT NULL) عبر استخدام أول لعبة موجودة إن لم يُرسل
     let effectiveGameId: string | null = (data.gameId as string) || (body as any).gameId || null
+    // اربط التعريب بلعبة من نفس المنصة المختارة في النموذج (حتى لا يضيع حق الاختيار)
+    const bodyPlatform =
+      typeof (body as any).platform === 'string' ? (body as any).platform.trim().toUpperCase() : ''
+    if (!effectiveGameId && bodyPlatform) {
+      const platformGame = await db.game.findFirst({
+        where: { platform: bodyPlatform },
+        select: { id: true },
+      })
+      effectiveGameId = platformGame?.id || null
+    }
     if (!effectiveGameId) {
       const fallbackGame = await db.game.findFirst({ select: { id: true } })
       effectiveGameId = fallbackGame?.id || null

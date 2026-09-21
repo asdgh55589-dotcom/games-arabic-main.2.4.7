@@ -17,6 +17,13 @@ import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { normalizeTranslationType, TRANSLATION_TYPE_LABELS, type TranslationType } from '@/lib/schemas'
 import { Field, Section, formatArabicTitle } from './primitives'
 
+/** صيغ Xbox 360 المدعومة */
+const XBOX_FORMATS = ['GOD', 'JTAG', 'RGH', 'ISO', 'XEX']
+
+/** أنواع تثبيت أندرويد + بنيات المعالج */
+const ANDROID_INSTALL_TYPES = ['APK مدمج', 'ملفات OBB', 'مجلد Data']
+const ANDROID_CPU_ARCHS = ['ARM64', 'ARMv7', 'x86']
+
 /** الحد الأقصى لعناصر محتوى التعريب المختارة من القائمة */
 export const MAX_SCOPE_ITEMS = 10
 
@@ -81,6 +88,52 @@ function splitScope(v: string): string[] {
     .filter(Boolean)
 }
 
+/** اختيار متعدد (chips) لقيم مفصولة بفواصل — يُخزن بصيغة "أ، ب" */
+function MultiChips({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  const selected = new Set(splitScope(value))
+  const toggle = (opt: string) => {
+    const next = splitScope(value)
+    if (selected.has(opt)) {
+      onChange(next.filter((s) => s !== opt).join('، '))
+    } else {
+      onChange([...next, opt].join('، '))
+    }
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((opt) => {
+        const checked = selected.has(opt)
+        return (
+          <label
+            key={opt}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+              checked
+                ? 'border-primary bg-primary/10 font-bold text-primary'
+                : 'hover:border-muted-foreground/40 hover:bg-accent'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => toggle(opt)}
+              className="h-3.5 w-3.5 rounded border-border accent-primary"
+            />
+            {opt}
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
 interface Props {
   name: string
   setName: (v: string) => void
@@ -102,6 +155,33 @@ interface Props {
   setTranslationMethod: (v: string) => void
   compatibility: string
   setCompatibility: (v: string) => void
+  platform: string
+  platformGameId: string
+  setPlatformGameId: (v: string) => void
+  cusaId: string
+  setCusaId: (v: string) => void
+  ppsaId: string
+  setPpsaId: (v: string) => void
+  titleId: string
+  setTitleId: (v: string) => void
+  mediaId: string
+  setMediaId: (v: string) => void
+  deviceModel: string
+  setDeviceModel: (v: string) => void
+  installType: string
+  setInstallType: (v: string) => void
+  cpuArch: string
+  setCpuArch: (v: string) => void
+  gameVersion: string
+  setGameVersion: (v: string) => void
+  minAndroidVersion: string
+  setMinAndroidVersion: (v: string) => void
+  supportedFormat: string
+  setSupportedFormat: (v: string) => void
+  systemFirmware: string
+  setSystemFirmware: (v: string) => void
+  gameUpdateVersion: string
+  setGameUpdateVersion: (v: string) => void
   summary: string
   setSummary: (v: string) => void
   userRole: string
@@ -175,13 +255,190 @@ export function ModFormBasicInfo(p: Props) {
             </SelectContent>
           </Select>
         </Field>
-        <Field label={t.compatField} hint={t.compatHint}>
-          <Input
-            value={p.compatibility}
-            onChange={(e) => p.setCompatibility(e.target.value)}
-            dir="auto"
-          />
-        </Field>
+        {(p.platform === 'PS1' || p.platform === 'PS2') ? (
+          <Field label="معرّف اللعبة (Game ID)">
+            <Input
+              value={p.platformGameId}
+              onChange={(e) => p.setPlatformGameId(e.target.value)}
+              placeholder="مثال: SCUS-94426"
+              dir="ltr"
+            />
+          </Field>
+        ) : p.platform === 'PS3' ? (
+          <>
+            <Field label="معرّف اللعبة (Game ID)">
+              <Input
+                value={p.platformGameId}
+                onChange={(e) => p.setPlatformGameId(e.target.value)}
+                placeholder="مثال: BCES-01719"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="رقم تحديث اللعبة المتوافق">
+              <Input
+                value={p.gameUpdateVersion}
+                onChange={(e) => p.setGameUpdateVersion(e.target.value)}
+                placeholder="مثال: 1.02"
+                dir="ltr"
+              />
+            </Field>
+          </>
+        ) : p.platform === 'PS4' ? (
+          <>
+            <Field label="معرّف اللعبة (CUSA)">
+              <Input
+                value={p.cusaId}
+                onChange={(e) => p.setCusaId(e.target.value)}
+                placeholder="مثال: CUSA-00123"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="تحديث النظام المتوافق">
+              <Input
+                value={p.systemFirmware}
+                onChange={(e) => p.setSystemFirmware(e.target.value)}
+                placeholder="مثال: 11.00"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="رقم تحديث اللعبة المتوافق">
+              <Input
+                value={p.gameUpdateVersion}
+                onChange={(e) => p.setGameUpdateVersion(e.target.value)}
+                placeholder="مثال: 1.02"
+                dir="ltr"
+              />
+            </Field>
+          </>
+        ) : p.platform === 'PS5' ? (
+          <>
+            <Field label="معرّف اللعبة (PPSA)">
+              <Input
+                value={p.ppsaId}
+                onChange={(e) => p.setPpsaId(e.target.value)}
+                placeholder="مثال: PPSA-00001"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="تحديث النظام المتوافق">
+              <Input
+                value={p.systemFirmware}
+                onChange={(e) => p.setSystemFirmware(e.target.value)}
+                placeholder="مثال: 11.00"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="رقم تحديث اللعبة المتوافق">
+              <Input
+                value={p.gameUpdateVersion}
+                onChange={(e) => p.setGameUpdateVersion(e.target.value)}
+                placeholder="مثال: 1.02"
+                dir="ltr"
+              />
+            </Field>
+          </>
+        ) : p.platform === 'X360' ? (
+          <>
+            <Field label="معرّف اللعبة (Title ID)">
+              <Input
+                value={p.titleId}
+                onChange={(e) => p.setTitleId(e.target.value)}
+                placeholder="مثال: 584111F7"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="معرّف الوسائط (Media ID)">
+              <Input
+                value={p.mediaId}
+                onChange={(e) => p.setMediaId(e.target.value)}
+                placeholder="مثال: D06D12ED"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="صيغة اللعبة المدعومة">
+              <MultiChips
+                options={XBOX_FORMATS}
+                value={p.supportedFormat}
+                onChange={p.setSupportedFormat}
+              />
+            </Field>
+          </>
+        ) : p.platform === 'NS' ? (
+          <>
+            <Field label="إصدار اللعبة">
+              <Input
+                value={p.titleId}
+                onChange={(e) => p.setTitleId(e.target.value)}
+                placeholder="مثال: 010042D00D900000"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="الجهاز">
+              <Input
+                value={p.deviceModel}
+                onChange={(e) => p.setDeviceModel(e.target.value)}
+                placeholder="مثال: NS1"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="رقم التحديث المتوافق">
+              <Input
+                value={p.gameUpdateVersion}
+                onChange={(e) => p.setGameUpdateVersion(e.target.value)}
+                placeholder="مثال: 1.0.2"
+                dir="ltr"
+              />
+            </Field>
+          </>
+        ) : p.platform === 'ANDROID' ? (
+          <>
+            <Field label="نوع ملف التثبيت">
+              <select
+                value={p.installType}
+                onChange={(e) => p.setInstallType(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+              >
+                <option value="">— اختر النوع —</option>
+                {ANDROID_INSTALL_TYPES.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="بنية المعالج المتوافقة">
+              <MultiChips
+                options={ANDROID_CPU_ARCHS}
+                value={p.cpuArch}
+                onChange={p.setCpuArch}
+              />
+            </Field>
+            <Field label="رقم إصدار اللعبة المتوافق">
+              <Input
+                value={p.gameVersion}
+                onChange={(e) => p.setGameVersion(e.target.value)}
+                placeholder="مثال: 2.5.1"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="الحد الأدنى لنظام الأندرويد">
+              <Input
+                value={p.minAndroidVersion}
+                onChange={(e) => p.setMinAndroidVersion(e.target.value)}
+                placeholder="مثال: 8.0"
+                dir="ltr"
+              />
+            </Field>
+          </>
+        ) : (
+          <Field label={t.compatField} hint={t.compatHint}>
+            <Input
+              value={p.compatibility}
+              onChange={(e) => p.setCompatibility(e.target.value)}
+              dir="auto"
+            />
+          </Field>
+        )}
         <Field label={t.summaryLabel} hint={t.summaryHint}>
           <Textarea
             value={p.summary}

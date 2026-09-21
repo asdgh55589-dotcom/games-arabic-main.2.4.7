@@ -133,6 +133,18 @@ export async function POST(req: NextRequest) {
 
   // fallback للـ gameId — لم يعد مطلوباً في الواجهة (استُبدل بـ seriesId/teamId)
   let effectiveGameId = (data as unknown as { gameId?: string }).gameId
+  // اربط التعريب بلعبة من نفس المنصة المختارة في النموذج (حتى لا يضيع حق الاختيار)
+  const bodyPlatform =
+    typeof (body as unknown as { platform?: unknown }).platform === 'string'
+      ? ((body as unknown as { platform: string }).platform || '').trim().toUpperCase()
+      : ''
+  if (!effectiveGameId && bodyPlatform) {
+    const platformGame = await db.game.findFirst({
+      where: { platform: bodyPlatform },
+      select: { id: true },
+    })
+    effectiveGameId = platformGame?.id || (undefined as unknown as string)
+  }
   if (!effectiveGameId) {
     const fallbackGame = await db.game.findFirst({ select: { id: true } })
     effectiveGameId = fallbackGame?.id || (undefined as unknown as string)

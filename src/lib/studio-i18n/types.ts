@@ -311,6 +311,9 @@ export interface StudioDict {
     noImageLink: string
     missingName: string
     missingDesc: string
+    descTooShort: string
+    loadDataFailed: string
+    retryBtn: string
     incompleteData: string
     requiredFields: string
     imagesMissing: string

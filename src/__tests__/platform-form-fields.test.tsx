@@ -53,56 +53,50 @@ describe('PlatformFieldsSection', () => {
 
   it('hides platform dropdown when hidePlatformSelect is true', () => {
     renderSection('PS4', true)
-    // No dropdown, no platform indicator line — only the platform blocks
+    // No dropdown, no indicator line, no PS4 extras (fields live in basic info)
     expect(screen.queryByText('المنصة')).toBeNull()
-    expect(screen.getByText('معرّف اللعبة (CUSA)')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة (CUSA)')).toBeNull()
   })
 
-  it.each(['PS1', 'PS2'])('shows platformGameId for %s', (pl) => {
+  it.each(['PS1', 'PS2'])('shows no extras in platform section for %s (Game ID lives in basic info)', (pl) => {
     renderSection(pl)
-    expect(screen.getByText('معرّف اللعبة (Game ID)')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة (Game ID)')).toBeNull()
   })
 
-  it('shows PS3 fields', () => {
+  it('PS3 shows no extras in platform section (fields live in basic info)', () => {
     renderSection('PS3')
-    expect(screen.getByText('معرّف اللعبة')).toBeDefined()
-    expect(screen.getByText('رقم تحديث اللعبة المتوافق')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة')).toBeNull()
+    expect(screen.queryByText('رقم تحديث اللعبة المتوافق')).toBeNull()
   })
 
-  it('shows PS4 fields', () => {
+  it('PS4 shows no extras in platform section (fields live in basic info)', () => {
     renderSection('PS4')
-    expect(screen.getByText('معرّف اللعبة (CUSA)')).toBeDefined()
-    expect(screen.getByText('تحديث النظام المتوافق')).toBeDefined()
-    expect(screen.getByText('رقم تحديث اللعبة المتوافق')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة (CUSA)')).toBeNull()
+    expect(screen.queryByText('تحديث النظام المتوافق')).toBeNull()
   })
 
-  it('shows PS5 fields', () => {
+  it('PS5 shows no extras in platform section (fields live in basic info)', () => {
     renderSection('PS5')
-    expect(screen.getByText('معرّف اللعبة (PPSA)')).toBeDefined()
-    expect(screen.getByText('تحديث النظام المتوافق')).toBeDefined()
-    expect(screen.getByText('رقم تحديث اللعبة المتوافق')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة (PPSA)')).toBeNull()
+    expect(screen.queryByText('تحديث النظام المتوافق')).toBeNull()
   })
 
-  it('shows Switch fields', () => {
+  it('NS shows no extras in platform section (fields live in basic info)', () => {
     renderSection('NS')
-    expect(screen.getByText('إصدار اللعبة')).toBeDefined()
-    expect(screen.getByText('الجهاز')).toBeDefined()
-    expect(screen.getByText('رقم التحديث المتوافق')).toBeDefined()
+    expect(screen.queryByText('إصدار اللعبة')).toBeNull()
+    expect(screen.queryByText('الجهاز')).toBeNull()
   })
 
-  it('shows Xbox 360 fields', () => {
+  it('X360 shows no extras in platform section (fields live in basic info)', () => {
     renderSection('X360')
-    expect(screen.getByText('معرّف اللعبة (Title ID)')).toBeDefined()
-    expect(screen.getByText('معرّف الوسائط (Media ID)')).toBeDefined()
-    expect(screen.getByText('صيغة اللعبة المدعومة')).toBeDefined()
+    expect(screen.queryByText('معرّف اللعبة (Title ID)')).toBeNull()
+    expect(screen.queryByText('معرّف الوسائط (Media ID)')).toBeNull()
   })
 
-  it('shows Android fields', () => {
+  it('ANDROID shows no extras in platform section (fields live in basic info)', () => {
     renderSection('ANDROID')
-    expect(screen.getByText('نوع ملف التثبيت')).toBeDefined()
-    expect(screen.getByText('بنية المعالج المتوافقة')).toBeDefined()
-    expect(screen.getByText('رقم إصدار اللعبة المتوافق')).toBeDefined()
-    expect(screen.getByText('الحد الأدنى لنظام الأندرويد')).toBeDefined()
+    expect(screen.queryByText('نوع ملف التثبيت')).toBeNull()
+    expect(screen.queryByText('بنية المعالج المتوافقة')).toBeNull()
   })
 
   it('PC shows no platform-specific extras', () => {

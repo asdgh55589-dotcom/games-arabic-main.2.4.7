@@ -5,9 +5,10 @@
  *  1. العنوان  2. العنوان بالعربي  3. طريقة التعريب  4. نوع التعريب
  *  5. محتوى التعريب  6. تاريخ إصدار التعريب  7. حجم التعريب
  *
- * PC inserts "توافق التعريب" between تاريخ الإصدار and الحجم (spec order:
- * العنوان، العنوان بالعربي، طريقة التعريب، نوع التعريب، محتوى التعريب،
- * تاريخ إصدار التعريب، توافق التعريب، حجم التعريب).
+ * PC inserts "توافق التعريب" between تاريخ الإصدار and الحجم, and
+ * PS1/PS2 insert "معرّف اللعبة (Game ID)" in the same slot
+ * (spec order: العنوان، العنوان بالعربي، طريقة التعريب، نوع التعريب،
+ * محتوى التعريب، تاريخ إصدار التعريب، توافق التعريب، حجم التعريب).
  *
  * Platform-specific extras render ONLY for their platform, in spec order.
  * Empty/null values are skipped (except always-shown fallbacks).
@@ -119,7 +120,8 @@ export function getModTitles(
     const fmt = nonEmpty(mod.fileFormat) ? ` .${(mod.fileFormat as string).trim()}` : ''
     sizeStr = `${size}${fmt}`
   }
-  if (platform !== 'PC' && sizeStr) {
+  const sizeDeferred = platform !== 'OTHER'
+  if (!sizeDeferred && sizeStr) {
     push('size', 'حجم التعريب', sizeStr)
   }
 
@@ -128,37 +130,44 @@ export function getModTitles(
     case 'PS1':
     case 'PS2':
       pushIf('gameId', 'معرّف اللعبة (Game ID)', mod.platformGameId)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'PS3':
-      pushIf('gameId', 'معرّف اللعبة', mod.platformGameId)
+      pushIf('gameId', 'معرّف اللعبة (Game ID)', mod.platformGameId)
       pushIf('gameUpdate', 'رقم تحديث اللعبة المتوافق', mod.gameUpdateVersion)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'PS4':
       pushIf('cusa', 'معرّف اللعبة (CUSA)', mod.cusaId)
       pushIf('firmware', 'تحديث النظام المتوافق', mod.systemFirmware)
       pushIf('gameUpdate', 'رقم تحديث اللعبة المتوافق', mod.gameUpdateVersion)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'PS5':
       pushIf('ppsa', 'معرّف اللعبة (PPSA)', mod.ppsaId)
       pushIf('firmware', 'تحديث النظام المتوافق', mod.systemFirmware)
       pushIf('gameUpdate', 'رقم تحديث اللعبة المتوافق', mod.gameUpdateVersion)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'NS':
       pushIf('titleId', 'إصدار اللعبة', mod.titleId)
       pushIf('device', 'الجهاز', mod.deviceModel)
       pushIf('gameUpdate', 'رقم التحديث المتوافق', mod.gameUpdateVersion)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'X360':
       pushIf('titleId', 'معرّف اللعبة (Title ID)', mod.titleId)
       pushIf('mediaId', 'معرّف الوسائط (Media ID)', mod.mediaId)
       pushIf('format', 'صيغة اللعبة المدعومة', mod.supportedFormat)
       pushIf('compat', 'التوافق', mod.compatibility)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'ANDROID':
       pushIf('installType', 'نوع ملف التثبيت', mod.installType)
       pushIf('cpu', 'بنية المعالج المتوافقة', mod.cpuArch)
       pushIf('gameVersion', 'رقم إصدار اللعبة المتوافق', mod.gameVersion)
       pushIf('minAndroid', 'الحد الأدنى لنظام الأندرويد', mod.minAndroidVersion)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
       break
     case 'PC':
       pushIf('compat', 'توافق التعريب', mod.compatibility)
