@@ -10,7 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { BookOpen, Lightbulb, AlertTriangle } from 'lucide-react'
+import { BookOpen, Lightbulb, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 import type { DocPage, DocSection, DocBlock } from '@/lib/docs/mod-form-docs'
 
 // ═══ Block Renderers ═══
@@ -57,11 +57,64 @@ function WarnBlock({ block }: { block: DocBlock }) {
   )
 }
 
+function GoodBlock({ block }: { block: DocBlock }) {
+  return (
+    <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-3">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        أمثلة صحيحة
+      </div>
+      <pre className="whitespace-pre-wrap text-sm text-foreground/80">{block.text}</pre>
+    </div>
+  )
+}
+
+function BadBlock({ block }: { block: DocBlock }) {
+  return (
+    <div className="rounded-lg border border-red-500/25 bg-red-500/5 p-3">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold text-red-600">
+        <XCircle className="h-3.5 w-3.5" />
+        أمثلة خاطئة — تجنبها
+      </div>
+      <pre className="whitespace-pre-wrap text-sm text-foreground/80">{block.text}</pre>
+    </div>
+  )
+}
+
 function FieldBlock({ block }: { block: DocBlock }) {
   return (
     <div className="rounded-lg border border-border bg-card/50 p-3">
       <div className="mb-1 text-sm font-bold text-foreground">{block.label}</div>
       <p className="text-sm text-muted-foreground">{block.text}</p>
+    </div>
+  )
+}
+
+function TableBlock({ block }: { block: DocBlock }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted/60">
+            {block.headers?.map((h, i) => (
+              <th key={i} className="border-b border-border px-3 py-2 text-right text-xs font-bold text-foreground">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {block.rows?.map((row, i) => (
+            <tr key={i} className="odd:bg-card/30">
+              {row.map((cell, j) => (
+                <td key={j} className="border-b border-border/50 px-3 py-2 align-top text-muted-foreground">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -97,9 +150,12 @@ function BlockRenderer({ block }: { block: DocBlock }) {
     case 'text':    return <TextBlock block={block} />
     case 'list':    return <ListBlock block={block} />
     case 'example': return <ExampleBlock block={block} />
+    case 'good':    return <GoodBlock block={block} />
+    case 'bad':     return <BadBlock block={block} />
     case 'tip':     return <TipBlock block={block} />
     case 'warn':    return <WarnBlock block={block} />
     case 'field':   return <FieldBlock block={block} />
+    case 'table':   return <TableBlock block={block} />
     case 'sub':     return <SubBlock block={block} />
     default:        return null
   }
