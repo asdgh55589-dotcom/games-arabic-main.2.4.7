@@ -331,11 +331,16 @@ export interface StudioDict {
     statusHistory: string
     basicInfo: string
     modName: string
+    namePh: string
+    nameYearHint: string
+    titleYearRequired: string
     arabicName: string
     arabicNamePh: string
     scope: string
     scopeHint: string
     scopePlaceholder: string
+    scopePicked: string
+    scopeMax: string
     fullDesc: string
     descHint: string
     tags: string
@@ -343,6 +348,14 @@ export interface StudioDict {
     modType: string
     modTypeHint: string
     modTypePlaceholder: string
+    modMethod: string
+    modMethodHint: string
+    modMethodPlaceholder: string
+    methodHuman: string
+    methodAi: string
+    methodMixed: string
+    compatField: string
+    compatHint: string
     modSource: string
     externalYes: string
     ownYes: string

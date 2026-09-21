@@ -8,12 +8,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 
+/** تنسيق سرعة الرفع (بايت/ثانية) للعرض */
+function formatSpeed(bytesPerSec: number): string {
+  if (!bytesPerSec || bytesPerSec <= 0) return '…'
+  if (bytesPerSec >= 1024 * 1024) return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`
+  return `${Math.max(1, Math.round(bytesPerSec / 1024))} KB/s`
+}
+
 interface ImageUploadProps {
   bucket: 'mods' | 'teams' | 'series' | 'news' | string
   value?: string
   values?: string[] // for gallery
   onChange?: (url: string) => void
-  onValuesChange?: (urls: string[]) => void
+  // Functional updates supported so parallel uploads never overwrite each other.
+  onValuesChange?: (urls: string[] | ((prev: string[]) => string[])) => void
   onFileSelect?: (file: File) => void // New: return file without uploading
   label?: string
   hint?: string
@@ -24,6 +32,8 @@ interface ImageUploadProps {
   folder?: string
   modId?: string // لصور التعديلات فقط — يُستخدم في سجل الاستهلاك
   skipUpload?: boolean // New: skip upload, just return file
+  /** عنوان/تسمية الصورة التلقائية — نص ثابت أو دالة (ملف، ترتيبه في الدفعة) */
+  uploadTitle?: string | ((file: File, index: number) => string)
 }
 
 export function ImageUpload({
@@ -42,6 +52,7 @@ export function ImageUpload({
   folder = '',
   modId,
   skipUpload = false,
+  uploadTitle,
 }: ImageUploadProps) {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -50,6 +61,18 @@ export function ImageUpload({
   const [preview, setPreview] = useState<string | null>(null)
   const [previewModal, setPreviewModal] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // عمليات الرفع الجارية (وضع المعرض) — صورة + تقدم + سرعة + حالة لكل ملف
+  const [pending, setPending] = useState<
+    {
+      id: string
+      name: string
+      preview: string | null
+      progress: number
+      speed: number
+      status: 'uploading' | 'error'
+      error?: string
+    }[]
+  >([])
 
   // Sync preview with value when parent updates (e.g., initial load)
   useEffect(() => {
@@ -58,8 +81,80 @@ export function ImageUpload({
 
   const isMultiple = multiple || Array.isArray(values)
 
+  /** رفع عبر XHR مع تقدم وسرعة لكل ملف (fetch لا يدعم تقدم الرفع). */
+  const uploadModsFile = (file: File, formData: FormData): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const track = isMultiple
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const blobPreview = track ? URL.createObjectURL(file) : null
+      if (track && blobPreview) {
+        setPending((prev) => [
+          ...prev,
+          { id, name: file.name, preview: blobPreview, progress: 0, speed: 0, status: 'uploading' },
+        ])
+      }
+      const fail = (message: string) => {
+        if (blobPreview) URL.revokeObjectURL(blobPreview)
+        if (track) {
+          setPending((prev) =>
+            prev.map((it) => (it.id === id ? { ...it, status: 'error' as const, error: message } : it)),
+          )
+        }
+        reject(new Error(message))
+      }
+      const xhr = new XMLHttpRequest()
+      let lastLoaded = 0
+      let lastTime = Date.now()
+      xhr.upload.onprogress = (e) => {
+        if (!track || !e.lengthComputable) return
+        const now = Date.now()
+        const dt = (now - lastTime) / 1000
+        const speed = dt > 0 ? (e.loaded - lastLoaded) / dt : 0
+        lastLoaded = e.loaded
+        lastTime = now
+        const progress = Math.min(99, Math.round((e.loaded / e.total) * 100))
+        setPending((prev) => prev.map((it) => (it.id === id ? { ...it, progress, speed } : it)))
+      }
+      xhr.onload = () => {
+        if (blobPreview) URL.revokeObjectURL(blobPreview)
+        let data: any = null
+        try {
+          data = JSON.parse(xhr.responseText || 'null')
+        } catch {
+          data = null
+        }
+        if (xhr.status < 200 || xhr.status >= 300) {
+          fail(data?.error?.message || data?.error?.details || 'فشل رفع الصورة')
+          return
+        }
+        const publicUrl = data?.data?.url
+        if (!publicUrl) {
+          fail('لم يتم إرجاع رابط الصورة من الخادم')
+          return
+        }
+        if (track) {
+          setPending((prev) =>
+            prev.map((it) => (it.id === id ? { ...it, progress: 100, speed: 0 } : it)),
+          )
+          // إخفاء البطاقة بعد ظهور الصورة في الشبكة
+          setTimeout(() => {
+            setPending((prev) => prev.filter((it) => it.id !== id))
+          }, 600)
+        }
+        resolve(publicUrl)
+      }
+      xhr.onerror = () => fail('انقطع الاتصال أثناء الرفع')
+      xhr.open('POST', '/api/storage/upload-image')
+      xhr.send(formData)
+    })
+  }
+
+  const dismissPending = (id: string) => {
+    setPending((prev) => prev.filter((it) => it.id !== id))
+  }
+
   const uploadFile = useCallback(
-    async (file: File) => {
+    async (file: File, batchIndex = 0) => {
       setWarning(null)
       if (file.size > maxSizeMB * 1024 * 1024) {
         setError(`الملف كبير جداً — الحد الأقصى ${maxSizeMB}MB`)
@@ -109,22 +204,18 @@ export function ImageUpload({
           const formData = new FormData()
           formData.append('file', file)
           formData.append('modId', effectiveModId)
-
-          const res = await fetch('/api/storage/upload-image', {
-            method: 'POST',
-            body: formData,
-          })
-          const data = await res.json().catch(() => null)
-          if (!res.ok) {
-            const msg =
-              data?.error?.message || data?.error?.details || 'فشل رفع الصورة'
-            throw new Error(msg)
+          // التسمية التلقائية (تُرسل لخدمة الرفع كعنوان للصورة)
+          const resolvedTitle =
+            typeof uploadTitle === 'function'
+              ? uploadTitle(file, batchIndex)
+              : uploadTitle
+          if (resolvedTitle && resolvedTitle.trim()) {
+            formData.append('title', resolvedTitle.trim().slice(0, 200))
           }
-          const publicUrl = data?.data?.url
-          if (!publicUrl) throw new Error('لم يتم إرجاع رابط الصورة من الخادم')
 
-          if (isMultiple && onValuesChange && values) {
-            onValuesChange([...values, publicUrl])
+          const publicUrl = await uploadModsFile(file, formData)
+          if (isMultiple && onValuesChange) {
+            onValuesChange((prev) => [...(Array.isArray(prev) ? prev : []), publicUrl])
           } else {
             onChange?.(publicUrl)
             setPreview(publicUrl)
@@ -135,7 +226,12 @@ export function ImageUpload({
         // باقي الـ buckets → Supabase Storage (أفاتار، فرق، إلخ)
         const supabase = createClient()
         const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+        const supabaseTitle =
+          typeof uploadTitle === 'function' ? uploadTitle(file, batchIndex) : uploadTitle
+        const fileName =
+          supabaseTitle && supabaseTitle.trim()
+            ? `${supabaseTitle.trim().replace(/\//g, '-')}.${ext}`
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
         const path = folder ? `${folder}/${fileName}` : fileName
 
         const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
@@ -160,8 +256,8 @@ export function ImageUpload({
         const { data } = supabase.storage.from(bucket).getPublicUrl(path)
         const publicUrl = data.publicUrl
 
-        if (isMultiple && onValuesChange && values) {
-          onValuesChange([...values, publicUrl])
+        if (isMultiple && onValuesChange) {
+          onValuesChange((prev) => [...(Array.isArray(prev) ? prev : []), publicUrl])
         } else {
           onChange?.(publicUrl)
           setPreview(publicUrl)
@@ -182,9 +278,9 @@ export function ImageUpload({
       setDragOver(false)
       const files = Array.from(e.dataTransfer.files)
       if (isMultiple) {
-        files.forEach((f) => uploadFile(f))
+        files.forEach((f, i) => uploadFile(f, i))
       } else if (files[0]) {
-        uploadFile(files[0])
+        uploadFile(files[0], 0)
       }
     },
     [isMultiple, uploadFile],
@@ -193,9 +289,9 @@ export function ImageUpload({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : []
     if (isMultiple) {
-      files.forEach((f) => uploadFile(f))
+      files.forEach((f, i) => uploadFile(f, i))
     } else if (files[0]) {
-      uploadFile(files[0])
+      uploadFile(files[0], 0)
     }
     if (inputRef.current) inputRef.current.value = ''
   }
@@ -366,6 +462,59 @@ export function ImageUpload({
             className="hidden"
             onChange={handleFileSelect}
           />
+
+          {/* عمليات الرفع الجارية — صورة + تقدم + سرعة + حالة لكل ملف */}
+          {pending.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {pending.map((it) => (
+                <div
+                  key={it.id}
+                  className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                >
+                  {it.preview && it.status === 'uploading' && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={it.preview} alt={it.name} className="h-full w-full object-cover opacity-70" />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 space-y-1 bg-background/85 p-1.5 backdrop-blur-sm">
+                    <p className="truncate text-[10px] font-medium" title={it.name}>
+                      {it.name}
+                    </p>
+                    {it.status === 'uploading' ? (
+                      <>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary transition-[width]"
+                            style={{ width: `${it.progress}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>{it.progress}%</span>
+                          <span>{formatSpeed(it.speed)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate text-[10px] text-red-500">{it.error || 'فشل الرفع'}</span>
+                        <button
+                          type="button"
+                          onClick={() => dismissPending(it.id)}
+                          className="shrink-0 rounded px-1 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                          aria-label="إزالة"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {it.status === 'uploading' && (
+                    <div className="absolute inset-0 grid place-items-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {values && values.length > 0 && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">

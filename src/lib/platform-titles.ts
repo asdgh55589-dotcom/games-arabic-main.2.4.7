@@ -5,6 +5,10 @@
  *  1. العنوان  2. العنوان بالعربي  3. طريقة التعريب  4. نوع التعريب
  *  5. محتوى التعريب  6. تاريخ إصدار التعريب  7. حجم التعريب
  *
+ * PC inserts "توافق التعريب" between تاريخ الإصدار and الحجم (spec order:
+ * العنوان، العنوان بالعربي، طريقة التعريب، نوع التعريب، محتوى التعريب،
+ * تاريخ إصدار التعريب، توافق التعريب، حجم التعريب).
+ *
  * Platform-specific extras render ONLY for their platform, in spec order.
  * Empty/null values are skipped (except always-shown fallbacks).
  */
@@ -106,18 +110,24 @@ export function getModTitles(
   )
   pushIf('content', 'محتوى التعريب', mod.translationScope)
   push('releaseDate', 'تاريخ إصدار التعريب', formatDate(mod.releaseDate))
+  // حجم التعريب — يُعرض أخيراً دائماً، لكن في PC يأتي بعد "توافق التعريب"
+  // حسب الترتيب المعتمد (تاريخ الإصدار ← التوافق ← الحجم).
+  const platform = getPlatformKey(mod.game.platform)
+  let sizeStr: string | null = null
   if (nonEmpty(mod.fileSize)) {
     const size = (mod.fileSize as string).trim()
     const fmt = nonEmpty(mod.fileFormat) ? ` .${(mod.fileFormat as string).trim()}` : ''
-    push('size', 'حجم التعريب', `${size}${fmt}`)
+    sizeStr = `${size}${fmt}`
+  }
+  if (platform !== 'PC' && sizeStr) {
+    push('size', 'حجم التعريب', sizeStr)
   }
 
   // ---- platform-specific extras (spec order, skip when empty) ----
-  const platform = getPlatformKey(mod.game.platform)
   switch (platform) {
     case 'PS1':
     case 'PS2':
-      pushIf('gameId', 'معرّف اللعبة', mod.platformGameId)
+      pushIf('gameId', 'معرّف اللعبة (Game ID)', mod.platformGameId)
       break
     case 'PS3':
       pushIf('gameId', 'معرّف اللعبة', mod.platformGameId)
@@ -134,7 +144,7 @@ export function getModTitles(
       pushIf('gameUpdate', 'رقم تحديث اللعبة المتوافق', mod.gameUpdateVersion)
       break
     case 'NS':
-      pushIf('titleId', 'اصدار اللعبه', mod.titleId)
+      pushIf('titleId', 'إصدار اللعبة', mod.titleId)
       pushIf('device', 'الجهاز', mod.deviceModel)
       pushIf('gameUpdate', 'رقم التحديث المتوافق', mod.gameUpdateVersion)
       break
@@ -151,6 +161,9 @@ export function getModTitles(
       pushIf('minAndroid', 'الحد الأدنى لنظام الأندرويد', mod.minAndroidVersion)
       break
     case 'PC':
+      pushIf('compat', 'توافق التعريب', mod.compatibility)
+      if (sizeStr) push('size', 'حجم التعريب', sizeStr)
+      break
     case 'OTHER':
     default:
       break

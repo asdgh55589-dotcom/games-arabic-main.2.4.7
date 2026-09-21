@@ -23,7 +23,7 @@ import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
 import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { ModFormBasicInfo } from '@/components/creator/mod-form/basic-info'
-import { ModFormFiles } from '@/components/creator/mod-form/files'
+import { ModFormFiles, ModFormSchedule } from '@/components/creator/mod-form/files'
 import { ModFormMedia } from '@/components/creator/mod-form/media'
 import { ModFormSettings } from '@/components/creator/mod-form/settings'
 import { PlatformSelector } from '@/components/creator/mod-form/platform-selector'
@@ -34,6 +34,9 @@ import {
   EMPTY_TAB,
   Field,
   Section,
+  buildUploadTitle,
+  formatArabicTitle,
+  hasTitleYear,
   slugify,
   type ContactLink,
   type CustomTab,
@@ -130,7 +133,7 @@ function ModFormInner({ modId }: ModFormProps) {
   const [version, setVersion] = useState('1.0.0')
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
-  const [releaseDate, setReleaseDate] = useState('')
+  const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().split('T')[0])
   const [scheduledAt, setScheduledAt] = useState<string | null>(null)
   const [isOriginalWork, setIsOriginalWork] = useState(true)
   const [originalSource, setOriginalSource] = useState('')
@@ -522,7 +525,7 @@ function ModFormInner({ modId }: ModFormProps) {
     const _description = (description || '').trim()
     if (!_name || !_description) {
       const missing: string[] = []
-      if (!_name) missing.push('الاسم')
+      if (!_name) missing.push('العنوان')
       if (!_description) missing.push('الوصف الكامل')
       toast({
         title: 'بيانات ناقصة',
@@ -531,6 +534,16 @@ function ModFormInner({ modId }: ModFormProps) {
       })
       return
     }
+    // العنوان يجب أن ينتهي بسنة النشر بين قوسين — مثال: Resident Evil 6 (2013)
+    if (!hasTitleYear(_name)) {
+      toast({
+        title: 'تنسيق العنوان مطلوب',
+        description: 'أنهِ العنوان بسنة النشر بين قوسين — مثال: Resident Evil 6 (2013)',
+        variant: 'destructive',
+      })
+      return
+    }
+    const _arabicTitle = formatArabicTitle(arabicTitle)
     const _summary = (summary || '').trim() || _description.slice(0, 150) || _name
     if (!(thumbnailUrl || '').trim() || !(imageUrl || '').trim()) {
       toast({
@@ -548,7 +561,7 @@ function ModFormInner({ modId }: ModFormProps) {
       description: _description,
       changelog,
       installGuide,
-      arabicTitle,
+      arabicTitle: _arabicTitle,
       translationScope,
       compatibility,
       tags: tags
@@ -758,6 +771,10 @@ function ModFormInner({ modId }: ModFormProps) {
         setTags={setTags}
         translationType={translationType}
         setTranslationType={setTranslationType}
+        translationMethod={translationMethod}
+        setTranslationMethod={setTranslationMethod}
+        compatibility={compatibility}
+        setCompatibility={setCompatibility}
         summary={summary}
         setSummary={setSummary}
         userRole={userRole}
@@ -766,8 +783,6 @@ function ModFormInner({ modId }: ModFormProps) {
       <PlatformFieldsSection
         platform={platform}
         setPlatform={setPlatform}
-        translationMethod={translationMethod}
-        setTranslationMethod={setTranslationMethod}
         platformGameId={platformGameId}
         setPlatformGameId={setPlatformGameId}
         cusaId={cusaId}
@@ -819,6 +834,7 @@ function ModFormInner({ modId }: ModFormProps) {
         setVideoGroups={setVideoGroups}
         fetchingVideoKey={fetchingVideoKey}
         onFetchVideoMetadata={onFetchVideoMetadata}
+        uploadTitleBase={buildUploadTitle(name)}
       />
 
       <ModFormFiles
@@ -830,9 +846,8 @@ function ModFormInner({ modId }: ModFormProps) {
         fileFormat={fileFormat}
         setFileFormat={setFileFormat}
         releaseDate={releaseDate}
+        setReleaseDate={setReleaseDate}
         isEdit={isEdit}
-        scheduledAt={scheduledAt}
-        setScheduledAt={setScheduledAt}
         files={files}
         setFiles={setFiles}
         addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
@@ -894,6 +909,8 @@ function ModFormInner({ modId }: ModFormProps) {
           </div>
         )}
       </Section>
+
+      <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
 
       {/* سجل الإصدارات */}
       {isEdit && (
@@ -965,8 +982,8 @@ function ModFormInner({ modId }: ModFormProps) {
             <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
             <AlertDialogDescription>
               تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
-              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (اسم التعريب،
-              الاسم بالعربي، الوصف) لن تتأثر.
+              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (العنوان،
+              العنوان بالعربي، الوصف) لن تتأثر.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

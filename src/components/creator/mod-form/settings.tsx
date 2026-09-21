@@ -15,6 +15,9 @@ import type {
   TeamOpt,
 } from './primitives'
 
+/** إظهار قائمتي التصنيف والقسم في العلاقات — مخفيتان حالياً (false) */
+const SHOW_CATEGORY_SECTION = false
+
 interface Props {
   seriesId: string
   setSeriesId: (v: string) => void
@@ -77,36 +80,39 @@ export function ModFormSettings(p: Props) {
             </select>
           </Field>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="التصنيف" hint="اختياري — تصنيف التعريب">
-            <select
-              value={p.categoryId}
-              onChange={(e) => p.setCategoryId(e.target.value)}
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-            >
-              <option value="">— بدون تصنيف —</option>
-              {p.categoriesList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="القسم" hint="اختياري — القسم الرئيسي">
-            <select
-              value={p.sectionId}
-              onChange={(e) => p.setSectionId(e.target.value)}
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-            >
-              <option value="">— بدون قسم —</option>
-              {p.sectionsList.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+        {/* التصنيف والقسم مخفيان حالياً (المنطق والحفظ يعملان) — لإظهارهما احذف الشرط */}
+        {SHOW_CATEGORY_SECTION && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="التصنيف" hint="اختياري — تصنيف التعريب">
+              <select
+                value={p.categoryId}
+                onChange={(e) => p.setCategoryId(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+              >
+                <option value="">— بدون تصنيف —</option>
+                {p.categoriesList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="القسم" hint="اختياري — القسم الرئيسي">
+              <select
+                value={p.sectionId}
+                onChange={(e) => p.setSectionId(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+              >
+                <option value="">— بدون قسم —</option>
+                {p.sectionsList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        )}
       </Section>
 
       {/* ===== 6. translation team ===== */}

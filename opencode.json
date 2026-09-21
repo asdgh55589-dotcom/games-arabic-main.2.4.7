@@ -1,4 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]
+  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"],
+  "mcp": {
+    "vercel": {
+      "type": "local",
+      "command": ["bash", "-c", "cd /home/x/Desktop/vercel-mcp-pro && exec node dist/index.js"],
+      "enabled": true
+    }
+  }
 }

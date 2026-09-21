@@ -117,6 +117,7 @@ export async function uploadToFreeImage(
   mime: string,
   filename = 'image.jpg',
   timeoutMs = 60_000,
+  title?: string,
 ): Promise<FreeImageResult> {
   const key = getFreeImageKey()
   if (!key) throw new Error('FreeImage غير مُكوَّن — FREEIMAGE_API_KEY مفقود')
@@ -133,6 +134,10 @@ export async function uploadToFreeImage(
   form.append('action', 'upload')
   form.append('format', 'json')
   form.append('source', new Blob([new Uint8Array(buffer)], { type: mime }), filename)
+  // عنوان الصورة (تسمية تلقائية من النموذج — مثال: t.me/PS_PC_AR-Name-1)
+  if (title && title.trim()) {
+    form.append('title', title.trim().slice(0, 200))
+  }
 
   const doFetch = async () => {
     const res = await fetch(FREEIMAGE_ENDPOINT, {

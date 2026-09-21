@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const modId = (formData.get('modId') as string) || undefined
+    // عنوان الصورة للتسمية التلقائية (يُرسل لخدمة الرفع عند توفره)
+    const rawTitle = formData.get('title')
+    const title = typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle.trim().slice(0, 200) : undefined
 
     if (!file || !(file instanceof File)) {
       return validationFail('لم يتم اختيار ملف')
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const uploaded = await uploadToFreeImage(buffer, file.type, file.name || 'image.jpg')
+    const uploaded = await uploadToFreeImage(buffer, file.type, file.name || 'image.jpg', 60_000, title)
     const wrappedUrl = wrapImageUrl(uploaded.url)
 
     // Record usage (always after a real provider upload — usage = reality).

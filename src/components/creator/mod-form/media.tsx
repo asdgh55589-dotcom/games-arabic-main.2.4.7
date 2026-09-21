@@ -94,6 +94,8 @@ interface Props {
   setVideoGroups: (v: VideoGroup[] | ((p: VideoGroup[]) => VideoGroup[])) => void
   fetchingVideoKey: string | null
   onFetchVideoMetadata: (groupIdx: number, videoIdx: number, videoUrl: string) => void
+  /** قاعدة التسمية التلقائية (t.me/PS_PC_AR-...) — المعرض يضيف -1، -2... */
+  uploadTitleBase?: string
 }
 
 export function ModFormMedia(p: Props) {
@@ -128,36 +130,8 @@ export function ModFormMedia(p: Props) {
           required
           hint={t.bannerHint}
           folder="banners"
+          uploadTitle={p.uploadTitleBase || undefined}
         />
-        <div className="flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => p.handleImageFileSelect(e, 'imageUrl', 16 / 9)}
-            />
-            {t.cropAdvanced169}
-          </label>
-          {p.imageUrl && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs min-h-[44px]"
-              onClick={() => p.handleUrlCrop(p.imageUrl, 'imageUrl', 16 / 9)}
-            >
-              {t.cropCurrentLink}
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs min-h-[44px]"
-            onClick={() => toggleFi('imageUrl')}
-          >
-            {t.freeImageToggle}
-          </Button>
-        </div>
         {fiOpen === 'imageUrl' && (
           <FreeImagePanel
             modId={p.modId}
@@ -178,36 +152,8 @@ export function ModFormMedia(p: Props) {
           required
           hint={t.thumbnailHint}
           folder="thumbnails"
+          uploadTitle={p.uploadTitleBase || undefined}
         />
-        <div className="flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => p.handleImageFileSelect(e, 'thumbnailUrl', 1)}
-            />
-            {t.cropAdvanced11}
-          </label>
-          {p.thumbnailUrl && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs min-h-[44px]"
-              onClick={() => p.handleUrlCrop(p.thumbnailUrl, 'thumbnailUrl', 1)}
-            >
-              {t.cropCurrentLink}
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs min-h-[44px]"
-            onClick={() => toggleFi('thumbnailUrl')}
-          >
-            {t.freeImageToggle}
-          </Button>
-        </div>
         {fiOpen === 'thumbnailUrl' && (
           <FreeImagePanel
             modId={p.modId}
@@ -228,26 +174,14 @@ export function ModFormMedia(p: Props) {
           label={t.gallery}
           hint={t.galleryHint}
           folder="gallery"
+          uploadTitle={
+            p.uploadTitleBase
+              ? (_file, i) => `${p.uploadTitleBase}-${p.galleryUrls.length + i + 1}`
+              : undefined
+          }
         />
         <div className="flex flex-wrap items-center gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-accent">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => p.handleImageFileSelect(e, 'gallery', 4 / 3)}
-            />
-            {t.galleryCrop}
-          </label>
           <p className="text-xs text-muted-foreground">{p.galleryUrls.length} {t.imagesCount}</p>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs min-h-[44px]"
-            onClick={() => toggleFi('gallery')}
-          >
-            {t.freeImageToggle}
-          </Button>
         </div>
         {fiOpen === 'gallery' && (
           <FreeImagePanel

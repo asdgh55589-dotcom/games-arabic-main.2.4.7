@@ -74,6 +74,46 @@ export const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
+/** سنة النشر بين قوسين في آخر العنوان — مثال: Resident Evil 6 (2013) */
+export const TITLE_YEAR_RE = /\(\s*(19\d{2}|20\d{2})\s*\)\s*$/
+
+export function hasTitleYear(name: string): boolean {
+  return TITLE_YEAR_RE.test((name || '').trim())
+}
+
+/**
+ * تنسيق العنوان بالعربي تلقائياً: كل اسم بين "..." ويفصل بينها " / ".
+ * مثال: رزنت ايفل 6 / الشر المقيم ← "رزنت ايفل 6" / "الشر المقيم"
+ */
+export function formatArabicTitle(v: string): string {
+  const parts = (v || '')
+    .split('/')
+    .map((s) => s.trim().replace(/^"+|"+$/g, '').trim())
+    .filter(Boolean)
+  if (parts.length === 0) return ''
+  return parts.map((s) => `"${s}"`).join(' / ')
+}
+
+/** بادئة التسمية التلقائية لصور التعريب — ثابتة دائماً في أول الاسم */
+export const UPLOAD_TITLE_PREFIX = 't.me/PS_PC_AR-'
+
+/**
+ * اسم قاعدة التسمية من العنوان: المسافات ← نقاط، مع الاحتفاظ بالأحرف
+ * والأرقام والنقاط والأقواس والشرطات. مثال:
+ * Resident Evil 6 (2013) ← t.me/PS_PC_AR-Resident.Evil.6.(2013)
+ * يرجع '' لو العنوان فاضي (يرفع بالسلوك القديم بدون تسمية).
+ */
+export function buildUploadTitle(name: string): string {
+  const slug = (name || '')
+    .trim()
+    .replace(/\s+/g, '.')
+    .replace(/[^A-Za-z0-9\u0600-\u06FF._()\-]/g, '')
+    .replace(/\.+/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+  if (!slug) return ''
+  return `${UPLOAD_TITLE_PREFIX}${slug}`
+}
+
 export const EMPTY_FILE: DownloadFile = {
   title: '',
   description: '',

@@ -58,12 +58,21 @@ describe('getPlatformKey', () => {
 })
 
 describe('per-platform title lists', () => {
-  it('PC shows only the 7 shared titles', () => {
-    expect(labels('PC')).toEqual(SHARED)
+  it('PC adds توافق التعريب before size', () => {
+    expect(labels('PC')).toEqual([
+      'العنوان',
+      'العنوان بالعربي',
+      'طريقة التعريب',
+      'نوع التعريب',
+      'محتوى التعريب',
+      'تاريخ إصدار التعريب',
+      'توافق التعريب',
+      'حجم التعريب',
+    ])
   })
-  it('PS1 and PS2 add معرّف اللعبة', () => {
-    expect(labels('PS1')).toEqual([...SHARED, 'معرّف اللعبة'])
-    expect(labels('PS2')).toEqual([...SHARED, 'معرّف اللعبة'])
+  it('PS1 and PS2 add معرّف اللعبة (Game ID)', () => {
+    expect(labels('PS1')).toEqual([...SHARED, 'معرّف اللعبة (Game ID)'])
+    expect(labels('PS2')).toEqual([...SHARED, 'معرّف اللعبة (Game ID)'])
   })
   it('PS3 adds Game ID + game update', () => {
     expect(labels('PS3')).toEqual([...SHARED, 'معرّف اللعبة', 'رقم تحديث اللعبة المتوافق'])
@@ -87,7 +96,7 @@ describe('per-platform title lists', () => {
   it('Switch adds Title ID + device + update number', () => {
     expect(labels('NS')).toEqual([
       ...SHARED,
-      'اصدار اللعبه',
+      'إصدار اللعبة',
       'الجهاز',
       'رقم التحديث المتوافق',
     ])
@@ -165,7 +174,7 @@ describe('no cross-platform leakage', () => {
     for (const bad of [
       'نوع ملف التثبيت',
       'بنية المعالج المتوافقة',
-      'اصدار اللعبه',
+      'إصدار اللعبة',
       'الجهاز',
       'معرّف اللعبة (Title ID)',
       'معرّف اللعبة (PPSA)',
@@ -180,7 +189,7 @@ describe('no cross-platform leakage', () => {
       'معرّف اللعبة (CUSA)',
       'معرّف اللعبة (PPSA)',
       'تحديث النظام المتوافق',
-      'اصدار اللعبه',
+      'إصدار اللعبة',
       'التوافق',
     ]) {
       expect(l).not.toContain(bad)

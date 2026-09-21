@@ -24,7 +24,7 @@ import {
 } from '@/lib/upload-cropped'
 import { ModFormActions } from './mod-form/actions'
 import { ModFormBasicInfo } from './mod-form/basic-info'
-import { ModFormFiles } from './mod-form/files'
+import { ModFormFiles, ModFormSchedule } from './mod-form/files'
 import { ModFormMedia } from './mod-form/media'
 import { ModFormSettings } from './mod-form/settings'
 import { ChangeTypeDialog, type ChangeType } from './mod-form/change-type-dialog'
@@ -47,6 +47,9 @@ import {
   EMPTY_MEMBER,
   EMPTY_TAB,
   Section,
+  buildUploadTitle,
+  formatArabicTitle,
+  hasTitleYear,
   slugify,
   type ContactLink,
   type CustomTab,
@@ -106,7 +109,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [version, setVersion] = useState('1.0.0')
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
-  const [releaseDate, setReleaseDate] = useState('')
+  const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().split('T')[0])
   const [scheduledAt, setScheduledAt] = useState<string | null>(null)
 
   // Platform-specific fields
@@ -488,6 +491,12 @@ export default function ModForm({ modId }: ModFormProps) {
       })
       return
     }
+    // العنوان يجب أن ينتهي بسنة النشر بين قوسين — مثال: Resident Evil 6 (2013)
+    if (!hasTitleYear(_name)) {
+      toast({ title: t.titleYearRequired, variant: 'destructive' })
+      return
+    }
+    const _arabicTitle = formatArabicTitle(arabicTitle)
     const _summary = (summary || '').trim() || _description.slice(0, 150) || _name
     if (!(thumbnailUrl || '').trim() || !(imageUrl || '').trim()) {
       toast({
@@ -505,7 +514,7 @@ export default function ModForm({ modId }: ModFormProps) {
       description: _description,
       changelog,
       installGuide,
-      arabicTitle,
+      arabicTitle: _arabicTitle,
       translationScope,
       compatibility,
       tags: tags
@@ -675,6 +684,10 @@ export default function ModForm({ modId }: ModFormProps) {
         setTags={setTags}
         translationType={translationType}
         setTranslationType={setTranslationType}
+        translationMethod={translationMethod}
+        setTranslationMethod={setTranslationMethod}
+        compatibility={compatibility}
+        setCompatibility={setCompatibility}
         summary={summary}
         setSummary={setSummary}
         userRole={userRole}
@@ -683,8 +696,6 @@ export default function ModForm({ modId }: ModFormProps) {
       <PlatformFieldsSection
         platform={platform}
         setPlatform={setPlatform}
-        translationMethod={translationMethod}
-        setTranslationMethod={setTranslationMethod}
         platformGameId={platformGameId}
         setPlatformGameId={setPlatformGameId}
         cusaId={cusaId}
@@ -755,6 +766,7 @@ export default function ModForm({ modId }: ModFormProps) {
         setVideoGroups={setVideoGroups}
         fetchingVideoKey={fetchingVideoKey}
         onFetchVideoMetadata={onFetchVideoMetadata}
+        uploadTitleBase={buildUploadTitle(name)}
       />
 
       <ModFormFiles
@@ -766,9 +778,8 @@ export default function ModForm({ modId }: ModFormProps) {
         fileFormat={fileFormat}
         setFileFormat={setFileFormat}
         releaseDate={releaseDate}
+        setReleaseDate={setReleaseDate}
         isEdit={isEdit}
-        scheduledAt={scheduledAt}
-        setScheduledAt={setScheduledAt}
         files={files}
         setFiles={setFiles}
         addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
@@ -798,6 +809,8 @@ export default function ModForm({ modId }: ModFormProps) {
         addEmptyTab={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}
         slugify={slugify}
       />
+
+      <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
 
       {/* سجل الإصدارات */}
       {isEdit && (
@@ -894,8 +907,8 @@ export default function ModForm({ modId }: ModFormProps) {
             <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
             <AlertDialogDescription>
               تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
-              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (اسم التعريب،
-              الاسم بالعربي، الوصف) لن تتأثر.
+              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (العنوان،
+              العنوان بالعربي، الوصف) لن تتأثر.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

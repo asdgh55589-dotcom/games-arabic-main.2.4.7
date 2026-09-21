@@ -33,12 +33,129 @@ interface Props {
   fileFormat: string
   setFileFormat: (v: string) => void
   releaseDate: string
+  setReleaseDate: (v: string) => void
   isEdit: boolean
-  scheduledAt: string | null
-  setScheduledAt: (v: string | null) => void
   files: DownloadFile[]
   setFiles: (v: DownloadFile[] | ((p: DownloadFile[]) => DownloadFile[])) => void
   addEmptyFile: () => void
+}
+
+/** وحدات حجم الملف */
+const SIZE_UNITS = ['MB', 'GB'] as const
+
+/** تحليل "MB 200" أو "200 MB" أو "200" ← {num, unit} */
+function parseFileSize(v: string): { num: string; unit: 'MB' | 'GB' } {
+  const m = (v || '').trim().match(/^(MB|GB)?\s*([\d.]+)?\s*(MB|GB)?$/i)
+  if (!m) return { num: '', unit: 'MB' }
+  return { num: m[2] || '', unit: ((m[1] || m[3] || 'MB').toUpperCase() as 'MB' | 'GB') }
+}
+
+/** حقل حجم الملف: رقم + وحدة (MB/GB) — يُخزن بصيغة "MB 30" */
+export function FileSizeField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const { num, unit } = parseFileSize(value)
+  const update = (nextNum: string, nextUnit: 'MB' | 'GB') => {
+    const n = nextNum.trim()
+    onChange(n === '' ? '' : `${nextUnit} ${n}`)
+  }
+  return (
+    <div className="flex gap-2" dir="ltr">
+      <Input
+        type="number"
+        min={0}
+        step="any"
+        value={num}
+        onChange={(e) => update(e.target.value, unit)}
+        placeholder="0"
+        className="flex-1 text-left"
+      />
+      <select
+        value={unit}
+        onChange={(e) => update(num, e.target.value as 'MB' | 'GB')}
+        className="h-10 w-24 shrink-0 rounded-md border border-border bg-background px-2 text-sm"
+        aria-label="وحدة الحجم"
+      >
+        {SIZE_UNITS.map((u) => (
+          <option key={u} value={u}>
+            {u}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+/** النشر المجدول — قسم مستقل يُعرض بعد مصدر التعريب */
+export function ModFormSchedule({
+  scheduledAt,
+  setScheduledAt,
+}: {
+  scheduledAt: string | null
+  setScheduledAt: (v: string | null) => void
+}) {
+  const { dict } = useStudioLanguage()
+  const t = dict.form
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-card/30 p-5">
+      <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+        <input
+          type="checkbox"
+          checked={!!scheduledAt}
+          onChange={(e) => {
+            if (!e.target.checked) {
+              setScheduledAt(null)
+            } else {
+              // افتراضي: غداً في نفس الوقت
+              const d = new Date(Date.now() + 24 * 60 * 60 * 1000)
+              setScheduledAt(d.toISOString())
+            }
+          }}
+          className="h-4 w-4 rounded border-border"
+        />
+        {t.scheduledPublish}
+      </label>
+      {!!scheduledAt && (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label={t.scheduledDate}>
+              <Input
+                type="date"
+                value={scheduledAt.slice(0, 10)}
+                onChange={(e) => {
+                  if (!e.target.value) return
+                  const time = scheduledAt ? scheduledAt.slice(11, 16) : '12:00'
+                  setScheduledAt(new Date(`${e.target.value}T${time}:00`).toISOString())
+                }}
+              />
+            </Field>
+            <Field label={t.scheduledTime}>
+              <Input
+                type="time"
+                value={scheduledAt ? scheduledAt.slice(11, 16) : '12:00'}
+                onChange={(e) => {
+                  if (!e.target.value || !scheduledAt) return
+                  const date = scheduledAt.slice(0, 10)
+                  setScheduledAt(new Date(`${date}T${e.target.value}:00`).toISOString())
+                }}
+              />
+            </Field>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t.scheduledPreview}{' '}
+            {new Date(scheduledAt).toLocaleString('ar-EG', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}
+          </p>
+        </>
+      )}
+    </div>
+  )
 }
 
 export function ModFormFiles(p: Props) {
@@ -65,11 +182,7 @@ export function ModFormFiles(p: Props) {
             />
           </Field>
           <Field label={t.fileSize} hint={t.fileSizeHint}>
-            <Input
-              value={p.fileSize}
-              onChange={(e) => p.setFileSize(e.target.value)}
-              placeholder="MB 200"
-            />
+            <FileSizeField value={p.fileSize} onChange={p.setFileSize} />
           </Field>
           <Field label={t.fileFormat}>
             <select
@@ -84,66 +197,15 @@ export function ModFormFiles(p: Props) {
             </select>
           </Field>
         </div>
-        {p.isEdit && (
-          <Field label={t.publishDate} hint={t.publishDateHint}>
-            <Input type="date" value={p.releaseDate} disabled className="opacity-60" />
-          </Field>
-        )}
-        {/* ===== النشر المجدول ===== */}
-        <div className="space-y-3 rounded-lg border border-border bg-card/40 p-4">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
-            <input
-              type="checkbox"
-              checked={!!p.scheduledAt}
-              onChange={(e) => {
-                if (!e.target.checked) {
-                  p.setScheduledAt(null)
-                } else {
-                  // افتراضي: غداً في نفس الوقت
-                  const d = new Date(Date.now() + 24 * 60 * 60 * 1000)
-                  p.setScheduledAt(d.toISOString())
-                }
-              }}
-              className="h-4 w-4 rounded border-border"
-            />
-            {t.scheduledPublish}
-          </label>
-          {!!p.scheduledAt && (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label={t.scheduledDate}>
-                  <Input
-                    type="date"
-                    value={p.scheduledAt.slice(0, 10)}
-                    onChange={(e) => {
-                      if (!e.target.value) return
-                      const time = p.scheduledAt ? p.scheduledAt.slice(11, 16) : '12:00'
-                      p.setScheduledAt(new Date(`${e.target.value}T${time}:00`).toISOString())
-                    }}
-                  />
-                </Field>
-                <Field label={t.scheduledTime}>
-                  <Input
-                    type="time"
-                    value={p.scheduledAt ? p.scheduledAt.slice(11, 16) : '12:00'}
-                    onChange={(e) => {
-                      if (!e.target.value || !p.scheduledAt) return
-                      const date = p.scheduledAt.slice(0, 10)
-                      p.setScheduledAt(new Date(`${date}T${e.target.value}:00`).toISOString())
-                    }}
-                  />
-                </Field>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t.scheduledPreview}{' '}
-                {new Date(p.scheduledAt).toLocaleString('ar-EG', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
-              </p>
-            </>
-          )}
-        </div>
+        <Field label={t.publishDate} hint={t.publishDateHint}>
+          <Input
+            type="date"
+            value={p.releaseDate}
+            onChange={(e) => p.setReleaseDate(e.target.value)}
+            disabled={p.isEdit}
+            className={p.isEdit ? 'opacity-60' : undefined}
+          />
+        </Field>
       </Section>
 
       {/* ===== 5. download files ===== */}
@@ -247,11 +309,11 @@ export function ModFormFiles(p: Props) {
                     />
                   </Field>
                   <Field label={t.fileSizeLabel}>
-                    <Input
+                    <FileSizeField
                       value={file.fileSize}
-                      onChange={(e) =>
+                      onChange={(v) =>
                         p.setFiles((prev) =>
-                          prev.map((f, idx) => (idx === i ? { ...f, fileSize: e.target.value } : f)),
+                          prev.map((f, idx) => (idx === i ? { ...f, fileSize: v } : f)),
                         )
                       }
                     />
