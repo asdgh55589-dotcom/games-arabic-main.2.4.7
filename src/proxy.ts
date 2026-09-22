@@ -75,6 +75,7 @@ export async function getRoleFromCookie(
 
     // Validate tokenVersion against Redis cache (Edge-safe) مع circuit breaker + tvVerified
     // الأمن الحقيقي في getSession() عبر DB — Edge هنا دفاع إضافي فقط، لذا FAIL-OPEN عند عدم وجود Redis
+    // مهلة 3s: قراءة Upstash الخام ~0.3s لكن runtime الميدلوير قد ينشغل (بناء/ضغط) — مهلة 1s كانت تطرد الجلسات السليمة.
     let tvVerified = false
     if (tv !== undefined && userId) {
       try {
@@ -82,7 +83,7 @@ export async function getRoleFromCookie(
           async () =>
             await Promise.race([
               getTokenVersionCache(userId),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
             ]),
           async () => null,
         )

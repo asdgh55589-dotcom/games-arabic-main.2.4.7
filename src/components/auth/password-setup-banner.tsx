@@ -15,6 +15,9 @@ const DISMISS_KEY = 'ga-setup-banner-dismissed'
  * navigation, never locks the user out. Dismissal lasts for the tab session
  * only (sessionStorage): it reappears on next login while setup is pending,
  * and disappears permanently once setup completes.
+ *
+ * Staff (moderator+) are exempt: their accounts are provisioned and
+ * verified by the platform itself.
  */
 export function PasswordSetupBanner() {
   const { user, loading } = useAuth()
@@ -28,7 +31,10 @@ export function PasswordSetupBanner() {
     }
   }, [])
 
-  const needsSetup = !!user && (user.needsSecuritySetup ?? user.hasPassword === false)
+  const isStaff =
+    !!user && ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
+  const needsSetup =
+    !!user && !isStaff && (user.needsSecuritySetup ?? user.hasPassword === false)
   if (loading || !needsSetup || dismissed) return null
 
   const dismiss = () => {
