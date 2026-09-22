@@ -1,13 +1,25 @@
 /**
- * PC Structure Prompt — system prompt + JSON schema for structuring
- * pasted raw mod texts into the 7 PC form fields via Gemini.
+ * Structure Prompt — system prompt + JSON schemas for structuring
+ * pasted raw mod texts into publish-form fields via Gemini.
  *
- * Scope: PC platform only. No API calls here — this module only
- * builds the prompt; the API route will use it in a later step.
+ * 7 fields are shared by all platforms; compatibility is PC-only;
+ * each other platform adds its own ID fields (same as the form).
+ * No API calls here — this module only builds prompts/schemas.
  */
 
 /** Gemini model used for structuring (fast + cheap + JSON mode). */
 export const PC_STRUCTURE_MODEL = 'gemini-2.5-flash'
+
+/** Shared by every platform (compatibility excluded — PC-only). */
+const SHARED_FIELDS = [
+  'headline',
+  'title',
+  'arabicTitle',
+  'scope',
+  'installGuide',
+  'description',
+  'summary',
+] as const
 
 /** The 8 PC fields — order is binding for the model output. */
 export const PC_STRUCTURE_FIELDS = [
@@ -20,6 +32,24 @@ export const PC_STRUCTURE_FIELDS = [
   'description',
   'summary',
 ] as const
+
+/** Per-platform field lists (publish-form fields, compatibility = PC only). */
+export const PLATFORM_STRUCTURE_FIELDS: Record<string, readonly string[]> = {
+  PC: PC_STRUCTURE_FIELDS,
+  PS1: ['headline', 'title', 'arabicTitle', 'scope', 'platformGameId', 'installGuide', 'description', 'summary'],
+  PS2: ['headline', 'title', 'arabicTitle', 'scope', 'platformGameId', 'installGuide', 'description', 'summary'],
+  PS3: ['headline', 'title', 'arabicTitle', 'scope', 'platformGameId', 'gameUpdateVersion', 'installGuide', 'description', 'summary'],
+  PS4: ['headline', 'title', 'arabicTitle', 'scope', 'cusaId', 'systemFirmware', 'gameUpdateVersion', 'installGuide', 'description', 'summary'],
+  PS5: ['headline', 'title', 'arabicTitle', 'scope', 'ppsaId', 'systemFirmware', 'gameUpdateVersion', 'installGuide', 'description', 'summary'],
+  NS: ['headline', 'title', 'arabicTitle', 'scope', 'titleId', 'deviceModel', 'gameUpdateVersion', 'installGuide', 'description', 'summary'],
+  X360: ['headline', 'title', 'arabicTitle', 'scope', 'titleId', 'mediaId', 'supportedFormat', 'installGuide', 'description', 'summary'],
+  ANDROID: ['headline', 'title', 'arabicTitle', 'scope', 'installType', 'cpuArch', 'gameVersion', 'minAndroidVersion', 'installGuide', 'description', 'summary'],
+}
+
+/** Every field any platform can return (for generic fill handling). */
+export const ALL_STRUCTURE_FIELDS: readonly string[] = [
+  ...new Set(Object.values(PLATFORM_STRUCTURE_FIELDS).flat()),
+]
 
 export type PcStructureField = (typeof PC_STRUCTURE_FIELDS)[number]
 
@@ -186,10 +216,163 @@ export const PC_RESPONSE_SCHEMA = {
   propertyOrdering: [...PC_STRUCTURE_FIELDS],
 } as const
 
+/** Arabic descriptions for every structurable field (schema builder). */
+const FIELD_DESCRIPTIONS: Record<string, string> = {
+  headline: 'صيغة العنوان القديمة كاملة دون سنة',
+  title: 'اسم اللعبة + السنة بين قوسين',
+  arabicTitle: 'الاسم العربي الشائع للعبة',
+  scope: 'الأجزاء المترجمة مفصولة بـ (،)',
+  compatibility: 'النظام والمعمارية ونسخة المتجر',
+  installGuide: 'مهارة التركيب بقالبها الثابت',
+  description: 'أقسام Markdown بالترتيب الثابت',
+  summary: 'جملة واحدة مركزة',
+  platformGameId: 'معرف اللعبة الكامل بالبادئة والأرقام',
+  cusaId: 'معرف CUSA الكامل',
+  ppsaId: 'معرف PPSA الكامل',
+  titleId: 'معرف Title ID الكامل',
+  mediaId: 'معرف الوسائط',
+  supportedFormat: 'صيغ اللعبة المختبرة فقط',
+  systemFirmware: 'رقم تحديث النظام',
+  gameUpdateVersion: 'رقم تحديث اللعبة الدقيق',
+  deviceModel: 'موديل الجهاز',
+  installType: 'نوع ملف التثبيت',
+  cpuArch: 'بنية المعالج المختبرة',
+  gameVersion: 'رقم إصدار اللعبة',
+  minAndroidVersion: 'رقم إصدار أندرويد',
+}
+
+/** Builds the JSON schema for a platform (shared + its own fields). */
+export function buildResponseSchema(platformKey: string) {
+  const fields = PLATFORM_STRUCTURE_FIELDS[platformKey] ?? PC_STRUCTURE_FIELDS
+  const properties: Record<string, { type: string; description: string }> = {}
+  for (const f of fields) {
+    properties[f] = { type: 'string', description: FIELD_DESCRIPTIONS[f] ?? f }
+  }
+  return {
+    type: 'object',
+    properties,
+    required: [...fields],
+    propertyOrdering: [...fields],
+  }
+}
+
 /**
- * Builds the full request payload: system prompt + raw pasted text.
- * The API route will send this to Gemini in a later step.
+ * Builds the system prompt for a given platform. The 8 fields are
+ * shared by all platforms; only the compatibility hint adapts.
  */
-export function buildPcStructureRequest(rawText: string): string {
-  return `${PC_SYSTEM_PROMPT}\n\n--- النص الخام ---\n${rawText.trim()}`
+const PLATFORM_NAMES: Record<string, string> = {
+  PC: 'PC',
+  PS1: 'PlayStation 1',
+  PS2: 'PlayStation 2',
+  PS3: 'PlayStation 3',
+  PS4: 'PlayStation 4',
+  PS5: 'PlayStation 5',
+  NS: 'Nintendo Switch',
+  X360: 'Xbox 360',
+  ANDROID: 'Android',
+}
+
+export const STRUCTURE_PLATFORMS = Object.keys(PLATFORM_NAMES)
+
+/**
+ * ID-field documentation per platform (rules + correct examples,
+ * same wording as the guide). Inserted after the scope rule.
+ */
+const PLATFORM_ID_DOCS: Record<string, string> = {
+  PS1: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (platformGameId): الرقم التسلسلي الكامل بالبادئة حسب المنطقة — SCUS أمريكي / SLES أوربي / SCPS ياباني.
+   مثال صحيح: SCUS-94426 (النسخة الأمريكية)
+   مثال خاطئ: 94426 (بدون بادئة المنطقة) — SLUS-01055 (بادئة PS2 وليست PS1)`,
+  PS2: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (platformGameId): الرقم التسلسلي الكامل بالبادئة حسب المنطقة — SLUS أمريكي / SLES أوربي / SLPS ياباني.
+   مثال صحيح: SLUS-20946 (النسخة الأمريكية)
+   مثال خاطئ: 20946 (بدون بادئة المنطقة) — SCUS-94426 (بادئة PS1 وليست PS2)`,
+  PS3: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (platformGameId): الرقم التسلسلي الكامل بالبادئة حسب المنطقة — BLUS أمريكي / BLES أوربي / BLJM ياباني.
+   مثال صحيح: BLUS-30118 (النسخة الأمريكية)
+   مثال خاطئ: 30118 (بدون بادئة المنطقة)
+   رقم تحديث اللعبة (gameUpdateVersion): رقم التحديث الدقيق أو نطاقه.
+   مثال صحيح: متوافق مع التحديث 1.05
+   مثال خاطئ: آخر تحديث (اكتب الرقم) — 1.5 بدل 1.05 (إصداران مختلفان)`,
+  PS4: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (cusaId): يبدأ بـ CUSA- متبوعاً بأرقام.
+   مثال صحيح: CUSA-00419
+   مثال خاطئ: 00419 (بدون CUSA-) — PPSA-00001 (معرف PS5 وليس PS4)
+   تحديث النظام (systemFirmware): أدنى إصدار نظام مطلوب.
+   مثال صحيح: يتطلب نظام 9.00 أو أحدث
+   مثال خاطئ: أحدث نظام (اكتب الرقم)
+   رقم تحديث اللعبة (gameUpdateVersion): رقم التحديث الدقيق.
+   مثال صحيح: متوافق مع التحديث 1.02
+   مثال خاطئ: آخر تحديث (اكتب الرقم الدقيق)`,
+  PS5: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (ppsaId): يبدأ بـ PPSA- أو ELUS- متبوعاً بالأرقام.
+   مثال صحيح: PPSA-00001
+   مثال خاطئ: 00001 (بدون البادئة) — CUSA-00419 (معرف PS4 وليس PS5)
+   تحديث النظام (systemFirmware): أدنى إصدار نظام مطلوب.
+   مثال صحيح: يتطلب نظام 11.00 أو أحدث
+   مثال خاطئ: أحدث نظام (اكتب الرقم)
+   رقم تحديث اللعبة (gameUpdateVersion): رقم التحديث الدقيق.
+   مثال صحيح: متوافق مع التحديث 1.02
+   مثال خاطئ: آخر تحديث (اكتب الرقم الدقيق)`,
+  NS: `خانات المنصة (بعد المحتوى):
+   إصدار اللعبة (titleId): 16 حرفاً سداسياً عشرياً (0-9 وA-F) بدون مسافات.
+   مثال صحيح: 010042D00D900000
+   مثال خاطئ: 010042D00D9 (ناقص — يجب 16 حرفاً)
+   الجهاز (deviceModel): موديل جهاز Switch المتوافق.
+   مثال صحيح: جميع أجهزة نينتندو سويتش
+   مثال خاطئ: جهازي (غير مفيد للآخرين)
+   رقم التحديث (gameUpdateVersion): رقم التحديث الدقيق.
+   مثال صحيح: متوافق مع التحديث 1.0.28716
+   مثال خاطئ: آخر إصدار (اكتب الرقم الدقيق)`,
+  X360: `خانات المنصة (بعد المحتوى):
+   معرّف اللعبة (titleId): 8 أحرف سداسية عشرية بدون مسافات.
+   مثال صحيح: 545407E7
+   مثال خاطئ: 545407 (ناقص — يجب 8 أحرف)
+   معرّف الوسائط (mediaId): معرف قرص اللعبة.
+   مثال صحيح: D5A3-48F2-B1C7-9E04
+   مثال خاطئ: تركه فارغاً مع صيغة تتطلبه
+   صيغة اللعبة (supportedFormat): GOD / JTAG / RGH / ISO / XEX — اختر فقط ما اختبرته فعلاً.
+   مثال صحيح: GOD + ISO (مختبرة فعلاً)
+   مثال خاطئ: اختيار كل الصيغ دون اختبار`,
+  ANDROID: `خانات المنصة (بعد المحتوى):
+   نوع التثبيت (installType): APK مدمج / ملفات OBB / مجلد Data — ما يطابق الملفات المرفوعة.
+   مثال صحيح: APK مدمج — ملف واحد يُثبّت مباشرة
+   مثال خاطئ: APK دون ذكر ملفات OBB المرافقة
+   بنية المعالج (cpuArch): ARM64 / ARMv7 / x86 — ما اختبرته فعلاً.
+   مثال صحيح: ARM64 — معظم الأجهزة الحديثة (بعد 2015)
+   مثال خاطئ: x86 فقط للهواتف (مخصص للمحاكيات)
+   إصدار اللعبة (gameVersion): رقم الإصدار المتوافق.
+   مثال صحيح: متوافق مع الإصدار 2.5.1
+   مثال خاطئ: أحدث نسخة (اكتب الرقم)
+   الحد الأدنى لأندرويد (minAndroidVersion): رقم الإصدار المطلوب.
+   مثال صحيح: يتطلب أندرويد 8.0 أو أحدث
+   مثال خاطئ: أندرويد (بدون رقم إصدار)`,
+}
+
+export function buildStructurePrompt(platformKey: string): string {
+  const label = PLATFORM_NAMES[platformKey] ?? platformKey
+  const fields = PLATFORM_STRUCTURE_FIELDS[platformKey] ?? PC_STRUCTURE_FIELDS
+  if (platformKey === 'PC') {
+    return `المنصة الحالية: ${label} — خانة (توافق التعريب): نظام التشغيل والمعمارية ونسخة المتجر.\n\n${PC_SYSTEM_PROMPT}`
+  }
+  // Non-PC: same base minus the PC-only compatibility rule (renumbered),
+  // plus this platform's ID fields after the scope rule.
+  let prompt = PC_SYSTEM_PROMPT
+    .replace(
+      '2. المفاتيح الثمانية التالية فقط وبهذا الترتيب تماماً: headline, title, arabicTitle, scope, compatibility, installGuide, description, summary.',
+      `2. المفاتيح التالية فقط وبهذا الترتيب تماماً: ${fields.join(', ')}.`,
+    )
+    .replace(
+      '4. scope (محتوى التعريب): الأجزاء المترجمة مفصولة بـ (،) — كن محدداً واذكر المستثنى.\n   مثال صحيح: القوائم، الحوارات، الواجهة — الحوارات الصوتية إنجليزية',
+      '4. scope (محتوى التعريب): الأجزاء المترجمة مفصولة بـ (،) — كن محدداً واذكر المستثنى.\n   مثال صحيح: القوائم، الحوارات، الواجهة — الحوارات الصوتية إنجليزية\n   ' +
+        (PLATFORM_ID_DOCS[platformKey] ?? ''),
+    )
+    .replace(
+      '5. compatibility (توافق التعريب): نظام التشغيل برقم الإصدار والمعمارية + نسخة المتجر.\n   مثال صحيح: Windows 10 / 11 نسخة 64-بت — نسخة Steam\n',
+      '',
+    )
+    .replace('\n6. installGuide', '\n5. installGuide')
+    .replace('\n7. description', '\n6. description')
+    .replace('\n8. summary', '\n7. summary')
+  return `المنصة الحالية: ${label} — لا توجد خانة توافق في هذه المنصة.\n\n${prompt}`
 }

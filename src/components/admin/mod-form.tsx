@@ -6,8 +6,6 @@
 'use client'
 
 import {
-  ArrowRight,
-  ChevronRight,
   Clock,
   FileArchive,
   Loader2,
@@ -23,6 +21,7 @@ import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
 import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { ModFormBasicInfo } from '@/components/creator/mod-form/basic-info'
+import { ModFormHeader } from '@/components/creator/mod-form/header'
 import { ModFormFiles, ModFormSchedule } from '@/components/creator/mod-form/files'
 import { ModFormMedia } from '@/components/creator/mod-form/media'
 import { ModFormSettings } from '@/components/creator/mod-form/settings'
@@ -692,38 +691,23 @@ function ModFormInner({ modId }: ModFormProps) {
 
   return (
     <div className="space-y-8">
-      {/* رأس */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/admin/mods" className="hover:text-foreground">
-            التعريبات
-          </Link>
-          <ChevronRight className="h-4 w-4 rotate-180" />
-          <span className="text-foreground">{isEdit ? 'تعديل تعريب' : 'تعريب جديد'}</span>
-          {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ml-2" />}
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href="/admin/mods">إلغاء</Link>
-          </Button>
-          {step === 2 && !isEdit && (
-            <Button variant="ghost" onClick={handleBackToStep1}>
-              <ArrowRight className="ml-1 h-4 w-4" />
-              تغيير المنصة
-            </Button>
-          )}
-          {step === 2 && (
-            <Button onClick={onSave} disabled={saving || !!loadError}>
-              {saving ? (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="ml-2 h-4 w-4" />
-              )}
-              {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
-            </Button>
-          )}
-        </div>
-      </div>
+      <ModFormHeader
+        breadcrumbHref="/admin/mods"
+        breadcrumbLabel="التعريبات"
+        currentLabel={isEdit ? 'تعديل تعريب' : 'تعريب جديد'}
+        statusBadge={isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ml-2" /> : undefined}
+        dir="rtl"
+        isEdit={isEdit}
+        step={step}
+        platform={platform}
+        saving={saving}
+        loadError={loadError}
+        onSave={onSave}
+        saveLabel={isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
+        cancelHref="/admin/mods"
+        cancelLabel="إلغاء"
+        onBackToStep1={!isEdit ? handleBackToStep1 : undefined}
+      />
 
       {/* Step indicator for new mods */}
       {!isEdit && (

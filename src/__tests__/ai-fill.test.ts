@@ -19,8 +19,13 @@ describe('ai-fill cross-tab contract', () => {
     expect(aiFillKey('PC')).toBe('ga-ai-fill:PC')
   })
 
-  it('parses a valid payload', () => {
-    expect(parseAiFill(JSON.stringify(full))).toEqual(full.values)
+  it('parses a valid payload (all known fields coerced)', () => {
+    const parsed = parseAiFill(JSON.stringify(full))!
+    expect(parsed.title).toBe('ت')
+    expect(parsed.scope).toBe('قوائم')
+    // platform ID fields default to empty string when absent
+    expect(parsed.cusaId).toBe('')
+    expect(parsed.titleId).toBe('')
   })
 
   it('rejects garbage, wrong shapes and missing values', () => {

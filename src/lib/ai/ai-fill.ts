@@ -5,9 +5,9 @@
  * applies them. Same-origin, no server round-trip for the handoff.
  */
 
-import { PC_STRUCTURE_FIELDS, type PcStructureField } from './pc-structure-prompt'
+import { ALL_STRUCTURE_FIELDS } from './pc-structure-prompt'
 
-export type AiFillValues = Record<PcStructureField, string>
+export type AiFillValues = Record<string, string>
 
 export const aiFillKey = (platform: string) => `ga-ai-fill:${platform}`
 
@@ -19,7 +19,7 @@ export function parseAiFill(raw: string | null): AiFillValues | null {
     const values = (parsed as { values?: unknown }).values as Record<string, unknown> | undefined
     if (!values || typeof values !== 'object') return null
     const out = {} as AiFillValues
-    for (const f of PC_STRUCTURE_FIELDS) {
+    for (const f of ALL_STRUCTURE_FIELDS) {
       out[f] = typeof values[f] === 'string' ? (values[f] as string) : ''
     }
     return out

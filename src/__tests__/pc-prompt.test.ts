@@ -1,8 +1,10 @@
 import {
-  buildPcStructureRequest,
+  buildResponseSchema,
+  buildStructurePrompt,
   PC_RESPONSE_SCHEMA,
   PC_STRUCTURE_FIELDS,
   PC_SYSTEM_PROMPT,
+  PLATFORM_STRUCTURE_FIELDS,
 } from '@/lib/ai/pc-structure-prompt'
 
 describe('PC structure prompt (Gemini system prompt)', () => {
@@ -65,10 +67,34 @@ describe('PC structure prompt (Gemini system prompt)', () => {
     expect([...PC_RESPONSE_SCHEMA.propertyOrdering]).toEqual([...PC_STRUCTURE_FIELDS])
   })
 
-  it('builds the request payload (prompt + raw text)', () => {
-    const req = buildPcStructureRequest('  نص تجريبي  ')
-    expect(req.startsWith(PC_SYSTEM_PROMPT)).toBe(true)
-    expect(req).toContain('نص تجريبي')
-    expect(req).not.toContain('  نص تجريبي  ')
+  it('per-platform fields: shared + own IDs, compatibility PC-only', () => {
+    expect(PLATFORM_STRUCTURE_FIELDS.PC).toContain('compatibility')
+    for (const [platform, fields] of Object.entries(PLATFORM_STRUCTURE_FIELDS)) {
+      if (platform !== 'PC') expect(fields).not.toContain('compatibility')
+      for (const shared of ['headline', 'title', 'arabicTitle', 'scope', 'installGuide', 'description', 'summary']) {
+        expect(fields).toContain(shared)
+      }
+    }
+    expect(PLATFORM_STRUCTURE_FIELDS.PS4).toEqual(
+      expect.arrayContaining(['cusaId', 'systemFirmware', 'gameUpdateVersion']),
+    )
+    expect(PLATFORM_STRUCTURE_FIELDS.X360).toEqual(
+      expect.arrayContaining(['titleId', 'mediaId', 'supportedFormat']),
+    )
+    expect(PLATFORM_STRUCTURE_FIELDS.ANDROID).toEqual(
+      expect.arrayContaining(['installType', 'cpuArch', 'gameVersion', 'minAndroidVersion']),
+    )
+  })
+
+  it('non-PC prompt drops compatibility and adds ID docs', () => {
+    const ps4 = buildStructurePrompt('PS4')
+    expect(ps4).not.toContain('compatibility (توافق التعريب)')
+    expect(ps4).toContain('cusaId')
+    expect(ps4).toContain('CUSA-00419')
+    expect(ps4).toContain('لا توجد خانة توافق في هذه المنصة')
+    const schema = buildResponseSchema('PS4')
+    expect(schema.required).toEqual([...(PLATFORM_STRUCTURE_FIELDS.PS4)])
+    expect(Object.keys(schema.properties)).toContain('cusaId')
+    expect(Object.keys(schema.properties)).not.toContain('compatibility')
   })
 })

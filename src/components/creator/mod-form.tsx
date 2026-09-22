@@ -3,8 +3,7 @@
 
 'use client'
 
-import { ChevronRight, Clock, FileArchive, Loader2, Plus, ArrowRight, Save } from 'lucide-react'
-import Link from 'next/link'
+import { Clock, FileArchive, Loader2, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
@@ -23,6 +22,7 @@ import {
   uploadCroppedDataUrl,
 } from '@/lib/upload-cropped'
 import { ModFormActions } from './mod-form/actions'
+import { ModFormHeader } from './mod-form/header'
 import { ModFormBasicInfo } from './mod-form/basic-info'
 import { ModFormFiles, ModFormSchedule } from './mod-form/files'
 import { ModFormMedia } from './mod-form/media'
@@ -644,32 +644,23 @@ export default function ModForm({ modId }: ModFormProps) {
 
   return (
     <div className="space-y-8">
-      {/* رأس */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/creator/mods" className="hover:text-foreground">
-            {t.breadcrumbMods}
-          </Link>
-          <ChevronRight className={`h-4 w-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
-          <span className="text-foreground">{isEdit ? t.editMod : t.newMod}</span>
-          {isEdit && <WorkflowStatusBadge status={workflowStatus} className="ms-2" />}
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href="/creator/mods">{t.cancel}</Link>
-          </Button>
-          {step === 2 && (
-            <Button onClick={onSave} disabled={saving || !!loadError}>
-              {saving ? (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="ml-2 h-4 w-4" />
-              )}
-              {isEdit ? t.saveChanges : t.publishMod}
-            </Button>
-          )}
-        </div>
-      </div>
+      <ModFormHeader
+        breadcrumbHref="/creator/mods"
+        breadcrumbLabel={t.breadcrumbMods}
+        currentLabel={isEdit ? t.editMod : t.newMod}
+        statusBadge={isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ms-2" /> : undefined}
+        dir={dir}
+        isEdit={isEdit}
+        step={step}
+        platform={platform}
+        saving={saving}
+        loadError={loadError}
+        onSave={onSave}
+        saveLabel={isEdit ? t.saveChanges : t.publishMod}
+        cancelHref="/creator/mods"
+        cancelLabel={t.cancel}
+        onBackToStep1={!isEdit ? handleBackToStep1 : undefined}
+      />
 
       {/* Step indicator for new mods */}
       {!isEdit && (
@@ -703,18 +694,6 @@ export default function ModForm({ modId }: ModFormProps) {
       {/* Step 2: Full Mod Form */}
       {step === 2 && (
         <>
-          {/* Back button for new mods */}
-          {!isEdit && (
-            <button
-              type="button"
-              onClick={handleBackToStep1}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowRight className="h-4 w-4" />
-              تغيير المنصة
-            </button>
-          )}
-
       <ModFormBasicInfo
         name={name}
         setName={setName}

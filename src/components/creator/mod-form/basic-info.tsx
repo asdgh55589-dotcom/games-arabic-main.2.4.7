@@ -5,8 +5,6 @@
 // طريقة التركيب، سجل التغييرات، الوسوم.
 
 import { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { aiFillKey, parseAiFill } from '@/lib/ai/ai-fill'
 import {
@@ -201,19 +199,39 @@ export function ModFormBasicInfo(p: Props) {
   // AI fill handoff: the ai-fill tab stores approved values in
   // localStorage; applying them here keeps review in the form.
   useEffect(() => {
-    if (p.platform !== 'PC') return
+    if (p.platform === '') return
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== aiFillKey('PC')) return
+      if (e.key !== aiFillKey(p.platform)) return
       const values = parseAiFill(e.newValue)
       if (!values) return
-      p.setHeadline(values.headline)
-      p.setName(values.title)
-      p.setArabicTitle(values.arabicTitle)
-      p.setTranslationScope(values.scope)
-      p.setCompatibility(values.compatibility)
-      p.setInstallGuide(values.installGuide)
-      p.setDescription(values.description)
-      p.setSummary(values.summary.slice(0, 150))
+      const setters: Record<string, (v: string) => void> = {
+        headline: p.setHeadline,
+        title: p.setName,
+        arabicTitle: p.setArabicTitle,
+        scope: p.setTranslationScope,
+        compatibility: p.setCompatibility,
+        installGuide: p.setInstallGuide,
+        description: p.setDescription,
+        platformGameId: p.setPlatformGameId,
+        cusaId: p.setCusaId,
+        ppsaId: p.setPpsaId,
+        titleId: p.setTitleId,
+        mediaId: p.setMediaId,
+        supportedFormat: p.setSupportedFormat,
+        systemFirmware: p.setSystemFirmware,
+        gameUpdateVersion: p.setGameUpdateVersion,
+        deviceModel: p.setDeviceModel,
+        installType: p.setInstallType,
+        cpuArch: p.setCpuArch,
+        gameVersion: p.setGameVersion,
+        minAndroidVersion: p.setMinAndroidVersion,
+      }
+      for (const [field, set] of Object.entries(setters)) {
+        if (typeof values[field] === 'string' && values[field] !== '') set(values[field])
+      }
+      if (typeof values.summary === 'string' && values.summary !== '') {
+        p.setSummary(values.summary.slice(0, 150))
+      }
       setAiFilled(true)
     }
     window.addEventListener('storage', onStorage)
@@ -225,28 +243,10 @@ export function ModFormBasicInfo(p: Props) {
     <>
       {/* ===== 1. basic info (unified order) ===== */}
       <Section title={t.basicInfo}>
-        {p.platform === 'PC' && (
-          <div className="rounded-lg border border-violet-500/25 bg-violet-500/5 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm">
-                <span className="font-bold">التعبئة الذكية (PC)</span>
-                <p className="text-xs text-muted-foreground">
-                  الصق النص الخام في تبويب جديد، راجع النتيجة، ثم اعتمدها لتُعبأ الحقول الثمانية هنا تلقائياً
-                </p>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <a href="/creator/ai-fill?platform=PC" target="_blank" rel="noopener">
-                  <Sparkles className="me-1 h-3.5 w-3.5" />
-                  تعبئة ذكية
-                </a>
-              </Button>
-            </div>
-            {aiFilled && (
-              <p className="mt-2 text-xs font-bold text-emerald-600">
-                تمت تعبئة الحقول من التبويب الذكي — راجعها قبل الحفظ
-              </p>
-            )}
-          </div>
+        {aiFilled && (
+          <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-3 text-xs font-bold text-emerald-600">
+            تمت تعبئة الحقول من التبويب الذكي — راجعها قبل الحفظ
+          </p>
         )}
         <Field label="العنوان الرئيسي *" hint="يظهر بخط عريض في البطاقات وأعلى صفحة التعريب">
           <Input

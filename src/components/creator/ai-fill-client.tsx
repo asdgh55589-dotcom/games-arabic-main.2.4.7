@@ -11,9 +11,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { aiFillKey, type AiFillValues } from '@/lib/ai/ai-fill'
-import { PC_STRUCTURE_FIELDS } from '@/lib/ai/pc-structure-prompt'
+import { PLATFORM_STRUCTURE_FIELDS } from '@/lib/ai/pc-structure-prompt'
 
-const FIELD_LABELS: Record<keyof AiFillValues, string> = {
+const FIELD_LABELS: Record<string, string> = {
   headline: 'العنوان الرئيسي',
   title: 'العنوان',
   arabicTitle: 'العنوان بالعربي',
@@ -22,9 +22,22 @@ const FIELD_LABELS: Record<keyof AiFillValues, string> = {
   installGuide: 'طريقة التركيب',
   description: 'الوصف الكامل',
   summary: 'الملخص',
+  platformGameId: 'معرّف اللعبة (Game ID)',
+  cusaId: 'معرّف اللعبة (CUSA)',
+  ppsaId: 'معرّف اللعبة (PPSA)',
+  titleId: 'معرّف اللعبة (Title ID)',
+  mediaId: 'معرّف الوسائط (Media ID)',
+  supportedFormat: 'صيغة اللعبة المدعومة',
+  systemFirmware: 'تحديث النظام المتوافق',
+  gameUpdateVersion: 'رقم تحديث اللعبة المتوافق',
+  deviceModel: 'الجهاز',
+  installType: 'نوع ملف التثبيت',
+  cpuArch: 'بنية المعالج المتوافقة',
+  gameVersion: 'رقم إصدار اللعبة المتوافق',
+  minAndroidVersion: 'الحد الأدنى لنظام الأندرويد',
 }
 
-const LONG_FIELDS: (keyof AiFillValues)[] = ['installGuide', 'description']
+const LONG_FIELDS: string[] = ['installGuide', 'description']
 
 export function AiFillClient({ platform }: { platform: string }) {
   const [text, setText] = useState('')
@@ -52,7 +65,8 @@ export function AiFillClient({ platform }: { platform: string }) {
         throw new Error(data?.error?.message || 'فشل الهيكلة — حاول مجدداً')
       }
       const out = {} as AiFillValues
-      for (const f of PC_STRUCTURE_FIELDS) {
+      const platformFields = PLATFORM_STRUCTURE_FIELDS[platform] ?? []
+      for (const f of platformFields) {
         out[f] = typeof data?.data?.[f] === 'string' ? data.data[f] : ''
       }
       setValues(out)
@@ -110,9 +124,9 @@ export function AiFillClient({ platform }: { platform: string }) {
         {values && (
           <div className="space-y-4 rounded-xl border border-border bg-card/30 p-4">
             <h2 className="text-lg font-bold">النتيجة — راجع قبل الاعتماد</h2>
-            {PC_STRUCTURE_FIELDS.map((f) => (
+            {(PLATFORM_STRUCTURE_FIELDS[platform] ?? []).map((f) => (
               <div key={f} className="space-y-1.5">
-                <Label htmlFor={`ai-${f}`}>{FIELD_LABELS[f]}</Label>
+                <Label htmlFor={`ai-${f}`}>{FIELD_LABELS[f] ?? f}</Label>
                 {LONG_FIELDS.includes(f) ? (
                   <Textarea
                     id={`ai-${f}`}
