@@ -9,6 +9,11 @@ import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/usernam
 function getBaseUrl(req: NextRequest): string {
   // استخدام x-forwarded-host للـ production (Vercel)
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000'
+  // حارس الإنتاج: لا نرتد أبداً إلى localhost (عرض لخلل Site URL في Supabase).
+  if (process.env.NODE_ENV === 'production' && host.includes('localhost')) {
+    const canonical = (process.env.NEXT_PUBLIC_SITE_URL || '').trim().replace(/\/$/, '')
+    if (canonical) return canonical
+  }
   const protocol = req.headers.get('x-forwarded-proto') || 'https'
   return `${protocol}://${host}`
 }
