@@ -92,8 +92,8 @@ describe('supabase.auth.resend whitelist (MUST remain — do NOT touch)', () => 
     expect(src).toContain("keyPrefix: 'auth:resend-verify'")
   })
 
-  it('login-form keeps supabase.auth.resend', () => {
-    expect(read('src/components/official-login/login-form.tsx')).toContain(
+  it('Google-only login-form has no verification resend (no verification messages)', () => {
+    expect(read('src/components/official-login/login-form.tsx')).not.toContain(
       'supabase.auth.resend(',
     )
   })

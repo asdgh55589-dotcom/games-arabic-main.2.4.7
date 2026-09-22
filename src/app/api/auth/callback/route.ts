@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
         id: true,
         username: true,
         email: true,
+        emailVerified: true,
         role: true,
         avatarUrl: true,
         banStatus: true,
@@ -103,6 +104,7 @@ export async function GET(req: NextRequest) {
             id: true,
             username: true,
             email: true,
+            emailVerified: true,
             role: true,
             avatarUrl: true,
             banStatus: true,
@@ -155,6 +157,7 @@ export async function GET(req: NextRequest) {
               id: true,
               username: true,
               email: true,
+              emailVerified: true,
               role: true,
               avatarUrl: true,
               banStatus: true,
@@ -198,6 +201,16 @@ export async function GET(req: NextRequest) {
 
     if (!neonUser) {
       return NextResponse.redirect(new URL('/?error=auth_failed', baseUrl))
+    }
+
+    // Google OAuth auto-verifies the email — for new AND existing users.
+    // No verification emails or messages are ever involved in this flow.
+    if (provider === 'google' && 'emailVerified' in neonUser && !neonUser.emailVerified) {
+      try {
+        await db.user.update({ where: { id: neonUser.id }, data: { emailVerified: true } })
+      } catch {
+        // best-effort — login continues regardless
+      }
     }
 
     // فحص الحظر

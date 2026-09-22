@@ -108,14 +108,16 @@ describe('setup card contract (optional fields + warning)', () => {
   })
 })
 
-describe('username-or-email login wiring', () => {  const FORM = read('components/official-login/login-form.tsx')
+describe('username-or-email login disabled (Google only)', () => {  const FORM = read('components/official-login/login-form.tsx')
   const ROUTE = read('app/api/auth/login-identifier/route.ts')
 
-  it('login form routes non-email identifiers to the identifier endpoint', () => {
-    expect(FORM).toContain('/api/auth/login-identifier')
+  it('login form offers no identifier endpoint', () => {
+    expect(FORM).not.toContain('/api/auth/login-identifier')
   })
 
-  it('identifier endpoint uses generic errors + Neon hash + role cookie + ledger', () => {
+  it('identifier endpoint is a 410 disabled stub', () => {
+    expect(ROUTE).toContain('LOGIN_METHOD_DISABLED')
+    expect(ROUTE).toContain('410')
     for (const token of [
       'LOGIN_GENERIC_ERROR',
       'bcrypt',
@@ -123,16 +125,16 @@ describe('username-or-email login wiring', () => {  const FORM = read('component
       'createSessionLedger',
       'getBanStatus',
     ]) {
-      expect(ROUTE).toContain(token)
+      expect(ROUTE).not.toContain(token)
     }
   })
 
-  it('identifier endpoint does not require a staff security key or Supabase session', () => {
+  it('identifier endpoint has no staff security key or Supabase session', () => {
     expect(ROUTE).not.toContain('securityKey')
     expect(ROUTE).not.toContain('signInWithPassword')
   })
 
-  it('identifier endpoint has no member-role block (it IS the member password path)', () => {
+  it('identifier endpoint has no member-role block (it answers 410 to all)', () => {
     expect(ROUTE).not.toContain('Insufficient permissions')
   })
 })

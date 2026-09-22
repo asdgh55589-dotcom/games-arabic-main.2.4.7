@@ -59,24 +59,16 @@ describe('Part 1: MFA in Settings (optional)', () => {
     }
   })
 
-  it('login stays optional: challenge ONLY when totpEnabled, others unchanged', () => {
-    expect(IDENTIFIER_ROUTE).toContain('mfaRequired')
-    expect(IDENTIFIER_ROUTE).toContain('totpEnabled')
-    // Full session path intact for non-MFA users.
-    expect(IDENTIFIER_ROUTE).toContain('setRoleCookie')
-    expect(IDENTIFIER_ROUTE).toContain('createSessionLedger')
+  it('identifier login disabled: 410 stub, no MFA challenge path', () => {
+    expect(IDENTIFIER_ROUTE).toContain('LOGIN_METHOD_DISABLED')
+    expect(IDENTIFIER_ROUTE).toContain('410')
+    expect(IDENTIFIER_ROUTE).not.toContain('mfaRequired')
   })
 
-  it('login form renders the TOTP second step with recovery fallback', () => {
-    for (const token of [
-      'mfaPending',
-      '/api/auth/mfa/login',
-      '/api/auth/mfa/recovery',
-      '/api/auth/mfa/challenge',
-      'رجوع لتسجيل الدخول',
-    ]) {
-      expect(LOGIN_FORM).toContain(token)
-    }
+  it('Google-only login form has no TOTP second step (email paths removed)', () => {
+    expect(LOGIN_FORM).not.toContain('mfaPending')
+    expect(LOGIN_FORM).not.toContain('/api/auth/mfa/login')
+    expect(LOGIN_FORM).toContain("provider: 'google'")
   })
 })
 
@@ -116,16 +108,12 @@ describe('Part 2d: consistent toasts', () => {
 })
 
 describe('Part 2a/2f: Arabic user-facing strings', () => {
-  it('ban messages are Arabic in both login routes', () => {
-    for (const f of [
-      'app/api/auth/login/route.ts',
-      'app/api/auth/login-identifier/route.ts',
-    ]) {
-      const src = read(f)
-      expect(src).toContain('تم حظر حسابك')
-      expect(src).not.toContain('temporarily banned')
-      expect(src).not.toContain('permanently banned')
-    }
+  it('ban messages are Arabic in the staff login route (identifier disabled)', () => {
+    const src = read('app/api/auth/login/route.ts')
+    expect(src).toContain('تم حظر حسابك')
+    expect(src).not.toContain('temporarily banned')
+    expect(src).not.toContain('permanently banned')
+    expect(read('app/api/auth/login-identifier/route.ts')).toContain('LOGIN_METHOD_DISABLED')
   })
 
   it('no English "Too many requests" bodies remain in auth API', () => {

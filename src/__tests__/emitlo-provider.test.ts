@@ -255,10 +255,9 @@ describe('emitlo provider', () => {
     }
   })
 
-  it('supabase auth.resend call sites are untouched', () => {
+  it('supabase auth.resend call sites are untouched (login-form exempt: Google-only)', () => {
     const files = [
       '../app/api/auth/send-verification-email/route.ts',
-      '../components/official-login/login-form.tsx',
       // Phase 4C merge: legacy views/verify-email.tsx folded into -address.
       '../views/verify-email-address.tsx',
     ]
@@ -266,5 +265,11 @@ describe('emitlo provider', () => {
       const content = fs.readFileSync(path.join(__dirname, rel), 'utf8')
       expect(content).toContain('supabase.auth.resend')
     }
+    // Google-only login sends no verification messages — no resend call site.
+    const form = fs.readFileSync(
+      path.join(__dirname, '../components/official-login/login-form.tsx'),
+      'utf8',
+    )
+    expect(form).not.toContain('supabase.auth.resend')
   })
 })

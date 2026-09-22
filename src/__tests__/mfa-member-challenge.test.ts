@@ -107,28 +107,21 @@ beforeEach(() => {
   mockUpdate.mockResolvedValue({})
 })
 
-describe('identifier login MFA challenge', () => {
-  it('TOTP user → mfaRequired + token, NO session cookies/ledger', async () => {
+describe('identifier login disabled (owner decision)', () => {
+  it('TOTP user → 410, no challenge issued', async () => {
     mockFindUnique.mockResolvedValue(totpUser())
     const res = await identifierPOST(post('/api/auth/login-identifier', { identifier: 'tguser', password: 'pw-12345678' }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.data).toEqual(
-      expect.objectContaining({ mfaRequired: true, mfaToken: 'test-mfa-challenge-token', recoveryCodesCount: 8 }),
-    )
+    expect(res.status).toBe(410)
     expect(mockSetRoleCookie).not.toHaveBeenCalled()
     expect(mockCreateLedger).not.toHaveBeenCalled()
-    expect(logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'mfa_challenge_issued' }))
   })
 
-  it('non-MFA user → unchanged full session (optionality)', async () => {
+  it('non-MFA user → 410, no session', async () => {
     mockFindUnique.mockResolvedValue(plainUser())
     const res = await identifierPOST(post('/api/auth/login-identifier', { identifier: 'tguser', password: 'pw-12345678' }))
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.data.mfaRequired).toBeUndefined()
-    expect(mockSetRoleCookie).toHaveBeenCalled()
-    expect(mockCreateLedger).toHaveBeenCalled()
+    expect(res.status).toBe(410)
+    expect(mockSetRoleCookie).not.toHaveBeenCalled()
+    expect(mockCreateLedger).not.toHaveBeenCalled()
   })
 })
 

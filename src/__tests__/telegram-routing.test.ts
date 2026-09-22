@@ -185,8 +185,8 @@ describe('call-site wiring invariants', () => {
     expect(src('app/api/auth/verify-email/route.ts')).toContain("type: 'email_change'")
   })
 
-  it('all three login paths emit new-device alerts', () => {
-    expect(src('app/api/auth/login-identifier/route.ts')).toContain('maybeSendLoginAlert')
+  it('remaining login paths emit new-device alerts (identifier disabled)', () => {
+    expect(src('app/api/auth/login-identifier/route.ts')).toContain('LOGIN_METHOD_DISABLED')
     expect(src('app/api/auth/login/route.ts')).toContain('maybeSendLoginAlert')
     expect(src('lib/telegram-login.ts')).toContain('maybeSendLoginAlert')
   })

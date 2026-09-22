@@ -1,9 +1,11 @@
 /**
- * Invariant tests for the login-03 redesign (D.C).
+ * Invariant tests for the Google-only login (owner decision).
  *
- * React components can't render under the node test env (no jsdom), so these
- * tests assert the load-bearing contracts by reading source: isolation from
- * the customized ui/, registry fidelity, RTL+Arabic, and real-auth wiring.
+ * Manual email/username login and Telegram login are hidden AND disabled
+ * server-side. React components can't render under the node test env (no
+ * jsdom), so these tests assert the load-bearing contracts by reading
+ * source: isolation from the customized ui/, registry fidelity, RTL+Arabic,
+ * Google-only wiring, and absence of the disabled methods.
  */
 
 import * as fs from 'fs'
@@ -30,7 +32,7 @@ describe('official-login isolation', () => {
   })
 
   it('official-ui primitives are self-contained (only ./utils + external deps)', () => {
-    for (const f of ['button', 'card', 'input', 'label']) {
+    for (const f of ['button', 'card', 'label']) {
       const src = read(`components/official-ui/${f}.tsx`)
       expect(src).not.toMatch(/@\/components\//)
       expect(src).not.toMatch(/@\/lib\//)
@@ -40,7 +42,7 @@ describe('official-login isolation', () => {
 })
 
 describe('login-03 registry fidelity', () => {
-  it('keeps the official structure (Card shell, two OAuth buttons, divider, email form, terms)', () => {
+  it('keeps the official structure (Card shell, OAuth button, terms)', () => {
     for (const token of [
       'CardHeader',
       'CardTitle',
@@ -67,11 +69,24 @@ describe('login-03 registry fidelity', () => {
   })
 })
 
-describe('Arabic + real-auth wiring', () => {
-  it('is Arabic-first', () => {
-    for (const s of ['مرحباً بعودتك', 'الدخول عبر Google', 'الدخول عبر Telegram', 'نسيت كلمة المرور؟']) {
+describe('Arabic + Google-only wiring', () => {
+  it('is Arabic-first with Google as the only method', () => {
+    for (const s of ['مرحباً بك', 'الدخول عبر Google']) {
       expect(FORM).toContain(s)
     }
+  })
+
+  it('offers no Telegram entry point', () => {
+    expect(FORM).not.toMatch(/Telegram/i)
+    expect(FORM).not.toContain('/api/auth/telegram')
+  })
+
+  it('offers no manual email/username form', () => {
+    expect(FORM).not.toContain('signInWithPassword')
+    expect(FORM).not.toContain('signUp')
+    expect(FORM).not.toContain('/api/auth/register-ledger')
+    expect(FORM).not.toContain('/api/auth/login-identifier')
+    expect(FORM).not.toContain('نسيت كلمة المرور؟')
   })
 
   it('wires Google OAuth via Supabase with the real callback', () => {
@@ -79,25 +94,9 @@ describe('Arabic + real-auth wiring', () => {
     expect(FORM).toContain('/api/auth/callback')
   })
 
-  it('wires Telegram deep-link + polling + ledger', () => {
-    expect(FORM).toContain("fetch('/api/auth/telegram'")
-    expect(FORM).toContain('/api/auth/telegram/poll?token=')
-    expect(FORM).toContain("fetch('/api/auth/session-ledger'")
-  })
-
-  it('wires email login/register with pending-verification + resend', () => {
-    expect(FORM).toContain('signInWithPassword')
-    expect(FORM).toContain('signUp')
-    expect(FORM).toContain('/api/auth/register-ledger')
-    expect(FORM).toContain('/api/auth/send-verification-email')
-  })
-
-  it('links recovery, terms, and privacy (all exist as routes)', () => {
-    expect(FORM).toContain('href="/recover"')
+  it('links terms and privacy', () => {
     expect(FORM).toContain('href="/terms"')
     expect(FORM).toContain('href="/privacy"')
-    expect(fs.existsSync(path.join(ROOT, 'app/recover/page.tsx'))).toBe(true)
-    expect(fs.existsSync(path.join(ROOT, 'app/reset-password/page.tsx'))).toBe(true)
   })
 
   it('keeps the /login URL with noindex metadata', () => {
@@ -106,20 +105,34 @@ describe('Arabic + real-auth wiring', () => {
   })
 })
 
-describe('signup username oracle closed (Phase 4B Fix 3)', () => {
-  it('performs no pre-signup username-existence probe', () => {
-    // The old fetch(`/api/users/${...}/profile`) let anyone enumerate names.
-    expect(FORM).not.toMatch(/api\/users\/.*\/profile/)
-    expect(FORM).not.toMatch(/\/api\/users\//)
+describe('disabled methods stay disabled server-side', () => {
+  it('login-identifier rejects with 410', () => {
+    const src = read('app/api/auth/login-identifier/route.ts')
+    expect(src).toContain('LOGIN_METHOD_DISABLED')
+    expect(src).toMatch(/410/)
   })
 
-  it('handles server-side 409 conflicts after a real signup attempt', () => {
-    expect(FORM).toMatch(/register-ledger/)
-    expect(FORM).toMatch(/status === 409/)
-    expect(FORM).toMatch(/USERNAME_TAKEN/)
+  it('register-ledger rejects with 410', () => {
+    const src = read('app/api/auth/register-ledger/route.ts')
+    expect(src).toContain('LOGIN_METHOD_DISABLED')
+    expect(src).toMatch(/410/)
   })
 
-  it('conflict warning is generic and actionable (no reason oracle)', () => {
-    expect(FORM).toMatch(/يمكنك تغييره لاحقاً من الإعدادات/)
+  it('telegram login entry points reject with 410', () => {
+    for (const p of [
+      'app/api/auth/telegram/route.ts',
+      'app/api/auth/telegram/poll/route.ts',
+      'app/api/auth/telegram/callback/route.ts',
+    ]) {
+      const src = read(p)
+      expect(src).toContain('LOGIN_METHOD_DISABLED')
+      expect(src).toMatch(/410/)
+    }
+  })
+
+  it('Google callback auto-verifies email for existing users', () => {
+    const src = read('app/api/auth/callback/route.ts')
+    expect(src).toContain('emailVerified')
+    expect(src).toMatch(/provider === 'google'/)
   })
 })
