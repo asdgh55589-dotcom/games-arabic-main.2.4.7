@@ -271,6 +271,7 @@ describe('translationType dropdown', () => {
   it('schema coerces legacy Arabic instead of rejecting', () => {
     const base = {
       name: 'مود تجريبي',
+      headline: 'العنوان الرئيسي للاختبار',
       description: 'وصف طويل بما يكفي لاجتياز التحقق من الصحة هنا',
       thumbnailUrl: 'https://example.com/t.png',
       imageUrl: 'https://example.com/i.png',

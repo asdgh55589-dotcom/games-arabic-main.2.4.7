@@ -199,6 +199,10 @@ export const CreateModSchema = z.object({
     .string()
     .min(1, 'اسم التعريب مطلوب')
     .max(200, 'اسم التعريب طويل جداً (الحد الأقصى 200 حرف)'),
+  headline: z
+    .string()
+    .min(1, 'العنوان الرئيسي مطلوب')
+    .max(200, 'العنوان الرئيسي طويل جداً (الحد الأقصى 200 حرف)'),
   summary: z.string().max(500, 'الملخص طويل جداً (الحد الأقصى 500 حرف)').optional().default(''),
   description: z
     .string()

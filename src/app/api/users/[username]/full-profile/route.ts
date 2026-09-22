@@ -52,6 +52,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             name: true,
+            headline: true,
             slug: true,
             thumbnailUrl: true,
             downloads: true,
@@ -129,7 +130,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           guestName: true,
           parentId: true,
           user: { select: { username: true, avatarUrl: true } },
-          mod: { select: { name: true, slug: true } },
+          mod: { select: { name: true, headline: true, slug: true } },
         },
       }),
     ])

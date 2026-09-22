@@ -47,6 +47,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         data: {
           slug: copySlug,
           name: customTitle || `نسخة من: ${original.name}`,
+          headline: original.headline,
           summary: original.summary,
           description: original.description,
           changelog: original.changelog,

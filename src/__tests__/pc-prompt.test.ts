@@ -8,6 +8,7 @@ import {
 describe('PC structure prompt (Gemini system prompt)', () => {
   it('covers exactly the 7 PC fields in order', () => {
     expect([...PC_STRUCTURE_FIELDS]).toEqual([
+      'headline',
       'title',
       'arabicTitle',
       'scope',
@@ -34,13 +35,26 @@ describe('PC structure prompt (Gemini system prompt)', () => {
     expect(PC_SYSTEM_PROMPT).toMatch(/بين قوسين/)
   })
 
+  it('fixes the install guide template (grouped steps + removal)', () => {
+    expect(PC_SYSTEM_PROMPT).toMatch(/🔧 طريقة التركيب/)
+    expect(PC_SYSTEM_PROMPT).toMatch(/الأنواع السبعة/)
+    expect(PC_SYSTEM_PROMPT).toMatch(/BepInEx/)
+    expect(PC_SYSTEM_PROMPT).toMatch(/القواعد الذهبية/)
+    expect(PC_SYSTEM_PROMPT).toMatch(/للإزالة/)
+    expect(PC_SYSTEM_PROMPT).toMatch(/ممنوع تجاهلها/)
+  })
+
   it('fixes the description assembly order (overview + features first)', () => {
     const overviewIdx = PC_SYSTEM_PROMPT.indexOf('لمحة عن اللعبة')
     const featuresIdx = PC_SYSTEM_PROMPT.indexOf('مميزات التعريب')
     const problemsIdx = PC_SYSTEM_PROMPT.indexOf('المشاكل المعروفة والحلول')
+    const faqIdx = PC_SYSTEM_PROMPT.indexOf('أسئلة شائعة (FAQ)')
+    const styleIdx = PC_SYSTEM_PROMPT.indexOf('الأسلوب الطبيعي')
     expect(overviewIdx).toBeGreaterThan(-1)
     expect(featuresIdx).toBeGreaterThan(-1)
     expect(problemsIdx).toBeGreaterThan(-1)
+    expect(faqIdx).toBeGreaterThan(-1)
+    expect(styleIdx).toBeGreaterThan(-1)
     expect(overviewIdx).toBeLessThan(featuresIdx)
     expect(featuresIdx).toBeLessThan(problemsIdx)
   })

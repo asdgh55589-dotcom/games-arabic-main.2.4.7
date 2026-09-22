@@ -115,6 +115,7 @@ function ModFormInner({ modId }: ModFormProps) {
 
   // ===== Form state =====
   const [name, setName] = useState('')
+  const [headline, setHeadline] = useState('')
   const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
   const [changelog, setChangelog] = useState('')
@@ -229,6 +230,7 @@ function ModFormInner({ modId }: ModFormProps) {
         if (!data?.data) throw new Error('البيانات فارغة')
         const m = data.data
         setName(m.name || '')
+        setHeadline((m as any).headline || '')
         setSummary(m.summary || '')
         setDescription(m.description || '')
         setChangelog(m.changelog || '')
@@ -525,9 +527,11 @@ function ModFormInner({ modId }: ModFormProps) {
       return
     }
     const _name = (name || '').trim()
+    const _headline = (headline || '').trim()
     const _description = (description || '').trim()
-    if (!_name || !_description) {
+    if (!_name || !_headline || !_description) {
       const missing: string[] = []
+      if (!_headline) missing.push('العنوان الرئيسي')
       if (!_name) missing.push('العنوان')
       if (!_description) missing.push('الوصف الكامل')
       toast({
@@ -568,6 +572,7 @@ function ModFormInner({ modId }: ModFormProps) {
     setSaving(true)
     const payload = {
       name: _name,
+      headline: _headline,
       summary: _summary,
       description: _description,
       changelog,
@@ -774,6 +779,8 @@ function ModFormInner({ modId }: ModFormProps) {
       <ModFormBasicInfo
         name={name}
         setName={setName}
+        headline={headline}
+        setHeadline={setHeadline}
         description={description}
         setDescription={setDescription}
         changelog={changelog}

@@ -174,7 +174,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
                   textShadow: '0 2px 24px rgba(0,0,0,0.6)',
                 }}
               >
-                {slide.name}
+                {slide.headline || slide.name}
               </h2>
 
               <p className="mb-5 text-sm font-semibold text-muted-foreground">

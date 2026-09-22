@@ -2,6 +2,7 @@ import { aiFillKey, parseAiFill } from '@/lib/ai/ai-fill'
 
 const full = {
   values: {
+    headline: 'ر',
     title: 'ت',
     arabicTitle: 'ع',
     scope: 'قوائم',

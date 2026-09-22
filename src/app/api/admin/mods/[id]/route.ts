@@ -109,6 +109,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const updateData: Record<string, unknown> = {}
     const allowedFields = [
       'name',
+      'headline',
       'summary',
       'description',
       'changelog',

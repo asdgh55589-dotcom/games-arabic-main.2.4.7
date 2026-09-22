@@ -6,7 +6,6 @@
 
 import { useState } from 'react'
 import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
-import { SiteHeader } from '@/components/creator-dashboard/site-header'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -15,6 +14,7 @@ import { aiFillKey, type AiFillValues } from '@/lib/ai/ai-fill'
 import { PC_STRUCTURE_FIELDS } from '@/lib/ai/pc-structure-prompt'
 
 const FIELD_LABELS: Record<keyof AiFillValues, string> = {
+  headline: 'العنوان الرئيسي',
   title: 'العنوان',
   arabicTitle: 'العنوان بالعربي',
   scope: 'محتوى التعريب',
@@ -70,16 +70,23 @@ export function AiFillClient({ platform }: { platform: string }) {
   }
 
   return (
-    <>
-      <SiteHeader />
-      <div className="mx-auto flex max-w-3xl flex-1 flex-col gap-6 p-4 lg:p-6" dir="rtl">
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Minimal standalone header (no studio shell — this opens in a new tab) */}
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
+          <Sparkles className="h-5 w-5 text-violet-500" />
+          <span className="font-bold">التعبئة الذكية</span>
+          <span className="text-xs text-muted-foreground">Games Arabic</span>
+        </div>
+      </header>
+      <div className="mx-auto flex max-w-3xl flex-1 flex-col gap-6 p-4 lg:p-6">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Sparkles className="h-5 w-5 text-violet-500" />
             التعبئة الذكية (PC)
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            الصق كل بيانات التعريب كنص خام — تُرتب في الخانات السبع. راجع النتيجة ثم اعتمدها لتُعبأ في النموذج.
+            الصق كل بيانات التعريب كنص خام — تُرتب في الخانات الثماني. راجع النتيجة ثم اعتمدها لتُعبأ في النموذج.
           </p>
         </div>
 
@@ -130,12 +137,12 @@ export function AiFillClient({ platform }: { platform: string }) {
             </Button>
             {applied && (
               <p className="text-sm font-bold text-emerald-600">
-                تمت التعبئة — ارجع لتبويب النموذج وراجع الحقول السبع قبل الحفظ
+                تمت التعبئة — ارجع لتبويب النموذج وراجع الحقول الثمانية قبل الحفظ
               </p>
             )}
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }

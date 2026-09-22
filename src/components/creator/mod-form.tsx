@@ -89,6 +89,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [pendingPlatform, setPendingPlatform] = useState('')
 
   const [name, setName] = useState('')
+  const [headline, setHeadline] = useState('')
   const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
   const [changelog, setChangelog] = useState('')
@@ -204,6 +205,7 @@ export default function ModForm({ modId }: ModFormProps) {
         }
         const m = data.data
         setName(m.name || '')
+        setHeadline((m as any).headline || '')
         setSummary(m.summary || '')
         setDescription(m.description || '')
         setChangelog(m.changelog || '')
@@ -493,9 +495,11 @@ export default function ModForm({ modId }: ModFormProps) {
       return
     }
     const _name = (name || '').trim()
+    const _headline = (headline || '').trim()
     const _description = (description || '').trim()
-    if (!_name || !_description) {
+    if (!_name || !_headline || !_description) {
       const missing: string[] = []
+      if (!_headline) missing.push('العنوان الرئيسي')
       if (!_name) missing.push(t.missingName)
       if (!_description) missing.push(t.missingDesc)
       toast({
@@ -528,6 +532,7 @@ export default function ModForm({ modId }: ModFormProps) {
     setSaving(true)
     const payload = {
       name: _name,
+      headline: _headline,
       summary: _summary,
       description: _description,
       changelog,
@@ -713,6 +718,8 @@ export default function ModForm({ modId }: ModFormProps) {
       <ModFormBasicInfo
         name={name}
         setName={setName}
+        headline={headline}
+        setHeadline={setHeadline}
         description={description}
         setDescription={setDescription}
         changelog={changelog}

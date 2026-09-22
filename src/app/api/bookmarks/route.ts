@@ -67,6 +67,7 @@ export async function GET() {
             id: true,
             slug: true,
             name: true,
+            headline: true,
             summary: true,
             thumbnailUrl: true,
             imageUrl: true,

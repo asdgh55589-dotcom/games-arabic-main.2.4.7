@@ -49,7 +49,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
             },
           },
         },
-        targetMod: { select: { id: true, name: true, slug: true, thumbnailUrl: true } },
+        targetMod: { select: { id: true, name: true, headline: true, slug: true, thumbnailUrl: true } },
         targetComment: { select: { id: true, text: true, createdAt: true } },
         targetUser: {
           select: {

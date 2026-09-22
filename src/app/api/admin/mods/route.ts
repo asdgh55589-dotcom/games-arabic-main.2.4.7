@@ -202,6 +202,7 @@ export async function POST(req: NextRequest) {
         data: {
           slug,
           name: data.name,
+          headline: data.headline,
           summary: data.summary,
           description: data.description,
           changelog: data.changelog || '',

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { content, variables } = formatPost(
       {
-        name: mod.name,
+        name: mod.headline || mod.name,
         arabicTitle: mod.arabicTitle || undefined,
         version: mod.version,
         description: mod.description || undefined,

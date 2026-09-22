@@ -137,6 +137,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   interface NeighborLink {
     slug: string
     name: string
+    headline?: string | null
   }
   const neighborsUrl = useMemo(() => {
     if (!mod?.slug) return null
@@ -250,14 +251,14 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           </Link>
           <span className="shrink-0 text-primary/60 text-[10px]">‹</span>
           <span className="min-w-0 flex-1 truncate inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
-            {mod.name}
+            {(mod as { headline?: string }).headline || mod.name}
           </span>
         </nav>
       </div>
 
       {/* ===== العنوان + الملخص + الشارات (3a/3d/3i/3j/3k) ===== */}
       <div className="mx-2 mt-2 rounded-none border-[2px] border-border bg-card px-3 py-3 shadow-[1px_1px_0_0_var(--border)]">
-        <h1 className="text-lg font-black leading-snug text-foreground">{mod.name}</h1>
+        <h1 className="text-lg font-black leading-snug text-foreground">{(mod as { headline?: string }).headline || mod.name}</h1>
         {displaySummary !== '' && (
           <p className="mt-1.5 text-[13px] font-medium leading-[1.8] text-foreground/90">
             {displaySummary}
@@ -640,7 +641,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                     السابق
                   </div>
                   <div className="truncate text-[11px] font-black leading-tight text-foreground">
-                    {prevMod.name}
+                    {prevMod.headline || prevMod.name}
                   </div>
                 </div>
               </Link>
@@ -657,7 +658,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                     التالي
                   </div>
                   <div className="truncate text-[11px] font-black leading-tight text-foreground">
-                    {nextMod.name}
+                    {nextMod.headline || nextMod.name}
                   </div>
                 </div>
                 <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

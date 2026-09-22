@@ -249,7 +249,9 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
         <div className="flex w-full flex-col gap-1.5 p-2 sm:gap-2 sm:p-3">
           {/* ZONE 1: IDENTITY */}
           <h3 className="line-clamp-2 h-[2.6em] w-full text-xs font-bold leading-[1.3] text-foreground transition-colors group-hover:text-primary sm:text-sm">
-            {query ? highlightMatch(mod.name, query) : mod.name}
+            {query
+              ? highlightMatch((mod as { headline?: string }).headline || mod.name, query)
+              : (mod as { headline?: string }).headline || mod.name}
           </h3>
           {mod.isOriginalWork === false && (
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600">

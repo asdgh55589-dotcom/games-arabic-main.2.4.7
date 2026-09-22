@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         id: true,
         text: true,
         createdAt: true,
-        mod: { select: { name: true, slug: true } },
+        mod: { select: { name: true, headline: true, slug: true } },
       },
     })
 
@@ -68,6 +68,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         name: true,
+        headline: true,
         slug: true,
         thumbnailUrl: true,
         downloads: true,
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         name: true,
+        headline: true,
         slug: true,
         thumbnailUrl: true,
         updatedAt: true,
@@ -99,7 +101,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         id: true,
         value: true,
         createdAt: true,
-        mod: { select: { name: true, slug: true, thumbnailUrl: true } },
+        mod: { select: { name: true, headline: true, slug: true, thumbnailUrl: true } },
       },
     })
 

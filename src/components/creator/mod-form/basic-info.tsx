@@ -141,6 +141,8 @@ function MultiChips({
 interface Props {
   name: string
   setName: (v: string) => void
+  headline: string
+  setHeadline: (v: string) => void
   description: string
   setDescription: (v: string) => void
   changelog: string
@@ -204,6 +206,7 @@ export function ModFormBasicInfo(p: Props) {
       if (e.key !== aiFillKey('PC')) return
       const values = parseAiFill(e.newValue)
       if (!values) return
+      p.setHeadline(values.headline)
       p.setName(values.title)
       p.setArabicTitle(values.arabicTitle)
       p.setTranslationScope(values.scope)
@@ -228,7 +231,7 @@ export function ModFormBasicInfo(p: Props) {
               <div className="text-sm">
                 <span className="font-bold">التعبئة الذكية (PC)</span>
                 <p className="text-xs text-muted-foreground">
-                  الصق النص الخام في تبويب جديد، راجع النتيجة، ثم اعتمدها لتُعبأ الحقول السبع هنا تلقائياً
+                  الصق النص الخام في تبويب جديد، راجع النتيجة، ثم اعتمدها لتُعبأ الحقول الثمانية هنا تلقائياً
                 </p>
               </div>
               <Button asChild variant="outline" size="sm">
@@ -245,6 +248,14 @@ export function ModFormBasicInfo(p: Props) {
             )}
           </div>
         )}
+        <Field label="العنوان الرئيسي *" hint="يظهر بخط عريض في البطاقات وأعلى صفحة التعريب">
+          <Input
+            value={p.headline}
+            onChange={(e) => p.setHeadline(e.target.value)}
+            placeholder="مثال: التعريب العربي الكامل للعبة"
+            dir="auto"
+          />
+        </Field>
         <Field label={t.modName} required hint={t.nameYearHint}>
           <Input
             value={p.name}

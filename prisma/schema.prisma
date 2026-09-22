@@ -288,6 +288,7 @@ model Mod {
   id                   String                @id @default(cuid())
   slug                 String                @unique
   name                 String
+  headline             String                @default("") // العنوان الرئيسي (يظهر عريضاً في البطاقات والتفاصيل)
   summary              String
   description          String
   changelog            String                @default("") // سجل التغييرات (markdown)

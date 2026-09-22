@@ -331,7 +331,7 @@ function ModCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-medium truncate">{mod.name}</h3>
+              <h3 className="font-medium truncate">{(mod as { headline?: string }).headline || mod.name}</h3>
               <Badge className={cn('text-white', meta.color)}>
                 <StatusIcon className="h-3 w-3 me-1" />
                 {statusLabel(mod.workflowStatus, dict.mods)}

@@ -66,6 +66,7 @@ const PUBLISHER = { id: 'u2', username: 'sara', email: 's@t', role: 'publisher' 
 
 const BASE_BODY = {
   name: 'Test Mod',
+  headline: 'العنوان الرئيسي للاختبار',
   description: 'وصف طويل بما فيه الكفاية لاجتياز التحقق من الصحة',
   thumbnailUrl: 'https://x.test/t.png',
   imageUrl: 'https://x.test/i.png',

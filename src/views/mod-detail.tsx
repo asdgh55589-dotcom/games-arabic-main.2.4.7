@@ -189,6 +189,7 @@ export function ModDetailPage() {
   interface NeighborLink {
     slug: string
     name: string
+    headline?: string | null
   }
   const neighborsUrl = useMemo(() => {
     if (!mod?.slug) return null
@@ -403,7 +404,7 @@ export function ModDetailPage() {
                   </Link>
                   <span className="text-primary/60 text-[10px]">‹</span>
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
-                    {mod.name}
+                    {(mod as { headline?: string }).headline || mod.name}
                   </span>
                 </nav>
               </div>
@@ -489,7 +490,7 @@ export function ModDetailPage() {
                     >
                       {/* Title */}
                       <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
-                        {mod.name}
+                        {(mod as { headline?: string }).headline || mod.name}
                       </h1>
                       {/* 3a — summary below title with description fallback */}
                       {displaySummary !== '' && (
@@ -1023,7 +1024,7 @@ export function ModDetailPage() {
                           التعريب السابق
                         </div>
                         <div className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                          {prevMod.name}
+                          {prevMod.headline || prevMod.name}
                         </div>
                       </div>
                     </Link>
@@ -1040,7 +1041,7 @@ export function ModDetailPage() {
                           التعريب التالي
                         </div>
                         <div className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                          {nextMod.name}
+                          {nextMod.headline || nextMod.name}
                         </div>
                       </div>
                       <ChevronLeft className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />

@@ -22,6 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
           select: {
             id: true,
             name: true,
+            headline: true,
             slug: true,
             thumbnailUrl: true,
             downloads: true,

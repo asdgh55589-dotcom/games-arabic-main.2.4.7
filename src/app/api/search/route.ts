@@ -156,6 +156,7 @@ async function searchViaPrisma({
       ? {
           OR: [
             { name: { contains: q, mode: 'insensitive' } },
+            { headline: { contains: q, mode: 'insensitive' } },
             { arabicTitle: { contains: q, mode: 'insensitive' } },
             { summary: { contains: q, mode: 'insensitive' } },
             { tags: { contains: q, mode: 'insensitive' } },

@@ -61,6 +61,7 @@ export interface ModSummary {
   id: string
   slug: string
   name: string
+  headline: string
   summary: string
   thumbnailUrl: string
   imageUrl: string

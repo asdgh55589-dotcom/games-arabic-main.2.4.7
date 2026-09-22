@@ -5,7 +5,7 @@ interface RouteParams {
   params: Promise<{ slug: string }>
 }
 
-const navSelect = { slug: true, name: true } as const
+const navSelect = { slug: true, name: true, headline: true } as const
 
 // GET /api/mods/[slug]/neighbors — previous/next mod within the same game.
 //

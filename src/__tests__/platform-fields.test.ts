@@ -9,12 +9,18 @@ import type { ModDetail } from '@/lib/types'
 
 const BASE_MOD = {
   name: 'Test Mod',
+  headline: 'العنوان الرئيسي للاختبار',
   description: 'وصف كافٍ للاختبار هنا 12345',
   thumbnailUrl: 'https://example.com/t.jpg',
   imageUrl: 'https://example.com/b.jpg',
 }
 
 describe('platform-specific mod fields', () => {
+  it('CreateModSchema requires headline', () => {
+    const { headline: _omitted, ...without } = BASE_MOD
+    expect(CreateModSchema.safeParse(without).success).toBe(false)
+    expect(CreateModSchema.safeParse(BASE_MOD).success).toBe(true)
+  })
   it('CreateModSchema accepts all 14 platform fields as optional strings', () => {
     const parsed = CreateModSchema.safeParse({
       ...BASE_MOD,
