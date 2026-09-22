@@ -4,7 +4,11 @@
 // نوع التعريب، طريقة التعريب، توافق التعريب، الملخص، الوصف الكامل،
 // طريقة التركيب، سجل التغييرات، الوسوم.
 
+import { useEffect, useState } from 'react'
+import { Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { aiFillKey, parseAiFill } from '@/lib/ai/ai-fill'
 import {
   Select,
   SelectContent,
@@ -190,10 +194,57 @@ interface Props {
 export function ModFormBasicInfo(p: Props) {
   const { dict } = useStudioLanguage()
   const t = dict.form
+  const [aiFilled, setAiFilled] = useState(false)
+
+  // AI fill handoff: the ai-fill tab stores approved values in
+  // localStorage; applying them here keeps review in the form.
+  useEffect(() => {
+    if (p.platform !== 'PC') return
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== aiFillKey('PC')) return
+      const values = parseAiFill(e.newValue)
+      if (!values) return
+      p.setName(values.title)
+      p.setArabicTitle(values.arabicTitle)
+      p.setTranslationScope(values.scope)
+      p.setCompatibility(values.compatibility)
+      p.setInstallGuide(values.installGuide)
+      p.setDescription(values.description)
+      p.setSummary(values.summary.slice(0, 150))
+      setAiFilled(true)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.platform])
+
   return (
     <>
       {/* ===== 1. basic info (unified order) ===== */}
       <Section title={t.basicInfo}>
+        {p.platform === 'PC' && (
+          <div className="rounded-lg border border-violet-500/25 bg-violet-500/5 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm">
+                <span className="font-bold">التعبئة الذكية (PC)</span>
+                <p className="text-xs text-muted-foreground">
+                  الصق النص الخام في تبويب جديد، راجع النتيجة، ثم اعتمدها لتُعبأ الحقول السبع هنا تلقائياً
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <a href="/creator/ai-fill?platform=PC" target="_blank" rel="noopener">
+                  <Sparkles className="me-1 h-3.5 w-3.5" />
+                  تعبئة ذكية
+                </a>
+              </Button>
+            </div>
+            {aiFilled && (
+              <p className="mt-2 text-xs font-bold text-emerald-600">
+                تمت تعبئة الحقول من التبويب الذكي — راجعها قبل الحفظ
+              </p>
+            )}
+          </div>
+        )}
         <Field label={t.modName} required hint={t.nameYearHint}>
           <Input
             value={p.name}
