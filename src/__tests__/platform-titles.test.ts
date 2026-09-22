@@ -41,7 +41,6 @@ const SHARED = [
   'نوع التعريب',
   'محتوى التعريب',
   'تاريخ إصدار التعريب',
-  'حجم التعريب',
 ]
 
 const labels = (platform: string) => getModTitles(fullMod(platform), fmt).map((t) => t.label)
@@ -58,7 +57,7 @@ describe('getPlatformKey', () => {
 })
 
 describe('per-platform title lists', () => {
-  it('PC adds توافق التعريب before size', () => {
+  it('PC adds توافق التعريب last', () => {
     expect(labels('PC')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -67,10 +66,9 @@ describe('per-platform title lists', () => {
       'محتوى التعريب',
       'تاريخ إصدار التعريب',
       'توافق التعريب',
-      'حجم التعريب',
     ])
   })
-  it('PS1 and PS2 add معرّف اللعبة (Game ID) before size', () => {
+  it('PS1 and PS2 add معرّف اللعبة (Game ID) last', () => {
     const expected = [
       'العنوان',
       'العنوان بالعربي',
@@ -79,12 +77,11 @@ describe('per-platform title lists', () => {
       'محتوى التعريب',
       'تاريخ إصدار التعريب',
       'معرّف اللعبة (Game ID)',
-      'حجم التعريب',
     ]
     expect(labels('PS1')).toEqual(expected)
     expect(labels('PS2')).toEqual(expected)
   })
-  it('PS3 adds Game ID + game update before size', () => {
+  it('PS3 adds Game ID + game update last', () => {
     expect(labels('PS3')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -94,10 +91,9 @@ describe('per-platform title lists', () => {
       'تاريخ إصدار التعريب',
       'معرّف اللعبة (Game ID)',
       'رقم تحديث اللعبة المتوافق',
-      'حجم التعريب',
     ])
   })
-  it('PS4 adds CUSA + firmware + game update before size', () => {
+  it('PS4 adds CUSA + firmware + game update last', () => {
     expect(labels('PS4')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -108,10 +104,9 @@ describe('per-platform title lists', () => {
       'معرّف اللعبة (CUSA)',
       'تحديث النظام المتوافق',
       'رقم تحديث اللعبة المتوافق',
-      'حجم التعريب',
     ])
   })
-  it('PS5 adds PPSA + firmware + game update before size', () => {
+  it('PS5 adds PPSA + firmware + game update last', () => {
     expect(labels('PS5')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -122,10 +117,9 @@ describe('per-platform title lists', () => {
       'معرّف اللعبة (PPSA)',
       'تحديث النظام المتوافق',
       'رقم تحديث اللعبة المتوافق',
-      'حجم التعريب',
     ])
   })
-  it('Switch adds Title ID + device + update number before size', () => {
+  it('Switch adds Title ID + device + update number last', () => {
     expect(labels('NS')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -136,10 +130,9 @@ describe('per-platform title lists', () => {
       'إصدار اللعبة',
       'الجهاز',
       'رقم التحديث المتوافق',
-      'حجم التعريب',
     ])
   })
-  it('Xbox 360 adds Title ID + Media ID + format (+ compat) before size', () => {
+  it('Xbox 360 adds Title ID + Media ID + format (+ compat) last', () => {
     expect(labels('X360')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -151,10 +144,9 @@ describe('per-platform title lists', () => {
       'معرّف الوسائط (Media ID)',
       'صيغة اللعبة المدعومة',
       'التوافق',
-      'حجم التعريب',
     ])
   })
-  it('Android adds install type + cpu + game version + min android before size', () => {
+  it('Android adds install type + cpu + game version + min android last', () => {
     expect(labels('ANDROID')).toEqual([
       'العنوان',
       'العنوان بالعربي',
@@ -166,10 +158,9 @@ describe('per-platform title lists', () => {
       'بنية المعالج المتوافقة',
       'رقم إصدار اللعبة المتوافق',
       'الحد الأدنى لنظام الأندرويد',
-      'حجم التعريب',
     ])
   })
-  it('unknown platform falls back to 7 shared only', () => {
+  it('unknown platform falls back to 6 shared only', () => {
     expect(labels('PS9')).toEqual(SHARED)
   })
 })
@@ -184,7 +175,7 @@ describe('values', () => {
     expect(byLabel['نوع التعريب']).toBe('نصي')
     expect(byLabel['محتوى التعريب']).toBe('قوائم، حوارات')
     expect(byLabel['تاريخ إصدار التعريب']).toBe('DATE:2026-01-01')
-    expect(byLabel['حجم التعريب']).toBe('200 .zip')
+    expect(byLabel['حجم التعريب']).toBeUndefined()
     expect(byLabel['معرّف اللعبة (CUSA)']).toBe('CUSA-00123')
   })
   it('falls back to غير محدد for missing method/type', () => {

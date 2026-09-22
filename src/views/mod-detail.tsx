@@ -359,7 +359,7 @@ export function ModDetailPage() {
                         className="absolute inset-0"
                         style={{
                           background:
-                            'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.06) 30%, transparent 55%)',
+                            'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.06) 30%, transparent 55%, rgba(0,0,0,0.62) 100%)',
                         }}
                       />
                     </>
@@ -478,7 +478,7 @@ export function ModDetailPage() {
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}
                     <div
-                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8 bg-black/25 backdrop-blur-sm"
+                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8 bg-black/50 backdrop-blur-sm"
                       style={{
                         maskImage:
                           'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
@@ -489,7 +489,7 @@ export function ModDetailPage() {
                       }}
                     >
                       {/* Title */}
-                      <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl whitespace-nowrap">
+                      <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
                         {(mod as { headline?: string }).headline || mod.name}
                       </h1>
                       {/* 3a — summary below title with description fallback */}
