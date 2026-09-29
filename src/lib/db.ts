@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client'
+import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 /**
  * Resolve the active DATABASE_URL.
@@ -82,6 +84,8 @@ export interface RetryOptions {
 /**
  * Generic retry with exponential backoff (1s, 2s, 4s, max 3 attempts).
  * Used for Aiven cold-start resilience. Wraps any async fn, including Prisma $connect.
+ * Pool exhaustion (P2024) is reported to Sentry — it means the pool sizing or
+ * query fan-out regressed and needs attention, not just a retry.
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -96,12 +100,28 @@ export async function withRetry<T>(
       return await fn()
     } catch (err) {
       lastError = err
+      if (isPoolExhaustedError(err)) {
+        logger.error(
+          { event: 'db_pool_exhausted', attempt, maxAttempts, err },
+          'DB pool exhausted (P2024) — pool sizing or query fan-out regressed',
+        )
+        reportError(err, { route: 'db-pool', action: `pool-exhausted attempt ${attempt}/${maxAttempts}` })
+      }
       if (attempt >= maxAttempts) break
       const delay = delaysMs[attempt - 1] ?? delaysMs[delaysMs.length - 1] ?? 1000
       await sleepFn(delay)
     }
   }
   throw lastError
+}
+
+/** P2024 = timed out fetching a connection from the pool. */
+export function isPoolExhaustedError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const code = (err as { code?: unknown }).code
+  if (code === 'P2024') return true
+  const msg = err instanceof Error ? err.message : String(err)
+  return /P2024|timed out fetching a new connection from the connection pool/i.test(msg)
 }
 
 // Aliases for spec flexibility — both names wrap the same exponential backoff
@@ -152,5 +172,41 @@ if (process.env.NODE_ENV !== 'test' && databaseUrl) {
   }).then(
     () => console.log('[db] connection pool warmed up successfully'),
     (err) => console.error('[db] failed to warm up connection pool:', err),
+  )
+}
+
+// Connection health flag + auto-reconnect on client errors (ECONNRESET, etc.).
+// Fail-open with backoff: a dead pool recovers without a redeploy.
+// Guarded: skipped in tests (mocked client has no $on) and when no URL resolved.
+let connectionHealthy = true
+
+export function isConnectionHealthy(): boolean {
+  return connectionHealthy
+}
+
+if (
+  process.env.NODE_ENV !== 'test' &&
+  databaseUrl &&
+  typeof (db as unknown as { $on?: unknown }).$on === 'function'
+) {
+  ;(db as unknown as { $on: (event: string, cb: (err: unknown) => void) => void }).$on(
+    'error',
+    (err: unknown) => {
+      connectionHealthy = false
+      logger.error({ event: 'db_client_error', err }, 'Prisma client error — reconnecting in 5s')
+      setTimeout(() => {
+        void withDatabaseRetry(() => db.$connect(), {
+          maxAttempts: 4,
+          delaysMs: [1000, 2000, 4000, 8000],
+        }).then(
+          () => {
+            connectionHealthy = true
+            logger.info({ event: 'db_reconnected' }, 'DB reconnected successfully')
+          },
+          (reconnectErr: unknown) =>
+            logger.error({ event: 'db_reconnect_failed', err: reconnectErr }, 'DB reconnection failed'),
+        )
+      }, 5000)
+    },
   )
 }
