@@ -144,9 +144,10 @@ gh pr create --title "..." --body "..."
 ### Completed Phases:
 - ✅ Phase 1 (Database Foundation): Pool leaks fixed, sizing enforced (commit `9ff635d`)
 - ✅ Phase 1 (API Error Foundation): RFC 7807 adopted (additive problem field), 20+ error.message leaks eliminated, CORS + OPTIONS added, validation→422, Retry-After on all 429s (merge `b007563`, tests `85559bd`)
+- ✅ Phase 2 (Database Performance): /api/home 27→8 sequential queries, reports/stats bursts ≤3, author:true→select projections (secret leak fixed), sitemap paginated, home-cache→Redis 300s, ledger negative cache (merge `9936170`, PR #2, tests 2065/2074 — 9 failures pre-existing on HEAD)
 
 ### Current Phase:
-- 🔄 Phase 2 (Database Performance): Query optimization, Redis caching
+- ⏳ None — Phase 2 Database merged to main; awaiting next assignment
 
 ### Next Phases:
 - ⏳ Phase 2: Observability & Logging (pino-only, lifecycle logs, RED metrics)
