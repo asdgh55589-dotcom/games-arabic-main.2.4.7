@@ -8,6 +8,8 @@ const SESSION_TTL_DAYS = 7
 
 /** Ledger liveness cache TTL (seconds). Revoke paths invalidate eagerly. */
 const LEDGER_CACHE_TTL_S = 120
+/** Inactive sessions churn less — negative-cache them longer (fewer DB re-checks). */
+const LEDGER_NEGATIVE_CACHE_TTL_S = 300
 
 /** Never use the raw token as a Redis key — hash it. */
 function ledgerCacheKey(token: string): string {
@@ -58,11 +60,16 @@ export async function isSessionActive(token: string): Promise<boolean> {
   try {
     const s = await db.session.findUnique({ where: { token } as any, select: { expiresAt: true } })
     if (!s) {
-      await redisSet(cacheKey, false, LEDGER_CACHE_TTL_S).catch(() => {})
+      // Negative cache: a dead token stays dead (revoke paths invalidate eagerly).
+      await redisSet(cacheKey, false, LEDGER_NEGATIVE_CACHE_TTL_S).catch(() => {})
       return false
     }
     const active = new Date((s as any).expiresAt) > new Date()
-    await redisSet(cacheKey, active, LEDGER_CACHE_TTL_S).catch(() => {})
+    // Active sessions revalidate often (revocation must propagate fast);
+    // inactive ones are cached longer since they never become active again.
+    await redisSet(cacheKey, active, active ? LEDGER_CACHE_TTL_S : LEDGER_NEGATIVE_CACHE_TTL_S).catch(
+      () => {},
+    )
     return active
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: fail-open liveness check — DB down means "not verifiable", caller treats false as signed-out

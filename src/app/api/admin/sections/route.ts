@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    clearHomeCache()
+    await clearHomeCache()
 
     return ok(section)
   } catch (err) {

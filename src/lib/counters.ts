@@ -144,7 +144,7 @@ export async function recordModView(modId: string, req: Request, db: any): Promi
     ])
   }
   try {
-    clearHomeCache()
+    await clearHomeCache()
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the view is already counted, stale homepage self-heals on TTL
     // intentional: expected+handled (count already committed, no rollback)
@@ -322,7 +322,7 @@ export async function recordDownload(
   // تحديث تدريجي لشارات التعريب (best-effort — لا يكسر العدّ عند الفشل)
   await refreshBadgesOnDownload(db, opts.modId).catch(() => {})
   try {
-    clearHomeCache()
+    await clearHomeCache()
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: cache invalidation is best-effort — the download is already counted, stale homepage self-heals on TTL
     // intentional: expected+handled (count already committed, no rollback)

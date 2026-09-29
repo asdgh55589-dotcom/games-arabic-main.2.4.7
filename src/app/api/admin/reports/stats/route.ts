@@ -12,7 +12,57 @@ export async function GET(_req: NextRequest) {
     const twelveWeeksAgo = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000)
     const twelveMonthsAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
 
-    // تشغيل كل التجميعات بشكل متوازٍ — كل استعلام رحلة واحدة فقط (SQL aggregation)
+    // تشغيل التجميعات على دفعات صغيرة (≤3) — دفعة واحدة من 17 استعلاماً
+    // متوازياً كانت تحجز كامل الـ pool (5) وتسبب P2024. نفس الاستعلامات،
+    // نفس الترتيب، نفس الحقول — فقط التسلسل تغيّر.
+    const jobs: Array<() => Promise<unknown>> = [
+      () => db.report.count(),
+      () => db.report.count({ where: { status: 'new' } }),
+      () => db.report.count({ where: { status: 'under_review' } }),
+      () => db.report.count({ where: { status: 'confirmed' } }),
+      () => db.report.count({ where: { status: 'rejected' } }),
+      () => db.report.count({ where: { status: 'resolved' } }),
+      () => db.report.groupBy({ by: ['status'], _count: { _all: true } }),
+      () => db.report.groupBy({ by: ['reason'], _count: { _all: true } }),
+      () => db.report.groupBy({ by: ['priority'], _count: { _all: true } }),
+      () => db.report.aggregate({ _avg: { fraudScore: true } }),
+      () => db.report.count({ where: { status: { in: ['confirmed', 'rejected', 'resolved'] } } }),
+      () =>
+        db.report.groupBy({
+          by: ['reason'],
+          _count: { id: true },
+          orderBy: { _count: { id: 'desc' } },
+          take: 10,
+        }),
+      () =>
+        db.report.groupBy({
+          by: ['reporterId'],
+          _count: { id: true },
+          orderBy: { _count: { id: 'desc' } },
+          take: 10,
+          where: { reporterId: { not: null } },
+        }),
+      () =>
+        db.report.groupBy({
+          by: ['actionTaken'],
+          _count: { id: true },
+          where: { actionTaken: { not: null } },
+        }),
+      () => db.user.count({ where: { banStatus: { in: ['banned_temp', 'banned_perm'] } } }),
+      () => db.userAction.count({ where: { action: 'warn' } }),
+      () =>
+        db.report.groupBy({
+          by: ['targetUserId'],
+          _count: { id: true },
+          where: { targetUserId: { not: null }, status: 'confirmed' },
+          orderBy: { _count: { id: 'desc' } },
+          take: 10,
+        }),
+    ]
+    const settled: unknown[] = []
+    for (let i = 0; i < jobs.length; i += 3) {
+      settled.push(...(await Promise.all(jobs.slice(i, i + 3).map((j) => j()))))
+    }
     const [
       total,
       newCount,
@@ -31,46 +81,25 @@ export async function GET(_req: NextRequest) {
       bannedUsers,
       warnedUsers,
       repeatOffenderGroups,
-    ] = await Promise.all([
-      db.report.count(),
-      db.report.count({ where: { status: 'new' } }),
-      db.report.count({ where: { status: 'under_review' } }),
-      db.report.count({ where: { status: 'confirmed' } }),
-      db.report.count({ where: { status: 'rejected' } }),
-      db.report.count({ where: { status: 'resolved' } }),
-      db.report.groupBy({ by: ['status'], _count: { _all: true } }),
-      db.report.groupBy({ by: ['reason'], _count: { _all: true } }),
-      db.report.groupBy({ by: ['priority'], _count: { _all: true } }),
-      db.report.aggregate({ _avg: { fraudScore: true } }),
-      db.report.count({ where: { status: { in: ['confirmed', 'rejected', 'resolved'] } } }),
-      db.report.groupBy({
-        by: ['reason'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10,
-      }),
-      db.report.groupBy({
-        by: ['reporterId'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10,
-        where: { reporterId: { not: null } },
-      }),
-      db.report.groupBy({
-        by: ['actionTaken'],
-        _count: { id: true },
-        where: { actionTaken: { not: null } },
-      }),
-      db.user.count({ where: { banStatus: { in: ['banned_temp', 'banned_perm'] } } }),
-      db.userAction.count({ where: { action: 'warn' } }),
-      db.report.groupBy({
-        by: ['targetUserId'],
-        _count: { id: true },
-        where: { targetUserId: { not: null }, status: 'confirmed' },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10,
-      }),
-    ])
+    ] = settled as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      Array<{ status: string; _count: { _all: number } }>,
+      Array<{ reason: string; _count: { _all: number } }>,
+      Array<{ priority: string; _count: { _all: number } }>,
+      { _avg: { fraudScore: number | null } },
+      number,
+      Array<{ reason: string; _count: { id: number } }>,
+      Array<{ reporterId: string | null; _count: { id: number } }>,
+      Array<{ actionTaken: string | null; _count: { id: number } }>,
+      number,
+      number,
+      Array<{ targetUserId: string | null; _count: { id: number } }>,
+    ]
 
     const confirmationRate = confirmed + rejected > 0 ? confirmed / (confirmed + rejected) : 0
 

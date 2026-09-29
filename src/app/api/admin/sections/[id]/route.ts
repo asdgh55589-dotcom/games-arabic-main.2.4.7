@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           }
           await tx.section.update({ where: { id }, data: { order: newOrder, ...updateData } })
         })
-        clearHomeCache()
+        await clearHomeCache()
         return ok({ success: true })
       } else {
         updateData.order = newOrder
@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     await db.section.update({ where: { id }, data: updateData })
-    clearHomeCache()
+    await clearHomeCache()
 
     return ok({ success: true })
   } catch (err) {
@@ -101,7 +101,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     }
 
     await db.section.delete({ where: { id } })
-    clearHomeCache()
+    await clearHomeCache()
 
     return ok({ success: true })
   } catch (err) {
