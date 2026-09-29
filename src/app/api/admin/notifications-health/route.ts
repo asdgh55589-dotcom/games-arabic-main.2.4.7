@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
 import { metricsService } from '@/infrastructure/observability/metrics'
 import { internalError, ok } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
-
-const db = new PrismaClient()
+import { db } from '@/lib/db'
 
 export async function GET() {
   try {

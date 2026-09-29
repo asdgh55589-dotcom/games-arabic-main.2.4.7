@@ -19,9 +19,10 @@ export function getDatabaseUrl(): string {
 /**
  * Ensure Aiven-required URL params:
  * - sslmode=require (inject if missing, throw if explicitly disable/allow or non-require)
- * - connect_timeout=30 if missing
- * - connection_limit=20 if missing
- * - pool_timeout=60 if missing
+ * - connection_limit=5 if missing (MUST match Aiven server pool size — never oversubscribe)
+ * - pool_timeout=10 if missing (fail fast instead of hanging)
+ * - connect_timeout=10 if missing
+ * - statement_timeout=15000 (15s) if missing (kill runaway queries, free the connection)
  * Preserves all other params/values.
  */
 export function ensureSslmode(url: string): string {
@@ -49,15 +50,20 @@ export function ensureSslmode(url: string): string {
     params.set('sslmode', 'require')
   }
 
-  // Pool tuning — inject defaults only if missing, do not override existing values
+  // Pool tuning — inject defaults only if missing, do not override existing values.
+  // Values match Aiven's server pool size (5): the app must never open more
+  // connections than the server pool holds, or requests queue into P2024.
   if (!params.has('connect_timeout')) {
-    params.set('connect_timeout', '30')
+    params.set('connect_timeout', '10')
   }
   if (!params.has('connection_limit')) {
-    params.set('connection_limit', '20')
+    params.set('connection_limit', '5')
   }
   if (!params.has('pool_timeout')) {
-    params.set('pool_timeout', '60')
+    params.set('pool_timeout', '10')
+  }
+  if (!params.has('statement_timeout')) {
+    params.set('statement_timeout', '15000')
   }
 
   return parsed.toString()
@@ -135,3 +141,16 @@ export const db =
 // production creates a new PrismaClient per importing module instance and
 // exhausts the connection pool under concurrent requests.
 globalForPrisma.prisma = db
+
+// Warm up the connection pool at boot (Aiven cold-start resilience).
+// Fail-open: a cold DB must never crash the app — requests will retry via
+// withRetry at call time. Skipped in tests (Prisma is mocked there).
+if (process.env.NODE_ENV !== 'test' && databaseUrl) {
+  void withDatabaseRetry(() => db.$connect(), {
+    maxAttempts: 3,
+    delaysMs: [1000, 2000, 4000],
+  }).then(
+    () => console.log('[db] connection pool warmed up successfully'),
+    (err) => console.error('[db] failed to warm up connection pool:', err),
+  )
+}

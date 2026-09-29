@@ -1,10 +1,15 @@
 import { db } from '../src/lib/db'
 
 async function main() {
-  const cols = await db.$queryRaw`PRAGMA table_info(Mod)`
+  const cols = await db.$queryRaw<Array<{ column_name: string; data_type: string; is_nullable: string }>>`
+    SELECT column_name, data_type, is_nullable
+    FROM information_schema.columns
+    WHERE table_name = 'Mod'
+    ORDER BY ordinal_position
+  `
   console.log('Mod columns:')
-  for (const c of cols as any[]) {
-    console.log(`  ${c.name} (${c.type})`)
+  for (const c of cols) {
+    console.log(`  ${c.column_name} (${c.data_type})`)
   }
   const count = await db.mod.count()
   console.log('mod count:', count)

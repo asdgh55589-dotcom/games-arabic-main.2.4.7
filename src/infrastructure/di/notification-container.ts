@@ -3,7 +3,7 @@
  * Singleton factory for NotificationService and related dependencies.
  */
 
-import { PrismaClient } from '@prisma/client'
+import { db } from '@/lib/db'
 import { InMemoryEventBus } from '@/application/event-bus/in-memory-event-bus'
 import { NotificationQueryService } from '@/application/services/notification-query-service'
 import { NotificationService } from '@/application/services/notification-service'
@@ -16,7 +16,8 @@ import { PrismaNotificationRepository } from '@/infrastructure/repositories/pris
 import { PrismaPreferenceRepository } from '@/infrastructure/repositories/prisma-preference-repository'
 import { PrismaTemplateRepository } from '@/infrastructure/repositories/prisma-template-repository'
 
-const db = new PrismaClient()
+// Shared singleton — ONE PrismaClient per process (see src/lib/db.ts).
+// A second client here would open a second pool against Aiven's pool of 5.
 
 let notificationService: NotificationService | null = null
 let queryService: NotificationQueryService | null = null

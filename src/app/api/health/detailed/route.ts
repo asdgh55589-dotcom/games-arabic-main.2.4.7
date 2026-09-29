@@ -44,8 +44,18 @@ async function runCheck<T>(fn: () => Promise<T>): Promise<{ ok: boolean; value?:
 
 async function checkDatabase(): Promise<ServiceCheck> {
   const r = await runCheck(() => db.$queryRaw`SELECT 1`)
-  if (!r.ok) return { status: 'error', latencyMs: r.latencyMs, detail: r.error }
-  return { status: 'ok', latencyMs: r.latencyMs }
+  if (!r.ok) {
+    // P2024 = pool exhausted (all 5 connections busy past pool_timeout).
+    const exhausted = /P2024|pool/i.test(r.error ?? '')
+    return {
+      status: 'error',
+      latencyMs: r.latencyMs,
+      detail: exhausted
+        ? `pool may be exhausted (${r.error})`
+        : `pool unreachable (${r.error})`,
+    }
+  }
+  return { status: 'ok', latencyMs: r.latencyMs, detail: 'pool responsive' }
 }
 
 async function checkRedis(): Promise<ServiceCheck> {
