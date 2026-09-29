@@ -8,6 +8,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { DisableMfaSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ success: true, message: 'تم تعطيل المصادقة الثنائية' })
   } catch (err) {
-    console.error('[mfa disable] failed:', err)
+    logger.error('[mfa disable] failed:', err)
     return internalError('حدث خطأ أثناء التعطيل')
   }
 }

@@ -5,6 +5,7 @@ import { createSupabaseAuthUser, hashPassword } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { hashSecurityKey } from '@/lib/security-key'
+import { logger } from '@/lib/logger'
 
 // POST /api/admin/setup — إنشاء أول حساب owner
 // محمي: لا يعمل لو يوجد owner بالفعل (flag في DB)
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ message: 'Owner account created successfully', setup: true })
   } catch (err) {
-    console.error('[setup] failed:', err)
+    logger.error('[setup] failed:', err)
     return internalError('Setup failed')
   }
 }

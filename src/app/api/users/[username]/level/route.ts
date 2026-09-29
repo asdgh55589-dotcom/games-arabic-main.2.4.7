@@ -3,6 +3,7 @@ import { internalError, notFound, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierConfig } from '@/lib/tiers'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -38,7 +39,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       tierHistory: user.tierHistory,
     })
   } catch (err) {
-    console.error('[level GET] failed:', err)
+    logger.error('[level GET] failed:', err)
     return internalError('فشل جلب بيانات المستوى')
   }
 }

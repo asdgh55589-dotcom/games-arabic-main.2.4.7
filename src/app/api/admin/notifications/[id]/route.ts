@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/notifications/[id] PATCH] failed:', err)
+    logger.error('[admin/notifications/[id] PATCH] failed:', err)
     return internalError('Failed')
   }
 }

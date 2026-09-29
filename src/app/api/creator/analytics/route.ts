@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 const RANGES = new Set([7, 30, 90])
 
@@ -147,7 +148,7 @@ export async function GET(req: NextRequest) {
       PRIVATE_NO_STORE,
     )
   } catch (err) {
-    console.error('[creator/analytics GET] failed:', err)
+    logger.error('[creator/analytics GET] failed:', err)
     reportError(err, { route: 'GET /api/creator/analytics' })
     return internalError('فشل جلب التحليلات')
   }

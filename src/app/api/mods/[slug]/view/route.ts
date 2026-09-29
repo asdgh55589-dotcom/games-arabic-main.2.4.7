@@ -3,6 +3,7 @@ import { internalError, notFound, ok, rateLimited } from '@/lib/api-response'
 import { isBot, recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       viewsCount: result.counted ? mod.views + 1 : mod.views,
     })
   } catch (err) {
-    console.error('[view POST] failed:', err)
+    logger.error('[view POST] failed:', err)
     return internalError('Failed')
   }
 }

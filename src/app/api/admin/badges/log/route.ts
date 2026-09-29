@@ -3,6 +3,7 @@ import { internalError, okPaginated } from '@/lib/api-response'
 import { parsePagination } from '@/lib/api-utils'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/badges/log — سجل تغييرات الشارات (الأحدث أولاً)
 export async function GET(req: NextRequest) {
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       },
     )
   } catch (err) {
-    console.error('[admin badges log GET] failed:', err)
+    logger.error('[admin badges log GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to fetch badge log')

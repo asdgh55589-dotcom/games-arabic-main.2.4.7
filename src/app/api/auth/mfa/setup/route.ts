@@ -3,6 +3,7 @@ import { internalError, ok, unauthorized, validationFail } from '@/lib/api-respo
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { encryptTOTPSecret, generateQRCode, generateTOTPSecret, generateTOTPUri } from '@/lib/totp'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ secret, qrCode, uri })
   } catch (err) {
-    console.error('[mfa setup] failed:', err)
+    logger.error('[mfa setup] failed:', err)
     return internalError('حدث خطأ أثناء الإعداد')
   }
 }

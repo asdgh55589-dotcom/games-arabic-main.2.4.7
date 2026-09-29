@@ -3,6 +3,7 @@ import { internalError, ok, rateLimited } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
 import { rateLimit } from '@/lib/rate-limit'
 import { redisGet, redisSet } from '@/lib/redis'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       return internalError('خدمة Telegram غير مهيأة حالياً')
     }
     if (!secretToken || secretToken !== expectedSecret) {
-      console.warn('[telegram webhook] Invalid secret token')
+      logger.warn('[telegram webhook] Invalid secret token')
       return ok({ ok: true }) // Return 200 to prevent Telegram from retrying
     }
 
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (e) {
-      console.error('[Telegram webhook] failed to fetch photo:', e)
+      logger.error('[Telegram webhook] failed to fetch photo:', e)
     }
 
     await redisSet(
@@ -178,7 +179,7 @@ async function sendMessage(botToken: string, chatId: number, text: string): Prom
       const blocked = data.error_code === 403
       const err = new Error(`[telegram sendMessage] failed: ${data.description || 'unknown'}`)
       if (blocked) {
-        console.warn('[telegram sendMessage] user blocked bot or never started it', {
+        logger.warn('[telegram sendMessage] user blocked bot or never started it', {
           chatId,
           error_code: data.error_code,
         })

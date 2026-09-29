@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { getActiveNews } from '@/lib/news-helpers'
+import { logger } from '@/lib/logger'
 
 // GET /api/news?type=ticker|featured — الأخبار النشطة
 export async function GET(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
       },
     )
   } catch (err) {
-    console.error('[api/news] failed:', err)
+    logger.error('[api/news] failed:', err)
     return internalError('Failed')
   }
 }

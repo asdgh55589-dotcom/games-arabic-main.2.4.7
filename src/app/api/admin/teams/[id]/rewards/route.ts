@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { forbidden, unauthorized } from '@/lib/api-response'
 import { AuthError, requireModerator } from '@/lib/auth'
 import { getTeamPoints } from '@/lib/points'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const rewards = await getTeamPoints(id)
     return NextResponse.json(rewards)
   } catch (error) {
-    console.error('[team-rewards GET]', error)
+    logger.error('[team-rewards GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

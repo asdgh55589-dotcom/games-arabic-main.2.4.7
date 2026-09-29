@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/admin/scheduled-publish/check
@@ -62,7 +63,7 @@ export async function GET() {
 
       published.push({ id: mod.id, name: mod.name })
     } catch (err) {
-      console.error(`[scheduled-publish] Failed to publish mod ${mod.id}:`, err)
+      logger.error(`[scheduled-publish] Failed to publish mod ${mod.id}:`, err)
     }
   }
 

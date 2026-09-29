@@ -7,6 +7,7 @@ import {
   getBadgeSettings,
   type BadgeResult,
 } from '@/lib/badges'
+import { logger } from '@/lib/logger'
 import { db } from '@/lib/db'
 
 export interface ModBadgeRow {
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[admin badges GET] failed:', err)
+    logger.error('[admin badges GET] failed:', err)
     return internalError('Failed to list badges')
   }
 }

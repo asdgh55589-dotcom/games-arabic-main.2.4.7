@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // POST /api/bookmarks/check-batch — التحقق من حالة الحفظ لعدة تعريبات في طلب واحد
 export async function POST(req: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ bookmarkedIds: bookmarks.map((b) => b.modId) })
   } catch (err) {
-    console.error('[bookmarks/check-batch POST] failed:', err)
+    logger.error('[bookmarks/check-batch POST] failed:', err)
     return internalError('Failed')
   }
 }

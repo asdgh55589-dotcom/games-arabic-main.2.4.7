@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
   try {
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
       stats: statusCounts,
     })
   } catch (error) {
-    console.error('[tickets GET]', error)
+    logger.error('[tickets GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(ticket, { status: 201 })
   } catch (error) {
-    console.error('[tickets POST]', error)
+    logger.error('[tickets POST]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

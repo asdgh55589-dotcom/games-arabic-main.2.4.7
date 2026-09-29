@@ -5,6 +5,7 @@ import { logUserAction } from '@/lib/audit'
 import { getClientIp, invalidateUserSessions, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { deleteIpBanCache, setIpBanCache } from '@/lib/ip-ban-cache'
+import { logger } from '@/lib/logger'
 
 // POST /api/admin/users/[id]/ban — حظر مستخدم (مؤقت/دائم + خيار حظر IP)
 //
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ipBanExpiresAt,
     })
   } catch (err) {
-    console.error('[admin/users/[id]/ban] failed:', err)
+    logger.error('[admin/users/[id]/ban] failed:', err)
     return internalError('Failed')
   }
 }
@@ -180,7 +181,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/users/[id]/ban DELETE] failed:', err)
+    logger.error('[admin/users/[id]/ban DELETE] failed:', err)
     return internalError('Failed')
   }
 }

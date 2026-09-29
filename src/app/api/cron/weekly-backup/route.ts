@@ -7,6 +7,7 @@ import crypto from 'crypto'
 import { requireCronAuth } from '@/lib/cron-auth'
 import { claimRun, completeRun } from '@/lib/cron-ledger'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 const execAsync = promisify(exec)
 
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
           { timeout: 120_000 },
         )
       } catch (uploadErr) {
-        console.error('[weekly-backup] فشل الرفع إلى S3:', uploadErr)
+        logger.error('[weekly-backup] فشل الرفع إلى S3:', uploadErr)
         // Continue — local backup succeeded
       }
     }
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
     if (jobId) await completeRun(jobId)
     return NextResponse.json({ ok: true, manifest })
   } catch (error) {
-    console.error('[weekly-backup] فشل النسخ الاحتياطي:', error)
+    logger.error('[weekly-backup] فشل النسخ الاحتياطي:', error)
     reportError(error, { route: 'GET /api/cron/weekly-backup', action: 'pg_dump' })
     return NextResponse.json({ error: 'فشل النسخ الاحتياطي' }, { status: 500 })
   }

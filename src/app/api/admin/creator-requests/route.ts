@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/creator-requests — قائمة طلبات برنامج منشئ المحتوى (admin/manager/owner فقط)
 // Query: status (pending|approved|rejected|all) + track + q (بحث بالاسم/البريد) + page + limit
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
     if (status === 403) return forbidden('ليس لديك صلاحية')
-    console.error('[admin/creator-requests GET] failed:', err)
+    logger.error('[admin/creator-requests GET] failed:', err)
     return internalError('فشل جلب طلبات المُعَرِّبين')
   }
 }

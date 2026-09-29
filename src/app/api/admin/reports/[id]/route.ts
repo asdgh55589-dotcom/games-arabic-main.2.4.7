@@ -4,6 +4,7 @@ import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isValidTransition } from '@/lib/reports/constants'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -104,7 +105,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ report: { ...report, previousReports } })
   } catch (err) {
-    console.error('[admin/reports/[id] GET] failed:', err)
+    logger.error('[admin/reports/[id] GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -184,13 +185,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
               message: 'بدأ فريق الإشراف بمراجعة بلاغك. سيتم إشعارك بالنتيجة.',
             },
           })
-          .catch((err) => console.error('[PATCH] notify under_review failed:', err))
+          .catch((err) => logger.error('[PATCH] notify under_review failed:', err))
       }
     }
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/reports/[id] PATCH] failed:', err)
+    logger.error('[admin/reports/[id] PATCH] failed:', err)
     return internalError('Failed')
   }
 }

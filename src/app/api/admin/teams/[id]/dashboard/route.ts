@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { forbidden, unauthorized } from '@/lib/api-response'
 import { AuthError, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -98,7 +99,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       members,
     })
   } catch (error) {
-    console.error('[team-dashboard GET]', error)
+    logger.error('[team-dashboard GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

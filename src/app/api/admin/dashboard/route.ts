@@ -1,6 +1,7 @@
 import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/dashboard — إحصائيات + آخر النشاطات
 export async function GET() {
@@ -83,7 +84,7 @@ export async function GET() {
 
     return response
   } catch (err) {
-    console.error('[admin/dashboard] failed:', err)
+    logger.error({ err }, '[admin/dashboard] failed')
     return internalError('Failed to load dashboard data')
   }
 }

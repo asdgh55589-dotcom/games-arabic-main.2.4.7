@@ -22,7 +22,8 @@ import {
   isPathAllowedByPagesClaim,
 } from '@/lib/admin-pages'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
-import { logger } from '@/lib/logger'
+import { logError, logger } from '@/lib/logger'
+import { trackRoute } from '@/lib/observability/middleware'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
@@ -224,7 +225,40 @@ function proxyJson(
   return applyCors(req, withRequestId(res, requestId))
 }
 
+/**
+ * Phase 2 observability — lifecycle logging + RED metrics for every proxied
+ * request. Delegates to proxyInner; logs `started` (debug) and `completed`
+ * (info, with status + durationMs) and records rate/errors/duration.
+ */
 export async function proxy(req: NextRequest) {
+  const start = Date.now()
+  const requestId = getOrCreateRequestId(req)
+  const route = `${req.method} ${req.nextUrl.pathname}`
+  const finish = trackRoute(route)
+  const log = logger.child({ requestId, route })
+
+  log.debug('Proxy request started')
+
+  let status = 500
+  try {
+    const res = await proxyInner(req)
+    status = res.status
+    return res
+  } catch (err) {
+    logError(err, { requestId, route })
+    throw err
+  } finally {
+    const durationMs = Date.now() - start
+    try {
+      finish(durationMs, status >= 500)
+    } catch {
+      // best-effort metrics — never break the request
+    }
+    log.info({ status, durationMs }, 'Proxy request completed')
+  }
+}
+
+async function proxyInner(req: NextRequest) {
   const { pathname } = req.nextUrl
   const requestId = getOrCreateRequestId(req)
 

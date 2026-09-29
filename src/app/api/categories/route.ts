@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(_req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(_req: NextRequest) {
 
     return ok(categories)
   } catch (err) {
-    console.error('[categories GET] failed:', err)
+    logger.error('[categories GET] failed:', err)
     return internalError('Failed')
   }
 }

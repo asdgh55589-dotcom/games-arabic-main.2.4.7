@@ -9,6 +9,7 @@ import { DisplayNameSchema, EmailSchema, PasswordSchema, UsernameSchema } from '
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername } from '@/lib/username-generator'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const OnboardingSaveSchema = z
   .object({
@@ -192,7 +193,7 @@ export async function PATCH(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[onboarding PATCH] failed:', err instanceof Error ? err.message : 'unknown')
+    logger.error('[onboarding PATCH] failed:', err instanceof Error ? err.message : 'unknown')
     return internalError('حدث خطأ')
   }
 }

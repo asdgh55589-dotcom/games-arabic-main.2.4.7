@@ -10,6 +10,7 @@ import {
   SPECIAL_ROLES,
   type SpecialRole,
 } from '@/lib/special-roles'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
       if (exclusiveHolders.length > 0) {
         // Allow but warn — not blocking, just log
-        console.warn(
+        logger.warn(
           `[special-role] exclusive role ${role} already held by ${exclusiveHolders.map((u) => u.username).join(', ')}`,
         )
       }
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401 || status === 403) return forbidden('غير مصرح')
-    console.error('[special-role POST] failed:', err)
+    logger.error('[special-role POST] failed:', err)
     return internalError('خطأ في الخادم')
   }
 }
@@ -173,7 +174,7 @@ export async function DELETE(
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401 || status === 403) return forbidden('غير مصرح')
-    console.error('[special-role DELETE] failed:', err)
+    logger.error('[special-role DELETE] failed:', err)
     return internalError('خطأ في الخادم')
   }
 }

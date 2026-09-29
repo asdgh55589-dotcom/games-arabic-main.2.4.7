@@ -7,6 +7,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -78,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         },
       })
     } catch (e) {
-      console.error('[admin/mod-requests PATCH notify] failed:', e)
+      logger.error('[admin/mod-requests PATCH notify] failed:', e)
     }
 
     return ok({ success: true, message: 'تم تحديث حالة الطلب' })
@@ -86,7 +87,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
     if (status === 403) return forbidden('ليس لديك صلاحية')
-    console.error('[admin/mod-requests PATCH] failed:', err)
+    logger.error('[admin/mod-requests PATCH] failed:', err)
     return internalError('فشل تحديث حالة الطلب')
   }
 }

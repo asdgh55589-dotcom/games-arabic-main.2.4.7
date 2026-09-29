@@ -4,6 +4,7 @@ import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/username-generator'
+import { logger } from '@/lib/logger'
 
 // تحديد الـ base URL بناءً على الـ request
 function getBaseUrl(req: NextRequest): string {
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) {
-        console.error('[auth/callback] Code exchange failed:', error.message)
+        logger.error('[auth/callback] Code exchange failed:', error.message)
         return NextResponse.redirect(new URL('/?error=auth_failed', baseUrl))
       }
     }
@@ -258,7 +259,7 @@ export async function GET(req: NextRequest) {
         } as any,
       })
     } catch (e) {
-      console.warn('[auth/callback] ledger create failed', e)
+      logger.warn('[auth/callback] ledger create failed', e)
     }
 
     // تسجيل audit
@@ -283,7 +284,7 @@ export async function GET(req: NextRequest) {
     }
     return res
   } catch (err) {
-    console.error('[auth/callback] failed:', err instanceof Error ? err.message : 'unknown error')
+    logger.error('[auth/callback] failed:', err instanceof Error ? err.message : 'unknown error')
     const baseUrl = getBaseUrl(req)
     return NextResponse.redirect(new URL('/?error=auth_failed', baseUrl))
   }

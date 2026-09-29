@@ -68,7 +68,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ user, actions, comments })
   } catch (err) {
-    console.error('[admin/users/[id] GET] failed:', err)
+    logger.error('[admin/users/[id] GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -217,14 +217,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
         await invalidateUserSessions(id)
       } catch (error) {
-        console.error('[admin/users/[id] PUT] Password update error:', error)
+        logger.error('[admin/users/[id] PUT] Password update error:', error)
         return fail('INTERNAL_ERROR', 'خطأ في تحديث كلمة المرور', 500)
       }
     }
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/users/[id] PUT] failed:', err)
+    logger.error('[admin/users/[id] PUT] failed:', err)
     return internalError('Failed to update user')
   }
 }
@@ -251,7 +251,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     await db.user.delete({ where: { id } })
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/users/[id] DELETE] failed:', err)
+    logger.error('[admin/users/[id] DELETE] failed:', err)
     return internalError('Failed to delete user')
   }
 }

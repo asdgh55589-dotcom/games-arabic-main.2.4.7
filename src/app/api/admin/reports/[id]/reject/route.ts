@@ -6,6 +6,7 @@ import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { checkReporterStrikes } from '@/lib/reports/reporter-strike'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (report.reporterId) {
       await recalculateTrustScore(report.reporterId)
       await checkReporterStrikes(report.reporterId).catch((err) =>
-        console.error('[reject] checkReporterStrikes failed:', err),
+        logger.error('[reject] checkReporterStrikes failed:', err),
       )
     }
 
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/reports/[id]/reject POST] failed:', err)
+    logger.error('[admin/reports/[id]/reject POST] failed:', err)
     return internalError('Failed')
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { checkForDuplicates } from '@/lib/duplicate-detection'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('[duplicate-check] Error:', error)
+    logger.error('[duplicate-check] Error:', error)
     return NextResponse.json({ error: 'خطأ في فحص التكرار' }, { status: 500 })
   }
 }

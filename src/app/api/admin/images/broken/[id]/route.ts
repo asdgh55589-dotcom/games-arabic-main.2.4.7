@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // PATCH: تمييز الصورة المكسورة كمُصلحة أو مُتجاهلة
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -35,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const { forbidden } = await import('@/lib/api-response')
       return forbidden('ليس لديك صلاحية تحديث الحالة')
     }
-    console.error('[ImageHealth] فشل تحديث الحالة:', error)
+    logger.error('[ImageHealth] فشل تحديث الحالة:', error)
     return internalError('فشل تحديث الحالة')
   }
 }

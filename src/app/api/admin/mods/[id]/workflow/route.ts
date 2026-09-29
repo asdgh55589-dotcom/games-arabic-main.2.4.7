@@ -4,6 +4,7 @@ import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/ap
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { notifyWorkflowChange } from '@/lib/mod-notifications'
 import { canApproveMods } from '@/lib/permissions'
 import { canTransition, isValidTransition, type WorkflowStatus } from '@/lib/workflow'
@@ -156,7 +157,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         changedBy: user.id,
         changedByName: user.username,
         reason: reason || undefined,
-      }).catch(console.error)
+      }).catch((err) => logger.error({ err }, '[workflow] background task failed'))
     }
 
     // ISR: revalidate public pages after workflow status change
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok(updatedMod)
   } catch (err) {
-    console.error('[admin/mods/[id]/workflow POST] failed:', err)
+    logger.error('[admin/mods/[id]/workflow POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')
@@ -213,7 +214,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok(history)
   } catch (err) {
-    console.error('[admin/mods/[id]/workflow GET] failed:', err)
+    logger.error('[admin/mods/[id]/workflow GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

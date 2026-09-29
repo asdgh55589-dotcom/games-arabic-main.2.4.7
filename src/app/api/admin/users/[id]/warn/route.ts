@@ -3,6 +3,7 @@ import { fail, forbidden, internalError, ok, unauthorized } from '@/lib/api-resp
 import { logUserAction } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // POST /api/admin/users/[id]/warn — تحذير مستخدم
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const status = (err as any)?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
-    console.error('[admin/users/[id]/warn] failed:', err)
+    logger.error('[admin/users/[id]/warn] failed:', err)
     return internalError('Failed')
   }
 }

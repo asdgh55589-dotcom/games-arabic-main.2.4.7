@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import type { UserRole } from '@/lib/roles'
 import { upgradeUser } from '@/lib/tier-engine'
 import { getMaxTierForRole } from '@/lib/tiers'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -94,14 +95,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         },
       })
     } catch (e) {
-      console.error('[tier PATCH notify] failed:', e)
+      logger.error('[tier PATCH notify] failed:', e)
     }
 
     return ok({ success: true, oldTier, newTier: tier })
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401 || status === 403) return internalError('غير مصرح')
-    console.error('[tier PATCH] failed:', err)
+    logger.error('[tier PATCH] failed:', err)
     return internalError('خطأ في الخادم')
   }
 }

@@ -8,6 +8,7 @@ import { calculateModQualityScore } from '@/lib/mod-quality'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -71,7 +72,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok(mod)
   } catch (err) {
-    console.error('[admin/mods/[id] GET] failed:', err)
+    logger.error('[admin/mods/[id] GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')
@@ -479,7 +480,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/mods/[id] PUT] failed:', err)
+    logger.error('[admin/mods/[id] PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')
@@ -517,7 +518,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/mods/[id] DELETE] failed:', err)
+    logger.error('[admin/mods/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

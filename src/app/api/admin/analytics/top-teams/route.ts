@@ -1,6 +1,7 @@
 import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -44,7 +45,7 @@ export async function GET() {
 
     return ok({ teams: result }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
-    console.error('[admin/analytics/top-teams] failed:', err)
+    logger.error('[admin/analytics/top-teams] failed:', err)
     return internalError('Failed to load top teams analytics')
   }
 }

@@ -3,6 +3,7 @@ import { conflict, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/series-helpers'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/series — قائمة السلاسل
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
 
     return ok(series)
   } catch (err) {
-    console.error('[admin/series GET] failed:', err)
+    logger.error('[admin/series GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     return ok(series)
   } catch (err) {
-    console.error('[admin/series POST] failed:', err)
+    logger.error('[admin/series POST] failed:', err)
     return internalError('Failed')
   }
 }

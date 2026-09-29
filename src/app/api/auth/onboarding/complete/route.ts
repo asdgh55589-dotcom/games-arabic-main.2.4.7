@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { UsernameSchema } from '@/lib/schemas'
 import { createAdminClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // POST /api/auth/onboarding/complete — D.6-b3: verify readiness, flip the
 // flag, re-issue ga_admin_role with ob:true.
@@ -111,7 +112,7 @@ export async function POST(_req?: NextRequest) {
 
     return ok({ user: { id: updated.id, username: updated.username, onboardingCompleted: true } })
   } catch (err) {
-    console.error('[onboarding complete] failed:', err instanceof Error ? err.message : 'unknown')
+    logger.error('[onboarding complete] failed:', err instanceof Error ? err.message : 'unknown')
     return internalError('حدث خطأ')
   }
 }

@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { UsernameSchema } from '@/lib/schemas'
 import { generateUniqueUsername } from '@/lib/username-generator'
+import { logger } from '@/lib/logger'
 
 // GET /api/auth/onboarding/check-username?username=... — D.6-b1
 // Real-time availability for the onboarding username step.
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     const suggestion = await generateUniqueUsername(username)
     return ok({ available: false, username, suggestion })
   } catch (err) {
-    console.error('[check-username] failed:', err instanceof Error ? err.message : 'unknown')
+    logger.error('[check-username] failed:', err instanceof Error ? err.message : 'unknown')
     return internalError('حدث خطأ')
   }
 }

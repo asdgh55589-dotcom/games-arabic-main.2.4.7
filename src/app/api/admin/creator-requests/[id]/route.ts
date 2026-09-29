@@ -7,6 +7,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { requireAdmin } from '@/lib/auth'
 import { approveCreatorRequest, rejectCreatorRequest } from '@/lib/creator-requests'
 import { db } from '@/lib/db'
@@ -69,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
     if (status === 403) return forbidden('ليس لديك صلاحية')
-    console.error('[admin/creator-requests PATCH] failed:', err)
+    logger.error('[admin/creator-requests PATCH] failed:', err)
     return internalError('فشل معالجة الطلب')
   }
 }

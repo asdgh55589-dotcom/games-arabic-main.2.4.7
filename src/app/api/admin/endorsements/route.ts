@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, okPaginated } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/endorsements — قائمة كل التأييدات
 export async function GET(req: NextRequest) {
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
       { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
     )
   } catch (err) {
-    console.error('[admin/endorsements GET] failed:', err)
+    logger.error('[admin/endorsements GET] failed:', err)
     return internalError('Failed')
   }
 }

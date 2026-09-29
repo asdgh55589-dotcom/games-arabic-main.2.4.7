@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 function escapeCSV(value: string | null | undefined): string {
   if (!value) return ''
@@ -98,7 +99,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[admin/reports/export GET] failed:', err)
+    logger.error('[admin/reports/export GET] failed:', err)
     return internalError('Failed')
   }
 }

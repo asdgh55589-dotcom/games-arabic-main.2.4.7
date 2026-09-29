@@ -3,6 +3,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
     })
   } catch (err) {
-    console.error('[creator/requests GET] failed:', err)
+    logger.error('[creator/requests GET] failed:', err)
     reportError(err, { route: 'GET /api/creator/requests' })
     return internalError('فشل جلب الطلبات')
   }

@@ -4,6 +4,7 @@ import { parsePagination } from '@/lib/api-utils'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/video-cache — قائمة الفيديوهات المخزنة (50/page)
 export async function GET(req: NextRequest) {
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[admin/video-cache GET] failed:', err)
+    logger.error('[admin/video-cache GET] failed:', err)
     reportError(err, { route: 'GET /api/admin/video-cache' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
@@ -91,7 +92,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ ok: true, cleared: deleted.count })
   } catch (err) {
-    console.error('[admin/video-cache DELETE] failed:', err)
+    logger.error('[admin/video-cache DELETE] failed:', err)
     reportError(err, { route: 'DELETE /api/admin/video-cache' })
     return internalError('فشل مسح الكاش')
   }

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { fail, internalError, ok } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/scheduler — قائمة المهام المجدولة
 export async function GET(req: NextRequest) {
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
       stats: statusCounts,
     })
   } catch (err) {
-    console.error('[admin/scheduler] GET failed:', err)
+    logger.error('[admin/scheduler] GET failed:', err)
     return internalError('فشل في تحميل المهام المجدولة')
   }
 }
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     return ok(job)
   } catch (err) {
-    console.error('[admin/scheduler] POST failed:', err)
+    logger.error('[admin/scheduler] POST failed:', err)
     return internalError('فشل في إنشاء المهمة')
   }
 }
@@ -122,7 +123,7 @@ export async function PATCH(req: NextRequest) {
 
     return ok(updated)
   } catch (err) {
-    console.error('[admin/scheduler] PATCH failed:', err)
+    logger.error('[admin/scheduler] PATCH failed:', err)
     return internalError('فشل في تحديث المهمة')
   }
 }
@@ -155,7 +156,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ cancelled: true })
   } catch (err) {
-    console.error('[admin/scheduler] DELETE failed:', err)
+    logger.error('[admin/scheduler] DELETE failed:', err)
     return internalError('فشل في إلغاء المهمة')
   }
 }

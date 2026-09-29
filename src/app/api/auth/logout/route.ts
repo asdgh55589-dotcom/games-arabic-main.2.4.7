@@ -5,6 +5,7 @@ import { clearRoleCookie, type getSession, invalidateUserSessions, requireAuth }
 import { db } from '@/lib/db'
 import { revokeSession } from '@/lib/session-ledger'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 /** Clear the ledger cookie with the same attributes it was set with. */
 function clearLedgerCookie(res: NextResponse): void {
@@ -55,30 +56,30 @@ export async function POST(req: NextRequest) {
   try {
     await invalidateUserSessions(user.id)
   } catch (e) {
-    console.error('[Logout] invalidateUserSessions failed:', e)
+    logger.error('[Logout] invalidateUserSessions failed:', e)
   }
 
   // إبطال كل صفوف الـ ledger الخاصة بالمستخدم (كل الأجهزة) — فوري وغير قابل لإعادة الاستخدام
   try {
     await db.session.deleteMany({ where: { userId: user.id } })
   } catch (e) {
-    console.error('[Logout] ledger revoke-all failed:', e)
+    logger.error('[Logout] ledger revoke-all failed:', e)
   }
 
   // مسح كوكي الجهاز الحالي
   try {
     await clearRoleCookie()
   } catch (e) {
-    console.error('[Logout] clearRoleCookie failed:', e)
+    logger.error('[Logout] clearRoleCookie failed:', e)
   }
 
   // تسجيل خروج Supabase
   try {
     const supabase = await createClient()
     const { error } = await supabase.auth.signOut()
-    if (error) console.error('[Logout] Supabase signOut failed:', error.message)
+    if (error) logger.error('[Logout] Supabase signOut failed:', error.message)
   } catch (e) {
-    console.error('[Logout] Supabase signOut failed:', e)
+    logger.error('[Logout] Supabase signOut failed:', e)
   }
 
   // سجل تدقيق

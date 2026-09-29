@@ -1,6 +1,7 @@
 import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const STAGE_LABELS: Record<string, string> = {
   DRAFT: 'مسودة',
@@ -65,7 +66,7 @@ export async function GET() {
 
     return ok({ stages }, { headers: { 'Cache-Control': 'private, max-age=300' } })
   } catch (err) {
-    console.error('[admin/analytics/funnel] failed:', err)
+    logger.error('[admin/analytics/funnel] failed:', err)
     return internalError('Failed to load funnel analytics')
   }
 }

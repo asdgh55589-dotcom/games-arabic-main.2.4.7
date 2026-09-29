@@ -3,6 +3,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
 import { getClientIP } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ tracked: true })
   } catch (err) {
-    console.error('[platforms/view] failed:', err)
+    logger.error('[platforms/view] failed:', err)
     return internalError('Failed to track platform view')
   }
 }

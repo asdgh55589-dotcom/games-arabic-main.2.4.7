@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(_req: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function GET(_req: NextRequest) {
 
     return ok(result)
   } catch (error) {
-    console.error('[Assignable] Failed:', error)
+    logger.error('[Assignable] Failed:', error)
     return internalError('فشل تحميل قائمة المشرفين')
   }
 }

@@ -4,6 +4,7 @@ import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getCloudinaryUsage } from '@/lib/cloudinary'
 import { getHealthStatus, runDailyHealthCheck } from '@/lib/image-health-check'
+import { logger } from '@/lib/logger'
 
 // GET: الحصول على حالة الصحة + السجلات + الصور المكسورة + حالة المزودين (P3)
 export async function GET() {
@@ -16,7 +17,7 @@ export async function GET() {
     if (status === 401 || status === 403) {
       return forbidden('ليس لديك صلاحية عرض حالة الصور')
     }
-    console.error('[ImageHealth] فشل تحميل الحالة:', error)
+    logger.error('[ImageHealth] فشل تحميل الحالة:', error)
     return internalError('فشل تحميل حالة الصور')
   }
 }
@@ -91,7 +92,7 @@ export async function POST() {
     if (status === 401 || status === 403) {
       return forbidden('ليس لديك صلاحية تشغيل الفحص')
     }
-    console.error('[ImageHealth] فشل الفحص اليدوي:', error)
+    logger.error('[ImageHealth] فشل الفحص اليدوي:', error)
     return internalError('فشل الفحص اليدوي — حاول مرة أخرى')
   }
 }

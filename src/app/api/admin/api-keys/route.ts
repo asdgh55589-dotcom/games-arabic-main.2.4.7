@@ -5,6 +5,7 @@ import { fail, forbidden, internalError, ok, unauthorized, validationFail } from
 import { apiKeyPrefix, hashApiKey } from '@/lib/api-key-auth'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // ===== Validation Schemas =====
 
@@ -66,7 +67,7 @@ export async function GET() {
     const status = (err as { status?: number })?.status || 500
     if (status === 401) return unauthorized()
     if (status === 403) return forbidden()
-    console.error('[admin/api-keys GET] failed:', err)
+    logger.error('[admin/api-keys GET] failed:', err)
     return internalError('Failed to fetch API keys')
   }
 }
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401) return unauthorized()
     if (status === 403) return forbidden()
-    console.error('[admin/api-keys POST] failed:', err)
+    logger.error('[admin/api-keys POST] failed:', err)
     return internalError('Failed to create API key')
   }
 }

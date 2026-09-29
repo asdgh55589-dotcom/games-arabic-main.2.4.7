@@ -5,6 +5,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
 import { fileCategoryWhere, type FileCategory } from '@/lib/file-types'
+import { logger } from '@/lib/logger'
 
 const PROVIDERS = ['freeimage', 'ia', 'direct', 'cloudinary', 'supabase'] as const
 const CATEGORIES: FileCategory[] = ['image', 'video', 'archive', 'audio', 'other']
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[creator/files GET] failed:', err)
+    logger.error('[creator/files GET] failed:', err)
     reportError(err, { route: 'GET /api/creator/files' })
     return internalError('فشل جلب الملفات')
   }

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ ok: true, deleted, failed, errors })
   } catch (err) {
-    console.error('[admin/files/bulk-delete] failed:', err)
+    logger.error('[admin/files/bulk-delete] failed:', err)
     reportError(err, { route: 'POST /api/admin/files/bulk-delete' })
     return internalError('فشل الحذف الجماعي — حاول مرة أخرى')
   }

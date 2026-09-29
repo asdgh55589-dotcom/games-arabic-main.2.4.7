@@ -5,6 +5,7 @@ import { parsePagination } from '@/lib/api-utils'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/news — قائمة الأخبار
 export async function GET(req: NextRequest) {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     return okPaginated(news, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 })
   } catch (err) {
-    console.error('[admin/news GET] failed:', err)
+    logger.error('[admin/news GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     return ok(news)
   } catch (err) {
-    console.error('[admin/news POST] failed:', err)
+    logger.error('[admin/news POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }

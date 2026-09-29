@@ -3,6 +3,7 @@ import { forbidden, internalError, ok, validationFail } from '@/lib/api-response
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 const RANGES = new Set([7, 30, 90])
 
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
       PRIVATE_NO_STORE,
     )
   } catch (err) {
-    console.error('[creator/analytics/history GET] failed:', err)
+    logger.error('[creator/analytics/history GET] failed:', err)
     return internalError('فشل جلب سجل التحليلات')
   }
 }

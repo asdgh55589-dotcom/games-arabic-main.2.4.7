@@ -5,6 +5,7 @@ import { isFreeImageConfigured, uploadToFreeImage } from '@/lib/freeimage'
 import { wrapImageUrl } from '@/lib/image-worker'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 // Owner decision (P2): unified 60MB cap for all image uploads (FreeImage real limit).
 export const MAX_IMAGE_BYTES = 60 * 1024 * 1024 // 60MB
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
         checksum: uploaded.sha256,
       })
     } catch (usageError) {
-      console.error('[upload-image] usage record failed:', usageError)
+      logger.error('[upload-image] usage record failed:', usageError)
       // Non-fatal: the upload itself succeeded; usage converges on next uploads.
     }
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (error) {
-    console.error('[upload-image] failed:', error)
+    logger.error('[upload-image] failed:', error)
     reportError(error, { route: 'POST /api/storage/upload-image' })
     const message = error instanceof Error ? error.message : ''
     if (message.includes('FREEIMAGE_API_KEY') || message.includes('غير مُكوَّن')) {

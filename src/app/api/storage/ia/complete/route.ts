@@ -8,6 +8,7 @@ import {
   isIaEnabled,
   verifyIaObject,
 } from '@/lib/ia'
+import { logger } from '@/lib/logger'
 import { checkUploadQuota, recordUploadUsage } from '@/lib/quota'
 import { reportError } from '@/lib/error-reporting'
 
@@ -74,12 +75,12 @@ export async function POST(req: NextRequest) {
         mime,
       })
     } catch (usageError) {
-      console.error('[ia/complete] usage record failed:', usageError)
+      logger.error('[ia/complete] usage record failed:', usageError)
     }
 
     return ok({ downloadUrl, key, identifier, storageKey, bytes }, { status: 201 })
   } catch (err) {
-    console.error('[ia/complete] failed:', err)
+    logger.error('[ia/complete] failed:', err)
     reportError(err, { route: 'POST /api/storage/ia/complete' })
     return internalError('فشل تأكيد الرفع — حاول مرة أخرى')
   }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(ticket)
   } catch (error) {
-    console.error('[ticket GET]', error)
+    logger.error('[ticket GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -71,7 +72,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(ticket)
   } catch (error) {
-    console.error('[ticket PATCH]', error)
+    logger.error('[ticket PATCH]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -94,7 +95,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ticket DELETE]', error)
+    logger.error('[ticket DELETE]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

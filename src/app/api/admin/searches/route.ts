@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(searches)
   } catch (error) {
-    console.error('[saved-searches GET]', error)
+    logger.error('[saved-searches GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(search, { status: 201 })
   } catch (error) {
-    console.error('[saved-searches POST]', error)
+    logger.error('[saved-searches POST]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -60,7 +61,7 @@ export async function DELETE(request: Request) {
     await db.savedSearch.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[saved-searches DELETE]', error)
+    logger.error('[saved-searches DELETE]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

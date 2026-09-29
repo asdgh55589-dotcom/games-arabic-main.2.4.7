@@ -1,5 +1,6 @@
 import { ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/ads — جلب إعلانات الصفحة الرئيسية (المرئية فقط)
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
 
     return ok({ ads })
   } catch (err) {
-    console.error('[api/ads] failed:', err)
+    logger.error('[api/ads] failed:', err)
     return ok({ ads: [] })
   }
 }

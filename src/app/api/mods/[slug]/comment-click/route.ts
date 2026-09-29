@@ -3,6 +3,7 @@ import { internalError, notFound, ok, rateLimited } from '@/lib/api-response'
 import { isBot, recordCommentSectionClick } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const result = await recordCommentSectionClick(mod.id, req, db)
     return ok({ counted: result.counted })
   } catch (err) {
-    console.error('[comment-click POST] failed:', err)
+    logger.error('[comment-click POST] failed:', err)
     return internalError('Failed')
   }
 }

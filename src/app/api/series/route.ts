@@ -1,5 +1,6 @@
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/series — قائمة بكل السلاسل (من Series model الجديد)
 export async function GET() {
@@ -28,7 +29,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[api/series] failed:', err)
+    logger.error('[api/series] failed:', err)
     return internalError('Failed to fetch series')
   }
 }

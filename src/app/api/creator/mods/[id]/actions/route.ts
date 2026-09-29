@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         return validationFail('إجراء غير صالح')
     }
   } catch (err) {
-    console.error('[creator/mods actions] failed:', err)
+    logger.error('[creator/mods actions] failed:', err)
     const status = (err as { status?: number })?.status
     if (status === 401 || status === 403) return forbidden('غير مصرح')
     return internalError('فشل تنفيذ الإجراء')

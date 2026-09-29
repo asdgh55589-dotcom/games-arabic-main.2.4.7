@@ -3,6 +3,7 @@ import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok(duplicate)
   } catch (err) {
-    console.error('[admin/mods/[id]/duplicate POST] failed:', err)
+    logger.error('[admin/mods/[id]/duplicate POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

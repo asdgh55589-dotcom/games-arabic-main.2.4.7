@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
 import { fileCategory } from '@/lib/file-types'
+import { logger } from '@/lib/logger'
 
 const FORMATS = ['html', 'markdown', 'bbcode'] as const
 type EmbedFormat = (typeof FORMATS)[number]
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ ok: true, format, code: buildEmbedCode(asset.originalUrl, asset.mime, format) })
   } catch (err) {
-    console.error('[creator/files/embed-code] failed:', err)
+    logger.error('[creator/files/embed-code] failed:', err)
     reportError(err, { route: 'POST /api/creator/files/embed-code' })
     return internalError('فشل إنشاء كود التضمين')
   }

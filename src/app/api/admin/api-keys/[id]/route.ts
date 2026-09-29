@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -48,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401) return unauthorized()
     if (status === 403) return forbidden()
-    console.error('[admin/api-keys/[id] PATCH] failed:', err)
+    logger.error('[admin/api-keys/[id] PATCH] failed:', err)
     return internalError('Failed to update API key')
   }
 }
@@ -77,7 +78,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     const status = (err as { status?: number })?.status || 500
     if (status === 401) return unauthorized()
     if (status === 403) return forbidden()
-    console.error('[admin/api-keys/[id] DELETE] failed:', err)
+    logger.error('[admin/api-keys/[id] DELETE] failed:', err)
     return internalError('Failed to delete API key')
   }
 }

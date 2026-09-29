@@ -3,6 +3,7 @@ import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { updateModQualityScore } from '@/lib/quality-score'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -43,7 +44,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
     })
   } catch (error) {
-    console.error('[ratings GET]', error)
+    logger.error('[ratings GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -114,7 +115,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ratings POST]', error)
+    logger.error('[ratings POST]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -165,7 +166,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ratings DELETE]', error)
+    logger.error('[ratings DELETE]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -168,7 +169,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } },
     )
   } catch (err) {
-    console.error('[activity GET] failed:', err)
+    logger.error('[activity GET] failed:', err)
     return internalError('Failed')
   }
 }

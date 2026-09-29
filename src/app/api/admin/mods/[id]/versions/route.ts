@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -27,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok(versions)
   } catch (err) {
-    console.error('[admin/mods/[id]/versions GET] failed:', err)
+    logger.error('[admin/mods/[id]/versions GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to fetch versions')
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok(created)
   } catch (err) {
-    console.error('[admin/mods/[id]/versions POST] failed:', err)
+    logger.error('[admin/mods/[id]/versions POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to create version')
@@ -148,7 +149,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/mods/[id]/versions DELETE] failed:', err)
+    logger.error('[admin/mods/[id]/versions DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to delete version')

@@ -3,6 +3,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
 import { getClientIP } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // POST /api/search/track — تتبع استعلامات البحث
 export async function POST(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ tracked: true })
   } catch (err) {
-    console.error('[search/track] failed:', err)
+    logger.error('[search/track] failed:', err)
     return internalError('Failed to track search')
   }
 }

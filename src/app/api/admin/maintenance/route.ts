@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const MAINTENANCE_GROUP = 'maintenance'
 const MAINTENANCE_ENABLED_KEY = 'enabled'
@@ -37,7 +38,7 @@ export async function GET() {
     const settings = await getMaintenanceSettings()
     return ok({ settings })
   } catch (err) {
-    console.error('[maintenance GET] failed:', err)
+    logger.error('[maintenance GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -78,7 +79,7 @@ export async function PUT(req: NextRequest) {
     const settings = await getMaintenanceSettings()
     return ok({ settings, success: true })
   } catch (err) {
-    console.error('[maintenance PUT] failed:', err)
+    logger.error('[maintenance PUT] failed:', err)
     return internalError('Failed')
   }
 }

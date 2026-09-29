@@ -1,5 +1,6 @@
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/teams — قائمة بكل فرق التعريب
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[api/teams] failed:', err)
+    logger.error('[api/teams] failed:', err)
     return internalError('Failed to fetch teams')
   }
 }

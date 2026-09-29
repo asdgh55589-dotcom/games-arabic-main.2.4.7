@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { exportAuditToCSV } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
     if (status === 401 || status === 403) {
       return new Response('Forbidden', { status: status as number })
     }
-    console.error('[audit export]', err)
+    logger.error('[audit export]', err)
     return new Response('Error', { status: 500 })
   }
 }

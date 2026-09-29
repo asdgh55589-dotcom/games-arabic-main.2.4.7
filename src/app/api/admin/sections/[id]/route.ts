@@ -3,6 +3,7 @@ import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clearHomeCache } from '@/lib/home-cache'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -72,7 +73,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/sections/[id] PUT] failed:', err)
+    logger.error('[admin/sections/[id] PUT] failed:', err)
     const message = (err as Error).message || 'Failed'
     if (message.includes('Unique constraint')) {
       return validationFail({ key: 'هذا المفتاح موجود مسبقاً' })
@@ -105,7 +106,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/sections/[id] DELETE] failed:', err)
+    logger.error('[admin/sections/[id] DELETE] failed:', err)
     return internalError('Failed')
   }
 }

@@ -8,6 +8,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import * as cloudinaryLib from '@/lib/cloudinary'
 import { db } from '@/lib/db'
@@ -116,13 +117,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       if (existing?.bannerPublicId) {
         const result = await deleteFromCloudinary(existing.bannerPublicId).catch(() => null)
         if (!result?.ok) {
-          console.warn('[banner upload] old asset cleanup unverified', {
+          logger.warn('[banner upload] old asset cleanup unverified', {
             publicId: existing.bannerPublicId,
           })
         }
       }
     } catch {
-      console.warn('[banner upload] old asset cleanup failed')
+      logger.warn('[banner upload] old asset cleanup failed')
     }
 
     let uploaded: { url: string; publicId: string }
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         transform: 'w_1500,h_500,c_fill,q_auto,f_webp',
       })
     } catch (err) {
-      console.error('[banner upload] failed:', err)
+      logger.error('[banner upload] failed:', err)
       return internalError('Failed')
     }
 
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ url: uploaded.url, publicId: uploaded.publicId })
   } catch (err) {
-    console.error('[banner upload] failed:', err)
+    logger.error('[banner upload] failed:', err)
     return internalError('Failed')
   }
 }
@@ -170,7 +171,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
         await deleteFromCloudinary(existing.bannerPublicId).catch(() => {})
       }
     } catch {
-      console.warn('[banner delete] old asset cleanup failed')
+      logger.warn('[banner delete] old asset cleanup failed')
     }
 
     try {
@@ -179,12 +180,12 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
         data: { bannerUrl: null, bannerPublicId: null },
       })
     } catch {
-      console.warn('[banner delete] db clear failed')
+      logger.warn('[banner delete] db clear failed')
     }
 
     return ok({ message: 'تم حذف صورة البانر' })
   } catch (err) {
-    console.error('[banner delete] failed:', err)
+    logger.error('[banner delete] failed:', err)
     return ok({ message: 'تم حذف صورة البانر' })
   }
 }

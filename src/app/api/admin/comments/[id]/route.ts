@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { adminDeleteComment, setCommentPinned } from '@/lib/comments/repository'
+import { logger } from '@/lib/logger'
 
 /** يحوّل خطأ صلاحيات إلى الاستجابة الصحيحة بدل 500 */
 function authFail(err: unknown) {
@@ -27,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return ok(updated)
   } catch (err) {
-    console.error('[admin/comments/[id] PUT] failed:', err)
+    logger.error('[admin/comments/[id] PUT] failed:', err)
     return authFail(err) ?? internalError('فشل العملية')
   }
 }
@@ -43,7 +44,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/comments/[id] DELETE] failed:', err)
+    logger.error('[admin/comments/[id] DELETE] failed:', err)
     return authFail(err) ?? internalError('فشل العملية')
   }
 }

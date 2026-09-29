@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
       })),
     })
   } catch (err) {
-    console.error('[creator/stats GET] failed:', err)
+    logger.error('[creator/stats GET] failed:', err)
     return internalError('فشل جلب الإحصائيات')
   }
 }

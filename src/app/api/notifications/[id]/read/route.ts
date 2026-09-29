@@ -3,6 +3,7 @@ import { internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invalidateUnreadCache } from '@/lib/notification-cache'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -35,7 +36,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[notification read POST] failed:', err)
+    logger.error('[notification read POST] failed:', err)
     return internalError('Failed')
   }
 }

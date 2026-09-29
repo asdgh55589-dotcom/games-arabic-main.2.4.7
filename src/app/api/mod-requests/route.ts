@@ -3,6 +3,7 @@ import { internalError, ok, unauthorized, validationFail } from '@/lib/api-respo
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 // GET: List requests (public) — يعرض open + accepted + completed مرتبة حسب الشعبية
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
     })
     return ok({ requests })
   } catch (err) {
-    console.error('[mod-requests GET] failed:', err)
+    logger.error('[mod-requests GET] failed:', err)
     return internalError('فشل جلب الطلبات')
   }
 }
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
-    console.error('[mod-requests POST] failed:', err)
+    logger.error('[mod-requests POST] failed:', err)
     return internalError('فشل إنشاء الطلب')
   }
 }

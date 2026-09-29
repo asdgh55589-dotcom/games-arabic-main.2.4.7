@@ -3,6 +3,7 @@ import { internalError, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invalidateUnreadCache } from '@/lib/notification-cache'
+import { logger } from '@/lib/logger'
 
 async function markAllAsRead() {
   const neonUser = await getOptionalSession()
@@ -25,7 +26,7 @@ export async function POST(_req: NextRequest) {
   try {
     return await markAllAsRead()
   } catch (err) {
-    console.error('[notifications read-all POST] failed:', err)
+    logger.error('[notifications read-all POST] failed:', err)
     return internalError('Failed')
   }
 }
@@ -35,7 +36,7 @@ export async function PUT() {
   try {
     return await markAllAsRead()
   } catch (err) {
-    console.error('[notifications read-all PUT] failed:', err)
+    logger.error('[notifications read-all PUT] failed:', err)
     return internalError('Failed')
   }
 }
