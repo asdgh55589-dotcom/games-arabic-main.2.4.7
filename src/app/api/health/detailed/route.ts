@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok, rateLimited, unauthorized } from '@/lib/api-response'
 import { AuthError, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { dbCircuitBreaker } from '@/lib/observability/db-circuit-breaker'
+import { DbMonitor } from '@/lib/observability/db-monitor'
 import { getCircuitStatus, isCircuitOpen } from '@/lib/redis-circuit-breaker'
 import { redisGet } from '@/lib/redis'
 import { rateLimit } from '@/lib/rate-limit'
@@ -135,10 +137,15 @@ export async function GET(req: NextRequest) {
     ])
     const checks = { database, redis, telegram, brevo, storage }
     const allOk = Object.values(checks).every((c) => c.status === 'ok')
+    // Additive observability (Phase 3): pool telemetry + breaker state.
+    // Best-effort — a null poolMetrics never flips the status.
+    const poolMetrics = await DbMonitor.getMetrics().catch(() => null)
     return ok({
       status: allOk ? 'healthy' : 'degraded',
       time: new Date().toISOString(),
       checks,
+      poolMetrics,
+      circuitBreaker: dbCircuitBreaker.getState(),
     })
   } catch (err) {
     return internalError('Failed')
