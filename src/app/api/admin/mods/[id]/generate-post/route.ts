@@ -3,6 +3,7 @@ import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { formatPost, getDefaultTemplate, validatePostLength } from '@/lib/telegram-templates'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       modName: mod.name,
     })
   } catch (err) {
-    console.error('[admin/mods/generate-post] failed:', err)
+    logger.error('[admin/mods/generate-post] failed:', err)
     return internalError('فشل في توليد المنشور')
   }
 }

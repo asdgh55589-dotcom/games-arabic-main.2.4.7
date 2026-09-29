@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return ok(versions)
   } catch (err) {
-    console.error('[creator/mods/[id]/versions GET] failed:', err)
+    logger.error('[creator/mods/[id]/versions GET] failed:', err)
     return internalError('فشل جلب الإصدارات')
   }
 }

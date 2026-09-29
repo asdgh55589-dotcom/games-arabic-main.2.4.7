@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { calculateUserTier } from '@/lib/tier-engine'
 
 interface RouteParams {
@@ -252,7 +253,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return response
   } catch (error) {
-    console.error('[full-profile GET] failed:', error)
+    logger.error({ err: error }, '[full-profile GET] failed')
     return internalError('Failed')
   }
 }

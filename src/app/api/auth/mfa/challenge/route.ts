@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { generateMFAToken } from '@/lib/mfa-token'
 import { rateLimit } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // POST /api/auth/mfa/challenge — Phase 4C: mint an MFA challenge token for a
 // Supabase-authed user (client-side email login path).
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ mfaRequired: true, mfaToken, recoveryCodesCount: Math.max(0, 10 - used) })
   } catch (err) {
-    console.error('[mfa challenge] failed:', err)
+    logger.error('[mfa challenge] failed:', err)
     return internalError('حدث خطأ')
   }
 }

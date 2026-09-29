@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
   try {
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ leaderboard, timeRange })
   } catch (error) {
-    console.error('[leaderboard GET]', error)
+    logger.error('[leaderboard GET]', error)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

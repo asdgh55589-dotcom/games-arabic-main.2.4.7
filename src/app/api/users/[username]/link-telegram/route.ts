@@ -3,6 +3,7 @@ import { forbidden, internalError, ok, unauthorized, validationFail } from '@/li
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true, message: 'تم ربط حساب Telegram بنجاح' })
   } catch (err) {
-    console.error('[link-telegram] failed:', err)
+    logger.error('[link-telegram] failed:', err)
     return internalError('حدث خطأ أثناء ربط الحساب')
   }
 }
@@ -131,7 +132,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true, message: 'تم إلغاء ربط Telegram بنجاح' })
   } catch (err) {
-    console.error('[unlink-telegram] failed:', err)
+    logger.error('[unlink-telegram] failed:', err)
     return internalError('حدث خطأ أثناء إلغاء الربط')
   }
 }
@@ -163,7 +164,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return ok({ linked: !!linked, account: linked || null })
   } catch (err) {
-    console.error('[link-telegram GET] failed:', err)
+    logger.error('[link-telegram GET] failed:', err)
     return internalError('حدث خطأ')
   }
 }

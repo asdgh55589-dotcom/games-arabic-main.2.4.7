@@ -3,6 +3,7 @@ import { conflict, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/teams — قائمة الفرق
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
     })
     return ok(teams)
   } catch (err) {
-    console.error('[admin/teams GET] failed:', err)
+    logger.error('[admin/teams GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     return ok(team)
   } catch (err) {
-    console.error('[admin/teams POST] failed:', err)
+    logger.error('[admin/teams POST] failed:', err)
     return internalError('Failed')
   }
 }

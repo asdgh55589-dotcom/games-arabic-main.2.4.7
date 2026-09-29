@@ -4,6 +4,7 @@ import { internalError, ok, okPaginated, validationFail } from '@/lib/api-respon
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { CreateTemplateSchema, PaginationSchema } from '@/lib/schemas'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
     })
   } catch (err) {
-    console.error('[admin/templates GET] failed:', err)
+    logger.error('[admin/templates GET] failed:', err)
     return internalError('Failed to load templates')
   }
 }
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     return ok(template)
   } catch (err) {
-    console.error('[admin/templates POST] failed:', err)
+    logger.error('[admin/templates POST] failed:', err)
     return internalError('Failed to create template')
   }
 }

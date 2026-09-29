@@ -4,6 +4,7 @@ import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { clearHomeCache } from '@/lib/home-cache'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 const MAX_ACTIVE_MAIN_SECTIONS = 7
 
@@ -31,7 +32,7 @@ export async function GET() {
 
     return ok(sections)
   } catch (err) {
-    console.error('[admin/sections GET] failed:', err)
+    logger.error('[admin/sections GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     return ok(section)
   } catch (err) {
-    console.error('[admin/sections POST] failed:', err)
+    logger.error('[admin/sections POST] failed:', err)
     const message = (err as Error).message || 'Failed'
     if (message.includes('Unique constraint')) {
       return validationFail({ key: 'هذا المفتاح موجود مسبقاً' })

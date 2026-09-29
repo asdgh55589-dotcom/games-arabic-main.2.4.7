@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { recordTeamView } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/teams/[slug] — تفاصيل فريق
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
     // Fire-and-forget: مشاهدات صفحة الفريق مع dedup (user 24h / IP+UA 1h، bots مرفوضة)
     recordTeamView(team.id, req, db).catch((err) => {
-      console.error('[api/teams/[slug]] failed to record team view:', err)
+      logger.error('[api/teams/[slug]] failed to record team view:', err)
     })
 
     // إعادة القراءة بعد التسجيل قد تكون قديمة بثانية — مقبول لعداد عرض فقط
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       },
     )
   } catch (err) {
-    console.error('[api/teams/[slug]] failed:', err)
+    logger.error('[api/teams/[slug]] failed:', err)
     return internalError('Failed')
   }
 }

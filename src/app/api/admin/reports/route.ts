@@ -3,6 +3,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
       stats: statsMap,
     })
   } catch (err) {
-    console.error('[admin/reports GET] failed:', err)
+    logger.error('[admin/reports GET] failed:', err)
     reportError(err, { route: 'GET /api/admin/reports' })
     return internalError('Failed')
   }

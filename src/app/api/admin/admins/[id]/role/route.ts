@@ -4,6 +4,7 @@ import { logUserAction } from '@/lib/audit'
 import { invalidateUserSessions, requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canAssignRole } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -62,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const status = (err as any)?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمالك فقط')
-    console.error('[admins role PUT] failed:', err)
+    logger.error('[admins role PUT] failed:', err)
     return internalError('فشل تغيير الدور')
   }
 }

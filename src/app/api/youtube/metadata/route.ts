@@ -9,6 +9,7 @@ import {
   fetchVimeoOEmbedData,
   type VideoProvider,
 } from '@/lib/oembed'
+import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 
 // ===== P3: metadata cache (24h fresh, 7d TTL, stale-while-revalidate) =====
@@ -334,7 +335,7 @@ export async function POST(req: NextRequest) {
       // Stale: serve now, refresh in background (P3 — no scheduled job yet).
       after(() => {
         refreshVideoCache(canonicalUrl, detected.provider, detected.id, url.trim()).catch((err) =>
-          console.error('[youtube/metadata] background refresh failed:', err),
+          logger.error('[youtube/metadata] background refresh failed:', err),
         )
       })
       return ok({ ...toVideoMetadata(cached), cached: true, stale: true })
@@ -344,7 +345,7 @@ export async function POST(req: NextRequest) {
     try {
       const fresh = await fetchFreshVideo(detected.provider, detected.id, canonicalUrl, url.trim())
       await writeVideoCache(canonicalUrl, fresh).catch((err) =>
-        console.error('[youtube/metadata] cache write failed:', err),
+        logger.error('[youtube/metadata] cache write failed:', err),
       )
       return ok({ ...fresh, cached: false })
     } catch (err) {
@@ -354,7 +355,7 @@ export async function POST(req: NextRequest) {
       throw err
     }
   } catch (err) {
-    console.error('[youtube/metadata] failed:', err)
+    logger.error('[youtube/metadata] failed:', err)
     return internalError('فشل جلب البيانات')
   }
 }
@@ -379,10 +380,10 @@ async function fetchFreshVideo(
     const data = await runYtDlp(canonicalUrl)
     return buildMetadata(data, videoId, canonicalUrl)
   } catch (err) {
-    console.error('[youtube/metadata] yt-dlp failed:', err)
+    logger.error('[youtube/metadata] yt-dlp failed:', err)
     const oembed = await fetchOEmbedData(canonicalUrl)
     if (oembed) {
-      console.info('[youtube/metadata] oEmbed fallback succeeded')
+      logger.info('[youtube/metadata] oEmbed fallback succeeded')
       return buildOEmbedMetadata(oembed, videoId, canonicalUrl)
     }
     const classified = classifyYtDlpError(err)
@@ -487,6 +488,6 @@ async function refreshVideoCache(
     await writeVideoCache(canonicalUrl, fresh)
   } catch (err) {
     // Background refresh never surfaces errors — stale row stays until TTL.
-    console.error('[youtube/metadata] background refresh failed:', err)
+    logger.error('[youtube/metadata] background refresh failed:', err)
   }
 }

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { isBot, recordAdClick } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ counted: result.counted, clicksCount: freshAd?.clicksCount ?? 0 })
   } catch (err) {
-    console.error('[ads click] failed:', err)
+    logger.error('[ads click] failed:', err)
     return internalError('Failed')
   }
 }

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { forbidden, internalError, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[admin/sessions] GET failed', err)
+    logger.error('[admin/sessions] GET failed', err)
     return internalError('Failed to load sessions')
   }
 }
@@ -140,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'token أو sessionId مطلوب' }, { status: 400 })
   } catch (err) {
-    console.error('[admin/sessions] POST failed', err)
+    logger.error('[admin/sessions] POST failed', err)
     return internalError('Failed to revoke session')
   }
 }

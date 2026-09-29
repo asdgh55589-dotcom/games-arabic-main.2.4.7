@@ -7,6 +7,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -42,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing, followersCount })
   } catch (err) {
-    console.error('[team-follow GET] failed:', err)
+    logger.error('[team-follow GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -83,7 +84,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing: true, followersCount })
   } catch (err) {
-    console.error('[team-follow POST] failed:', err)
+    logger.error('[team-follow POST] failed:', err)
     return internalError('Failed')
   }
 }
@@ -113,7 +114,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing: false, followersCount })
   } catch (err) {
-    console.error('[team-follow DELETE] failed:', err)
+    logger.error('[team-follow DELETE] failed:', err)
     return internalError('Failed')
   }
 }

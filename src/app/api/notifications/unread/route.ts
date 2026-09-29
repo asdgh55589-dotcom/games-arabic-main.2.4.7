@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/notifications/unread — الإشعارات غير المقروءة
 export async function GET(_req: NextRequest) {
@@ -39,7 +40,7 @@ export async function GET(_req: NextRequest) {
 
     return ok(notifications)
   } catch (err) {
-    console.error('[notifications unread GET] failed:', err)
+    logger.error('[notifications unread GET] failed:', err)
     return internalError('Failed')
   }
 }

@@ -5,6 +5,7 @@ import {
   getBadgeSettings,
   logBadgeChange,
 } from '@/lib/badges'
+import { logger } from '@/lib/logger'
 import { db } from '@/lib/db'
 
 const BATCH = 200
@@ -104,7 +105,7 @@ export async function GET() {
 
     return ok({ data: { scanned, updated, logged } })
   } catch (err) {
-    console.error('[admin badges recalculate] failed:', err)
+    logger.error('[admin badges recalculate] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to recalculate badges')

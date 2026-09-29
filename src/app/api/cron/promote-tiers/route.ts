@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import type { UserRole } from '@/lib/roles'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierLabel } from '@/lib/tiers'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   const authErr = await requireCronAuth(req)
@@ -60,13 +61,13 @@ export async function GET(req: NextRequest) {
           })
           notified++
         } catch (e) {
-          console.error(`[TierPromotion] notify failed for ${user.id}:`, e)
+          logger.error(`[TierPromotion] notify failed for ${user.id}:`, e)
         }
 
         promoted++
       }
     } catch (error) {
-      console.error(`[TierPromotion] Failed for user ${user.id}:`, error)
+      logger.error(`[TierPromotion] Failed for user ${user.id}:`, error)
     }
   }
 

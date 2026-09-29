@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, requireModerator } from '@/lib/auth'
 import { revalidateTag } from '@/lib/cache'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/ads/[id] PUT] failed:', err)
+    logger.error('[admin/ads/[id] PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }
@@ -64,7 +65,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/ads/[id] DELETE] failed:', err)
+    logger.error('[admin/ads/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }

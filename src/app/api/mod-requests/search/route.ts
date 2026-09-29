@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/mod-requests/search?q=keyword — بحث سريع عن طلبات مطابقة (public)
 export async function GET(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     return ok({ requests })
   } catch (err) {
-    console.error('[mod-requests/search GET] failed:', err)
+    logger.error('[mod-requests/search GET] failed:', err)
     return internalError('فشل البحث')
   }
 }

@@ -10,6 +10,7 @@ import {
   resolveBadgeSettings,
   type FeaturedTier,
 } from '@/lib/badges'
+import { logger } from '@/lib/logger'
 import { db } from '@/lib/db'
 
 // GET /api/admin/badges/settings — الإعدادات الحالية مدمجة مع الافتراضي
@@ -37,7 +38,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[admin badges settings GET] failed:', err)
+    logger.error('[admin badges settings GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to fetch badge settings')
@@ -118,7 +119,7 @@ export async function PUT(req: NextRequest) {
     })
     return ok({ ok: true })
   } catch (err) {
-    console.error('[admin badges settings PUT] failed:', err)
+    logger.error('[admin badges settings PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to update badge settings')

@@ -4,6 +4,7 @@ import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { UpdateTemplateSchema } from '@/lib/schemas'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -61,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     return ok(updated)
   } catch (err) {
-    console.error('[admin/templates/[id] PUT] failed:', err)
+    logger.error('[admin/templates/[id] PUT] failed:', err)
     const message = (err as Error).message || 'Failed'
     if (message.includes('Unique constraint')) {
       return validationFail({ type: 'يوجد قالب نشط لنفس النوع والقناة' })
@@ -100,7 +101,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/templates/[id] DELETE] failed:', err)
+    logger.error('[admin/templates/[id] DELETE] failed:', err)
     return internalError('Failed to delete template')
   }
 }

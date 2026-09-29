@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { conflict, forbidden, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { AuthError, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string; memberId: string }>
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       },
     })
   } catch (e) {
-    console.error('[LinkMember] Failed to send notification:', e)
+    logger.error('[LinkMember] Failed to send notification:', e)
   }
 
   return ok({
@@ -192,7 +193,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
         },
       })
     } catch (e) {
-      console.error('[UnlinkMember] Failed to send notification:', e)
+      logger.error('[UnlinkMember] Failed to send notification:', e)
     }
   }
 

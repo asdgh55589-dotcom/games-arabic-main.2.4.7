@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('[track] Error:', error)
+    logger.error('[track] Error:', error)
   }
 
   if (event === 'open') {

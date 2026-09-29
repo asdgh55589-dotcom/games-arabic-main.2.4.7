@@ -8,6 +8,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import * as cloudinaryLib from '@/lib/cloudinary'
 import { db } from '@/lib/db'
@@ -117,13 +118,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       if (existing?.avatarPublicId) {
         const result = await deleteFromCloudinary(existing.avatarPublicId).catch(() => null)
         if (!result?.ok) {
-          console.warn('[avatar upload] old asset cleanup unverified', {
+          logger.warn('[avatar upload] old asset cleanup unverified', {
             publicId: existing.avatarPublicId,
           })
         }
       }
     } catch {
-      console.warn('[avatar upload] old asset cleanup failed')
+      logger.warn('[avatar upload] old asset cleanup failed')
     }
 
     let uploaded: { url: string; publicId: string }
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         transform: 'w_500,h_500,c_fill,q_auto,f_webp',
       })
     } catch (err) {
-      console.error('[avatar POST] failed:', err)
+      logger.error('[avatar POST] failed:', err)
       reportError(err, { route: 'POST /api/users/[username]/avatar' })
       return internalError('Failed')
     }
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ url: uploaded.url, publicId: uploaded.publicId })
   } catch (err) {
-    console.error('[avatar POST] failed:', err)
+    logger.error('[avatar POST] failed:', err)
     reportError(err, { route: 'POST /api/users/[username]/avatar' })
     return internalError('Failed')
   }
@@ -173,7 +174,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
         await deleteFromCloudinary(existing.avatarPublicId).catch(() => {})
       }
     } catch {
-      console.warn('[avatar delete] old asset cleanup failed')
+      logger.warn('[avatar delete] old asset cleanup failed')
     }
 
     try {
@@ -182,12 +183,12 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
         data: { avatarUrl: null, avatarPublicId: null },
       })
     } catch {
-      console.warn('[avatar delete] db clear failed')
+      logger.warn('[avatar delete] db clear failed')
     }
 
     return ok({ message: 'تم حذف الصورة الشخصية' })
   } catch (err) {
-    console.error('[avatar DELETE] failed:', err)
+    logger.error('[avatar DELETE] failed:', err)
     reportError(err, { route: 'DELETE /api/users/[username]/avatar' })
     return ok({ message: 'تم حذف الصورة الشخصية' })
   }

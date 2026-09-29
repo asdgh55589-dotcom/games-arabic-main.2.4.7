@@ -3,6 +3,7 @@ import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { logBadgeChange, parseHiddenBadges } from '@/lib/badges'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 type BadgeName = 'featured' | 'trending' | 'popular'
 type Op = 'grant' | 'revoke' | 'hide' | 'show' | 'reset-counter'
@@ -158,7 +159,7 @@ export async function PUT(
 
     return validationFail('op must be grant|revoke|hide|show|reset-counter')
   } catch (err) {
-    console.error('[admin badges PUT] failed:', err)
+    logger.error('[admin badges PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to update badges')

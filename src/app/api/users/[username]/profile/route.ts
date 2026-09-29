@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 import {
   conflict,
   forbidden,
@@ -168,7 +169,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     )
   } catch (err: any) {
-    console.error('[profile GET] failed:', err?.message, err?.stack)
+    logger.error({ err }, '[profile GET] failed')
     return internalError('Failed')
   }
 }
@@ -178,7 +179,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const body = await req.json()
     const { username } = await params
-    console.log('[API] Profile PUT - username:', username, 'fields:', Object.keys(body))
+    logger.info('[API] Profile PUT - username:', username, 'fields:', Object.keys(body))
     const neonUser = await getOptionalSession()
     if (!neonUser) {
       return unauthorized()
@@ -294,7 +295,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     return ok({ profile: updatedUser })
   } catch (err: any) {
-    console.error('[profile PUT] failed:', err?.message, err?.stack)
+    logger.error({ err }, '[profile PUT] failed')
     return internalError('Failed')
   }
 }

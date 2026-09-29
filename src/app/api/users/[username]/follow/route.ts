@@ -9,6 +9,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing, followersCount, followingCount })
   } catch (err) {
-    console.error('[follow GET] failed:', err)
+    logger.error('[follow GET] failed:', err)
     return internalError('حدث خطأ في الخادم')
   }
 }
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing: true, followersCount, followingCount })
   } catch (err) {
-    console.error('[follow POST] failed:', err)
+    logger.error('[follow POST] failed:', err)
     return internalError('حدث خطأ في الخادم')
   }
 }
@@ -145,7 +146,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
     return ok({ isFollowing: false, followersCount, followingCount })
   } catch (err) {
-    console.error('[follow DELETE] failed:', err)
+    logger.error('[follow DELETE] failed:', err)
     return internalError('حدث خطأ في الخادم')
   }
 }

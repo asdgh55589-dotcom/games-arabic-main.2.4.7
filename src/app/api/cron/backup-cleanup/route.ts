@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/cron-auth'
 import { claimRun, completeRun } from '@/lib/cron-ledger'
 import { cleanupOldBackups } from '@/lib/backup'
+import { logger } from '@/lib/logger'
 
 /**
  * إزالة النسخ الاحتياطية القديمة.
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     if (jobId) await completeRun(jobId)
     return NextResponse.json({ ok: true, deleted })
   } catch (error) {
-    console.error('[backup-cleanup] فشل التنظيف:', error)
+    logger.error('[backup-cleanup] فشل التنظيف:', error)
     return NextResponse.json({ error: 'فشل التنظيف' }, { status: 500 })
   }
 }

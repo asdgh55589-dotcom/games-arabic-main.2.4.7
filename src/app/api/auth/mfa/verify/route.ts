@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { encryptRecoveryCodes, generateRecoveryCodes } from '@/lib/recovery-codes'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ success: true, recoveryCodes })
   } catch (err) {
-    console.error('[mfa verify] failed:', err)
+    logger.error('[mfa verify] failed:', err)
     return internalError('حدث خطأ أثناء التحقق')
   }
 }

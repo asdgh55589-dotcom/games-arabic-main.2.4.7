@@ -2,6 +2,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/files/storage-stats — نظرة تخزينية شاملة (للإدارة)
 export async function GET() {
@@ -96,7 +97,7 @@ export async function GET() {
       trend,
     })
   } catch (err) {
-    console.error('[admin/files/storage-stats] failed:', err)
+    logger.error('[admin/files/storage-stats] failed:', err)
     reportError(err, { route: 'GET /api/admin/files/storage-stats' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')

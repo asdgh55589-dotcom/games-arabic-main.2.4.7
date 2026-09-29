@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/news/[id]
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!news) return notFound('الخبر غير موجود')
     return ok(news)
   } catch (err) {
-    console.error('[admin/news/[id] GET] failed:', err)
+    logger.error('[admin/news/[id] GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }
@@ -51,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const news = await db.news.update({ where: { id }, data })
     return ok(news)
   } catch (err) {
-    console.error('[admin/news/[id] PUT] failed:', err)
+    logger.error('[admin/news/[id] PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }
@@ -68,7 +69,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await db.news.update({ where: { id }, data: { visible: false } })
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/news/[id] DELETE] failed:', err)
+    logger.error('[admin/news/[id] DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }

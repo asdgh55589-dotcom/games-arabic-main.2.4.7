@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -100,7 +101,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } },
     )
   } catch (err) {
-    console.error('[badges GET] failed:', err)
+    logger.error('[badges GET] failed:', err)
     return internalError('Failed')
   }
 }

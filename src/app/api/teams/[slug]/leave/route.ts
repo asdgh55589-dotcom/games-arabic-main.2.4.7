@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { fail, notFound, ok, unauthorized } from '@/lib/api-response'
 import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ slug: string }>
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }),
     })
   } catch (err) {
-    console.error('[LeaveTeam] Failed to log action:', err)
+    logger.error('[LeaveTeam] Failed to log action:', err)
   }
 
   if (team.ownerId) {
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         },
       })
     } catch (e) {
-      console.error('[LeaveTeam] Failed to notify owner:', e)
+      logger.error('[LeaveTeam] Failed to notify owner:', e)
     }
   }
 

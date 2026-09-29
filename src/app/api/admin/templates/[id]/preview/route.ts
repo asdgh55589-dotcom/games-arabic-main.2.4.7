@@ -4,6 +4,7 @@ import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       sampleVariables: sampleVars,
     })
   } catch (err) {
-    console.error('[admin/templates/[id]/preview POST] failed:', err)
+    logger.error('[admin/templates/[id]/preview POST] failed:', err)
     return internalError('Failed to preview template')
   }
 }

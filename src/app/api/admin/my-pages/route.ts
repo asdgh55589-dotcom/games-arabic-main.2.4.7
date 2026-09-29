@@ -2,6 +2,7 @@ import { fail, internalError, ok } from '@/lib/api-response'
 import { ADMIN_PAGES_FLAT } from '@/lib/admin-pages'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/my-pages — صفحاتي المسموحة لترشيح القائمة الجانبية.
 // pages = null → النظام الافتراضي حسب الرتبة (اعرض كل ما تسمح به الرتبة).
@@ -21,7 +22,7 @@ export async function GET() {
     const pages = rows.map((r) => r.page).filter((k) => validKeys.has(k))
     return ok({ pages: pages.length > 0 ? pages : null, role: session.role })
   } catch (err) {
-    console.error('[admin my-pages GET] failed:', err)
+    logger.error('[admin my-pages GET] failed:', err)
     return internalError('فشل تحميل الصفحات المسموحة')
   }
 }

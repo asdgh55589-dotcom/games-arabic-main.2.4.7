@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 async function requireUser() {
   return getOptionalSession()
@@ -29,7 +30,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ deleted: deleted.count })
   } catch (err) {
-    console.error('[notifications bulk DELETE] failed:', err)
+    logger.error('[notifications bulk DELETE] failed:', err)
     return internalError('Failed')
   }
 }

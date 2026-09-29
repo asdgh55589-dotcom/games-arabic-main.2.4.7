@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface ChangelogBody {
   type?: string
@@ -53,7 +54,7 @@ export async function POST(
 
     return ok({ data: changelog }, { status: 201 })
   } catch (err) {
-    console.error('[admin/mods/[id]/changelog POST] failed:', err)
+    logger.error('[admin/mods/[id]/changelog POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) return internalError('Unauthorized or forbidden')
     return internalError('Failed to save changelog')

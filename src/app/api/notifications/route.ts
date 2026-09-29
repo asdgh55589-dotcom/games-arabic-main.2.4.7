@@ -6,6 +6,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { parsePagination } from '@/lib/api-utils'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
       { unreadCount },
     )
   } catch (err) {
-    console.error('[notifications GET] failed:', err)
+    logger.error('[notifications GET] failed:', err)
     return internalError('Failed to fetch notifications')
   }
 }
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
 
     return ok(notification)
   } catch (err) {
-    console.error('[notifications POST] failed:', err)
+    logger.error('[notifications POST] failed:', err)
     return internalError('Failed to create notification')
   }
 }

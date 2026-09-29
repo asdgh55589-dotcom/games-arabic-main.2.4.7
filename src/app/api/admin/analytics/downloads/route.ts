@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const PLATFORM_LABELS: Record<string, string> = {
   NS: 'Nintendo Switch',
@@ -159,7 +160,7 @@ export async function GET(req: NextRequest) {
       { headers: { 'Cache-Control': 'private, max-age=300' } },
     )
   } catch (err) {
-    console.error('[admin/analytics/downloads] failed:', err)
+    logger.error('[admin/analytics/downloads] failed:', err)
     return internalError('Failed to load downloads analytics')
   }
 }

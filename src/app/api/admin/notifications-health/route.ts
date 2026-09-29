@@ -2,6 +2,7 @@ import { metricsService } from '@/infrastructure/observability/metrics'
 import { internalError, ok } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -31,7 +32,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (err) {
-    console.error('[admin/notifications-health] failed:', err)
+    logger.error('[admin/notifications-health] failed:', err)
     return internalError('Failed to load notification health data')
   }
 }

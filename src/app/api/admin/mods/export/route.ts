@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/mods/export — تصدير التعريبات كـ CSV
 export async function GET(req: NextRequest) {
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[admin/mods/export GET] failed:', err)
+    logger.error('[admin/mods/export GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

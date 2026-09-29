@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/teams/[id] — تفاصيل الفريق
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     return ok(team)
   } catch (err) {
-    console.error('[admin/teams/[id] GET] failed:', err)
+    logger.error('[admin/teams/[id] GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -139,7 +140,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
     return ok(team)
   } catch (err) {
-    console.error('[admin/teams/[id] PUT] failed:', err)
+    logger.error('[admin/teams/[id] PUT] failed:', err)
     return internalError('Failed')
   }
 }
@@ -163,7 +164,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await db.team.delete({ where: { id } })
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/teams/[id] DELETE] failed:', err)
+    logger.error('[admin/teams/[id] DELETE] failed:', err)
     return internalError('Failed')
   }
 }

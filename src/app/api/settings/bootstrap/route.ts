@@ -1,6 +1,7 @@
 import { internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -84,7 +85,7 @@ export async function GET() {
       },
     )
   } catch (error) {
-    console.error('[settings-bootstrap] failed:', error)
+    logger.error({ err: error }, '[settings-bootstrap] failed')
     return internalError('Failed')
   }
 }

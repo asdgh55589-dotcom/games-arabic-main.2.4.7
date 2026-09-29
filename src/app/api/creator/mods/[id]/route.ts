@@ -6,6 +6,7 @@ import { authorPublicSelect, gameDetailSelect } from '@/lib/prisma-selects'
 import { CreateModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -96,12 +97,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         uploadedBy: user.id,
       })
     } catch (relErr) {
-      console.error('[creator/mods PATCH] relations failed:', relErr)
+      logger.error('[creator/mods PATCH] relations failed:', relErr)
     }
 
     return ok({ mod: updated, message: 'تم تحديث التعريب بنجاح' })
   } catch (err) {
-    console.error('[creator/mods PATCH] failed:', err)
+    logger.error('[creator/mods PATCH] failed:', err)
     return internalError('فشل تحديث التعريب')
   }
 }
@@ -128,7 +129,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     return ok(mod)
   } catch (err) {
-    console.error('[creator/mods GET] failed:', err)
+    logger.error('[creator/mods GET] failed:', err)
     return internalError('فشل جلب التعريب')
   }
 }

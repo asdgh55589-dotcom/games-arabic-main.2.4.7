@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (createResult.error && !createResult.error.message?.includes('already exists')) {
-          console.error('[upload-url bucket create failed]', createResult.error)
+          logger.error({ err: createResult.error }, '[upload-url bucket create failed]')
         }
       }
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       publicUrl: publicUrlData.publicUrl,
     })
   } catch (error) {
-    console.error('[storage upload-url] failed:', error)
+    logger.error({ err: error }, '[storage upload-url] failed')
     return internalError('Failed')
   } finally {
     console.timeEnd('[upload-url]')

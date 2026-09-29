@@ -8,6 +8,7 @@ import {
   getTotalBackupSize,
   listBackups,
 } from '@/lib/backup'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/backup — قائمة النسخ الاحتياطية
 export async function GET() {
@@ -24,7 +25,7 @@ export async function GET() {
       lastBackup: backups[0] || null,
     })
   } catch (err) {
-    console.error('[admin/backup] GET failed:', err)
+    logger.error('[admin/backup] GET failed:', err)
     return internalError('فشل في تحميل النسخ الاحتياطية')
   }
 }
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     return ok(backup)
   } catch (err) {
-    console.error('[admin/backup] POST failed:', err)
+    logger.error('[admin/backup] POST failed:', err)
     return internalError('فشل في إنشاء النسخة الاحتياطية')
   }
 }
@@ -69,7 +70,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ deleted: true })
   } catch (err) {
-    console.error('[admin/backup] DELETE failed:', err)
+    logger.error('[admin/backup] DELETE failed:', err)
     return internalError('فشل في حذف النسخة الاحتياطية')
   }
 }

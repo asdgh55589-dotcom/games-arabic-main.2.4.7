@@ -3,6 +3,7 @@ import { internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { syncTeamCounts } from '@/lib/team-helpers'
+import { logger } from '@/lib/logger'
 
 // PUT /api/admin/teams/[id]/mods — ربط/فصل تعريبة
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/teams/[id]/mods PUT] failed:', err)
+    logger.error('[admin/teams/[id]/mods PUT] failed:', err)
     return internalError('Failed')
   }
 }

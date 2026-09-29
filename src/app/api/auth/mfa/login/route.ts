@@ -4,6 +4,7 @@ import { setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { verifyMFAToken } from '@/lib/mfa-token'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[mfa login] failed:', err)
+    logger.error('[mfa login] failed:', err)
     return internalError('حدث خطأ أثناء التحقق')
   }
 }

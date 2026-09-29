@@ -8,6 +8,7 @@ import { executeAutoAction } from '@/lib/reports/auto-actions'
 import { REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
 import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/reports/[id]/confirm POST] failed:', err)
+    logger.error('[admin/reports/[id]/confirm POST] failed:', err)
     return internalError('Failed')
   }
 }

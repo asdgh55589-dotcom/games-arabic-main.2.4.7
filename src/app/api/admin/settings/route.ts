@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireManager, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/settings — قراءة الإعدادات
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
     }
     return ok({ settings: grouped })
   } catch (err) {
-    console.error('[admin/settings GET] failed:', err)
+    logger.error('[admin/settings GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -44,7 +45,7 @@ export async function PUT(req: NextRequest) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/settings PUT] failed:', err)
+    logger.error('[admin/settings PUT] failed:', err)
     return internalError('Failed')
   }
 }

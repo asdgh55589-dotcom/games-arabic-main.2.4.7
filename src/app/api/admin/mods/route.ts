@@ -4,6 +4,7 @@ import { forbidden, internalError, ok, okPaginated, validationFail } from '@/lib
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { requireCreator, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { calculateModQualityScore } from '@/lib/mod-quality'
 import { canCreateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[admin/mods GET] failed:', err)
+    logger.error('[admin/mods GET] failed:', err)
     reportError(err, { route: 'GET /api/admin/mods' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
@@ -460,7 +461,9 @@ export async function POST(req: NextRequest) {
     })
 
     // Check for tier upgrade
-    checkAndUpgradeTier(mod.authorId).catch(console.error)
+    checkAndUpgradeTier(mod.authorId).catch((err) =>
+      logger.error({ err, authorId: mod.authorId }, '[mods POST] tier upgrade check failed'),
+    )
 
     // إشعار نشر التعريب
     try {
@@ -511,7 +514,7 @@ export async function POST(req: NextRequest) {
 
     return ok(mod)
   } catch (err) {
-    console.error('[admin/mods POST] failed:', err)
+    logger.error('[admin/mods POST] failed:', err)
     reportError(err, { route: 'POST /api/admin/mods' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {

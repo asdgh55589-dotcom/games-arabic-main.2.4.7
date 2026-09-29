@@ -2,6 +2,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 import { getHomeCache, getHomeCacheTtl, setHomeCache } from '@/lib/home-cache'
+import { logger } from '@/lib/logger'
 import { modCardSelect } from '@/lib/prisma-selects'
 import type { ModSummary, SeriesSummary } from '@/lib/types'
 import { Prisma } from '@prisma/client'
@@ -335,7 +336,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[api/home] failed:', err)
+    logger.error('[api/home] failed:', err)
     return internalError('Failed to load homepage data')
   }
 }

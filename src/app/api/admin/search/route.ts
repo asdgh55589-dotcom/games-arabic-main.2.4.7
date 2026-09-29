@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { search } from '@/lib/search'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(results)
   } catch (error) {
-    console.error('[search GET]', error)
+    logger.error('[search GET]', error)
     return NextResponse.json({ error: 'خطأ في البحث' }, { status: 500 })
   }
 }

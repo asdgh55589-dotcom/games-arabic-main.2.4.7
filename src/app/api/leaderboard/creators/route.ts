@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -48,7 +49,7 @@ export async function GET() {
       { headers: { 'Cache-Control': 'public, max-age=60' } },
     )
   } catch (err) {
-    console.error('[leaderboard/creators] failed:', err)
+    logger.error('[leaderboard/creators] failed:', err)
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
 }

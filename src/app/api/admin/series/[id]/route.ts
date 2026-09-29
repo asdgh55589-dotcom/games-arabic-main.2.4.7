@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify, syncSeriesCounts } from '@/lib/series-helpers'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/series/[id] — تفاصيل السلسلة
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     return ok(series)
   } catch (err) {
-    console.error('[admin/series/[id] GET] failed:', err)
+    logger.error('[admin/series/[id] GET] failed:', err)
     return internalError('Failed')
   }
 }
@@ -67,7 +68,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const series = await db.series.update({ where: { id }, data })
     return ok(series)
   } catch (err) {
-    console.error('[admin/series/[id] PUT] failed:', err)
+    logger.error('[admin/series/[id] PUT] failed:', err)
     return internalError('Failed')
   }
 }
@@ -95,7 +96,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await db.series.delete({ where: { id } })
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/series/[id] DELETE] failed:', err)
+    logger.error('[admin/series/[id] DELETE] failed:', err)
     return internalError('Failed')
   }
 }

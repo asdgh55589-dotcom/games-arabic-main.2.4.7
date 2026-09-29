@@ -4,6 +4,7 @@ import { ADMIN_PAGES_FLAT } from '@/lib/admin-pages'
 import { logUserAction } from '@/lib/audit'
 import { invalidateUserSessions, requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -34,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const status = (err as any)?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
-    console.error('[admin user pages GET] failed:', err)
+    logger.error('[admin user pages GET] failed:', err)
     return internalError('فشل تحميل صلاحيات الصفحات')
   }
 }
@@ -85,7 +86,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const status = (err as any)?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
-    console.error('[admin user pages PUT] failed:', err)
+    logger.error('[admin user pages PUT] failed:', err)
     return internalError('فشل حفظ صلاحيات الصفحات')
   }
 }
@@ -117,7 +118,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const status = (err as any)?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
-    console.error('[admin user pages DELETE] failed:', err)
+    logger.error('[admin user pages DELETE] failed:', err)
     return internalError('فشل حذف التخصيص')
   }
 }

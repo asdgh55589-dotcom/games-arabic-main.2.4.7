@@ -5,6 +5,7 @@ import { logUserAction } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { deleteIpBanCache } from '@/lib/ip-ban-cache'
+import { logger } from '@/lib/logger'
 
 // POST /api/admin/users/[id]/unban — إلغاء الحظر
 //
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return ok({ success: true, ipCleared })
   } catch (err) {
-    console.error('[admin/users/[id]/unban] failed:', err)
+    logger.error('[admin/users/[id]/unban] failed:', err)
     return internalError('Failed')
   }
 }

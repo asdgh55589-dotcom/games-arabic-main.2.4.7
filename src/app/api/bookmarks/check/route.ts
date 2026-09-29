@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/bookmarks/check?modId=xxx — التحقق من حالة الحفظ
 export async function GET(req: NextRequest) {
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     return ok({ bookmarked: !!bookmark })
   } catch (err) {
-    console.error('[bookmarks/check GET] failed:', err)
+    logger.error('[bookmarks/check GET] failed:', err)
     return internalError('Failed')
   }
 }

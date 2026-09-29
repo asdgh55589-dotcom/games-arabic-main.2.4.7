@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, okPaginated, unauthorized } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { adminListComments } from '@/lib/comments/repository'
+import { logger } from '@/lib/logger'
 
 /** يحوّل خطأ صلاحيات إلى الاستجابة الصحيحة بدل 500 */
 function authFail(err: unknown) {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
     })
   } catch (err) {
-    console.error('[admin/comments GET] failed:', err)
+    logger.error('[admin/comments GET] failed:', err)
     return authFail(err) ?? internalError('فشل العملية')
   }
 }

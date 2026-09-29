@@ -3,6 +3,7 @@ import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { revalidateTag } from '@/lib/cache'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/ads — قائمة كل الإعلانات
 export async function GET() {
@@ -27,7 +28,7 @@ export async function GET() {
     })
     return ok(ads)
   } catch (err) {
-    console.error('[admin/ads GET] failed:', err)
+    logger.error('[admin/ads GET] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     return ok(ad)
   } catch (err) {
-    console.error('[admin/ads POST] failed:', err)
+    logger.error('[admin/ads POST] failed:', err)
     const status = (err as { status?: number })?.status || 500
     return internalError('Failed')
   }

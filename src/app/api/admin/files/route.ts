@@ -5,6 +5,7 @@ import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
 import { fileCategoryWhere, type FileCategory } from '@/lib/file-types'
+import { logger } from '@/lib/logger'
 
 const PROVIDERS = ['freeimage', 'ia', 'direct', 'cloudinary', 'supabase'] as const
 const CATEGORIES: FileCategory[] = ['image', 'video', 'archive', 'audio', 'other']
@@ -112,7 +113,7 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit) || 1,
     })
   } catch (err) {
-    console.error('[admin/files GET] failed:', err)
+    logger.error('[admin/files GET] failed:', err)
     reportError(err, { route: 'GET /api/admin/files' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {

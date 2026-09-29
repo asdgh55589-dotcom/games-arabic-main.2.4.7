@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/games/[slug]/categories — أقسام لعبة معينة
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -17,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
 
     return ok(game.categories)
   } catch (err) {
-    console.error('[api/games/[slug]/categories] failed:', err)
+    logger.error('[api/games/[slug]/categories] failed:', err)
     return internalError('Failed to fetch categories')
   }
 }

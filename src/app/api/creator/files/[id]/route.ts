@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { deleteUploadAsset } from '@/lib/file-delete'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     ])
     return ok({ ...asset, bytes: Number(asset.bytes), mod, linkedIn: links })
   } catch (err) {
-    console.error('[creator/files/[id] GET] failed:', err)
+    logger.error('[creator/files/[id] GET] failed:', err)
     reportError(err, { route: 'GET /api/creator/files/[id]' })
     return internalError('فشل جلب الملف')
   }
@@ -66,7 +67,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     })
     return ok({ ok: true, deleted: true, ...result })
   } catch (err) {
-    console.error('[creator/files/[id] DELETE] failed:', err)
+    logger.error('[creator/files/[id] DELETE] failed:', err)
     reportError(err, { route: 'DELETE /api/creator/files/[id]' })
     return internalError('فشل حذف الملف — حاول مرة أخرى')
   }

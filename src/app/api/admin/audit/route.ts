@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, okPaginated } from '@/lib/api-response'
 import { requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // GET /api/admin/audit — سجل النشاطات
 export async function GET(req: NextRequest) {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     return okPaginated({ logs }, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 })
   } catch (err) {
-    console.error('[admin/audit GET] failed:', err)
+    logger.error('[admin/audit GET] failed:', err)
     return internalError('Failed')
   }
 }

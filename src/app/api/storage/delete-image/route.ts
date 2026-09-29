@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ ok: true, deleted: true })
   } catch (error) {
-    console.error('[delete-image] failed:', error)
+    logger.error('[delete-image] failed:', error)
     logger.error({ err: error }, 'delete-image route failed')
     return internalError('فشل حذف الصورة — حاول مرة أخرى')
   }

@@ -1,6 +1,7 @@
 import { forbidden, internalError, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { getImageWorkerDomain, isImageWorkerConfigured } from '@/lib/image-worker'
+import { logger } from '@/lib/logger'
 
 export interface WorkerHealthResponse {
   ok: boolean
@@ -39,7 +40,7 @@ export async function GET() {
     if (status === 401 || status === 403) {
       return forbidden('ليس لديك صلاحية عرض حالة العامل')
     }
-    console.error('[WorkerHealth] فشل:', error)
+    logger.error('[WorkerHealth] فشل:', error)
     return internalError('فشل التحقق من حالة العامل')
   }
 }

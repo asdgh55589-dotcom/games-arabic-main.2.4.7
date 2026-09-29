@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -61,7 +62,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       clicksByDate,
     })
   } catch (err) {
-    console.error('[admin ads stats] failed:', err)
+    logger.error('[admin ads stats] failed:', err)
     return internalError('Failed')
   }
 }

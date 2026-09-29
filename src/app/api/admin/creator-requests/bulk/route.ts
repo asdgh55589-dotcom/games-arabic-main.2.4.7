@@ -3,6 +3,7 @@ import { forbidden, internalError, ok, unauthorized, validationFail } from '@/li
 import { requireAdmin } from '@/lib/auth'
 import { approveCreatorRequest, rejectCreatorRequest } from '@/lib/creator-requests'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // POST /api/admin/creator-requests/bulk — قبول/رفض جماعي (admin/manager/owner فقط)
 // Body: { action: 'approve' | 'reject', ids: string[], rejectReason?: string }
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
         }
         results.push({ id, ok: true })
       } catch (e) {
-        console.error('[admin/creator-requests bulk] failed:', id, e)
+        logger.error({ err: e, id }, '[admin/creator-requests bulk] failed')
         results.push({ id, ok: false, error: 'خطأ داخلي' })
       }
     }
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
     if (status === 403) return forbidden('ليس لديك صلاحية')
-    console.error('[admin/creator-requests bulk] failed:', err)
+    logger.error('[admin/creator-requests bulk] failed:', err)
     return internalError('فشل العملية الجماعية')
   }
 }

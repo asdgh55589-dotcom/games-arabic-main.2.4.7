@@ -5,6 +5,7 @@ import { getSession, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { deleteUploadAsset } from '@/lib/file-delete'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -46,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     if (!asset) return notFound('الملف غير موجود')
     return ok(asset)
   } catch (err) {
-    console.error('[admin/files/[id] GET] failed:', err)
+    logger.error('[admin/files/[id] GET] failed:', err)
     reportError(err, { route: 'GET /api/admin/files/[id]' })
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
@@ -80,7 +81,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     })
     return ok({ ok: true, deleted: true, ...result })
   } catch (err) {
-    console.error('[admin/files/[id] DELETE] failed:', err)
+    logger.error('[admin/files/[id] DELETE] failed:', err)
     reportError(err, { route: 'DELETE /api/admin/files/[id]' })
     return internalError('فشل حذف الملف — حاول مرة أخرى')
   }

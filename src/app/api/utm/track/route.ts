@@ -3,6 +3,7 @@ import { internalError, ok } from '@/lib/api-response'
 import { getUserIdFromRequestCookies } from '@/lib/auth'
 import { getClientIP } from '@/lib/counters'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // POST /api/utm/track — تتبع UTM parameters
 export async function POST(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ tracked: true })
   } catch (err) {
-    console.error('[utm/track] failed:', err)
+    logger.error('[utm/track] failed:', err)
     return internalError('Failed to track utm')
   }
 }

@@ -5,6 +5,7 @@ import { logAction } from '@/lib/audit'
 import { hashPassword, invalidateUserSessions, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       const status = (err as { status?: number }).status === 401 ? 401 : 403
       return fail(status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN', status === 401 ? 'Unauthorized' : 'Forbidden', status)
     }
-    console.error('[admin/users/[id]/recover] failed:', err)
+    logger.error('[admin/users/[id]/recover] failed:', err)
     return internalError('Failed to issue recovery')
   }
 }

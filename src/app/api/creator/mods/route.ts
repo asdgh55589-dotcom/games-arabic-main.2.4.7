@@ -7,6 +7,7 @@ import { canCreateMod, canTranslateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { slugify } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
       uploadedBy: user.id,
     })
   } catch (relErr) {
-    console.error('[creator/mods POST] relations failed:', relErr)
+    logger.error('[creator/mods POST] relations failed:', relErr)
   }
 
   // Notify admins if submitted for review

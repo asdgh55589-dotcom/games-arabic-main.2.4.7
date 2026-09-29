@@ -7,6 +7,7 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 import { AuthError, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return ok(member)
   } catch (err) {
-    console.error('[admin/teams/[id]/members POST] failed:', err)
+    logger.error('[admin/teams/[id]/members POST] failed:', err)
     return internalError('Failed')
   }
 }
@@ -112,7 +113,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const member = await db.teamMembership.update({ where: { id: body.memberId }, data })
     return ok(member)
   } catch (err) {
-    console.error('[admin/teams/[id]/members PUT] failed:', err)
+    logger.error('[admin/teams/[id]/members PUT] failed:', err)
     return internalError('Failed')
   }
 }
@@ -143,7 +144,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[admin/teams/[id]/members DELETE] failed:', err)
+    logger.error('[admin/teams/[id]/members DELETE] failed:', err)
     return internalError('Failed')
   }
 }

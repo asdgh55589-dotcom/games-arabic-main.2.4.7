@@ -9,6 +9,7 @@ import { PasswordSchema } from '@/lib/schemas'
 import { routeNotification } from '@/lib/notification-router'
 import { createAdminClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const ResetSchema = z.object({
   token: z.string().min(16, 'رابط الاستعادة غير صالح'),
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       password: parsed.data.password,
     })
     if (error) {
-      console.error('[reset-password] supabase update failed:', error.message)
+      logger.error('[reset-password] supabase update failed:', error.message)
       return validationFail({ token: INVALID })
     }
 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ success: true })
   } catch (err) {
-    console.error('[reset-password] failed:', err instanceof Error ? err.message : 'unknown')
+    logger.error('[reset-password] failed:', err instanceof Error ? err.message : 'unknown')
     return internalError('حدث خطأ')
   }
 }

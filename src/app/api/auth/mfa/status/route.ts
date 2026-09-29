@@ -2,6 +2,7 @@ import { internalError, ok, unauthorized } from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 async function buildStatus(userId: string) {
   const user = await db.user.findUnique({
@@ -86,7 +87,7 @@ export async function GET() {
 
     return ok(status)
   } catch (err) {
-    console.error('[mfa status] failed:', err)
+    logger.error('[mfa status] failed:', err)
     return internalError('حدث خطأ')
   }
 }

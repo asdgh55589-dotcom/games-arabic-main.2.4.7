@@ -3,6 +3,7 @@ import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { WORKFLOW_STATUSES, type WorkflowStatus } from '@/lib/workflow'
+import { logger } from '@/lib/logger'
 
 // PUT /api/admin/mods/bulk — تعديل جماعي
 export async function PUT(req: NextRequest) {
@@ -59,7 +60,7 @@ export async function PUT(req: NextRequest) {
     const affected = await db.mod.count({ where: { id: { in: ids } } })
     return ok({ success: true, updated: affected })
   } catch (err) {
-    console.error('[admin/mods/bulk PUT] failed:', err)
+    logger.error('[admin/mods/bulk PUT] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')
@@ -85,7 +86,7 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ success: true, deleted: toDelete })
   } catch (err) {
-    console.error('[admin/mods/bulk DELETE] failed:', err)
+    logger.error('[admin/mods/bulk DELETE] failed:', err)
     const status = (err as { status?: number })?.status || 500
     if (status === 401 || status === 403) {
       return internalError('Unauthorized or forbidden')

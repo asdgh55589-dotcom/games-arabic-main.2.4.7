@@ -7,6 +7,7 @@ import {
   revokeOtherSessions,
   revokeSession,
 } from '@/lib/session-ledger'
+import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 
 // GET /api/auth/session-ledger — list own sessions.
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
     })
     return res
   } catch (err) {
-    console.error('[session-ledger] POST failed', err)
+    logger.error('[session-ledger] POST failed', err)
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
 }

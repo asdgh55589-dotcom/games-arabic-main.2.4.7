@@ -1,5 +1,6 @@
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 // Hierarchy for sorting — lower index = higher rank
 const ROLE_ORDER: Record<string, number> = {
@@ -66,7 +67,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error('[api/site-team] failed:', err)
+    logger.error('[api/site-team] failed:', err)
     return internalError('Failed to load site team')
   }
 }

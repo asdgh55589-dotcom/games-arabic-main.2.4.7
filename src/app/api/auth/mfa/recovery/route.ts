@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { verifyMFAToken } from '@/lib/mfa-token'
 import { rateLimit } from '@/lib/rate-limit'
 import { markRecoveryCodeUsed, verifyRecoveryCode } from '@/lib/recovery-codes'
+import { logger } from '@/lib/logger'
 
 // POST /api/auth/mfa/recovery — Phase 4B: token-bound recovery-code login.
 //
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
 
     return ok({ success: true, remainingCodes: 10 - newUsedIndices.length })
   } catch (err) {
-    console.error('[mfa recovery] failed:', err)
+    logger.error('[mfa recovery] failed:', err)
     return internalError('حدث خطأ أثناء التحقق')
   }
 }
