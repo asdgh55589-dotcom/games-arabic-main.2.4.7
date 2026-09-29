@@ -5,6 +5,7 @@ import { clamp, parseIntParam, serialize } from '@/lib/api-utils'
 import { PLATFORM_KEYS } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { meili, meiliHealth } from '@/lib/meilisearch/client'
+import { modCardSelect } from '@/lib/prisma-selects'
 import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/search?q=...&platform=PC,PS3&limit=...&type=all|mod|game|team|user&page=1&gameId=...&author=...
@@ -89,11 +90,7 @@ async function searchViaMeili({ q, platforms, minTier, limit, page, want }: Sear
     if (ids.length) {
       const rows = await db.mod.findMany({
         where: { id: { in: ids }, workflowStatus: 'PUBLISHED' },
-        include: {
-          author: true,
-          game: { select: { name: true, slug: true, platform: true } },
-          category: { select: { name: true, slug: true } },
-        },
+        select: modCardSelect,
       })
       const order = new Map(ids.map((id, i) => [id, i]))
       rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
@@ -178,11 +175,7 @@ async function searchViaPrisma({
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { downloads: 'desc' },
-          include: {
-            author: true,
-            game: { select: { name: true, slug: true, platform: true } },
-            category: { select: { name: true, slug: true } },
-          },
+          select: modCardSelect,
         }),
       ])
     : [0, []]

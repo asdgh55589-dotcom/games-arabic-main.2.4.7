@@ -9,25 +9,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_SITE_URL ||
     'https://games-arabic.com'
 
-  // Fetch all published content — with fail-safe for each query
+  // Fetch published content — bounded (sitemap protocol caps a file at 50k URLs)
+  // with fail-safe for each query. No full-table scans without take.
   const [mods, games, sections, seriesList, teams] = await Promise.all([
     db.mod
       .findMany({
         where: { workflowStatus: 'PUBLISHED' },
         select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 50000,
       })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
     db.game
-      .findMany({ select: { slug: true, updatedAt: true } })
+      .findMany({ select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
     db.section
-      .findMany({ select: { key: true, updatedAt: true } })
+      .findMany({ select: { key: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 100 })
       .catch(() => [] as { key: string; updatedAt: Date }[]),
     db.series
-      .findMany({ select: { slug: true, updatedAt: true } })
+      .findMany({ select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
     db.team
-      .findMany({ select: { slug: true, updatedAt: true } })
+      .findMany({ select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
   ])
 

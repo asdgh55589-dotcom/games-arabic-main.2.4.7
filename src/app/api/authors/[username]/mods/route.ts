@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
+import { authorPublicSelect, modCardSelect } from '@/lib/prisma-selects'
 import type { AuthorModsResponse } from '@/lib/types'
 
 // GET /api/authors/[username]/mods - list mods by author username
@@ -12,14 +13,11 @@ export async function GET(
   const { username } = await params
   const user = await db.user.findFirst({
     where: { username: { equals: username, mode: 'insensitive' } },
-    include: {
+    select: {
+      ...authorPublicSelect,
       mods: {
         orderBy: { downloads: 'desc' },
-        include: {
-          author: true,
-          game: { select: { name: true, slug: true, platform: true } },
-          category: { select: { name: true, slug: true } },
-        },
+        select: modCardSelect,
       },
     },
   })
@@ -28,11 +26,10 @@ export async function GET(
     return notFound('Author not found')
   }
 
-  // Strip the email field from the response — it's PII we don't want exposed.
-  const { email: _email, ...authorWithoutEmail } = user
+  const { mods, ...author } = user
 
   return ok<AuthorModsResponse>({
-    author: authorWithoutEmail,
-    mods: user.mods,
+    author,
+    mods,
   })
 }

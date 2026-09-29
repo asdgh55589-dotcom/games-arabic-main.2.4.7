@@ -145,7 +145,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
     // Invalidate home cache for real-time stats
     try {
-      clearHomeCache()
+      await clearHomeCache()
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort endorsement
     }

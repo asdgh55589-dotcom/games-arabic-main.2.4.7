@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { notFound, okPaginated, validationFail } from '@/lib/api-response'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
+import { modCardSelect } from '@/lib/prisma-selects'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views'] as const
 
@@ -54,11 +55,7 @@ export async function GET(req: NextRequest) {
       orderBy: ORDER_BY[sort],
       skip: (page - 1) * limit,
       take: limit,
-      include: {
-        author: true,
-        game: { select: { name: true, slug: true, platform: true } },
-        category: { select: { name: true, slug: true } },
-      },
+      select: modCardSelect,
     }),
   ])
 

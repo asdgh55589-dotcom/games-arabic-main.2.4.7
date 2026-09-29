@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { authorPublicSelect, gameDetailSelect } from '@/lib/prisma-selects'
 import { CreateModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
@@ -114,7 +115,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const { id } = await params
     const mod = await db.mod.findUnique({
       where: { id },
-      include: { game: true, author: true },
+      include: {
+        game: { select: gameDetailSelect },
+        author: { select: authorPublicSelect },
+      },
     })
     if (!mod) return notFound('التعريب غير موجود')
 

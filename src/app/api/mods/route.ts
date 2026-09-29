@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { okPaginated } from '@/lib/api-response'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
+import { modCardSelect } from '@/lib/prisma-selects'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating', 'tier'] as const
 type Sort = (typeof SORTS)[number]
@@ -85,11 +86,7 @@ export async function GET(req: NextRequest) {
       orderBy: orderBy as unknown as Record<string, 'desc' | 'asc'>,
       skip: (page - 1) * limit,
       take: limit,
-      include: {
-        author: true,
-        game: { select: { name: true, slug: true, platform: true } },
-        category: { select: { name: true, slug: true } },
-      },
+      select: modCardSelect,
     }),
   ])
 
