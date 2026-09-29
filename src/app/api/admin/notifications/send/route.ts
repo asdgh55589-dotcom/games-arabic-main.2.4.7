@@ -1,7 +1,15 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import {
+  conflict,
+  forbidden,
+  internalError,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { sendNotification } from '@/lib/notifications/service'
 
 export async function POST(req: NextRequest) {
@@ -12,7 +20,10 @@ export async function POST(req: NextRequest) {
     const { target, role, userIds, type, title, message, channels } = body
 
     if (!title?.trim() || !message?.trim()) {
-      return NextResponse.json({ error: 'العنوان والرسالة مطلوبان' }, { status: 400 })
+      return validationFail(
+        { formErrors: ['العنوان والرسالة مطلوبان'], fieldErrors: {} },
+        req.nextUrl.pathname,
+      )
     }
 
     const effectiveChannels: ('in_app' | 'email' | 'telegram')[] =
@@ -36,11 +47,17 @@ export async function POST(req: NextRequest) {
         select: { id: true, username: true, displayName: true },
       })
     } else {
-      return NextResponse.json({ error: 'حدد المستلمين بشكل صحيح' }, { status: 400 })
+      return validationFail(
+        { formErrors: ['حدد المستلمين بشكل صحيح'], fieldErrors: {} },
+        req.nextUrl.pathname,
+      )
     }
 
     if (recipients.length === 0) {
-      return NextResponse.json({ error: 'لا يوجد مستلمون' }, { status: 400 })
+      return validationFail(
+        { formErrors: ['لا يوجد مستلمون'], fieldErrors: {} },
+        req.nextUrl.pathname,
+      )
     }
 
     await sendNotification({
@@ -69,10 +86,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { sent: recipients.length } })
   } catch (error) {
     const status = (error as { status?: number })?.status
-    if (status === 401 || status === 403) {
-      return NextResponse.json({ error: (error as Error).message }, { status })
-    }
-    console.error('[admin/notifications/send] Error:', error)
-    return NextResponse.json({ error: 'فشل إرسال الإشعار' }, { status: 500 })
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
+    logger.error({ err: error, route: 'POST /api/admin/notifications/send' }, 'Failed to send notification')
+    return internalError('فشل إرسال الإشعار')
   }
 }

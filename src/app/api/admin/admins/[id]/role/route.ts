@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { logUserAction } from '@/lib/audit'
 import { invalidateUserSessions, requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -60,7 +60,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return ok({ success: true, message: `تم تغيير الدور إلى ${newRole}` })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمالك فقط')
     console.error('[admins role PUT] failed:', err)
     return internalError('فشل تغيير الدور')
   }

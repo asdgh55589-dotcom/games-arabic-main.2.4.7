@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
 
     return ok({ ok: true, processed, total: updates.length })
   } catch (err) {
-    return ok({ ok: false, error: err instanceof Error ? err.message : 'unknown' })
+    return ok({ ok: false, error: 'poll_failed' })
   }
 }
 

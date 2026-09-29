@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import {
+  conflict,
+  forbidden,
+  internalError,
+  notFound,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,17 +19,20 @@ export async function POST(req: NextRequest) {
     const { jobId } = body
 
     if (!jobId) {
-      return NextResponse.json({ error: 'معرف الوظيفة مطلوب' }, { status: 400 })
+      return validationFail(
+        { formErrors: ['معرف الوظيفة مطلوب'], fieldErrors: {} },
+        req.nextUrl.pathname,
+      )
     }
 
     const job = await db.notificationJob.findUnique({ where: { id: jobId } })
 
     if (!job) {
-      return NextResponse.json({ error: 'الوظيفة غير موجودة' }, { status: 404 })
+      return notFound('الوظيفة غير موجودة')
     }
 
     if (job.status !== 'failed' && job.status !== 'dead_letter') {
-      return NextResponse.json({ error: 'لا يمكن إعادة إرسال وظيفة غير فاشلة' }, { status: 400 })
+      return conflict('لا يمكن إعادة إرسال وظيفة غير فاشلة')
     }
 
     await db.notificationJob.update({
@@ -45,10 +57,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     const status = (error as { status?: number })?.status
-    if (status === 401 || status === 403) {
-      return NextResponse.json({ error: (error as Error).message }, { status })
-    }
-    console.error('[admin/notifications/retry] Error:', error)
-    return NextResponse.json({ error: 'فشل إعادة الإرسال' }, { status: 500 })
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمشرفين فقط')
+    logger.error({ err: error, route: 'POST /api/admin/notifications/retry' }, 'Failed to retry notification job')
+    return internalError('فشل إعادة الإرسال')
   }
 }

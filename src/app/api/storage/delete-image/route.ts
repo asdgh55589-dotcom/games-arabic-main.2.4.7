@@ -54,8 +54,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[delete-image] failed:', error)
     logger.error({ err: error }, 'delete-image route failed')
-    const message = error instanceof Error ? error.message : 'فشل حذف الصورة — حاول مرة أخرى'
-    return internalError(message)
+    return internalError('فشل حذف الصورة — حاول مرة أخرى')
   }
 }
 

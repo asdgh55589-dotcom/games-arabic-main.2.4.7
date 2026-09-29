@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
           if (createError) {
             logger.error({ err: createError }, '[admin/users POST] Supabase creation failed')
             await db.user.delete({ where: { id: user.id } })
-            return fail('INTERNAL_ERROR', 'فشل إنشاء حساب المصادقة: ' + createError.message, 500)
+            return fail('INTERNAL_ERROR', 'فشل إنشاء حساب المصادقة', 500)
           }
           if (supabaseUser?.user?.id) {
             await db.user.update({

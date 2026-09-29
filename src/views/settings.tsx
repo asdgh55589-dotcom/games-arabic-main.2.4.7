@@ -884,7 +884,11 @@ export function SettingsPage() {
         toast({ title: 'تم إلغاء الربط بنجاح' })
       } else {
         const data = await res.json()
-        toast({ title: data.error || 'حدث خطأ', variant: 'destructive' })
+        const errBody = data?.error
+        toast({
+          title: (typeof errBody === 'string' ? errBody : errBody?.message) || 'حدث خطأ',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'حدث خطأ أثناء إلغاء الربط', variant: 'destructive' })

@@ -4,6 +4,7 @@ import { hasRoleAtLeast } from '@/lib/roles'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { deleteUploadAsset } from '@/lib/file-delete'
+import { logger } from '@/lib/logger'
 import { reportError } from '@/lib/error-reporting'
 
 // POST /api/admin/files/bulk-delete — حذف جماعي (حتى 50 ملف)
@@ -49,7 +50,9 @@ export async function POST(req: NextRequest) {
         deleted += 1
       } catch (err) {
         failed += 1
-        errors.push({ id, reason: err instanceof Error ? err.message : 'فشل الحذف' })
+        // Never expose raw error text per item (may contain DB/internals) — generic reason.
+        logger.error({ err, route: 'POST /api/admin/files/bulk-delete' }, 'Bulk file delete item failed')
+        errors.push({ id, reason: 'فشل الحذف' })
       }
     }
 

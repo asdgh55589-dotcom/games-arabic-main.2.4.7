@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/error-reporting'
 
 function toNumOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -30,7 +32,9 @@ export async function GET() {
       })),
     })
   } catch (error) {
-    return internalError(error instanceof Error ? error.message : 'فشل تحميل الاستثناءات')
+    reportError(error, { route: 'GET /api/admin/quotas/overrides' })
+    logger.error({ err: error, route: 'GET /api/admin/quotas/overrides' }, 'Failed to load quota overrides')
+    return internalError('فشل تحميل الاستثناءات')
   }
 }
 
@@ -85,7 +89,9 @@ export async function PUT(req: NextRequest) {
       },
     })
   } catch (error) {
-    return internalError(error instanceof Error ? error.message : 'فشل حفظ الاستثناء')
+    reportError(error, { route: 'PUT /api/admin/quotas/overrides' })
+    logger.error({ err: error, route: 'PUT /api/admin/quotas/overrides' }, 'Failed to save quota override')
+    return internalError('فشل حفظ الاستثناء')
   }
 }
 
@@ -98,6 +104,8 @@ export async function DELETE(req: NextRequest) {
     await db.quotaOverride.deleteMany({ where: { userId } })
     return ok({ removed: true })
   } catch (error) {
-    return internalError(error instanceof Error ? error.message : 'فشل حذف الاستثناء')
+    reportError(error, { route: 'DELETE /api/admin/quotas/overrides' })
+    logger.error({ err: error, route: 'DELETE /api/admin/quotas/overrides' }, 'Failed to delete quota override')
+    return internalError('فشل حذف الاستثناء')
   }
 }

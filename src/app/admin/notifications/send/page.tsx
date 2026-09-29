@@ -46,7 +46,11 @@ export default function SendNotificationPage() {
         setTitle('')
         setMessage('')
       } else {
-        toast({ title: data.error || 'فشل الإرسال', variant: 'destructive' })
+        const errBody = (data as { error?: string | { message?: string } })?.error
+        toast({
+          title: (typeof errBody === 'string' ? errBody : errBody?.message) || 'فشل الإرسال',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'خطأ في الاتصال', variant: 'destructive' })

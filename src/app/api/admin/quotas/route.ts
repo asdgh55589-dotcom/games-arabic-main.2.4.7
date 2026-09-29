@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { BUILTIN_QUOTAS, QUOTA_RANKS } from '@/lib/quota'
 import { reportError } from '@/lib/error-reporting'
 
@@ -26,7 +27,8 @@ export async function GET() {
     return ok({ policies: rows })
   } catch (error) {
     reportError(error, { route: 'GET /api/admin/quotas' })
-    return internalError(error instanceof Error ? error.message : 'فشل تحميل السياسات')
+    logger.error({ err: error, route: 'GET /api/admin/quotas' }, 'Failed to load quota policies')
+    return internalError('فشل تحميل السياسات')
   }
 }
 
@@ -69,6 +71,7 @@ export async function PUT(req: NextRequest) {
     })
   } catch (error) {
     reportError(error, { route: 'PUT /api/admin/quotas' })
-    return internalError(error instanceof Error ? error.message : 'فشل حفظ السياسة')
+    logger.error({ err: error, route: 'PUT /api/admin/quotas' }, 'Failed to save quota policy')
+    return internalError('فشل حفظ السياسة')
   }
 }

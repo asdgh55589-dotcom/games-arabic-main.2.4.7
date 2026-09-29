@@ -225,7 +225,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('يجب تسجيل الدخول')
-    if (status === 403) return forbidden((err as Error).message)
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمشرفين فقط')
     logger.error({ err }, '[creator-requests POST] failed')
     return internalError('فشل إرسال الطلب')
   }

@@ -40,3 +40,9 @@ Thumbs.db
 
 # Backups — local pg_dump / JSON artifacts, never commit (SA-3)
 /backups/
+
+# MCP local configs — may contain tokens, never commit (.mcp.json is the committed template, env-only)
+.mcp-aiven.json
+mcp-aiven-config.json
+.mcp.json.local
+claude_desktop_config.json

@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { logAction, logUserAction } from '@/lib/audit'
 import { hashPassword, invalidateUserSessions, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { canAssignRole } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -165,8 +166,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
             { password: newPassword },
           )
           if (updateError) {
-            console.error('[admin/users/[id] PUT] Supabase password update failed:', updateError)
-            return fail('INTERNAL_ERROR', 'فشل تحديث كلمة المرور: ' + updateError.message, 500)
+            logger.error({ err: updateError, route: 'PUT /api/admin/users/[id]' }, 'Supabase password update failed')
+            return fail('INTERNAL_ERROR', 'فشل تحديث كلمة المرور', 500)
           }
           supabaseUpdated = true
         }

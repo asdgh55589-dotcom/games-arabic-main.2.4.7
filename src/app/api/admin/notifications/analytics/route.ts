@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { forbidden, internalError, unauthorized } from '@/lib/api-response'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   try {
@@ -110,10 +112,9 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     const status = (error as { status?: number })?.status
-    if (status === 401 || status === 403) {
-      return NextResponse.json({ error: (error as Error).message }, { status })
-    }
-    console.error('[admin/notifications/analytics] Error:', error)
-    return NextResponse.json({ error: 'فشل تحميل التحليلات' }, { status: 500 })
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمشرفين فقط')
+    logger.error({ err: error, route: 'GET /api/admin/notifications/analytics' }, 'Failed to load notification analytics')
+    return internalError('فشل تحميل التحليلات')
   }
 }

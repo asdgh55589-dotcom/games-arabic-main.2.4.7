@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { forbidden, internalError, unauthorized } from '@/lib/api-response'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/error-reporting'
 
 export async function GET() {
   try {
@@ -21,9 +24,11 @@ export async function GET() {
 
     return NextResponse.json({ accounts })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    const status =
-      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
-    return NextResponse.json({ error: message }, { status })
+    if (err instanceof AuthError) {
+      return err.status === 401 ? unauthorized() : forbidden()
+    }
+    reportError(err, { route: 'GET /api/settings/linked-accounts' })
+    logger.error({ err, route: 'GET /api/settings/linked-accounts' }, 'Failed to load linked accounts')
+    return internalError('Failed to load linked accounts')
   }
 }

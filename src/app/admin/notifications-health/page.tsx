@@ -82,7 +82,11 @@ export default function NotificationsHealthPage() {
         toast({ title: 'تمت إعادة الجدولة' })
         fetchHealth()
       } else {
-        toast({ title: json.error || 'فشل إعادة الإرسال', variant: 'destructive' })
+        const errBody = (json as { error?: string | { message?: string } })?.error
+        toast({
+          title: (typeof errBody === 'string' ? errBody : errBody?.message) || 'فشل إعادة الإرسال',
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'خطأ في الاتصال', variant: 'destructive' })
