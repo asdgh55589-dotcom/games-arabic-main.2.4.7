@@ -151,9 +151,88 @@ export function withRequestId<T extends NextResponse>(res: T, requestId: string)
   return res
 }
 
+/**
+ * Phase 1 error foundation — Edge-safe unified error shape.
+ * NOTE: proxy.ts runs in Edge runtime, so it intentionally does NOT import
+ * @/lib/api-response (keeps the Edge bundle free of future Node-only deps).
+ * The shape below mirrors fail() exactly: { error: {...}, problem: {...} }.
+ */
+function proxyErrorBody(
+  code: string,
+  message: string,
+  detail: string,
+  status: number,
+  requestId: string,
+  instance: string,
+): Record<string, unknown> {
+  return {
+    error: {
+      code,
+      message,
+      requestId,
+      timestamp: new Date().toISOString(),
+    },
+    problem: {
+      type: `/errors/${code.toLowerCase().replace(/_/g, '-')}`,
+      title: message,
+      status,
+      detail,
+      instance,
+    },
+  }
+}
+
+/** Comma-separated allowlist for cross-origin API access (same-origin by default). */
+function getAllowedOrigins(): string[] {
+  return (
+    process.env.ALLOWED_ORIGINS?.split(',')
+      .map((o) => o.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
+/** Attach CORS headers when the request Origin is allowlisted. */
+function applyCors<T extends NextResponse>(req: NextRequest, res: T): T {
+  const origin = req.headers.get('origin')
+  if (origin && getAllowedOrigins().includes(origin)) {
+    res.headers.set('Access-Control-Allow-Origin', origin)
+    res.headers.set('Access-Control-Allow-Credentials', 'true')
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    res.headers.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Request-ID',
+    )
+    res.headers.set('Access-Control-Max-Age', '86400') // 24 hours
+  }
+  return res
+}
+
+/** Unified JSON error responder: canonical body + x-request-id + CORS. */
+function proxyJson(
+  req: NextRequest,
+  requestId: string,
+  code: string,
+  message: string,
+  detail: string,
+  status: number,
+  headers?: Record<string, string>,
+): NextResponse {
+  const res = NextResponse.json(
+    proxyErrorBody(code, message, detail, status, requestId, req.nextUrl.pathname),
+    { status, headers },
+  )
+  return applyCors(req, withRequestId(res, requestId))
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   const requestId = getOrCreateRequestId(req)
+
+  // ===== CORS preflight (Phase 1) — allowlisted origins only =====
+  if (req.method === 'OPTIONS') {
+    const preflight = new NextResponse(null, { status: 204 })
+    return applyCors(req, withRequestId(preflight, requestId))
+  }
 
   // ===== SPA → File-based route redirects (301) =====
   const view = req.nextUrl.searchParams.get('view')
@@ -328,12 +407,13 @@ export async function proxy(req: NextRequest) {
       if (ip) {
         const ipBan = await getIpBanCache(ip)
         if (ipBan?.banned) {
-          return withRequestId(
-            NextResponse.json(
-              { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-              { status: 403 },
-            ),
+          return proxyJson(
+            req,
             requestId,
+            'IP_BANNED',
+            'تم حظر عنوان IP الخاص بك',
+            'Your IP address has been banned from accessing this service',
+            403,
           )
         }
       }
@@ -366,12 +446,19 @@ export async function proxy(req: NextRequest) {
         async () => null,
       )
       if (rl && !rl.success) {
-        return withRequestId(
-          NextResponse.json(
-            { error: 'محاولات كتير جداً، استنى شوية', code: 'RATE_LIMITED' },
-            { status: 429, headers: rateLimitHeaders(rl) },
-          ),
+        return proxyJson(
+          req,
           requestId,
+          'RATE_LIMITED',
+          'محاولات كتير جداً، استنى شوية',
+          'Too many requests — try again later',
+          429,
+          {
+            ...rateLimitHeaders(rl),
+            'Retry-After': String(
+              Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000)),
+            ),
+          },
         )
       }
     } catch (err) {
@@ -412,12 +499,13 @@ export async function proxy(req: NextRequest) {
           async () => null,
         )
         if (ipBan?.banned) {
-          return withRequestId(
-            NextResponse.json(
-              { error: 'تم حظر عنوان IP الخاص بك', code: 'IP_BANNED' },
-              { status: 403 },
-            ),
+          return proxyJson(
+            req,
             requestId,
+            'IP_BANNED',
+            'تم حظر عنوان IP الخاص بك',
+            'Your IP address has been banned from accessing this service',
+            403,
           )
         }
       }
@@ -453,12 +541,13 @@ export async function proxy(req: NextRequest) {
       return withRequestId(redirectRes, requestId)
     }
     if (decision === 'json') {
-      return withRequestId(
-        NextResponse.json(
-          { error: 'أكمل إعداد حسابك أولاً', code: 'ONBOARDING_REQUIRED' },
-          { status: 403 },
-        ),
+      return proxyJson(
+        req,
         requestId,
+        'ONBOARDING_REQUIRED',
+        'أكمل إعداد حسابك أولاً',
+        'Complete your account setup before accessing this resource',
+        403,
       )
     }
   }
@@ -538,22 +627,30 @@ export async function proxy(req: NextRequest) {
       !rolePayload ||
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
     ) {
-      const res = NextResponse.json(
-        { error: rolePayload?.role ? 'Forbidden — insufficient role' : 'Unauthorized' },
-        { status: rolePayload?.role ? 403 : 401 },
+      const status = rolePayload?.role ? 403 : 401
+      const res = proxyJson(
+        req,
+        requestId,
+        status === 403 ? 'FORBIDDEN' : 'UNAUTHORIZED',
+        rolePayload?.role ? 'Forbidden — insufficient role' : 'Unauthorized',
+        rolePayload?.role
+          ? 'Your role does not grant access to the admin API'
+          : 'Authentication required for the admin API',
+        status,
       )
       if (req.cookies.has(ROLE_COOKIE_NAME)) {
         res.headers.set('x-auth-reason', 'invalid_jwt')
       }
-      return withRequestId(res, requestId)
+      return res
     }
     if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
-      return withRequestId(
-        NextResponse.json(
-          { error: 'Unable to verify session token version', code: 'TOKEN_VERSION_UNVERIFIED' },
-          { status: 503 },
-        ),
+      return proxyJson(
+        req,
         requestId,
+        'TOKEN_VERSION_UNVERIFIED',
+        'Unable to verify session token version',
+        'The session token version could not be verified — please sign in again',
+        503,
       )
     }
     // صلاحيات الصفحات المخصصة على الـ API (‎/api/admin/X ← صفحة ‎/admin/X).
@@ -565,9 +662,13 @@ export async function proxy(req: NextRequest) {
       const adminPath = apiPathToAdminPath(pathname)
       const pageDef = adminPath ? findPageForPath(adminPath) : null
       if (!pageDef || !(rolePayload.pages as string[]).includes(pageDef.key)) {
-        return withRequestId(
-          NextResponse.json({ error: 'غير مصرح لهذه الصفحة', code: 'PAGE_FORBIDDEN' }, { status: 403 }),
+        return proxyJson(
+          req,
           requestId,
+          'PAGE_FORBIDDEN',
+          'غير مصرح لهذه الصفحة',
+          'Your account is not authorized for this admin page',
+          403,
         )
       }
     }
@@ -579,12 +680,13 @@ export async function proxy(req: NextRequest) {
       !rolePayload.mfaVerified &&
       !pathname.startsWith('/api/auth/mfa')
     ) {
-      return withRequestId(
-        NextResponse.json(
-          { error: 'المصادقة الثنائية مطلوبة', code: 'MFA_REQUIRED' },
-          { status: 403 },
-        ),
+      return proxyJson(
+        req,
         requestId,
+        'MFA_REQUIRED',
+        'المصادقة الثنائية مطلوبة',
+        'Two-factor authentication is required for this resource',
+        403,
       )
     }
   }
@@ -614,13 +716,24 @@ export async function proxy(req: NextRequest) {
   if (pathname === '/api/creator' || pathname.startsWith('/api/creator/')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
-      return withRequestId(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), requestId)
+      return proxyJson(
+        req,
+        requestId,
+        'UNAUTHORIZED',
+        'Unauthorized',
+        'Authentication required for the creator API',
+        401,
+      )
     }
     const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
-      return withRequestId(
-        NextResponse.json({ error: 'Forbidden — creator access required' }, { status: 403 }),
+      return proxyJson(
+        req,
         requestId,
+        'FORBIDDEN',
+        'Forbidden — creator access required',
+        'A creator role (or higher) is required for the creator API',
+        403,
       )
     }
     // Track gate (Phase 4): news.create is publisher-only — translators
@@ -629,12 +742,13 @@ export async function proxy(req: NextRequest) {
     if (pathname === '/api/creator/news' || pathname.startsWith('/api/creator/news/')) {
       const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
       if (!NEWS_PUBLISHERS.includes(rolePayload.role)) {
-        return withRequestId(
-          NextResponse.json(
-            { error: 'Forbidden — publisher track required' },
-            { status: 403 },
-          ),
+        return proxyJson(
+          req,
           requestId,
+          'FORBIDDEN',
+          'Forbidden — publisher track required',
+          'A publisher role (or higher) is required to manage news',
+          403,
         )
       }
     }
@@ -654,7 +768,7 @@ export async function proxy(req: NextRequest) {
   }
 
   supabaseResponse.headers.set('x-request-id', requestId)
-  return addSecurityHeaders(supabaseResponse)
+  return addSecurityHeaders(supabaseResponse, req)
 }
 
 // Alias للتوافق الخلفي — بعض الأدوات قد تستورد middleware
@@ -667,7 +781,7 @@ export default proxy
 
 // ===== Security Headers =====
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
+function addSecurityHeaders(response: NextResponse, req: NextRequest): NextResponse {
   // HSTS — forces HTTPS for 1 year
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
 
@@ -708,6 +822,9 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   )
+
+  // CORS (Phase 1) — same-origin by default; allowlisted origins via ALLOWED_ORIGINS
+  applyCors(req, response)
 
   return response
 }

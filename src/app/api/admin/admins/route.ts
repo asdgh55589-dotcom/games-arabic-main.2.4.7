@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { fail, forbidden, internalError, ok, validationFail } from '@/lib/api-response'
+import { fail, forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction, logUserAction } from '@/lib/audit'
 import { hashPassword, invalidateUserSessions, requireOwner } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -118,8 +118,11 @@ export async function POST(req: NextRequest) {
     return ok({ user, message: 'تم إنشاء العضو بنجاح' })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) {
-      return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) {
+      return unauthorized('سجّل الدخول أولاً')
+    }
+    if (status === 403) {
+      return forbidden('غير مصرح — هذه الصفحة للمالك فقط')
     }
     logger.error({ err }, '[admin/admins POST] failed')
     return internalError('فشل إنشاء العضو')
@@ -150,8 +153,11 @@ export async function GET(req: NextRequest) {
     return ok(users)
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) {
-      return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) {
+      return unauthorized('سجّل الدخول أولاً')
+    }
+    if (status === 403) {
+      return forbidden('غير مصرح — هذه الصفحة للمالك فقط')
     }
     logger.error({ err }, '[admin/admins GET] failed')
     return internalError('فشل جلب الفريق')

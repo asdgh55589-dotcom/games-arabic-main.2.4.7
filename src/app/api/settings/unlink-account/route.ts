@@ -1,7 +1,17 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
+import {
+  conflict,
+  forbidden,
+  internalError,
+  notFound,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/error-reporting'
 
 const UnlinkAccountSchema = z.object({
   accountId: z.string().min(1),
@@ -14,7 +24,7 @@ export async function POST(req: NextRequest) {
     const parsed = UnlinkAccountSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
+      return validationFail(parsed.error.flatten(), req.nextUrl.pathname)
     }
 
     const { accountId } = parsed.data
@@ -24,11 +34,11 @@ export async function POST(req: NextRequest) {
     })
 
     if (!account) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+      return notFound('Account not found')
     }
 
     if (account.userId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return forbidden()
     }
 
     const accountCount = await db.oAuthAccount.count({
@@ -36,10 +46,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (accountCount <= 1) {
-      return NextResponse.json(
-        { error: 'Cannot unlink your last login method. Link another provider first.' },
-        { status: 400 },
-      )
+      return conflict('Cannot unlink your last login method. Link another provider first.')
     }
 
     await db.oAuthAccount.delete({
@@ -48,9 +55,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    const status =
-      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
-    return NextResponse.json({ error: message }, { status })
+    if (err instanceof AuthError) {
+      return err.status === 401 ? unauthorized() : forbidden()
+    }
+    reportError(err, { route: 'POST /api/settings/unlink-account' })
+    logger.error({ err, route: 'POST /api/settings/unlink-account' }, 'Failed to unlink account')
+    return internalError('Failed to unlink account')
   }
 }

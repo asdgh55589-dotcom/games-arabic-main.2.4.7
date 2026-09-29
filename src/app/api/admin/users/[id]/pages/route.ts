@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { ADMIN_PAGES_FLAT } from '@/lib/admin-pages'
 import { logUserAction } from '@/lib/audit'
 import { invalidateUserSessions, requireOwner } from '@/lib/auth'
@@ -32,7 +32,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return ok({ pages: pages.length > 0 ? pages : null, role: target.role })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
     console.error('[admin user pages GET] failed:', err)
     return internalError('فشل تحميل صلاحيات الصفحات')
   }
@@ -82,7 +83,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return ok({ success: true, pages, message: 'تم الحفظ — سيحتاج المستخدم لتسجيل الدخول مجدداً' })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
     console.error('[admin user pages PUT] failed:', err)
     return internalError('فشل حفظ صلاحيات الصفحات')
   }
@@ -113,7 +115,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return ok({ success: true, pages: null })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
     console.error('[admin user pages DELETE] failed:', err)
     return internalError('فشل حذف التخصيص')
   }

@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { internalError, notFound, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { internalError, notFound, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -15,10 +16,11 @@ export async function POST(req: NextRequest) {
   // Rate limiting: 10 requests per 60 seconds
   const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'storage:upload' })
   if (!rl.success) {
-    return new Response(JSON.stringify({ error: 'Too many requests', code: 'RATE_LIMITED' }), {
-      status: 429,
-      headers: { 'Content-Type': 'application/json', ...rateLimitHeaders(rl) },
-    })
+    const retryAfter = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))
+    const res = rateLimited('Too many requests', retryAfter, new URL(req.url).pathname)
+    const headers = rateLimitHeaders(rl)
+    for (const [k, v] of Object.entries(headers)) res.headers.set(k, v)
+    return res
   }
 
   try {
@@ -68,9 +70,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (signedResult.error) {
-      console.error('[upload-url retry failed]', signedResult.error)
+      logger.error({ err: signedResult.error, route: 'POST /api/storage/upload-url' }, 'Signed upload URL failed')
       console.timeEnd('[upload-url]')
-      return internalError(signedResult.error.message)
+      return internalError('Failed to create upload URL')
     }
 
     const { data: publicUrlData } = adminClient.storage.from(bucket).getPublicUrl(path)

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { fail, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -46,13 +46,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return ok(updated)
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return fail(
-        err instanceof Error ? err.message : 'Unauthorized',
-        err instanceof Error ? err.message : 'Unauthorized',
-        status,
-      )
-    }
+    if (status === 401) return unauthorized()
+    if (status === 403) return forbidden()
     console.error('[admin/api-keys/[id] PATCH] failed:', err)
     return internalError('Failed to update API key')
   }
@@ -80,13 +75,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return ok({ deleted: true })
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return fail(
-        err instanceof Error ? err.message : 'Unauthorized',
-        err instanceof Error ? err.message : 'Unauthorized',
-        status,
-      )
-    }
+    if (status === 401) return unauthorized()
+    if (status === 403) return forbidden()
     console.error('[admin/api-keys/[id] DELETE] failed:', err)
     return internalError('Failed to delete API key')
   }

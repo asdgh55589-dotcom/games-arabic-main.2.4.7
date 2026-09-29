@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { fail, internalError, ok, validationFail } from '@/lib/api-response'
+import { fail, forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { apiKeyPrefix, hashApiKey } from '@/lib/api-key-auth'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -64,13 +64,8 @@ export async function GET() {
     return ok(maskedKeys)
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return fail(
-        err instanceof Error ? err.message : 'Unauthorized',
-        err instanceof Error ? err.message : 'Unauthorized',
-        status,
-      )
-    }
+    if (status === 401) return unauthorized()
+    if (status === 403) return forbidden()
     console.error('[admin/api-keys GET] failed:', err)
     return internalError('Failed to fetch API keys')
   }
@@ -141,13 +136,8 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     const status = (err as { status?: number })?.status || 500
-    if (status === 401 || status === 403) {
-      return fail(
-        err instanceof Error ? err.message : 'Unauthorized',
-        err instanceof Error ? err.message : 'Unauthorized',
-        status,
-      )
-    }
+    if (status === 401) return unauthorized()
+    if (status === 403) return forbidden()
     console.error('[admin/api-keys POST] failed:', err)
     return internalError('Failed to create API key')
   }

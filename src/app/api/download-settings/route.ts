@@ -11,6 +11,7 @@ import {
   type TrustedHostService,
 } from '@/lib/download-trust'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 
 const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/
 
@@ -73,7 +74,8 @@ export async function GET() {
     return ok({ services, warningMessage })
   } catch (error) {
     reportError(error, { route: 'GET /api/download-settings' })
-    return internalError(error instanceof Error ? error.message : 'فشل تحميل إعدادات التحميل')
+    logger.error({ err: error, route: 'GET /api/download-settings' }, 'Failed to load download settings')
+    return internalError('فشل تحميل إعدادات التحميل')
   }
 }
 
@@ -121,6 +123,7 @@ export async function PUT(req: NextRequest) {
         : forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
     }
     reportError(error, { route: 'PUT /api/download-settings' })
-    return internalError(error instanceof Error ? error.message : 'فشل حفظ إعدادات التحميل')
+    logger.error({ err: error, route: 'PUT /api/download-settings' }, 'Failed to save download settings')
+    return internalError('فشل حفظ إعدادات التحميل')
   }
 }

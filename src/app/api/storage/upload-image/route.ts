@@ -80,10 +80,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[upload-image] failed:', error)
     reportError(error, { route: 'POST /api/storage/upload-image' })
-    const message = error instanceof Error ? error.message : 'فشل رفع الصورة — حاول مرة أخرى'
+    const message = error instanceof Error ? error.message : ''
     if (message.includes('FREEIMAGE_API_KEY') || message.includes('غير مُكوَّن')) {
       return internalError('خدمة رفع الصور غير متاحة حالياً — حاول لاحقاً')
     }
-    return internalError(message.startsWith('FreeImage') ? 'فشل رفع الصورة — حاول مرة أخرى' : message)
+    // Never forward raw error text (may contain SDK/DB internals) — generic message.
+    return internalError('فشل رفع الصورة — حاول مرة أخرى')
   }
 }

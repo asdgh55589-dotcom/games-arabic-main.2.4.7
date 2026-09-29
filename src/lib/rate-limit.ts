@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { fail } from './api-response'
 import { redisIncr } from './redis'
 
 interface RateLimitEntry {
@@ -76,10 +77,26 @@ export async function rateLimitMiddleware(
 ): Promise<NextResponse | null> {
   const result = await rateLimit(req, options)
   if (!result.success) {
-    return NextResponse.json(
-      { error: 'عدد كبير من الطلبات، حاول مرة أخرى لاحقاً', code: 'RATE_LIMITED' },
-      { status: 429, headers: rateLimitHeaders(result) },
+    // Unified envelope (Phase 1): canonical fail() shape + Retry-After + X-RateLimit-*.
+    const retryAfter = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))
+    const res = fail(
+      'RATE_LIMITED',
+      'عدد كبير من الطلبات، حاول مرة أخرى لاحقاً',
+      429,
+      undefined,
+      undefined,
+      (() => {
+        try {
+          return new URL(req.url).pathname
+        } catch {
+          return undefined
+        }
+      })(),
     )
+    const headers = rateLimitHeaders(result)
+    for (const [k, v] of Object.entries(headers)) res.headers.set(k, v)
+    res.headers.set('Retry-After', String(retryAfter))
+    return res
   }
   return null
 }

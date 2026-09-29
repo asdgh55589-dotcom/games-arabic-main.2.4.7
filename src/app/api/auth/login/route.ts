@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { type NextRequest, NextResponse } from 'next/server'
 import {
+  fail,
   forbidden,
   internalError,
   ok,
@@ -204,7 +205,7 @@ export async function POST(req: NextRequest) {
         }
       }
       await sleep(loginDelayFor(fails) * 1000)
-      return NextResponse.json({ error: LOGIN_GENERIC_ERROR }, { status: 401 })
+      return fail('INVALID_CREDENTIALS', LOGIN_GENERIC_ERROR, 401)
     }
 
     // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { fail, internalError, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, ok, unauthorized } from '@/lib/api-response'
 import { logUserAction } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return ok({ success: true })
   } catch (err) {
     const status = (err as any)?.status
-    if (status === 401 || status === 403) return fail('FORBIDDEN', (err as Error).message, status)
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
     console.error('[admin/users/[id]/warn] failed:', err)
     return internalError('Failed')
   }

@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/error-reporting'
 
 // GET /api/admin/quotas/usage?days=7 — recent daily usage + top storage users
 export async function GET(req: NextRequest) {
@@ -45,6 +47,8 @@ export async function GET(req: NextRequest) {
       })),
     })
   } catch (error) {
-    return internalError(error instanceof Error ? error.message : 'فشل تحميل الاستهلاك')
+    reportError(error, { route: 'GET /api/admin/quotas/usage' })
+    logger.error({ err: error, route: 'GET /api/admin/quotas/usage' }, 'Failed to load quota usage')
+    return internalError('فشل تحميل الاستهلاك')
   }
 }

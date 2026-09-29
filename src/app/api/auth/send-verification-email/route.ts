@@ -1,6 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import type { NextRequest } from 'next/server'
+import { fail, internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 import { EmailSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 
@@ -32,11 +33,12 @@ export async function POST(req: NextRequest) {
       options: { emailRedirectTo: '/verify-email' },
     })
     if (error) {
-      return NextResponse.json({ error: error.message, code: 'RESEND_FAILED' }, { status: 500 })
+      logger.error({ err: error, route: 'POST /api/auth/send-verification-email' }, 'Verification email resend failed')
+      return fail('RESEND_FAILED', 'تعذر إرسال رسالة التحقق. حاول مرة أخرى لاحقاً.', 500)
     }
     return ok({ sent: true })
   } catch (err) {
-    console.error('[send-verification-email] failed:', err instanceof Error ? err.message : 'unknown')
+    logger.error({ err, route: 'POST /api/auth/send-verification-email' }, 'Verification email resend failed')
     return internalError('حدث خطأ')
   }
 }

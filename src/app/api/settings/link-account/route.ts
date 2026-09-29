@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
+import {
+  conflict,
+  forbidden,
+  internalError,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
+import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/error-reporting'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
@@ -74,10 +83,7 @@ export async function POST(req: NextRequest) {
     const parsed = LinkAccountSchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: parsed.error.flatten() },
-        { status: 400 },
-      )
+      return validationFail(parsed.error.flatten(), req.nextUrl.pathname)
     }
 
     const { provider, providerAccountId, providerEmail, providerUsername, avatarUrl } = parsed.data
@@ -88,18 +94,18 @@ export async function POST(req: NextRequest) {
     if (provider === 'telegram') {
       const proof = verifyTelegramOwnership(parsed.data.telegram)
       if (!proof.ok) {
-        return NextResponse.json(
-          { error: 'Telegram ownership proof required (signed widget payload).' },
-          { status: 400 },
+        return validationFail(
+          { formErrors: ['Telegram ownership proof required (signed widget payload).'], fieldErrors: {} },
+          req.nextUrl.pathname,
         )
       }
       verifiedId = proof.accountId
     } else {
       const proof = await verifyGoogleOwnership(user.id, providerAccountId)
       if (!proof.ok) {
-        return NextResponse.json(
-          { error: 'Google ownership proof required (fresh Supabase identity).' },
-          { status: 400 },
+        return validationFail(
+          { formErrors: ['Google ownership proof required (fresh Supabase identity).'], fieldErrors: {} },
+          req.nextUrl.pathname,
         )
       }
       verifiedId = proof.accountId
@@ -116,15 +122,9 @@ export async function POST(req: NextRequest) {
 
     if (existingAccount) {
       if (existingAccount.userId === user.id) {
-        return NextResponse.json(
-          { error: 'You already have this provider linked.' },
-          { status: 409 },
-        )
+        return conflict('You already have this provider linked.')
       }
-      return NextResponse.json(
-        { error: 'This account is already linked to another user.' },
-        { status: 409 },
-      )
+      return conflict('This account is already linked to another user.')
     }
 
     const userProvider = await db.oAuthAccount.findFirst({
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (userProvider) {
-      return NextResponse.json({ error: 'You already have this provider linked.' }, { status: 409 })
+      return conflict('You already have this provider linked.')
     }
 
     const account = await db.oAuthAccount.create({
@@ -158,9 +158,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ account }, { status: 201 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    const status =
-      err instanceof Error && 'status' in err ? (err as { status: number }).status : 500
-    return NextResponse.json({ error: message }, { status })
+    if (err instanceof AuthError) {
+      return err.status === 401 ? unauthorized() : forbidden()
+    }
+    reportError(err, { route: 'POST /api/settings/link-account' })
+    logger.error({ err, route: 'POST /api/settings/link-account' }, 'Failed to link account')
+    return internalError('Failed to link account')
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { buildProblem } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
@@ -58,9 +59,23 @@ export async function POST(req: Request) {
     try {
       const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'telemetry:edge-error' })
       if (!rl.success) {
+        const retryAfter = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))
         return NextResponse.json(
-          { ok: false, error: 'RATE_LIMITED' },
-          { status: 429, headers: rateLimitHeaders(rl) },
+          {
+            ok: false,
+            error: 'RATE_LIMITED',
+            problem: buildProblem(
+              'RATE_LIMITED',
+              'Rate limit exceeded',
+              429,
+              'Too many requests — try again later',
+              '/api/telemetry/edge-error',
+            ),
+          },
+          {
+            status: 429,
+            headers: { ...rateLimitHeaders(rl), 'Retry-After': String(retryAfter) },
+          },
         )
       }
     } catch {
@@ -90,7 +105,22 @@ export async function POST(req: Request) {
 
     const validated = EdgeErrorSchema.safeParse(clean)
     if (!validated.success) {
-      return NextResponse.json({ ok: false, error: 'VALIDATION_ERROR' }, { status: 400 })
+      // 422 (not 400) — Phase 1 validation standardization. Beacon protocol
+      // ({ok:false}) is preserved; problem is additive.
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'VALIDATION_ERROR',
+          problem: buildProblem(
+            'VALIDATION_ERROR',
+            'Invalid input data',
+            422,
+            'One or more fields failed validation',
+            '/api/telemetry/edge-error',
+          ),
+        },
+        { status: 422 },
+      )
     }
     const { message, route, requestId } = validated.data
 
