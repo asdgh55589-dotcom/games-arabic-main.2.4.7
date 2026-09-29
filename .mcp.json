@@ -1,0 +1,14 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/mcp.json",
+  "mcpServers": {
+    "aiven": {
+      "command": "mcp-aiven",
+      "args": [],
+      "env": {
+        "AIVEN_TOKEN": "${AIVEN_TOKEN}",
+        "AIVEN_READ_ONLY": "true",
+        "AIVEN_SERVICES_SCOPE": "pg"
+      }
+    }
+  }
+}

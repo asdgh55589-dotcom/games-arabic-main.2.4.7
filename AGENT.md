@@ -196,6 +196,30 @@ gh pr create --title "feat(scope): description" --body "..."
 gh pr checks
 ```
 
+## 🔌 MCP-AIVEN INTEGRATION
+
+MCP (Model Context Protocol) server for Aiven is installed and configured (`mcp-aiven`, stdio, **read-only + pg-scoped**).
+Full guide: `docs/MCP-AIVEN.md`. Client config: `.mcp.json` (env-only, no secrets).
+
+### Available Tools (read-only surface):
+- `aiven_pg_read` — Execute read-only SQL queries
+- `aiven_service_list` / `aiven_service_get` — List / inspect services
+- `aiven_service_metrics_fetch` — View performance metrics
+- `aiven_project_get_service_logs` — View recent logs
+- `aiven_service_query_activity` — Currently running queries
+- `aiven_pg_service_query_statistics` — Slow-query statistics
+
+### Usage Guidelines:
+- ALWAYS use read-only queries through MCP (`AIVEN_READ_ONLY=true` enforced)
+- For schema changes, use Prisma migrations (not MCP)
+- For large tables, add LIMIT; keep statement_timeout ≤ 15s
+- Never expose credentials or raw connection strings (`AIVEN_ALLOW_SECRETS` stays false)
+
+### Example Queries:
+- Pool pressure: `SELECT count(*) AS active, state FROM pg_stat_activity GROUP BY state`
+- Slow queries: `SELECT query, calls FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10`
+- Table sizes: `SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) FROM pg_tables WHERE schemaname='public' LIMIT 20`
+
 ## 🆘 ESCALATION
 
 If you're unsure about something:
