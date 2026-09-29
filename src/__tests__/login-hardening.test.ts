@@ -93,12 +93,18 @@ describe('generic error (no enumeration)', () => {
     expect(results.map((r) => r.status)).toEqual([401, 401, 401, 401])
     expect(new Set(results.map((r) => r.error)).size).toBe(1)
     expect(results[0].error).toBe(LOGIN_GENERIC_ERROR)
+    // Same machine-readable code on all four (no oracle via code either)
+    expect(new Set(results.map((r) => (r as { code?: string }).code)).size).toBe(1)
   })
 })
 
-async function unpack(res: Response): Promise<{ status: number; error?: string }> {
-  const body = (await res.json().catch(() => ({}))) as { error?: string }
-  return { status: res.status, error: body.error }
+async function unpack(res: Response): Promise<{ status: number; error?: string; code?: string }> {
+  const body = (await res.json().catch(() => ({}))) as {
+    error?: string | { code?: string; message?: string }
+  }
+  const err = body.error
+  // Canonical envelope: compare the stable message (requestId/timestamp differ per response by design)
+  return { status: res.status, error: typeof err === 'string' ? err : err?.message, code: typeof err === 'string' ? undefined : err?.code }
 }
 
 function baseUser() {

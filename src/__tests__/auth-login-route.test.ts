@@ -207,7 +207,10 @@ describe('POST /api/auth/login', () => {
     const res = await POST(loginReq({ username: 'unknown', email: 'x@x.com', password: 'pass', securityKey: 'key' }))
     const body = await res.json()
     expect(res.status).toBe(401)
-    expect(body.error).toBe('بيانات الدخول غير صحيحة')
+    expect(body.error?.code).toBe('INVALID_CREDENTIALS')
+    expect(body.error?.message).toBe('بيانات الدخول غير صحيحة')
+    expect(body.problem?.type).toBe('/errors/invalid-credentials')
+    expect(body.problem?.status).toBe(401)
   })
 
   it('يرجع 401 عند عدم تطابق البريد الإلكتروني', async () => {

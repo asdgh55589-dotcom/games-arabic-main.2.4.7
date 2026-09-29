@@ -56,16 +56,16 @@ beforeEach(() => {
 describe('telegram proof', () => {
   const widget = { id: '777', first_name: 'A', auth_date: String(Math.floor(Date.now() / 1000)), hash: 'h' }
 
-  it('no-proof (self-asserted id only) → 400, no write', async () => {
+  it('no-proof (self-asserted id only) → 422, no write', async () => {
     const res = await linkPOST(req({ provider: 'telegram', providerAccountId: '777' }))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     expect(mockOAuth.create).not.toHaveBeenCalled()
   })
 
-  it('bad HMAC → 400, no write', async () => {
+  it('bad HMAC → 422, no write', async () => {
     mockVerifyTg.mockReturnValue(false)
     const res = await linkPOST(req({ provider: 'telegram', telegram: widget }))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     expect(mockOAuth.create).not.toHaveBeenCalled()
   })
 
@@ -81,20 +81,20 @@ describe('telegram proof', () => {
 })
 
 describe('google proof', () => {
-  it('no Supabase google identity → 400, no write', async () => {
+  it('no Supabase google identity → 422, no write', async () => {
     mockGetUserById.mockResolvedValue({ data: { user: { identities: [{ provider: 'email' }] } }, error: null })
     const res = await linkPOST(req({ provider: 'google', providerAccountId: 'g-1' }))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     expect(mockOAuth.create).not.toHaveBeenCalled()
   })
 
-  it('mismatched sub → 400, no write', async () => {
+  it('mismatched sub → 422, no write', async () => {
     mockGetUserById.mockResolvedValue({
       data: { user: { identities: [{ provider: 'google', identity_data: { sub: 'g-other' } }] } },
       error: null,
     })
     const res = await linkPOST(req({ provider: 'google', providerAccountId: 'g-1' }))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     expect(mockOAuth.create).not.toHaveBeenCalled()
   })
 
@@ -124,6 +124,8 @@ describe('unlink last-method guard (unchanged)', () => {
     mockOAuth.findUnique.mockResolvedValue({ id: 'oa-1', userId: 'u-1' })
     mockOAuth.count.mockResolvedValue(1)
     const res = await unlinkPOST(unlinkReq({ accountId: 'oa-1' }))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error?.code).toBe('CONFLICT')
   })
 })
