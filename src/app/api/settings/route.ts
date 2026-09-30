@@ -1,4 +1,5 @@
-import { ok } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
+import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 
 const DEFAULTS: Record<string, string> = {
@@ -24,15 +25,21 @@ const DEFAULTS: Record<string, string> = {
   telegram: '',
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const rows = await db.siteSetting.findMany()
     const settings: Record<string, string> = { ...DEFAULTS }
     for (const row of rows) {
       settings[row.key] = row.value
     }
-    return ok({ settings })
+    // Phase 3: public site config (same for everyone) — short public cache + ETag.
+    // (Deliberately NOT no-store: this is shared config, not user data.)
+    const headers = new Headers()
+    setCacheControl(headers, { type: 'public', maxAge: 30, swr: 60 })
+    return withETag(req, { data: { settings } }, { headers })
   } catch {
-    return ok({ settings: DEFAULTS })
+    const headers = new Headers()
+    setCacheControl(headers, { type: 'public', maxAge: 30, swr: 60 })
+    return withETag(req, { data: { settings: DEFAULTS } }, { headers })
   }
 }

@@ -1,12 +1,23 @@
 import type { Prisma } from '@prisma/client'
 import type { NextRequest } from 'next/server'
-import { ok, rateLimited } from '@/lib/api-response'
+import { rateLimited } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
 import { clamp, parseIntParam, serialize } from '@/lib/api-utils'
 import { PLATFORM_KEYS } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { meili, meiliHealth } from '@/lib/meilisearch/client'
 import { modCardSelect } from '@/lib/prisma-selects'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+
+// Phase 3: shared headers for search responses — short public cache +
+// X-RateLimit-* on EVERY response (success and 429), not just errors.
+function searchHeaders(rl: { limit: number; remaining: number; resetAt: number }): Headers {
+  const headers = new Headers()
+  setCacheControl(headers, { type: 'public', maxAge: 30, swr: 60 })
+  const rlHeaders = rateLimitHeaders(rl)
+  for (const [k, v] of Object.entries(rlHeaders)) headers.set(k, v)
+  return headers
+}
 
 // GET /api/search?q=...&platform=PC,PS3&limit=...&type=all|mod|game|team|user&page=1&gameId=...&author=...
 // يبحث في 4 كيانات (تعريبات/ألعاب/فرق/مستخدمين).
@@ -15,7 +26,10 @@ import { rateLimit } from '@/lib/rate-limit'
 export async function GET(req: NextRequest) {
   const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'search' })
   if (!rl.success) {
-    return rateLimited()
+    const res = rateLimited()
+    const rlHeaders = rateLimitHeaders(rl)
+    for (const [k, v] of Object.entries(rlHeaders)) res.headers.set(k, v)
+    return res
   }
 
   const { searchParams } = new URL(req.url)
@@ -33,13 +47,19 @@ export async function GET(req: NextRequest) {
   const want = (t: string) => type === 'all' || type === t
 
   if (!q && platforms.length === 0 && !minTier && !gameId && !author) {
-    return ok({
-      mods: [],
-      games: [],
-      teams: [],
-      users: [],
-      pagination: { page: 1, limit, total: 0, totalPages: 0 },
-    })
+    return withETag(
+      req,
+      {
+        data: {
+          mods: [],
+          games: [],
+          teams: [],
+          users: [],
+          pagination: { page: 1, limit, total: 0, totalPages: 0 },
+        },
+      },
+      { headers: searchHeaders(rl) },
+    )
   }
 
   const args = { q, platforms, minTier, limit, page, gameId, author, want }
@@ -48,13 +68,13 @@ export async function GET(req: NextRequest) {
   // gameId/author filters are Prisma-only → fall back when present.
   if (q && !gameId && !author && meili && (await meiliHealth())) {
     try {
-      return ok(await searchViaMeili(args))
+      return withETag(req, { data: await searchViaMeili(args) }, { headers: searchHeaders(rl) })
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort search fallback
     }
   }
 
-  return ok(await searchViaPrisma(args))
+  return withETag(req, { data: await searchViaPrisma(args) }, { headers: searchHeaders(rl) })
 }
 
 interface SearchArgs {

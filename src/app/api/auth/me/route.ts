@@ -46,6 +46,12 @@ async function getPendingEmail(userId: string): Promise<string | null> {
 }
 
 // GET /api/auth/me — المستخدم الحالي
+
+// Phase 3: user-specific session payload — never cache (browser, CDN, or proxy).
+const NO_STORE = {
+  headers: { 'Cache-Control': 'private, no-store, must-revalidate' },
+} as const
+
 export async function GET() {
   try {
     // 1. محاولة Supabase Auth أولاً (بمهلة 3 ثوانٍ — لا تعلّق الطلب)
@@ -88,7 +94,7 @@ export async function GET() {
         if (user) {
           const ban = getBanStatus(user)
           if (ban.banned) {
-            return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type })
+            return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type }, NO_STORE)
           }
           const { password: _pw, ...safeUser } = user
           const hasPassword = !!_pw
@@ -103,7 +109,7 @@ export async function GET() {
                 emailVerified: safeUser.emailVerified,
               }),
             },
-          })
+          }, NO_STORE)
         }
 
         // المستخدم جديد — أنشئ ملف شخصي (استخدم مولد موحد)
@@ -132,7 +138,7 @@ export async function GET() {
             needsSecuritySetup: true,
             emailVerified: newUser.emailVerified,
           },
-        })
+        }, NO_STORE)
       }
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase fallback
@@ -144,14 +150,14 @@ export async function GET() {
     const roleToken = cookieStore.get(ROLE_COOKIE_NAME)?.value
 
     if (!roleToken) {
-      return ok({ user: null })
+      return ok({ user: null }, NO_STORE)
     }
 
     // Fast path: cached payload (60s TTL, invalidated on logout).
     const meCacheKey = authMeCacheKey(roleToken)
     try {
       const cached = await redisGet<Record<string, unknown>>(meCacheKey)
-      if (cached !== null) return ok(cached)
+      if (cached !== null) return ok(cached, NO_STORE)
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: cache miss → DB below
     }
@@ -167,7 +173,7 @@ export async function GET() {
       // JWT غير صالح (قديم أو مزور) — امسح الـ cookie الفاسد
       logger.warn('[auth/me] invalid role cookie — clearing')
       await clearRoleCookie()
-      return ok({ user: null })
+      return ok({ user: null }, NO_STORE)
     }
     const userId = payload.userId as string
     const role = payload.role as string
@@ -175,7 +181,7 @@ export async function GET() {
 
     if (!userId || !role) {
       await clearRoleCookie()
-      return ok({ user: null })
+      return ok({ user: null }, NO_STORE)
     }
 
     // البحث عن المستخدم في قاعدة البيانات باستخدام userId
@@ -202,7 +208,7 @@ export async function GET() {
 
     if (!user) {
       await clearRoleCookie()
-      return ok({ user: null })
+      return ok({ user: null }, NO_STORE)
     }
 
     // فحص tokenVersion — لو غير متطابق → الجلسة ملغاة
@@ -213,7 +219,7 @@ export async function GET() {
         dbVersion: user.tokenVersion,
       })
       await clearRoleCookie()
-      return ok({ user: null })
+      return ok({ user: null }, NO_STORE)
     }
 
     // فحص حالة الحظر
@@ -221,7 +227,7 @@ export async function GET() {
     if (ban.banned) {
       const bannedPayload = { user: null, banned: true, banReason: ban.reason, banType: ban.type }
       await redisSet(meCacheKey, bannedPayload, ME_CACHE_TTL_S).catch(() => {})
-      return ok(bannedPayload)
+      return ok(bannedPayload, NO_STORE)
     }
 
     const mePayload = {
@@ -243,7 +249,7 @@ export async function GET() {
       },
     }
     await redisSet(meCacheKey, mePayload, ME_CACHE_TTL_S).catch(() => {})
-    return ok(mePayload)
+    return ok(mePayload, NO_STORE)
   } catch (err) {
     logger.error('[auth/me] failed', err)
     // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع
@@ -252,6 +258,6 @@ export async function GET() {
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort cookie cleanup in error path
     }
-    return ok({ user: null })
+    return ok({ user: null }, NO_STORE)
   }
 }

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { okPaginated } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 import { modCardSelect } from '@/lib/prisma-selects'
@@ -90,18 +90,15 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return okPaginated(
-    serialize(mods),
-    {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit) || 1,
-    },
-    {
-      headers: {
-        'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
-      },
-    },
-  )
+  const items = serialize(mods)
+  const pagination = {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit) || 1,
+  }
+  // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
+  const headers = new Headers()
+  setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
+  return withETag(req, { data: items, pagination }, { headers })
 }

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { ok } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
 import { pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 
@@ -45,13 +45,11 @@ export async function GET(req: NextRequest) {
     include: { _count: { select: { mods: true } } },
   })
 
-  return ok(serialize(games), {
-    headers: {
-      // Cache for 60s in the browser, serve stale for up to 300s while revalidating.
-      // Only apply to non-filtered lists (search/featured/category queries are
-      // less cache-friendly since they vary by query string — but the browser
-      // keys cache by full URL anyway, so this is safe).
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-    },
-  })
+  // Phase 3: ETag + Vary (TTL preserved: 60s fresh, 300s stale).
+  // Only apply to non-filtered lists (search/featured/category queries are
+  // less cache-friendly since they vary by query string — but the browser
+  // keys cache by full URL anyway, so this is safe).
+  const headers = new Headers()
+  setCacheControl(headers, { type: 'public', maxAge: 60, swr: 300 })
+  return withETag(req, { data: serialize(games) }, { headers })
 }

@@ -121,7 +121,10 @@ export async function GET() {
       comments: 0,
     }))
 
-    return ok(data)
+    // Phase 3: user-specific — never cache
+    return ok(data, {
+      headers: { 'Cache-Control': 'private, no-store, must-revalidate' },
+    })
   } catch (err) {
     logger.error({ err }, '[bookmarks GET] failed')
     return internalError('Failed to fetch bookmarks')
