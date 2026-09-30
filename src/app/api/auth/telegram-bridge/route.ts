@@ -1,32 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { rateLimited } from '@/lib/api-response'
 import { AUTH_ERRORS } from '@/lib/auth/errors'
 import { logger } from '@/lib/logger'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { performTelegramLogin } from '@/lib/telegram-login'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
 export async function POST(req: NextRequest) {
   try {
-    // Rate limit: 10/min
+    // Rate limit: 10/min (canonical rate-limit.ts — Redis + memory fallback)
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'telegram-bridge' })
     if (!rl.success) {
-      return NextResponse.json(
-        { error: AUTH_ERRORS.RATE_LIMITED, code: 'RATE_LIMITED' },
-        { status: 429 },
-      )
-    }
-
-    // Distributed rate limit (Upstash, no-op without env) — additive guard
-    const { checkRateLimit } = await import('@/lib/ratelimit')
-    const bridgeIp =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      req.headers.get('x-real-ip') ||
-      'unknown'
-    if (!(await checkRateLimit(`auth:telegram-bridge:${bridgeIp}`))) {
-      return NextResponse.json(
-        { error: AUTH_ERRORS.RATE_LIMITED, code: 'RATE_LIMITED' },
-        { status: 429 },
-      )
+      const retryAfter = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))
+      const res = rateLimited(AUTH_ERRORS.RATE_LIMITED, retryAfter, req.nextUrl.pathname)
+      const headers = rateLimitHeaders(rl)
+      for (const [k, v] of Object.entries(headers)) res.headers.set(k, v)
+      return res
     }
 
     const body = await req.json().catch(() => null)

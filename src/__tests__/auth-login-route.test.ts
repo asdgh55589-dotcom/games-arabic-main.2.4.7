@@ -38,10 +38,6 @@ jest.mock('@/lib/rate-limit', () => ({
   rateLimitHeaders: jest.fn(),
 }))
 
-jest.mock('@/lib/ratelimit', () => ({
-  checkRateLimit: jest.fn(),
-}))
-
 jest.mock('@/lib/login-defense', () => ({
   LOGIN_GENERIC_ERROR: 'بيانات الدخول غير صحيحة',
   ACCOUNT_LOCKED_MESSAGE:
@@ -96,7 +92,6 @@ import bcrypt from 'bcryptjs'
 import { createClient } from '@/lib/supabase/server'
 import { verifySecurityKey, isSecurityKeyExpired } from '@/lib/security-key'
 import { rateLimit as rateLimitFn } from '@/lib/rate-limit'
-import { checkRateLimit } from '@/lib/ratelimit'
 import { NextRequest } from 'next/server'
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
@@ -104,7 +99,6 @@ const mockBcryptCompare = bcrypt.compare as unknown as jest.Mock
 const mockVerifySecurityKey = verifySecurityKey as jest.MockedFunction<typeof verifySecurityKey>
 const mockIsSecurityKeyExpired = isSecurityKeyExpired as jest.MockedFunction<typeof isSecurityKeyExpired>
 const mockRateLimit = rateLimitFn as jest.MockedFunction<typeof rateLimitFn>
-const mockCheckRateLimit = checkRateLimit as jest.MockedFunction<typeof checkRateLimit>
 
 function loginReq(body: unknown, ip = '1.2.3.4') {
   return new NextRequest('http://x/api/auth/login', {
@@ -174,7 +168,6 @@ describe('POST /api/auth/login', () => {
     jest.clearAllMocks()
     // Re-setup rate limit mocks after clearAllMocks
     mockRateLimit.mockResolvedValue({ success: true, remaining: 4, resetAt: Date.now() + 60000, limit: 5 })
-    mockCheckRateLimit.mockResolvedValue(true)
     // Default: no lockout (individual tests override per-case)
     require('@/lib/login-defense').getLockoutRemainingSeconds.mockResolvedValue(0)
     // Setup ownerEnsured cache
@@ -317,12 +310,8 @@ describe('POST /api/auth/login', () => {
     mockRateLimit.mockResolvedValue({ success: false, remaining: 0, resetAt: Date.now() + 60000, limit: 5 })
     const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
     expect(res.status).toBe(429)
-  })
-
-  it('يرجع 429 عند فشل checkRateLimit', async () => {
-    mockCheckRateLimit.mockResolvedValue(false)
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
-    expect(res.status).toBe(429)
+    // Canonical 429 carries Retry-After (Phase 3 rate-limit unification)
+    expect(res.headers.get('Retry-After')).toBeTruthy()
   })
 
   it('يرجع خطأ عام 500 عند استثناء غير متوقع', async () => {

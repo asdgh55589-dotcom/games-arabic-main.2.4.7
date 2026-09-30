@@ -46,7 +46,6 @@ jest.mock('@/lib/supabase/server', () => ({
 }))
 
 jest.mock('@/lib/audit', () => ({ logAction: jest.fn() }))
-jest.mock('@/lib/ratelimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(true) }))
 jest.mock('@/lib/security-key', () => ({
   hashSecurityKey: jest.fn(),
   verifySecurityKey: jest.fn().mockResolvedValue(false),

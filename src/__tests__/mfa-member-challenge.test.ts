@@ -52,8 +52,6 @@ jest.mock('@/lib/session-ledger', () => ({
   createSessionLedger: (...a: Array<never>) => mockCreateLedger(...a),
 }))
 
-jest.mock('@/lib/ratelimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(true) }))
-
 const mockSbGetUser = jest.fn()
 jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(async () => ({ auth: { getUser: mockSbGetUser } })),
