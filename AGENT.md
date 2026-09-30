@@ -146,14 +146,18 @@ gh pr create --title "..." --body "..."
 - ✅ Phase 1 (API Error Foundation): RFC 7807 adopted (additive problem field), 20+ error.message leaks eliminated, CORS + OPTIONS added, validation→422, Retry-After on all 429s (merge `b007563`, tests `85559bd`)
 - ✅ Phase 2 (Database Performance): /api/home 27→8 sequential queries, reports/stats bursts ≤3, author:true→select projections (secret leak fixed), sitemap paginated, home-cache→Redis 300s, ledger negative cache (merge `9936170`, PR #2, tests 2065/2074 — 9 failures pre-existing on HEAD)
 - ✅ Phase 2 (API Logging): pino standardization (186 route files), lifecycle logs + RED metrics wired, file/line diagnostics (merge `0b8bb64`, PR #3, tests 2078/2080 — 2 failures pre-existing: missing prisma 20260907 migration SQL)
+- ✅ Phase 3 (Database Observability): DbMonitor (pool telemetry, Sentry on >80%), DbCircuitBreaker (3-state), P2024 Sentry alerts, auto-reconnect with backoff, /api/admin/db/monitoring, health/detailed pool fields, load-test harness staging-only (merge `4058a62`, PR #4, tests 2098/2100 — 2 failures pre-existing: missing prisma 20260907 migration SQL + comments mock drift)
 
 ### Current Phase:
-- ⏳ None — Phase 2 API Logging merged to main; awaiting next assignment
+- 🔄 [Awaiting direction]
 
 ### Next Phases:
-- ⏳ Phase 3 (API Performance): ETag, Cache-Control, rate-limit headers
-- ⏳ Phase 4: Advanced (Sparse Fieldsets, HATEOAS, Versioning, OpenAPI)
-- ⏳ Fix pre-existing test failures (missing prisma 20260907 migration SQL files)
+- ⏳ API Phase 3 (Performance): ETag, Cache-Control, unified rate-limit headers
+- ⏳ API Phase 4 (Advanced): Sparse Fieldsets, HATEOAS, API Versioning, OpenAPI
+- ⏳ Investigate notifications table 122k seq_scans
+- ⏳ Fix pre-existing test failures (missing prisma 20260907 migration SQL files, comments-step6 mock drift)
+- ⏳ Operator action: ALTER ROLE avnadmin SET statement_timeout = '15s' on Aiven
+- ⏳ Operator action: CREATE EXTENSION pg_stat_statements on Aiven (optional)
 
 ## ⚠️ CRITICAL WARNINGS FOR AGENTS
 
