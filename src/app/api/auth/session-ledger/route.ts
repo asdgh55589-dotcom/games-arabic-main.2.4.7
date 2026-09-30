@@ -11,17 +11,38 @@ import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 
 // GET /api/auth/session-ledger — list own sessions.
-// Response: { data: rows, currentSessionId: string | null }.
+// Response: { data: rows (NO bearer tokens — httpOnly cookie only), currentSessionId }.
 // currentSessionId is resolved SERVER-SIDE from the httpOnly
 // ga_session_ledger cookie (JS can never read httpOnly cookies, so the
 // client must NOT guess — see settings-sessions.tsx).
 export async function GET(req: NextRequest) {
-  // The ledger cookie holds the current device's session TOKEN; resolve it
-  // to the row id (never expose the token itself as the identity signal).
+  // Resolve the presented token to a row id WITHOUT serializing the token.
   const presentedToken = req.cookies.get('ga_session_ledger')?.value || null
-  const withCurrent = (rows: Array<{ id: string; token: string }>) => {
-    const current = presentedToken ? rows.find((r) => r.token === presentedToken) : undefined
-    return NextResponse.json({ data: rows, currentSessionId: current?.id ?? null })
+  const withCurrent = async (
+    rows: Array<{ id: string }>,
+    ownerId: string,
+  ): Promise<NextResponse> => {
+    let currentId: string | null = null
+    if (presentedToken) {
+      try {
+        const match = await db.session.findUnique({
+          where: { token: presentedToken } as any,
+          select: { id: true, userId: true },
+        })
+        if (match && (match as { userId: string }).userId === ownerId) {
+          currentId = (match as { id: string }).id
+        }
+      } catch {
+        // fail-open to unknown — never block the list on a lookup failure
+      }
+    }
+    // Defense in depth: strip bearer tokens at the serialization boundary too,
+    // so a lib regression can never leak them into JSON.
+    const safeRows = rows.map((r) => {
+      const { token: _bearer, ...rest } = r as Record<string, unknown> & { token?: unknown }
+      return rest
+    })
+    return NextResponse.json({ data: safeRows, currentSessionId: currentId })
   }
   try {
     // Try Supabase first
@@ -36,7 +57,7 @@ export async function GET(req: NextRequest) {
         })
         if (u) {
           const rows = await listUserSessions(u.id)
-          return withCurrent(rows as Array<{ id: string; token: string }>)
+          return withCurrent(rows, u.id)
         }
       }
     } catch {
@@ -46,7 +67,7 @@ export async function GET(req: NextRequest) {
     const u = await requireAuth().catch(() => null)
     if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const rows = await listUserSessions(u.id)
-    return withCurrent(rows as Array<{ id: string; token: string }>)
+    return withCurrent(rows, u.id)
   } catch (err) {
     return NextResponse.json({ error: 'failed' }, { status: 500 })
   }
@@ -83,7 +104,13 @@ export async function POST(req: NextRequest) {
       null
     const ua = req.headers.get('user-agent') || null
     const row = await createSessionLedger(userId, { ip, userAgent: ua })
-    const res = NextResponse.json({ data: row })
+    // Strip the bearer token from the JSON body — it travels ONLY in the
+    // httpOnly cookie below. Serializing it would make it XSS-stealable.
+    const { token: _bearer, ...safeRow } = row as Record<string, unknown> & {
+      token: string
+      expiresAt: Date
+    }
+    const res = NextResponse.json({ data: safeRow })
     res.cookies.set('ga_session_ledger', row.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -98,11 +125,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/auth/session-ledger?token=... — revoke one
+// DELETE /api/auth/session-ledger?id=... — revoke one (by row id, never by token)
 export async function DELETE(req: NextRequest) {
   try {
-    const token = req.nextUrl.searchParams.get('token')
-    if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 })
+    const id = req.nextUrl.searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
     // need to verify ownership — check current user
     let userId: string | null = null
     try {
@@ -125,11 +152,11 @@ export async function DELETE(req: NextRequest) {
     }
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // verify session belongs to user
-    const s = await db.session.findUnique({ where: { token } as any })
+    // verify session belongs to user — resolve token server-side only
+    const s = await db.session.findUnique({ where: { id } as any })
     if (!s || (s as any).userId !== userId)
       return NextResponse.json({ error: 'not found' }, { status: 404 })
-    await revokeSession(token)
+    await revokeSession((s as any).token as string)
     return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: 'failed' }, { status: 500 })

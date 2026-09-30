@@ -82,10 +82,24 @@ export interface RetryOptions {
 }
 
 /**
+ * Prisma error codes that will NEVER succeed on retry (constraint / lookup /
+ * parse failures). Retrying them wastes pool connections and delays the
+ * caller's error handling — rethrow immediately.
+ */
+export const DETERMINISTIC_ERROR_CODES = ['P2002', 'P2003', 'P2025', 'P2008']
+
+export function isDeterministicError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const code = (err as { code?: unknown }).code
+  return typeof code === 'string' && DETERMINISTIC_ERROR_CODES.includes(code)
+}
+
+/**
  * Generic retry with exponential backoff (1s, 2s, 4s, max 3 attempts).
  * Used for Aiven cold-start resilience. Wraps any async fn, including Prisma $connect.
  * Pool exhaustion (P2024) is reported to Sentry — it means the pool sizing or
  * query fan-out regressed and needs attention, not just a retry.
+ * Deterministic errors (P2002/P2003/P2025/P2008) are rethrown immediately.
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -100,6 +114,7 @@ export async function withRetry<T>(
       return await fn()
     } catch (err) {
       lastError = err
+      if (isDeterministicError(err)) throw err
       if (isPoolExhaustedError(err)) {
         logger.error(
           { event: 'db_pool_exhausted', attempt, maxAttempts, err },

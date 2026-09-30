@@ -33,6 +33,12 @@ const PROBE_TIMEOUT_MS = 4_000
 const POOL_ALERT_THRESHOLD_PCT = 80
 const SLOW_QUERY_THRESHOLD_S = 5
 
+/** Prisma pool size (must match connection_limit). pg_stat_activity is
+ * server-wide so per-process attribution is impossible without
+ * application_name — active-query count against OUR pool size is the
+ * closest P2024-risk signal. Capped at 100 (background roles inflate it). */
+export const PRISMA_POOL_SIZE = 5
+
 async function withProbeTimeout<T>(fn: () => Promise<T>): Promise<T> {
   return (await Promise.race([
     fn(),
@@ -100,7 +106,7 @@ export class DbMonitor {
         idleConnections: idle,
         totalConnections: total,
         maxConnections: max,
-        poolUsagePercent: max > 0 ? Math.round((total / max) * 100) : 0,
+        poolUsagePercent: Math.min(100, Math.round((active / PRISMA_POOL_SIZE) * 100)),
         oldestQueryS: slows.reduce((m, q) => Math.max(m, q.durationS), 0),
         slowQueries: slows,
       }

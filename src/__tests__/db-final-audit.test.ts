@@ -123,7 +123,7 @@ describe('AUDIT monitoring (6-8)', () => {
       .mockResolvedValueOnce([])
     const h = await DbMonitor.checkHealth()
     expect(h.healthy).toBe(false)
-    expect(h.issues.join(' ')).toMatch(/90%/)
+    expect(h.issues.join(' ')).toMatch(/100%/)
   })
 
   it('8. resetThrottle re-enables collection after a throttled null', async () => {

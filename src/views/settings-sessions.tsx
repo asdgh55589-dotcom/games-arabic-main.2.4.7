@@ -20,8 +20,6 @@ import { useToast } from '@/hooks/use-toast'
 
 interface Session {
   id: string
-  token: string
-  userId: string
   expiresAt: string | Date
   createdAt: string | Date
   updatedAt: string | Date
@@ -114,16 +112,17 @@ export default function SessionsView() {
     fetchSessions()
   }, [])
 
-  const revoke = async (token: string) => {
+  // Revoke by row id — bearer tokens never leave the httpOnly cookie.
+  const revoke = async (id: string) => {
     if (!confirm('هل تريد طرد هذه الجلسة؟')) return
-    setRevoking(token)
+    setRevoking(id)
     try {
-      const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(token)}`, {
+      const r = await fetch(`/api/auth/session-ledger?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       })
       if (r.ok) {
         toast({ title: 'تم طرد الجلسة' })
-        setSessions((prev) => prev.filter((s) => s.token !== token))
+        setSessions((prev) => prev.filter((s) => s.id !== id))
       } else {
         toast({ title: 'فشل طرد الجلسة', variant: 'destructive' })
       }
@@ -141,7 +140,7 @@ export default function SessionsView() {
       const others = sessions.filter((s) => !s.isCurrent)
       let ok = true
       for (const s of others) {
-        const r = await fetch(`/api/auth/session-ledger?token=${encodeURIComponent(s.token)}`, {
+        const r = await fetch(`/api/auth/session-ledger?id=${encodeURIComponent(s.id)}`, {
           method: 'DELETE',
         }).catch(() => null as any)
         if (r && !r.ok) ok = false
@@ -246,11 +245,11 @@ export default function SessionsView() {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => revoke(s.token)}
-                        disabled={revoking === s.token}
+                        onClick={() => revoke(s.id)}
+                        disabled={revoking === s.id}
                         className="shrink-0 min-h-[36px]"
                       >
-                        {revoking === s.token ? (
+                        {revoking === s.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           'طرد'

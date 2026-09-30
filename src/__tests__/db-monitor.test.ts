@@ -33,7 +33,7 @@ describe('DbMonitor.getMetrics', () => {
     expect(m!.idleConnections).toBe(3)
     expect(m!.totalConnections).toBe(5)
     expect(m!.maxConnections).toBe(20)
-    expect(m!.poolUsagePercent).toBe(25)
+    expect(m!.poolUsagePercent).toBe(40)
     expect(m!.oldestQueryS).toBeCloseTo(0.01)
   })
 
@@ -53,11 +53,11 @@ describe('DbMonitor.getMetrics', () => {
     healthyRows()
     const fresh = await DbMonitor.getCachedOrCollect()
     expect(fresh.stale).toBe(false)
-    expect(fresh.metrics!.poolUsagePercent).toBe(25)
+    expect(fresh.metrics!.poolUsagePercent).toBe(40)
     // throttled now — falls back to last good
     const stale = await DbMonitor.getCachedOrCollect()
     expect(stale.stale).toBe(true)
-    expect(stale.metrics!.poolUsagePercent).toBe(25)
+    expect(stale.metrics!.poolUsagePercent).toBe(40)
   })
 
   it('getCachedOrCollect reports unknown when nothing was ever collected', async () => {
@@ -87,7 +87,7 @@ describe('DbMonitor.checkHealth', () => {
       .mockResolvedValueOnce([])
     const h = await DbMonitor.checkHealth()
     expect(h.healthy).toBe(false)
-    expect(h.issues.join(' ')).toMatch(/95%/)
+    expect(h.issues.join(' ')).toMatch(/100%/)
     expect(mockReportError).toHaveBeenCalledTimes(1)
   })
 

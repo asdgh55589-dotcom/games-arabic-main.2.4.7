@@ -17,6 +17,7 @@ export async function GET(
       ...authorPublicSelect,
       mods: {
         orderBy: { downloads: 'desc' },
+        take: 50,
         select: modCardSelect,
       },
     },

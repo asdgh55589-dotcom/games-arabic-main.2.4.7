@@ -4,8 +4,21 @@ import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
+    // 2 queries total (was 1 + 2×N per-creator fan-out, up to 41 on pool=5):
+    // 1) aggregate published mods per author, 2) fetch the top authors' cards.
+    const groups = await db.mod.groupBy({
+      by: ['authorId'],
+      where: { workflowStatus: 'PUBLISHED' },
+      _count: { id: true },
+      _sum: { downloads: true },
+      orderBy: { _sum: { downloads: 'desc' } },
+      take: 200,
+    })
+    const byAuthor = new Map(
+      groups.map((g) => [g.authorId, { publishedCount: g._count.id, totalDownloads: g._sum.downloads || 0 }]),
+    )
     const creators = await db.user.findMany({
-      where: { role: 'creator' },
+      where: { id: { in: [...byAuthor.keys()] }, role: 'creator' },
       select: {
         id: true,
         username: true,
@@ -14,29 +27,15 @@ export async function GET() {
         tier: true,
         specialRoles: true,
       },
-      orderBy: [{ tier: 'desc' }, { joinedAt: 'asc' }],
-      take: 20,
+      take: 200,
     })
 
-    // Enrich with published count
-    const enriched = await Promise.all(
-      creators.map(async (u) => {
-        const publishedCount = await db.mod.count({
-          where: { authorId: u.id, workflowStatus: 'PUBLISHED' },
-        })
-        const totalDownloadsAgg = await db.mod.aggregate({
-          where: { authorId: u.id, workflowStatus: 'PUBLISHED' },
-          _sum: { downloads: true },
-        })
-        return {
-          user: u,
-          publishedCount,
-          totalDownloads: totalDownloadsAgg._sum.downloads || 0,
-        }
-      }),
-    )
-
-    const ranked = enriched
+    const ranked = creators
+      .map((u) => ({
+        user: u,
+        publishedCount: byAuthor.get(u.id)?.publishedCount ?? 0,
+        totalDownloads: byAuthor.get(u.id)?.totalDownloads ?? 0,
+      }))
       .filter((e) => e.publishedCount > 0)
       .sort((a, b) => {
         if (b.user.tier !== a.user.tier) return b.user.tier - a.user.tier

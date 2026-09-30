@@ -8,7 +8,7 @@ jest.mock('@/lib/logger', () => ({ logger: { warn: jest.fn(), info: jest.fn(), e
 const mockReportError = jest.fn()
 jest.mock('@/lib/error-reporting', () => ({ reportError: (...a: unknown[]) => mockReportError(...a) }))
 
-import { isPoolExhaustedError, withRetry } from '@/lib/db'
+import { isDeterministicError, isPoolExhaustedError, withRetry } from '@/lib/db'
 
 const noSleep = { sleepFn: jest.fn().mockResolvedValue(undefined) }
 
@@ -47,5 +47,20 @@ describe('withRetry P2024 alerting', () => {
     const fn = jest.fn().mockRejectedValue(new Error('plain failure'))
     await expect(withRetry(fn, { maxAttempts: 2, ...noSleep })).rejects.toThrow('plain failure')
     expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  it('rethrows deterministic errors immediately (no retry, no sleep, no Sentry)', async () => {
+    for (const code of ['P2002', 'P2003', 'P2025', 'P2008']) {
+      jest.clearAllMocks()
+      const err = Object.assign(new Error(code), { code })
+      const fn = jest.fn().mockRejectedValue(err)
+      const sleep = jest.fn().mockResolvedValue(undefined)
+      await expect(withRetry(fn, { maxAttempts: 3, sleepFn: sleep })).rejects.toBe(err)
+      expect(fn).toHaveBeenCalledTimes(1)
+      expect(sleep).not.toHaveBeenCalled()
+      expect(mockReportError).not.toHaveBeenCalled()
+    }
+    expect(isDeterministicError({ code: 'P2002' })).toBe(true)
+    expect(isDeterministicError(new Error('P2024-ish'))).toBe(false)
   })
 })
