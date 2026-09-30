@@ -57,7 +57,6 @@ jest.mock('@/lib/notification-router', () => ({
 }))
 
 jest.mock('@/lib/audit', () => ({ logAction: (...a: Array<never>) => mockLogAction(...a) }))
-jest.mock('@/lib/ratelimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(true) }))
 
 jest.mock('@/lib/auth', () => ({
   getOptionalSession: jest.fn().mockResolvedValue(null),

@@ -78,6 +78,8 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit) || 1,
       },
       { unreadCount },
+      // Phase 3: user-specific — never cache
+      { headers: { 'Cache-Control': 'private, no-store, must-revalidate' } },
     )
   } catch (err) {
     logger.error('[notifications GET] failed:', err)

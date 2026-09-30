@@ -166,15 +166,10 @@ export async function POST(req: NextRequest) {
       return rateLimited()
     }
 
-    // Distributed rate limit (Upstash, no-op without env) — additive guard
-    const { checkRateLimit } = await import('@/lib/ratelimit')
     const loginIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown'
-    if (!(await checkRateLimit(`auth:login:${loginIp}`))) {
-      return rateLimited()
-    }
 
     // Audit D.2: anti-enumeration — every credential failure below returns
     // the SAME 401 message after a progressive per-IP+username delay.

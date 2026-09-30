@@ -1,4 +1,6 @@
-import { internalError, ok } from '@/lib/api-response'
+import type { NextRequest } from 'next/server'
+import { internalError } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
 import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 import { getHomeCache, getHomeCacheTtl, setHomeCache } from '@/lib/home-cache'
@@ -174,16 +176,17 @@ function toModSummary(r: PlatformModRow): ModSummary {
 //   4. trending mods · 5. top endorsed · 6. latest 2 per platform (lateral join)
 //   7. top 10 per platform (lateral join) · 8. top series
 // Results are cached shared (Redis, 300s) — repeat hits cost zero queries.
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Serve from shared cache if fresh
     const now = Date.now()
     const cached = await getHomeCache()
     const ttl = getHomeCacheTtl()
     if (cached && now - cached.timestamp < ttl) {
-      return ok(cached.data as ReturnType<typeof serialize>, {
-        headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' },
-      })
+      // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
+      const headers = new Headers()
+      setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
+      return withETag(req, { data: cached.data }, { headers })
     }
 
     // 1. Active sections drive the platform queries
@@ -330,11 +333,10 @@ export async function GET() {
     // Update shared cache (fail-open — a cache write failure must not fail the request)
     await setHomeCache(responseData, now).catch(() => {})
 
-    return ok(responseData, {
-      headers: {
-        'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
-      },
-    })
+    // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
+    const headers = new Headers()
+    setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
+    return withETag(req, { data: responseData }, { headers })
   } catch (err) {
     logger.error('[api/home] failed:', err)
     return internalError('Failed to load homepage data')

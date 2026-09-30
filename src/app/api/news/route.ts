@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok } from '@/lib/api-response'
+import { setCacheControl, withETag } from '@/lib/api-cache'
+import { internalError } from '@/lib/api-response'
 import { getActiveNews } from '@/lib/news-helpers'
 import { logger } from '@/lib/logger'
 
@@ -12,14 +13,10 @@ export async function GET(req: NextRequest) {
 
     const news = await getActiveNews({ type, limit })
 
-    return ok(
-      { news },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
-        },
-      },
-    )
+    // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
+    const headers = new Headers()
+    setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
+    return withETag(req, { data: { news } }, { headers })
   } catch (err) {
     logger.error('[api/news] failed:', err)
     return internalError('Failed')
