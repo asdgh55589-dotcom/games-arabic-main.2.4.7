@@ -49,7 +49,9 @@ export function addHateoasLinks<T extends { id: string; [key: string]: unknown }
     if (slug) {
       links.push({ rel: 'comments', href: `${origin}/api/mods/${slug}/comments` })
     }
-    const authorId = resource.authorId as string | undefined
+    // authorId scalar may be absent (e.g. sparse fieldsets) — fall back to the embedded author relation.
+    const author = resource.author as { id?: string } | undefined
+    const authorId = (resource.authorId as string | undefined) ?? author?.id
     if (authorId) {
       links.push({ rel: 'author', href: `${origin}/api/users/${authorId}` })
     }
