@@ -15,12 +15,16 @@ jest.mock('@/lib/logger', () => ({
 
 const mockFindFirst = jest.fn()
 const mockFindMany = jest.fn()
+const mockSessionFindUnique = jest.fn()
 jest.mock('@/lib/db', () => ({
   db: { user: { findFirst: (...a: Array<never>) => mockFindFirst(...a) } },
 }))
 // session-ledger lib uses db.session — attach after mock creation
 import { db } from '@/lib/db'
-;(db as any).session = { findMany: (...a: Array<never>) => mockFindMany(...a) }
+;(db as any).session = {
+  findMany: (...a: Array<never>) => mockFindMany(...a),
+  findUnique: (...a: Array<never>) => mockSessionFindUnique(...a),
+}
 
 const mockSbGetUser = jest.fn()
 jest.mock('@/lib/supabase/server', () => ({
@@ -47,6 +51,10 @@ beforeEach(() => {
   mockSbGetUser.mockResolvedValue({ data: { user: { id: 'sb-9', email: 's@s.io' } } })
   mockFindFirst.mockResolvedValue({ id: 'u-9' })
   mockFindMany.mockResolvedValue(ROWS)
+  mockSessionFindUnique.mockImplementation(async (args: any) => {
+    const row = ROWS.find((r) => r.token === args?.where?.token)
+    return row ? { id: row.id, userId: row.userId } : null
+  })
 })
 
 describe('GET /api/auth/session-ledger currentSessionId', () => {
@@ -68,6 +76,24 @@ describe('GET /api/auth/session-ledger currentSessionId', () => {
   it('returns null when the cookie matches no row (stale/foreign token)', async () => {
     const res = await sessionsGET(getReq('ga_session_ledger=tok-unknown'))
     expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.currentSessionId).toBeNull()
+  })
+
+  it('never serializes bearer tokens in the JSON body', async () => {
+    const res = await sessionsGET(getReq('ga_session_ledger=tok-bbb'))
+    const body = await res.json()
+    const raw = JSON.stringify(body)
+    expect(raw).not.toContain('tok-aaa')
+    expect(raw).not.toContain('tok-bbb')
+    for (const row of body.data) {
+      expect(row).not.toHaveProperty('token')
+    }
+  })
+
+  it('ignores a token belonging to a different user (no cross-user match)', async () => {
+    mockSessionFindUnique.mockResolvedValue({ id: 's-X', userId: 'u-other' })
+    const res = await sessionsGET(getReq('ga_session_ledger=tok-bbb'))
     const body = await res.json()
     expect(body.currentSessionId).toBeNull()
   })

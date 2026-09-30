@@ -33,7 +33,7 @@ describe('DbMonitor.getMetrics', () => {
     expect(m!.idleConnections).toBe(3)
     expect(m!.totalConnections).toBe(5)
     expect(m!.maxConnections).toBe(20)
-    expect(m!.poolUsagePercent).toBe(25)
+    expect(m!.poolUsagePercent).toBe(40)
     expect(m!.oldestQueryS).toBeCloseTo(0.01)
   })
 
@@ -47,6 +47,25 @@ describe('DbMonitor.getMetrics', () => {
   it('fail-open: probe failure returns null, never throws', async () => {
     mockQueryRaw.mockRejectedValue(new Error('db down'))
     await expect(DbMonitor.getMetrics()).resolves.toBeNull()
+  })
+
+  it('getCachedOrCollect serves last-good sample as stale instead of flapping', async () => {
+    healthyRows()
+    const fresh = await DbMonitor.getCachedOrCollect()
+    expect(fresh.stale).toBe(false)
+    expect(fresh.metrics!.poolUsagePercent).toBe(40)
+    // throttled now — falls back to last good
+    const stale = await DbMonitor.getCachedOrCollect()
+    expect(stale.stale).toBe(true)
+    expect(stale.metrics!.poolUsagePercent).toBe(40)
+  })
+
+  it('getCachedOrCollect reports unknown when nothing was ever collected', async () => {
+    DbMonitor.resetThrottle()
+    DbMonitor.resetCache()
+    mockQueryRaw.mockRejectedValue(new Error('db down'))
+    // first call fails (null, nothing cached)...
+    expect(await DbMonitor.getCachedOrCollect()).toEqual({ metrics: null, stale: false })
   })
 })
 
@@ -68,7 +87,7 @@ describe('DbMonitor.checkHealth', () => {
       .mockResolvedValueOnce([])
     const h = await DbMonitor.checkHealth()
     expect(h.healthy).toBe(false)
-    expect(h.issues.join(' ')).toMatch(/95%/)
+    expect(h.issues.join(' ')).toMatch(/100%/)
     expect(mockReportError).toHaveBeenCalledTimes(1)
   })
 

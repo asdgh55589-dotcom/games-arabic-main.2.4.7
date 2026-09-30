@@ -29,12 +29,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // One collection only — checkHealth reuses it (its internal fetch is throttled).
-    const metrics = await DbMonitor.getMetrics()
+    // One collection only — a throttled probe falls back to the last good
+    // sample (stale:true) instead of flapping to degraded.
+    const { metrics, stale } = await DbMonitor.getCachedOrCollect()
+    if (!metrics) {
+      return ok({
+        status: 'unknown',
+        metrics: null,
+        stale: false,
+        issues: ['warming up — no sample collected yet'],
+        circuitBreaker: dbCircuitBreaker.getState(),
+        connectionHealthy: isConnectionHealthy(),
+        time: new Date().toISOString(),
+      })
+    }
     const health = await DbMonitor.checkHealth(metrics)
     return ok({
       status: health.healthy ? 'healthy' : 'degraded',
       metrics,
+      stale,
       issues: health.issues,
       circuitBreaker: dbCircuitBreaker.getState(),
       connectionHealthy: isConnectionHealthy(),

@@ -109,13 +109,31 @@ export async function revokeOtherSessions(userId: string, currentToken: string) 
   }
 }
 
-export async function listUserSessions(userId: string) {
+/** Public session shape — NEVER includes the bearer `token` (XSS-stealable). */
+export interface PublicSession {
+  id: string
+  ipAddress: string | null
+  userAgent: string | null
+  expiresAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+export async function listUserSessions(userId: string): Promise<PublicSession[]> {
   try {
     const rows = await db.session.findMany({
       where: { userId, expiresAt: { gt: new Date() } } as any,
       orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        ipAddress: true,
+        userAgent: true,
+        expiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
-    return rows
+    return rows as PublicSession[]
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: read-only settings page — empty list is a safe degraded render
     // intentional: expected+handled (fail-open to empty list)
