@@ -147,15 +147,16 @@ gh pr create --title "..." --body "..."
 - ✅ Phase 2 (Database Performance): /api/home 27→8 sequential queries, reports/stats bursts ≤3, author:true→select projections (secret leak fixed), sitemap paginated, home-cache→Redis 300s, ledger negative cache (merge `9936170`, PR #2, tests 2065/2074 — 9 failures pre-existing on HEAD)
 - ✅ Phase 2 (API Logging): pino standardization (186 route files), lifecycle logs + RED metrics wired, file/line diagnostics (merge `0b8bb64`, PR #3, tests 2078/2080 — 2 failures pre-existing: missing prisma 20260907 migration SQL)
 - ✅ Phase 3 (Database Observability): DbMonitor (pool telemetry, Sentry on >80%), DbCircuitBreaker (3-state), P2024 Sentry alerts, auto-reconnect with backoff, /api/admin/db/monitoring, health/detailed pool fields, load-test harness staging-only (merge `4058a62`, PR #4, tests 2098/2100 — 2 failures pre-existing: missing prisma 20260907 migration SQL + comments mock drift)
+- ✅ Phase 3 (API Performance): ETags + 304, Cache-Control/Vary, rate-limit unification (ratelimit.ts deleted), no-store on session endpoints (merge `c65ae91`, PR #5, tests 2107/2109 — 2 failures pre-existing: missing prisma 20260907 migration SQL)
 
 ### Current Phase:
-- 🔄 [Awaiting direction]
+- 🔄 Critical Fixes (session token leak, N+1, unbounded queries) — PR pending
 
 ### Next Phases:
-- ⏳ API Phase 3 (Performance): ETag, Cache-Control, unified rate-limit headers
-- ⏳ API Phase 4 (Advanced): Sparse Fieldsets, HATEOAS, API Versioning, OpenAPI
+- ⏳ Phase 4 (API Advanced): Sparse Fieldsets, HATEOAS, API Versioning, OpenAPI
 - ⏳ Investigate notifications table 122k seq_scans
-- ⏳ Fix pre-existing test failures (missing prisma 20260907 migration SQL files, comments-step6 mock drift)
+- ⏳ Fix pre-existing test failures (2 tests on main: missing prisma 20260907 migration SQL)
+- ⏳ Load Testing on staging
 - ⏳ Operator action: ALTER ROLE avnadmin SET statement_timeout = '15s' on Aiven
 - ⏳ Operator action: CREATE EXTENSION pg_stat_statements on Aiven (optional)
 
