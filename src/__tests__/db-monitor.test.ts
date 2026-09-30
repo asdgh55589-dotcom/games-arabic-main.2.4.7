@@ -48,6 +48,25 @@ describe('DbMonitor.getMetrics', () => {
     mockQueryRaw.mockRejectedValue(new Error('db down'))
     await expect(DbMonitor.getMetrics()).resolves.toBeNull()
   })
+
+  it('getCachedOrCollect serves last-good sample as stale instead of flapping', async () => {
+    healthyRows()
+    const fresh = await DbMonitor.getCachedOrCollect()
+    expect(fresh.stale).toBe(false)
+    expect(fresh.metrics!.poolUsagePercent).toBe(25)
+    // throttled now — falls back to last good
+    const stale = await DbMonitor.getCachedOrCollect()
+    expect(stale.stale).toBe(true)
+    expect(stale.metrics!.poolUsagePercent).toBe(25)
+  })
+
+  it('getCachedOrCollect reports unknown when nothing was ever collected', async () => {
+    DbMonitor.resetThrottle()
+    DbMonitor.resetCache()
+    mockQueryRaw.mockRejectedValue(new Error('db down'))
+    // first call fails (null, nothing cached)...
+    expect(await DbMonitor.getCachedOrCollect()).toEqual({ metrics: null, stale: false })
+  })
 })
 
 describe('DbMonitor.checkHealth', () => {

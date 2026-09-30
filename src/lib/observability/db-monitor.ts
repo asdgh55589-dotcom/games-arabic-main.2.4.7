@@ -44,10 +44,16 @@ async function withProbeTimeout<T>(fn: () => Promise<T>): Promise<T> {
 
 export class DbMonitor {
   private static lastCheck = 0
+  private static lastGood: DbMetrics | null = null
 
   /** Test seam: reset the 30s throttle. */
   static resetThrottle(): void {
     DbMonitor.lastCheck = 0
+  }
+
+  /** Test seam: clear cached metrics. */
+  static resetCache(): void {
+    DbMonitor.lastGood = null
   }
 
   static async getMetrics(): Promise<DbMetrics | null> {
@@ -89,7 +95,7 @@ export class DbMonitor {
         durationS: Number(q.duration) || 0,
       }))
 
-      return {
+      const metrics: DbMetrics = {
         activeConnections: active,
         idleConnections: idle,
         totalConnections: total,
@@ -98,10 +104,24 @@ export class DbMonitor {
         oldestQueryS: slows.reduce((m, q) => Math.max(m, q.durationS), 0),
         slowQueries: slows,
       }
+      DbMonitor.lastGood = metrics
+      return metrics
     } catch (err) {
       logger.warn({ event: 'db_metrics_failed', err }, 'DB metrics collection failed')
       return null
     }
+  }
+
+  /**
+   * Collection that never flaps: a throttled (null) fresh probe falls back to
+   * the last good sample with `stale: true`. Only a never-collected state
+   * returns metrics:null (endpoint reports 'warming up', not 'degraded').
+   */
+  static async getCachedOrCollect(): Promise<{ metrics: DbMetrics | null; stale: boolean }> {
+    const fresh = await DbMonitor.getMetrics()
+    if (fresh) return { metrics: fresh, stale: false }
+    if (DbMonitor.lastGood) return { metrics: DbMonitor.lastGood, stale: true }
+    return { metrics: null, stale: false }
   }
 
   static async checkHealth(prefetched?: DbMetrics | null): Promise<{ healthy: boolean; issues: string[] }> {

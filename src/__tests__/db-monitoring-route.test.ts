@@ -29,10 +29,12 @@ jest.mock('@/lib/db', () => ({
 
 const mockGetMetrics = jest.fn()
 const mockCheckHealth = jest.fn()
+const mockCachedOrCollect = jest.fn()
 jest.mock('@/lib/observability/db-monitor', () => ({
   DbMonitor: {
     getMetrics: (...a: unknown[]) => mockGetMetrics(...a),
     checkHealth: (...a: unknown[]) => mockCheckHealth(...a),
+    getCachedOrCollect: (...a: unknown[]) => mockCachedOrCollect(...a),
   },
 }))
 
@@ -53,6 +55,10 @@ beforeEach(() => {
   mockRequireAdmin.mockResolvedValue({ id: 'a1', role: 'admin' })
   mockGetMetrics.mockResolvedValue({ poolUsagePercent: 25, totalConnections: 5 })
   mockCheckHealth.mockResolvedValue({ healthy: true, issues: [] })
+  mockCachedOrCollect.mockResolvedValue({
+    metrics: { poolUsagePercent: 25, totalConnections: 5 },
+    stale: false,
+  })
 })
 
 describe('GET /api/admin/db/monitoring', () => {
@@ -75,11 +81,30 @@ describe('GET /api/admin/db/monitoring', () => {
     const body = await res.json()
     expect(body.data.status).toBe('healthy')
     expect(body.data.metrics.poolUsagePercent).toBe(25)
+    expect(body.data.stale).toBe(false)
     expect(body.data.circuitBreaker.state).toBe('CLOSED')
     expect(body.data.connectionHealthy).toBe(true)
     expect(body.data.time).toBeDefined()
     // checkHealth receives the already-collected metrics (no double probe)
     expect(mockCheckHealth).toHaveBeenCalledWith({ poolUsagePercent: 25, totalConnections: 5 })
+  })
+
+  it('serves stale sample instead of flapping degraded on throttle', async () => {
+    mockCachedOrCollect.mockResolvedValue({
+      metrics: { poolUsagePercent: 25, totalConnections: 5 },
+      stale: true,
+    })
+    const body = await (await GET(req())).json()
+    expect(body.data.status).toBe('healthy')
+    expect(body.data.stale).toBe(true)
+    expect(body.data.metrics.poolUsagePercent).toBe(25)
+  })
+
+  it('reports unknown (not degraded) when nothing was ever collected', async () => {
+    mockCachedOrCollect.mockResolvedValue({ metrics: null, stale: false })
+    const body = await (await GET(req())).json()
+    expect(body.data.status).toBe('unknown')
+    expect(body.data.metrics).toBeNull()
   })
 
   it('reports degraded when health has issues', async () => {
