@@ -61,8 +61,8 @@ export async function etagFor(data: unknown): Promise<string> {
   return `"${await sha256Hex(JSON.stringify(data))}"`
 }
 
-function clientEtagMatches(req: { headers: { get(name: string): string | null } }, etag: string): boolean {
-  const inm = req.headers.get('if-none-match')
+function clientEtagMatches(req: { headers?: { get(name: string): string | null } }, etag: string): boolean {
+  const inm = req.headers?.get('if-none-match')
   if (!inm) return false
   if (inm.trim() === '*') return true
   return inm.split(',').some((tag) => tag.trim() === etag)
@@ -79,7 +79,7 @@ export interface CachedResponseOptions {
  * Returns 304 (empty body) when the client sent a matching If-None-Match.
  */
 export async function withETag(
-  req: { headers: { get(name: string): string | null } },
+  req: { headers?: { get(name: string): string | null } },
   data: unknown,
   opts: CachedResponseOptions = {},
 ): Promise<NextResponse> {
