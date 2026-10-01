@@ -20,6 +20,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { recordRouteError } from '@/lib/observability/red-metrics'
 
 // ===== Types =====
 
@@ -133,6 +134,14 @@ export function fail(
   instance?: string,
 ): NextResponse {
   const rid = requestId ?? getRequestId()
+  // RED error signal — recorded AT THE SOURCE with the REAL status.
+  // (Middleware cannot observe the final status; see red-metrics.ts.)
+  // Fire-and-forget + fail-open: never break the error response itself.
+  try {
+    recordRouteError(instance ?? 'unknown', status)
+  } catch {
+    // intentional: observability must not break error responses
+  }
   return NextResponse.json<ApiResponseError>(
     {
       error: {

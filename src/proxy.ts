@@ -24,6 +24,7 @@ import {
 import { getIpBanCache } from '@/lib/ip-ban-cache'
 import { logError, logger } from '@/lib/logger'
 import { trackRoute } from '@/lib/observability/middleware'
+import { recordRouteError } from '@/lib/observability/red-metrics'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
@@ -218,6 +219,13 @@ function proxyJson(
   status: number,
   headers?: Record<string, string>,
 ): NextResponse {
+  // RED error signal — proxyJson statuses are REAL (generated here, not by
+  // route handlers), so record at the source. Fire-and-forget, fail-open.
+  try {
+    recordRouteError(req.nextUrl.pathname, status)
+  } catch {
+    // intentional: observability must not break the error response
+  }
   const res = NextResponse.json(
     proxyErrorBody(code, message, detail, status, requestId, req.nextUrl.pathname),
     { status, headers },
@@ -228,7 +236,17 @@ function proxyJson(
 /**
  * Phase 2 observability — lifecycle logging + RED metrics for every proxied
  * request. Delegates to proxyInner; logs `started` (debug) and `completed`
- * (info, with status + durationMs) and records rate/errors/duration.
+ * (info, with middleware-egress status + durationMs) and records
+ * rate/duration.
+ *
+ * RED error-rate honesty note: this middleware runs BEFORE route handlers,
+ * so `status` here is the middleware-egress status (200 for every
+ * pass-through via NextResponse.next()), NOT the route handler's final
+ * status. Real 4xx/5xx from route handlers are recorded AT THE SOURCE with
+ * the real status — api-response.ts fail() and proxyJson() below call
+ * recordRouteError(). The `status` log field is kept for backward compat;
+ * `statusSource` marks what it actually is. Do NOT treat it as the final
+ * response status.
  */
 export async function proxy(req: NextRequest) {
   const start = Date.now()
@@ -254,7 +272,7 @@ export async function proxy(req: NextRequest) {
     } catch {
       // best-effort metrics — never break the request
     }
-    log.info({ status, durationMs }, 'Proxy request completed')
+    log.info({ status, statusSource: 'middleware-egress', durationMs }, 'Proxy request completed')
   }
 }
 

@@ -4,6 +4,7 @@ import { AuthError, requireAdmin } from '@/lib/auth'
 import { isConnectionHealthy } from '@/lib/db'
 import { dbCircuitBreaker } from '@/lib/observability/db-circuit-breaker'
 import { DbMonitor } from '@/lib/observability/db-monitor'
+import { getRouteErrors } from '@/lib/observability/red-metrics'
 import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -40,10 +41,20 @@ export async function GET(req: NextRequest) {
         issues: ['warming up — no sample collected yet'],
         circuitBreaker: dbCircuitBreaker.getState(),
         connectionHealthy: isConnectionHealthy(),
+        redErrors: await getRouteErrors().catch(() => []),
         time: new Date().toISOString(),
       })
     }
     const health = await DbMonitor.checkHealth(metrics)
+    // RED error signal (last ~2 min, real route-handler statuses recorded at
+    // the source by api-response.ts fail() + proxyJson()). Never fails the
+    // endpoint — degrades to [].
+    let redErrors: Awaited<ReturnType<typeof getRouteErrors>> = []
+    try {
+      redErrors = await getRouteErrors()
+    } catch {
+      // intentional: RED read failure must not break DB monitoring
+    }
     return ok({
       status: health.healthy ? 'healthy' : 'degraded',
       metrics,
@@ -51,6 +62,7 @@ export async function GET(req: NextRequest) {
       issues: health.issues,
       circuitBreaker: dbCircuitBreaker.getState(),
       connectionHealthy: isConnectionHealthy(),
+      redErrors,
       time: new Date().toISOString(),
     })
   } catch {
