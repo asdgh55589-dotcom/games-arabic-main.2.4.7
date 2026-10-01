@@ -4,6 +4,11 @@ import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import {
+  cacheIdempotentResponse,
+  checkIdempotency,
+  idempotentReplay,
+} from '@/lib/idempotency'
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { CreateReportSchema } from '@/lib/schemas'
@@ -23,6 +28,14 @@ export async function POST(req: NextRequest) {
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'reports:create' })
     if (!rl.success) {
       return rateLimited()
+    }
+
+    // Phase 4 (opt-in): Idempotency-Key replay short-circuits BEFORE validation/
+    // creation — same key + same user returns the cached envelope, no duplicate
+    // row, no re-notify. Absent/invalid key → normal execution.
+    const idem = await checkIdempotency(req, `reports:create:${neonUser.id}`)
+    if (idem.isDuplicate && idem.cached) {
+      return idempotentReplay(idem.cached, idem.key)
     }
 
     const body = await req.json()
@@ -102,7 +115,15 @@ export async function POST(req: NextRequest) {
       logger.error({ err }, '[reports POST] trust score update failed')
     })
 
-    return ok({ report }, { status: 201 })
+    // Phase 4: cache the envelope for Idempotency-Key replays (best-effort).
+    await cacheIdempotentResponse(idem.key, `reports:create:${neonUser.id}`, {
+      status: 201,
+      body: { data: { report } },
+    })
+
+    const res = ok({ report }, { status: 201 })
+    if (idem.key) res.headers.set('Idempotency-Key', idem.key)
+    return res
   } catch (err) {
     logger.error({ err }, '[reports POST] failed')
     reportError(err, { route: 'POST /api/reports' })
