@@ -98,7 +98,10 @@ export interface ModSummary {
   createdAt: string | Date
   author: Author
   game: { name: string; slug: string; platform: string }
-  category: { name: string; slug: string } | null
+  // Matches the Category interface above — the home route's raw-SQL mapper
+  // selects c."id" alongside name/slug, so the runtime object carries all
+  // three. A narrower inline copy here silently drops `id` from the contract.
+  category: Category | null
 }
 
 // ===== أنواع البيانات الجديدة للـ relations =====

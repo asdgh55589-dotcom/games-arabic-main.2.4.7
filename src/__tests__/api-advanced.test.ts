@@ -135,7 +135,12 @@ describe('idempotency', () => {
 
 describe('openapi registry', () => {
   it('covers 11 paths / 12 operations including Phase 4 reads', () => {
-    const spec = getOpenApiSpec() as { paths: Record<string, Record<string, unknown>> }
+    // OpenAPIObject.paths is typed as PathsObject (per-operation PathItemObject
+    // values), which does not structurally overlap the loose record asserted
+    // below — go through `unknown` so the cast is explicit rather than unsound.
+    const spec = getOpenApiSpec() as unknown as {
+      paths: Record<string, Record<string, unknown>>
+    }
     expect(Object.keys(spec.paths).length).toBeGreaterThanOrEqual(11)
     expect(spec.paths['/api/mods']?.get).toBeDefined()
     expect(spec.paths['/api/mods']?.post).toBeDefined()

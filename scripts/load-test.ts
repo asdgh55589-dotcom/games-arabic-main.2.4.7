@@ -33,8 +33,10 @@ const PRESSURE: Scenario[] = [
 function summarize(label: string, r: autocannon.Result): void {
   console.log(`--- ${label} ---`)
   console.log(`  req/s avg: ${r.requests.average} | errors: ${r.errors} | timeouts: ${r.timeouts}`)
+  // autocannon's Histogram exposes p97_5, not p95 — the old p95 read
+  // silently printed `undefined` into every load-test report.
   console.log(
-    `  latency ms avg/p95/p99: ${r.latency.average}/${r.latency.p95}/${r.latency.p99}`,
+    `  latency ms avg/p97.5/p99: ${r.latency.average}/${r.latency.p97_5}/${r.latency.p99}`,
   )
 }
 
