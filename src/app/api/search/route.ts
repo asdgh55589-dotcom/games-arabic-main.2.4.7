@@ -7,11 +7,11 @@ import { PLATFORM_KEYS } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { meili, meiliHealth } from '@/lib/meilisearch/client'
 import { modCardSelect } from '@/lib/prisma-selects'
-import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { rateLimit, rateLimitHeaders, type RateLimitResult } from '@/lib/rate-limit'
 
 // Phase 3: shared headers for search responses — short public cache +
 // X-RateLimit-* on EVERY response (success and 429), not just errors.
-function searchHeaders(rl: { limit: number; remaining: number; resetAt: number }): Headers {
+function searchHeaders(rl: RateLimitResult): Headers {
   const headers = new Headers()
   setCacheControl(headers, { type: 'public', maxAge: 30, swr: 60 })
   const rlHeaders = rateLimitHeaders(rl)

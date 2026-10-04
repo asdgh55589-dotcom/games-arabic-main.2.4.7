@@ -50,7 +50,7 @@ describe('fail() unified envelope', () => {
   it('generates a requestId when none is provided', async () => {
     const body = await bodyOf(fail('INTERNAL_ERROR', 'oops', 500))
     expect(typeof body.error?.requestId).toBe('string')
-    expect(body.error?.requestId.length).toBeGreaterThan(0)
+    expect(body.error?.requestId?.length).toBeGreaterThan(0)
   })
 
   it('omits instance when not provided', async () => {
