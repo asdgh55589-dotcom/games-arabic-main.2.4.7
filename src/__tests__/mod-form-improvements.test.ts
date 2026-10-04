@@ -184,7 +184,34 @@ describe('Changelog API', () => {
 // ============================================================
 // Scheduled Publish Cron
 // ============================================================
+// Phase 1: the endpoint now requires the shared CRON_SECRET (requireCronAuth),
+// so each case must present an authorized cron caller, and an anonymous caller
+// must be rejected BEFORE any publish write.
+const CRON_SECRET = 'cron-secret-for-mod-form-tests'
+
+function cronReq(url: string, secret: string | null = CRON_SECRET) {
+  return new NextRequest(url, {
+    method: 'GET',
+    headers: secret ? { Authorization: `Bearer ${secret}` } : {},
+  })
+}
+
 describe('Scheduled Publish Cron', () => {
+  beforeEach(() => {
+    process.env.CRON_SECRET = CRON_SECRET
+  })
+
+  it('rejects an unauthenticated caller without publishing anything', async () => {
+    mockMod.findMany.mockResolvedValue([
+      { id: 'mod-1', scheduledAt: new Date(Date.now() - 60000).toISOString(), name: 'test-mod' },
+    ])
+
+      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check', null))
+
+    expect(res.status).toBe(401)
+    expect(mockMod.update).not.toHaveBeenCalled()
+  })
+
   it('publishes mods that are past their scheduledAt', async () => {
     const pastDate = new Date(Date.now() - 60000).toISOString()
     mockMod.findMany.mockResolvedValue([
@@ -192,8 +219,7 @@ describe('Scheduled Publish Cron', () => {
     ])
     mockMod.update.mockResolvedValue({})
 
-      const req = getReq('http://localhost/api/admin/scheduled-publish/check')
-      const res = await scheduledPublishGET()
+      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
       const body = await res.json()
 
       expect(res.status).toBe(200)
@@ -210,8 +236,7 @@ describe('Scheduled Publish Cron', () => {
       // When scheduledAt > now, the DB query filters them out, so findMany returns []
       mockMod.findMany.mockResolvedValue([])
 
-      const req = getReq('http://localhost/api/admin/scheduled-publish/check')
-      const res = await scheduledPublishGET()
+      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
       const body = await res.json()
 
       expect(res.status).toBe(200)
@@ -222,8 +247,7 @@ describe('Scheduled Publish Cron', () => {
     it('returns published: 0 when no mods are scheduled', async () => {
       mockMod.findMany.mockResolvedValue([])
 
-      const req = getReq('http://localhost/api/admin/scheduled-publish/check')
-      const res = await scheduledPublishGET()
+      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
     const body = await res.json()
 
     expect(res.status).toBe(200)

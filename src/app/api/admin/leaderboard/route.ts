@@ -1,10 +1,35 @@
+import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { forbidden, rateLimited, unauthorized } from '@/lib/api-response'
+import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
-export async function GET(request: Request) {
+/** يحوّل خطأ صلاحيات إلى الاستجابة الصحيحة بدل 500 */
+function authFail(err: unknown) {
+  const status = (err as { status?: number })?.status
+  if (status === 401) return unauthorized('يجب تسجيل الدخول')
+  if (status === 403) return forbidden('ليس لديك صلاحية')
+  return null
+}
+
+// GET /api/admin/leaderboard — لوحة المتصدرين (إدارة | admin فأعلى)
+// محمي: requireAdmin + rate limit (استعلامات تجميعية مكلفة)
+// ملاحظة: شكل الـ response ثابت (leaderboard في الجذر) لأن
+// src/app/admin/rewards/page.tsx يقرأ data.leaderboard مباشرة.
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    await requireAdmin()
+
+    const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'admin:leaderboard' })
+    if (!rl.success) {
+      const res = rateLimited('طلبات كثيرة — حاول بعد قليل')
+      for (const [k, v] of Object.entries(rateLimitHeaders(rl))) res.headers.set(k, v)
+      return res
+    }
+
+    const { searchParams } = new URL(req.url)
     const timeRange = searchParams.get('range') || 'all_time'
 
     let whereClause = {}
@@ -77,7 +102,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ leaderboard, timeRange })
   } catch (error) {
-    logger.error('[leaderboard GET]', error)
+    logger.error('[admin/leaderboard GET]', error)
+    const authResp = authFail(error)
+    if (authResp) return authResp
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
