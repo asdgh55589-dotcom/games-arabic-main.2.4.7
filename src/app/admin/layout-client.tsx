@@ -60,6 +60,8 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   exact?: boolean
   adminOnly?: boolean
+  /** مرئي للمدير (manager) والمالك فقط — يطابق requireManager في المسار. */
+  managerOnly?: boolean
   ownerOnly?: boolean
 }
 
@@ -117,8 +119,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/search', label: 'بحث متقدم', icon: Search, adminOnly: true },
       { href: '/admin/api-keys', label: 'مفاتيح API', icon: Key, adminOnly: true },
-      { href: '/admin/templates', label: 'قوالب الإشعارات', icon: FileText, adminOnly: true },
-      { href: '/admin/notifications/send', label: 'إرسال إشعار', icon: Send, adminOnly: true },
+      { href: '/admin/templates', label: 'قوالب الإشعارات', icon: FileText, managerOnly: true },
+      { href: '/admin/notifications/send', label: 'إرسال إشعار', icon: Send, managerOnly: true },
       {
         href: '/admin/notifications/analytics',
         label: 'تحليلات الإشعارات',
@@ -129,7 +131,7 @@ const NAV_GROUPS: NavGroup[] = [
         href: '/admin/notifications-health',
         label: 'صحة الإشعارات',
         icon: HeartPulse,
-        adminOnly: true,
+        managerOnly: true,
       },
       { href: '/admin/notifications/history', label: 'سجل الإشعارات', icon: Bell, adminOnly: true },
       { href: '/admin/sessions', label: 'الجلسات النشطة', icon: Shield, adminOnly: true },
@@ -343,6 +345,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const isItemVisible = (item: NavItem) => {
     if (item.ownerOnly && user.role !== 'owner') return false
+    // P3: الرؤية تطابق require* في المسار حرفياً — لا رابط لصفحة لا تستطيع فتحها.
+    // (adminOnly يشمل manager، وmanagerOnly أضيق: يستثني admin أيضاً.)
+    if (item.managerOnly && !['manager', 'owner'].includes(user.role)) return false
     if (item.adminOnly && !['admin', 'manager', 'owner'].includes(user.role)) return false
     // تخصيص الصفحات: المالك دائماً كامل، وغيره يُرشَّح حسب القائمة البيضاء.
     if (user.role !== 'owner' && allowedPages && allowedPages.length > 0) {
@@ -357,7 +362,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       {/* Brand */}
       <div className="flex h-14 items-center gap-2.5 border-b border-border-light px-5">
-        <NextImage src="/logo.png" alt="ألعاب عربية" width={28} height={28} className="h-7 w-auto object-contain" />
+        <NextImage
+          src="/logo.png"
+          alt="ألعاب عربية"
+          width={28}
+          height={28}
+          className="h-7 w-auto object-contain"
+        />
       </div>
 
       {/* Navigation */}
@@ -480,7 +491,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }`}
       >
         <div className="flex h-14 items-center justify-between border-b border-border-light px-5">
-          <NextImage src="/logo.png" alt="ألعاب عربية" width={28} height={28} className="h-7 w-auto object-contain" />
+          <NextImage
+            src="/logo.png"
+            alt="ألعاب عربية"
+            width={28}
+            height={28}
+            className="h-7 w-auto object-contain"
+          />
           <button
             onClick={() => setMobileOpen(false)}
             aria-label="إغلاق"

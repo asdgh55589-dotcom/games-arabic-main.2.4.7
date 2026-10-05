@@ -1,8 +1,19 @@
 import type { NextRequest } from 'next/server'
-import { fail, internalError, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+
+/**
+ * P3: فشل الصلاحية يجب أن يعود 401/403 (RFC 7807 + request-ID عبر fail/unauthorized/
+ * forbidden) لا 500 — كان AuthError يبتله catch العام في كل معالجات هذا المسار.
+ */
+function authErrorResponse(err: unknown): Response | null {
+  const status = (err as { status?: number })?.status
+  if (status === 401) return unauthorized('سجّل الدخول أولاً')
+  if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
+  return null
+}
 
 // GET /api/admin/scheduler — قائمة المهام المجدولة
 export async function GET(req: NextRequest) {
@@ -53,6 +64,8 @@ export async function GET(req: NextRequest) {
       stats: statusCounts,
     })
   } catch (err) {
+    const authRes = authErrorResponse(err)
+    if (authRes) return authRes
     logger.error('[admin/scheduler] GET failed:', err)
     return internalError('فشل في تحميل المهام المجدولة')
   }
@@ -86,6 +99,8 @@ export async function POST(req: NextRequest) {
 
     return ok(job)
   } catch (err) {
+    const authRes = authErrorResponse(err)
+    if (authRes) return authRes
     logger.error('[admin/scheduler] POST failed:', err)
     return internalError('فشل في إنشاء المهمة')
   }
@@ -123,6 +138,8 @@ export async function PATCH(req: NextRequest) {
 
     return ok(updated)
   } catch (err) {
+    const authRes = authErrorResponse(err)
+    if (authRes) return authRes
     logger.error('[admin/scheduler] PATCH failed:', err)
     return internalError('فشل في تحديث المهمة')
   }
@@ -156,6 +173,8 @@ export async function DELETE(req: NextRequest) {
 
     return ok({ cancelled: true })
   } catch (err) {
+    const authRes = authErrorResponse(err)
+    if (authRes) return authRes
     logger.error('[admin/scheduler] DELETE failed:', err)
     return internalError('فشل في إلغاء المهمة')
   }

@@ -1,7 +1,7 @@
 import Handlebars from 'handlebars'
 import type { NextRequest } from 'next/server'
 import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
-import { internalError, notFound, ok } from '@/lib/api-response'
+import { forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
@@ -81,6 +81,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       sampleVariables: sampleVars,
     })
   } catch (err) {
+    // P3: فشل الصلاحية يجب أن يعود 401/403 لا 500 (كان الخطأ العام يبتلع AuthError).
+    const status = (err as { status?: number })?.status
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — إدارة القوالب للمديرين فقط')
     logger.error('[admin/templates/[id]/preview POST] failed:', err)
     return internalError('Failed to preview template')
   }

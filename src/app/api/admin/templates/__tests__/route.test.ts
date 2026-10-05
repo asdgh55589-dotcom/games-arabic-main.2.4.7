@@ -100,6 +100,57 @@ describe('GET /api/admin/templates', () => {
       }),
     )
   })
+
+  it('should return 401 when the caller is not signed in', async () => {
+    mockRequireManager.mockRejectedValueOnce(
+      Object.assign(new Error('Unauthorized'), { status: 401 }),
+    )
+
+    const res = await GET(makeReq('http://localhost/api/admin/templates'))
+    const data = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(data.error.code).toBe('UNAUTHORIZED')
+    expect(mockDb.notificationTemplate.findMany).not.toHaveBeenCalled()
+  })
+
+  it('should return 403 when the caller is not a manager', async () => {
+    mockRequireManager.mockRejectedValueOnce(
+      Object.assign(new Error('Forbidden — manager access required'), { status: 403 }),
+    )
+
+    const res = await GET(makeReq('http://localhost/api/admin/templates'))
+    const data = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(data.error.code).toBe('FORBIDDEN')
+  })
+
+  it('should fall back to page 1 / limit 50 for unparseable pagination', async () => {
+    mockDb.notificationTemplate.findMany.mockResolvedValue([])
+    mockDb.notificationTemplate.count.mockResolvedValue(0)
+
+    const res = await GET(makeReq('http://localhost/api/admin/templates?page=abc&limit=xyz'))
+    const data = await res.json()
+
+    expect(data.pagination.page).toBe(1)
+    expect(data.pagination.limit).toBe(50)
+    expect(mockDb.notificationTemplate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 50 }),
+    )
+  })
+
+  it('reports totalPages: 0 for an empty table — differs from the notifications list', async () => {
+    // `GET /api/admin/notifications` يفرض `|| 1` فيعيد 1، وهنا `Math.ceil(0/50)`
+    // = 0. الفرق موثّق هنا كسلوك قائم لا كموافقة عليه.
+    mockDb.notificationTemplate.findMany.mockResolvedValue([])
+    mockDb.notificationTemplate.count.mockResolvedValue(0)
+
+    const res = await GET(makeReq('http://localhost/api/admin/templates'))
+    const data = await res.json()
+
+    expect(data.pagination.totalPages).toBe(0)
+  })
 })
 
 describe('POST /api/admin/templates', () => {
@@ -416,10 +467,70 @@ describe('POST /api/admin/templates/[id]/preview', () => {
   it('should return 404 for non-existent template', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue(null)
 
-    const req = makeReq('http://localhost/api/admin/templates/not-found/preview', 'POST', {})
+    const req = makeReq('http://localhost/api/admin/templates/not-found', 'POST', {})
     const res = await previewPOST(req, { params: Promise.resolve({ id: 'not-found' }) })
     const data = await res.json()
 
     expect(data.error.code).toBe('NOT_FOUND')
+  })
+
+  it('should return 403 (not 500) when the caller is not a manager', async () => {
+    // P3: catch في preview يفحص `status` — forbidden لا ينقلب إلى 500.
+    mockRequireManager.mockRejectedValueOnce(
+      Object.assign(new Error('Forbidden — manager access required'), { status: 403 }),
+    )
+
+    const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
+    const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
+
+    expect(res.status).toBe(403)
+    // لا يُقرأ القالب ولا يُصرَّف قبل التحقق من الصلاحية
+    expect(mockDb.notificationTemplate.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('should return 401 (not 500) when the caller is not signed in', async () => {
+    mockRequireManager.mockRejectedValueOnce(
+      Object.assign(new Error('Unauthorized'), { status: 401 }),
+    )
+
+    const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
+    const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
+
+    expect(res.status).toBe(401)
+    expect(mockDb.notificationTemplate.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('should return 500 when the stored template has broken Handlebars', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue({
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'in_app',
+      titleTemplate: '{{#if unclosed}}',
+      bodyTemplate: 'body',
+      variables: [],
+    })
+
+    const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
+    const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
+
+    expect(res.status).toBe(500)
+  })
+
+  it('should fall back to an empty sample when no variables are supplied or matched', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue({
+      id: 'tpl-1',
+      type: 'unknown_future_type',
+      channel: 'in_app',
+      titleTemplate: 'عنوان',
+      bodyTemplate: 'متن',
+      variables: [],
+    })
+
+    const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
+    const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
+    const data = await res.json()
+
+    expect(data.data.sampleVariables).toEqual({})
+    expect(data.data.title).toBe('عنوان')
   })
 })
