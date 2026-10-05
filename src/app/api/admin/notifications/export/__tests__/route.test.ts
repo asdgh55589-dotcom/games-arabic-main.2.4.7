@@ -111,4 +111,97 @@ describe('GET /api/admin/notifications/export', () => {
     expect(res.status).toBe(403)
     expect(data.error.code).toBe('FORBIDDEN')
   })
+
+  it('returns 401 for an anonymous caller', async () => {
+    mockRequireModerator.mockRejectedValueOnce(
+      Object.assign(new Error('Unauthorized'), { status: 401 }),
+    )
+
+    const res = await GET(new NextRequest('http://localhost/api/admin/notifications/export'))
+    const data = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(data.error.code).toBe('UNAUTHORIZED')
+    // لا استعلام قاعدة بيانات قبل التحقق من الصلاحية
+    expect(mockFindMany).not.toHaveBeenCalled()
+  })
+
+  it('returns a CSV attachment with a UTF-8 BOM and Arabic headers', async () => {
+    mockFindMany.mockResolvedValue([])
+
+    const res = await GET(new NextRequest('http://localhost/api/admin/notifications/export'))
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('text/csv; charset=utf-8')
+    expect(res.headers.get('content-disposition')).toContain('notifications-export.csv')
+
+    // `Response.text()` يُزيل BOM أثناء فكّ الترميز، لذا نتحقق من البايتات.
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]) // EF BB BF
+
+    const body = new TextDecoder('utf-8').decode(bytes.slice(3))
+    expect(body).toContain('"التاريخ"')
+    expect(body).toContain('"المستلم"')
+  })
+
+  it('emits only the header row when there is nothing to export', async () => {
+    const csv = await csvText([])
+
+    expect(csv.trimEnd().split('\n')).toHaveLength(1)
+  })
+
+  it('applies the channel and status filters as an exact-match where clause', async () => {
+    mockFindMany.mockResolvedValue([])
+
+    await GET(
+      new NextRequest(
+        'http://localhost/api/admin/notifications/export?channel=email&status=failed',
+      ),
+    )
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { channel: 'email', status: 'failed' } }),
+    )
+  })
+
+  it('ignores empty filter values instead of filtering on an empty string', async () => {
+    mockFindMany.mockResolvedValue([])
+
+    await GET(new NextRequest('http://localhost/api/admin/notifications/export?channel=&status='))
+
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }))
+  })
+
+  it('caps the export at 10,000 rows, newest first', async () => {
+    mockFindMany.mockResolvedValue([])
+
+    await GET(new NextRequest('http://localhost/api/admin/notifications/export'))
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 10_000, orderBy: { createdAt: 'desc' } }),
+    )
+  })
+
+  it('does not leak an internal error message when the query fails', async () => {
+    mockFindMany.mockRejectedValueOnce(new Error('connection to 10.0.0.5 refused'))
+    jest.spyOn(console, 'error').mockImplementation(() => {
+      // الخرج مسموع في Jest فقط؛ نكتمه حتى لا يغرق سجل التشغيل.
+    })
+
+    const res = await GET(new NextRequest('http://localhost/api/admin/notifications/export'))
+    const data = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(data.error.code).toBe('INTERNAL_ERROR')
+    expect(JSON.stringify(data)).not.toContain('10.0.0.5')
+  })
+
+  it('falls back to the raw type label when the notification is missing', async () => {
+    const csv = await csvText([
+      makeLog({ notification: { type: 'unknown_future_type', title: 'عنوان', user: null } }),
+    ])
+
+    expect(csv).toContain('"unknown_future_type"')
+    expect(csv).toContain('""') // لا مستلم
+  })
 })
