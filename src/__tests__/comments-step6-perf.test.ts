@@ -203,11 +203,11 @@ describe('3.1 DB round trips per endpoint (mocked call counts)', () => {
 
 describe('3.1.3 composite indexes captured in migrations (static)', () => {
   it('schema (modId,createdAt) is captured in the baseline migration SQL', () => {
-    // History squash (20260907000000_baseline): old per-change migration dirs
+    // History squash (20260920000000_baseline_squash): old per-change migration dirs
     // were retired after proving column/index parity — point at the baseline.
     const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
     const mig = fs.readFileSync(
-      path.join(root, 'prisma/migrations/20260907000000_baseline/migration.sql'),
+      path.join(root, 'prisma/migrations/20260920000000_baseline_squash/migration.sql'),
       'utf8',
     )
     expect(schema).toMatch(/@@index\(\[modId, createdAt\]\)/)

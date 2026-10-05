@@ -12,7 +12,7 @@
   (see `docs/prod-migration-sync.md:108-111` — "Production's
   `_prisma_migrations` still lists the 22 retired migrations").
 - Foundation-freeze branch (`feat/foundation-freeze`) squashes to
-  `20260907000000_baseline` + additive migrations.
+  `20260920000000_baseline_squash` + additive migrations.
 - This runbook aligns prod history metadata to the 8 canonical names below.
   **No table is created, dropped, or altered by Step 2–3** (metadata only).
 - Note on the 9th migration: this checkout contains
@@ -24,7 +24,7 @@
 
 Canonical 8 (verbatim directory names under `prisma/migrations/`):
 
-1. `20260907000000_baseline`
+1. `20260920000000_baseline_squash`
 2. `20260907000001_wave3a_likes_composite_indexes`
 3. `20260907000002_wave3a_news_author`
 4. `20260907000003_wave3b_comment_clicks`
@@ -63,7 +63,7 @@ Do NOT proceed until Step 0 restore point is confirmed.
 BEGIN;
 DELETE FROM "_prisma_migrations"
 WHERE migration_name NOT IN (
-  '20260907000000_baseline',
+  '20260920000000_baseline_squash',
   '20260907000001_wave3a_likes_composite_indexes',
   '20260907000002_wave3a_news_author',
   '20260907000003_wave3b_comment_clicks',
@@ -88,7 +88,7 @@ Run from a checkout of this branch (`feat/foundation-freeze`) with
 production `DATABASE_URL` exported. One command per migration, in order:
 
 ```bash
-DATABASE_URL="$DATABASE_URL" npx prisma migrate resolve --applied "20260907000000_baseline"
+DATABASE_URL="$DATABASE_URL" npx prisma migrate resolve --applied "20260920000000_baseline_squash"
 DATABASE_URL="$DATABASE_URL" npx prisma migrate resolve --applied "20260907000001_wave3a_likes_composite_indexes"
 DATABASE_URL="$DATABASE_URL" npx prisma migrate resolve --applied "20260907000002_wave3a_news_author"
 DATABASE_URL="$DATABASE_URL" npx prisma migrate resolve --applied "20260907000003_wave3b_comment_clicks"
@@ -107,7 +107,7 @@ from Step 0, investigate. Do NOT run `migrate dev` against production.
 Index definitions derived verbatim from `docs/prod-migration-sync.md`
 trgm section (Step 3 extras). Source quoted per index; all statements use
 `IF NOT EXISTS` so existing DBs are safe. Fresh DBs get the same block via
-the appended tail of `prisma/migrations/20260907000000_baseline/migration.sql`.
+the appended tail of `prisma/migrations/20260920000000_baseline_squash/migration.sql`.
 
 ```sql
 -- source: docs/prod-migration-sync.md:162
