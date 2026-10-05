@@ -78,25 +78,28 @@ describe('PATCH /api/admin/notifications/[id] — happy path', () => {
     })
   })
 
-  it('sends an empty patch rather than failing when no editable field is present', async () => {
+  it('rejects an empty patch with 422 instead of reporting a fake success', async () => {
+    // P3: جسم بلا حقول قابلة للتعديل خطأ تحقّق — لا 200 ولا كتابة في القاعدة.
     const res = await patch('n1', {})
 
-    expect(res.status).toBe(200)
-    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: 'n1' }, data: {} })
+    expect(res.status).toBe(422)
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 
-  it('ignores falsy values instead of blanking a column', async () => {
-    await patch('n1', { title: '', message: null })
+  it('rejects an all-falsy patch with 422 instead of blanking a column', async () => {
+    const res = await patch('n1', { title: '', message: null })
 
-    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: 'n1' }, data: {} })
+    expect(res.status).toBe(422)
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 
   it('scopes the update to the id from the route params', async () => {
     await patch('n-42', { title: 't' })
 
+    // P3: يُقرأ السطر كاملاً (type/title/message) لتغذية سجل التدقيق before/after.
     expect(mockFindUnique).toHaveBeenCalledWith({
       where: { id: 'n-42' },
-      select: { id: true },
+      select: { id: true, type: true, title: true, message: true },
     })
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'n-42' } }))
   })
@@ -125,20 +128,31 @@ describe('PATCH /api/admin/notifications/[id] — auth failure', () => {
     mockFindUnique.mockResolvedValue({ id: 'n1' })
   })
 
-  it('returns 500 (not 403) when the caller is not a moderator — known gap', async () => {
-    // السلوك الحالي: catch لا يفحص `status` إطلاقاً، فكل خطأ يُرجَع 500.
+  it('returns 403 (not 500) when the caller is not a moderator', async () => {
+    // P3: catch يفحص `status` now — 403Forbidden لا ينقلب إلى 500.
     mockRequireModerator.mockRejectedValue(
       Object.assign(new Error('Forbidden — moderator access required'), { status: 403 }),
     )
 
     const res = await patch('n1', { title: 't' })
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(403)
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns 401 (not 500) when the caller is not signed in', async () => {
+    mockRequireModerator.mockRejectedValue(
+      Object.assign(new Error('Unauthorized'), { status: 401 }),
+    )
+
+    const res = await patch('n1', { title: 't' })
+
+    expect(res.status).toBe(401)
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
   it('never touches the database before the auth check resolves', async () => {
-    mockRequireModerator.mockRejectedValue(new Error('anything'))
+    mockRequireModerator.mockRejectedValue(Object.assign(new Error('anything'), { status: 403 }))
 
     await patch('n1', { title: 't' })
 
@@ -163,7 +177,8 @@ describe('PATCH /api/admin/notifications/[id] — failure handling', () => {
     expect(JSON.stringify(json)).not.toContain('deadlock')
   })
 
-  it('returns 500 for a malformed JSON body instead of crashing', async () => {
+  it('returns 422 for a malformed JSON body instead of crashing', async () => {
+    // P3: جسم غير قابل للتحليل يُعامَل كجسم فارغ → 422 عبر حارس "لا حقول".
     const res = await PATCH(
       new NextRequest('http://localhost/api/admin/notifications/n1', {
         method: 'PATCH',
@@ -173,7 +188,7 @@ describe('PATCH /api/admin/notifications/[id] — failure handling', () => {
       { params: Promise.resolve({ id: 'n1' }) },
     )
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(422)
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 })

@@ -15,7 +15,8 @@ jest.mock('@/lib/db', () => ({
 }))
 
 jest.mock('@/lib/auth', () => ({
-  requireAdmin: jest.fn(),
+  // P3: الإرسال الجماعي = requireManager (لا ينزل عن تحرير القوالب).
+  requireManager: jest.fn(),
 }))
 
 jest.mock('@/lib/audit', () => ({
@@ -32,12 +33,12 @@ jest.mock('@/lib/notifications/service', () => ({
 
 import { NextRequest } from 'next/server'
 import { logAction } from '@/lib/audit'
-import { requireAdmin } from '@/lib/auth'
+import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { sendNotification } from '@/lib/notifications/service'
 import { POST } from '../route'
 
-const mockRequireAdmin = requireAdmin as jest.Mock
+const mockRequireManager = requireManager as jest.Mock
 const mockUserFindMany = db.user.findMany as jest.Mock
 const mockSend = sendNotification as jest.Mock
 const mockLogAction = logAction as jest.Mock
@@ -63,7 +64,7 @@ const BASE = {
 describe('POST /api/admin/notifications/send — happy path', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockRequireAdmin.mockResolvedValue(ADMIN)
+    mockRequireManager.mockResolvedValue(ADMIN)
     mockUserFindMany.mockResolvedValue([
       { id: 'u1', username: 'ali', displayName: 'علي' },
       { id: 'u2', username: 'sara', displayName: null },
@@ -176,7 +177,7 @@ describe('POST /api/admin/notifications/send — happy path', () => {
 describe('POST /api/admin/notifications/send — validation failure', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockRequireAdmin.mockResolvedValue(ADMIN)
+    mockRequireManager.mockResolvedValue(ADMIN)
     mockUserFindMany.mockResolvedValue([{ id: 'u1', username: 'ali', displayName: null }])
     mockSend.mockResolvedValue({ created: 1, skipped: 0, queued: 0 })
   })
@@ -247,7 +248,7 @@ describe('POST /api/admin/notifications/send — auth failure', () => {
   })
 
   it('returns 401 when the caller is not signed in', async () => {
-    mockRequireAdmin.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
+    mockRequireManager.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
 
     const res = await post({ ...BASE, target: 'all' })
     const json = await res.json()
@@ -258,9 +259,9 @@ describe('POST /api/admin/notifications/send — auth failure', () => {
     expect(mockUserFindMany).not.toHaveBeenCalled()
   })
 
-  it('returns 403 when the caller is not an admin', async () => {
-    mockRequireAdmin.mockRejectedValue(
-      Object.assign(new Error('Forbidden — admin access required'), { status: 403 }),
+  it('returns 403 when the caller is not a manager', async () => {
+    mockRequireManager.mockRejectedValue(
+      Object.assign(new Error('Forbidden — manager access required'), { status: 403 }),
     )
 
     const res = await post({ ...BASE, target: 'all' })
@@ -274,7 +275,7 @@ describe('POST /api/admin/notifications/send — auth failure', () => {
 describe('POST /api/admin/notifications/send — unexpected failure', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockRequireAdmin.mockResolvedValue(ADMIN)
+    mockRequireManager.mockResolvedValue(ADMIN)
     mockUserFindMany.mockResolvedValue([{ id: 'u1', username: 'ali', displayName: null }])
   })
 

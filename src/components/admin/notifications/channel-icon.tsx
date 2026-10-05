@@ -1,7 +1,7 @@
 'use client'
 
-import { Bell, Mail, MessageSquare, type LucideIcon, Send } from 'lucide-react'
-import { isAdminChannel, type AdminChannel } from '@/lib/notifications/admin-labels'
+import { Bell, type LucideIcon, Mail, MessageSquare, Send } from 'lucide-react'
+import { type AdminChannel, isAdminChannel } from '@/lib/notifications/admin-labels'
 
 /**
  * Channel → icon. The health page used to render a `Mail` glyph for every
@@ -16,13 +16,7 @@ const CHANNEL_ICONS: Record<AdminChannel, LucideIcon> = {
   telegram: Send,
 }
 
-export function ChannelIcon({
-  channel,
-  className,
-}: {
-  channel: string
-  className?: string
-}) {
+export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
   const Icon = isAdminChannel(channel) ? CHANNEL_ICONS[channel] : MessageSquare
   return <Icon aria-hidden="true" className={className} />
 }

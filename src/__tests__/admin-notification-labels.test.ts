@@ -2,12 +2,8 @@ import {
   AR_LOCALE,
   CHANNEL_LABELS,
   CHANNEL_ORDER,
-  DELIVERY_STATUS,
-  JOB_STATUS,
-  NOT_AVAILABLE_LABEL,
-  SCHEDULER_STATUS,
-  UNKNOWN_CHANNEL_LABEL,
   channelLabel,
+  DELIVERY_STATUS,
   formatArDate,
   formatArDateTime,
   formatArNumber,
@@ -15,9 +11,13 @@ import {
   formatPercent,
   growthPercent,
   isAdminChannel,
+  JOB_STATUS,
+  NOT_AVAILABLE_LABEL,
   percentOrNotAvailable,
+  SCHEDULER_STATUS,
   statusMeta,
   toDateInputValue,
+  UNKNOWN_CHANNEL_LABEL,
 } from '@/lib/notifications/admin-labels'
 
 /**

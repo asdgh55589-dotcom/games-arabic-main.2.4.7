@@ -474,8 +474,8 @@ describe('POST /api/admin/templates/[id]/preview', () => {
     expect(data.error.code).toBe('NOT_FOUND')
   })
 
-  it('should return 500 (not 403) when the caller is not a manager — known gap', async () => {
-    // catch في preview لا يفحص `status`، فخطأ المصادقة يصل 500.
+  it('should return 403 (not 500) when the caller is not a manager', async () => {
+    // P3: catch في preview يفحص `status` — forbidden لا ينقلب إلى 500.
     mockRequireManager.mockRejectedValueOnce(
       Object.assign(new Error('Forbidden — manager access required'), { status: 403 }),
     )
@@ -483,12 +483,12 @@ describe('POST /api/admin/templates/[id]/preview', () => {
     const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
     const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(403)
     // لا يُقرأ القالب ولا يُصرَّف قبل التحقق من الصلاحية
     expect(mockDb.notificationTemplate.findUnique).not.toHaveBeenCalled()
   })
 
-  it('should return 500 (not 401) when the caller is not signed in — known gap', async () => {
+  it('should return 401 (not 500) when the caller is not signed in', async () => {
     mockRequireManager.mockRejectedValueOnce(
       Object.assign(new Error('Unauthorized'), { status: 401 }),
     )
@@ -496,7 +496,7 @@ describe('POST /api/admin/templates/[id]/preview', () => {
     const req = makeReq('http://localhost/api/admin/templates/tpl-1/preview', 'POST', {})
     const res = await previewPOST(req, { params: Promise.resolve({ id: 'tpl-1' }) })
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(401)
     expect(mockDb.notificationTemplate.findUnique).not.toHaveBeenCalled()
   })
 

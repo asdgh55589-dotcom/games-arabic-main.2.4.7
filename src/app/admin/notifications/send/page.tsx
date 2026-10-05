@@ -1,18 +1,9 @@
 'use client'
 
+import { Loader2, Send, UserCheck, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Loader2, Send, UserCheck, Users, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { CHANNEL_ORDER, channelLabel, formatArNumber } from '@/lib/notifications/admin-labels'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
@@ -60,9 +60,7 @@ export default function SendNotificationPage() {
 
   const toggleUser = (user: PickedUser) => {
     setSelectedUsers((prev) =>
-      prev.some((u) => u.id === user.id)
-        ? prev.filter((u) => u.id !== user.id)
-        : [...prev, user],
+      prev.some((u) => u.id === user.id) ? prev.filter((u) => u.id !== user.id) : [...prev, user],
     )
   }
 
@@ -113,21 +111,18 @@ export default function SendNotificationPage() {
 
   const validation = validateSendForm({ type, title, message, channels, target, selectedUsers })
 
-  const sendToRecipients = useCallback(
-    async (body: SendPayload) => {
-      const res = await fetch('/api/admin/notifications/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const detail = await readError(res)
-        throw new Error(detail)
-      }
-      return parseSendResult(await res.json())
-    },
-    [],
-  )
+  const sendToRecipients = useCallback(async (body: SendPayload) => {
+    const res = await fetch('/api/admin/notifications/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const detail = await readError(res)
+      throw new Error(detail)
+    }
+    return parseSendResult(await res.json())
+  }, [])
 
   const confirmSend = async () => {
     setSending(true)
@@ -305,7 +300,11 @@ export default function SendNotificationPage() {
                   placeholder="اسم المستخدم أو البريد"
                 />
               </div>
-              <div className="max-h-56 overflow-y-auto rounded-md border" role="listbox" aria-label="نتائج البحث">
+              <div
+                className="max-h-56 overflow-y-auto rounded-md border"
+                role="listbox"
+                aria-label="نتائج البحث"
+              >
                 {searching ? (
                   <p className="p-3 text-sm text-muted-foreground">جارٍ البحث…</p>
                 ) : results.length === 0 ? (
@@ -357,13 +356,11 @@ export default function SendNotificationPage() {
           )}
 
           <p className="text-sm text-muted-foreground" aria-live="polite">
-            {estimating ? (
-              'جارٍ تقدير عدد المستقبِلين…'
-            ) : recipientCount == null ? (
-              'عدد المستقبِلين غير متاح'
-            ) : (
-              `عدد المستقبِلين التقريبي: ${formatArNumber(recipientCount)}`
-            )}
+            {estimating
+              ? 'جارٍ تقدير عدد المستقبِلين…'
+              : recipientCount == null
+                ? 'عدد المستقبِلين غير متاح'
+                : `عدد المستقبِلين التقريبي: ${formatArNumber(recipientCount)}`}
           </p>
 
           {validation && (
@@ -375,19 +372,16 @@ export default function SendNotificationPage() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={() => setConfirmOpen(true)}
-          disabled={Boolean(validation) || sending}
-        >
+        <Button onClick={() => setConfirmOpen(true)} disabled={Boolean(validation) || sending}>
           <Send className="h-4 w-4" />
           إرسال
         </Button>
-        <Button
-          variant="outline"
-          onClick={testToMe}
-          disabled={Boolean(validation) || testing}
-        >
-          {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+        <Button variant="outline" onClick={testToMe} disabled={Boolean(validation) || testing}>
+          {testing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UserCheck className="h-4 w-4" />
+          )}
           اختبار إلى نفسي
         </Button>
       </div>
@@ -396,9 +390,7 @@ export default function SendNotificationPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>تأكيد الإرسال</DialogTitle>
-            <DialogDescription>
-              راجع الإشعار والمستقبِلين قبل الإرسال النهائي.
-            </DialogDescription>
+            <DialogDescription>راجع الإشعار والمستقبِلين قبل الإرسال النهائي.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 rounded-md border p-4 text-sm">
             <div>
@@ -585,11 +577,7 @@ export function sentToast(result: SendResult): {
   }
 }
 
-function describeAudience(
-  target: Target,
-  role: string,
-  selectedUsers: PickedUser[],
-): string {
+function describeAudience(target: Target, role: string, selectedUsers: PickedUser[]): string {
   if (target === 'all') return 'كل المستخدمين'
   if (target === 'role') return ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role
   if (selectedUsers.length === 0) return 'لم يُختر أي مستخدم'

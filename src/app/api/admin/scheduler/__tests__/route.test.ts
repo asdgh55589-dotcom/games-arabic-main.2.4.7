@@ -5,8 +5,8 @@
  * PATCH (تعديل)، DELETE (إلغاء). يغطّي كلٌّ منها المسار السعيد وفشل المصادقة
  * وفشل التحقق.
  *
- * ملاحظة: `requireAdmin` يمرّ بـ `try/catch` بلا فحص `status`، فكل خطأ مصادقة
- * يصل كـ 500. السلوك موثّق كما هو.
+ * P3: `requireAdmin` صار يُترجَم خطأُه إلى 401/403 عبر `authErrorResponse`
+ * بدل ابتلاعه في catch العام كـ 500. الاختبارات هنا تثبّت هذا العقد الجديد.
  */
 
 jest.mock('@/lib/db', () => ({
@@ -403,18 +403,27 @@ describe('/api/admin/scheduler — auth failure', () => {
     ['POST', () => POST(req('http://localhost/api/admin/scheduler', 'POST', { type: 'x' }))],
     ['PATCH', () => PATCH(req('http://localhost/api/admin/scheduler', 'PATCH', { id: 'x' }))],
     ['DELETE', () => DELETE(req('http://localhost/api/admin/scheduler?id=x', 'DELETE'))],
-  ])('%s returns 500 (not 401/403) when the caller is not an admin', async (_label, run) => {
-    // catch لا يفحص `status` — 500 هو السلوك الفعلي، موثّق لا مُغطّى.
+  ])('%s returns 403 (not 500) when the caller is not an admin', async (_label, run) => {
+    // P3: AuthError 403 يُترجَم إلى forbidden() لا إلى catch العام.
     mockRequireAdmin.mockRejectedValue(
       Object.assign(new Error('Forbidden — admin access required'), { status: 403 }),
     )
 
     const res = await run()
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(403)
     expect(mockFindMany).not.toHaveBeenCalled()
     expect(mockCreate).not.toHaveBeenCalled()
     expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns 401 (not 500) when the caller is not signed in', async () => {
+    mockRequireAdmin.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
+
+    const res = await GET(req('http://localhost/api/admin/scheduler'))
+
+    expect(res.status).toBe(401)
+    expect(mockFindMany).not.toHaveBeenCalled()
   })
 })
 

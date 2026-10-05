@@ -14,10 +14,7 @@ import {
  * assertions below cover the controls that cannot be exercised without a DOM.
  */
 
-const PAGE = readFileSync(
-  join(process.cwd(), 'src/app/admin/notifications/send/page.tsx'),
-  'utf8',
-)
+const PAGE = readFileSync(join(process.cwd(), 'src/app/admin/notifications/send/page.tsx'), 'utf8')
 
 const VALID = {
   type: 'system_alert',
@@ -25,6 +22,7 @@ const VALID = {
   message: 'ستتوقف الخدمة قليلاً',
   channels: ['in_app'],
   target: 'all' as const,
+  role: 'member',
   selectedUsers: [] as { id: string; username: string; displayName: string | null }[],
 }
 
@@ -57,7 +55,7 @@ describe('send form validation', () => {
 
   it('blocks an empty title or message', () => {
     expect(validateSendForm({ ...VALID, title: '   ' })).toBe('العنوان مطلوب')
-    expect(validateSendForm({ ...VALID, message: '  ' })).toBe('الرسالة مطلوب')
+    expect(validateSendForm({ ...VALID, message: '  ' })).toBe('الرسالة مطلوبة')
   })
 
   it('blocks a send with no channel selected', () => {
