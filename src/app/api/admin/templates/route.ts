@@ -1,10 +1,18 @@
 import Handlebars from 'handlebars'
 import type { NextRequest } from 'next/server'
-import { internalError, ok, okPaginated, validationFail } from '@/lib/api-response'
+import {
+  conflict,
+  forbidden,
+  internalError,
+  ok,
+  okPaginated,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { CreateTemplateSchema, PaginationSchema } from '@/lib/schemas'
 import { logger } from '@/lib/logger'
+import { CreateTemplateSchema, PaginationSchema } from '@/lib/schemas'
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,6 +49,9 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
     })
   } catch (err) {
+    const status = (err as { status?: number })?.status
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — إدارة القوالب للمديرين فقط')
     logger.error('[admin/templates GET] failed:', err)
     return internalError('Failed to load templates')
   }
@@ -70,24 +81,17 @@ export async function POST(req: NextRequest) {
       return validationFail({ bodyTemplate: `خطأ في صيغة القالب: ${(e as Error).message}` })
     }
 
-    // Check for existing active template with same type+channel
+    // `@@unique([type, channel])` يسمح بصف واحد فقط لكل تركيبة، و`version` عدّاد على
+    // صف واحد — أي أن "سجل الإصدارات" مستحيل بنيوياً. الكتابة فوق القالب الموجود كانت
+    // تمحو محتوى الإنتاج بلا تأكيد ولا أثر، لذلك نرفض بـ 409 ويوجّه المستخدم للتعديل.
     const existing = await db.notificationTemplate.findUnique({
       where: { type_channel: { type, channel } },
     })
 
     if (existing) {
-      // Update existing
-      const updated = await db.notificationTemplate.update({
-        where: { type_channel: { type, channel } },
-        data: {
-          titleTemplate,
-          bodyTemplate,
-          variables,
-          isActive,
-          version: existing.version + 1,
-        },
-      })
-      return ok(updated)
+      return conflict(
+        'يوجد قالب بنفس نوع الإشعار والقناة بالفعل — عدّل القالب الموجود بدل إنشاء جديد',
+      )
     }
 
     const template = await db.notificationTemplate.create({
@@ -104,6 +108,16 @@ export async function POST(req: NextRequest) {
 
     return ok(template)
   } catch (err) {
+    const status = (err as { status?: number })?.status
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — إدارة القوالب للمديرين فقط')
+    // إغلاق نافذة السباق: طلبان متزامنان قد يتجاوزان فحص findUnique معاً،
+    // فيرمي Prisma قيد التفرّد — نُرجع نفس 409 بدل 500.
+    if ((err as Error)?.message?.includes('Unique constraint')) {
+      return conflict(
+        'يوجد قالب بنفس نوع الإشعار والقناة بالفعل — عدّل القالب الموجود بدل إنشاء جديد',
+      )
+    }
     logger.error('[admin/templates POST] failed:', err)
     return internalError('Failed to create template')
   }

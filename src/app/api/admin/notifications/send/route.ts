@@ -1,11 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  conflict,
-  forbidden,
-  internalError,
-  unauthorized,
-  validationFail,
-} from '@/lib/api-response'
+import { forbidden, internalError, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -60,7 +54,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    await sendNotification({
+    const result = await sendNotification({
       type: type || 'system_alert',
       title: title.trim(),
       message: message.trim(),
@@ -78,17 +72,33 @@ export async function POST(req: NextRequest) {
         target,
         role: role || null,
         recipientsCount: recipients.length,
+        createdCount: result.created,
+        skippedCount: result.skipped,
+        queuedCount: result.queued,
+        channels: effectiveChannels,
         title,
       }),
       request: req,
     })
 
-    return NextResponse.json({ data: { sent: recipients.length } })
+    // `sent` كان دائماً يساوي عدد المستلمين المطابقين، أي رقم لا علاقة له بما حدث فعلاً.
+    // نُرجع ما أنشئ وما تخطي وما بقي في الطابور بلا عامل معالجة.
+    return NextResponse.json({
+      data: {
+        created: result.created,
+        skipped: result.skipped,
+        queued: result.queued,
+        channels: effectiveChannels,
+      },
+    })
   } catch (error) {
     const status = (error as { status?: number })?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للإداريين فقط')
-    logger.error({ err: error, route: 'POST /api/admin/notifications/send' }, 'Failed to send notification')
+    logger.error(
+      { err: error, route: 'POST /api/admin/notifications/send' },
+      'Failed to send notification',
+    )
     return internalError('فشل إرسال الإشعار')
   }
 }

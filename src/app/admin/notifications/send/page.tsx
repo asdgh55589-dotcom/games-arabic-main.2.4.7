@@ -10,6 +10,26 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 
+/**
+ * قنوات الإرسال من لوحة الإدارة.
+ *
+ * `in_app` فقط هو قناة تعمل فعلياً: `sendNotification()` يكتب صف `Notification`
+ * لكل مستلم. أما `email` و`telegram` فغير موصولتين من طرف إلى طرف:
+ *  - `processNotificationQueue()` بلا أي مستدعٍ (لا cron ولا أمر).
+ *  - `processEmailJob()` دالة فارغة تُعلّم المهمة `sent` بلا إرسال.
+ *  - `processTelegramJob()` تعود مبكراً غالباً بلا إرسال.
+ *
+ * تفعيلها الآن يعني إنشاء مهام `pending` لا يقرأها أحد بينما الواجهة تقول "تم الإرسال",
+ * لذلك معطّلة حتى يصل عامل المعالجة والمرسل الحقيقي (P2).
+ */
+const CHANNEL_OPTIONS = [
+  { value: 'in_app', label: 'داخل التطبيق', enabled: true },
+  { value: 'email', label: 'بريد', enabled: false },
+  { value: 'telegram', label: 'Telegram', enabled: false },
+] as const
+
+const ENABLED_CHANNELS = CHANNEL_OPTIONS.filter((c) => c.enabled).map((c) => c.value)
+
 export default function SendNotificationPage() {
   const { toast } = useToast()
   const [target, setTarget] = useState<'all' | 'role' | 'users'>('all')
@@ -34,15 +54,38 @@ export default function SendNotificationPage() {
       return
     }
     setIsLoading(true)
+    // حماية إضافية: لا تُرسل إلا القنوات المفعّلة فعلياً حتى لو عُبّئت الحالة بطريقة ما
+    const selected = channels.filter((c) => (ENABLED_CHANNELS as readonly string[]).includes(c))
     try {
       const res = await fetch('/api/admin/notifications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target, role, type, title, message, channels }),
+        body: JSON.stringify({
+          target,
+          role,
+          type,
+          title,
+          message,
+          channels: selected.length > 0 ? selected : ['in_app'],
+        }),
       })
       const data = await res.json()
       if (res.ok) {
-        toast({ title: `تم إرسال الإشعار إلى ${data.data.sent} مستخدم` })
+        // `data.data.sent` كان يساوي عدد المستخدمين المطابقين فقط، وليس عدد ما
+        // أُنشئ. الآن نعرض الأرقام التي تعيدها الخدمة فعلياً.
+        const created = Number(data?.data?.created ?? 0)
+        const skipped = Number(data?.data?.skipped ?? 0)
+        const queued = Number(data?.data?.queued ?? 0)
+        toast({
+          title: `تم إنشاء الإشعار داخل التطبيق لـ ${created} مستخدم${
+            skipped > 0 ? ` (تم تخطي ${skipped} حسب التفضيلات)` : ''
+          }`,
+          description:
+            queued > 0
+              ? `${queued} إشعار بقي في قائمة الانتظار — قنوات البريد وTelegram غير مفعّلة ولا يوجد عامل إرسال.`
+              : undefined,
+          variant: queued > 0 ? 'destructive' : 'default',
+        })
         setTitle('')
         setMessage('')
       } else {
@@ -123,19 +166,35 @@ export default function SendNotificationPage() {
 
           <div>
             <Label>القنوات</Label>
-            <div className="mt-1 flex gap-2">
-              {(['in_app', 'email', 'telegram'] as const).map((c) => (
-                <label key={c} className="flex items-center gap-1.5 text-sm">
+            <div className="mt-1 flex flex-wrap gap-3">
+              {CHANNEL_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-center gap-1.5 text-sm ${
+                    option.enabled ? '' : 'text-muted-foreground'
+                  }`}
+                  title={option.enabled ? option.label : `${option.label} — معطلة مؤقتا`}
+                >
                   <input
                     type="checkbox"
-                    checked={channels.includes(c)}
-                    onChange={() => toggleChannel(c)}
+                    checked={option.enabled && channels.includes(option.value)}
+                    disabled={!option.enabled}
+                    onChange={() => toggleChannel(option.value)}
                     className="rounded"
                   />
-                  {c === 'in_app' ? 'داخل التطبيق' : c === 'email' ? 'بريد' : 'Telegram'}
+                  {option.label}
+                  {!option.enabled && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      معطلة مؤقتا
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              قناة البريد وTelegram معطلة مؤقتاً: لا يوجد عامل معالجة يقرأ المهام، لذا يُنشأ الإشعار
+              داخل التطبيق فقط.
+            </p>
           </div>
 
           <div>

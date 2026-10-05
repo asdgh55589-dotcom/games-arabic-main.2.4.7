@@ -10,12 +10,29 @@ import { renderNotificationContent } from './template-renderer'
 import { type NotificationChannel, type NotificationEvent, NotificationType } from './types'
 
 /**
+ * ملخص ما تم فعله فعلياً — يُرجع بدلاً من `void` حتى لا يظن المستدعي أن كل
+ * المستلمين استلموا الإشعار. `queued` يعني مهام أُنشئت ولا يوجد عامل يقرأها.
+ */
+export interface SendNotificationResult {
+  /** عدد إشعارات `Notification` التي أُنشئت فعلياً في قاعدة البيانات */
+  created: number
+  /** عدد المستلمين الذين لم يُنشأ لهم إشعار (كل القنوات مستبعدة بالتفضيلات) */
+  skipped: number
+  /** عدد مهام البريد/Telegram المنشأة في حالة `pending` بلا عامل معالجة */
+  queued: number
+}
+
+/**
  * إرسال إشعار عبر القنوات المتاحة
  */
-export async function sendNotification(event: NotificationEvent): Promise<void> {
+export async function sendNotification(event: NotificationEvent): Promise<SendNotificationResult> {
   console.log(
     `[notification-service] Sending ${event.type} to ${event.recipients.length} recipients`,
   )
+
+  let created = 0
+  let skipped = 0
+  let queued = 0
 
   for (const recipient of event.recipients) {
     // Check user preferences
@@ -37,7 +54,10 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
       }
     }
 
-    if (channels.length === 0) continue
+    if (channels.length === 0) {
+      skipped++
+      continue
+    }
 
     // بناء متغيرات القالب
     const variables: Record<string, unknown> = {
@@ -75,6 +95,7 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
         actorAvatarUrl: event.actorAvatarUrl || null,
       },
     })
+    created++
 
     // إنشاء مهمة لكل قناة مرتبطة بنفس الإشعار
     for (const channel of channels) {
@@ -96,6 +117,8 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
           },
         })
       } else {
+        // لا يوجد عامل معالجة يستهلك هذه المهام حالياً (processNotificationQueue بلا مستدعٍ)،
+        // لذلك تُعدّ `queued` ولا تُعدّ توصيلاً.
         await db.notificationJob.create({
           data: {
             notificationId: notification.id,
@@ -103,9 +126,12 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
             status: 'pending',
           },
         })
+        queued++
       }
     }
   }
+
+  return { created, skipped, queued }
 }
 
 /**
