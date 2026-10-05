@@ -3,7 +3,7 @@
 // المفتاح (key) هو ما يُحفظ في StaffPageAccess وفي claim الـ JWT.
 // client + Edge safe (بدون أي import سيرفر).
 
-export type StaffMinRole = 'moderator' | 'admin' | 'owner'
+export type StaffMinRole = 'moderator' | 'admin' | 'manager' | 'owner'
 
 export interface AdminPageDef {
   /** مفتاح ثابت يُحفظ في DB والكوكي (مثل mods) */
@@ -75,10 +75,12 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
     pages: [
       p('/admin/search', 'بحث متقدم', 'admin'),
       p('/admin/api-keys', 'مفاتيح API', 'admin'),
-      p('/admin/templates', 'قوالب الإشعارات', 'admin'),
-      p('/admin/notifications/send', 'إرسال إشعار', 'admin'),
+      // P3: هذه الثلاث requireManager — كانت minRole 'admin' فتُعرض (وتُمنح)
+      // لرتبة يرفضها الـ API. الارتفاع إلى manager لا يمنح أحداً صلاحية جديدة.
+      p('/admin/templates', 'قوالب الإشعارات', 'manager'),
+      p('/admin/notifications/send', 'إرسال إشعار', 'manager'),
       p('/admin/notifications/analytics', 'تحليلات الإشعارات', 'admin'),
-      p('/admin/notifications-health', 'صحة الإشعارات', 'admin'),
+      p('/admin/notifications-health', 'صحة الإشعارات', 'manager'),
       p('/admin/notifications/history', 'سجل الإشعارات', 'admin'),
       p('/admin/sessions', 'الجلسات النشطة', 'admin'),
       p('/admin/scheduler', 'الجدولة', 'admin'),
