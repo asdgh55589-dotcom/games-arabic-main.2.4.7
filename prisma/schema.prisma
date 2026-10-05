@@ -1077,6 +1077,7 @@ model NotificationPreference {
   quietHoursEnabled   Boolean  @default(false) @map("quiet_hours_enabled")
   quietHoursStart     String?  @map("quiet_hours_start") // "23:00" format
   quietHoursEnd       String?  @map("quiet_hours_end") // "07:00" format
+  timezone            String? // IANA zone (مثال "Asia/Riyadh") — ساعات الهدوء تُحسب بها، لا بتوقيت الخادم
   typePreferences     Json     @default("{}") @map("type_preferences") // Record<NotificationType, TypePreference>
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -1109,7 +1110,7 @@ model NotificationJob {
   id             String    @id @default(cuid())
   notificationId String    @map("notification_id")
   channel        String // in_app, email, telegram
-  status         String    @default("pending") // pending, processing, sent, failed, dead_letter
+  status         String    @default("pending") // pending, processing, sent, skipped, failed, dead_letter
   attempts       Int       @default(0)
   maxAttempts    Int       @default(5) @map("max_attempts")
   lastError      String?   @map("last_error")

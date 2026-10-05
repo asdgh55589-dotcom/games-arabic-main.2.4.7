@@ -78,4 +78,9 @@ export interface NotificationEvent {
   // Actor info
   actorUsername?: string
   actorAvatarUrl?: string
+  /**
+   * تجاوز منع التكرار لهذا الحدث (لرسائل لا يجوز أن تضيع مثل تنبيه إداري
+   * متعدد الأحداث). الافتراضي: تُطبَّق نافذة النوع من سياسة domain.
+   */
+  skipDeduplication?: boolean
 }
