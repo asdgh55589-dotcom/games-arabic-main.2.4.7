@@ -26,6 +26,7 @@ export class PrismaPreferenceRepository implements PreferenceRepository {
       quietHoursEnabled: record.quietHoursEnabled,
       quietHoursStart: record.quietHoursStart,
       quietHoursEnd: record.quietHoursEnd,
+      timezone: record.timezone,
       typePreferences: parseTypePreferences(record.typePreferences),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -45,6 +46,7 @@ export class PrismaPreferenceRepository implements PreferenceRepository {
         quietHoursEnabled: preference.quietHoursEnabled,
         quietHoursStart: preference.quietHoursStart,
         quietHoursEnd: preference.quietHoursEnd,
+        timezone: preference.timezone,
         typePreferences: preference.typePreferences as unknown as Prisma.InputJsonValue,
       },
       update: {
@@ -56,6 +58,7 @@ export class PrismaPreferenceRepository implements PreferenceRepository {
         quietHoursEnabled: preference.quietHoursEnabled,
         quietHoursStart: preference.quietHoursStart,
         quietHoursEnd: preference.quietHoursEnd,
+        timezone: preference.timezone,
         typePreferences: preference.typePreferences as unknown as Prisma.InputJsonValue,
       },
     })
@@ -70,6 +73,7 @@ export class PrismaPreferenceRepository implements PreferenceRepository {
       quietHoursEnabled: record.quietHoursEnabled,
       quietHoursStart: record.quietHoursStart,
       quietHoursEnd: record.quietHoursEnd,
+      timezone: record.timezone,
       typePreferences: parseTypePreferences(record.typePreferences),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

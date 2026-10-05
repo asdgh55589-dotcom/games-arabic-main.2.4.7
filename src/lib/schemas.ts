@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { isValidTimezone } from '@/domain/policies/quiet-hours'
 import { isAllowedDownloadUrl } from '@/lib/constants'
 
 // ===== Common Schemas =====
@@ -483,6 +484,18 @@ export const UpdatePreferencesSchema = z
     quietHoursEnd: z
       .string()
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
+    // المنطقة الزمنية IANA (مثل "Asia/Riyadh") التي تُحسب بها ساعات
+    // الهدوء — لا بتوقيت الخادم. القيمة الفارغة/null تعني: بلا منطقة
+    // صريحة ⇒ يُعامَل كـ UTC (سلوك الخادم القديم).
+    timezone: z
+      .string()
+      .trim()
+      .max(64)
+      .refine((value) => value.length === 0 || isValidTimezone(value), {
+        message: 'المنطقة الزمنية غير صالحة',
+      })
       .nullable()
       .optional(),
     typePreferences: z

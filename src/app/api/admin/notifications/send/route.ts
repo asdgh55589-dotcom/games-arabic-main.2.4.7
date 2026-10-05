@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
         createdCount: result.created,
         skippedCount: result.skipped,
         queuedCount: result.queued,
+        deduplicatedCount: result.deduplicated,
         channels: effectiveChannels,
         title,
       }),
@@ -82,12 +83,14 @@ export async function POST(req: NextRequest) {
     })
 
     // `sent` كان دائماً يساوي عدد المستلمين المطابقين، أي رقم لا علاقة له بما حدث فعلاً.
-    // نُرجع ما أنشئ وما تخطي وما بقي في الطابور بلا عامل معالجة.
+    // نُرجع ما أُنشئ وما تخطّي وما دخل الطابور بانتظار عامل التصريف (cron)
+    // وما استبعدته نافذة منع التكرار.
     return NextResponse.json({
       data: {
         created: result.created,
         skipped: result.skipped,
         queued: result.queued,
+        deduplicated: result.deduplicated,
         channels: effectiveChannels,
       },
     })

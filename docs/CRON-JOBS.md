@@ -1,6 +1,6 @@
 # Cron Jobs
 
-> Last updated: 2026-09-13
+> Last updated: 2026-10-05
 
 All cron endpoints are protected with Bearer token authentication via `$CRON_SECRET`.
 
@@ -12,6 +12,14 @@ All cron endpoints are protected with Bearer token authentication via `$CRON_SEC
 | promote-tiers | `/api/cron/promote-tiers` | `0 3 1 * *` (1st of month, 03:00) | `Bearer $CRON_SECRET` | 10 min | 1 retry, 5 min delay | Alert admin + manual review |
 | backup-cleanup | `/api/cron/backup-cleanup` | `0 4 * * *` (Daily 04:00) | `Bearer $CRON_SECRET` | 5 min | 1 retry, 5 min delay | Alert + keep existing backups |
 | weekly-backup | `/api/cron/weekly-backup` | `0 1 * * 0` (Sun 01:00) | `Bearer $CRON_SECRET` | 15 min | 1 retry, 5 min delay | Alert + trigger manual backup |
+| notification-drain | `/api/cron/notification-drain` | `* * * * *` (Every minute) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batches) | Exponential backoff per job, `maxAttempts = 5` | `dead_letter` → visible in `/admin/notifications-health` |
+
+> **Scheduling note (P2):** there is no `vercel.json` in this repository, so the
+> `notification-drain` schedule above is a **suggested** cron entry, not an
+> installed one. Add it to whichever scheduler fronts the deployment (Vercel
+> `crons`, cron-job.org, …). Cadence matters more than precision: each run takes
+> a bounded batch and returns a `nextCursor`, so an unfinished backlog resumes
+> on the next tick instead of being re-scanned.
 
 ## Invocation
 
@@ -57,6 +65,32 @@ Removes old backups exceeding retention limits (7 daily, 4 weekly, 12 monthly) f
 ```
 
 Runs `pg_dump --format=custom` against the database, optionally uploads to S3, and enforces 4-dump retention.
+
+### notification-drain
+
+```json
+{
+  "data": {
+    "scanned": 18, "processed": 18, "sent": 12, "retried": 2,
+    "deferred": 3, "skipped": 1, "deadLettered": 0,
+    "hasMore": true, "nextCursor": "1770000000000:cmh000abc",
+    "batches": 2, "durationMs": 4910,
+    "resume": "/api/cron/notification-drain?cursor=1770000000000%3Acmh000abc"
+  }
+}
+```
+
+Consumes `NotificationJob` rows (`email` + `telegram`, both the legacy
+`lib/notifications` writer and the clean-arch `PrismaJobQueue`):
+
+- **deferred** — quiet hours are active in the recipient's timezone; the job is
+  rescheduled to the end of that window (nothing is dropped).
+- **skipped** — no deliverable target (disabled preference, synthetic Telegram
+  address, no linked chat).
+- **retried** — provider/network failure; `scheduledFor` moves out by
+  60 s → 2 min → 4 min → 8 min, then `dead_letter`.
+- Every attempt is written to `NotificationLog`; its `id` is the `requestId` of
+  the email and the tracking-pixel/`click` id (`/api/notifications/track`).
 
 ## Monitoring
 
