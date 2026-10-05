@@ -1,177 +1,520 @@
 'use client'
 
-import { Loader2, Send } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Loader2, Send, UserCheck, Users, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { CHANNEL_ORDER, channelLabel, formatArNumber } from '@/lib/notifications/admin-labels'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
+import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
+
+type Target = 'all' | 'role' | 'users'
 
 export default function SendNotificationPage() {
   const { toast } = useToast()
-  const [target, setTarget] = useState<'all' | 'role' | 'users'>('all')
-  const [role, setRole] = useState('member')
   const [type, setType] = useState('system_alert')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [channels, setChannels] = useState<string[]>(['in_app'])
-  const [isLoading, setIsLoading] = useState(false)
+  const [target, setTarget] = useState<Target>('all')
+  const [role, setRole] = useState<string>('member')
+  const [selectedUsers, setSelectedUsers] = useState<PickedUser[]>([])
+  const [search, setSearch] = useState('')
+  const [results, setResults] = useState<PickedUser[]>([])
+  const [searching, setSearching] = useState(false)
+  const [estimate, setEstimate] = useState<number | null>(null)
+  const [estimating, setEstimating] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [testing, setTesting] = useState(false)
 
-  const toggleChannel = (c: string) => {
-    setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
+  const recipientCount = useMemo(
+    () => resolveRecipientCount(target, selectedUsers, estimate),
+    [target, selectedUsers, estimate],
+  )
+
+  const toggleChannel = (channel: string) => {
+    setChannels((prev) =>
+      prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel],
+    )
   }
 
-  const handleSend = async () => {
-    if (!title.trim() || !message.trim()) {
-      toast({ title: 'العنوان والرسالة مطلوبان', variant: 'destructive' })
+  const toggleUser = (user: PickedUser) => {
+    setSelectedUsers((prev) =>
+      prev.some((u) => u.id === user.id)
+        ? prev.filter((u) => u.id !== user.id)
+        : [...prev, user],
+    )
+  }
+
+  // Recipient estimate for the broad targets. The send route resolves real
+  // recipients at POST time, so this is a count for confirmation, not a promise.
+  useEffect(() => {
+    if (target === 'users') {
+      setEstimate(null)
       return
     }
-    if (channels.length === 0) {
-      toast({ title: 'اختر قناة واحدة على الأقل', variant: 'destructive' })
-      return
+    let cancelled = false
+    setEstimating(true)
+    const params = new URLSearchParams({ page: '1', limit: '1', banned: 'active' })
+    if (target === 'role') params.set('role', role)
+    fetch(`/api/admin/users?${params}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (cancelled) return
+        setEstimate(body?.pagination?.total ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setEstimate(null)
+      })
+      .finally(() => {
+        if (!cancelled) setEstimating(false)
+      })
+    return () => {
+      cancelled = true
     }
-    setIsLoading(true)
-    try {
+  }, [target, role])
+
+  // Debounced user search for the target picker.
+  useEffect(() => {
+    if (target !== 'users') return
+    const term = search.trim()
+    const handle = setTimeout(() => {
+      setSearching(true)
+      const params = new URLSearchParams({ page: '1', limit: '20' })
+      if (term) params.set('search', term)
+      fetch(`/api/admin/users?${params}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((body) => setResults(body?.data ?? []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false))
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [search, target])
+
+  const validation = validateSendForm({ type, title, message, channels, target, selectedUsers })
+
+  const sendToRecipients = useCallback(
+    async (body: SendPayload) => {
       const res = await fetch('/api/admin/notifications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target, role, type, title, message, channels }),
+        body: JSON.stringify(body),
       })
-      const data = await res.json()
-      if (res.ok) {
-        toast({ title: `تم إرسال الإشعار إلى ${data.data.sent} مستخدم` })
-        setTitle('')
-        setMessage('')
-      } else {
-        const errBody = (data as { error?: string | { message?: string } })?.error
-        toast({
-          title: (typeof errBody === 'string' ? errBody : errBody?.message) || 'فشل الإرسال',
-          variant: 'destructive',
-        })
+      if (!res.ok) {
+        const detail = await readError(res)
+        throw new Error(detail)
       }
-    } catch {
-      toast({ title: 'خطأ في الاتصال', variant: 'destructive' })
+      return (await res.json()) as { data?: { sent?: number } }
+    },
+    [],
+  )
+
+  const confirmSend = async () => {
+    setSending(true)
+    try {
+      const result = await sendToRecipients(buildSendPayload({ type, title, message, channels, target, role, selectedUsers }))
+      const sent = result.data?.sent
+      setConfirmOpen(false)
+      toast({
+        title: 'تم الإرسال',
+        description:
+          sent != null ? `وصل الإشعار إلى ${formatArNumber(sent)} مستخدم` : 'تم إرسال الإشعار',
+      })
+      setTitle('')
+      setMessage('')
+    } catch (err) {
+      toast({ title: 'تعذّر الإرسال', description: err instanceof Error ? err.message : undefined, variant: 'destructive' })
     } finally {
-      setIsLoading(false)
+      setSending(false)
+    }
+  }
+
+  /**
+   * Test-to-me: delivers to the signed-in admin only, so an operator can check
+   * rendering per channel without touching real users. Uses the send route's
+   * `users` target with the current identity from /api/auth/me.
+   */
+  const testToMe = async () => {
+    setTesting(true)
+    try {
+      const meRes = await fetch('/api/auth/me')
+      const meBody = meRes.ok ? await meRes.json() : null
+      const meId = meBody?.data?.user?.id as string | undefined
+      if (!meId) throw new Error('تعذّر تحديد حسابك الحالي')
+      const result = await sendToRecipients({
+        type,
+        title: title.trim() || 'إشعار تجريبي',
+        message: message.trim() || 'هذا إشعار تجريبي أُرسل إلى حسابك فقط.',
+        channels,
+        target: 'users',
+        userIds: [meId],
+      })
+      const sent = result.data?.sent
+      toast({ title: 'تم الإرسال', description: sent ? 'وصل الإشعار التجريبي إلى حسابك' : 'تم إرسال الإشعار التجريبي' })
+    } catch (err) {
+      toast({ title: 'تعذّر الإرسال', description: err instanceof Error ? err.message : undefined, variant: 'destructive' })
+    } finally {
+      setTesting(false)
     }
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 py-6" dir="rtl">
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10">
-          <Send className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">إرسال إشعار يدوي</h1>
-          <p className="text-sm text-muted-foreground">إرسال إشعار جماعي للمستخدمين</p>
-        </div>
-      </div>
+    <div className="space-y-6" dir="rtl">
+      <h1 className="text-2xl font-bold">إرسال إشعار</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">تفاصيل الإشعار</CardTitle>
+          <CardTitle>محتوى الإشعار</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>المستلمون</Label>
-            <select
-              value={target}
-              onChange={(e) => setTarget(e.target.value as never)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              <option value="all">جميع المستخدمين</option>
-              <option value="role">رتبة محددة</option>
-            </select>
+          <div className="space-y-2">
+            <Label htmlFor="type">النوع</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(NOTIFICATION_TYPE_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {target === 'role' && (
-            <div>
-              <Label>الرتبة</Label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              >
-                <option value="member">عضو</option>
-                <option value="creator">مُعَرِّب</option>
-                <option value="publisher">ناشر</option>
-                <option value="moderator">مشرف</option>
-                <option value="admin">مسؤول</option>
-                <option value="manager">مدير</option>
-              </select>
-            </div>
-          )}
-
-          <div>
-            <Label>نوع الإشعار</Label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              {Object.entries(NOTIFICATION_TYPE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label as string}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <Label>القنوات</Label>
-            <div className="mt-1 flex gap-2">
-              {(['in_app', 'email', 'telegram'] as const).map((c) => (
-                <label key={c} className="flex items-center gap-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={channels.includes(c)}
-                    onChange={() => toggleChannel(c)}
-                    className="rounded"
-                  />
-                  {c === 'in_app' ? 'داخل التطبيق' : c === 'email' ? 'بريد' : 'Telegram'}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label>العنوان</Label>
+          <div className="space-y-2">
+            <Label htmlFor="title">العنوان</Label>
             <Input
+              id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="عنوان الإشعار"
-              className="mt-1"
             />
           </div>
 
-          <div>
-            <Label>الرسالة</Label>
+          <div className="space-y-2">
+            <Label htmlFor="message">الرسالة</Label>
             <Textarea
+              id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
-              placeholder="نص الإشعار..."
-              className="mt-1"
+              placeholder="نص الإشعار"
             />
           </div>
 
-          <Button onClick={handleSend} disabled={isLoading} className="w-full min-h-[44px]">
-            {isLoading ? (
-              <>
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الإرسال...
-              </>
-            ) : (
-              <>
-                <Send className="ml-2 h-4 w-4" /> إرسال الإشعار
-              </>
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Label>القنوات</Label>
+            <div className="flex flex-wrap gap-2">
+              {CHANNEL_ORDER.map((channel) => (
+                <Button
+                  key={channel}
+                  type="button"
+                  size="sm"
+                  variant={channels.includes(channel) ? 'default' : 'outline'}
+                  aria-pressed={channels.includes(channel)}
+                  onClick={() => toggleChannel(channel)}
+                >
+                  {channelLabel(channel)}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>المستقبِلون</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="target">الجمهور</Label>
+            <Select value={target} onValueChange={(v) => setTarget(v as Target)}>
+              <SelectTrigger id="target">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المستخدمين</SelectItem>
+                <SelectItem value="role">حسب الدور</SelectItem>
+                <SelectItem value="users">مستخدمون محددون</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {target === 'role' && (
+            <div className="space-y-2">
+              <Label htmlFor="role">الدور</Label>
+              {/* Sourced from the canonical role list so `owner` is selectable. */}
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger id="role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_ORDER.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {target === 'users' && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="user-search">البحث عن مستخدم</Label>
+                <Input
+                  id="user-search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="اسم المستخدم أو البريد"
+                />
+              </div>
+              <div className="max-h-56 overflow-y-auto rounded-md border" role="listbox" aria-label="نتائج البحث">
+                {searching ? (
+                  <p className="p-3 text-sm text-muted-foreground">جارٍ البحث…</p>
+                ) : results.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">لا توجد نتائج</p>
+                ) : (
+                  results.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedUsers.some((u) => u.id === user.id)}
+                      onClick={() => toggleUser(user)}
+                      className="flex w-full items-center justify-between p-3 text-right text-sm hover:bg-muted"
+                    >
+                      <span>
+                        <span className="font-medium">{user.displayName || user.username}</span>
+                        <span className="text-muted-foreground"> @{user.username}</span>
+                      </span>
+                      {selectedUsers.some((u) => u.id === user.id) ? (
+                        <UserCheck className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+              {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedUsers.map((user) => (
+                    <span
+                      key={user.id}
+                      className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs"
+                    >
+                      {user.displayName || user.username}
+                      <button
+                        type="button"
+                        onClick={() => toggleUser(user)}
+                        aria-label={`إزالة ${user.displayName || user.username}`}
+                        className="hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {estimating ? (
+              'جارٍ تقدير عدد المستقبِلين…'
+            ) : recipientCount == null ? (
+              'عدد المستقبِلين غير متاح'
+            ) : (
+              `عدد المستقبِلين التقريبي: ${formatArNumber(recipientCount)}`
+            )}
+          </p>
+
+          {validation && (
+            <p className="text-sm text-destructive" role="alert">
+              {validation}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={() => setConfirmOpen(true)}
+          disabled={Boolean(validation) || sending}
+        >
+          <Send className="h-4 w-4" />
+          إرسال
+        </Button>
+        <Button
+          variant="outline"
+          onClick={testToMe}
+          disabled={Boolean(validation) || testing}
+        >
+          {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+          اختبار إلى نفسي
+        </Button>
+      </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تأكيد الإرسال</DialogTitle>
+            <DialogDescription>
+              راجع الإشعار والمستقبِلين قبل الإرسال النهائي.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 rounded-md border p-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">النوع: </span>
+              {NOTIFICATION_TYPE_LABELS[type] ?? type}
+            </div>
+            <div>
+              <span className="text-muted-foreground">العنوان: </span>
+              {title.trim() || '—'}
+            </div>
+            <div>
+              <span className="text-muted-foreground">الرسالة: </span>
+              <span className="whitespace-pre-wrap">{message.trim() || '—'}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">القنوات: </span>
+              {channels.map((c) => channelLabel(c)).join('، ')}
+            </div>
+            <div>
+              <span className="text-muted-foreground">الجمهور: </span>
+              {describeAudience(target, role, selectedUsers)}
+            </div>
+            <div>
+              <span className="text-muted-foreground">عدد المستقبِلين: </span>
+              {recipientCount == null ? 'غير متاح' : formatArNumber(recipientCount)}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>
+              إلغاء
+            </Button>
+            <Button onClick={confirmSend} disabled={sending}>
+              {sending && <Loader2 className="h-4 w-4 animate-spin" />}
+              تأكيد الإرسال
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+interface PickedUser {
+  id: string
+  username: string
+  displayName: string | null
+}
+
+interface SendPayload {
+  type: string
+  title: string
+  message: string
+  channels: string[]
+  target: Target
+  role?: string
+  userIds?: string[]
+}
+
+/**
+ * Exact for the `users` target (we hold the ids), an estimate for the broad
+ * targets (the send route re-resolves real recipients at POST time).
+ * Returns null when no estimate is available yet so the UI can say so rather
+ * than implying zero recipients.
+ */
+export function resolveRecipientCount(
+  target: Target,
+  selectedUsers: PickedUser[],
+  estimate: number | null,
+): number | null {
+  if (target === 'users') return selectedUsers.length
+  return estimate
+}
+
+/** Blocking problems that must stop the send button. Returns null when valid. */
+export function validateSendForm(form: {
+  type: string
+  title: string
+  message: string
+  channels: string[]
+  target: Target
+  selectedUsers: PickedUser[]
+}): string | null {
+  if (!form.title.trim()) return 'العنوان مطلوب'
+  if (!form.message.trim()) return 'الرسالة مطلوبة'
+  if (form.channels.length === 0) return 'اختر قناة واحدة على الأقل'
+  if (form.target === 'users' && form.selectedUsers.length === 0) {
+    return 'اختر مستخدمًا واحدًا على الأقل'
+  }
+  return null
+}
+
+export function buildSendPayload(form: {
+  type: string
+  title: string
+  message: string
+  channels: string[]
+  target: Target
+  role: string
+  selectedUsers: PickedUser[]
+}): SendPayload {
+  const base = {
+    type: form.type,
+    title: form.title.trim(),
+    message: form.message.trim(),
+    channels: form.channels,
+    target: form.target,
+  }
+  if (form.target === 'role') return { ...base, role: form.role }
+  if (form.target === 'users') return { ...base, userIds: form.selectedUsers.map((u) => u.id) }
+  return base
+}
+
+function describeAudience(
+  target: Target,
+  role: string,
+  selectedUsers: PickedUser[],
+): string {
+  if (target === 'all') return 'كل المستخدمين'
+  if (target === 'role') return ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role
+  if (selectedUsers.length === 0) return 'لم يُختر أي مستخدم'
+  return `${formatArNumber(selectedUsers.length)} مستخدم محدد`
+}
+
+async function readError(res: Response): Promise<string> {
+  try {
+    const body = await res.json()
+    return body?.error || body?.message || `فشل الإرسال (${res.status})`
+  } catch {
+    return `فشل الإرسال (${res.status})`
+  }
 }
