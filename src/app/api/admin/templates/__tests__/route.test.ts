@@ -22,10 +22,13 @@ jest.mock('@/lib/auth', () => ({
 }))
 
 import { NextRequest } from 'next/server'
+import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { POST as previewPOST } from '../[id]/preview/route'
 import { DELETE, PUT } from '../[id]/route'
 import { GET, POST } from '../route'
+
+const mockRequireManager = requireManager as jest.Mock
 
 const mockDb = db as unknown as {
   notificationTemplate: {
@@ -132,18 +135,12 @@ describe('POST /api/admin/templates', () => {
     expect(mockDb.notificationTemplate.create).toHaveBeenCalled()
   })
 
-  it('should update existing template and increment version', async () => {
+  it('should return 409 Conflict and NOT overwrite when type+channel already exists', async () => {
     mockDb.notificationTemplate.findUnique.mockResolvedValue({
       id: 'existing-1',
       type: 'like',
       channel: 'email',
       version: 1,
-    })
-    mockDb.notificationTemplate.update.mockResolvedValue({
-      id: 'existing-1',
-      type: 'like',
-      channel: 'email',
-      version: 2,
     })
 
     const req = makeReq('http://localhost/api/admin/templates', 'POST', {
@@ -156,12 +153,50 @@ describe('POST /api/admin/templates', () => {
     const res = await POST(req)
     const data = await res.json()
 
-    expect(data.data.version).toBe(2)
-    expect(mockDb.notificationTemplate.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ version: 2 }),
-      }),
+    expect(res.status).toBe(409)
+    expect(data.error.code).toBe('CONFLICT')
+    // لا كتابة فوق قالب الإنتاج
+    expect(mockDb.notificationTemplate.update).not.toHaveBeenCalled()
+    expect(mockDb.notificationTemplate.create).not.toHaveBeenCalled()
+  })
+
+  it('should return 409 on unique-constraint race instead of 500', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue(null)
+    mockDb.notificationTemplate.create.mockRejectedValue(
+      new Error('Unique constraint failed on the fields: (`type`,`channel`)'),
     )
+
+    const req = makeReq('http://localhost/api/admin/templates', 'POST', {
+      type: 'like',
+      channel: 'email',
+      titleTemplate: 'إعجاب',
+      bodyTemplate: 'حصل على إعجاب',
+    })
+
+    const res = await POST(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(data.error.code).toBe('CONFLICT')
+  })
+
+  it('should return 403 when the caller is not a manager', async () => {
+    mockRequireManager.mockRejectedValueOnce(
+      Object.assign(new Error('Forbidden — manager access required'), { status: 403 }),
+    )
+
+    const req = makeReq('http://localhost/api/admin/templates', 'POST', {
+      type: 'like',
+      channel: 'email',
+      titleTemplate: 'إعجاب',
+      bodyTemplate: 'حصل على إعجاب',
+    })
+
+    const res = await POST(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(data.error.code).toBe('FORBIDDEN')
   })
 
   it('should reject invalid Handlebars in titleTemplate (non-string)', async () => {

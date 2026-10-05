@@ -5,6 +5,21 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 
+/**
+ * حقن الصيغ في CSV (OWASP): أي خلية تبدأ بـ `=` أو `+` أو `-` أو `@` (أو بــ tab/CR)
+ * تُنفّذ كصيغة عند فتح الملف في Excel / Google Sheets / LibreOffice.
+ * `username` و`title` يتحكم بهما المستخدم أو كاتب القالب، لذا نُسبق الخلية وعلامة
+ * اقتباس قبل لفّها. المسافة البادئة تُعالَج أيضاً لأن بعض المحلّلات تتجاهلها.
+ */
+const FORMULA_PREFIX = /^\s*[=+\-@]/
+const TAB_OR_CR_PREFIX = /^[\t\r]/
+
+function sanitizeCsvCell(value: unknown): string {
+  const raw = value === null || value === undefined ? '' : String(value)
+  if (FORMULA_PREFIX.test(raw) || TAB_OR_CR_PREFIX.test(raw)) return `'${raw}`
+  return raw
+}
+
 export async function GET(req: NextRequest) {
   try {
     await requireModerator()
@@ -46,8 +61,10 @@ export async function GET(req: NextRequest) {
     ])
 
     const csv = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      headers.map((h) => `"${sanitizeCsvCell(h).replace(/"/g, '""')}"`).join(','),
+      ...rows.map((row) =>
+        row.map((cell) => `"${sanitizeCsvCell(cell).replace(/"/g, '""')}"`).join(','),
+      ),
     ].join('\n')
 
     const bom = '\uFEFF'
@@ -62,7 +79,10 @@ export async function GET(req: NextRequest) {
     const status = (error as { status?: number })?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — هذه الصفحة للمشرفين فقط')
-    logger.error({ err: error, route: 'GET /api/admin/notifications/export' }, 'Failed to export notifications')
+    logger.error(
+      { err: error, route: 'GET /api/admin/notifications/export' },
+      'Failed to export notifications',
+    )
     return internalError('فشل التصدير')
   }
 }

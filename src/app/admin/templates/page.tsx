@@ -389,8 +389,15 @@ export default function AdminTemplatesPage() {
                       className="mt-1 overflow-auto rounded-lg border border-border"
                       style={{ maxHeight: '400px' }}
                     >
+                      {/*
+                        `sandbox=""` = أقصى تقييد: لا سكربتات، لا same-origin، لا نماذج،
+                        لا تنقّل أعلى. بدونه يرث iframe أصل الصفحة، فقالب يحتوي
+                        `<script>` (يُحفظ كما هو بلا تعقيم) ينفّذ داخل أصل الإدارة
+                        بجلسة المدير.
+                      */}
                       <iframe
                         srcDoc={previewResult.html}
+                        sandbox=""
                         className="h-[400px] w-full border-0"
                         title="Email Preview"
                       />
