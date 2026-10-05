@@ -121,7 +121,7 @@ describe('approveNote migration + UI (static)', () => {
     const sql = fs.readFileSync(
       path.join(
         root,
-        'prisma/migrations/20260907080000_add_creator_approve_note/migration.sql',
+        'prisma/migrations/20260920000000_baseline_squash/migration.sql',
       ),
       'utf8',
     )

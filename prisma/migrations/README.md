@@ -7,7 +7,7 @@ migration before applying. Affected: 6 GIN indexes on search fields.
 
 ## Why this happens
 
-The committed baseline migration (`20260907000000_baseline`, extended by
+The committed baseline migration (`20260920000000_baseline_squash`, extended by
 commit `415f698`) creates six trigram indexes for search performance:
 
 - `idx_user_username_trgm`, `idx_user_email_trgm`, `idx_user_display_name_trgm`
