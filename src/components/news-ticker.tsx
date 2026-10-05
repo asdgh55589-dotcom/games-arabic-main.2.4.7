@@ -20,7 +20,10 @@ export function NewsTicker() {
   const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
 
   useEffect(() => {
-    fetch('/api/news?type=ticker&limit=10')
+    // Abort on unmount/remount (StrictMode dev double-invoke) so only one
+    // request completes per mount — no duplicate /api/news fetches.
+    const ctrl = new AbortController()
+    fetch('/api/news?type=ticker&limit=10', { signal: ctrl.signal })
       .then((r) => r.json())
       .then((d) => {
         const list = d.data?.news ?? d.data ?? []
@@ -29,6 +32,7 @@ export function NewsTicker() {
         }
       })
       .catch(() => {})
+    return () => ctrl.abort()
   }, [])
 
   // IntersectionObserver for accurate view tracking (50% visible)

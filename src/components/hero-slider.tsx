@@ -271,13 +271,19 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               key={i}
               onClick={() => goTo(i)}
               aria-label={`الانتقال للشريحة ${i + 1}`}
-              className="rounded-full transition-all duration-300"
-              style={{
-                width: i === active ? '22px' : '6px',
-                height: '6px',
-                backgroundColor: i === active ? meta.color : 'rgba(255,255,255,0.22)',
-              }}
-            />
+              // 24px hit area (Lighthouse target-size) — visual dot stays 6px
+              className="grid h-6 w-6 place-items-center rounded-full transition-all duration-300"
+            >
+              <span
+                aria-hidden="true"
+                className="block rounded-full"
+                style={{
+                  width: i === active ? '22px' : '6px',
+                  height: '6px',
+                  backgroundColor: i === active ? meta.color : 'rgba(255,255,255,0.22)',
+                }}
+              />
+            </button>
           ))}
         </div>
       </div>
