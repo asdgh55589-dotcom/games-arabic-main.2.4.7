@@ -462,6 +462,10 @@ export const CreateTemplateSchema = z.object({
   bodyTemplate: z.string().min(1, 'محتوى القالب مطلوب'),
   variables: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  // P3 (additive — legacy fields above unchanged): rich-text payload + audit note.
+  parseMode: z.enum(['HTML', 'MarkdownV2']).nullable().optional(),
+  richBodyTemplate: z.string().nullable().optional(),
+  changeNote: z.string().trim().max(500, 'ملاحظة التغيير طويلة جداً').optional(),
 })
 
 export const UpdateTemplateSchema = CreateTemplateSchema.partial()

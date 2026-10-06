@@ -6,6 +6,7 @@ import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { UpdateTemplateSchema } from '@/lib/schemas'
+import { securityTemplateGuard, snapshotTemplateVersion } from '@/lib/template-lifecycle'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -50,6 +51,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     if (!existing) {
       return notFound('القالب غير موجود')
     }
+
+    // P3: قوالب الأمان لا تُعدّل إطلاقاً — 403 قبل أي تحقق من المدخلات.
+    const securityGuard = securityTemplateGuard(existing)
+    if (securityGuard) return securityGuard
 
     const parsed = UpdateTemplateSchema.safeParse(body)
     if (!parsed.success) {
@@ -97,6 +102,45 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         )
       }
     }
+    if (data.richBodyTemplate) {
+      try {
+        Handlebars.compile(data.richBodyTemplate)
+      } catch (e) {
+        const msg = `خطأ في صيغة النص الغني: ${(e as Error).message}`
+        return fail(
+          'VALIDATION_ERROR',
+          msg,
+          422,
+          { richBodyTemplate: msg },
+          undefined,
+          req.nextUrl.pathname,
+        )
+      }
+    }
+
+    // P3: حارس إيقاف التفعيل — لا يجوز إيقاف آخر قالب نشط (نفس منطق الحذف).
+    // يُطبَّق فقط على تغيير صريح isActive:true → false.
+    if (data.isActive === false && existing.isActive === true) {
+      const activeCount = await db.notificationTemplate.count({
+        where: {
+          type: existing.type,
+          channel: existing.channel,
+          isActive: true,
+          id: { not: id },
+        },
+      })
+      if (activeCount === 0) {
+        const msg = 'لا يمكن إيقاف تفعيل آخر قالب نشط لهذا النوع والقناة'
+        return fail(
+          'VALIDATION_ERROR',
+          msg,
+          422,
+          { isActive: msg },
+          undefined,
+          req.nextUrl.pathname,
+        )
+      }
+    }
 
     const updateData: Record<string, unknown> = {}
     if (data.type !== undefined) updateData.type = data.type
@@ -105,6 +149,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     if (data.bodyTemplate !== undefined) updateData.bodyTemplate = data.bodyTemplate
     if (data.variables !== undefined) updateData.variables = data.variables
     if (data.isActive !== undefined) updateData.isActive = data.isActive
+    // P3 (additive): أعمدة الحمولة الغنية — nullable، وnull يعني إلغاؤها صراحةً.
+    if (data.parseMode !== undefined) updateData.parseMode = data.parseMode
+    if (data.richBodyTemplate !== undefined) updateData.richBodyTemplate = data.richBodyTemplate
 
     // Increment version on any change
     updateData.version = existing.version + 1
@@ -114,11 +161,25 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       data: updateData,
     })
 
+    // P3: لقطة إصدار بعد كل تعديل — السجل التاريخي غير القابل للتعديل.
+    await snapshotTemplateVersion(updated, {
+      changedBy: manager.id,
+      changeNote: data.changeNote ?? null,
+    })
+
+    // P3: تسمية تدقيق تُميّز تفعيل/إيقاف التفعيل عن تعديل المحتوى.
+    const activationTransition =
+      existing.isActive !== updated.isActive
+        ? updated.isActive
+          ? 'NOTIFICATION_TEMPLATE_ACTIVATED'
+          : 'NOTIFICATION_TEMPLATE_DEACTIVATED'
+        : null
+
     // P3: تدقيق تعديل القالب — قبل/بعد لنسخة القالب ونوعه وقناته.
     await logAction({
       userId: manager.id,
       username: manager.username,
-      action: 'NOTIFICATION_TEMPLATE_UPDATED',
+      action: activationTransition ?? 'NOTIFICATION_TEMPLATE_UPDATED',
       entity: 'notification_template',
       entityId: id,
       details: JSON.stringify({
@@ -172,6 +233,10 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     if (!existing) {
       return notFound('القالب غير موجود')
     }
+
+    // P3: قوالب الأمان لا تُحذف ولا تُعدّل عبر هذه الواجهة إطلاقاً.
+    const securityGuard = securityTemplateGuard(existing)
+    if (securityGuard) return securityGuard
 
     // Check if this is the last active template for its type+channel
     const activeCount = await db.notificationTemplate.count({

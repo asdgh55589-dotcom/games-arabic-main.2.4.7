@@ -14,6 +14,12 @@ import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { CreateTemplateSchema, PaginationSchema } from '@/lib/schemas'
+import {
+  isSecurityTemplateType,
+  SECURITY_TEMPLATE_FORBIDDEN,
+  securityExcludedTypeWhere,
+  snapshotTemplateVersion,
+} from '@/lib/template-lifecycle'
 
 /** تسميات عربية لحقول القالب — تُستخدم حين لا تحمل رسالة zod نصاً عربياً. */
 const FIELD_AR: Record<string, string> = {
@@ -59,8 +65,19 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type')
     const channel = searchParams.get('channel')
 
-    const where: Record<string, unknown> = {}
-    if (type) where.type = type
+    // P3: استبعاد قوالب الأمان من القائمة في الخادم (لا تُعرض أبداً) —
+    // وفلترة `type` الخاصة بنوع أمان تعيد قائمة فارغة لا الصف المحظور.
+    const typeWhere = securityExcludedTypeWhere(type)
+    if (typeof typeWhere === 'object' && 'filteredOut' in typeWhere) {
+      return okPaginated([], {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      })
+    }
+
+    const where: Record<string, unknown> = { type: typeWhere }
     if (channel) where.channel = channel
 
     const [templates, total] = await Promise.all([
@@ -93,6 +110,11 @@ export async function POST(req: NextRequest) {
     const manager = await requireManager()
     const body = await req.json()
 
+    // P3: قوالب الأمان لا تُنشأ ولا تُعدّل عبر هذه الواجهة إطلاقاً (403 قبل أي تحقق).
+    if (typeof body?.type === 'string' && isSecurityTemplateType(body.type)) {
+      return forbidden(SECURITY_TEMPLATE_FORBIDDEN)
+    }
+
     const parsed = CreateTemplateSchema.safeParse(body)
     if (!parsed.success) {
       const flat = parsed.error.flatten()
@@ -106,7 +128,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { type, channel, titleTemplate, bodyTemplate, variables, isActive } = parsed.data
+    const {
+      type,
+      channel,
+      titleTemplate,
+      bodyTemplate,
+      variables,
+      isActive,
+      parseMode,
+      richBodyTemplate,
+      changeNote,
+    } = parsed.data
 
     // Validate Handlebars syntax
     try {
@@ -135,6 +167,21 @@ export async function POST(req: NextRequest) {
         req.nextUrl.pathname,
       )
     }
+    if (richBodyTemplate) {
+      try {
+        Handlebars.compile(richBodyTemplate)
+      } catch (e) {
+        const msg = `خطأ في صيغة النص الغني: ${(e as Error).message}`
+        return fail(
+          'VALIDATION_ERROR',
+          msg,
+          422,
+          { richBodyTemplate: msg },
+          undefined,
+          req.nextUrl.pathname,
+        )
+      }
+    }
 
     // `@@unique([type, channel])` يسمح بصف واحد فقط لكل تركيبة، و`version` عدّاد على
     // صف واحد — أي أن "سجل الإصدارات" مستحيل بنيوياً. الكتابة فوق القالب الموجود كانت
@@ -158,7 +205,16 @@ export async function POST(req: NextRequest) {
         variables,
         isActive,
         version: 1,
+        // P3 (additive): حمولة تيليجرام الغنية — تتولد كمسودة أو نشطة حسب isActive.
+        ...(parseMode !== undefined ? { parseMode } : {}),
+        ...(richBodyTemplate !== undefined ? { richBodyTemplate } : {}),
       },
+    })
+
+    // P3: لقطة إصدار أولى تُوثّق نسخة الإنشاء في سجل القوالب (غير قابلة للتعديل).
+    await snapshotTemplateVersion(template, {
+      changedBy: manager.id,
+      changeNote: changeNote ?? 'إنشاء القالب',
     })
 
     // P3: تدقيق إنشاء القالب — كان تحرير القوالب كله بلا أي أثر في سجل النشاط،

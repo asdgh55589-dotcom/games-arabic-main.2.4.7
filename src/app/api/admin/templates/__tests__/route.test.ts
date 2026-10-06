@@ -14,11 +14,20 @@ jest.mock('@/lib/db', () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    notificationTemplateVersion: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
   },
 }))
 
 jest.mock('@/lib/auth', () => ({
   requireManager: jest.fn().mockResolvedValue({ id: 'admin-1', role: 'manager' }),
+}))
+
+jest.mock('@/lib/audit', () => ({
+  logAction: jest.fn().mockResolvedValue(undefined),
 }))
 
 import { NextRequest } from 'next/server'
@@ -38,6 +47,11 @@ const mockDb = db as unknown as {
     create: jest.Mock
     update: jest.Mock
     delete: jest.Mock
+  }
+  notificationTemplateVersion: {
+    create: jest.Mock
+    findUnique: jest.Mock
+    findMany: jest.Mock
   }
 }
 
@@ -150,6 +164,31 @@ describe('GET /api/admin/templates', () => {
     const data = await res.json()
 
     expect(data.pagination.totalPages).toBe(0)
+  })
+
+  it('excludes security-router templates server-side when no type filter is set (P3)', async () => {
+    mockDb.notificationTemplate.findMany.mockResolvedValue([])
+    mockDb.notificationTemplate.count.mockResolvedValue(0)
+
+    await GET(makeReq('http://localhost/api/admin/templates'))
+
+    expect(mockDb.notificationTemplate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          type: expect.objectContaining({ notIn: expect.arrayContaining(['password_reset']) }),
+        }),
+      }),
+    )
+  })
+
+  it('returns an empty page when filtering by a security type — the row is never listed (P3)', async () => {
+    const res = await GET(makeReq('http://localhost/api/admin/templates?type=password_reset'))
+    const data = await res.json()
+
+    expect(data.data).toHaveLength(0)
+    expect(data.pagination.total).toBe(0)
+    expect(mockDb.notificationTemplate.findMany).not.toHaveBeenCalled()
+    expect(mockDb.notificationTemplate.count).not.toHaveBeenCalled()
   })
 })
 
@@ -532,5 +571,126 @@ describe('POST /api/admin/templates/[id]/preview', () => {
 
     expect(data.data.sampleVariables).toEqual({})
     expect(data.data.title).toBe('عنوان')
+  })
+})
+
+describe('P3 — security templates + immutable snapshots (legacy CRUD)', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  const SECURITY_ROW = {
+    id: 'sec-1',
+    type: 'password_reset',
+    channel: 'email',
+    titleTemplate: 'استعادة',
+    bodyTemplate: 'رابط',
+    variables: [],
+    isActive: true,
+    version: 1,
+    richBodyTemplate: null,
+    parseMode: null,
+  }
+
+  it('POST rejects creating a security-router type with 403 before any write', async () => {
+    const req = makeReq('http://localhost/api/admin/templates', 'POST', {
+      type: 'password_reset',
+      channel: 'email',
+      titleTemplate: 'x',
+      bodyTemplate: 'y',
+    })
+    const res = await POST(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(data.error.message).toContain('قوالب الأمان')
+    expect(mockDb.notificationTemplate.create).not.toHaveBeenCalled()
+  })
+
+  it('POST writes an immutable version snapshot for the created template', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue(null)
+    mockDb.notificationTemplate.create.mockResolvedValue({
+      id: 'new-1',
+      type: 'like',
+      channel: 'email',
+      titleTemplate: 't',
+      bodyTemplate: 'b',
+      variables: [],
+      isActive: true,
+      version: 1,
+      richBodyTemplate: null,
+      parseMode: null,
+    })
+
+    await POST(
+      makeReq('http://localhost/api/admin/templates', 'POST', {
+        type: 'like',
+        channel: 'email',
+        titleTemplate: 't',
+        bodyTemplate: 'b',
+      }),
+    )
+
+    expect(mockDb.notificationTemplateVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ templateId: 'new-1', version: 1 }),
+      }),
+    )
+  })
+
+  it('PUT returns 403 for a security-router template before any validation', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue(SECURITY_ROW)
+
+    const res = await PUT(
+      makeReq('http://localhost/api/admin/templates/sec-1', 'PUT', {
+        titleTemplate: 'غير مسموح',
+      }),
+      { params: Promise.resolve({ id: 'sec-1' }) },
+    )
+    const data = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(data.error.message).toContain('قوالب الأمان')
+    expect(mockDb.notificationTemplate.update).not.toHaveBeenCalled()
+  })
+
+  it('PUT writes a snapshot of the updated version', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue({
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      version: 3,
+      isActive: true,
+    })
+    mockDb.notificationTemplate.update.mockResolvedValue({
+      id: 'tpl-1',
+      type: 'like',
+      channel: 'email',
+      version: 4,
+      isActive: true,
+    })
+
+    const res = await PUT(
+      makeReq('http://localhost/api/admin/templates/tpl-1', 'PUT', {
+        titleTemplate: 'محدث',
+      }),
+      { params: Promise.resolve({ id: 'tpl-1' }) },
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.notificationTemplateVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ templateId: 'tpl-1', version: 4 }),
+      }),
+    )
+  })
+
+  it('DELETE returns 403 for a security-router template', async () => {
+    mockDb.notificationTemplate.findUnique.mockResolvedValue(SECURITY_ROW)
+
+    const res = await DELETE(makeReq('http://localhost/api/admin/templates/sec-1', 'DELETE'), {
+      params: Promise.resolve({ id: 'sec-1' }),
+    })
+    const data = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(mockDb.notificationTemplate.delete).not.toHaveBeenCalled()
   })
 })

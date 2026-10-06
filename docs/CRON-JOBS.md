@@ -13,6 +13,7 @@ All cron endpoints are protected with Bearer token authentication via `$CRON_SEC
 | backup-cleanup | `/api/cron/backup-cleanup` | `0 4 * * *` (Daily 04:00) | `Bearer $CRON_SECRET` | 5 min | 1 retry, 5 min delay | Alert + keep existing backups |
 | weekly-backup | `/api/cron/weekly-backup` | `0 1 * * 0` (Sun 01:00) | `Bearer $CRON_SECRET` | 15 min | 1 retry, 5 min delay | Alert + trigger manual backup |
 | notification-drain | `/api/cron/notification-drain` | `* * * * *` (Every minute) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batches) | Exponential backoff per job, `maxAttempts = 5` | `dead_letter` → visible in `/admin/notifications-health` |
+| template-publish | `/api/cron/template-publish` | `* * * * *` (Every minute — idle runs are a single indexed query) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batch of 20) | Requeue until `maxRetries = 3`, then `failed` with `error` set | `ScheduledJob.status=failed` + error log; template stays a draft |
 
 > **Scheduling note (P2):** there is no `vercel.json` in this repository, so the
 > `notification-drain` schedule above is a **suggested** cron entry, not an
@@ -91,6 +92,20 @@ Consumes `NotificationJob` rows (`email` + `telegram`, both the legacy
   60 s → 2 min → 4 min → 8 min, then `dead_letter`.
 - Every attempt is written to `NotificationLog`; its `id` is the `requestId` of
   the email and the tracking-pixel/`click` id (`/api/notifications/track`).
+
+### template-publish
+
+```json
+{ "ok": true, "due": 2, "published": 2, "skipped": 0, "failed": 0 }
+```
+
+Executes due `ScheduledJob` rows of type `template_publish` (created by
+`POST /api/admin/templates/[id]/publish` with `scheduledFor`). Each due job is
+claimed idempotently (`pending → running`), the template is re-validated through
+the canonical rich-text rules, and only then flipped to `isActive: true` with an
+immutable version snapshot — an invalid template fails the job instead of going
+live. A deleted template is recorded as `completed` with a note (`skipped`),
+retries requeue until `maxRetries = 3`.
 
 ## Monitoring
 
