@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/username-generator'
-import { logger } from '@/lib/logger'
 
 // تحديد الـ base URL بناءً على الـ request
 function getBaseUrl(req: NextRequest): string {
@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) {
         logger.error('[auth/callback] Code exchange failed:', error.message)
+        if (next.startsWith('/admin')) {
+          const loginUrl = new URL('/admin/login', baseUrl)
+          loginUrl.searchParams.set('from', next)
+          loginUrl.searchParams.set('error', 'auth_failed')
+          return NextResponse.redirect(loginUrl)
+        }
         return NextResponse.redirect(new URL('/?error=auth_failed', baseUrl))
       }
     }
@@ -59,6 +65,12 @@ export async function GET(req: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!supabaseUser) {
+      if (next.startsWith('/admin')) {
+        const loginUrl = new URL('/admin/login', baseUrl)
+        loginUrl.searchParams.set('from', next)
+        loginUrl.searchParams.set('error', 'no_session')
+        return NextResponse.redirect(loginUrl)
+      }
       return NextResponse.redirect(new URL('/?error=no_session', baseUrl))
     }
 
@@ -226,7 +238,13 @@ export async function GET(req: NextRequest) {
     }
 
     // إنشاء role cookie مع tokenVersion
-    await setRoleCookie(neonUser.id, neonUser.role as UserRole, neonUser.tokenVersion, false, neonUser.onboardingCompleted)
+    await setRoleCookie(
+      neonUser.id,
+      neonUser.role as UserRole,
+      neonUser.tokenVersion,
+      false,
+      neonUser.onboardingCompleted,
+    )
 
     // تحديث lastLoginAt + loginCount
     await db.user.update({

@@ -30,6 +30,34 @@ export async function invalidateAuthMeCache(roleToken: string): Promise<void> {
   }
 }
 
+/**
+ * Per-user /me generation counter. Role-change paths bump it so a cached
+ * payload written before the change is never served afterwards (the cache
+ * is keyed by token hash, which the role-change path doesn't hold).
+ */
+export function authMeGenKey(userId: string): string {
+  return `auth:me-gen:${userId}`
+}
+
+export async function getAuthMeGeneration(userId: string): Promise<number> {
+  try {
+    const v = await redisGet<number>(authMeGenKey(userId))
+    return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
+  } catch {
+    return 0
+  }
+}
+
+/** Bump the generation (call after role change / session invalidation). Fail-open. */
+export async function bumpAuthMeGeneration(userId: string): Promise<void> {
+  try {
+    const { redisIncr } = await import('@/lib/redis')
+    await redisIncr(authMeGenKey(userId), 24 * 60 * 60)
+  } catch {
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort — tv check still rejects stale tokens
+  }
+}
+
 // Phase 4B: latest still-pending verification address (two-step email
 // change). Null when none — best-effort, never fails the request.
 async function getPendingEmail(userId: string): Promise<string | null> {
@@ -94,22 +122,28 @@ export async function GET() {
         if (user) {
           const ban = getBanStatus(user)
           if (ban.banned) {
-            return ok({ user: null, banned: true, banReason: ban.reason, banType: ban.type }, NO_STORE)
+            return ok(
+              { user: null, banned: true, banReason: ban.reason, banType: ban.type },
+              NO_STORE,
+            )
           }
           const { password: _pw, ...safeUser } = user
           const hasPassword = !!_pw
-          return ok({
-            user: {
-              ...safeUser,
-              hasPassword,
-              pendingEmail: await getPendingEmail(user.id),
-              needsSecuritySetup: needsSecuritySetup({
+          return ok(
+            {
+              user: {
+                ...safeUser,
                 hasPassword,
-                email: safeUser.email,
-                emailVerified: safeUser.emailVerified,
-              }),
+                pendingEmail: await getPendingEmail(user.id),
+                needsSecuritySetup: needsSecuritySetup({
+                  hasPassword,
+                  email: safeUser.email,
+                  emailVerified: safeUser.emailVerified,
+                }),
+              },
             },
-          }, NO_STORE)
+            NO_STORE,
+          )
         }
 
         // المستخدم جديد — أنشئ ملف شخصي (استخدم مولد موحد)
@@ -125,20 +159,23 @@ export async function GET() {
             role: 'member',
           },
         })
-        return ok({
-          user: {
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            role: newUser.role,
-            avatarUrl: newUser.avatarUrl,
-            onboardingCompleted: newUser.onboardingCompleted,
-            hasPassword: false,
-            pendingEmail: null,
-            needsSecuritySetup: true,
-            emailVerified: newUser.emailVerified,
+        return ok(
+          {
+            user: {
+              id: newUser.id,
+              username: newUser.username,
+              email: newUser.email,
+              role: newUser.role,
+              avatarUrl: newUser.avatarUrl,
+              onboardingCompleted: newUser.onboardingCompleted,
+              hasPassword: false,
+              pendingEmail: null,
+              needsSecuritySetup: true,
+              emailVerified: newUser.emailVerified,
+            },
           },
-        }, NO_STORE)
+          NO_STORE,
+        )
       }
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort Supabase fallback
@@ -154,10 +191,22 @@ export async function GET() {
     }
 
     // Fast path: cached payload (60s TTL, invalidated on logout).
+    // Generation-guarded: a role change bumps the per-user generation, so
+    // entries written before the change are treated as a miss.
     const meCacheKey = authMeCacheKey(roleToken)
     try {
-      const cached = await redisGet<Record<string, unknown>>(meCacheKey)
-      if (cached !== null) return ok(cached, NO_STORE)
+      const cached = await redisGet<{
+        gen?: number
+        uid?: string
+        payload?: Record<string, unknown>
+      }>(meCacheKey)
+      if (cached !== null && cached?.payload) {
+        const gen = await getAuthMeGeneration(String(cached.uid || ''))
+        if (!cached.uid || gen === (cached.gen ?? 0)) return ok(cached.payload, NO_STORE)
+      } else if (cached !== null && !(cached as Record<string, unknown>).payload) {
+        // Legacy unwrapped entry (pre-generation) — serve as-is.
+        return ok(cached as unknown as Record<string, unknown>, NO_STORE)
+      }
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: cache miss → DB below
     }
@@ -226,7 +275,12 @@ export async function GET() {
     const ban = getBanStatus(user)
     if (ban.banned) {
       const bannedPayload = { user: null, banned: true, banReason: ban.reason, banType: ban.type }
-      await redisSet(meCacheKey, bannedPayload, ME_CACHE_TTL_S).catch(() => {})
+      const gen = await getAuthMeGeneration(user.id)
+      await redisSet(
+        meCacheKey,
+        { gen, uid: user.id, payload: bannedPayload },
+        ME_CACHE_TTL_S,
+      ).catch(() => {})
       return ok(bannedPayload, NO_STORE)
     }
 
@@ -248,7 +302,11 @@ export async function GET() {
         emailVerified: user.emailVerified,
       },
     }
-    await redisSet(meCacheKey, mePayload, ME_CACHE_TTL_S).catch(() => {})
+    await redisSet(
+      meCacheKey,
+      { gen: await getAuthMeGeneration(user.id), uid: user.id, payload: mePayload },
+      ME_CACHE_TTL_S,
+    ).catch(() => {})
     return ok(mePayload, NO_STORE)
   } catch (err) {
     logger.error('[auth/me] failed', err)

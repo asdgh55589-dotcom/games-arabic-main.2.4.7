@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { type NextRequest, NextResponse } from 'next/server'
 import {
+  accountLocked,
   fail,
   forbidden,
   internalError,
@@ -8,7 +9,6 @@ import {
   rateLimited,
   unauthorized,
   validationFail,
-  accountLocked,
 } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import {
@@ -19,23 +19,25 @@ import {
   type UserRole,
 } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
 import {
   ACCOUNT_LOCKED_MESSAGE,
-  LOCKOUT_THRESHOLD,
-  LOGIN_GENERIC_ERROR,
   clearLoginFailures,
   failureKey,
   getLockoutRemainingSeconds,
+  getLoginFailures,
+  LOCKOUT_THRESHOLD,
+  LOGIN_GENERIC_ERROR,
   loginDelayFor,
   recordLoginFailure,
   sleep,
+  specificErrorAllowed,
 } from '@/lib/login-defense'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { LoginSchema } from '@/lib/schemas'
 import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
 import { createClient } from '@/lib/supabase/server'
-import { reportError } from '@/lib/error-reporting'
-import { logger } from '@/lib/logger'
 
 function requireOwnerEnv() {
   const username = process.env.OWNER_USERNAME
@@ -182,8 +184,7 @@ export async function POST(req: NextRequest) {
       return accountLocked(ACCOUNT_LOCKED_MESSAGE, lockedSeconds)
     }
 
-    const failClosed = async () => {
-      const fails = await recordLoginFailure(fkey)
+    const maybeLogLockout = async (fails: number) => {
       // Log ONLY the activation (once per lockout — never per blocked hit,
       // so attackers can't spam the audit table).
       if (fails === LOCKOUT_THRESHOLD) {
@@ -199,8 +200,25 @@ export async function POST(req: NextRequest) {
           // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
         }
       }
+    }
+
+    const failClosed = async () => {
+      const fails = await recordLoginFailure(fkey)
+      await maybeLogLockout(fails)
       await sleep(loginDelayFor(fails) * 1000)
       return fail('INVALID_CREDENTIALS', LOGIN_GENERIC_ERROR, 401)
+    }
+
+    // S3 compromise: attempts 1–2 on this IP+identifier key return a SPECIFIC
+    // {code,field,message} (no delay — legitimate typo recovery); attempt 3+
+    // falls back to the generic 401 after the progressive delay above.
+    // `priorFails` is read BEFORE recording so the 1st/2nd failures are specific.
+    const priorFails = await getLoginFailures(fkey).catch(() => 0)
+    const failSpecific = async (code: string, field: string, message: string) => {
+      if (!specificErrorAllowed(priorFails)) return failClosed()
+      const fails = await recordLoginFailure(fkey)
+      await maybeLogLockout(fails)
+      return fail(code, message, 401, { field } as never)
     }
 
     // 1. البحث عن المستخدم بواسطة اسم المستخدم أولاً (لرسائل دقيقة)
@@ -209,12 +227,12 @@ export async function POST(req: NextRequest) {
     })
 
     if (!userByUsername || !userByUsername.password) {
-      return failClosed()
+      return failSpecific('UNKNOWN_USER', 'username', 'اسم المستخدم غير موجود')
     }
 
     // 2. التحقق من تطابق البريد (حساسية حالة الأحرف غير مهمة)
     if (userByUsername.email.toLowerCase() !== email.toLowerCase()) {
-      return failClosed()
+      return failSpecific('EMAIL_MISMATCH', 'email', 'البريد الإلكتروني لا يطابق هذا المستخدم')
     }
 
     const neonUser = userByUsername
@@ -222,23 +240,23 @@ export async function POST(req: NextRequest) {
     // 3. التحقق من كلمة المرور
     const passwordValid = await bcrypt.compare(password, neonUser.password!)
     if (!passwordValid) {
-      return failClosed()
+      return failSpecific('WRONG_PASSWORD', 'password', 'كلمة المرور غير صحيحة')
     }
 
     // 4. التحقق من وجود مفتاح الأمان
     if (!neonUser.securityKey) {
-      return failClosed()
+      return failSpecific('MISSING_SECURITY_KEY', 'securityKey', 'لا يوجد مفتاح أمان لهذا الحساب')
     }
 
     // 5. التحقق من مفتاح الأمان
     const keyValid = await verifySecurityKey(securityKey, neonUser.securityKey)
     if (!keyValid) {
-      return failClosed()
+      return failSpecific('WRONG_SECURITY_KEY', 'securityKey', 'مفتاح الأمان غير صحيح')
     }
 
     // 6. فحص انتهاء صلاحية المفتاح
     if (isSecurityKeyExpired(neonUser.securityKeyExpiresAt as Date | null)) {
-      return failClosed()
+      return failSpecific('SECURITY_KEY_EXPIRED', 'securityKey', 'انتهت صلاحية مفتاح الأمان')
     }
 
     // فحص الحظر قبل أي محاولة دخول
