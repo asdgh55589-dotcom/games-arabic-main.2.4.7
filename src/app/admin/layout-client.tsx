@@ -212,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         const user = json?.data?.user
         if (!user || user.role === 'member') {
-          router.replace('/admin/login?error=retry')
+          router.replace(`/admin/login?from=${encodeURIComponent(pathname)}&error=retry`)
         } else {
           setUser(user)
         }
@@ -220,7 +220,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => {
         clearTimeout(timer)
         if (mounted) {
-          router.replace('/admin/login?error=retry')
+          router.replace(`/admin/login?from=${encodeURIComponent(pathname)}&error=retry`)
         }
       })
       .finally(() => {

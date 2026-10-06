@@ -25,7 +25,13 @@ export default function AdminLoginClient() {
 function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const fromPath = searchParams.get('from') || '/admin'
+  const rawFrom = searchParams.get('from') || '/admin'
+  // Sanitize ?from= (mirrors the callback allow-list): relative path only,
+  // never protocol-relative (//evil) or traversal. Unsafe → '/admin'.
+  const fromPath =
+    rawFrom.startsWith('/') && !rawFrom.startsWith('//') && !rawFrom.includes('/../')
+      ? rawFrom
+      : '/admin'
   const errorCode = searchParams.get('error')
   const tokenCheckFailed = searchParams.get('token_check_failed')
 
@@ -125,17 +131,7 @@ function AdminLoginContent() {
         return
       }
       // Same-origin post-login navigation: client-side replace + refresh.
-      // Full reload only for cross-origin from targets.
-      try {
-        const target = new URL(fromPath, window.location.origin)
-        if (target.origin !== window.location.origin) {
-          window.location.href = target.toString()
-          return
-        }
-      } catch {
-        window.location.href = fromPath
-        return
-      }
+      // fromPath is sanitized at parse time (relative path only).
       router.replace(fromPath)
       router.refresh()
     } catch {
@@ -175,16 +171,7 @@ function AdminLoginContent() {
           return
         }
       }
-      try {
-        const target = new URL(fromPath, window.location.origin)
-        if (target.origin !== window.location.origin) {
-          window.location.href = target.toString()
-          return
-        }
-      } catch {
-        window.location.href = fromPath
-        return
-      }
+      // fromPath is sanitized at parse time (relative path only).
       router.replace(fromPath)
       router.refresh()
     } catch {
@@ -231,7 +218,7 @@ function AdminLoginContent() {
             ⚠️ تعذر التحقق من الجلسة. تم تسجيل دخولك — اضغط زر الدخول للمتابعة.
             <button
               type="button"
-              onClick={() => router.replace('/admin/login')}
+              onClick={() => router.replace(`/admin/login?from=${encodeURIComponent(fromPath)}`)}
               className="block mt-2 mx-auto text-center font-bold underline"
             >
               إعادة تسجيل الدخول
