@@ -122,6 +122,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // لو تم تغيير الدور → إبطال الجلسات القديمة (tokenVersion) + تسجيل في AuditLog (B1)
     if (newRole && newRole !== target.role) {
       await invalidateUserSessions(id)
+      // إبطال كاش /me (الحمولات المخزنة تحمل الدور القديم).
+      try {
+        const { bumpAuthMeGeneration } = await import('@/app/api/auth/me/route')
+        await bumpAuthMeGeneration(id)
+      } catch {
+        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort — tv check still rejects stale tokens
+      }
       try {
         await logUserAction({
           userId: id,
@@ -166,7 +173,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
             { password: newPassword },
           )
           if (updateError) {
-            logger.error({ err: updateError, route: 'PUT /api/admin/users/[id]' }, 'Supabase password update failed')
+            logger.error(
+              { err: updateError, route: 'PUT /api/admin/users/[id]' },
+              'Supabase password update failed',
+            )
             return fail('INTERNAL_ERROR', 'فشل تحديث كلمة المرور', 500)
           }
           supabaseUpdated = true

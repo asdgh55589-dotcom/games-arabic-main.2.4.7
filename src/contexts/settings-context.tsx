@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import {
   createContext,
   type ReactNode,
@@ -46,6 +47,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SettingsData>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const pathname = usePathname()
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -69,8 +71,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Light login shell: /admin/login needs no site settings — skip the fetch.
+    if (pathname === '/admin/login') {
+      setLoading(false)
+      return
+    }
     fetchSettings()
-  }, [fetchSettings])
+  }, [fetchSettings, pathname])
 
   const value = useMemo(
     () => ({

@@ -4,8 +4,8 @@ import { fail, forbidden, internalError, notFound, ok, rateLimited } from '@/lib
 import { logAction } from '@/lib/audit'
 import { hashPassword, invalidateUserSessions, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { rateLimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
+import { rateLimit } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -64,6 +64,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort invalidation
     }
+    // إبطال كاش /me للهدف (جلسات/أدوار قديمة).
+    try {
+      const { bumpAuthMeGeneration } = await import('@/app/api/auth/me/route')
+      await bumpAuthMeGeneration(target.id)
+    } catch {
+      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort — tv check still rejects stale tokens
+    }
 
     try {
       await logAction({
@@ -89,7 +96,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // requireAdmin throws AuthError for non-staff — map to generic responses.
     if (err instanceof Error && err.name === 'AuthError') {
       const status = (err as { status?: number }).status === 401 ? 401 : 403
-      return fail(status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN', status === 401 ? 'Unauthorized' : 'Forbidden', status)
+      return fail(
+        status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN',
+        status === 401 ? 'Unauthorized' : 'Forbidden',
+        status,
+      )
     }
     logger.error('[admin/users/[id]/recover] failed:', err)
     return internalError('Failed to issue recovery')

@@ -6,13 +6,13 @@
  */
 import {
   ACCOUNT_LOCKED_MESSAGE,
-  LOGIN_GENERIC_ERROR,
   activateLockout,
+  clearLoginFailures,
   getLockoutRemainingSeconds,
+  getLoginFailures,
+  LOGIN_GENERIC_ERROR,
   loginDelayFor,
   recordLoginFailure,
-  getLoginFailures,
-  clearLoginFailures,
 } from '@/lib/login-defense'
 
 const mockDbUser = { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() }
@@ -52,8 +52,8 @@ jest.mock('@/lib/security-key', () => ({
   isSecurityKeyExpired: jest.fn().mockReturnValue(false),
 }))
 
-import { POST as loginPOST } from '@/app/api/auth/login/route'
 import { GET as callbackGET } from '@/app/api/auth/callback/route'
+import { POST as loginPOST } from '@/app/api/auth/login/route'
 
 const { NextRequest } = jest.requireActual('next/server') as typeof import('next/server')
 
@@ -65,36 +65,74 @@ function loginReq(body: unknown, ip = '9.9.9.9') {
   })
 }
 
-const GOOD_SHAPE = { username: 'boss', email: 'boss@x.io', password: 'x'.repeat(12), securityKey: 'k' }
+const GOOD_SHAPE = {
+  username: 'boss',
+  email: 'boss@x.io',
+  password: 'x'.repeat(12),
+  securityKey: 'k',
+}
 
 describe('generic error (no enumeration)', () => {
   beforeEach(() => {
     process.env.OWNER_USERNAME = 'boss-owner'
     process.env.OWNER_EMAIL = 'owner@x.io'
     process.env.OWNER_PASSWORD = 'owner-pass-12345'
-    mockDbUser.findFirst.mockResolvedValue({ username: 'boss-owner', email: 'owner@x.io', securityKey: 'x' })
+    mockDbUser.findFirst.mockResolvedValue({
+      username: 'boss-owner',
+      email: 'owner@x.io',
+      securityKey: 'x',
+    })
   })
 
-  it('unknown user, email mismatch, bad password, bad key → identical 401', async () => {
+  it('attempt 3+: unknown user, email mismatch, bad password, bad key → identical generic 401', async () => {
+    const { failureKey } = await import('@/lib/login-defense')
     const results: Array<{ status: number; error?: string }> = []
-    // 1. unknown user
-    mockDbUser.findUnique.mockResolvedValue(null)
-    results.push(await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.1'))))
-    // 2. email mismatch
-    mockDbUser.findUnique.mockResolvedValue({ ...baseUser(), email: 'other@x.io' })
-    results.push(await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.2'))))
-    // 3. bad password (bcrypt mocked false)
-    mockDbUser.findUnique.mockResolvedValue(baseUser())
-    results.push(await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.3'))))
-    // 4. bad security key (verify mocked false)
-    mockDbUser.findUnique.mockResolvedValue(baseUser())
-    results.push(await unpack(await loginPOST(loginReq({ ...GOOD_SHAPE, securityKey: 'wrong' }, '9.9.9.4'))))
+    // Pre-record 2 failures per key so the S3 specific window (attempts 1-2) is exhausted.
+    const cases: Array<[string, unknown, unknown]> = [
+      ['9.9.9.1', null, GOOD_SHAPE],
+      ['9.9.9.2', { ...baseUser(), email: 'other@x.io' }, GOOD_SHAPE],
+      ['9.9.9.3', baseUser(), GOOD_SHAPE],
+      ['9.9.9.4', baseUser(), { ...GOOD_SHAPE, securityKey: 'wrong' }],
+    ]
+    for (const [ip, user, body] of cases) {
+      const fkey = failureKey(ip, 'boss')
+      for (let i = 0; i < 2; i++) await recordLoginFailure(fkey)
+      mockDbUser.findUnique.mockResolvedValue(user)
+      results.push(await unpack(await loginPOST(loginReq(body, ip))))
+      await clearLoginFailures(fkey)
+    }
     expect(results.map((r) => r.status)).toEqual([401, 401, 401, 401])
     expect(new Set(results.map((r) => r.error)).size).toBe(1)
     expect(results[0].error).toBe(LOGIN_GENERIC_ERROR)
     // Same machine-readable code on all four (no oracle via code either)
     expect(new Set(results.map((r) => (r as { code?: string }).code)).size).toBe(1)
-  })
+  }, 60000)
+
+  it('S3: attempts 1-2 return specific codes with field (fresh keys)', async () => {
+    const { failureKey, specificErrorAllowed, getLoginFailures } = await import(
+      '@/lib/login-defense'
+    )
+    const fkey = failureKey('9.9.9.11', 'boss')
+    await clearLoginFailures(fkey)
+    expect(specificErrorAllowed(await getLoginFailures(fkey))).toBe(true)
+    // 1st failure: unknown user → specific
+    mockDbUser.findUnique.mockResolvedValue(null)
+    const r1 = await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.11')))
+    expect(r1.status).toBe(401)
+    expect(r1.code).toBe('UNKNOWN_USER')
+    expect(specificErrorAllowed(await getLoginFailures(fkey))).toBe(true)
+    // 2nd failure: still specific
+    const r2 = await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.11')))
+    expect(r2.status).toBe(401)
+    expect(r2.code).toBe('UNKNOWN_USER')
+    expect(specificErrorAllowed(await getLoginFailures(fkey))).toBe(false)
+    // 3rd failure: generic
+    const r3 = await unpack(await loginPOST(loginReq(GOOD_SHAPE, '9.9.9.11')))
+    expect(r3.status).toBe(401)
+    expect(r3.code).toBe('INVALID_CREDENTIALS')
+    expect(r3.error).toBe(LOGIN_GENERIC_ERROR)
+    await clearLoginFailures(fkey)
+  }, 30000)
 })
 
 async function unpack(res: Response): Promise<{ status: number; error?: string; code?: string }> {
@@ -103,16 +141,31 @@ async function unpack(res: Response): Promise<{ status: number; error?: string; 
   }
   const err = body.error
   // Canonical envelope: compare the stable message (requestId/timestamp differ per response by design)
-  return { status: res.status, error: typeof err === 'string' ? err : err?.message, code: typeof err === 'string' ? undefined : err?.code }
+  return {
+    status: res.status,
+    error: typeof err === 'string' ? err : err?.message,
+    code: typeof err === 'string' ? undefined : err?.code,
+  }
 }
 
 function baseUser() {
   return {
-    id: 'u-9', username: 'boss', email: 'boss@x.io', password: 'hashed',
-    securityKey: 'sk', securityKeyExpiresAt: null, role: 'admin',
-    tokenVersion: 1, onboardingCompleted: true, avatarUrl: null,
-    banStatus: 'active', bannedUntil: null, banReason: null,
-    supabaseId: null, lastLoginAt: null, loginCount: 0,
+    id: 'u-9',
+    username: 'boss',
+    email: 'boss@x.io',
+    password: 'hashed',
+    securityKey: 'sk',
+    securityKeyExpiresAt: null,
+    role: 'admin',
+    tokenVersion: 1,
+    onboardingCompleted: true,
+    avatarUrl: null,
+    banStatus: 'active',
+    bannedUntil: null,
+    banReason: null,
+    supabaseId: null,
+    lastLoginAt: null,
+    loginCount: 0,
   }
 }
 
@@ -158,7 +211,11 @@ describe('hard lockout (Phase 4A — replaces CAPTCHA placeholder)', () => {
     process.env.OWNER_USERNAME = 'boss-owner'
     process.env.OWNER_EMAIL = 'owner@x.io'
     process.env.OWNER_PASSWORD = 'owner-pass-12345'
-    mockDbUser.findFirst.mockResolvedValue({ username: 'boss-owner', email: 'owner@x.io', securityKey: 'x' })
+    mockDbUser.findFirst.mockResolvedValue({
+      username: 'boss-owner',
+      email: 'owner@x.io',
+      securityKey: 'x',
+    })
     const ip = '9.9.7.8'
     // 10 recorded failures on THIS composite key (real shared store)…
     const { failureKey } = await import('@/lib/login-defense')

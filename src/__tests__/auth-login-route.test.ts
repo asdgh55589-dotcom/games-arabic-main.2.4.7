@@ -43,6 +43,9 @@ jest.mock('@/lib/login-defense', () => ({
   ACCOUNT_LOCKED_MESSAGE:
     'تم قفل الحساب مؤقتًا بسبب محاولات متعددة فاشلة. يرجى المحاولة بعد 15 دقيقة.',
   LOCKOUT_THRESHOLD: 10,
+  SPECIFIC_ERROR_MAX_ATTEMPTS: 2,
+  specificErrorAllowed: jest.fn().mockReturnValue(false),
+  getLoginFailures: jest.fn().mockResolvedValue(0),
   clearLoginFailures: jest.fn(),
   failureKey: jest.fn().mockReturnValue('test-fkey'),
   getLockoutRemainingSeconds: jest.fn().mockResolvedValue(0),
@@ -87,17 +90,19 @@ jest.mock('@/lib/auth', () => {
   }
 })
 
-import { POST } from '@/app/api/auth/login/route'
 import bcrypt from 'bcryptjs'
-import { createClient } from '@/lib/supabase/server'
-import { verifySecurityKey, isSecurityKeyExpired } from '@/lib/security-key'
-import { rateLimit as rateLimitFn } from '@/lib/rate-limit'
 import { NextRequest } from 'next/server'
+import { POST } from '@/app/api/auth/login/route'
+import { rateLimit as rateLimitFn } from '@/lib/rate-limit'
+import { isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
+import { createClient } from '@/lib/supabase/server'
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
 const mockBcryptCompare = bcrypt.compare as unknown as jest.Mock
 const mockVerifySecurityKey = verifySecurityKey as jest.MockedFunction<typeof verifySecurityKey>
-const mockIsSecurityKeyExpired = isSecurityKeyExpired as jest.MockedFunction<typeof isSecurityKeyExpired>
+const mockIsSecurityKeyExpired = isSecurityKeyExpired as jest.MockedFunction<
+  typeof isSecurityKeyExpired
+>
 const mockRateLimit = rateLimitFn as jest.MockedFunction<typeof rateLimitFn>
 
 function loginReq(body: unknown, ip = '1.2.3.4') {
@@ -167,9 +172,17 @@ describe('POST /api/auth/login', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Re-setup rate limit mocks after clearAllMocks
-    mockRateLimit.mockResolvedValue({ success: true, remaining: 4, resetAt: Date.now() + 60000, limit: 5 })
+    mockRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 4,
+      resetAt: Date.now() + 60000,
+      limit: 5,
+    })
     // Default: no lockout (individual tests override per-case)
     require('@/lib/login-defense').getLockoutRemainingSeconds.mockResolvedValue(0)
+    // Default: generic path (S3 specific tests opt in per-case)
+    require('@/lib/login-defense').specificErrorAllowed.mockReturnValue(false)
+    require('@/lib/login-defense').getLoginFailures.mockResolvedValue(0)
     // Setup ownerEnsured cache
     mockFindFirst.mockImplementation(async (args: any) => {
       if (args?.where?.role === 'owner') return baseUser()
@@ -186,18 +199,24 @@ describe('POST /api/auth/login', () => {
   })
 
   it('يرفض username فارغ', async () => {
-    const res = await POST(loginReq({ username: '', email: 'a@b.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({ username: '', email: 'a@b.com', password: 'pass', securityKey: 'key' }),
+    )
     expect(res.status).toBe(422)
   })
 
   it('يرفض email غير صالح', async () => {
-    const res = await POST(loginReq({ username: 'u', email: 'not-an-email', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({ username: 'u', email: 'not-an-email', password: 'pass', securityKey: 'key' }),
+    )
     expect(res.status).toBe(422)
   })
 
   it('يرجع 401 لمستخدم غير موجود', async () => {
     mockFindUnique.mockResolvedValue(null)
-    const res = await POST(loginReq({ username: 'unknown', email: 'x@x.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({ username: 'unknown', email: 'x@x.com', password: 'pass', securityKey: 'key' }),
+    )
     const body = await res.json()
     expect(res.status).toBe(401)
     expect(body.error?.code).toBe('INVALID_CREDENTIALS')
@@ -206,28 +225,102 @@ describe('POST /api/auth/login', () => {
     expect(body.problem?.status).toBe(401)
   })
 
+  it('S3: المحاولتان 1-2 ترجعان خطأً محدداً مع field', async () => {
+    require('@/lib/login-defense').specificErrorAllowed.mockReturnValue(true)
+    require('@/lib/login-defense').getLoginFailures.mockResolvedValue(0)
+    mockFindUnique.mockResolvedValue(null)
+    const res = await POST(
+      loginReq({ username: 'unknown', email: 'x@x.com', password: 'pass', securityKey: 'key' }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(401)
+    expect(body.error?.code).toBe('UNKNOWN_USER')
+    expect(body.error?.details?.field).toBe('username')
+    // بلا تأخير في المحاولات المحددة
+    expect(require('@/lib/login-defense').sleep).not.toHaveBeenCalled()
+  })
+
+  it('S3: كلمة مرور خاطئة في محاولة مبكرة ترجع WRONG_PASSWORD', async () => {
+    require('@/lib/login-defense').specificErrorAllowed.mockReturnValue(true)
+    require('@/lib/login-defense').getLoginFailures.mockResolvedValue(1)
+    mockBcryptCompare.mockResolvedValue(false as any)
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'wrong',
+        securityKey: 'key',
+      }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(401)
+    expect(body.error?.code).toBe('WRONG_PASSWORD')
+    expect(body.error?.details?.field).toBe('password')
+  })
+
+  it('S3: المحاولة 3+ ترجع الخطأ العام مع التأخير', async () => {
+    require('@/lib/login-defense').specificErrorAllowed.mockReturnValue(false)
+    require('@/lib/login-defense').getLoginFailures.mockResolvedValue(5)
+    mockFindUnique.mockResolvedValue(null)
+    const res = await POST(
+      loginReq({ username: 'unknown', email: 'x@x.com', password: 'pass', securityKey: 'key' }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(401)
+    expect(body.error?.code).toBe('INVALID_CREDENTIALS')
+    expect(require('@/lib/login-defense').sleep).toHaveBeenCalled()
+  })
+
   it('يرجع 401 عند عدم تطابق البريد الإلكتروني', async () => {
     mockFindUnique.mockResolvedValue({ ...baseUser(), email: 'other@test.com' })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'wrong@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'wrong@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('يرجع 401 عند كلمة مرور خاطئة', async () => {
     mockBcryptCompare.mockResolvedValue(false as any)
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'wrong', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'wrong',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('يرجع 401 عند مفتاح أمان خاطئ', async () => {
     mockBcryptCompare.mockResolvedValueOnce(true as any)
     mockVerifySecurityKey.mockResolvedValue(false)
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'wrong-key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'wrong-key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('يرجع 401 عندما لا يوجد securityKey للمستخدم', async () => {
     mockFindUnique.mockResolvedValue({ ...baseUser(), securityKey: null })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -236,7 +329,14 @@ describe('POST /api/auth/login', () => {
     mockVerifySecurityKey.mockResolvedValue(true)
     mockIsSecurityKeyExpired.mockReturnValue(false)
     mockFindUnique.mockResolvedValue({ ...baseUser(), banStatus: 'banned_perm' })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(403)
   })
 
@@ -245,13 +345,27 @@ describe('POST /api/auth/login', () => {
     mockVerifySecurityKey.mockResolvedValue(true)
     mockIsSecurityKeyExpired.mockReturnValue(false)
     mockFindUnique.mockResolvedValue({ ...baseUser(), role: 'member' })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(403)
   })
 
   it('ينجح تسجيل الدخول مع حساب موجود في Supabase', async () => {
     setupSuccessMocks()
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.user.username).toBe('owner-user')
@@ -279,7 +393,14 @@ describe('POST /api/auth/login', () => {
 
     mockCreateSupabaseAuthUser.mockResolvedValue('new-supabase-id')
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.user.username).toBe('owner-user')
@@ -302,13 +423,32 @@ describe('POST /api/auth/login', () => {
 
     mockCreateSupabaseAuthUser.mockResolvedValue(null)
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('يرجع 429 عند تجاوز حد المعدل', async () => {
-    mockRateLimit.mockResolvedValue({ success: false, remaining: 0, resetAt: Date.now() + 60000, limit: 5 })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    mockRateLimit.mockResolvedValue({
+      success: false,
+      remaining: 0,
+      resetAt: Date.now() + 60000,
+      limit: 5,
+    })
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(429)
     // Canonical 429 carries Retry-After (Phase 3 rate-limit unification)
     expect(res.headers.get('Retry-After')).toBeTruthy()
@@ -316,14 +456,28 @@ describe('POST /api/auth/login', () => {
 
   it('يرجع خطأ عام 500 عند استثناء غير متوقع', async () => {
     mockFindUnique.mockRejectedValue(new Error('DB exploded'))
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(500)
   })
 
   it('يربط supabaseId في DB عندما لا يكون موجوداً', async () => {
     mockFindUnique.mockResolvedValue({ ...baseUser(), supabaseId: null })
     setupSuccessMocks({ supabaseId: null })
-    await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(mockUpdate).toHaveBeenCalled()
   })
 
@@ -331,7 +485,14 @@ describe('POST /api/auth/login', () => {
     mockIsSecurityKeyExpired.mockReturnValue(true)
     mockBcryptCompare.mockResolvedValue(true as any)
     mockVerifySecurityKey.mockResolvedValue(true)
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -356,7 +517,14 @@ describe('POST /api/auth/login', () => {
 
     mockCreateSupabaseAuthUser.mockResolvedValue('new-supabase-id')
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -372,7 +540,14 @@ describe('POST /api/auth/login', () => {
       generateMFAToken: jest.fn().mockResolvedValue('mfa-token-123'),
     }))
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.mfaRequired).toBe(true)
@@ -385,13 +560,24 @@ describe('POST /api/auth/login', () => {
 
     mockFindUnique
       .mockResolvedValueOnce(baseUser())
-      .mockResolvedValueOnce({ totpEnabled: true, totpSecret: 'secret', recoveryCodesUsed: ['code1', 'code2', 'code3'] })
+      .mockResolvedValueOnce({
+        totpEnabled: true,
+        totpSecret: 'secret',
+        recoveryCodesUsed: ['code1', 'code2', 'code3'],
+      })
 
     jest.mock('@/lib/mfa-token', () => ({
       generateMFAToken: jest.fn().mockResolvedValue('mfa-token-456'),
     }))
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.recoveryCodesCount).toBe(7) // 10 - 3
@@ -416,14 +602,21 @@ describe('POST /api/auth/login', () => {
       },
     } as any)
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     // Should have called update to link supabaseId
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ supabaseId: 'supa-session-user' }),
-      })
+      }),
     )
   })
 
@@ -431,7 +624,14 @@ describe('POST /api/auth/login', () => {
     // Password passes but securityKey is null → line 217
     mockBcryptCompare.mockResolvedValue(true as any)
     mockFindUnique.mockResolvedValue({ ...baseUser(), securityKey: null })
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -439,7 +639,14 @@ describe('POST /api/auth/login', () => {
     const { getLockoutRemainingSeconds } = require('@/lib/login-defense')
     getLockoutRemainingSeconds.mockResolvedValue(640)
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(429)
     const body = await res.json()
     expect(body.error.code).toBe('ACCOUNT_LOCKED')
@@ -455,7 +662,14 @@ describe('POST /api/auth/login', () => {
 
     // No lock → login proceeds normally; user won't exist → 401
     mockFindUnique.mockResolvedValue(null)
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(401)
     expect(getLockoutRemainingSeconds).toHaveBeenCalled()
   })
@@ -472,7 +686,14 @@ describe('POST /api/auth/login', () => {
       bannedUntil: new Date('2020-01-01'),
     })
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     const body = await res.json()
     // Not banned (expired), but member role check... wait, role is 'owner' so it should succeed
     expect(res.status).toBe(200)
@@ -491,7 +712,14 @@ describe('POST /api/auth/login', () => {
       banReason: 'انتهاك القواعد',
     })
 
-    const res = await POST(loginReq({ username: 'owner-user', email: 'owner@test.com', password: 'pass', securityKey: 'key' }))
+    const res = await POST(
+      loginReq({
+        username: 'owner-user',
+        email: 'owner@test.com',
+        password: 'pass',
+        securityKey: 'key',
+      }),
+    )
     expect(res.status).toBe(403)
   })
 })

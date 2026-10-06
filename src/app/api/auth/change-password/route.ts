@@ -4,9 +4,9 @@ import { logAction } from '@/lib/audit'
 import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { ChangePasswordSchema } from '@/lib/schemas'
 import { routeNotification } from '@/lib/notification-router'
 import { rateLimit } from '@/lib/rate-limit'
+import { ChangePasswordSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
@@ -65,7 +65,14 @@ export async function POST(req: NextRequest) {
           where: {
             OR: [{ supabaseId: supabaseUser.id }, { email: supabaseUser.email || '' }],
           },
-          select: { id: true, username: true, role: true, tokenVersion: true, email: true, onboardingCompleted: true },
+          select: {
+            id: true,
+            username: true,
+            role: true,
+            tokenVersion: true,
+            email: true,
+            onboardingCompleted: true,
+          },
         })
       } catch {
         // biome-ignore lint/suspicious/noEmptyBlockStatements: DB lookup fallback, will use Supabase user
@@ -73,6 +80,13 @@ export async function POST(req: NextRequest) {
 
       if (neonUser) {
         const newTokenVersion = await invalidateUserSessions(neonUser.id)
+        // إبطال كاش /me (tokenVersion الجديد يجعل الحمولات المخزنة قديمة).
+        try {
+          const { bumpAuthMeGeneration } = await import('@/app/api/auth/me/route')
+          await bumpAuthMeGeneration(neonUser.id)
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort — tv check still rejects stale tokens
+        }
 
         // إعادة إصدار الكوكي للجلسة الحالية فقط — يبقى المستخدم الحالي مسجلاً
         // إذا كان MFA مفعلاً، نحتاج إلى الحفاظ على حالة التحقق
@@ -83,7 +97,13 @@ export async function POST(req: NextRequest) {
               select: { totpEnabled: true },
             })
             const mfaVerified = !!fullUser?.totpEnabled
-            await setRoleCookie(neonUser.id, neonUser.role as never, newTokenVersion, mfaVerified, neonUser.onboardingCompleted)
+            await setRoleCookie(
+              neonUser.id,
+              neonUser.role as never,
+              newTokenVersion,
+              mfaVerified,
+              neonUser.onboardingCompleted,
+            )
           } catch (e) {
             logger.error({ err: e }, '[ChangePassword] setRoleCookie failed')
           }
@@ -103,8 +123,8 @@ export async function POST(req: NextRequest) {
             }),
           })
         } catch {
-        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
-      }
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort audit logging
+        }
 
         // Telegram-first: bot is primary for linked users; real inboxes get
         // a backup copy (router decides). Fail-open, never blocks.

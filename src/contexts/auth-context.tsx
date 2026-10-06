@@ -136,14 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [toast])
 
-  // Fetch on mount
+  // Fetch on mount — skip on /admin/login (it runs its own pre-check).
   useEffect(() => {
+    if (pathname === '/admin/login') {
+      setLoading(false)
+      return
+    }
     fetchUser()
-  }, [fetchUser])
+  }, [fetchUser, pathname])
 
   // Re-validate auth state on route change in the background (catches OAuth
   // redirects, admin login redirects, etc.) — SWR cache absorbs the storm.
   useEffect(() => {
+    if (pathname === '/admin/login') return
     if (hasInitialized.current && prevPathname.current !== pathname) {
       prevPathname.current = pathname
       fetchUser({ background: true })
@@ -161,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let lastRefetch = 0
     const handleVisibility = () => {
       if (document.visibilityState !== 'visible') return
+      if (pathname === '/admin/login') return
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
         const now = Date.now()
@@ -174,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibility)
       if (timer) clearTimeout(timer)
     }
-  }, [fetchUser])
+  }, [fetchUser, pathname])
 
   const value = useMemo(
     () => ({
