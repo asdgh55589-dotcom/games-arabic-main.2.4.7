@@ -53,7 +53,7 @@ export default async function CreatorNewsPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`📰 ${dict.news.title}`} subtitle={dict.news.subtitle} />
-      <SectionCard title={dict.news.title} description={dict.news.subtitle}>
+      <SectionCard title={dict.news.sectionTitle}>
         <NewsClient />
       </SectionCard>
     </div>

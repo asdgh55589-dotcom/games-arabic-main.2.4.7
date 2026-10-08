@@ -31,7 +31,7 @@ export default async function CreatorLikesPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`❤️ ${dict.likes.title}`} subtitle={dict.likes.subtitle} />
-      <SectionCard title={dict.likes.title} description={dict.likes.subtitle}>
+      <SectionCard title={dict.likes.sectionTitle}>
         <LikesClient />
       </SectionCard>
     </div>

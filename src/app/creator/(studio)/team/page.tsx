@@ -32,7 +32,7 @@ export default async function CreatorTeamPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`👥 ${dict.nav.myTeam}`} subtitle="إدارة فريق التعريب الخاص بك" />
-      <SectionCard title={dict.nav.myTeam} description="إدارة فريق التعريب الخاص بك">
+      <SectionCard title="إدارة الفريق">
         <TeamManager />
       </SectionCard>
     </div>

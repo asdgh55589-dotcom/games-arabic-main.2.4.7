@@ -42,7 +42,7 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`✏️ ${dict.form.editMod}`} />
-      <SectionCard title={dict.form.editMod}>
+      <SectionCard title={dict.form.sectionTitle}>
         <ModForm modId={id} />
       </SectionCard>
     </div>

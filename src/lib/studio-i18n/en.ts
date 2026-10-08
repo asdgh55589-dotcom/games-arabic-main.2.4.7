@@ -193,16 +193,19 @@ export const en: StudioDict = {
   },
   modsPage: {
     title: 'My Mods',
+    sectionTitle: 'Mod list',
     metaTitle: 'My Mods',
   },
   commentsPage: {
     title: 'Comment Management',
     subtitle: 'Manage comments on your mods — reply, hide, delete',
+    sectionTitle: 'Comment list',
     metaTitle: 'Comment Management',
   },
   requestsPage: {
     title: 'Mod Requests',
     subtitle: 'Browse community requests, accept what suits you, then link your mod on completion',
+    sectionTitle: 'Request list',
     metaTitle: 'Mod Requests',
   },
   settingsPage: {
@@ -221,6 +224,7 @@ export const en: StudioDict = {
   statsPage: {
     title: 'My Statistics',
     subtitle: 'Track your mods performance in detail',
+    sectionTitle: 'Performance summary',
     metaTitle: 'My Statistics',
     empty: 'No published mods to show statistics for',
     views: 'views',
@@ -318,6 +322,7 @@ export const en: StudioDict = {
     pageOf: 'of',
   },
   form: {
+    sectionTitle: 'Mod details',
     invalidLink: 'Invalid link',
     invalidLinkDesc: 'Please enter a valid YouTube or Vimeo link',
     fetchFailed: 'Fetch failed',
@@ -616,6 +621,7 @@ export const en: StudioDict = {
   likes: {
     title: 'Likes',
     subtitle: 'Who engaged with your mods — endorsements, comment likes, ratings',
+    sectionTitle: 'Engagement details',
     metaTitle: 'Likes',
     endorsements: 'Endorsements',
     commentLikes: 'Comment likes',
@@ -636,6 +642,7 @@ export const en: StudioDict = {
   news: {
     title: 'News',
     subtitle: 'Publish your mod news directly — no review',
+    sectionTitle: 'News list',
     metaTitle: 'News',
     newPost: 'New post',
     editPost: 'Edit post',
@@ -677,6 +684,7 @@ export const en: StudioDict = {
   reports: {
     title: 'Report follow-ups',
     subtitle: 'Moderation outcomes on reports against your mods — reporters stay anonymous',
+    sectionTitle: 'Report list',
     metaTitle: 'Report follow-ups',
     all: 'All',
     targetMod: 'Mod',

@@ -16,7 +16,7 @@ export default function CreatorDocsPage() {
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6" dir="rtl">
+      <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
         {/* Page Header */}
         <StudioPageHeader
           title="📖 دليل حقول التعريب"

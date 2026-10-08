@@ -30,7 +30,7 @@ export default async function CreatorStatsPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`📊 ${dict.statsPage.title}`} subtitle={dict.statsPage.subtitle} />
-      <SectionCard title={dict.statsPage.title} description={dict.statsPage.subtitle}>
+      <SectionCard title={dict.statsPage.sectionTitle}>
         <StatsClient />
       </SectionCard>
     </div>

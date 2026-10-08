@@ -272,16 +272,19 @@ export interface StudioDict {
   }
   modsPage: {
     title: string
+    sectionTitle: string
     metaTitle: string
   }
   commentsPage: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
   }
   requestsPage: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
   }
   settingsPage: {
@@ -300,6 +303,7 @@ export interface StudioDict {
   statsPage: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
     empty: string
     views: string
@@ -320,6 +324,7 @@ export interface StudioDict {
     retry: string
   }
   form: {
+    sectionTitle: string
     invalidLink: string
     invalidLinkDesc: string
     fetchFailed: string
@@ -618,6 +623,7 @@ export interface StudioDict {
   reports: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
     all: string
     targetMod: string
@@ -651,6 +657,7 @@ export interface StudioDict {
   likes: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
     endorsements: string
     commentLikes: string
@@ -671,6 +678,7 @@ export interface StudioDict {
   news: {
     title: string
     subtitle: string
+    sectionTitle: string
     metaTitle: string
     newPost: string
     editPost: string

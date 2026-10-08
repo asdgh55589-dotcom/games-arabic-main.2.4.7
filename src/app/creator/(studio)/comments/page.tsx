@@ -32,7 +32,7 @@ export default async function CreatorCommentsPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`💬 ${dict.commentsPage.title}`} subtitle={dict.commentsPage.subtitle} />
-      <SectionCard title={dict.commentsPage.title} description={dict.commentsPage.subtitle}>
+      <SectionCard title={dict.commentsPage.sectionTitle}>
         <CommentsManager />
       </SectionCard>
     </div>

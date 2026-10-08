@@ -194,16 +194,19 @@ export const ar: StudioDict = {
   },
   modsPage: {
     title: 'تعريباتي',
+    sectionTitle: 'قائمة التعريبات',
     metaTitle: 'تعريباتي',
   },
   commentsPage: {
     title: 'إدارة التعليقات',
     subtitle: 'إدارة التعليقات على تعريباتك — الرد، الإخفاء، الحذف',
+    sectionTitle: 'قائمة التعليقات',
     metaTitle: 'إدارة التعليقات',
   },
   requestsPage: {
     title: 'طلبات التعريب',
     subtitle: 'تصفح طلبات المجتمع وقبول ما يناسبك، ثم اربطه بتعريبك عند الإكمال',
+    sectionTitle: 'قائمة الطلبات',
     metaTitle: 'طلبات التعريب',
   },
   settingsPage: {
@@ -222,6 +225,7 @@ export const ar: StudioDict = {
   statsPage: {
     title: 'إحصائياتي',
     subtitle: 'تابع أداء تعريباتك بالتفصيل',
+    sectionTitle: 'ملخص الأداء',
     metaTitle: 'إحصائياتي',
     empty: 'لا توجد تعريبات منشورة لعرض الإحصائيات',
     views: 'مشاهدة',
@@ -319,6 +323,7 @@ export const ar: StudioDict = {
     pageOf: 'من',
   },
   form: {
+    sectionTitle: 'بيانات التعريب',
     invalidLink: 'رابط غير صالح',
     invalidLinkDesc: 'الرجاء إدخال رابط يوتيوب أو فيميو صحيح',
     fetchFailed: 'فشل الجلب',
@@ -617,6 +622,7 @@ export const ar: StudioDict = {
   likes: {
     title: 'الإعجابات',
     subtitle: 'من تفاعل مع تعريباتك — التأييدات وإعجابات التعليقات والتقييمات',
+    sectionTitle: 'تفاصيل التفاعل',
     metaTitle: 'الإعجابات',
     endorsements: 'التأييدات',
     commentLikes: 'إعجابات التعليقات',
@@ -637,6 +643,7 @@ export const ar: StudioDict = {
   news: {
     title: 'الأخبار',
     subtitle: 'انشر أخبار تعريباتك مباشرة — بدون مراجعة',
+    sectionTitle: 'قائمة الأخبار',
     metaTitle: 'الأخبار',
     newPost: 'خبر جديد',
     editPost: 'تعديل الخبر',
@@ -678,6 +685,7 @@ export const ar: StudioDict = {
   reports: {
     title: 'متابعة البلاغات',
     subtitle: 'نتائج وقرارات الإدارة على البلاغات ضد تعريباتك — بدون كشف المُبلغين',
+    sectionTitle: 'قائمة البلاغات',
     metaTitle: 'متابعة البلاغات',
     all: 'الكل',
     targetMod: 'تعريب',

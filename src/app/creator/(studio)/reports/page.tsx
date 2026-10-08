@@ -31,7 +31,7 @@ export default async function CreatorReportsPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`🛡️ ${dict.reports.title}`} subtitle={dict.reports.subtitle} />
-      <SectionCard title={dict.reports.title} description={dict.reports.subtitle}>
+      <SectionCard title={dict.reports.sectionTitle}>
         <ReportsClient />
       </SectionCard>
     </div>

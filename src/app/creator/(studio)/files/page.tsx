@@ -25,7 +25,7 @@ export default async function CreatorFilesPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title="📁 ملفاتي" subtitle="إدارة ملفات التعريبات الخاصة بك" />
-      <SectionCard title="ملفاتي" description="إدارة ملفات التعريبات الخاصة بك">
+      <SectionCard title="قائمة الملفات">
         <FilesManager
           apiBase="/api/creator/files"
           deleteBase="/api/creator/files"

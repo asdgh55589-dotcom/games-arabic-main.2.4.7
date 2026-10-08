@@ -32,7 +32,7 @@ export default async function CreatorRequestsPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`📥 ${dict.requestsPage.title}`} subtitle={dict.requestsPage.subtitle} />
-      <SectionCard title={dict.requestsPage.title} description={dict.requestsPage.subtitle}>
+      <SectionCard title={dict.requestsPage.sectionTitle}>
         <RequestsManager />
       </SectionCard>
     </div>

@@ -39,7 +39,7 @@ export default async function MyModsPage({
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`📦 ${dict.modsPage.title}`} />
-      <SectionCard title={dict.modsPage.title}>
+      <SectionCard title={dict.modsPage.sectionTitle}>
         <ModsListClient initialStatus={status} initialQuery={q} />
       </SectionCard>
     </div>

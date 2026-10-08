@@ -32,7 +32,7 @@ export default async function NewModPage() {
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`➕ ${dict.form.newMod}`} />
-      <SectionCard title={dict.form.newMod}>
+      <SectionCard title={dict.form.sectionTitle}>
         <ModForm />
       </SectionCard>
     </div>
