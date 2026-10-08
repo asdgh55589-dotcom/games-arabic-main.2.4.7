@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { RequestsManager } from '@/components/creator/requests-manager'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -30,13 +31,10 @@ export default async function CreatorRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">📥 {dict.requestsPage.title}</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">
-          {dict.requestsPage.subtitle}
-        </p>
-      </div>
-      <RequestsManager />
+      <StudioPageHeader title={`📥 ${dict.requestsPage.title}`} subtitle={dict.requestsPage.subtitle} />
+      <SectionCard title={dict.requestsPage.title} description={dict.requestsPage.subtitle}>
+        <RequestsManager />
+      </SectionCard>
     </div>
   )
 }

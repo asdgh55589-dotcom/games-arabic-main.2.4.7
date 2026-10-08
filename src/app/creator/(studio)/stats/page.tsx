@@ -1,7 +1,7 @@
-import { BarChart3 } from 'lucide-react'
 import { isCreatorRole } from '@/lib/roles'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { StatsClient } from '@/components/creator/stats-client'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -29,14 +29,10 @@ export default async function CreatorStatsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          {dict.statsPage.title}
-        </h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.statsPage.subtitle}</p>
-      </div>
-      <StatsClient />
+      <StudioPageHeader title={`📊 ${dict.statsPage.title}`} subtitle={dict.statsPage.subtitle} />
+      <SectionCard title={dict.statsPage.title} description={dict.statsPage.subtitle}>
+        <StatsClient />
+      </SectionCard>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import ModForm from '@/components/creator/mod-form'
 import { getSession } from '@/lib/auth'
-import { getStudioLocale } from '@/lib/studio-i18n/server'
+import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
 
@@ -26,5 +27,14 @@ export default async function NewModPage() {
     redirect('/become-creator/apply')
   }
 
-  return <ModForm />
+  const { dict } = await getStudioDict()
+
+  return (
+    <div className="space-y-6">
+      <StudioPageHeader title={`➕ ${dict.form.newMod}`} />
+      <SectionCard title={dict.form.newMod}>
+        <ModForm />
+      </SectionCard>
+    </div>
+  )
 }

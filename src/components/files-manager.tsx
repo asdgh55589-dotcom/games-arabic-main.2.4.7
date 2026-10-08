@@ -59,12 +59,16 @@ export function FilesManager({
   showUploader,
   title,
   embedEndpoint,
+  hideHeader,
 }: {
   apiBase: string
   deleteBase: string
   showUploader: boolean
   title: string
   embedEndpoint?: string
+  /** When true (studio SectionCard rollout), the page header is rendered by
+   *  the caller — keep only the file count line, skip the duplicate h1. */
+  hideHeader?: boolean
 }) {
   const { toast } = useToast()
   const [files, setFiles] = useState<ManagedFile[]>([])
@@ -105,10 +109,16 @@ export function FilesManager({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">📁 {title}</h1>
-        <span className="text-sm text-muted-foreground">{pagination.total} ملف</span>
-      </div>
+      {hideHeader ? (
+        <div className="flex items-center justify-end">
+          <span className="text-sm text-muted-foreground">{pagination.total} ملف</span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">📁 {title}</h1>
+          <span className="text-sm text-muted-foreground">{pagination.total} ملف</span>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

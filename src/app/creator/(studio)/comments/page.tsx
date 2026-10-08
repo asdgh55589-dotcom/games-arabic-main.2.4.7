@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { CommentsManager } from '@/components/creator/comments-manager'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -30,13 +31,10 @@ export default async function CreatorCommentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">💬 {dict.commentsPage.title}</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">
-          {dict.commentsPage.subtitle}
-        </p>
-      </div>
-      <CommentsManager />
+      <StudioPageHeader title={`💬 ${dict.commentsPage.title}`} subtitle={dict.commentsPage.subtitle} />
+      <SectionCard title={dict.commentsPage.title} description={dict.commentsPage.subtitle}>
+        <CommentsManager />
+      </SectionCard>
     </div>
   )
 }

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { notFound, redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import ModForm from '@/components/creator/mod-form'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { getStudioLocale } from '@/lib/studio-i18n/server'
+import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
 
@@ -36,5 +37,14 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
     redirect('/creator/mods')
   }
 
-  return <ModForm modId={id} />
+  const { dict } = await getStudioDict()
+
+  return (
+    <div className="space-y-6">
+      <StudioPageHeader title={`✏️ ${dict.form.editMod}`} />
+      <SectionCard title={dict.form.editMod}>
+        <ModForm modId={id} />
+      </SectionCard>
+    </div>
+  )
 }

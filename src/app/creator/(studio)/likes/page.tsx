@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { LikesClient } from '@/components/creator/likes-client'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -29,11 +30,10 @@ export default async function CreatorLikesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">❤️ {dict.likes.title}</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.likes.subtitle}</p>
-      </div>
-      <LikesClient />
+      <StudioPageHeader title={`❤️ ${dict.likes.title}`} subtitle={dict.likes.subtitle} />
+      <SectionCard title={dict.likes.title} description={dict.likes.subtitle}>
+        <LikesClient />
+      </SectionCard>
     </div>
   )
 }

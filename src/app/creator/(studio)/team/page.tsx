@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { TeamManager } from '@/components/creator/team-manager'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -30,11 +31,10 @@ export default async function CreatorTeamPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{dict.nav.myTeam}</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">إدارة فريق التعريب الخاص بك</p>
-      </div>
-      <TeamManager />
+      <StudioPageHeader title={`👥 ${dict.nav.myTeam}`} subtitle="إدارة فريق التعريب الخاص بك" />
+      <SectionCard title={dict.nav.myTeam} description="إدارة فريق التعريب الخاص بك">
+        <TeamManager />
+      </SectionCard>
     </div>
   )
 }

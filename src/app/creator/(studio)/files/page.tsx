@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { FilesManager } from '@/components/files-manager'
 import { getSession } from '@/lib/auth'
 
@@ -22,12 +23,18 @@ export default async function CreatorFilesPage() {
   }
 
   return (
-    <FilesManager
-      apiBase="/api/creator/files"
-      deleteBase="/api/creator/files"
-      showUploader={false}
-      title="ملفاتي"
-      embedEndpoint="/api/creator/files/embed-code"
-    />
+    <div className="space-y-6">
+      <StudioPageHeader title="📁 ملفاتي" subtitle="إدارة ملفات التعريبات الخاصة بك" />
+      <SectionCard title="ملفاتي" description="إدارة ملفات التعريبات الخاصة بك">
+        <FilesManager
+          apiBase="/api/creator/files"
+          deleteBase="/api/creator/files"
+          showUploader={false}
+          title="ملفاتي"
+          embedEndpoint="/api/creator/files/embed-code"
+          hideHeader
+        />
+      </SectionCard>
+    </div>
   )
 }
