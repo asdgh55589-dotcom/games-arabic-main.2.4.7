@@ -1,12 +1,26 @@
 import type { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
+
+// B5 — strict action enum (was: free `body.action` string with a
+// switch/default). Unknown actions now fail Zod before any DB read.
+const ModActionSchema = z
+  .object({
+    action: z.enum(['submit', 'archive', 'resubmit', 'delete']),
+  })
+  .strict()
+
+// B5 — cap the admin fan-out on resubmit so one action cannot flood
+// the notifications table (queue/trim: only the most recent 20 admins).
+const ADMIN_NOTIFY_CAP = 20
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
@@ -16,9 +30,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const { id } = await params
     const body = await req.json().catch(() => ({}))
-    const { action } = body as { action?: string }
+    const parsed = ModActionSchema.safeParse(body)
+    if (!parsed.success) return validationFail(parsed.error.flatten())
+    const { action } = parsed.data
 
-    if (!action) return validationFail('إجراء مطلوب')
+    // B5 — flood guard: 10 workflow actions/hour per creator.
+    const limited = await rateLimitMiddleware(req, {
+      limit: 10,
+      window: 3600,
+      keyPrefix: `creator:mod-action:${user.id}`,
+    })
+    if (limited) return limited
 
     const mod = await db.mod.findUnique({ where: { id } })
     if (!mod) return notFound('التعريب غير موجود')
@@ -90,11 +112,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             },
           })
         })
-        // Notify admins
+        // Notify admins (capped fan-out — see ADMIN_NOTIFY_CAP).
         try {
           const admins = await db.user.findMany({
             where: { role: { in: ['admin', 'manager', 'owner'] } },
             select: { id: true },
+            take: ADMIN_NOTIFY_CAP,
           })
           for (const admin of admins) {
             await db.notification.create({

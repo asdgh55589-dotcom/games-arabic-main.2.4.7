@@ -9,6 +9,7 @@ import {
   getCommentModAuthor,
   getCommentOwner,
 } from '@/lib/comments/repository'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -18,6 +19,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  // B5 — flood guard: 30 comment actions/hour per creator.
+  const limited = await rateLimitMiddleware(req, {
+    limit: 30,
+    window: 3600,
+    keyPrefix: `creator:comment-action:${user.id}`,
+  })
+  if (limited) return limited
 
   const { id } = await params
   const comment = await getCommentModAuthor(id)
@@ -80,6 +89,14 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  // B5 — same flood guard as PATCH.
+  const limited = await rateLimitMiddleware(req, {
+    limit: 30,
+    window: 3600,
+    keyPrefix: `creator:comment-action:${user.id}`,
+  })
+  if (limited) return limited
 
   const { id } = await params
   const comment = await getCommentModAuthor(id)

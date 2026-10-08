@@ -3,6 +3,7 @@ import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { creatorBulkSetHidden } from '@/lib/comments/repository'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const MAX_BULK = 50
 
@@ -12,6 +13,14 @@ export async function POST(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  // B5 — flood guard: 30 bulk ops/hour per creator (each op touches ≤50 rows).
+  const limited = await rateLimitMiddleware(req, {
+    limit: 30,
+    window: 3600,
+    keyPrefix: `creator:comment-bulk:${user.id}`,
+  })
+  if (limited) return limited
 
   const body = (await req.json().catch(() => ({}))) as { ids?: unknown; action?: unknown }
   const rawIds: unknown = body?.ids

@@ -21,6 +21,10 @@ export async function GET(req: NextRequest) {
     const provider = searchParams.get('provider')?.trim() || null
     const type = searchParams.get('type')?.trim() || null
     const search = searchParams.get('search')?.trim() || null
+    // B2 backend — mod filter for the files page (author-scoped: the mod
+    // must belong to the caller, otherwise the filter is rejected so one
+    // creator can never probe another creator's file linkage).
+    const modId = searchParams.get('modId')?.trim() || null
     const { page, limit } = parsePagination(searchParams.get('page'), searchParams.get('limit'), {
       limit: 50,
       maxLimit: 100,
@@ -32,6 +36,17 @@ export async function GET(req: NextRequest) {
     }
     if (type && (CATEGORIES as string[]).includes(type)) {
       Object.assign(where, fileCategoryWhere(type as FileCategory))
+    }
+    if (modId) {
+      const owned = await db.mod.findFirst({
+        where: { id: modId, authorId: user.id },
+        select: { id: true },
+      })
+      if (!owned) {
+        const { validationFail } = await import('@/lib/api-response')
+        return validationFail('التعريب غير موجود أو ليس لك')
+      }
+      where.modId = modId
     }
     if (search) {
       where.OR = [

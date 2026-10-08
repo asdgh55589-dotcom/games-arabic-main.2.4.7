@@ -3,6 +3,8 @@ import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canPublishNews } from '@/lib/permissions'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { sanitizeUrl } from '@/lib/sanitize'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -26,6 +28,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const row = await ownNews(id, user.id)
   if (!row) return notFound('الخبر غير موجود')
 
+  // B4 — flood guard on edits (10/hr), same as create.
+  const limited = await rateLimitMiddleware(req, {
+    limit: 10,
+    window: 3600,
+    keyPrefix: `creator:news:${user.id}`,
+  })
+  if (limited) return limited
+
   const body = await req.json().catch(() => ({}))
   const data: Record<string, unknown> = {}
 
@@ -35,20 +45,36 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     data.title = title
   }
   if (body?.summary !== undefined) {
-    data.summary = typeof body.summary === 'string' ? body.summary.trim().slice(0, 500) : ''
+    const summary = typeof body.summary === 'string' ? body.summary.trim() : ''
+    if (summary.length > 500) return validationFail('الملخص طويل جداً (الحد الأقصى 500 حرف)')
+    data.summary = summary
   }
   if (body?.content !== undefined) {
-    data.content = typeof body.content === 'string' ? body.content.trim().slice(0, 20000) : ''
+    const content = typeof body.content === 'string' ? body.content.trim() : ''
+    if (content.length > 20000) return validationFail('المحتوى طويل جداً (الحد الأقصى 20000 حرف)')
+    data.content = content
   }
   if (body?.imageUrl !== undefined) {
     const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : ''
-    if (imageUrl && !/^https:\/\//i.test(imageUrl)) return validationFail('رابط الصورة يجب أن يبدأ بـ https://')
-    data.imageUrl = imageUrl
+    if (imageUrl.length > 500) return validationFail('رابط الصورة طويل جداً (الحد الأقصى 500 حرف)')
+    if (imageUrl) {
+      const safe = sanitizeUrl(imageUrl)
+      if (!safe || !/^https:/i.test(safe)) return validationFail('رابط الصورة يجب أن يبدأ بـ https://')
+      data.imageUrl = safe
+    } else {
+      data.imageUrl = ''
+    }
   }
   if (body?.linkUrl !== undefined) {
-    const linkUrl = typeof body.linkUrl === 'string' && body.linkUrl.trim() ? body.linkUrl.trim() : null
-    if (linkUrl && !/^https?:\/\//i.test(linkUrl)) return validationFail('الرابط الخارجي غير صالح')
-    data.linkUrl = linkUrl
+    const raw = typeof body.linkUrl === 'string' && body.linkUrl.trim() ? body.linkUrl.trim() : null
+    if (raw && raw.length > 500) return validationFail('الرابط الخارجي طويل جداً (الحد الأقصى 500 حرف)')
+    if (raw) {
+      const safe = sanitizeUrl(raw)
+      if (!safe || !/^https?:/i.test(safe)) return validationFail('الرابط الخارجي غير صالح')
+      data.linkUrl = safe
+    } else {
+      data.linkUrl = null
+    }
   }
   if (body?.category !== undefined) {
     if (!['general', 'update', 'announcement', 'event'].includes(body.category)) {

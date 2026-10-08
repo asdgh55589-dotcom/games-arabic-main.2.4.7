@@ -17,6 +17,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
 
+  // B5 — PATCH was the only custom-tabs mutator without a limit;
+  // align with POST/DELETE (10/hr for consistency).
+  const limited = await rateLimitMiddleware(req, {
+    limit: 10,
+    window: 3600,
+    keyPrefix: `creator:team-tabs:${user.id}`,
+  })
+  if (limited) return limited
+
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')

@@ -3,6 +3,8 @@ import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canPublishNews } from '@/lib/permissions'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { sanitizeUrl } from '@/lib/sanitize'
 
 // GET /api/creator/news — own news rows (drafts + published)
 export async function GET(req: NextRequest) {
@@ -60,12 +62,20 @@ export async function POST(req: NextRequest) {
     return forbidden('نشر الأخبار متاح لمسار الناشر فقط')
   }
 
+  // B4 — flood guard: 10 news/hour per publisher.
+  const limited = await rateLimitMiddleware(req, {
+    limit: 10,
+    window: 3600,
+    keyPrefix: `creator:news:${user.id}`,
+  })
+  if (limited) return limited
+
   const body = await req.json().catch(() => ({}))
   const title = typeof body?.title === 'string' ? body.title.trim() : ''
   const summary = typeof body?.summary === 'string' ? body.summary.trim().slice(0, 500) : ''
   const content = typeof body?.content === 'string' ? body.content.trim().slice(0, 20000) : ''
-  const imageUrl = typeof body?.imageUrl === 'string' ? body.imageUrl.trim() : ''
-  const linkUrl = typeof body?.linkUrl === 'string' ? body.linkUrl.trim() : null
+  const rawImageUrl = typeof body?.imageUrl === 'string' ? body.imageUrl.trim() : ''
+  const rawLinkUrl = typeof body?.linkUrl === 'string' ? body.linkUrl.trim() : null
   const category = typeof body?.category === 'string' ? body.category : 'general'
   const type = typeof body?.type === 'string' ? body.type : 'ticker'
   const visible = body?.visible === true
@@ -73,17 +83,39 @@ export async function POST(req: NextRequest) {
   if (title.length < 3 || title.length > 120) {
     return validationFail('العنوان مطلوب (3-120 حرفاً)')
   }
+  if (summary.length > 500) {
+    return validationFail('الملخص طويل جداً (الحد الأقصى 500 حرف)')
+  }
+  if (content.length > 20000) {
+    return validationFail('المحتوى طويل جداً (الحد الأقصى 20000 حرف)')
+  }
+  if (rawImageUrl.length > 500 || (rawLinkUrl && rawLinkUrl.length > 500)) {
+    return validationFail('الرابط طويل جداً (الحد الأقصى 500 حرف)')
+  }
   if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
     return validationFail('التصنيف غير صالح')
   }
   if (!TYPES.includes(type as (typeof TYPES)[number])) {
     return validationFail('النوع غير صالح (ticker أو featured)')
   }
-  if (imageUrl && !/^https:\/\//i.test(imageUrl)) {
-    return validationFail('رابط الصورة يجب أن يبدأ بـ https://')
+  // B4 — sanitizeUrl() instead of regex-only checks: blocks
+  // javascript:/data:/vbscript: schemes that a prefix regex can miss
+  // (whitespace/control-char padding, mixed case, etc.).
+  let imageUrl = ''
+  if (rawImageUrl) {
+    const safe = sanitizeUrl(rawImageUrl)
+    if (!safe || !/^https:/i.test(safe)) {
+      return validationFail('رابط الصورة يجب أن يبدأ بـ https://')
+    }
+    imageUrl = safe
   }
-  if (linkUrl && !/^https?:\/\//i.test(linkUrl)) {
-    return validationFail('الرابط الخارجي غير صالح')
+  let linkUrl: string | null = null
+  if (rawLinkUrl) {
+    const safe = sanitizeUrl(rawLinkUrl)
+    if (!safe || !/^https?:/i.test(safe)) {
+      return validationFail('الرابط الخارجي غير صالح')
+    }
+    linkUrl = safe
   }
 
   const row = await db.news.create({

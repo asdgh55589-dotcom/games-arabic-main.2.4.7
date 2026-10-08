@@ -130,13 +130,23 @@ export async function POST(req: NextRequest) {
     if (identifierLimited) return identifierLimited
 
     // Resolve the invitee when possible (username is authoritative).
+    // B6 — anti-enumeration: never reveal whether a username exists.
+    // Unknown usernames get the same generic ok shape as a real invite
+    // (no row, no token), so `404 المستخدم غير موجود` cannot be used
+    // to probe the username space.
     let invitedUser: { id: string; username: string; email: string } | null = null
     if (username) {
       invitedUser = await db.user.findUnique({
         where: { username },
         select: { id: true, username: true, email: true },
       })
-      if (!invitedUser) return notFound('المستخدم غير موجود')
+      if (!invitedUser) {
+        return ok({
+          invite: null,
+          queued: true,
+          message: 'تمت معالجة الدعوة — سيتلقى المستخدم الدعوة إذا كان الحساب موجوداً ومؤهلاً',
+        })
+      }
     } else if (email) {
       invitedUser = await db.user.findUnique({
         where: { email },
