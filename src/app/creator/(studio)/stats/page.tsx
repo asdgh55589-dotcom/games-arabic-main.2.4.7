@@ -1,4 +1,5 @@
 import { BarChart3 } from 'lucide-react'
+import { isCreatorRole } from '@/lib/roles'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { StatsClient } from '@/components/creator/stats-client'
@@ -22,8 +23,7 @@ export default async function CreatorStatsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/stats')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) redirect('/become-creator/apply')
+  if (!isCreatorRole(session.role)) redirect('/become-creator/apply')
 
   const { dict } = await getStudioDict()
 

@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { isCreatorRole } from '@/lib/roles'
 import { useAuth } from '@/contexts/auth-context'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useToast } from '@/hooks/use-toast'
@@ -121,8 +122,6 @@ const SECTIONS: {
     description: 'انضم كمعرّب أو ناشر وشارك المحتوى العربي',
   },
 ]
-
-const TRANSLATOR_ROLES = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
 
 const TRANSLATOR_BENEFITS = [
   {
@@ -925,7 +924,7 @@ export function SettingsPage() {
   }
 
   const accent = profile.accentColor || '#ff8c00'
-  const isCreator = TRANSLATOR_ROLES.includes(user?.role || '')
+  const isCreator = isCreatorRole(user?.role)
   const displayAvatar = avatarRemoved ? null : avatarPreview || profile.avatarUrl
   const displayBanner = bannerRemoved ? null : bannerPreview || profile.bannerUrl
 
@@ -1574,7 +1573,7 @@ export function SettingsPage() {
 
             {/* ========== Notifications Section ========== */}
             {activeSection === 'notifications' &&
-              (TRANSLATOR_ROLES.includes(user?.role) ? (
+              (isCreatorRole(user?.role) ? (
                 <NotificationSettings />
               ) : (
                 <SimpleNotificationSettings />

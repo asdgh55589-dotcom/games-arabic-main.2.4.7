@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { isCreatorRole } from '@/lib/roles'
 import { notFound, redirect } from 'next/navigation'
 import ModForm from '@/components/creator/mod-form'
 import { getSession } from '@/lib/auth'
@@ -23,8 +24,7 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
   const session = await getSession()
   if (!session) redirect(`/login?next=/creator/mods/${id}/edit`)
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) {
+  if (!isCreatorRole(session.role)) {
     redirect('/become-creator/apply')
   }
 

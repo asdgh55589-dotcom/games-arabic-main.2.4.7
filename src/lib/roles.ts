@@ -17,6 +17,29 @@ export const ROLE_ORDER = [
 
 export type UserRole = (typeof ROLE_ORDER)[number]
 
+/**
+ * CREATOR_ROLES — الأدوار المسموح لها بدخول استوديو المبدعين
+ * (creator..owner). المصدر المركزي الوحيد لبوابات الاستوديو —
+ * صفحات `/creator` والـ layout والحارس `requireCreatorStudio` تستورد
+ * من هنا بدل تكرار المصفوفة inline.
+ */
+export const CREATOR_ROLES = [
+  'creator',
+  'publisher',
+  'moderator',
+  'admin',
+  'manager',
+  'owner',
+] as const
+
+export type CreatorRole = (typeof CREATOR_ROLES)[number]
+
+/** true عندما يكون الدور ضمن أدوار الاستوديو (creator أو أعلى). */
+export function isCreatorRole(role?: string | null): boolean {
+  if (!role) return false
+  return (CREATOR_ROLES as readonly string[]).includes(role)
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   member: 'عضو',
   creator: 'مُعَرِّب',
@@ -62,6 +85,16 @@ export function hasRoleAtLeast(role: string, minimum: UserRole): boolean {
   const minIndex = ROLE_ORDER.indexOf(minimum)
   if (roleIndex === -1 || minIndex === -1) return false
   return roleIndex >= minIndex
+}
+
+/**
+ * Central staff check (GAM-8/A5) — single source of truth for "is this user
+ * staff?". Staff = moderator and up. Do NOT inline role arrays elsewhere;
+ * import this instead so moderator inclusion never drifts between call sites.
+ */
+export function isStaff(role?: string | null): boolean {
+  if (!role) return false
+  return hasRoleAtLeast(role, 'moderator')
 }
 
 /**

@@ -4,6 +4,7 @@ import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
 import { StudioShell } from '@/components/creator-dashboard/studio-shell'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { getBanInfo, getSession } from '@/lib/auth'
+import { isCreatorRole } from '@/lib/roles'
 import { StudioLanguageProvider } from '@/lib/studio-i18n/context'
 
 export const metadata: Metadata = {
@@ -21,8 +22,7 @@ export default async function CreatorLayout({ children }: { children: React.Reac
 
   if (!session) redirect('/login?next=/creator')
 
-  const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!CREATOR_ONLY.includes(session.role)) {
+  if (!isCreatorRole(session.role)) {
     redirect('/become-creator/apply')
   }
 

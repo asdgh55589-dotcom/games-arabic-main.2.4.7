@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
 import { ReportsClient } from '@/components/creator/reports-client'
 import { getSession } from '@/lib/auth'
@@ -21,8 +22,7 @@ export default async function CreatorReportsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/reports')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) {
+  if (!isCreatorRole(session.role)) {
     redirect('/become-creator/apply')
   }
   const { dict } = await getStudioDict()

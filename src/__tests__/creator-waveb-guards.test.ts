@@ -41,17 +41,21 @@ describe('6-role gate on every studio page (static)', () => {
 
   it.each(pages)('%s admits all 6 roles and redirects members to apply', (file) => {
     const content = src(file)
-    for (const role of SIX_ROLES) {
-      expect(content).toContain(`'${role}'`)
-    }
+    // Gate goes through the central isCreatorRole() helper (GAM-6/E E1).
+    expect(content).toMatch(/isCreatorRole\(session\.role\)/)
     expect(content).toMatch(/become-creator\/apply/)
+  })
+
+  it('central CREATOR_ROLES admits exactly the 6 studio roles', () => {
+    const roles = src('src/lib/roles.ts')
+    for (const role of SIX_ROLES) {
+      expect(roles).toContain(`'${role}'`)
+    }
   })
 
   it('studio layout enforces the same gate', () => {
     const layout = src('src/app/creator/(studio)/layout.tsx')
-    for (const role of SIX_ROLES) {
-      expect(layout).toContain(`'${role}'`)
-    }
+    expect(layout).toMatch(/isCreatorRole\(session\.role\)/)
   })
 })
 

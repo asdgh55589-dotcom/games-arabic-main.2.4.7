@@ -21,7 +21,7 @@
 
 import { jwtVerify, SignJWT } from 'jose'
 import type { NextRequest, NextResponse } from 'next/server'
-import { hasRoleAtLeast } from '@/lib/roles'
+import { hasRoleAtLeast, isCreatorRole } from '@/lib/roles'
 import { ADMIN_PAGES_FLAT } from './admin-pages'
 // Re-export for use in other modules
 export { jwtVerify }
@@ -367,8 +367,7 @@ export async function requireCreatorStudio(
 ): Promise<{ user: SessionUser | null; error: NextResponse | null }> {
   try {
     const user = await requireAuth()
-    const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-    if (!CREATOR_ONLY.includes(user.role)) {
+    if (!isCreatorRole(user.role)) {
       const { forbidden } = await import('@/lib/api-response')
       return { user: null, error: forbidden('هذه الصفحة متاحة للمُعَرِّبين والإدارة فقط') }
     }

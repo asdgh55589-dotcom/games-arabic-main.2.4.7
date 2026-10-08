@@ -20,14 +20,25 @@ const PAGES = [
 ];
 
 describe('Fix 5: page guards admit creators + management (only members redirected)', () => {
-  it.each(PAGES)('%s admits owner', (p) => {
+  it.each(PAGES)('%s uses the central creator gate (no inline role list)', (p) => {
     const code = src(p);
-    expect(code).toMatch(/'creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'/);
+    expect(code).toMatch(/isCreatorRole\(session\.role\)/);
+    expect(code).toMatch(/from '@\/lib\/roles'/);
+    expect(code).not.toMatch(/const creatorRoles = \[/);
+  });
+
+  it('central CREATOR_ROLES covers creator..owner', () => {
+    const roles = src('src/lib/roles.ts');
+    expect(roles).toMatch(
+      /export const CREATOR_ROLES = \[\s*'creator',\s*'publisher',\s*'moderator',\s*'admin',\s*'manager',\s*'owner',\s*\]/,
+    );
+    expect(roles).toMatch(/export function isCreatorRole/);
   });
 
   it('home page relies on the studio layout gate (single source of truth)', () => {
     const layout = src('src/app/creator/(studio)/layout.tsx');
-    expect(layout).toMatch(/CREATOR_ONLY = \['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner'\]/);
+    expect(layout).toMatch(/isCreatorRole\(session\.role\)/);
+    expect(layout).not.toMatch(/const CREATOR_ONLY = \[/);
     const home = src('src/app/creator/(studio)/page.tsx');
     expect(home).not.toMatch(/redirect\('\/become-creator\/apply'\)/);
   });
