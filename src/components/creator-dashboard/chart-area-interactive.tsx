@@ -56,6 +56,8 @@ export function ChartAreaInteractive() {
   )
   const [timeRange, setTimeRange] = React.useState("30d")
   const [chartData, setChartData] = React.useState<HistoryPoint[]>([])
+  const [chartStatus, setChartStatus] = React.useState<"loading" | "ready" | "error" | "empty">("loading")
+  const [reloadKey, setReloadKey] = React.useState(0)
 
   React.useEffect(() => {
     if (isMobile) {
@@ -66,13 +68,17 @@ export function ChartAreaInteractive() {
   React.useEffect(() => {
     let cancelled = false
     async function load() {
+      setChartStatus("loading")
       try {
         const range = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90
         const res = await fetch(
           `/api/creator/analytics/history?range=${range}`,
           { cache: "no-store" }
         )
-        if (!res.ok) return
+        if (!res.ok) {
+          if (!cancelled) setChartStatus("error")
+          return
+        }
         const json = await res.json()
         const views: { date: string; count: number }[] =
           json?.data?.views ?? []
@@ -105,21 +111,24 @@ export function ChartAreaInteractive() {
           byDate.set(k.date, cur)
         }
         if (!cancelled) {
-          setChartData(
-            [...byDate.values()].sort((a, b) =>
-              a.date < b.date ? -1 : a.date > b.date ? 1 : 0
-            )
+          const rows = [...byDate.values()].sort((a, b) =>
+            a.date < b.date ? -1 : a.date > b.date ? 1 : 0
           )
+          setChartData(rows)
+          setChartStatus(rows.length === 0 ? "empty" : "ready")
         }
-      } catch {
-        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort chart operation
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[studio] chart history load failed", err)
+          setChartStatus("error")
+        }
       }
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [timeRange])
+  }, [timeRange, reloadKey])
 
   const filteredData = chartData.filter((item) => {
     const date = new Date(item.date)
@@ -205,9 +214,47 @@ export function ChartAreaInteractive() {
               </SelectItem>
             </SelectContent>
           </Select>
+          {/* C4: series switcher visible on mobile too */}
+          <Select value={seriesMode} onValueChange={(v) => v && setSeriesMode(v as 'downloads' | 'clicks')}>
+            <SelectTrigger
+              className="@[767px]/card:hidden flex w-40"
+              aria-label={dict.chart.pickSeries}
+            >
+              <SelectValue placeholder={dict.chart.downloads} />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="downloads" className="rounded-lg">
+                {dict.chart.downloads}
+              </SelectItem>
+              <SelectItem value="clicks" className="rounded-lg">
+                {dict.chart.commentClicks}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        {chartStatus === "loading" && (
+          <div role="status" aria-live="polite" aria-label={dict.chart.loading} className="h-[250px] w-full animate-pulse rounded-lg bg-muted/60" />
+        )}
+        {chartStatus === "error" && (
+          <div role="alert" className="flex h-[250px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 text-sm">
+            <p className="font-medium">{dict.chart.loadError}</p>
+            <button
+              type="button"
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+            >
+              {dict.chart.retry}
+            </button>
+          </div>
+        )}
+        {chartStatus === "empty" && (
+          <div role="status" className="flex h-[250px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+            {dict.chart.empty}
+          </div>
+        )}
+        {chartStatus === "ready" && (
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
@@ -273,6 +320,7 @@ export function ChartAreaInteractive() {
             />
           </AreaChart>
         </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

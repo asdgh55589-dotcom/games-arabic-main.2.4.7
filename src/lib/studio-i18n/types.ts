@@ -23,6 +23,8 @@ export interface StudioDict {
     likes: string
     news: string
     reports: string
+    docs: string
+    newMod: string
     quickCreate: string
     inbox: string
     settings: string
@@ -64,13 +66,29 @@ export interface StudioDict {
     title: string
     totalLast3Months: string
     last3Months: string
-    last30Days: string
     last7Days: string
+    last30Days: string
     pickRange: string
+    pickSeries: string
     views: string
     downloads: string
     commentClicks: string
     visitors: string
+    loading: string
+    loadError: string
+    retry: string
+    empty: string
+  }
+  dashboard: {
+    quickLinks: string
+    topModsTitle: string
+    topModsLoading: string
+    topModsError: string
+    topModsEmpty: string
+    retry: string
+    cardsLoading: string
+    cardsError: string
+    cardsEmpty: string
   }
   /** Status KEYS (never display raw) + their labels. Rows carry keys. */
   status: {

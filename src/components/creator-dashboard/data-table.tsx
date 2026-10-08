@@ -87,6 +87,16 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -135,6 +145,36 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
+const ORDER_STORAGE_KEY = "studio:top-mods-order"
+
+function readStoredOrder(): string[] | null {
+  try {
+    const raw = window.localStorage.getItem(ORDER_STORAGE_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : null
+  } catch {
+    return null
+  }
+}
+
+// Translated column labels for the "customize columns" menu (C3: no raw IDs).
+function columnLabel(columnId: string, dict: StudioDict): string {
+  switch (columnId) {
+    case "header":
+      return dict.table.name
+    case "type":
+      return dict.table.sectionType
+    case "status":
+      return dict.table.status
+    case "target":
+      return dict.table.target
+    case "limit":
+      return dict.table.limit
+    default:
+      return columnId
+  }
+}
 function useColumns(
   dict: StudioDict,
   opts: { onArchive: (modId: string, name: string) => void },
@@ -306,10 +346,11 @@ export function DataTable({
   onChanged?: () => void
 }) {
   const { dict, dir } = useStudioLanguage()
+  const [pendingArchive, setPendingArchive] = React.useState<{ modId: string; name: string } | null>(null)
 
-  const handleArchive = React.useCallback(
-    async (modId: string, name: string) => {
-      if (!window.confirm(`${dict.table.confirmArchive} "${name}"؟`)) return
+  const doArchive = React.useCallback(
+    async (modId: string) => {
+      setPendingArchive(null)
       try {
         const res = await fetch(`/api/creator/mods/${modId}/actions`, {
           method: 'POST',
@@ -330,12 +371,28 @@ export function DataTable({
     [dict, onChanged]
   )
 
+  const handleArchive = React.useCallback((modId: string, name: string) => {
+    // RTL AlertDialog instead of native window.confirm().
+    setPendingArchive({ modId, name })
+  }, [])
+
   const columns = React.useMemo(() => useColumns(dict, { onArchive: handleArchive }), [dict, handleArchive])
   const [data, setData] = React.useState(() => initialData)
 
   // Refresh rows when the parent reloads (e.g. after archive).
+  // C3: re-apply persisted manual order (by modId) on top of fresh data.
   React.useEffect(() => {
-    setData(initialData)
+    const order = readStoredOrder()
+    if (!order || order.length === 0) {
+      setData(initialData)
+      return
+    }
+    const rank = new Map(order.map((id, i) => [id, i]))
+    setData([...initialData].sort((a, b) => {
+      const ra = rank.has(a.modId) ? rank.get(a.modId)! : Number.MAX_SAFE_INTEGER
+      const rb = rank.has(b.modId) ? rank.get(b.modId)! : Number.MAX_SAFE_INTEGER
+      return ra - rb
+    }))
   }, [initialData])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -396,7 +453,14 @@ export function DataTable({
       setData((data) => {
         const oldIndex = dataIds.indexOf(active.id)
         const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
+        const next = arrayMove(data, oldIndex, newIndex)
+        // C3: persist manual order (best-effort, by modId).
+        try {
+          window.localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(next.map((r) => r.modId)))
+        } catch {
+          // ignore storage failures
+        }
+        return next
       })
     }
   }
@@ -446,7 +510,7 @@ export function DataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {columnLabel(column.id, dict)}
                     </DropdownMenuCheckboxItem>
                   )
                 })}
@@ -587,6 +651,25 @@ export function DataTable({
           </div>
         </div>
       </TabsContent>
+      <AlertDialog open={pendingArchive !== null} onOpenChange={(open) => !open && setPendingArchive(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dict.table.sections}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingArchive ? `${dict.table.confirmArchive} "${pendingArchive.name}"؟` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{dict.table.done}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingArchive && doArchive(pendingArchive.modId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {dict.table.confirmArchive}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   )
 }
