@@ -1,9 +1,10 @@
 import { Bell, Settings } from 'lucide-react'
+import { isCreatorRole } from '@/lib/roles'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -26,8 +27,7 @@ export default async function CreatorSettingsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/settings')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) redirect('/become-creator/apply')
+  if (!isCreatorRole(session.role)) redirect('/become-creator/apply')
 
   const user = await db.user.findUnique({
     where: { id: session.id },
@@ -37,40 +37,39 @@ export default async function CreatorSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          {dict.settingsPage.title}
-        </h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.settingsPage.subtitle}</p>
-      </div>
+      <StudioPageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <Settings className="h-6 w-6" />
+            {dict.settingsPage.title}
+          </span>
+        }
+        subtitle={dict.settingsPage.subtitle}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{dict.settingsPage.profile}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+      <SectionCard title={dict.settingsPage.profile}>
+        <div className="space-y-2 text-sm">
           <div>{dict.settingsPage.bio}: {user?.bio || dict.settingsPage.noBio}</div>
-          <div>{dict.settingsPage.website}: {user?.websiteUrl || '—'}</div>
-          <Link href="/settings?section=profile">
+          <div dir="auto">{dict.settingsPage.website}: {user?.websiteUrl || '—'}</div>
+          {/* Cross-surface link stays in a new tab so the studio page never unmounts. */}
+          <Link href="/settings?section=profile" target="_blank" rel="noopener">
             <Button variant="outline" size="sm" className="mt-2">
               {dict.settingsPage.editProfile}
             </Button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <SectionCard
+        title={
+          <span className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
             {dict.settingsPage.notifications}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CreatorNotificationSettings />
-        </CardContent>
-      </Card>
+          </span>
+        }
+      >
+        <CreatorNotificationSettings />
+      </SectionCard>
     </div>
   )
 }

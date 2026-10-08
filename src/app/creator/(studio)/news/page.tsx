@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { isCreatorRole } from '@/lib/roles'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { NewsClient } from '@/components/creator/news-client'
 import { getSession } from '@/lib/auth'
 import { canPublishNews } from '@/lib/permissions'
@@ -23,8 +25,7 @@ export default async function CreatorNewsPage() {
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/news')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) {
+  if (!isCreatorRole(session.role)) {
     redirect('/become-creator/apply')
   }
   const { dict } = await getStudioDict()
@@ -51,11 +52,10 @@ export default async function CreatorNewsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">📰 {dict.news.title}</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground mt-1">{dict.news.subtitle}</p>
-      </div>
-      <NewsClient />
+      <StudioPageHeader title={`📰 ${dict.news.title}`} subtitle={dict.news.subtitle} />
+      <SectionCard title={dict.news.title} description={dict.news.subtitle}>
+        <NewsClient />
+      </SectionCard>
     </div>
   )
 }

@@ -437,7 +437,22 @@ body {
 
 /* ===== Creator studio: scoped official shadcn (zinc light) theme =====
    Isolates dashboard-01 from the site's custom dark tokens. Only vars
-   consumed by the block + official-ui primitives are overridden. */
+   consumed by the block + official-ui primitives are overridden.
+   ---
+   D2 gray/dark accent tokens (GAM-11): the studio stays light
+   (`color-scheme: light` below is load-bearing — the public site dark
+   mode must not leak in). Gray/dark accents are opt-in per surface via
+   these existing tokens — do NOT add new dark backgrounds:
+   - `--muted` / `--accent` (≈zinc-100): SectionCard bodies, filter rows,
+     empty-state wells. Text on them MUST be `--foreground` or
+     `--muted-foreground` (contrast ≥ 4.5:1 on white-adjacent zinc).
+   - `--border` / `--input` (≈zinc-200): card + field borders. Never use
+     for text.
+   - `--primary` (≈zinc-900): primary buttons + active states only; its
+     pairing foreground is `--primary-foreground` (near-white).
+   - `--sidebar-*`: sidebar surfaces mirror the same zinc scale.
+   Verified pairs: primary/primary-foreground, foreground/muted,
+   muted-foreground on muted, card-foreground on card. */
 .creator-studio-official {
   color-scheme: light;
   /* Latin/digit metrics parity with the official preview (Geist first).

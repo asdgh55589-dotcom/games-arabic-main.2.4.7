@@ -3,7 +3,6 @@
 import Link from "next/link"
 import {
   BellIcon,
-  CreditCardIcon,
   LogOutIcon,
   MoreVerticalIcon,
   UserCircleIcon,
@@ -91,19 +90,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/settings?section=profile">
+                <Link href="/creator/settings">
                   <UserCircleIcon />
                   {dict.nav.account}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings?section=account">
-                  <CreditCardIcon />
-                  {dict.nav.billing}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings?section=notifications">
+                <Link href="/creator/settings">
                   <BellIcon />
                   {dict.nav.notifications}
                 </Link>

@@ -260,7 +260,8 @@ export function buildResponseSchema(platformKey: string) {
  * Builds the system prompt for a given platform. The 8 fields are
  * shared by all platforms; only the compatibility hint adapts.
  */
-const PLATFORM_NAMES: Record<string, string> = {
+/** Display name per platform key (PC, PS4, …) — used for dynamic titles. */
+export const PLATFORM_NAMES: Record<string, string> = {
   PC: 'PC',
   PS1: 'PlayStation 1',
   PS2: 'PlayStation 2',

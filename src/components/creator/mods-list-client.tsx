@@ -23,6 +23,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -113,6 +123,7 @@ export function ModsListClient({
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
   const [page, setPage] = useState(1)
+  const [pendingConfirm, setPendingConfirm] = useState<{ modId: string; action: string } | null>(null)
 
   const fetchMods = useCallback(
     async (pageNum = 1, signal?: AbortSignal) => {
@@ -197,7 +208,17 @@ export function ModsListClient({
       archive: dict.mods.confirmArchive,
       delete: dict.mods.confirmDelete,
     }
-    if (confirmMessages[action] && !confirm(confirmMessages[action])) return
+    // RTL AlertDialog instead of native confirm() (no dir/contrast control).
+    if (confirmMessages[action]) {
+      setPendingConfirm({ modId, action })
+      return
+    }
+
+    await runModAction(modId, action)
+  }
+
+  const runModAction = async (modId: string, action: string) => {
+    setPendingConfirm(null)
 
     try {
       const res = await fetch(`/api/creator/mods/${modId}/actions`, {
@@ -293,6 +314,28 @@ export function ModsListClient({
           </Button>
         </div>
       )}
+
+      <AlertDialog open={pendingConfirm !== null} onOpenChange={(open) => !open && setPendingConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dict.mods.actions}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingConfirm
+                ? { submit: dict.mods.confirmSubmit, archive: dict.mods.confirmArchive, delete: dict.mods.confirmDelete }[pendingConfirm.action]
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingConfirm && runModAction(pendingConfirm.modId, pendingConfirm.action)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {dict.mods.remove}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

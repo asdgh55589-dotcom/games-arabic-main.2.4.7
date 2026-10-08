@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { ModsListClient } from '@/components/creator/mods-list-client'
 import { getSession } from '@/lib/auth'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
@@ -25,8 +27,7 @@ export default async function MyModsPage({
   const session = await getSession()
   if (!session) redirect('/login?next=/creator/mods')
 
-  const creatorRoles = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
-  if (!creatorRoles.includes(session.role)) {
+  if (!isCreatorRole(session.role)) {
     redirect('/become-creator/apply')
   }
 
@@ -37,11 +38,10 @@ export default async function MyModsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">📦 {dict.modsPage.title}</h1>
-      </div>
-
-      <ModsListClient initialStatus={status} initialQuery={q} />
+      <StudioPageHeader title={`📦 ${dict.modsPage.title}`} />
+      <SectionCard title={dict.modsPage.title}>
+        <ModsListClient initialStatus={status} initialQuery={q} />
+      </SectionCard>
     </div>
   )
 }

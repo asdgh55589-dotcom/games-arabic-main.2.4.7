@@ -57,17 +57,17 @@ export function ModFormHeader(p: ModFormHeaderProps) {
         )}
         {p.step === 2 && p.platform !== '' && (
           <Button asChild variant="outline" className="border-violet-500/40 text-violet-600 hover:text-violet-600">
-            <a href={`/creator/ai-fill?platform=${p.platform}`} target="_blank" rel="noopener">
+            <Link href={`/creator/ai-fill?platform=${p.platform}`} target="_blank" rel="noopener">
               <Sparkles className="me-1 h-3.5 w-3.5" />
               تعبئة ذكية
-            </a>
+            </Link>
           </Button>
         )}
         <Button asChild variant="outline" className="border-emerald-500/40 text-emerald-600 hover:text-emerald-600">
-          <a href="/creator/polish" target="_blank" rel="noopener">
+          <Link href="/creator/polish" target="_blank" rel="noopener">
             <Wand2 className="me-1 h-3.5 w-3.5" />
             تحسين نصوص ذكية
-          </a>
+          </Link>
         </Button>
         {p.onBackToStep1 && (
           <Button variant="ghost" onClick={p.onBackToStep1}>

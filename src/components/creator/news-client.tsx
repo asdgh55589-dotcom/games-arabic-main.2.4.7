@@ -216,7 +216,7 @@ export function NewsClient() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="news-category">{t.category}</Label>
-                <Input id="news-category" value={form.category} onChange={(e) => set('category')(e.target.value)} placeholder="عام" dir="ltr" className="text-left" />
+                <Input id="news-category" value={form.category} onChange={(e) => set('category')(e.target.value)} placeholder="عام" dir="auto" />
               </div>
             </div>
             <div className="space-y-1.5">

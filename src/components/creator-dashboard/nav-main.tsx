@@ -47,7 +47,7 @@ export function NavMain({
               variant="outline"
               asChild
             >
-              <Link href="/settings?section=notifications" aria-label={dict.nav.inbox}>
+              <Link href="/creator/settings" aria-label={dict.nav.inbox}>
                 <MailIcon />
                 <span className="sr-only">{dict.nav.inbox}</span>
               </Link>

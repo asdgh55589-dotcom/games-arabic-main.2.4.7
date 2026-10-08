@@ -1,14 +1,17 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   ArrowUpCircleIcon,
   BarChartIcon,
   BookOpenIcon,
   FolderIcon,
   HeartIcon,
+  InboxIcon,
   LayoutDashboardIcon,
   ListIcon,
+  MessageSquareIcon,
   NewspaperIcon,
   SettingsIcon,
   ShieldAlertIcon,
@@ -44,8 +47,8 @@ export function AppSidebar({
     { title: dict.nav.files, url: "/creator/files", icon: FolderIcon },
     { title: dict.nav.myTeam, url: "/creator/team", icon: UsersIcon },
     { title: dict.nav.stats, url: "/creator/stats", icon: BarChartIcon },
-    { title: dict.nav.requests, url: "/creator/requests", icon: FolderIcon },
-    { title: dict.nav.comments, url: "/creator/comments", icon: UsersIcon },
+    { title: dict.nav.requests, url: "/creator/requests", icon: InboxIcon },
+    { title: dict.nav.comments, url: "/creator/comments", icon: MessageSquareIcon },
     { title: dict.nav.likes, url: "/creator/likes", icon: HeartIcon },
     // Track gate (Phase 4): news authoring is publisher-only — translators
     // don't see the item (API + page + proxy enforce the same rule).
@@ -68,10 +71,10 @@ export function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/creator">
+              <Link href="/creator">
                 <ArrowUpCircleIcon className="h-5 w-5" />
                 <span className="text-base font-semibold">{dict.common.brand}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

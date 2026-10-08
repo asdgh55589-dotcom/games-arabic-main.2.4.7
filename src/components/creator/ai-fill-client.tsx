@@ -1,5 +1,5 @@
 // AiFillClient — new-tab page: paste raw mod text → Gemini structures
-// it into the 7 PC fields → review/edit → approve. Approval stores
+// it into the platform's fields → review/edit → approve. Approval stores
 // the values in localStorage; the form tab applies them on `storage`.
 
 'use client'
@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { aiFillKey, type AiFillValues } from '@/lib/ai/ai-fill'
-import { PLATFORM_STRUCTURE_FIELDS } from '@/lib/ai/pc-structure-prompt'
+import { PLATFORM_NAMES, PLATFORM_STRUCTURE_FIELDS } from '@/lib/ai/pc-structure-prompt'
 
 const FIELD_LABELS: Record<string, string> = {
   headline: 'العنوان الرئيسي',
@@ -40,6 +40,8 @@ const FIELD_LABELS: Record<string, string> = {
 const LONG_FIELDS: string[] = ['installGuide', 'description']
 
 export function AiFillClient({ platform }: { platform: string }) {
+  const platformLabel = PLATFORM_NAMES[platform] ?? platform
+  const platformFields = PLATFORM_STRUCTURE_FIELDS[platform] ?? []
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,23 +86,15 @@ export function AiFillClient({ platform }: { platform: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Minimal standalone header (no studio shell — this opens in a new tab) */}
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Sparkles className="h-5 w-5 text-violet-500" />
-          <span className="font-bold">التعبئة الذكية</span>
-          <span className="text-xs text-muted-foreground">Games Arabic</span>
-        </div>
-      </header>
-      <div className="mx-auto flex max-w-3xl flex-1 flex-col gap-6 p-4 lg:p-6">
+    // Inherits dir/lang from StudioShell (AR/EN flip); no hardcoded dir.
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 py-2">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Sparkles className="h-5 w-5 text-violet-500" />
-            التعبئة الذكية (PC)
+            التعبئة الذكية ({platformLabel})
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            الصق كل بيانات التعريب كنص خام — تُرتب في الخانات الثماني. راجع النتيجة ثم اعتمدها لتُعبأ في النموذج.
+            الصق كل بيانات التعريب كنص خام — تُرتب في الخانات {platformFields.length}. راجع النتيجة ثم اعتمدها لتُعبأ في النموذج.
           </p>
         </div>
 
@@ -151,12 +145,11 @@ export function AiFillClient({ platform }: { platform: string }) {
             </Button>
             {applied && (
               <p className="text-sm font-bold text-emerald-600">
-                تمت التعبئة — ارجع لتبويب النموذج وراجع الحقول الثمانية قبل الحفظ
+                تمت التعبئة — ارجع لتبويب النموذج وراجع الحقول قبل الحفظ
               </p>
             )}
           </div>
         )}
-      </div>
     </div>
   )
 }
