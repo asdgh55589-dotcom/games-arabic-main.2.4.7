@@ -316,6 +316,8 @@ export interface StudioDict {
     published: string
     recentActivity: string
     topMods: string
+    loadError: string
+    retry: string
   }
   form: {
     invalidLink: string
@@ -663,6 +665,8 @@ export interface StudioDict {
     empty: string
     total: string
     sortBy: string
+    loadError: string
+    retry: string
   }
   news: {
     title: string

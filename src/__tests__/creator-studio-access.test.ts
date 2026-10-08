@@ -28,20 +28,33 @@ function roleArraysWithCreator(code: string): string[] {
   return out;
 }
 
+/**
+ * Pages/layout/auth gate through the central CREATOR_ROLES helper (GAM-6/E E1)
+ * instead of inline arrays. The central constant must admit owner/management.
+ */
+function usesCentralGate(code: string): boolean {
+  return /isCreatorRole\(session\.role\)|isCreatorRole\(user\.role\)/.test(code);
+}
+
+function centralRolesAdmitOwner(): void {
+  const roles = src('src/lib/roles.ts');
+  expect(roles).toMatch(/'owner'/);
+  expect(roles).toMatch(/'moderator'/);
+  expect(roles).toMatch(/'manager'/);
+}
+
 describe('Studio guards admit owner/management (not only creator/publisher)', () => {
-  it.each(STUDIO_PAGES)('%s admits owner', (p) => {
-    const arrays = roleArraysWithCreator(src(p));
-    expect(arrays.length).toBeGreaterThan(0);
-    for (const a of arrays) {
-      expect(a).toMatch(/'owner'/);
-      expect(a).toMatch(/'moderator'/);
-    }
+  it.each(STUDIO_PAGES)('%s admits owner via the central gate', (p) => {
+    const code = src(p);
+    expect(usesCentralGate(code)).toBe(true);
   });
 
-  it('studio layout admits owner', () => {
-    const arrays = roleArraysWithCreator(src('src/app/creator/(studio)/layout.tsx'));
-    expect(arrays.length).toBeGreaterThan(0);
-    for (const a of arrays) expect(a).toMatch(/'owner'/);
+  it('central CREATOR_ROLES admits owner/management', () => {
+    centralRolesAdmitOwner();
+  });
+
+  it('studio layout admits owner via the central gate', () => {
+    expect(usesCentralGate(src('src/app/creator/(studio)/layout.tsx'))).toBe(true);
   });
 
   it('proxy /creator guards (page + api) admit owner', () => {
@@ -51,10 +64,10 @@ describe('Studio guards admit owner/management (not only creator/publisher)', ()
     for (const a of arrays) expect(a).toMatch(/'owner'/);
   });
 
-  it('requireCreatorStudio admits owner', () => {
-    const arrays = roleArraysWithCreator(src('src/lib/auth.ts'));
-    expect(arrays.length).toBeGreaterThan(0);
-    for (const a of arrays) expect(a).toMatch(/'owner'/);
+  it('requireCreatorStudio admits owner via the central gate', () => {
+    const code = src('src/lib/auth.ts');
+    expect(code).toMatch(/isCreatorRole\(user\.role\)/);
+    centralRolesAdmitOwner();
   });
 });
 

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
+import { reportError } from '@/lib/error-reporting'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'
 import { HomeMobile } from './home-mobile'
@@ -170,7 +171,10 @@ export function HomePage() {
           setSections(json.data)
         }
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        // fallback sections stay visible — log the failure
+        reportError(err, { route: 'home', action: 'load-sections' })
+      })
   }, [])
 
   return (

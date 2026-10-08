@@ -22,6 +22,7 @@ import {
   type TrustedHostService,
 } from '@/lib/download-trust'
 import { formatArabicDate, timeAgo } from '@/lib/format'
+import { reportError } from '@/lib/error-reporting'
 import type { ModFile } from '@/lib/types'
 
 interface DownloadSectionProps {
@@ -51,7 +52,10 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
           setTrust({ services: data.services, warningMessage: data.warningMessage })
         }
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        // trust settings are optional — direct download still works
+        reportError(err, { route: 'mod-download', action: 'load-trust' })
+      })
   }, [])
 
   const toggleExpand = (id: string) => {
@@ -70,7 +74,9 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
       const json = await response.json()
       const finalUrl = json?.data?.url || url
       window.open(finalUrl, '_blank', 'noopener,noreferrer')
-    } catch {
+    } catch (err) {
+      // fall back to the direct URL, but log the tracking failure
+      reportError(err, { route: 'mod-download', action: 'resolve-url' })
       window.open(url, '_blank', 'noopener,noreferrer')
     }
   }

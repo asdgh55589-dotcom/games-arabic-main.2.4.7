@@ -238,6 +238,8 @@ export const ar: StudioDict = {
     published: 'منشورة',
     recentActivity: 'النشاط الأخير',
     topMods: 'الأعلى تحميلاً',
+    loadError: 'تعذّر تحميل البيانات — تحقق من الاتصال',
+    retry: 'إعادة المحاولة',
   },
   commentsMgr: {
     all: 'الكل',
@@ -629,6 +631,8 @@ export const ar: StudioDict = {
     empty: 'لا توجد تفاعلات في هذه الفترة بعد',
     total: 'الإجمالي',
     sortBy: 'ترتيب حسب',
+    loadError: 'تعذّر تحميل البيانات — تحقق من الاتصال',
+    retry: 'إعادة المحاولة',
   },
   news: {
     title: 'الأخبار',

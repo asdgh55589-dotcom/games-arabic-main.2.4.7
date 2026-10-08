@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { timeAgo } from '@/lib/format'
+import { reportError } from '@/lib/error-reporting'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface AnalyticsSummary {
@@ -63,9 +64,11 @@ export function StatsClient() {
   const [topMods, setTopMods] = useState<TopMod[]>([])
   const [recent, setRecent] = useState<RecentItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const [a, s] = await Promise.all([
         fetch(`/api/creator/analytics?range=${range}`, { cache: 'no-store' }),
@@ -81,8 +84,10 @@ export function StatsClient() {
         if (json?.data?.topMods) setTopMods(json.data.topMods)
         if (json?.data?.recentActivity) setRecent(json.data.recentActivity)
       }
-    } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort stats operation
+      if (!a.ok && !s.ok) setError(t.loadError)
+    } catch (err) {
+      reportError(err, { route: 'creator-stats', action: 'load' })
+      setError(t.loadError)
     }
     setLoading(false)
   }, [range])
@@ -104,6 +109,15 @@ export function StatsClient() {
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">…</div>
+      ) : error ? (
+        <Card>
+          <CardContent className="space-y-3 py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchAll}>
+              {t.retry}
+            </Button>
+          </CardContent>
+        </Card>
       ) : !totals || totals.totalMods === 0 ? (
         <EmptyState icon="file" title={t.empty} description={t.subtitle} />
       ) : (

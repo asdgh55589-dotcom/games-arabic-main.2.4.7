@@ -7,6 +7,7 @@ import { Input } from '@/components/official-ui/input'
 import { Label } from '@/components/official-ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { reportError } from '@/lib/error-reporting'
 
 interface TabRow {
   id: string
@@ -32,8 +33,9 @@ export function TeamCustomTabs() {
       const res = await fetch('/api/creator/team/custom-tabs', { cache: 'no-store' })
       const json = await res.json().catch(() => null)
       if (res.ok) setTabs(json.data?.tabs ?? [])
-    } catch {
-      // advisory list — form stays usable
+    } catch (err) {
+      // advisory list — form stays usable, but log the failure
+      reportError(err, { route: 'creator-team-tabs', action: 'load' })
     }
     setLoading(false)
   }, [])
@@ -60,7 +62,8 @@ export function TeamCustomTabs() {
       } else {
         toast({ title: json?.error?.message || 'فشل إضافة التبويب', variant: 'destructive' })
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { route: 'creator-team-tabs', action: 'mutate' })
       toast({ title: 'تعذر الاتصال — حاول مجدداً', variant: 'destructive' })
     }
     setSaving(false)
@@ -80,7 +83,8 @@ export function TeamCustomTabs() {
         const json = await res.json().catch(() => null)
         toast({ title: json?.error?.message || 'فشل الحفظ', variant: 'destructive' })
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { route: 'creator-team-tabs', action: 'mutate' })
       toast({ title: 'تعذر الاتصال — حاول مجدداً', variant: 'destructive' })
     }
     setBusyId(null)
@@ -99,7 +103,8 @@ export function TeamCustomTabs() {
         const json = await res.json().catch(() => null)
         toast({ title: json?.error?.message || 'فشل الحذف', variant: 'destructive' })
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { route: 'creator-team-tabs', action: 'mutate' })
       toast({ title: 'تعذر الاتصال — حاول مجدداً', variant: 'destructive' })
     }
     setBusyId(null)

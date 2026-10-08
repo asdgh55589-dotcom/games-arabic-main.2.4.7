@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { reportError } from '@/lib/error-reporting'
 
 /**
  * Wave B Task 5 — fires once per session per mod when the comments section
@@ -21,8 +22,9 @@ export function CommentSectionBeacon({ slug }: { slug: string }) {
     fetch(`/api/mods/${encodeURIComponent(slug)}/comment-click`, {
       method: 'POST',
       keepalive: true,
-    }).catch(() => {
-      // fire-and-forget analytics — never break the page
+    }).catch((err: unknown) => {
+      // fire-and-forget analytics — never break the page, but log it
+      reportError(err, { route: 'comment-beacon', action: 'click' })
     })
   }, [slug])
 

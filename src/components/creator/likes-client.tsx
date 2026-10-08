@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { timeAgo } from '@/lib/format'
+import { reportError } from '@/lib/error-reporting'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface PerMod {
@@ -74,16 +75,20 @@ export function LikesClient() {
   const [range, setRange] = useState(30)
   const [data, setData] = useState<LikesData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('total')
 
   const fetchLikes = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/creator/likes?range=${range}`, { cache: 'no-store' })
       const json = await res.json()
       if (res.ok) setData(json.data)
-    } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort likes operation
+      else setError(t.loadError)
+    } catch (err) {
+      reportError(err, { route: 'creator-likes', action: 'load' })
+      setError(t.loadError)
     }
     setLoading(false)
   }, [range])
@@ -139,6 +144,15 @@ export function LikesClient() {
             </Card>
           ))}
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="space-y-3 py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchLikes}>
+              {t.retry}
+            </Button>
+          </CardContent>
+        </Card>
       ) : !s || (s.endorsements === 0 && s.commentLikes === 0 && s.ratings === 0) ? (
         <EmptyState icon="heart" title={t.empty} description={t.subtitle} />
       ) : (

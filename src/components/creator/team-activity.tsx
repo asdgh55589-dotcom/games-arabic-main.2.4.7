@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/official-ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { reportError } from '@/lib/error-reporting'
 import { timeAgo } from '@/lib/format'
 
 interface ActivityRow {
@@ -43,7 +44,8 @@ export function TeamActivity() {
       } else {
         setError(json?.error?.message || 'فشل تحميل النشاط')
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { route: 'creator-team-activity', action: 'load' })
       setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)

@@ -237,6 +237,8 @@ export const en: StudioDict = {
     published: 'Published',
     recentActivity: 'Recent activity',
     topMods: 'Top downloaded',
+    loadError: 'Failed to load data — check your connection',
+    retry: 'Retry',
   },
   commentsMgr: {
     all: 'All',
@@ -628,6 +630,8 @@ export const en: StudioDict = {
     empty: 'No engagement in this period yet',
     total: 'Total',
     sortBy: 'Sort by',
+    loadError: 'Failed to load data — check your connection',
+    retry: 'Retry',
   },
   news: {
     title: 'News',

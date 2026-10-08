@@ -6,6 +6,7 @@ import { Button } from '@/components/official-ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import { reportError } from '@/lib/error-reporting'
 
 interface SlimMod {
   id: string
@@ -70,7 +71,8 @@ export function TeamStats() {
       } else {
         setError(json?.error?.message || 'فشل تحميل الإحصائيات')
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { route: 'creator-team-stats', action: 'load' })
       setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
