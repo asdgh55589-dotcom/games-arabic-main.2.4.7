@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { AdSection } from '@/components/ad-section'
 import { CreatorLeaderboardCard } from '@/components/creator-leaderboard-card'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { HeroSlider } from '@/components/hero-slider'
 import { HomeSidebar } from '@/components/home-sidebar'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
@@ -181,11 +182,15 @@ export function HomePage() {
           {showSkeleton ? (
             <div className="h-[clamp(360px,52vh,580px)] w-full animate-pulse bg-secondary" />
           ) : homeData?.latestMods && homeData.latestMods.length > 0 ? (
-            <HeroSlider slides={homeData.latestMods} />
+            <ErrorBoundary label="hero slider" fallback={null}>
+              <HeroSlider slides={homeData.latestMods} />
+            </ErrorBoundary>
           ) : null}
 
           {/* ===== شريط الأخبار — تحت البنر مباشرة ===== */}
-          <NewsTicker />
+          <ErrorBoundary label="news ticker" fallback={null}>
+            <NewsTicker />
+          </ErrorBoundary>
 
           {/* ===== الصف الرئيسي: المحتوى + الشريط الجانبي ===== */}
           <div
@@ -197,9 +202,15 @@ export function HomePage() {
               ref={sidebarRef}
               className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0 lg:sticky lg:top-[60px] lg:self-start"
             >
-              <AdSection />
-              <SiteTeamCard />
-              <CreatorLeaderboardCard />
+              <ErrorBoundary label="ad section" fallback={null}>
+                <AdSection />
+              </ErrorBoundary>
+              <ErrorBoundary label="site team card" fallback={null}>
+                <SiteTeamCard />
+              </ErrorBoundary>
+              <ErrorBoundary label="creator leaderboard" fallback={null}>
+                <CreatorLeaderboardCard />
+              </ErrorBoundary>
               {showSkeleton ? (
                 <div className="space-y-4">
                   <div className="h-64 animate-pulse rounded-lg bg-secondary" />
@@ -207,18 +218,24 @@ export function HomePage() {
                   <div className="h-64 animate-pulse rounded-lg bg-secondary" />
                 </div>
               ) : (
-                <HomeSidebar
-                  latest={homeData?.latestMods || []}
-                  trending={homeData?.trendingMods || []}
-                  topEndorsed={homeData?.topEndorsed || []}
-                />
+                <ErrorBoundary label="home sidebar" fallback={null}>
+                  <HomeSidebar
+                    latest={homeData?.latestMods || []}
+                    trending={homeData?.trendingMods || []}
+                    topEndorsed={homeData?.topEndorsed || []}
+                  />
+                </ErrorBoundary>
               )}
             </div>
 
             {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
             <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
               {/* آخر الأخبار — قبل أقسام المنصات */}
-              {!loading && <NewsFeatured />}
+              {!loading && (
+                <ErrorBoundary label="featured news" fallback={null}>
+                  <NewsFeatured />
+                </ErrorBoundary>
+              )}
 
               {/* أقسام المنصات — ديناميكي من قاعدة البيانات */}
               {(() => {
@@ -294,9 +311,9 @@ export function HomePage() {
                         />
                       ))
                     : homeData?.topSeries?.slice(0, 6).map((s) => (
-                        <Link
-                          key={s.name}
-                          href={`/series/${encodeURIComponent(s.name)}`}
+                        <ErrorBoundary key={s.name} label="series card" fallback={null}>
+                          <Link
+                            href={`/series/${encodeURIComponent(s.name)}`}
                           className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                         >
                           {s.thumbnailUrl ? (
@@ -317,6 +334,7 @@ export function HomePage() {
                             </p>
                           </div>
                         </Link>
+                        </ErrorBoundary>
                       ))}
                 </div>
               </section>
@@ -339,9 +357,9 @@ export function HomePage() {
                     ))
                   ) : teamsData?.data?.length ? (
                     teamsData.data.slice(0, 6).map((t) => (
-                      <Link
-                        key={t.id}
-                        href={`/teams/${t.slug}`}
+                      <ErrorBoundary key={t.id} label="team card" fallback={null}>
+                        <Link
+                          href={`/teams/${t.slug}`}
                         className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                       >
                         {t.bannerUrl || t.logoUrl ? (
@@ -357,11 +375,12 @@ export function HomePage() {
                           <h3 className="line-clamp-1 text-sm font-black uppercase tracking-wider text-foreground group-hover:text-primary">
                             {t.name}
                           </h3>
-                          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-                            {formatNumber(t.modCount)} تعريب
-                          </p>
-                        </div>
-                      </Link>
+                            <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                              {formatNumber(t.modCount)} تعريب
+                            </p>
+                          </div>
+                        </Link>
+                      </ErrorBoundary>
                     ))
                   ) : (
                     <div className="col-span-full py-8 text-center text-sm text-muted-foreground">

@@ -486,3 +486,27 @@ The Creator Dashboard is a substantial, well-structured feature built on Next.js
 - `src/__tests__/creator-*.test.ts` — 16 creator test files
 - `src/app/api/creator/requests/__tests__/` — 2 request test files
 - `src/app/api/creator/stats/__tests__/` — 1 stats test file
+
+---
+
+## ملحق GAM-6/E (2026-10-08) — حالة التوثيق: superseded جزئيًا
+
+> **تنبيه:** هذا التقرير مؤرخ بتاريخ 2026-09-16 ويُحفظ كما هو لأغراض الأرشفة —
+> لا تُحرَّر أقسامه الأصلية. الملحق أدناه يوثّق ما تغيّر بعده فقط.
+
+**الحالة:** superseded جزئيًا — تدقيق [GAM-6](/GAM/issues/GAM-6) (المسار E، المهمة
+[GAM-12](/GAM/issues/GAM-12)) يحل محل أجزاء من هذا التقرير:
+
+| بند التقرير الأصلي | الحالة بعد GAM-6/E |
+|---|---|
+| غياب إدارة الفريق من لوحة المبدع (P0) | عُولج — صفحات `team/` + invites/members APIs موجودة الآن |
+| صفحة media library مفقودة (P1) | عُولج جزئيًا — صفحة `files/` + `uppy-uploader` موجودة |
+| صفحة settings للقراءة فقط (P1) | تغيّرت — تحقق من الحالة الراهنة قبل الاعتماد على هذا البند |
+| لا error/loading/empty states (P2) | عُولج جزئيًا — `ErrorBoundary` لكل بطاقة في الرئيسية (E3) + skeletons |
+| تكرار قوائم الأدوار inline | أُزيل — ثابت مركزي `CREATOR_ROLES` + `isCreatorRole()` في `src/lib/roles.ts` (E1) |
+| `catch {}` صامت في العملاء | قيد المعالجة — logger + toast + retry (E2) |
+| params حرة دون whitelist | قيد المعالجة — Zod enums (E4، بتنسيق Backend-Dev-1) |
+
+**المرجع المعتمد الجديد:** تدقيق GAM-6 (مستند `plan` على المهمة الأب
+[GAM-6](/GAM/issues/GAM-6)). عند التعارض بين هذا التقرير وتدقيق GAM-6، تُقدَّم
+نتائج GAM-6.

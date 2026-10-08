@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { HeroSlider } from '@/components/hero-slider'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { NewsFeatured } from '@/components/news-featured'
 // Sidebar blocks removed for phone — kept in desktop home.tsx
@@ -52,17 +53,23 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
         <div className="h-[300px] w-full animate-pulse bg-secondary" />
       ) : homeData?.latestMods && homeData.latestMods.length > 0 ? (
         <div className="[&_.h-\[clamp\(360px\,52vh\,580px\)\]]:h-[300px] [&_.h-\[clamp\(360px\,52vh\,580px\)\]]:min-h-[300px]">
-          <HeroSlider slides={homeData.latestMods} />
+          <ErrorBoundary label="hero slider" fallback={null}>
+            <HeroSlider slides={homeData.latestMods} />
+          </ErrorBoundary>
         </div>
       ) : null}
 
       {/* 2. NewsTicker */}
-      <NewsTicker />
+      <ErrorBoundary label="news ticker" fallback={null}>
+        <NewsTicker />
+      </ErrorBoundary>
 
       {/* 3. NewsFeatured */}
       {!loading && (
         <div className="px-3 py-4">
-          <NewsFeatured />
+          <ErrorBoundary label="featured news" fallback={null}>
+            <NewsFeatured />
+          </ErrorBoundary>
         </div>
       )}
 
@@ -152,9 +159,9 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                 />
               ))
             : homeData?.topSeries?.slice(0, 3).map((s) => (
-                <Link
-                  key={s.name}
-                  href={`/series/${encodeURIComponent(s.name)}`}
+                <ErrorBoundary key={s.name} label="series card" fallback={null}>
+                  <Link
+                    href={`/series/${encodeURIComponent(s.name)}`}
                   className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
                 >
                   {s.thumbnailUrl ? (
@@ -180,6 +187,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                     </p>
                   </div>
                 </Link>
+                </ErrorBoundary>
               ))}
         </div>
       </section>
@@ -212,9 +220,9 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
             ))
           ) : teams?.length ? (
             teams.slice(0, 3).map((t) => (
-              <Link
-                key={t.id}
-                href={`/teams/${t.slug}`}
+              <ErrorBoundary key={t.id} label="team card" fallback={null}>
+                <Link
+                  href={`/teams/${t.slug}`}
                 className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
               >
                 {t.bannerUrl || t.logoUrl ? (
@@ -240,6 +248,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
                   </p>
                 </div>
               </Link>
+              </ErrorBoundary>
             ))
           ) : (
             <div className="col-span-full py-6 text-center text-xs text-muted-foreground">
