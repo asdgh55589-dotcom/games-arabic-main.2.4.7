@@ -22,6 +22,7 @@ import {
   maskEmail,
 } from '@/lib/team-invites'
 import { InviteCreateSchema } from '@/lib/validation/team'
+import { InviteStatusFilterSchema, parseFilterParam } from '@/lib/creator-query'
 
 const MEMBER_CAP = 50
 
@@ -58,7 +59,17 @@ export async function GET(req: NextRequest) {
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
 
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')?.trim() || 'pending'
+    // E4 — whitelist: unknown status values previously flowed into `where` unchecked.
+    const statusParsed = parseFilterParam(
+      searchParams,
+      'status',
+      InviteStatusFilterSchema,
+      'pending',
+    )
+    if (!statusParsed.ok) {
+      return validationFail('الحالة غير صالحة')
+    }
+    const status = statusParsed.value
     const parsed = PaginationSchema.safeParse({
       page: searchParams.get('page') ?? undefined,
       limit: searchParams.get('limit') ?? undefined,

@@ -8,6 +8,7 @@ import { CreateModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { slugify } from '@/lib/utils'
 import { logger } from '@/lib/logger'
+import { ModStatusFilterSchema, parseFilterParam } from '@/lib/creator-query'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
@@ -15,7 +16,13 @@ export async function GET(req: NextRequest) {
   if (!user) return error!
 
   const { searchParams } = new URL(req.url)
-  const status = searchParams.get('status')
+  // E4 — whitelist: unknown status values previously flowed into
+  // `where.workflowStatus` unchecked.
+  const statusParsed = parseFilterParam(searchParams, 'status', ModStatusFilterSchema, 'all')
+  if (!statusParsed.ok) {
+    return validationFail('الحالة غير صالحة')
+  }
+  const status = statusParsed.value
   const q = searchParams.get('q')?.trim() || ''
   const sort = searchParams.get('sort') || 'createdAt'
   const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc'

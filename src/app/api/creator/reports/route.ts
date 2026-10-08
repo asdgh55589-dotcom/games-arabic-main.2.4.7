@@ -3,8 +3,7 @@ import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canReadOwnReports } from '@/lib/permissions'
-
-const STATUSES = ['new', 'under_review', 'confirmed', 'rejected', 'pending', 'resolved', 'reopened'] as const
+import { parseFilterParam, ReportStatusFilterSchema } from '@/lib/creator-query'
 
 // GET /api/creator/reports?status=&page=&limit= — OUTCOME-ONLY follow-up.
 // Scope: reports targeting the creator's mods (directly, or via comments on
@@ -20,13 +19,13 @@ export async function GET(req: NextRequest) {
   }
 
   const params = new URL(req.url).searchParams
-  const status = params.get('status') || 'all'
-  const page = Math.max(1, Math.floor(Number(params.get('page')) || 1))
-  const limit = Math.min(50, Math.max(1, Math.floor(Number(params.get('limit')) || 20)))
-
-  if (status !== 'all' && !(STATUSES as readonly string[]).includes(status)) {
+  const statusParsed = parseFilterParam(params, 'status', ReportStatusFilterSchema, 'all')
+  if (!statusParsed.ok) {
     return validationFail('الحالة غير صالحة')
   }
+  const status = statusParsed.value
+  const page = Math.max(1, Math.floor(Number(params.get('page')) || 1))
+  const limit = Math.min(50, Math.max(1, Math.floor(Number(params.get('limit')) || 20)))
 
   const scope = {
     OR: [{ targetMod: { authorId: user.id } }, { targetComment: { mod: { authorId: user.id } } }],
