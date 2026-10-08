@@ -33,12 +33,12 @@ interface CreatorMod {
   game?: string | null
 }
 
-function toRow(mod: CreatorMod, index: number, status: { publishedKey: string; inProgressKey: string }): Row {
+function toRow(mod: CreatorMod, index: number, status: { publishedKey: string; inProgressKey: string }, fallback: string): Row {
   return {
     id: index + 1,
     modId: mod.modId,
     header: mod.name,
-    type: mod.game ?? '—',
+    type: mod.game ?? fallback,
     // Status KEYS only — data-table translates at render. Never compare Arabic literals.
     status: mod.workflowStatus === 'PUBLISHED' ? status.publishedKey : status.inProgressKey,
     target: String(mod.downloads ?? 0),
@@ -77,7 +77,7 @@ export default function CreatorDashboard() {
       }
       const json = await res.json()
       const mods: CreatorMod[] = json?.data?.mods ?? []
-      setRows(mods.map((m, i) => toRow(m, i, dict.status)))
+      setRows(mods.map((m, i) => toRow(m, i, dict.status, dict.common.unpublishedFallback)))
       setTopStatus(mods.length === 0 ? 'empty' : 'ready')
     } catch (err) {
       console.error('[studio] top-mods load failed', err)
