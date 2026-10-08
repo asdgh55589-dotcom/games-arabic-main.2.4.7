@@ -24,6 +24,11 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/auth', () => ({
   requireCreatorStudio: jest.fn(),
 }))
+jest.mock('sanitize-html', () => ({ __esModule: true, default: jest.fn((h: string) => h) }))
+jest.mock('@/lib/rate-limit', () => ({
+  rateLimitMiddleware: jest.fn(async () => null),
+  rateLimit: jest.fn(async () => ({ success: true, remaining: 9, resetAt: 0, limit: 10 })),
+}))
 
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'

@@ -34,6 +34,7 @@ jest.mock('@/application/use-cases/factory', () => ({
 }))
 jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(async () => ({ success: true, remaining: 4, resetAt: 0, limit: 5 })),
+  rateLimitMiddleware: jest.fn(async () => null),
 }))
 jest.mock('sanitize-html', () => ({ __esModule: true, default: jest.fn((h: string) => h) }))
 

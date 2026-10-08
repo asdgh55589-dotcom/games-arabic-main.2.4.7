@@ -185,10 +185,15 @@ describe('duplicate + member guards', () => {
     expect(mockDb.teamInvitation.create).not.toHaveBeenCalled()
   })
 
-  it('rejects unknown usernames (404)', async () => {
+  it('unknown usernames get a generic ok — no enumeration (B6)', async () => {
     mockDb.user.findUnique.mockResolvedValue(null)
     const res = await CREATE_INVITE(req('POST', { username: 'ghost' }))
-    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.data.queued).toBe(true)
+    expect(body.data).not.toHaveProperty('token')
+    expect(JSON.stringify(body)).not.toContain('غير موجود')
+    expect(mockDb.teamInvitation.create).not.toHaveBeenCalled()
   })
 })
 
