@@ -23,7 +23,11 @@ export async function GET(_req: Request, { params }: RouteParams) {
     return notFound('Mod not found')
   }
 
-  const where = mod.gameId ? { gameId: mod.gameId } : {}
+  // DRAFT/IN_REVIEW never appear as neighbors; a non-PUBLISHED anchor
+  // simply resolves to nulls (GAM-8/A1-F1).
+  const where = mod.gameId
+    ? { gameId: mod.gameId, workflowStatus: 'PUBLISHED' }
+    : { workflowStatus: 'PUBLISHED' }
   const ids = await db.mod.findMany({
     where,
     orderBy: { downloads: 'desc' },

@@ -40,7 +40,8 @@ export async function GET(req: NextRequest) {
     return notFound()
   }
 
-  const where: Record<string, unknown> = { seriesId: series.id }
+  // Public list: DRAFT/IN_REVIEW never enumerable (GAM-8/A1-F1).
+  const where: Record<string, unknown> = { seriesId: series.id, workflowStatus: 'PUBLISHED' }
   if (search) {
     where.OR = [{ name: { contains: search } }, { summary: { contains: search } }]
   }

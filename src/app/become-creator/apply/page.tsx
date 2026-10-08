@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { isStaff } from '@/lib/roles'
 
 interface CreatorRequestStatus {
   id: string
@@ -209,7 +210,7 @@ export default function BecomeCreatorApplyPage() {
   }
 
   if (user.role !== 'member') {
-    const isStaff = ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
+    const staff = isStaff(user.role)
     return (
       <div className="container mx-auto py-12 max-w-2xl px-4 text-center" dir={dir}>
         <Card>
@@ -220,8 +221,8 @@ export default function BecomeCreatorApplyPage() {
               {t.alreadyCreatorDesc}
             </p>
             <div className="flex justify-center gap-3">
-              <Link href={isStaff ? '/admin' : '/creator'}>
-                <Button>{isStaff ? t.adminPanel : t.creatorPanel}</Button>
+              <Link href={staff ? '/admin' : '/creator'}>
+                <Button>{staff ? t.adminPanel : t.creatorPanel}</Button>
               </Link>
               <Link href="/settings">
                 <Button variant="outline">{t.settings}</Button>
@@ -270,7 +271,7 @@ export default function BecomeCreatorApplyPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 {t.approvedDesc}
               </p>
-              <Link href="/upload">
+              <Link href="/creator/mods/new">
                 <Button>{t.startUpload}</Button>
               </Link>
             </CardContent>

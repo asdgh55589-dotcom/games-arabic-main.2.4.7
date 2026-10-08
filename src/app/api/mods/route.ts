@@ -43,7 +43,10 @@ export async function GET(req: NextRequest) {
   const translationType = searchParams.get('translationType')
   const translationTeam = searchParams.get('translationTeam')?.trim() || null
 
-  const where: Record<string, unknown> = {}
+  // Public catalog: only PUBLISHED mods are enumerable.
+  // DRAFT / IN_REVIEW / ARCHIVED / REJECTED stay hidden (owner/staff preview
+  // lives behind authenticated creator/admin endpoints, never here).
+  const where: Record<string, unknown> = { workflowStatus: 'PUBLISHED' }
   if (search) {
     where.OR = [
       { name: { contains: search } },

@@ -202,8 +202,6 @@ export function ModFormFiles(p: Props) {
             type="date"
             value={p.releaseDate}
             onChange={(e) => p.setReleaseDate(e.target.value)}
-            disabled={p.isEdit}
-            className={p.isEdit ? 'opacity-60' : undefined}
           />
         </Field>
       </Section>

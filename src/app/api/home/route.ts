@@ -219,12 +219,14 @@ export async function GET(req: NextRequest) {
       take: 8,
     })
     const trendingMods = await db.mod.findMany({
-      where: { isTrending: true },
+      // Public homepage: PUBLISHED only (GAM-8/A1-F1).
+      where: { isTrending: true, workflowStatus: 'PUBLISHED' },
       orderBy: { downloads: 'desc' },
       take: 10,
       select: modCardSelect,
     })
     const topEndorsed = await db.mod.findMany({
+      where: { workflowStatus: 'PUBLISHED' },
       orderBy: { endorsements: 'desc' },
       take: 10,
       select: modCardSelect,
@@ -238,6 +240,7 @@ export async function GET(req: NextRequest) {
         SELECT m.* FROM "Mod" m
         JOIN "Game" g2 ON g2."id" = m."gameId"
         WHERE g2."platform" = s."key"
+          AND m."workflowStatus" = 'PUBLISHED'
         ORDER BY m."updatedAt" DESC
         LIMIT 2
       ) m

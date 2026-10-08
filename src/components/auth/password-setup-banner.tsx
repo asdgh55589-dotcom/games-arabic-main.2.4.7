@@ -4,6 +4,7 @@ import { ShieldAlert, X } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { isStaff as isStaffRole } from '@/lib/roles'
 
 const DISMISS_KEY = 'ga-setup-banner-dismissed'
 
@@ -31,8 +32,7 @@ export function PasswordSetupBanner() {
     }
   }, [])
 
-  const isStaff =
-    !!user && ['moderator', 'admin', 'manager', 'owner'].includes(user.role)
+  const isStaff = !!user && isStaffRole(user.role)
   const needsSetup =
     !!user && !isStaff && (user.needsSecuritySetup ?? user.hasPassword === false)
   if (loading || !needsSetup || dismissed) return null

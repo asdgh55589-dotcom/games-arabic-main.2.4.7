@@ -665,6 +665,10 @@ model Team {
   @@index([order])
   @@index([modCount])
   @@index([views])
+  // A3 (GAM-8): one team per owner — enforced at the DB level so concurrent
+  // POST /api/creator/team requests cannot create duplicates (P2002 → 409).
+  // ownerId is nullable (legacy rows); Postgres permits multiple NULLs.
+  @@unique([ownerId])
 }
 
 model TeamFollow {

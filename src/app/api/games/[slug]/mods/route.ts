@@ -34,7 +34,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return notFound('Game not found')
   }
 
-  const where: Record<string, unknown> = { gameId: game.id }
+  // Public list: DRAFT/IN_REVIEW never enumerable (GAM-8/A1-F1).
+  const where: Record<string, unknown> = { gameId: game.id, workflowStatus: 'PUBLISHED' }
   if (category) {
     where.category = { slug: category }
   }

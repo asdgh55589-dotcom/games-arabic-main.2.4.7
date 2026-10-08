@@ -16,6 +16,8 @@ export async function GET(
     select: {
       ...authorPublicSelect,
       mods: {
+        // Public author page: PUBLISHED only (GAM-8/A1-F1).
+        where: { workflowStatus: 'PUBLISHED' },
         orderBy: { downloads: 'desc' },
         take: 50,
         select: modCardSelect,

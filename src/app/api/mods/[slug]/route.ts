@@ -1,10 +1,12 @@
 import type { NextRequest } from 'next/server'
 import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
+import { requireAuth } from '@/lib/auth'
 import { recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { authorPublicSelect, categoryCardSelect, gameDetailSelect } from '@/lib/prisma-selects'
+import { hasRoleAtLeast } from '@/lib/roles'
 
 // GET /api/mods/[slug] - single mod by slug
 //
@@ -122,9 +124,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return notFound('Mod not found')
   }
 
-  // Note: DRAFT mods intentionally return 404 to prevent public access (if workflowStatus !== 'PUBLISHED' and user not admin)
-  // Current implementation returns mod regardless of status; filtering is handled at list level (GET /api/mods) and UI
-  // DO NOT change: DRAFT → 404 (when accessed via moderated UI), PUBLISHED → 200
+  // Non-PUBLISHED mods are invisible to the public: only the owner or staff
+  // (moderator+) may preview them. Everyone else gets 404 (no existence leak).
+  if (mod.workflowStatus !== 'PUBLISHED') {
+    let viewer: { id: string; role: string } | null = null
+    try {
+      viewer = await requireAuth()
+    } catch {
+      viewer = null
+    }
+    const isOwner = viewer !== null && viewer.id === mod.authorId
+    const isStaff = viewer !== null && hasRoleAtLeast(viewer.role, 'moderator')
+    if (!isOwner && !isStaff) {
+      return notFound('Mod not found')
+    }
+  }
 
   // Fire-and-forget view count — deduplicated (user 24h / guest IP+UA 1h, bots skipped).
   // Only unique views increment the counter and write a ModView row.

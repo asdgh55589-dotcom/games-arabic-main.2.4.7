@@ -20,6 +20,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         contactLinks: { orderBy: { order: 'asc' } },
         customTabs: { where: { visible: true }, orderBy: { order: 'asc' } },
         mods: {
+          // Public team page: PUBLISHED only (GAM-8/A1-F1).
+          where: { workflowStatus: 'PUBLISHED' },
           select: {
             id: true,
             name: true,

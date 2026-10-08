@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { ok, validationFail, forbidden } from '@/lib/api-response'
+import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { hasRoleAtLeast } from '@/lib/roles'
 
 interface ChangelogBody {
   type?: string
@@ -66,7 +67,28 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // Auth-gated: no anonymous enumeration of any mod's changelog history.
+  // Owner and staff (moderator+) may list; everyone else gets 403 — even for
+  // PUBLISHED mods, whose visible changelog already ships inside GET /api/mods/[slug].
+  const { user, error } = await requireCreatorStudio(req)
+  if (error) return error
+  if (!user) return forbidden('يجب تسجيل الدخول')
+
   const { id } = await params
+
+  const mod = await db.mod.findUnique({
+    where: { id },
+    select: { id: true, authorId: true },
+  })
+  if (!mod) {
+    return notFound('التعريب غير موجود')
+  }
+
+  const isOwner = mod.authorId === user.id
+  const isStaff = hasRoleAtLeast(user.role, 'moderator')
+  if (!isOwner && !isStaff) {
+    return forbidden('ليس لديك صلاحية لعرض سجل تغييرات هذا التعريب')
+  }
 
   const changelogs = await db.modChangelog.findMany({
     where: { modId: id },

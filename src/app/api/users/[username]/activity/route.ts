@@ -48,9 +48,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // آخر التعليقات
+    // آخر التعليقات — فقط على تعريبات منشورة (GAM-8/A1-F1).
     const comments = await db.modComment.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, mod: { workflowStatus: 'PUBLISHED' } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -61,9 +61,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    // آخر التعريبات
+    // آخر التعريبات — المنشورة فقط (GAM-8/A1-F1).
     const mods = await db.mod.findMany({
-      where: { authorId: user.id },
+      where: { authorId: user.id, workflowStatus: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' },
       take: 10,
       select: {
@@ -78,9 +78,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    // آخر تعديلات التعريبات
+    // آخر تعديلات التعريبات — المنشورة فقط (GAM-8/A1-F1).
     const modEdits = await db.mod.findMany({
-      where: { authorId: user.id },
+      where: { authorId: user.id, workflowStatus: 'PUBLISHED' },
       orderBy: { updatedAt: 'desc' },
       take: 5,
       select: {
@@ -93,9 +93,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    // آخر التوصيات التي قدمها المستخدم
+    // آخر التوصيات التي قدمها المستخدم — فقط على تعريبات منشورة (GAM-8/A1-F1).
     const endorsements = await db.endorsement.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, mod: { workflowStatus: 'PUBLISHED' } },
       orderBy: { createdAt: 'desc' },
       take: 5,
       select: {

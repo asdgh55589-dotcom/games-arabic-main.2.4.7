@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
           nomineeUsername: member.user.username,
           nominatorUsername: user.username,
           teamName: owned.name,
-          transferLink: `${buildInviteAcceptUrl(token)}?transfer=1`,
+          transferLink: `${buildInviteAcceptUrl(token)}&transfer=1`,
         })
         await emailProvider.send({
           from: emailFrom(),
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
         nominationId: nomination.id,
         nominee: member.user.username,
         token,
-        acceptUrl: `${buildInviteAcceptUrl(token)}?transfer=1`,
+        acceptUrl: `${buildInviteAcceptUrl(token)}&transfer=1`,
         message: 'تم إنشاء الترشيح — شارك الرابط مع المرشح',
       },
       { status: 201 },

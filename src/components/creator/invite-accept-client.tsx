@@ -29,7 +29,9 @@ export function InviteAcceptClient({ token, mode = 'invite' }: { token: string; 
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/creator/team/invites/${encodeURIComponent(token)}`, {
+      // A5 (GAM-8): transfer mode reads nomination metadata from the transfer
+      // endpoint — never the regular-invites endpoint.
+      const res = await fetch(`${base}/${encodeURIComponent(token)}`, {
         cache: 'no-store',
       })
       const json = await res.json().catch(() => null)
@@ -42,7 +44,7 @@ export function InviteAcceptClient({ token, mode = 'invite' }: { token: string; 
       setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
-  }, [token])
+  }, [token, base])
 
   useEffect(() => {
     load()

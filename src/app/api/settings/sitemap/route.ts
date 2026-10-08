@@ -8,7 +8,11 @@ export async function GET() {
 
     const [games, mods] = await Promise.all([
       db.game.findMany({ select: { slug: true, updatedAt: true } }),
-      db.mod.findMany({ select: { slug: true, updatedAt: true } }),
+      // Only PUBLISHED mods get indexed (GAM-8/A1-F1).
+      db.mod.findMany({
+        where: { workflowStatus: 'PUBLISHED' },
+        select: { slug: true, updatedAt: true },
+      }),
     ])
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'

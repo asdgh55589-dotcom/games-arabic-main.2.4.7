@@ -120,6 +120,24 @@ export async function POST(req: NextRequest) {
 
     return ok({ team, message: 'تم إنشاء الفريق بنجاح' }, { status: 201 })
   } catch (err) {
+    // A3 (GAM-8): race guard — the @@unique([ownerId]) constraint turns a
+    // concurrent double-POST into P2002; surface it as 409, not 500.
+    if (
+      err !== null &&
+      typeof err === 'object' &&
+      (err as { code?: string }).code === 'P2002'
+    ) {
+      const target = (err as { meta?: { target?: unknown } }).meta?.target
+      const targetsOwner = Array.isArray(target)
+        ? target.includes('ownerId')
+        : typeof target === 'string'
+          ? target.includes('ownerId')
+          : false
+      if (targetsOwner) {
+        return conflict('لديك فريق بالفعل — الإدارة الحالية تدعم فريقاً واحداً')
+      }
+      return conflict('تعارض في بيانات الفريق — حاول مجدداً')
+    }
     logger.error({ err }, '[creator/team POST] failed')
     return internalError('فشل إنشاء الفريق')
   }
