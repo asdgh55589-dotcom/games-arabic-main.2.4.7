@@ -60,7 +60,10 @@ import { getOwnedTeam } from '@/lib/creator-team'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const CREATOR = { id: 'u1', username: 'c1', email: 'c@x', role: 'publisher', avatarUrl: null }
-const req = (url: string, body?: unknown) => ({ url, json: async () => body ?? {} }) as any
+// Route handlers are imported per-method (POST/PATCH/GET), so the third
+// argument callers pass is documentary only — accept and ignore it. None of
+// these routes read `req.method`.
+const req = (url: string, body?: unknown, _method?: string) => ({ url, json: async () => body ?? {} }) as any
 const idParams = (id: string) => ({ params: Promise.resolve({ id }) }) as any
 const limitedOnce = () => {
   ;(rateLimitMiddleware as jest.Mock).mockResolvedValueOnce(
