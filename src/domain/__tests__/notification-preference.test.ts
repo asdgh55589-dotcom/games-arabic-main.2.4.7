@@ -1,6 +1,11 @@
 import { NotificationPreference } from '../entities/notification-preference'
 import { NotificationChannel, NotificationType } from '../value-objects'
 
+// P2: quiet hours are evaluated in the preference's timezone. These tests
+// build dates with setHours() (process-local wall clock), so pin the window
+// to the runner's zone to keep asserting window logic, not timezone.
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
+
 describe('NotificationPreference Entity', () => {
   describe('createDefault', () => {
     it('should create default preferences for a user', () => {
@@ -116,6 +121,7 @@ describe('NotificationPreference Entity', () => {
         quietHoursEnabled: true,
         quietHoursStart: '22:00',
         quietHoursEnd: '08:00',
+        timezone: LOCAL_TZ,
       })
 
       const nightTime = new Date()
@@ -131,6 +137,7 @@ describe('NotificationPreference Entity', () => {
         quietHoursEnabled: true,
         quietHoursStart: '22:00',
         quietHoursEnd: '08:00',
+        timezone: LOCAL_TZ,
       })
 
       const nightTime = new Date()
@@ -153,6 +160,7 @@ describe('NotificationPreference Entity', () => {
         quietHoursEnabled: true,
         quietHoursStart: '08:00',
         quietHoursEnd: '22:00',
+        timezone: LOCAL_TZ,
       })
 
       const morning = new Date()
@@ -169,6 +177,7 @@ describe('NotificationPreference Entity', () => {
         quietHoursEnabled: true,
         quietHoursStart: '23:00',
         quietHoursEnd: '07:00',
+        timezone: LOCAL_TZ,
       })
 
       const night = new Date()

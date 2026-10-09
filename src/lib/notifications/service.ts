@@ -1,57 +1,139 @@
 /**
  * lib/notifications/service.ts — خدمة الإشعارات متعددة القنوات
  *
+ * الكاتب الوحيد للإشعارات (unified writer): ينشئ صف `Notification` +
+ * مهمة `NotificationJob` لكل قناة + سجل `NotificationLog` لكل قناة،
+ * بعد تطبيق التفضيلات ومنع التكرار. الإرسال الفعلي (بريد/Telegram)
+ * يتم لاحقاً في عامل التصريف drain.ts عبر مسار cron — راجعه هناك.
+ *
  * تدعم الإشعارات عبر: داخل التطبيق، البريد الإلكتروني، Telegram
  */
 
 import { db } from '../db'
-import { sendToChannel } from '../telegram-bot'
+import {
+  buildVariables,
+  dedupCutoff,
+  dedupWindowMinutes,
+  isChannelEnabled,
+  type NotificationContentSource,
+} from './pipeline'
 import { renderNotificationContent } from './template-renderer'
-import { type NotificationChannel, type NotificationEvent, NotificationType } from './types'
+import { type NotificationEvent, NotificationType } from './types'
+
+/**
+ * ملخص ما تم فعله فعلياً — يُرجع بدلاً من `void` حتى لا يظن المستدعي أن كل
+ * المستلمين استلموا الإشعار.
+ */
+export interface SendNotificationResult {
+  /** عدد إشعارات `Notification` التي أُنشئت فعلياً في قاعدة البيانات */
+  created: number
+  /** عدد المستلمين الذين لم يُنشأ لهم إشعار (لا قناة قابلة للتوصيل) */
+  skipped: number
+  /** عدد مهام البريد/Telegram المنشأة بانتظار عامل التصريف (cron) */
+  queued: number
+  /** عدد المستلمين المستبعدين لأن إشعاراً مماثلاً موجود داخل نافذة المنع */
+  deduplicated: number
+}
+
+interface RecipientRow {
+  id: string
+  username: string
+  displayName: string | null
+  telegramUrl: string | null
+}
 
 /**
  * إرسال إشعار عبر القنوات المتاحة
  */
-export async function sendNotification(event: NotificationEvent): Promise<void> {
-  console.log(
-    `[notification-service] Sending ${event.type} to ${event.recipients.length} recipients`,
-  )
+export async function sendNotification(event: NotificationEvent): Promise<SendNotificationResult> {
+  const now = new Date()
+  const recipients = event.recipients
 
-  for (const recipient of event.recipients) {
-    // Check user preferences
-    const preferences = await db.notificationPreference.findUnique({
-      where: { userId: recipient.userId },
+  console.log(`[notification-service] Sending ${event.type} to ${recipients.length} recipients`)
+
+  let created = 0
+  let skipped = 0
+  let queued = 0
+  let deduplicated = 0
+
+  if (recipients.length === 0) return { created, skipped, queued, deduplicated }
+
+  const userIds = recipients.map((r) => r.userId)
+
+  // استعلامان مجمّعان بدل استعلام لكل مستلم (الإرسال الجماعي قد يصل لكل المستخدمين)
+  const [preferences, users] = await Promise.all([
+    db.notificationPreference.findMany({ where: { userId: { in: userIds } } }),
+    db.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true, displayName: true, telegramUrl: true },
+    }),
+  ])
+  const preferencesByUser = new Map(preferences.map((p) => [p.userId, p]))
+  const usersById = new Map<string, RecipientRow>(users.map((u) => [u.id, u]))
+
+  // منع التكرار: استعلام واحد لكل المستلمين داخل النافذة الزمنية
+  const windowMinutes = event.skipDeduplication ? 0 : dedupWindowMinutes(event.type)
+  const recentByUser = new Map<string, boolean>()
+  if (windowMinutes > 0) {
+    // استعلام واحد يجمع المستلمين الذين لديهم إشعار مماثل داخل النافذة
+    const recent = await db.notification.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: userIds },
+        type: event.type,
+        createdAt: { gte: dedupCutoff(now, windowMinutes) },
+      },
+      _count: { _all: true },
     })
+    for (const row of recent) recentByUser.set(row.userId, true)
+  }
 
-    // Determine which channels to use
-    let channels = determineChannels(recipient.channels, preferences, event.type)
+  for (const recipient of recipients) {
+    const preferences = preferencesByUser.get(recipient.userId) ?? null
+
+    // القنوات التي لم يعطّلها المستخدم (عام + خاص بالنوع) — نفس فحص
+    // domain PreferencePolicy.canDeliver. عامل التصريف يعيد الفحص قبل
+    // الإرسال، فالتفضيلات التي تتغير بعد الكتابة ما تزال مُحترمة.
+    let channels = recipient.channels.filter((c) => isChannelEnabled(preferences, c, event.type))
+
+    const user = usersById.get(recipient.userId) ?? null
 
     // Telegram requires telegramUrl — فلترة القناة إذا لم يكن موجوداً
-    if (channels.includes('telegram')) {
-      const user = await db.user.findUnique({
-        where: { id: recipient.userId },
-        select: { telegramUrl: true },
-      })
-      if (!user?.telegramUrl) {
-        channels = channels.filter((c) => c !== 'telegram')
-      }
+    if (channels.includes('telegram') && !user?.telegramUrl) {
+      channels = channels.filter((c) => c !== 'telegram')
     }
 
-    if (channels.length === 0) continue
-
-    // بناء متغيرات القالب
-    const variables: Record<string, unknown> = {
-      actorName: (event as unknown as Record<string, unknown>).actorName || '',
-      recipientName:
-        (recipient as unknown as Record<string, unknown>).displayName ||
-        (recipient as unknown as Record<string, unknown>).username ||
-        '',
-      modName: (event.data as Record<string, unknown> | undefined)?.modName || '',
-      teamName: (event.data as Record<string, unknown> | undefined)?.teamName || '',
-      ...(event.data || {}),
+    if (channels.length === 0) {
+      skipped++
+      continue
     }
 
-    // عرض المحتوى من القالب مع fallback
+    // منع التكرار قبل أي كتابة في القاعدة
+    if (windowMinutes > 0 && recentByUser.get(recipient.userId)) {
+      deduplicated++
+      continue
+    }
+
+    const recipientInfo = {
+      username: user?.username ?? '',
+      displayName: user?.displayName ?? null,
+    }
+
+    const variables = buildVariables(
+      {
+        type: event.type,
+        title: event.title,
+        message: event.message,
+        data: event.data,
+        targetUrl: event.targetUrl,
+        targetTitle: event.targetTitle,
+        targetSlug: event.targetSlug,
+        actorUsername: event.actorUsername,
+      },
+      recipientInfo,
+    )
+
+    // عرض المحتوى من القالب (in_app) مع fallback
     const content = await renderNotificationContent(event.type, 'in_app', variables, {
       title: event.title,
       message: event.message,
@@ -75,10 +157,12 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
         actorAvatarUrl: event.actorAvatarUrl || null,
       },
     })
+    created++
 
-    // إنشاء مهمة لكل قناة مرتبطة بنفس الإشعار
+    // إنشاء مهمة + سجل لكل قناة مرتبطة بنفس الإشعار
     for (const channel of channels) {
       if (channel === 'in_app') {
+        // داخل التطبيق: التسليم = وجود الصف، لذا تُغلق المهمة والسجل فوراً.
         await db.notificationJob.create({
           data: {
             notificationId: notification.id,
@@ -101,150 +185,62 @@ export async function sendNotification(event: NotificationEvent): Promise<void> 
             notificationId: notification.id,
             channel,
             status: 'pending',
+            scheduledFor: now,
           },
         })
-      }
-    }
-  }
-}
-
-/**
- * إنشاء إشعار داخل التطبيق — مُهمل: استخدم sendNotification (ينشئ إشعار واحد)
- * محفوظ للتوافق الخلفي فقط
- */
-async function createInAppNotification(event: NotificationEvent, userId: string): Promise<void> {
-  console.warn('[deprecated] createInAppNotification استخدم sendNotification')
-}
-
-/**
- * إضافة إشعار بريد إلى قائمة الانتظار — مُهمل
- */
-async function queueEmailNotification(event: NotificationEvent, userId: string): Promise<void> {
-  console.warn('[deprecated] queueEmailNotification استخدم sendNotification')
-}
-
-/**
- * إضافة إشعار Telegram إلى قائمة الانتظار — مُهمل
- */
-async function queueTelegramNotification(event: NotificationEvent, userId: string): Promise<void> {
-  console.warn('[deprecated] queueTelegramNotification استخدم sendNotification')
-}
-
-/**
- * معالجة قائمة انتظار الإشعارات
- */
-export async function processNotificationQueue(): Promise<void> {
-  const pendingJobs = await db.notificationJob.findMany({
-    where: {
-      status: 'pending',
-      channel: { in: ['email', 'telegram'] },
-    },
-    include: {
-      notification: {
-        include: { user: { select: { id: true, username: true, telegramUrl: true } } },
-      },
-    },
-    take: 20,
-  })
-
-  for (const job of pendingJobs) {
-    try {
-      await db.notificationJob.update({
-        where: { id: job.id },
-        data: { status: 'processing' },
-      })
-
-      if (job.channel === 'telegram') {
-        await processTelegramJob(job)
-      } else if (job.channel === 'email') {
-        await processEmailJob(job)
-      }
-
-      await db.notificationJob.update({
-        where: { id: job.id },
-        data: { status: 'sent', processedAt: new Date() },
-      })
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err)
-      const newAttempts = job.attempts + 1
-      await db.notificationJob.update({
-        where: { id: job.id },
-        data: {
-          status: newAttempts >= job.maxAttempts ? 'dead_letter' : 'pending',
-          attempts: newAttempts,
-          lastError: errorMsg,
-        },
-      })
-    }
-  }
-}
-
-/**
- * معالجة إشعار Telegram
- */
-async function processTelegramJob(job: any): Promise<void> {
-  const user = job.notification.user
-  if (!user?.telegramUrl) return
-
-  // Extract Telegram username from URL
-  const match = user.telegramUrl.match(/t\.me\/(\w+)/)
-  if (!match) return
-
-  const message = `🔔 ${job.notification.title}\n\n${job.notification.message}`
-  await sendToChannel(message)
-}
-
-/**
- * معالجة إشعار بريد
- */
-async function processEmailJob(job: any): Promise<void> {
-  // Email processing is handled by the existing email-service.ts
-  console.log(`[notification-service] Email job ${job.id} queued for email service`)
-}
-
-/**
- * تحديد القنوات بناءً على تفضيلات المستخدم
- */
-function determineChannels(
-  requestedChannels: NotificationChannel[],
-  preferences: any,
-  eventType: NotificationType,
-): NotificationChannel[] {
-  if (!preferences) return requestedChannels
-
-  // Check quiet hours
-  if (preferences.quietHoursEnabled) {
-    const now = new Date()
-    const hour = now.getHours()
-    const start = parseInt(preferences.quietHoursStart || '22', 10)
-    const end = parseInt(preferences.quietHoursEnd || '8', 10)
-
-    if (start > end) {
-      // Overnight quiet hours
-      if (hour >= start || hour < end) {
-        return requestedChannels.filter((c) => c === 'in_app')
-      }
-    } else {
-      if (hour >= start && hour < end) {
-        return requestedChannels.filter((c) => c === 'in_app')
+        // سجل من البداية: عامل التصريف يحدّث هذا الصف بنفسه (logId ثابت
+        // يُستخدم كـ requestId/بيكسل في البريد).
+        await db.notificationLog.create({
+          data: {
+            notificationId: notification.id,
+            channel,
+            status: 'queued',
+          },
+        })
+        queued++
       }
     }
   }
 
-  // Check type-specific preferences
-  const typePrefs = (preferences.typePreferences as Record<string, any>) || {}
-  const eventPrefs = typePrefs[eventType]
-
-  if (eventPrefs) {
-    return requestedChannels.filter((c) => eventPrefs[c] !== false)
-  }
-
-  return requestedChannels
+  return { created, skipped, queued, deduplicated }
 }
 
 /**
- * إرسال إشعار workflow değişikliği
+ * ساعات الهدوء لم تعد تقني القناة هنا: مهمة البريد/Telegram تُنشأ ثم يؤجّلها
+ * عامل التصريف (drain.ts) حتى تنتهي نافذة الهدوء بمنطقة المستلم الزمنية،
+ * فلا يضيع الإشعار ولا يصل أثناء الهدوء.
  */
+
+/** مصدر المحتوى من صف إشعار جاهز — يُستخدم أيضاً من عامل التصريف. */
+export function notificationSource(notification: {
+  type: string
+  title: string
+  message: string
+  data?: unknown
+  targetUrl?: string | null
+  targetTitle?: string | null
+  targetSlug?: string | null
+  actorUsername?: string | null
+}): NotificationContentSource {
+  return {
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    data: (notification.data ?? {}) as Record<string, unknown>,
+    targetUrl: notification.targetUrl,
+    targetTitle: notification.targetTitle,
+    targetSlug: notification.targetSlug,
+    actorUsername: notification.actorUsername,
+  }
+}
+
+/**
+ * إرسال إشعار workflow تغيير (مستدعى عبر sendNotification أعلاه).
+ *
+ * محفوظ للتوافق: لا يوجد مستدعٍ له حالياً — مسار `/api/admin/mods/[id]/workflow`
+ * يستخدم `lib/mod-notifications.notifyWorkflowChange` (نفس المضمون، كاتب واحد).
+ */
+
 export async function notifyWorkflowChange(params: {
   modId: string
   modName: string

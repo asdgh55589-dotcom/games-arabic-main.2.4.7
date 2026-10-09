@@ -179,7 +179,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const body = await req.json()
     const { username } = await params
-    logger.info('[API] Profile PUT - username:', username, 'fields:', Object.keys(body))
+    logger.info({ username, fields: Object.keys(body) }, '[API] Profile PUT')
     const neonUser = await getOptionalSession()
     if (!neonUser) {
       return unauthorized()

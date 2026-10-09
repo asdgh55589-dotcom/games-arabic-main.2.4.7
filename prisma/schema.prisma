@@ -1081,6 +1081,7 @@ model NotificationPreference {
   quietHoursEnabled   Boolean  @default(false) @map("quiet_hours_enabled")
   quietHoursStart     String?  @map("quiet_hours_start") // "23:00" format
   quietHoursEnd       String?  @map("quiet_hours_end") // "07:00" format
+  timezone            String? // IANA zone (مثال "Asia/Riyadh") — ساعات الهدوء تُحسب بها، لا بتوقيت الخادم
   typePreferences     Json     @default("{}") @map("type_preferences") // Record<NotificationType, TypePreference>
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -1113,7 +1114,7 @@ model NotificationJob {
   id             String    @id @default(cuid())
   notificationId String    @map("notification_id")
   channel        String // in_app, email, telegram
-  status         String    @default("pending") // pending, processing, sent, failed, dead_letter
+  status         String    @default("pending") // pending, processing, sent, skipped, failed, dead_letter
   attempts       Int       @default(0)
   maxAttempts    Int       @default(5) @map("max_attempts")
   lastError      String?   @map("last_error")
@@ -1122,18 +1123,27 @@ model NotificationJob {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
+  // ===== Telegram Rich-Text — المرحلة 1 (حفظ فقط، بلا إرسال) =====
+  destinationId String? @map("destination_id") // وجهة Telegram المستهدفة (تُترك NULL حين لا تنطبق)
+  parseMode     String? @map("parse_mode") // نسخة القالب وقت الدفع: "HTML" | "MarkdownV2" | null (نص عادي)
+  batchId       String? @map("batch_id") // دفعة بث (manager-only) — لا تغيير على مسار الإذن الحالي
+
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  destination  TelegramDestination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  batch        NotificationBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
 
   @@index([status, scheduledFor])
   @@index([notificationId])
   @@index([channel])
+  @@index([destinationId])
+  @@index([batchId])
   @@map("notification_jobs")
 }
 
 // ===== قوالب الإشعارات =====
 model NotificationTemplate {
   id            String   @id @default(cuid())
-  type          String // NotificationType enum value
+  type          String // NotificationType enum value — كل الأنواع مؤهلة للنص الغني، بلا قوائم سوداء
   channel       String // in_app, email, telegram
   titleTemplate String
   bodyTemplate  String
@@ -1143,9 +1153,101 @@ model NotificationTemplate {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // ===== Telegram Rich-Text — المرحلة 1 (حفظ فقط) =====
+  // bodyTemplate القديم يبقى سليماً ومعتمداً؛ الحقول الجديدة اختيارية تماماً:
+  // parseMode = null  ⇒ القالب العادي القديم (لا سلوك جديد).
+  parseMode        String? // "HTML" | "MarkdownV2"
+  richBodyTemplate String? // نص القالب الغني — يُستخدم فقط مع parseMode غير NULL
+
+  versions NotificationTemplateVersion[]
+
   @@unique([type, channel])
   @@index([isActive])
   @@map("notification_templates")
+}
+
+// ===== نسخ قوالب الإشعارات (أرشيف التعديلات) =====
+// لقطة غير قابلة للتعديل لكل تعديل على NotificationTemplate،
+// تُملأ من طبقة الحفظ لاحقاً — المرحلة 1 تُنشئ الجدول فقط.
+model NotificationTemplateVersion {
+  id               String   @id @default(cuid())
+  templateId       String   @map("template_id")
+  version          Int
+  type             String // لقطة من type وقت التعديل
+  channel          String
+  titleTemplate    String  @map("title_template")
+  bodyTemplate     String  @map("body_template")
+  richBodyTemplate String? @map("rich_body_template")
+  parseMode        String? @map("parse_mode")
+  variables        Json    @default("[]")
+  isActive         Boolean @default(true) @map("is_active")
+  changedBy        String? @map("changed_by") // userId المُعدِّل (إن وُجد)
+  changeNote       String? @map("change_note")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  template NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([type, channel])
+  @@index([createdAt])
+  @@map("notification_template_versions")
+}
+
+// ===== وجهات إرسال Telegram =====
+// وجهة واحدة لكل محادثة/قناة؛ التحقق من الصحة إجراءً قبل الإرسال.
+// كل أنواع المحادثات مؤهلة (channel | group | supergroup | private | bot).
+model TelegramDestination {
+  id                      String   @id @default(cuid())
+  chatId                  String   @unique @map("chat_id") // "-100..." أو "@handle" — يُطبَّع في lib/telegram-destinations
+  chatType                String   @default("unknown") @map("chat_type") // channel | group | supergroup | private | bot | unknown
+  username                String? // @handle إن عُرف
+  title                   String? // اسم القناة/المجموعة إن عُرف
+  status                  String   @default("pending") // pending | active | disabled
+
+  // التحقق من الوجهة
+  verificationStatus      String   @default("unverified") @map("verification_status") // unverified | verified | failed
+  verificationMethod      String?  @map("verification_method") // manual | token
+  verificationToken       String?  @map("verification_token") // رمز HMAC يُثبت سيطرة المشغّل (لا يُرسل في المرحلة 1)
+  verificationTokenUsedAt DateTime? @map("verification_token_used_at")
+  verificationCheckedAt   DateTime? @map("verification_checked_at")
+  lastVerificationError   String?  @map("last_verification_error")
+  verifiedAt              DateTime? @map("verified_at")
+
+  isDefault Boolean  @default(false) @map("is_default")
+  addedBy   String?  @map("added_by") // userId المُضيف (باص manager+ يبقى manager-only كما هو)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  jobs NotificationJob[]
+
+  @@index([status, verificationStatus])
+  @@index([chatType])
+  @@index([createdAt])
+  @@map("telegram_destinations")
+}
+
+// ===== دفعات البث (broadcast) =====
+// سجل يجمّع وظائف دفعة واحدة. البث يبقى manager-only عبر
+// /api/admin/notifications/send (requireManager) — لا يُضاف أي مسار إذن جديد.
+model NotificationBatch {
+  id          String   @id @default(cuid())
+  kind        String   @default("broadcast") // broadcast | digest
+  type        String // NotificationType الهدف
+  title       String?
+  body        String?
+  parseMode   String?  @map("parse_mode") // نص غني اختياري للدفعة
+  status      String   @default("draft") // draft | queued | completed | failed — لا إرسال في المرحلة 1
+  createdById String?  @map("created_by") // userId المدير المنفّذ
+  totalJobs   Int      @default(0) @map("total_jobs")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  jobs NotificationJob[]
+
+  @@index([status, createdAt])
+  @@index([type])
+  @@map("notification_batches")
 }
 
 // ===== حظر عناوين IP =====

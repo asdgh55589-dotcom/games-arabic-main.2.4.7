@@ -5,6 +5,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 
+/**
+ * بطاقة تتبع البريد الإلكتروني مخفية عمداً (P1).
+ *
+ * لا يوجد أي بريد يُرسَل فعلياً: `processEmailJob()` دالة فارغة و
+ * `processNotificationQueue()` بلا مستدعٍ، لذلك لا تُنشأ صفوف `NotificationLog`
+ * بقناة `email` أصلاً. الحقل `emailStats` يُحسب في `analytics/route.ts` خلف شرط
+ * ميت `emailLogs.length > 0 || true`، فكل أرقامه صفرية دائماً بينما تُعرض في
+ * الواجهة كقياس حقيقي. فعّلها بعد وصول عامل المعالجة ومرسل بريد حقيقي وتسجيل
+ * `deliveredAt/openedAt/clickedAt`.
+ */
+const SHOW_EMAIL_TRACKING = false
+
 interface AnalyticsData {
   range: string
   totals: { created: number; delivered: number; failed: number; deliveryRate: number }
@@ -166,7 +178,7 @@ export default function NotificationsAnalyticsPage() {
         </Card>
       </div>
 
-      {data.emailStats && (
+      {SHOW_EMAIL_TRACKING && data.emailStats && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

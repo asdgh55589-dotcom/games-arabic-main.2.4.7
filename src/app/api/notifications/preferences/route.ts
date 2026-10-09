@@ -52,7 +52,12 @@ export async function PUT(req: NextRequest) {
       return validationFail(parsed.error.flatten())
     }
 
-    const data = parsed.data
+    // '' يعني "أزل المنطقة الصريحة" ⇒ null (يُعامَل كـ UTC لاحقاً).
+    // غياب الحقل في الطلب = لا تغيير (تحديث جزئي).
+    const data = {
+      ...parsed.data,
+      ...(parsed.data.timezone !== undefined ? { timezone: parsed.data.timezone || null } : {}),
+    }
 
     const updateData: Record<string, unknown> = {}
     if (data.emailEnabled !== undefined) updateData.emailEnabled = data.emailEnabled
@@ -64,6 +69,7 @@ export async function PUT(req: NextRequest) {
     if (data.quietHoursEnabled !== undefined) updateData.quietHoursEnabled = data.quietHoursEnabled
     if (data.quietHoursStart !== undefined) updateData.quietHoursStart = data.quietHoursStart
     if (data.quietHoursEnd !== undefined) updateData.quietHoursEnd = data.quietHoursEnd
+    if (data.timezone !== undefined) updateData.timezone = data.timezone
     if (data.typePreferences !== undefined) {
       updateData.typePreferences = data.typePreferences as unknown as Prisma.InputJsonValue
     }

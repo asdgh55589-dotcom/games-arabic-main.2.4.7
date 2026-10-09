@@ -64,7 +64,13 @@ export async function POST(req: NextRequest) {
         username: data.username || null,
         photoUrl: data.photo_url || null,
       },
-      { ipAddress: bridgeIp, userAgent: req.headers.get('user-agent') },
+      {
+        ipAddress:
+          req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+          req.headers.get('x-real-ip') ||
+          null,
+        userAgent: req.headers.get('user-agent'),
+      },
     )
 
     if (!loginResult.ok) {

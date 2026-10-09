@@ -1,44 +1,18 @@
 import Handlebars from 'handlebars'
 import type { NextRequest } from 'next/server'
 import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
-import { internalError, notFound, ok } from '@/lib/api-response'
+import { forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import {
+  buildPreviewMatrix,
+  renderSampleVariables,
+  securityTemplateGuard,
+} from '@/lib/template-lifecycle'
 
 interface RouteParams {
   params: Promise<{ id: string }>
-}
-
-const SAMPLE_DATA: Record<string, Record<string, unknown>> = {
-  comment_reply: {
-    actorName: 'أحمد',
-    modTitle: 'لعبة زيد',
-    replyPreview: 'شكراً على المجهود الرائع!',
-  },
-  top_level_comment: {
-    actorName: 'محمد',
-    modTitle: 'لعبة زيد',
-    commentPreview: 'عمل ممتاز، شكراً لكم!',
-  },
-  like: { modTitle: 'لعبة زيد' },
-  follow: { followerName: 'سارة' },
-  mod_endorse: { modTitle: 'لعبة زيد' },
-  mod_endorse_milestone: { modTitle: 'لعبة زيد', count: '50' },
-  mod_featured: { modTitle: 'لعبة زيد' },
-  mod_published: { modTitle: 'لعبة زيد' },
-  mod_updated: { modTitle: 'لعبة زيد' },
-  mod_deleted: { modTitle: 'لعبة زيد' },
-  tier_upgrade: { fromTier: 'مبتدئ', toTier: 'مترجم' },
-  tier_revoked: { fromTier: 'مترجم', toTier: 'مبتدئ', reason: 'عدم النشاط' },
-  special_role_assigned: { roleName: 'مترجم رسمي' },
-  special_role_removed: { roleName: 'مترجم رسمي', reason: 'انتهاء الصلاحية' },
-  admin_action: { actionMessage: 'تم تعليق الحساب مؤقتاً', resolution: 'خرق سياسة المجتمع' },
-  admin_user_register: { username: 'ahmed_dev', registerDate: '2026-08-14' },
-  admin_request: { requestMessage: 'طلب انضمام لفريق التعريب' },
-  admin_report: { reason: 'محتوى مخالف' },
-  admin_milestone: { milestoneMessage: 'تم اعتماد 100 تعريب' },
-  system_announcement: { announcementMessage: 'سيتم إجراء صيانة مجدولة يوم الجمعة' },
 }
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
@@ -51,11 +25,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return notFound('القالب غير موجود')
     }
 
+    // P3: قوالب الأمان لا تُعاين ولا تُعرض عبر هذه الواجهة إطلاقاً.
+    const securityGuard = securityTemplateGuard(template)
+    if (securityGuard) return securityGuard
+
     const body = await req.json().catch(() => ({}))
     const sampleVars =
       body.variables && typeof body.variables === 'object'
         ? body.variables
-        : SAMPLE_DATA[template.type] || {}
+        : renderSampleVariables(template.type)
 
     const compiledTitle = Handlebars.compile(template.titleTemplate)
     const compiledBody = Handlebars.compile(template.bodyTemplate)
@@ -74,13 +52,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       })
     }
 
+    // P3 (additive): مصفوفة معاينة شاملة لكل أسطح القناة (إجراءات #4) —
+    // الحقول القديمة أعلاه تبقى كما هي تماماً.
+    const matrix = buildPreviewMatrix(template, sampleVars)
+
     return ok({
       title,
       body: bodyHtml,
       html,
       sampleVariables: sampleVars,
+      matrix,
     })
   } catch (err) {
+    // P3: فشل الصلاحية يجب أن يعود 401/403 لا 500 (كان الخطأ العام يبتلع AuthError).
+    const status = (err as { status?: number })?.status
+    if (status === 401) return unauthorized('سجّل الدخول أولاً')
+    if (status === 403) return forbidden('غير مصرح — إدارة القوالب للمديرين فقط')
     logger.error('[admin/templates/[id]/preview POST] failed:', err)
     return internalError('Failed to preview template')
   }

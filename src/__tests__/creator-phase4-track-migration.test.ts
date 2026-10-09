@@ -7,7 +7,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const root = process.cwd()
-const MIGRATION = '20260907070000_add_creator_track_and_portfolio'
+const MIGRATION = '20260920000000_baseline_squash'
 const sqlPath = path.join(root, 'prisma/migrations', MIGRATION, 'migration.sql')
 const sql = fs.readFileSync(sqlPath, 'utf8')
 const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')

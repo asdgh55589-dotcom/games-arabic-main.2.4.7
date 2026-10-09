@@ -1,8 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { setCacheControl, withETag } from '@/lib/api-cache'
+import { getApiVersion, setApiVersionHeader } from '@/lib/api-versioning'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
+import { addHateoasLinks, shouldIncludeLinks } from '@/lib/hateoas'
 import { modCardSelect } from '@/lib/prisma-selects'
+import { parseSparseFields } from '@/lib/sparse-fieldsets'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views', 'rating', 'tier'] as const
 type Sort = (typeof SORTS)[number]
@@ -15,6 +18,17 @@ const ORDER_BY: Record<Exclude<Sort, 'tier'>, Record<string, 'desc' | 'asc'>> = 
   views: { views: 'desc' },
   rating: { rating: 'desc' },
 }
+
+// Phase 4: sparse fieldset allowlist (scalar card fields; relations stay full).
+const MOD_SPARSE_ALLOWLIST = [
+  'id', 'slug', 'name', 'headline', 'summary', 'thumbnailUrl', 'imageUrl',
+  'galleryUrls', 'version', 'fileSize', 'fileFormat', 'downloads', 'endorsements',
+  'views', 'comments', 'rating', 'ratingCount', 'tags', 'series', 'translationTeam',
+  'translationType', 'isOriginalWork', 'originalSource', 'originalAuthor',
+  'isFeatured', 'isTrending', 'isLatest', 'featuredLevel', 'featuredUntil',
+  'trendingUntil', 'popularUntil', 'hiddenBadges', 'scheduledAt', 'workflowStatus',
+  'releaseDate', 'updatedAt', 'createdAt',
+] as const
 
 const PLATFORM_KEYS = ['PC', 'NS', 'PS1', 'PS2', 'PS3', 'PS4', 'PS5', 'X360', 'ANDROID'] as const
 
@@ -82,6 +96,9 @@ export async function GET(req: NextRequest) {
   const orderBy =
     sort === 'tier' ? { author: { tier: 'desc' } } : ORDER_BY[sort as Exclude<Sort, 'tier'>]
 
+  // Phase 4 (opt-in): ?fields= → Prisma select (absent/invalid = full card, unchanged).
+  const sparse = parseSparseFields(searchParams.get('fields'), MOD_SPARSE_ALLOWLIST)
+
   const [total, mods] = await Promise.all([
     db.mod.count({ where }),
     db.mod.findMany({
@@ -89,11 +106,18 @@ export async function GET(req: NextRequest) {
       orderBy: orderBy as unknown as Record<string, 'desc' | 'asc'>,
       skip: (page - 1) * limit,
       take: limit,
-      select: modCardSelect,
+      select: (sparse ?? modCardSelect) as typeof modCardSelect,
     }),
   ])
 
-  const items = serialize(mods)
+  let items: unknown[] = serialize(mods)
+  // Phase 4 (opt-in): HATEOAS via Accept: application/hal+json or ?_links=true.
+  if (shouldIncludeLinks(req, searchParams)) {
+    const origin = new URL(req.url).origin
+    items = items.map((m) =>
+      addHateoasLinks(m as { id: string; [key: string]: unknown }, 'mod', origin),
+    )
+  }
   const pagination = {
     page,
     limit,
@@ -103,5 +127,7 @@ export async function GET(req: NextRequest) {
   // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
   const headers = new Headers()
   setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
-  return withETag(req, { data: items, pagination }, { headers })
+  const res = await withETag(req, { data: items, pagination }, { headers })
+  // Phase 4: version stamp (v1 default — payload identical across versions for now)
+  return setApiVersionHeader(res, getApiVersion(req))
 }

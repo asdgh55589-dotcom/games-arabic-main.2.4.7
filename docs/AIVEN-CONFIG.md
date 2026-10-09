@@ -38,7 +38,7 @@ Notes:
 
 ## pg_trgm + GIN indexes (baseline)
 
-`pg_trgm` and its **6 GIN indexes** are already in the baseline (`prisma/migrations/20260907000000_baseline/migration.sql` tail + `docs/migrations-alignment-runbook.md:Step 4` + `docs/prod-migration-sync.md`). No extra migration is needed for the Aiven cutover.
+`pg_trgm` and its **6 GIN indexes** are already in the baseline (`prisma/migrations/20260920000000_baseline_squash/migration.sql` tail + `docs/migrations-alignment-runbook.md:Step 4` + `docs/prod-migration-sync.md`). No extra migration is needed for the Aiven cutover.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

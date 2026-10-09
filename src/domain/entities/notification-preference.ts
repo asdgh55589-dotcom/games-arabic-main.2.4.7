@@ -4,6 +4,7 @@
  * No external dependencies — pure TypeScript only.
  */
 
+import { isWithinQuietHours, resolveQuietHoursTimezone } from '../policies/quiet-hours'
 import { NotificationChannel, type NotificationType } from '../value-objects'
 
 /** Per-type preference override */
@@ -30,6 +31,8 @@ export interface ReconstructPreferenceProps {
   quietHoursEnabled: boolean
   quietHoursStart: string | null
   quietHoursEnd: string | null
+  /** IANA zone — ساعات الهدوء تُحسب بها (null ⇒ UTC). */
+  timezone?: string | null
   typePreferences: Record<string, TypePreference>
   createdAt: Date
   updatedAt: Date
@@ -45,6 +48,7 @@ export interface PreferenceUpdate {
   quietHoursEnabled: boolean
   quietHoursStart: string | null
   quietHoursEnd: string | null
+  timezone?: string | null
   typePreferences: Record<string, TypePreference>
 }
 
@@ -60,6 +64,7 @@ export class NotificationPreference {
     readonly quietHoursEnabled: boolean,
     readonly quietHoursStart: string | null,
     readonly quietHoursEnd: string | null,
+    readonly timezone: string | null,
     readonly typePreferences: Record<string, TypePreference>,
     readonly createdAt: Date,
     readonly updatedAt: Date,
@@ -83,6 +88,7 @@ export class NotificationPreference {
       false, // quietHoursEnabled
       null, // quietHoursStart
       null, // quietHoursEnd
+      null, // timezone — يعني UTC حتى يُدخل المستخدم منطقته
       {}, // typePreferences
       now,
       now,
@@ -104,6 +110,7 @@ export class NotificationPreference {
       props.quietHoursEnabled,
       props.quietHoursStart,
       props.quietHoursEnd,
+      props.timezone ?? null,
       props.typePreferences,
       props.createdAt,
       props.updatedAt,
@@ -139,22 +146,21 @@ export class NotificationPreference {
   /**
    * Check if the given date falls within quiet hours.
    * Handles overnight ranges (e.g., 23:00 - 07:00).
+   *
+   * P2: the window is evaluated in the recipient's timezone
+   * (`timezone`, null ⇒ UTC) instead of the server process timezone.
+   * Rows without explicit times keep the old "no window" behaviour.
    */
   isInQuietHours(date: Date): boolean {
     if (!this.quietHoursEnabled) return false
     if (!this.quietHoursStart || !this.quietHoursEnd) return false
 
-    const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-    const start = this.quietHoursStart
-    const end = this.quietHoursEnd
-
-    if (start <= end) {
-      // Same-day range (e.g., 08:00 - 22:00)
-      return timeStr >= start && timeStr <= end
-    } else {
-      // Overnight range (e.g., 23:00 - 07:00)
-      return timeStr >= start || timeStr <= end
-    }
+    return isWithinQuietHours(date, {
+      timezone: resolveQuietHoursTimezone(this.timezone),
+      quietHoursEnabled: true,
+      quietHoursStart: this.quietHoursStart,
+      quietHoursEnd: this.quietHoursEnd,
+    })
   }
 
   /**
@@ -172,6 +178,7 @@ export class NotificationPreference {
       partial.quietHoursEnabled ?? this.quietHoursEnabled,
       partial.quietHoursStart !== undefined ? partial.quietHoursStart : this.quietHoursStart,
       partial.quietHoursEnd !== undefined ? partial.quietHoursEnd : this.quietHoursEnd,
+      partial.timezone !== undefined ? partial.timezone : this.timezone,
       partial.typePreferences ?? this.typePreferences,
       this.createdAt,
       new Date(),

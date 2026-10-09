@@ -12,7 +12,7 @@ setup, pool tuning, and `AIVEN_DATABASE_URL` details, see
 
 ## RELEASE deploy — 9 additive migrations above baseline (this branch)
 
-> Production Neon already carries ONLY the `20260907000000_baseline` row
+> Production Neon already carries ONLY the `20260920000000_baseline_squash` row
 > (synced live earlier). At deploy, `prisma migrate deploy` will apply
 > exactly the 9 additive migrations below — all additive-only
 > (`ADD COLUMN` / `CREATE TABLE` / `CREATE INDEX`, `IF NOT EXISTS` where
@@ -37,7 +37,7 @@ setup, pool tuning, and `AIVEN_DATABASE_URL` details, see
 SELECT migration_name, finished_at, rolled_back_at
 FROM "_prisma_migrations"
 ORDER BY migration_name;
--- expected: exactly ONE row: 20260907000000_baseline
+-- expected: exactly ONE row: 20260920000000_baseline_squash
 -- (finished_at set, rolled_back_at NULL). Anything else — STOP.
 ```
 
@@ -113,7 +113,7 @@ place (old code ignores them).
 Migration history never contained the core `CREATE TABLE`s (history started
 mid-life with `ALTER TABLE "User"`), so `migrate deploy` can never provision
 a fresh database and `migrate dev` crashed on the shadow DB. Dev was fixed by
-squashing to a single proven baseline (`20260907000000_baseline`, verified:
+squashing to a single proven baseline (`20260920000000_baseline_squash`, verified:
 73/73 tables, zero column diffs vs dev). Production's `_prisma_migrations`
 still lists the 22 retired migrations — the next `migrate deploy` would fail
 with "applied migrations missing locally". This runbook aligns prod history
@@ -144,13 +144,13 @@ STOP and investigate before proceeding.
 ```sql
 BEGIN;
 DELETE FROM "_prisma_migrations"
-WHERE migration_name != '20260907000000_baseline';
+WHERE migration_name != '20260920000000_baseline_squash';
 INSERT INTO "_prisma_migrations"
   ("id", "checksum", "finished_at", "migration_name", "logs",
    "rolled_back_at", "started_at", "applied_steps_count")
-SELECT gen_random_uuid(), '', NOW(), '20260907000000_baseline', NULL, NULL, NOW(), 1
+SELECT gen_random_uuid(), '', NOW(), '20260920000000_baseline_squash', NULL, NULL, NOW(), 1
 WHERE NOT EXISTS (
-  SELECT 1 FROM "_prisma_migrations" WHERE migration_name = '20260907000000_baseline'
+  SELECT 1 FROM "_prisma_migrations" WHERE migration_name = '20260920000000_baseline_squash'
 );
 COMMIT;
 ```
@@ -159,7 +159,7 @@ Verify exactly one row remains:
 
 ```sql
 SELECT migration_name FROM "_prisma_migrations";
--- expected: 20260907000000_baseline
+-- expected: 20260920000000_baseline_squash
 ```
 
 ## 3. Additive extras with IF NOT EXISTS guards (safe to re-run)
@@ -252,7 +252,7 @@ npx prisma migrate status
   AND hard-blocked later `migrate dev` runs (Prisma state validation
   P3006). If you see trgm DROPs in a generated migration, delete those
   lines before applying.
-- **Post-baseline migrations must sort AFTER `20260907000000_baseline`.**
+- **Post-baseline migrations must sort AFTER `20260920000000_baseline_squash`.**
   `migrate dev` names new dirs with the wall clock — the container clock
   currently lags the baseline stamp, so RENAME the generated dir to
   `2026090700000N_*` and mirror the rename in `_prisma_migrations` if it

@@ -1,0 +1,105 @@
+name: notifications
+
+# بوابة جودة خاصة بإشعارات users. تعمل على تغييرات الكود أو القوالب فقط،
+# وتسجّل نتيجة التغطية دون فرض gate صارم على main الآن (P5).
+on:
+  pull_request:
+    paths:
+      - 'src/app/api/admin/notifications/**'
+      - 'src/app/api/admin/notifications-health/**'
+      - 'src/app/api/admin/templates/**'
+      - 'src/app/api/admin/scheduler/**'
+      - 'src/app/api/cron/notification-cleanup/**'
+      - 'src/app/admin/notifications/**'
+      - 'src/infrastructure/notifications/**'
+      - 'src/infrastructure/observability/**'
+      - 'src/infrastructure/resilience/**'
+      - 'src/lib/notifications/**'
+      - 'src/__tests__/notifications-*.test.tsx'
+      - 'src/__tests__/notifications*.test.ts'
+      - 'prisma/seed-notification-templates.ts'
+      - 'prisma/seed-email-templates.ts'
+      - '.github/workflows/notifications.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/app/api/admin/notifications/**'
+      - 'src/app/api/admin/notifications-health/**'
+      - 'src/app/api/admin/templates/**'
+      - 'src/app/api/admin/scheduler/**'
+      - 'src/app/api/cron/notification-cleanup/**'
+      - 'src/app/admin/notifications/**'
+      - 'src/infrastructure/notifications/**'
+      - 'src/infrastructure/observability/**'
+      - 'src/infrastructure/resilience/**'
+      - 'src/lib/notifications/**'
+      - '.github/workflows/notifications.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: notifications-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  notifications:
+    name: اختبارات وأرباط الإشعارات
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # نحتاج تاريخ merge-base لحساب "الملفات التي غيّرها هذا الـ PR" فقط.
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: تثبيت الاعتماديات
+        run: bun install --frozen-lockfile
+
+      # نسخة Prisma مولّدة محلياً في node_modules. `prisma generate` يتحقق من
+      # المخطط فقط ولا يتصل بالخادم، فيكفي عنوان افتراضي — لا سرّ مطلوب.
+      - name: توليد عميل Prisma
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+        run: bunx prisma generate
+
+      - name: اختبارات مسارات الإشعارات
+        run: >
+          npx jest --ci --silent
+          src/app/api/admin/notifications
+          src/app/api/admin/notifications-health
+          src/app/api/admin/templates
+          src/app/api/admin/scheduler
+          src/app/api/cron/notification-cleanup
+          src/__tests__/notifications
+
+      - name: فحص الأنواع
+        run: bun run typecheck
+
+      # `biome check` على مجلدات الإشعارات كاملة يوقف البناء بسبب ديون تنسيق
+      # سابقة (service.ts، email-service.ts، analytics/route.ts …) خارج نطاق
+      # P5 ولا يجوز إصلاحها هنا. لذا نفحص **ما غيّره هذا الـ PR فقط** حتى لا
+      # يتحوّل البوابة إلى حاصر للفرع. صيانة الديون تُتتبَّع بمهمة منفصلة.
+      - name: تنسيق وأسلوب الملفات التي غيّرها هذا الـ PR
+        run: |
+          set -o pipefail
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref || 'main' }}"
+          BASE=$(git merge-base HEAD "origin/${{ github.base_ref || 'main' }}")
+          mapfile -t CHANGED < <(
+            git diff --name-only --diff-filter=ACMR "$BASE" -- \
+              'src/**/*.ts' 'src/**/*.tsx' \
+            | grep -E '^(src/(app/api/(admin/(notifications|templates|scheduler)|cron)|infrastructure/(notifications|observability|resilience)|lib/notifications)|src/__tests__/notifications)' \
+            || true
+          )
+          if [ ${#CHANGED[@]} -eq 0 ]; then
+            echo "لا ملفات إشعارات متغيّرة — تخطّي فحص biome."
+            exit 0
+          fi
+          printf 'فحص %d ملف:\n' "${#CHANGED[@]}"
+          printf '  %s\n' "${CHANGED[@]}"
+          bunx biome check --files-ignore-unknown=true "${CHANGED[@]}"

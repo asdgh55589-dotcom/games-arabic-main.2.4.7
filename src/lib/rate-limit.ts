@@ -18,7 +18,10 @@ interface RateLimitOptions {
   window: number
   keyPrefix?: string
 }
-interface RateLimitResult {
+// Exported so callers that forward a result to rateLimitHeaders() can name the
+// type instead of re-declaring a narrower copy (a copy missing `success` does
+// not satisfy rateLimitHeaders' parameter and fails type check).
+export interface RateLimitResult {
   success: boolean
   remaining: number
   resetAt: number
