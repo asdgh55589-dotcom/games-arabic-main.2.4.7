@@ -66,7 +66,12 @@ export type InviteStatusFilter = z.infer<typeof InviteStatusFilterSchema>
 export function parseFilterParam<T extends string>(
   searchParams: URLSearchParams,
   key: string,
-  schema: z.ZodEnum<[T, ...T[]]>,
+  // Zod 4 types a ZodEnum by its values record (`ZodEnum<{a: "a", ...}>`), not
+  // by the old `ZodEnum<[T, ...T[]]>` tuple. The only contract this helper
+  // needs is "a schema that turns an unknown input into a T", so type it as
+  // `ZodType<T>` — which every ZodEnum satisfies and which keeps the parsed
+  // `.data` narrowed to T.
+  schema: z.ZodType<T>,
   fallback: T,
 ): { ok: true; value: T } | { ok: false } {
   const raw = searchParams.get(key)?.trim()

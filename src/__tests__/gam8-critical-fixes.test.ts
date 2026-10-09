@@ -87,7 +87,10 @@ const owner = {
   onboardingCompleted: true,
 }
 
-function req(url: string, init?: RequestInit): NextRequest {
+// Next's NextRequest uses its own RequestInit variant (notably `signal` is
+// `AbortSignal | undefined`, not DOM's `AbortSignal | null`), so take the
+// constructor's own parameter type instead of the DOM global.
+function req(url: string, init?: ConstructorParameters<typeof NextRequest>[1]): NextRequest {
   return new NextRequest(url, init)
 }
 
@@ -313,7 +316,7 @@ test('A5: transfer meta checks nominee binding before disclosing meta', async ()
     invitedUserId: 'u-nominee',
     expiresAt: new Date(Date.now() + 86400000),
     team: { id: 't1', name: 'Secret Team', slug: 'secret' },
-  }) } as unknown as jest.Mock
+  }) } as unknown as Record<string, jest.Mock>
   const res = await TRANSFER_META(
     req('http://localhost/api/creator/team/transfer/aaaaaaaaaaaaaaaaaaaa'),
     { params: Promise.resolve({ token: 'aaaaaaaaaaaaaaaaaaaa' }) },
