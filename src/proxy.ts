@@ -199,10 +199,7 @@ function applyCors<T extends NextResponse>(req: NextRequest, res: T): T {
     res.headers.set('Access-Control-Allow-Origin', origin)
     res.headers.set('Access-Control-Allow-Credentials', 'true')
     res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-    res.headers.set(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Request-ID',
-    )
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID')
     res.headers.set('Access-Control-Max-Age', '86400') // 24 hours
   }
   return res
@@ -489,9 +486,7 @@ async function proxyInner(req: NextRequest) {
           429,
           {
             ...rateLimitHeaders(rl),
-            'Retry-After': String(
-              Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000)),
-            ),
+            'Retry-After': String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))),
           },
         )
       }
@@ -596,7 +591,8 @@ async function proxyInner(req: NextRequest) {
       !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
     ) {
       const loginUrl = new URL('/admin/login', req.url)
-      if (!rolePayload?.role) loginUrl.searchParams.set('from', pathname)
+      loginUrl.searchParams.set('from', pathname)
+      if (!rolePayload?.role) loginUrl.searchParams.set('error', 'session_expired')
       else loginUrl.searchParams.set('error', 'insufficient_role')
       const redirectRes = NextResponse.redirect(loginUrl)
       copyCookies(supabaseResponse, redirectRes)

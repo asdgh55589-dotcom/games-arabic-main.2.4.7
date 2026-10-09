@@ -27,6 +27,20 @@ import { redisDel, redisGet, redisIncr, redisSet } from './redis'
 /** The ONLY credential-failure message the login route may return. */
 export const LOGIN_GENERIC_ERROR = 'بيانات الدخول غير صحيحة'
 
+/**
+ * Compromise (second audit S3): the FIRST TWO failures per IP+identifier key
+ * return a SPECIFIC {code,field,message} so legitimate staff can self-correct
+ * typos; from the THIRD failure on the key is treated as hostile and every
+ * failure returns the generic message after the progressive delay.
+ * Lockout (429) semantics are unchanged.
+ */
+export const SPECIFIC_ERROR_MAX_ATTEMPTS = 2
+
+/** True while the key has fewer than SPECIFIC_ERROR_MAX_ATTEMPTS prior failures. */
+export function specificErrorAllowed(priorFailCount: number): boolean {
+  return priorFailCount < SPECIFIC_ERROR_MAX_ATTEMPTS
+}
+
 /** Lockout response message (Arabic, includes the 15-minute wait). */
 export const ACCOUNT_LOCKED_MESSAGE =
   'تم قفل الحساب مؤقتًا بسبب محاولات متعددة فاشلة. يرجى المحاولة بعد 15 دقيقة.'
@@ -118,7 +132,11 @@ export async function getLockoutRemainingSeconds(key: string): Promise<number> {
 /** Activate (or refresh) the lockout marker (best-effort, fail-open). */
 export async function activateLockout(key: string): Promise<void> {
   try {
-    await redisSet(lockKey(key), Date.now() + LOCKOUT_DURATION_SECONDS * 1000, LOCKOUT_DURATION_SECONDS)
+    await redisSet(
+      lockKey(key),
+      Date.now() + LOCKOUT_DURATION_SECONDS * 1000,
+      LOCKOUT_DURATION_SECONDS,
+    )
   } catch {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort lock — login still delayed + rate-limited
   }

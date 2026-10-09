@@ -25,7 +25,13 @@ export default function AdminLoginClient() {
 function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const fromPath = searchParams.get('from') || '/admin'
+  const rawFrom = searchParams.get('from') || '/admin'
+  // Sanitize ?from= (mirrors the callback allow-list): relative path only,
+  // never protocol-relative (//evil) or traversal. Unsafe → '/admin'.
+  const fromPath =
+    rawFrom.startsWith('/') && !rawFrom.startsWith('//') && !rawFrom.includes('/../')
+      ? rawFrom
+      : '/admin'
   const errorCode = searchParams.get('error')
   const tokenCheckFailed = searchParams.get('token_check_failed')
 
@@ -36,23 +42,41 @@ function AdminLoginContent() {
   const [error, setError] = useState<{ message: string; field?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
+  const [spinnerText, setSpinnerText] = useState('جارٍ التحقق من الجلسة…')
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaToken, setMfaToken] = useState('')
   const [mfaCode, setMfaCode] = useState('')
   const [showRecovery, setShowRecovery] = useState(false)
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+    // Progressive spinner text during the intentional pre-check wait.
+    const t2 = setTimeout(() => setSpinnerText('لحظات ونجهّز صفحة الدخول…'), 3000)
+    const t3 = setTimeout(() => setSpinnerText('ما زلنا نتحقق — شكراً لانتظارك…'), 6000)
+    fetch('/api/auth/me', { cache: 'no-store', signal: controller.signal })
+      .then((r) => {
+        clearTimeout(timer)
+        const ct = r.headers.get('content-type') || ''
+        if (!ct.includes('application/json')) throw new Error('Non-JSON response')
+        return r.json()
+      })
       .then((json) => {
         const user = json?.data?.user
         if (user && user.role !== 'member' && !tokenCheckFailed) {
           router.replace(fromPath)
+          router.refresh()
         } else {
           setCheckingSession(false)
         }
       })
       .catch(() => setCheckingSession(false))
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(t2)
+      clearTimeout(t3)
+      controller.abort()
+    }
   }, [router, fromPath, tokenCheckFailed])
 
   useEffect(() => {
@@ -60,11 +84,20 @@ function AdminLoginContent() {
       setError({ message: 'لا تملك صلاحية الوصول إلى لوحة التحكم. سجّل دخول بحساب مشرف أو أعلى.' })
       return
     }
-    const from = searchParams.get('from')
-    if (from) {
+    if (errorCode === 'session_expired') {
       setError({ message: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.' })
+      return
     }
-  }, [errorCode, searchParams])
+    if (errorCode === 'retry') {
+      setError({ message: 'تعذّر التحقق من الجلسة مؤقتاً. حاول مرة أخرى.' })
+      return
+    }
+    if (errorCode === 'auth_failed' || errorCode === 'no_session') {
+      setError({ message: 'فشل تسجيل الدخول عبر المزوّد. حاول مرة أخرى.' })
+      return
+    }
+    // Plain ?from= (e.g. bookmarked first visit) is NOT an expiry — show no error.
+  }, [errorCode])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,7 +130,10 @@ function AdminLoginContent() {
         setError(null)
         return
       }
-      window.location.href = fromPath
+      // Same-origin post-login navigation: client-side replace + refresh.
+      // fromPath is sanitized at parse time (relative path only).
+      router.replace(fromPath)
+      router.refresh()
     } catch {
       setError({ message: 'تعذّر الاتصال بالخادم. حاول مرة أخرى.' })
     } finally {
@@ -135,7 +171,9 @@ function AdminLoginContent() {
           return
         }
       }
-      window.location.href = fromPath
+      // fromPath is sanitized at parse time (relative path only).
+      router.replace(fromPath)
+      router.refresh()
     } catch {
       setError({ message: 'تعذّر الاتصال بالخادم. حاول مرة أخرى.' })
     } finally {
@@ -146,7 +184,10 @@ function AdminLoginContent() {
   if (checkingSession) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">{spinnerText}</p>
+        </div>
       </div>
     )
   }
@@ -157,8 +198,6 @@ function AdminLoginContent() {
       className="relative grid min-h-screen place-items-center overflow-hidden bg-background p-4"
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black" />
-      <div className="pointer-events-none absolute -top-40 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 left-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
 
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
@@ -177,9 +216,13 @@ function AdminLoginContent() {
             dir="rtl"
           >
             ⚠️ تعذر التحقق من الجلسة. تم تسجيل دخولك — اضغط زر الدخول للمتابعة.
-            <Link href="/admin" className="block mt-2 text-center font-bold underline">
-              دخول لوحة التحكم
-            </Link>
+            <button
+              type="button"
+              onClick={() => router.replace(`/admin/login?from=${encodeURIComponent(fromPath)}`)}
+              className="block mt-2 mx-auto text-center font-bold underline"
+            >
+              إعادة تسجيل الدخول
+            </button>
           </div>
         )}
 

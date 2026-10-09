@@ -186,6 +186,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [allowedPages, setAllowedPages] = useState<string[] | null>(null)
 
   useEffect(() => {
+    // Light login shell: /admin/login runs its own pre-check in client.tsx —
+    // do not duplicate the /me fetch (or self-redirect) from the heavy shell.
+    if (pathname === '/admin/login') {
+      setLoading(false)
+      return
+    }
     let mounted = true
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 8000)
@@ -206,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         const user = json?.data?.user
         if (!user || user.role === 'member') {
-          router.replace('/admin/login')
+          router.replace(`/admin/login?from=${encodeURIComponent(pathname)}&error=retry`)
         } else {
           setUser(user)
         }
@@ -214,7 +220,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => {
         clearTimeout(timer)
         if (mounted) {
-          router.replace('/admin/login')
+          router.replace(`/admin/login?from=${encodeURIComponent(pathname)}&error=retry`)
         }
       })
       .finally(() => {
@@ -228,7 +234,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       clearTimeout(timer)
       controller.abort()
     }
-  }, [router])
+  }, [router, pathname])
 
   useEffect(() => {
     setMobileOpen(false)
