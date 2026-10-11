@@ -15,6 +15,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  FileArchive,
   FileText,
   Flag,
   FolderOpen,
