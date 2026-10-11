@@ -4,6 +4,7 @@ import {
   Award,
   BarChart3,
   Bookmark,
+  Bug,
   Calendar,
   CheckCircle,
   ChevronLeft,
@@ -21,6 +22,7 @@ import {
   Maximize2,
   MessageSquare,
   Play,
+  Rocket,
   Send,
   Shield,
   Star,
@@ -31,6 +33,7 @@ import {
   Users,
   XCircle,
   Youtube,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -1152,10 +1155,16 @@ export function ModDetailPage() {
                   <TabsContent value="changelog" className="mt-0" dir="rtl">
                     <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
                       <SectionHeading icon={<Clock className="h-5 w-5" />} title="سجل التغييرات" />
-                      <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-white/15 bg-card/40 px-4 py-2.5">
+                      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <Tag className="h-4 w-4" />
+                        </span>
                         <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
-                        <span className="text-base font-bold tabular-nums text-foreground">
+                        <span className="rounded-md bg-primary/10 px-2.5 py-1 text-base font-black tabular-nums text-primary">
                           v{mod.version}
+                        </span>
+                        <span className="ms-auto text-[11px] font-bold text-muted-foreground">
+                          تاريخ النشر: {formatArabicDate(mod.releaseDate)}
                         </span>
                       </div>
                       {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
@@ -1165,24 +1174,40 @@ export function ModDetailPage() {
                           <MarkdownRenderer content={mod.changelog} />
                         </div>
                       ) : (
-                        <ul className="space-y-2.5 text-sm font-bold text-foreground">
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            الإصدار الأول العام
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            إصلاحات توافق مع التعديلات الشائعة
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            تحسينات في الأداء للأجهزة الضعيفة
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            إصلاح أخطاء أبلغ عنها المجتمع
-                          </li>
-                        </ul>
+                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                              <Rocket className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              الإصدار الأول العام
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-500/10 text-sky-500">
+                              <Shield className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              إصلاحات توافق مع التعديلات الشائعة
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-500">
+                              <Zap className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              تحسينات في الأداء للأجهزة الضعيفة
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-500/10 text-rose-500">
+                              <Bug className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              إصلاح أخطاء أبلغ عنها المجتمع
+                            </span>
+                          </div>
+                        </div>
                       )}
                     </Card>
                   </TabsContent>

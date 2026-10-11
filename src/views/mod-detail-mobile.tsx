@@ -2,6 +2,7 @@
 
 import {
   Bookmark,
+  Bug,
   Calendar,
   CheckCircle,
   ChevronDown,
@@ -18,6 +19,7 @@ import {
   Layers,
   MessageSquare,
   Play,
+  Rocket,
   Shield,
   Star,
   Tag,
@@ -26,6 +28,7 @@ import {
   Users,
   XCircle,
   Youtube,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -774,33 +777,54 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           icon={<Clock className="h-3.5 w-3.5" />}
           iconBg="bg-amber-500/10 text-amber-500"
         >
-          <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-card/40 px-3 py-1.5">
-            <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
-            <span className="text-sm font-bold tabular-nums text-foreground">v{mod.version}</span>
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-3 py-2">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+              <Tag className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-[11px] font-bold text-foreground/80">الإصدار الحالي</span>
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-black tabular-nums text-primary">
+              v{mod.version}
+            </span>
           </div>
           {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
             <ChangelogDisplay changelogs={(mod as any).changelogs} />
           ) : mod.changelog ? (
             <MarkdownRenderer content={mod.changelog} />
           ) : (
-            <ul className="space-y-2 text-sm font-bold text-foreground">
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> الإصدار الأول
-                العام
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاحات توافق
-                مع التعديلات الشائعة
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> تحسينات في
-                الأداء للأجهزة الضعيفة
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاح أخطاء
-                أبلغ عنها المجتمع
-              </li>
-            </ul>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-emerald-500/10 text-emerald-500">
+                  <Rocket className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  الإصدار الأول العام
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-sky-500/10 text-sky-500">
+                  <Shield className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  إصلاحات توافق مع التعديلات الشائعة
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-amber-500/10 text-amber-500">
+                  <Zap className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  تحسينات في الأداء للأجهزة الضعيفة
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-rose-500/10 text-rose-500">
+                  <Bug className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  إصلاح أخطاء أبلغ عنها المجتمع
+                </span>
+              </div>
+            </div>
           )}
         </CollapsibleCard>
 
