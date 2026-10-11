@@ -771,7 +771,7 @@ export function ModDetailPage() {
 
                       </div>
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
-                      <div className="mt-4 flex flex-wrap items-center gap-3 pb-2 translate-x-24 sm:mt-5 sm:pb-4 lg:pb-6">
+                      <div className="mt-4 flex flex-wrap items-center gap-2.5 pb-2 translate-x-24 sm:mt-5 sm:pb-4 lg:pb-6">
                         {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem key={item.key} label={item.label} value={item.value} />
                         ))}
@@ -1414,7 +1414,7 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 function DataItem({ label, value }: { label: string; value: string }) {
   return (
     <div
-      className="inline-flex min-w-0 max-w-full items-center gap-2.5 rounded-md bg-gray-100 px-4 py-2 text-xs dark:bg-gray-800 sm:text-sm"
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs dark:bg-gray-800 sm:text-sm"
       title={`${label}: ${value}`}
     >
       <span className="shrink-0 font-normal text-muted-foreground">{label}</span>

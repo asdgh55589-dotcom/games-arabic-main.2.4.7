@@ -516,12 +516,12 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== صندوق المعلومات — عناوين حسب المنصة بنفس تصميم حقول المرجع ===== */}
-      <div className="mx-2 mt-4 rounded-none border-[2px] border-border bg-card p-3 shadow-[1px_1px_0_0_var(--border)]">
-        <div className="flex flex-wrap gap-2.5">
+      <div className="mx-2 mt-4 rounded-none border-[2px] border-border bg-card p-2 shadow-[1px_1px_0_0_var(--border)]">
+        <div className="flex flex-wrap gap-2">
           {getModTitles(mod, formatArabicDate).map((item) => (
             <div
               key={item.key}
-              className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-2 text-[11px] dark:bg-gray-800"
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] dark:bg-gray-800"
               title={`${item.label}: ${item.value}`}
             >
               <span className="shrink-0 font-normal text-muted-foreground">{item.label}</span>
