@@ -64,7 +64,11 @@ export function RateReviewBar({
     } catch {
       // best-effort: يُحفظ في الذاكرة فقط
     }
-    toast({ title: `قيّمت «${name}» بـ ${stars} من 5`, description: 'يُحفظ تقييمك على جهازك حالياً' })
+    toast({
+      title: 'شكراً على تقييمك بياناتنا',
+      description: `قيّمت «${name}» بـ ${stars} من 5 — النجوم تقيّم بيانات الصفحة (العنوان والوصف والحقول)`,
+      duration: 2500,
+    })
   }
 
   return (
