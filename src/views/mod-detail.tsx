@@ -771,7 +771,7 @@ export function ModDetailPage() {
 
                       </div>
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
-                      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-5 pb-2 translate-x-24 sm:mt-5 sm:pb-4 lg:pb-6">
+                      <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-5 pb-2 translate-x-24 sm:mt-8 sm:pb-4 lg:pb-6">
                         {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem key={item.key} label={item.label} value={item.value} />
                         ))}

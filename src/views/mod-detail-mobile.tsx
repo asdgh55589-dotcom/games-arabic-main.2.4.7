@@ -516,7 +516,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== صندوق المعلومات — عناوين حسب المنصة بنفس تصميم حقول المرجع ===== */}
-      <div className="mx-2 mt-4 rounded-none border-[2px] border-border bg-card p-2 shadow-[1px_1px_0_0_var(--border)]">
+      <div className="mx-2 mt-6 rounded-none border-[2px] border-border bg-card p-2 shadow-[1px_1px_0_0_var(--border)]">
         <div className="flex flex-wrap gap-x-1.5 gap-y-4">
           {getModTitles(mod, formatArabicDate).map((item) => (
             <div
