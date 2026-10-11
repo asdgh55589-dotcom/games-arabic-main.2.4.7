@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import type { ReportReason, ReportTargetType } from './constants'
-import { DAILY_REPORT_LIMIT, REPORT_REASONS, REPORT_TARGET_TYPES } from './constants'
+import { DAILY_REPORT_LIMIT, REPORT_TARGET_TYPES, isKnownReportReason } from './constants'
 
 const ALLOWED_URL_PROTOCOLS = ['http:', 'https:']
 
@@ -66,7 +66,7 @@ export async function validateReport(input: ValidateReportInput): Promise<Valida
     return { error: 'نوع المستهدف غير صالح' }
   }
 
-  if (!(reason in REPORT_REASONS)) {
+  if (!isKnownReportReason(reason)) {
     return { error: 'سبب البلاغ غير صالح' }
   }
 

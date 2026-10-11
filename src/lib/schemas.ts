@@ -136,7 +136,21 @@ export const AdminPasswordFormSchema = z.object({
 
 export const ReportFormSchema = z.object({
   reason: z.enum(
-    ['spam', 'inappropriate', 'copyright', 'offensive', 'false_info', 'technical', 'other'],
+    [
+      'spam',
+      'inappropriate',
+      'copyright',
+      'offensive',
+      'false_info',
+      'technical',
+      'other',
+      'dead_links',
+      'broken_files',
+      'install_issue',
+      'outdated_info',
+      'outdated_translation',
+      'version_mismatch',
+    ],
     { message: 'اختر سبب البلاغ' },
   ),
   description: z.string().max(1000, 'الحد الأقصى 1000 حرف').optional().default(''),
@@ -424,6 +438,12 @@ export const CreateReportSchema = z.object({
     'false_info',
     'technical',
     'other',
+    'dead_links',
+    'broken_files',
+    'install_issue',
+    'outdated_info',
+    'outdated_translation',
+    'version_mismatch',
   ]),
   details: z.string().max(2000).optional(),
 })
