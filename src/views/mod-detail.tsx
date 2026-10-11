@@ -11,20 +11,27 @@ import {
   ChevronRight,
   Clock,
   Crown,
+  Cpu,
   Download,
   ExternalLink,
   Eye,
   FileText,
   Flag,
+  FolderOpen,
   Gamepad2,
+  Globe,
+  HardDrive,
+  Hash,
   Heart,
   Layers,
+  Languages,
   Maximize2,
   MessageSquare,
   Play,
   Rocket,
   Send,
   Shield,
+  Smartphone,
   Star,
   Tag,
   ThumbsUp,
@@ -773,7 +780,12 @@ export function ModDetailPage() {
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
                       <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-5 pb-2 translate-x-24 sm:mt-8 sm:pb-4 lg:pb-6">
                         {getModTitles(mod, formatArabicDate).map((item) => (
-                          <DataItem key={item.key} label={item.label} value={item.value} />
+                          <DataItem
+                            key={item.key}
+                            icon={TITLE_ICONS[item.key]}
+                            label={item.label}
+                            value={item.value}
+                          />
                         ))}
                       </div>
                     </div>
@@ -1411,12 +1423,46 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 
 /** عنصر بيانات — تسمية / قيمة بخلفية رمادية (نفس تصميم حقول المرجع) */
 
-function DataItem({ label, value }: { label: string; value: string }) {
+/** Icons per platform-title key — monochrome white (no colors). */
+const TITLE_ICONS: Record<string, React.ReactNode> = {
+  title: <Gamepad2 className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  titleAr: <Languages className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  method: <User className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  type: <Shield className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  content: <Globe className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  releaseDate: <Calendar className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  size: <FileArchive className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  gameId: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  cusa: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  ppsa: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  titleId: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  mediaId: <HardDrive className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  format: <FolderOpen className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  firmware: <Cpu className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  gameUpdate: <Tag className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  device: <Smartphone className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  compat: <CheckCircle className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  installType: <FileText className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  cpu: <Cpu className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  gameVersion: <Tag className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  minAndroid: <Smartphone className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+}
+
+function DataItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
   return (
     <div
       className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs dark:bg-gray-800 sm:text-sm"
       title={`${label}: ${value}`}
     >
+      {icon}
       <span className="shrink-0 font-normal text-muted-foreground">{label}</span>
       <span className="shrink-0 text-muted-foreground/50">/</span>
       <span className="min-w-0 truncate font-bold text-foreground">{value}</span>

@@ -9,18 +9,26 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Cpu,
   Download,
   Eye,
+  FileArchive,
   FileText,
   Flag,
+  FolderOpen,
   Gamepad2,
+  Globe,
+  HardDrive,
+  Hash,
   Heart,
   Image as ImageIcon,
   Layers,
+  Languages,
   MessageSquare,
   Play,
   Rocket,
   Shield,
+  Smartphone,
   Star,
   Tag,
   ThumbsUp,
@@ -67,6 +75,31 @@ import type { EndorseResponse, ModDetail, ModSummary } from '@/lib/types'
 interface PaginatedModsResponse {
   data: ModSummary[]
   pagination: { page: number; limit: number; total: number; totalPages: number }
+}
+
+/** Icons per platform-title key — monochrome white (no colors). */
+const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2 }> = {
+  title: { Icon: Gamepad2 },
+  titleAr: { Icon: Languages },
+  method: { Icon: User },
+  type: { Icon: Shield },
+  content: { Icon: Globe },
+  releaseDate: { Icon: Calendar },
+  size: { Icon: FileArchive },
+  gameId: { Icon: Hash },
+  cusa: { Icon: Hash },
+  ppsa: { Icon: Hash },
+  titleId: { Icon: Hash },
+  mediaId: { Icon: HardDrive },
+  format: { Icon: FolderOpen },
+  firmware: { Icon: Cpu },
+  gameUpdate: { Icon: Tag },
+  device: { Icon: Smartphone },
+  compat: { Icon: CheckCircle },
+  installType: { Icon: FileText },
+  cpu: { Icon: Cpu },
+  gameVersion: { Icon: Tag },
+  minAndroid: { Icon: Smartphone },
 }
 
 export function ModDetailMobile({ mod }: { mod: ModDetail }) {
@@ -518,17 +551,22 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       {/* ===== صندوق المعلومات — عناوين حسب المنصة بنفس تصميم حقول المرجع ===== */}
       <div className="mx-2 mt-6 rounded-none border-[2px] border-border bg-card p-2 shadow-[1px_1px_0_0_var(--border)]">
         <div className="flex flex-wrap gap-x-1.5 gap-y-4">
-          {getModTitles(mod, formatArabicDate).map((item) => (
-            <div
-              key={item.key}
-              className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] dark:bg-gray-800"
-              title={`${item.label}: ${item.value}`}
-            >
-              <span className="shrink-0 font-normal text-muted-foreground">{item.label}</span>
-              <span className="shrink-0 text-muted-foreground/50">/</span>
-              <span className="min-w-0 truncate font-bold text-foreground">{item.value}</span>
-            </div>
-          ))}
+          {getModTitles(mod, formatArabicDate).map((item) => {
+            const meta = MOBILE_TITLE_ICONS[item.key] || MOBILE_TITLE_ICONS.title
+            const { Icon } = meta
+            return (
+              <div
+                key={item.key}
+                className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] dark:bg-gray-800"
+                title={`${item.label}: ${item.value}`}
+              >
+                <Icon className="h-3 w-3 shrink-0 text-zinc-800 dark:text-white" />
+                <span className="shrink-0 font-normal text-muted-foreground">{item.label}</span>
+                <span className="shrink-0 text-muted-foreground/50">/</span>
+                <span className="min-w-0 truncate font-bold text-foreground">{item.value}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
