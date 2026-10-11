@@ -3,37 +3,33 @@
 import {
   Award,
   BarChart3,
+  Bookmark,
   Calendar,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
-  Cpu,
   Crown,
   Download,
   ExternalLink,
   Eye,
-  FileArchive,
   FileText,
   Flag,
-  FolderOpen,
   Gamepad2,
-  Globe,
-  HardDrive,
-  Hash,
-  Languages,
+  Heart,
   Layers,
   Maximize2,
   MessageSquare,
+  Play,
   Send,
   Shield,
-  Smartphone,
   Star,
   Tag,
   ThumbsUp,
   Twitter,
   User,
   Users,
+  XCircle,
   Youtube,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -50,7 +46,10 @@ import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
+import { RateReviewBar } from '@/components/rate-review-bar'
 import { ReportButton } from '@/components/report-button'
+import { useAuth } from '@/contexts/auth-context'
+import { useBookmarks } from '@/contexts/bookmarks-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,7 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/hooks/use-toast'
-import { apiFetch } from '@/lib/api-client'
+import { apiFetch, ApiError } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
@@ -74,7 +73,6 @@ import {
 } from '@/lib/format'
 import { getModTitles } from '@/lib/platform-titles'
 import {
-  formatRatingText,
   getDisplaySummary,
   getSeriesDisplay,
   getTeamDisplay,
@@ -217,7 +215,6 @@ export function ModDetailPage() {
   const displaySummary = mod ? getDisplaySummary(mod) : ''
   const seriesDisplay = mod ? getSeriesDisplay(mod as any) : null
   const teamDisplay = mod ? getTeamDisplay(mod as any) : null
-  const ratingText = mod ? formatRatingText(mod.rating, mod.ratingCount) : null
   const showScheduled =
     !!mod &&
     shouldShowScheduledBanner(mod as any) &&
@@ -235,6 +232,142 @@ export function ModDetailPage() {
   const shownEndorsements = endorsementCount ?? mod?.endorsements ?? 0
   const shownDownloads = downloadCount ?? mod?.downloads ?? 0
   const shownViews = mod?.views ?? 0
+
+  const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
+  const { user } = useAuth()
+  const [bookmarkPending, setBookmarkPending] = useState(false)
+
+  useEffect(() => {
+    if (mod?.id) registerModIds([mod.id])
+  }, [mod?.id, registerModIds])
+
+  const bookmarked = mod ? isBookmarked(mod.id) : false
+
+  const handleBookmark = async () => {
+    if (!mod || bookmarkPending) return
+    if (!user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول لحفظ المفضلة',
+        variant: 'destructive',
+      })
+      router.push('/login')
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+    setBookmarkPending(true)
+    try {
+      if (bookmarked) {
+        await apiFetch(`/api/bookmarks?modId=${mod.id}`, {
+          method: 'DELETE',
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تمت الإزالة من المفضلة', description: mod.name })
+      } else {
+        await apiFetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modId: mod.id }),
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تم الحفظ في المفضلة', description: mod.name })
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          toast({
+            title: 'سجّل الدخول',
+            description: 'انتهت الجلسة — سجّل الدخول ثم حاول مجدداً',
+            variant: 'destructive',
+          })
+          router.push('/login')
+        } else if (err.status === 409) {
+          if (!bookmarked) toggleBookmark(mod.id)
+          toast({ title: 'موجود بالفعل في المفضلة', description: mod.name })
+        } else if (err.status === 429) {
+          toast({
+            title: 'حاول مرة أخرى لاحقاً',
+            description: 'تجاوزت حد المحاولات',
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'خطأ', description: err.message, variant: 'destructive' })
+        }
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        toast({
+          title: 'خطأ في الاتصال',
+          description: 'انتهت المهلة — تحقق من اتصالك',
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'خطأ', description: 'تعذّر حفظ المفضلة', variant: 'destructive' })
+      }
+    } finally {
+      clearTimeout(timeout)
+      setBookmarkPending(false)
+    }
+  }
+
+  const hasVideos = useMemo(
+    () => ((mod?.videoGroups || []) as { videos?: unknown[] }[]).some((g) => (g.videos || []).length > 0),
+    [mod?.videoGroups],
+  )
+
+  const scrollToVideos = () => {
+    setTab('videos')
+    requestAnimationFrame(() => {
+      document.getElementById('mod-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  const scrollToComments = () => {
+    setTab('comments')
+    requestAnimationFrame(() => {
+      document.getElementById('mod-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  const compatLabel =
+    mod?.gameUpdateVersion || mod?.gameVersion || mod?.systemFirmware || null
+  const isOfficial = (mod?.translationType || '').toLowerCase() === 'official'
+
+  /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
+  const DESIGN_PREVIEW = {
+    enabled: true,
+    progress: 85,
+    recommendPct: 94,
+    ratingDist: [68, 18, 8, 3, 3], // % النجوم 5..1
+    editionLabel: 'النسخة الذهبية',
+    scope: [
+      { label: 'واجهة وقوائم', done: true },
+      { label: 'الحوارات الرئيسية', done: true },
+      { label: 'النصوص الجانبية', done: true },
+      { label: 'دبلجة صوتية', done: false },
+    ],
+    gameMeta: [
+      { label: 'سنة الإصدار', value: '2023' },
+      { label: 'المطور', value: 'Capcom' },
+      { label: 'الناشر', value: 'Capcom' },
+    ],
+    requirements:
+      'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
+  } as const
+  const progressPct =
+    (mod as any)?.translationProgress ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.progress : 0)
+  const recommendPct =
+    (mod as any)?.recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
+  const editionLabel =
+    (mod as any)?.repackLabel ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.editionLabel : null)
+  const progressStatus = progressPct >= 100 ? 'مكتمل' : progressPct >= 50 ? 'جزئي' : 'تجريبي'
+  const progressStatusBox =
+    progressPct >= 100
+      ? 'bg-emerald-500/10 text-emerald-500'
+      : progressPct >= 50
+        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+        : 'bg-sky-500/10 text-sky-500'
 
   const onEndorse = async () => {
     if (!mod) return
@@ -330,11 +463,21 @@ export function ModDetailPage() {
             <>
               {/* ===== HERO BANNER — standalone, fixed height ===== */}
               <div
-                className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[520px]"
+                className="relative overflow-hidden h-[360px] sm:h-[480px] md:h-[600px]"
                 dir="rtl"
               >
-                {/* Backdrop image — تعتيم خفيف جداً */}
-                <div className="absolute inset-0">
+                {/* Backdrop image — ضباب أزرق 60% + تلاشي الأطراف */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    maskImage:
+                      'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 4%, rgba(0,0,0,1) 96%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, rgba(0,0,0,0) 100%)',
+                    WebkitMaskImage:
+                      'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 4%, rgba(0,0,0,1) 96%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, rgba(0,0,0,0) 100%)',
+                    maskComposite: 'intersect',
+                    WebkitMaskComposite: 'source-in',
+                  }}
+                >
                   {bannerImage ? (
                     <>
                       <Image
@@ -356,10 +499,14 @@ export function ModDetailPage() {
                         }}
                       />
                       <div
+                        className="absolute inset-0 bg-[#0B2A4A]/60"
+                        aria-hidden
+                      />
+                      <div
                         className="absolute inset-0"
                         style={{
                           background:
-                            'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.06) 30%, transparent 55%, rgba(0,0,0,0.62) 100%)',
+                            'linear-gradient(to bottom, rgba(4,18,34,0.10) 0%, rgba(4,18,34,0.05) 30%, transparent 55%, rgba(0,0,0,0.62) 100%)',
                         }}
                       />
                     </>
@@ -377,19 +524,19 @@ export function ModDetailPage() {
 
                 {/* Breadcrumb — top-start with spacing from edge */}
                 <nav
-                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-10 flex flex-wrap items-center gap-1.5 sm:gap-2 text-start text-[10px] sm:text-xs text-muted-foreground/80"
+                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-20 flex flex-wrap items-center gap-1.5 sm:gap-2 text-start text-[11px] sm:text-sm text-white/85"
                   aria-label="مسار التنقل"
                 >
                   <button
                     onClick={() => router.back()}
-                    className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20 cursor-pointer"
+                    className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20 cursor-pointer"
                     aria-label="العودة للصفحة السابقة"
                   >
                     <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20"
                   >
                     <span className="text-[8px] sm:text-[10px] opacity-60">«</span>
                     الرئيسية
@@ -397,13 +544,13 @@ export function ModDetailPage() {
                   <span className="text-primary/60 text-[10px]">‹</span>
                   <Link
                     href={`/platform/${mod.game.platform}`}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:border-white/20 whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:border-white/20 whitespace-nowrap"
                     style={{ color: platformColor }}
                   >
                     ARABIC {mod.game.platform}
                   </Link>
                   <span className="text-primary/60 text-[10px]">‹</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary border border-primary text-xs sm:text-sm font-bold text-primary-foreground">
                     {(mod as { headline?: string }).headline || mod.name}
                   </span>
                 </nav>
@@ -415,8 +562,8 @@ export function ModDetailPage() {
                 className="relative z-10 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 -mt-[160px] sm:-mt-[280px] md:-mt-[360px]"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
-                  {/* POSTER COLUMN — RIGHT side in RTL */}
-                  <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
+                  {/* POSTER COLUMN — RIGHT side in RTL (مرفوعة تحت المسار مباشرة) */}
+                  <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start -translate-y-[128px] md:-translate-y-[160px] translate-x-14 lg:translate-x-20">
                     {/* Poster image */}
                     <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
                       {mod.imageUrl ? (
@@ -466,10 +613,21 @@ export function ModDetailPage() {
                         <ModTimeBadge result={getModBadges(mod)} />
                       </div>
                     </div>
+                    {/* زر التريلر تحت البوستر */}
+                    {hasVideos && (
+                      <button
+                        onClick={scrollToVideos}
+                        className="mt-3 flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 border-[2px] border-border bg-card py-2.5 text-xs font-black text-foreground shadow-[2px_2px_0_0_var(--border)] transition-all hover:bg-accent"
+                        aria-label="التريلر لـ التعريب"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        التريلر لـ التعريب
+                      </button>
+                    )}
                   </div>
 
-                  {/* TEXT COLUMN — beside poster */}
-                  <div className="text-right">
+                  {/* TEXT COLUMN — beside poster (مرفوع لفوق جنب الصورة) */}
+                  <div className="text-right -mt-36 sm:-mt-44">
                     {/* Badges row */}
                     <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
                       <ModPerformanceBadge result={getModBadges(mod)} />
@@ -477,28 +635,33 @@ export function ModDetailPage() {
                     </div>
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}
-                    <div
-                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8 bg-black/50 backdrop-blur-sm"
-                      style={{
-                        maskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        WebkitMaskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        maskComposite: 'intersect',
-                        WebkitMaskComposite: 'source-in',
-                      }}
-                    >
+                    <div className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8">
+                    <div className="translate-x-24">
+                      {/* سطر تعريفي صغير فوق العنوان: المنصة + حقل العنوان + الإصدار */}
+                      <p className="mb-1 text-[11px] sm:text-xs font-black tracking-wide text-primary">
+                        {mod.game.platform} • {mod.name} • v{mod.version}
+                      </p>
                       {/* Title */}
                       <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
                         {(mod as { headline?: string }).headline || mod.name}
                       </h1>
+                      {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
+                      <RateReviewBar
+                        slug={mod.slug}
+                        name={mod.name}
+                        rating={mod.rating ?? 0}
+                        ratingCount={mod.ratingCount ?? 0}
+                        recommendPct={recommendPct}
+                        viewerRole={viewer?.role}
+                        onReadReviews={scrollToComments}
+                      />
                       {/* 3a — summary below title with description fallback */}
                       {displaySummary !== '' && (
                         <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
                           {displaySummary}
                         </p>
                       )}
-                      {/* 3j — version + rating, 3d — category + section — سطر واحد بدون لف */}
+                      {/* شارات الإصدار والقسم — سطر واحد بدون لف */}
                       <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
                         <Badge
                           variant="outline"
@@ -506,29 +669,26 @@ export function ModDetailPage() {
                         >
                           v{mod.version}
                         </Badge>
-                        {ratingText && (
+                        {isOfficial && (
                           <Badge
                             variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
+                            className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap"
                           >
-                            ★ {ratingText}
-                          </Badge>
-                        )}
-                        {mod.category?.name && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-bold shrink-0 whitespace-nowrap"
-                          >
-                            {mod.category.name}
+                            تعريب رسمي
                           </Badge>
                         )}
                         {(mod as any).sectionRelation?.name && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-bold shrink-0 whitespace-nowrap"
+                          <Link
+                            href={`/platform/${(mod as any).sectionRelation.key}`}
+                            className="shrink-0"
                           >
-                            {(mod as any).sectionRelation.name}
-                          </Badge>
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-bold whitespace-nowrap hover:underline"
+                            >
+                              {(mod as any).sectionRelation.name}
+                            </Badge>
+                          </Link>
                         )}
                         {tags.length > 0 &&
                           tags.map((t) => (
@@ -548,6 +708,15 @@ export function ModDetailPage() {
                           <span>
                             مجدول للنشر في:{' '}
                             {formatArabicDate((mod as any).scheduledAt)}
+                          </span>
+                        </div>
+                      )}
+                      {/* تحذير توافق نسخة اللعبة */}
+                      {compatLabel && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                            يتطلب نسخة اللعبة: {compatLabel}
                           </span>
                         </div>
                       )}
@@ -597,15 +766,11 @@ export function ModDetailPage() {
                         </div>
                       )}
 
+                      </div>
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
-                      <div className="mt-4 sm:mt-5 md:mt-6 pb-2 sm:pb-4 lg:pb-6 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
+                      <div className="mt-2 flex flex-wrap items-center gap-2 pb-2 translate-x-24 sm:mt-3 sm:pb-4 lg:pb-6">
                         {getModTitles(mod, formatArabicDate).map((item) => (
-                          <DataItem
-                            key={item.key}
-                            icon={TITLE_ICONS[item.key]}
-                            label={item.label}
-                            value={item.value}
-                          />
+                          <DataItem key={item.key} label={item.label} value={item.value} />
                         ))}
                       </div>
                     </div>
@@ -616,7 +781,7 @@ export function ModDetailPage() {
               {/* ===== صندوق البيانات — مائل بدون حواف ناعمة وبارز بخطوط عريضة ===== */}
               <div
                 dir="rtl"
-                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-8 sm:-mt-12 lg:-mt-14"
+                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-12 sm:-mt-16 lg:-mt-20"
               >
                 <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
                   {/* السلسلة — يفضّل seriesRelation ثم الاسم القديم */}
@@ -735,6 +900,19 @@ export function ModDetailPage() {
                       <ThumbsUp className={`h-3 w-3 ${endorsed ? 'fill-current' : ''}`} />
                       {endorsed ? 'تم الإعجاب' : 'أعجبني'}
                     </Button>
+                    <Button
+                      onClick={handleBookmark}
+                      disabled={bookmarkPending}
+                      className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap disabled:opacity-60 ${
+                        bookmarked
+                          ? 'bg-amber-500 text-white border-amber-500 cursor-pointer'
+                          : 'bg-card text-foreground border-border hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
+                      }`}
+                      aria-label={bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+                    >
+                      <Bookmark className={`h-3 w-3 ${bookmarked ? 'fill-current' : ''}`} />
+                      {bookmarked ? 'محفوظ' : 'حفظ'}
+                    </Button>
                     {hasReported ? (
                       <Button
                         variant="outline"
@@ -763,10 +941,130 @@ export function ModDetailPage() {
                 </div>
               </div>
 
+              {/* ===== معاينة تصميم فقط (Mock) — جودة التعريب + عن اللعبة ===== */}
+              {DESIGN_PREVIEW.enabled && (
+                <div
+                  dir="rtl"
+                  className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8"
+                >
+                  <div className="rounded-none border-[2px] border-dashed border-muted-foreground/40 p-2">
+                    <div className="mb-2 inline-flex items-center gap-2 px-1">
+                      <span className="text-xs font-black text-foreground">معاينة تصميم</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        بدون API حقيقي — تُربط بعد الاتفاق
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                      <div className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-foreground">جودة التعريب</span>
+                          <span
+                            className={`ms-auto rounded px-2 py-0.5 text-[11px] font-black ${progressStatusBox}`}
+                          >
+                            {progressStatus}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <div
+                            className="h-3 flex-1 overflow-hidden rounded-none border border-border bg-muted"
+                            role="progressbar"
+                            aria-valuenow={progressPct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="نسبة اكتمال التعريب"
+                          >
+                            <div
+                              className="h-full bg-gradient-to-l from-primary to-emerald-500"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-black tabular-nums text-foreground">
+                            {progressPct}%
+                          </span>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="shrink-0 text-center">
+                            <div className="text-3xl font-black tabular-nums leading-none text-foreground">
+                              {recommendPct}%
+                            </div>
+                            <div className="mt-1 text-[10px] font-bold text-muted-foreground">
+                              يوصون بالتعريب
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            {DESIGN_PREVIEW.ratingDist.map((pct, i) => (
+                              <div key={5 - i} className="flex items-center gap-2">
+                                <span className="w-6 shrink-0 text-[10px] font-black tabular-nums text-muted-foreground">
+                                  {5 - i}★
+                                </span>
+                                <div className="h-2 flex-1 bg-muted">
+                                  <div
+                                    className="h-full bg-amber-500"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="w-8 shrink-0 text-left text-[10px] font-bold tabular-nums text-muted-foreground">
+                                  {pct}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-1.5">
+                          {DESIGN_PREVIEW.scope.map((s) => (
+                            <div
+                              key={s.label}
+                              className="flex items-center gap-2 rounded-none border border-border/60 px-2 py-1.5"
+                            >
+                              {s.done ? (
+                                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                              ) : (
+                                <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                              )}
+                              <span className="truncate text-xs font-bold text-foreground">
+                                {s.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
+                        <span className="text-sm font-black text-foreground">
+                          عن اللعبة الأصلية
+                        </span>
+                        <div className="mt-2 divide-y divide-border text-xs">
+                          <div className="flex items-center gap-2 py-2">
+                            <span className="font-black tracking-widest text-foreground/60">
+                              المنصة:
+                            </span>
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full"
+                              style={{ background: platformColor || 'var(--primary)' }}
+                            />
+                            <span className="font-black text-foreground">
+                              {mod.game.platform} — {mod.game.name}
+                            </span>
+                          </div>
+                          {DESIGN_PREVIEW.gameMeta.map((row) => (
+                            <div key={row.label} className="flex items-center gap-2 py-2">
+                              <span className="font-black tracking-widest text-foreground/60">
+                                {row.label}:
+                              </span>
+                              <span className="font-black text-foreground">{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ===== الأقسام (Tabs) — قسم مستقل بذاته ===== */}
               <div
                 dir="rtl"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8"
+                id="mod-tabs"
+                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8 scroll-mt-24"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList
@@ -951,6 +1249,22 @@ export function ModDetailPage() {
                           />
                         </div>
                       )}
+                      {/* متطلبات تشغيل التعريب — معاينة تصميم فقط (Mock) */}
+                      {DESIGN_PREVIEW.enabled && (
+                        <div className="mt-5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-sky-700 dark:text-sky-400">
+                              متطلبات تشغيل التعريب
+                            </span>
+                            <span className="rounded border border-dashed border-muted-foreground/50 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
+                              معاينة تصميم
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs font-medium leading-[1.8] text-foreground/90">
+                            {(mod as any).translationRequirements ?? DESIGN_PREVIEW.requirements}
+                          </p>
+                        </div>
+                      )}
                     </Card>
                   </TabsContent>
 
@@ -960,6 +1274,22 @@ export function ModDetailPage() {
                         teamMembers={mod.teamMembers || []}
                         contactLinks={mod.contactLinks || []}
                       />
+                      {/* زر دعم الفريق — معاينة تصميم فقط (Mock) */}
+                      {DESIGN_PREVIEW.enabled && (
+                        <button
+                          onClick={() =>
+                            toast({
+                              title: 'معاينة تصميم فقط',
+                              description: 'زر الدعم سيُفعّل بعد الاتفاق على التصميم',
+                            })
+                          }
+                          className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-none border-[3px] border-amber-500 bg-amber-500/10 py-2.5 text-sm font-black text-amber-700 shadow-[3px_3px_0_0_var(--border)] transition-all hover:bg-amber-500/20 dark:text-amber-400 cursor-pointer"
+                          aria-label="ادعم فريق التعريب (معاينة تصميم)"
+                        >
+                          <Heart className="h-4 w-4 fill-current" />
+                          ادعم الفريق
+                        </button>
+                      )}
                     </Card>
                   </TabsContent>
 
@@ -1103,41 +1433,17 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
   )
 }
 
-/** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
-/** Icons per platform-title key (owner-approved title lists). */
-const TITLE_ICONS: Record<string, React.ReactNode> = {
-  title: <Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />,
-  titleAr: <Languages className="h-4 w-4 text-emerald-500 shrink-0" />,
-  method: <User className="h-4 w-4 text-violet-500 shrink-0" />,
-  type: <Shield className="h-4 w-4 text-purple-500 shrink-0" />,
-  content: <Globe className="h-4 w-4 text-sky-500 shrink-0" />,
-  releaseDate: <Calendar className="h-4 w-4 text-cyan-500 shrink-0" />,
-  size: <FileArchive className="h-4 w-4 text-rose-500 shrink-0" />,
-  gameId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
-  cusa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
-  ppsa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
-  titleId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
-  mediaId: <HardDrive className="h-4 w-4 text-slate-500 shrink-0" />,
-  format: <FolderOpen className="h-4 w-4 text-orange-500 shrink-0" />,
-  firmware: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
-  gameUpdate: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
-  device: <Smartphone className="h-4 w-4 text-teal-500 shrink-0" />,
-  compat: <CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />,
-  installType: <FileText className="h-4 w-4 text-sky-500 shrink-0" />,
-  cpu: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
-  gameVersion: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
-  minAndroid: <Smartphone className="h-4 w-4 text-green-500 shrink-0" />,
-}
+/** عنصر بيانات — تسمية / قيمة بخلفية رمادية (نفس تصميم حقول المرجع) */
 
-function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DataItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-muted-foreground shrink-0">{icon}</span>
-      <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">
-        {label}:
-      </span>
-      <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
-      <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
+    <div
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs dark:bg-gray-800 sm:text-sm"
+      title={`${label}: ${value}`}
+    >
+      <span className="shrink-0 font-normal text-muted-foreground">{label}</span>
+      <span className="shrink-0 text-muted-foreground/50">/</span>
+      <span className="min-w-0 truncate font-bold text-foreground">{value}</span>
     </div>
   )
 }
