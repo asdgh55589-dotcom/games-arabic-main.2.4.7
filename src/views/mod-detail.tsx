@@ -797,7 +797,7 @@ export function ModDetailPage() {
               {/* ===== صندوق البيانات — مائل بدون حواف ناعمة وبارز بخطوط عريضة ===== */}
               <div
                 dir="rtl"
-                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-12 sm:-mt-16 lg:-mt-20"
+                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-24 sm:-mt-32 lg:-mt-48"
               >
                 <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
                   {/* السلسلة — يفضّل seriesRelation ثم الاسم القديم */}
