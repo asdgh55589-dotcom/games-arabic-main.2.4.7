@@ -62,6 +62,12 @@ export async function GET(req: NextRequest) {
       false_info: 'معلومات كاذبة',
       technical: 'مشكلة تقنية',
       other: 'سبب آخر',
+      dead_links: 'روابط ميّتة',
+      broken_files: 'ملفات لا تعمل',
+      install_issue: 'مشاكل في التثبيت',
+      outdated_info: 'معلومات قديمة',
+      outdated_translation: 'تعريب قديم',
+      version_mismatch: 'غير متوافق مع نسخة اللعبة',
     }
     const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
     const actionLabels: Record<string, string> = {

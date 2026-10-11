@@ -47,13 +47,13 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
-import type { ReportAction, ReportPriority, ReportReason } from '@/lib/reports/constants'
+import type { ReportAction, ReportPriority } from '@/lib/reports/constants'
 import {
   REPORT_ACTIONS,
   REPORT_PRIORITIES,
-  REPORT_REASONS,
   REPORT_STATUSES,
   REPORT_TARGET_TYPES,
+  getReportReasonLabel,
 } from '@/lib/reports/constants'
 import { getRoleLabel } from '@/lib/roles'
 
@@ -365,7 +365,7 @@ export default function AdminReportDetailPage() {
   const targetLabel =
     REPORT_TARGET_TYPES[report.targetType as keyof typeof REPORT_TARGET_TYPES]?.label ||
     report.targetType
-  const reasonConfig = REPORT_REASONS[report.reason as ReportReason]
+  const reasonLabel = getReportReasonLabel(report.reason)
   const priorityConfig = REPORT_PRIORITIES[report.priority as ReportPriority]
   // Json array بعد التغيير + توافق مع بيانات قديمة comma-joined
   const evidenceUrls: string[] = (() => {
@@ -408,7 +408,7 @@ export default function AdminReportDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">السبب</span>
-                <span>{reasonConfig?.label || report.reason}</span>
+                <span>{reasonLabel}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الأولوية</span>
