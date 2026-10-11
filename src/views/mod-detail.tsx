@@ -941,125 +941,6 @@ export function ModDetailPage() {
                 </div>
               </div>
 
-              {/* ===== معاينة تصميم فقط (Mock) — جودة التعريب + عن اللعبة ===== */}
-              {DESIGN_PREVIEW.enabled && (
-                <div
-                  dir="rtl"
-                  className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8"
-                >
-                  <div className="rounded-none border-[2px] border-dashed border-muted-foreground/40 p-2">
-                    <div className="mb-2 inline-flex items-center gap-2 px-1">
-                      <span className="text-xs font-black text-foreground">معاينة تصميم</span>
-                      <span className="text-[10px] font-bold text-muted-foreground">
-                        بدون API حقيقي — تُربط بعد الاتفاق
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-                      <div className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-black text-foreground">جودة التعريب</span>
-                          <span
-                            className={`ms-auto rounded px-2 py-0.5 text-[11px] font-black ${progressStatusBox}`}
-                          >
-                            {progressStatus}
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2">
-                          <div
-                            className="h-3 flex-1 overflow-hidden rounded-none border border-border bg-muted"
-                            role="progressbar"
-                            aria-valuenow={progressPct}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label="نسبة اكتمال التعريب"
-                          >
-                            <div
-                              className="h-full bg-gradient-to-l from-primary to-emerald-500"
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-black tabular-nums text-foreground">
-                            {progressPct}%
-                          </span>
-                        </div>
-                        <div className="mt-4 flex items-center gap-4">
-                          <div className="shrink-0 text-center">
-                            <div className="text-3xl font-black tabular-nums leading-none text-foreground">
-                              {recommendPct}%
-                            </div>
-                            <div className="mt-1 text-[10px] font-bold text-muted-foreground">
-                              يوصون بالتعريب
-                            </div>
-                          </div>
-                          <div className="flex-1 space-y-1.5">
-                            {DESIGN_PREVIEW.ratingDist.map((pct, i) => (
-                              <div key={5 - i} className="flex items-center gap-2">
-                                <span className="w-6 shrink-0 text-[10px] font-black tabular-nums text-muted-foreground">
-                                  {5 - i}★
-                                </span>
-                                <div className="h-2 flex-1 bg-muted">
-                                  <div
-                                    className="h-full bg-amber-500"
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                                <span className="w-8 shrink-0 text-left text-[10px] font-bold tabular-nums text-muted-foreground">
-                                  {pct}%
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="mt-4 grid grid-cols-2 gap-1.5">
-                          {DESIGN_PREVIEW.scope.map((s) => (
-                            <div
-                              key={s.label}
-                              className="flex items-center gap-2 rounded-none border border-border/60 px-2 py-1.5"
-                            >
-                              {s.done ? (
-                                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
-                              ) : (
-                                <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-                              )}
-                              <span className="truncate text-xs font-bold text-foreground">
-                                {s.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="rounded-none border-[3px] border-border bg-card p-4 shadow-[4px_4px_0_0_var(--border)]">
-                        <span className="text-sm font-black text-foreground">
-                          عن اللعبة الأصلية
-                        </span>
-                        <div className="mt-2 divide-y divide-border text-xs">
-                          <div className="flex items-center gap-2 py-2">
-                            <span className="font-black tracking-widest text-foreground/60">
-                              المنصة:
-                            </span>
-                            <span
-                              className="inline-block h-2.5 w-2.5 rounded-full"
-                              style={{ background: platformColor || 'var(--primary)' }}
-                            />
-                            <span className="font-black text-foreground">
-                              {mod.game.platform} — {mod.game.name}
-                            </span>
-                          </div>
-                          {DESIGN_PREVIEW.gameMeta.map((row) => (
-                            <div key={row.label} className="flex items-center gap-2 py-2">
-                              <span className="font-black tracking-widest text-foreground/60">
-                                {row.label}:
-                              </span>
-                              <span className="font-black text-foreground">{row.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* ===== الأقسام (Tabs) — قسم مستقل بذاته ===== */}
               <div
                 dir="rtl"
@@ -1076,6 +957,16 @@ export function ModDetailPage() {
                       className="flex-none whitespace-nowrap rounded-lg px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer hover:bg-white/5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                     >
                       الوصف
+                    </TabsTrigger>
+                    <span
+                      className="mx-1 self-center h-4 w-px shrink-0 bg-muted-foreground/30"
+                      aria-hidden
+                    />
+                    <TabsTrigger
+                      value="quality"
+                      className="flex-none whitespace-nowrap rounded-lg px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer hover:bg-white/5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      جودة التعريب
                     </TabsTrigger>
                     <span
                       className="mx-1 self-center h-4 w-px shrink-0 bg-muted-foreground/30"
@@ -1182,6 +1073,82 @@ export function ModDetailPage() {
                     </Card>
                   </TabsContent>
 
+                  <TabsContent value="quality" className="mt-0" dir="rtl">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                      <div className="flex items-start justify-between gap-2">
+                        <SectionHeading icon={<Star className="h-5 w-5" />} title="جودة التعريب" />
+                        <span
+                          className={`mt-1 shrink-0 rounded px-2 py-0.5 text-[11px] font-black ${progressStatusBox}`}
+                        >
+                          {progressStatus}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <div
+                          className="h-3 flex-1 overflow-hidden rounded-none border border-border bg-muted"
+                          role="progressbar"
+                          aria-valuenow={progressPct}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="نسبة اكتمال التعريب"
+                        >
+                          <div
+                            className="h-full bg-gradient-to-l from-primary to-emerald-500"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-black tabular-nums text-foreground">
+                          {progressPct}%
+                        </span>
+                      </div>
+                      <div className="mt-4 flex items-center gap-4">
+                        <div className="shrink-0 text-center">
+                          <div className="text-3xl font-black tabular-nums leading-none text-foreground">
+                            {recommendPct}%
+                          </div>
+                          <div className="mt-1 text-[10px] font-bold text-muted-foreground">
+                            يوصون بالتعريب
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          {DESIGN_PREVIEW.ratingDist.map((pct, i) => (
+                            <div key={5 - i} className="flex items-center gap-2">
+                              <span className="w-6 shrink-0 text-[10px] font-black tabular-nums text-muted-foreground">
+                                {5 - i}★
+                              </span>
+                              <div className="h-2 flex-1 bg-muted">
+                                <div
+                                  className="h-full bg-amber-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-8 shrink-0 text-left text-[10px] font-bold tabular-nums text-muted-foreground">
+                                {pct}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-1.5">
+                        {DESIGN_PREVIEW.scope.map((s) => (
+                          <div
+                            key={s.label}
+                            className="flex items-center gap-2 rounded-none border border-border/60 px-2 py-1.5"
+                          >
+                            {s.done ? (
+                              <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                            )}
+                            <span className="truncate text-xs font-bold text-foreground">
+                              {s.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </TabsContent>
+
                   <TabsContent value="changelog" className="mt-0" dir="rtl">
                     <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
                       <SectionHeading icon={<Clock className="h-5 w-5" />} title="سجل التغييرات" />
@@ -1247,22 +1214,6 @@ export function ModDetailPage() {
                             title="فعّل التعريب من إعدادات اللعبة"
                             desc="شغّل اللعبة، ادخل على إعدادات اللغة، واختر «العربية». أعد تشغيل اللعبة إذا لزم الأمر."
                           />
-                        </div>
-                      )}
-                      {/* متطلبات تشغيل التعريب — معاينة تصميم فقط (Mock) */}
-                      {DESIGN_PREVIEW.enabled && (
-                        <div className="mt-5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-sky-700 dark:text-sky-400">
-                              متطلبات تشغيل التعريب
-                            </span>
-                            <span className="rounded border border-dashed border-muted-foreground/50 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
-                              معاينة تصميم
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs font-medium leading-[1.8] text-foreground/90">
-                            {(mod as any).translationRequirements ?? DESIGN_PREVIEW.requirements}
-                          </p>
                         </div>
                       )}
                     </Card>
