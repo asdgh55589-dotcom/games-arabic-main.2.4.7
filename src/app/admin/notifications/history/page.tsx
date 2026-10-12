@@ -1,6 +1,7 @@
 'use client'
 
 import { Bell, Download, Filter, RefreshCw } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,9 +44,16 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function NotificationHistoryPage() {
+  const searchParams = useSearchParams()
+  // قراءة `?channel=` مرّة واحدة عند التحميل فقط: تُهيّئ المرشّح الأولي للربط
+  // العميق من مركز تيليجرام، ولا تُزامَن مع تغييرات المرشّح اللاحقة.
+  const initialChannel = searchParams?.get('channel') ?? ''
   const [logs, setLogs] = useState<NotificationLog[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState({ channel: '', status: '' })
+  const [filter, setFilter] = useState({
+    channel: CHANNEL_LABELS[initialChannel] ? initialChannel : '',
+    status: '',
+  })
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
