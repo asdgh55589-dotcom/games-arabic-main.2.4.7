@@ -14,6 +14,7 @@ All cron endpoints are protected with Bearer token authentication via `$CRON_SEC
 | weekly-backup | `/api/cron/weekly-backup` | `0 1 * * 0` (Sun 01:00) | `Bearer $CRON_SECRET` | 15 min | 1 retry, 5 min delay | Alert + trigger manual backup |
 | notification-drain | `/api/cron/notification-drain` | `* * * * *` (Every minute) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batches) | Exponential backoff per job, `maxAttempts = 5` | `dead_letter` → visible in `/admin/notifications-health` |
 | template-publish | `/api/cron/template-publish` | `* * * * *` (Every minute — idle runs are a single indexed query) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batch of 20) | Requeue until `maxRetries = 3`, then `failed` with `error` set | `ScheduledJob.status=failed` + error log; template stays a draft |
+| social-publish | `/api/cron/social-publish` | `* * * * *` (Every minute — idle runs are a single indexed query) | `Bearer $CRON_SECRET` | ~10 s per run (bounded batch of 50 posts + 25 legacy jobs) | Per-post `attempts` with 5 min backoff until `maxAttempts = 3`, then `SocialPost.status=failed` | `SocialPost.lastError` set + `publish_failed` audit row; post stays editable |
 
 > **Scheduling note (P2):** there is no `vercel.json` in this repository, so the
 > `notification-drain` schedule above is a **suggested** cron entry, not an
@@ -106,6 +107,45 @@ the canonical rich-text rules, and only then flipped to `isActive: true` with an
 immutable version snapshot — an invalid template fails the job instead of going
 live. A deleted template is recorded as `completed` with a note (`skipped`),
 retries requeue until `maxRetries = 3`.
+
+### social-publish
+
+```json
+{
+  "ok": true, "window": "2026-10-12T14:05", "published": 3, "failed": 1,
+  "skipped": 0, "due": 4, "legacy": { "executed": 1, "failed": 0, "found": 1 },
+  "pruned": 0, "failures": [{ "id": "clx...", "error": "..." }], "duration_ms": 810
+}
+```
+
+Drains **two** queues in one run (Social Hub update #3):
+
+1. **`social_posts`** — rows with `platform='telegram'`, `status='scheduled'`
+   and `scheduled_for <= now` (bounded batch of 50), each published through
+   `lib/social/publish.ts::publishSocialPost(id, { source: 'cron' })`.
+2. **`scheduled_jobs` (legacy)** — pending `telegram_post` rows due now
+   (bounded batch of 25), executed via `lib/scheduler.ts::executeJob`. These
+   have had no caller since polling was removed in Phase 7; this cron is their
+   replacement entrypoint.
+
+**Idempotency + the `claimRun` windowKey defect.** `lib/cron-ledger.ts::claimRun`
+takes `(jobName, windowKey)` but **ignores `windowKey`**: it returns
+`alreadyRan` as soon as *any* completed row of that `jobName` exists, which
+would block every run after the first forever. That helper is shared with other
+crons and is not modified here, so this job **scopes the job name itself to the
+minute window**: `claimRun('social-publish:<YYYY-MM-DDTHH:mm>', <same window>)`.
+The completed-check then only matches rows from the same minute, and a
+concurrent duplicate tick hits the `(type, windowKey)` unique constraint and is
+reported as `skipped: 'duplicate'`. Stale `social-publish:*` ledger rows are
+pruned (older than 7 days) on every run so the table does not grow unbounded.
+
+**Per-post retries.** A transport failure increments `SocialPost.attempts` and
+re-queues the post 5 minutes out (`backoff` matching `lib/scheduler.ts`). When
+`attempts >= maxAttempts` (default 3) the post flips to `status='failed'` with
+`lastError` set. **Permanent** failures — invalid rich spec, unsupported tags,
+caption over 1024 chars with media, or a misconfigured destination — fail
+immediately without burning the retry budget, because retrying them cannot
+succeed.
 
 ## Monitoring
 
