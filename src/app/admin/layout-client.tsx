@@ -28,10 +28,12 @@ import {
   Newspaper,
   Package,
   PenTool,
+  Radio,
   ScrollText,
   Search,
   Send,
   Settings,
+  Share2,
   Shield,
   Star,
   ThumbsUp,
@@ -112,6 +114,28 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/special-roles', label: 'الأدوار الخاصة', icon: Star, adminOnly: true },
       { href: '/admin/tier-history', label: 'سجل الترقيات', icon: History, adminOnly: true },
       { href: '/admin/rewards', label: 'لوحة المكافآت', icon: Trophy, adminOnly: true },
+    ],
+  },
+  {
+    // W2: مركز السوشيال ميديا. العلامات تطابق require* في المسارات حرفياً:
+    // صفحات اللمحة/المركز adminOnly، وصفحتا المنشورات/القوالب managerOnly.
+    label: 'السوشيال ميديا',
+    items: [
+      { href: '/admin/social', label: 'نظرة عامة', icon: Share2, adminOnly: true, exact: true },
+      { href: '/admin/social/channels', label: 'القنوات', icon: Radio, adminOnly: true },
+      { href: '/admin/social/telegram', label: 'تيليجرام', icon: Send, adminOnly: true },
+      {
+        href: '/admin/social/telegram/posts',
+        label: 'منشورات تيليجرام',
+        icon: FileText,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/templates',
+        label: 'قوالب تيليجرام',
+        icon: ScrollText,
+        managerOnly: true,
+      },
     ],
   },
   {
