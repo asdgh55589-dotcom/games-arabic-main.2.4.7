@@ -11,12 +11,19 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 const mockFetch = jest.fn()
 
+// الصفحة تقرأ `?channel=` عبر `useSearchParams`؛ نُهيّئها لكل اختبار.
+let mockSearchParams = new URLSearchParams()
+jest.mock('next/navigation', () => ({
+  useSearchParams: () => mockSearchParams,
+}))
+
 // `waitFor` الافتراضي (1s) لا يكفي هنا: أول تشغيل للصفحات يتضمّن تجميع
 // ts-jest للملفات بالتوازي مع بقية المجموعات، فتزداد المهلة تحت ضغط CI.
 const WAIT = { timeout: 5000 }
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockSearchParams = new URLSearchParams()
   global.fetch = mockFetch as unknown as typeof fetch
 })
 
@@ -145,6 +152,28 @@ describe('/admin/notifications/history', () => {
     await changeSelect('كل الحالات', 'sent', 3)
     expect(lastUrl()).toContain('channel=telegram')
     expect(lastUrl()).toContain('status=sent')
+  })
+
+  it('initialises the channel filter from ?channel= and requests it once', async () => {
+    mockSearchParams = new URLSearchParams('channel=telegram')
+    mockFetch.mockReturnValue(jsonResponse(body([log()])))
+
+    renderPage()
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1), WAIT)
+    expect(lastUrl()).toContain('channel=telegram')
+    await waitForLoaded()
+    expect((screen.getByDisplayValue('Telegram') as HTMLSelectElement).value).toBe('telegram')
+  })
+
+  it('ignores an unknown ?channel= value', async () => {
+    mockSearchParams = new URLSearchParams('channel=bogus')
+    mockFetch.mockReturnValue(jsonResponse(body([])))
+
+    renderPage()
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1), WAIT)
+    expect(lastUrl()).toBe('/api/admin/notifications?page=1&limit=20')
   })
 
   it('advances to the next page', async () => {
