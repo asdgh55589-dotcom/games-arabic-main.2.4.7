@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  FileText,
   TrendingUp,
   XCircle,
 } from 'lucide-react'
@@ -38,14 +37,16 @@ const RANGES: { value: SocialStatsRange; label: string }[] = [
   { value: '90d', label: '90 يوماً' },
 ]
 
+// روابط سريعة لهذه الصفحة (adminOnly). تُعرض فقط الوجهات التي يستطيع زائر
+// الصفحة فتحها: history وscheduler رتبتهما admin. أمّا `/admin/templates`
+// (manager) وصفحتا منشورات/قوالب تيليجرام (manager) فلا تُدرَج — لا نُعلن روابط
+// لصفحات لا يستطيع المشاهد (admin) فتحها (P3)، وتُضاف صفحات W3 عند هبوطها.
 const QUICK_LINKS = [
-  // روابط المنشورات/القوالب تُضاف مع هبوط مسارات W3 (لا روابط ميتة).
   {
     href: '/admin/notifications/history?channel=telegram',
     label: 'سجل إشعارات تيليجرام',
     icon: Bell,
   },
-  { href: '/admin/templates?channel=telegram', label: 'قوالب الإشعارات', icon: FileText },
   { href: '/admin/scheduler', label: 'الجدولة', icon: Clock },
 ]
 
