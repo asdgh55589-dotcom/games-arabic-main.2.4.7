@@ -67,6 +67,7 @@ describe('findPageForPath على شجرة السوشيال', () => {
     expect(toPage('/api/admin/social/overview')).toBe('social')
     expect(toPage('/api/admin/social/stats')).toBe('social')
     expect(toPage('/api/admin/social/telegram/posts')).toBe('social-telegram-posts')
+    expect(toPage('/api/admin/social/telegram/templates')).toBe('social-telegram-templates')
   })
 })
 

@@ -1,9 +1,39 @@
-import { MOCK_SOCIAL_OVERVIEW, MOCK_SOCIAL_STATS, type SocialStatsRange } from '@/hooks/use-social'
+import {
+  MOCK_SOCIAL_OVERVIEW,
+  MOCK_SOCIAL_STATS,
+  type SocialStatsRange,
+  socialPostsUrl,
+  socialPostUrl,
+  socialTemplatesUrl,
+} from '@/hooks/use-social'
+import { apiPathToAdminPath, findPageForPath } from '@/lib/admin-pages'
 
 /**
  * B0 — أشكال البيانات التجريبية في `use-social.ts` يجب أن تطابق عقد W1 (§4)
  * حرفياً حتى تحلّ البيانات الحقيقية محلّها بلا أي تعديل في الواجهة.
  */
+
+describe('use-social — مسارات الـ API تتبع صفحتها في السجل', () => {
+  // نُحاكي ما يفعله `proxy.ts`: pathname → apiPathToAdminPath → findPageForPath.
+  const toPageKey = (apiUrl: string) => {
+    const path = new URL(apiUrl, 'https://x.test').pathname
+    const adminPath = apiPathToAdminPath(path)
+    return adminPath ? (findPageForPath(adminPath)?.key ?? null) : null
+  }
+
+  it('ينسب مسارات المنشورات إلى social-telegram-posts لا إلى social', () => {
+    expect(toPageKey(socialPostsUrl({}))).toBe('social-telegram-posts')
+    expect(toPageKey(socialPostsUrl({ status: 'scheduled', page: 2, limit: 20 }))).toBe(
+      'social-telegram-posts',
+    )
+    expect(toPageKey(socialPostUrl('abc123'))).toBe('social-telegram-posts')
+  })
+
+  it('ينسب مسار القوالب إلى social-telegram-templates لا إلى social', () => {
+    expect(toPageKey(socialTemplatesUrl())).toBe('social-telegram-templates')
+    expect(toPageKey(socialTemplatesUrl('telegram'))).toBe('social-telegram-templates')
+  })
+})
 
 describe('use-social — أشكال اللمحة', () => {
   it('يعرّف المنصات الثلاث بحالاتها الصحيحة', () => {

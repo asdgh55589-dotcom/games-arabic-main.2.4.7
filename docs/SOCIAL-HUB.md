@@ -25,6 +25,14 @@
 - `useSocialStats(range)` → `GET /api/admin/social/stats?platform=telegram&range=7d|30d|90d`
 - `useSocialPosts(query)` / `useSocialPost(id)` / `useSocialPostTemplates(query)`
 
+> **مسار ↔ صفحة:** تتبع مسارات الـ API تدرّج الصفحات في السجل، لذا فإن
+> المنشورات/القوالب على `/api/admin/social/telegram/posts` و
+> `/api/admin/social/telegram/templates` (لا `/api/admin/social/posts`). هذا شرط
+> لعمل حاجز claim الصفحات في `proxy.ts` عبر `apiPathToAdminPath` +
+> `findPageForPath`: المسار يُنسب لمفتاح `social-telegram-posts` /
+> `social-telegram-templates` (رتبة `manager`) بدل المفتاح العام `social` (رتبة `admin`).
+> نبني الروابط عبر `socialPostsUrl` / `socialPostUrl` / `socialTemplatesUrl` لتفادي الانحراف.
+
 ### سلوك البيانات التجريبية
 
 جرى تصميم الواجهة بحيث **لا تُحجب** إن لم تكن نقاط الـ API جاهزة على الخادم بعد:

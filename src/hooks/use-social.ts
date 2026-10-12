@@ -282,8 +282,16 @@ export interface SocialPostsQuery {
   limit?: number
 }
 
-/** قائمة المنشورات (W3 يستهلكها للجدول). لا تُسقِط على mock كي لا تُوهم المستخدم. */
-export function useSocialPosts(query: SocialPostsQuery = {}) {
+// مسارات الـ API تتبع تدرّج الصفحات في السجل (`/admin/social/telegram/*`) حتى
+// ينسبها proxy عبر `apiPathToAdminPath` + `findPageForPath` إلى مفاتيح
+// `social-telegram-posts` / `social-telegram-templates` الصحيحة. لو بقي المسار
+// `/api/admin/social/posts` لنُسب إلى مفتاح `social` (صفحة admin) — فيُرفض
+// 403 لحامل `social-telegram-posts` فقط، ويمرّ حامل `social` إلى APIs manager.
+const SOCIAL_POSTS_API = '/api/admin/social/telegram/posts'
+const SOCIAL_TEMPLATES_API = '/api/admin/social/telegram/templates'
+
+/** يبني رابط قائمة المنشورات مع المرشّحات والترقيم. */
+export function socialPostsUrl(query: SocialPostsQuery = {}): string {
   const params = new URLSearchParams()
   if (query.platform) params.set('platform', query.platform)
   if (query.status) params.set('status', query.status)
@@ -291,7 +299,22 @@ export function useSocialPosts(query: SocialPostsQuery = {}) {
   if (query.to) params.set('to', query.to)
   params.set('page', String(query.page ?? 1))
   params.set('limit', String(query.limit ?? 20))
-  const url = `/api/admin/social/posts?${params.toString()}`
+  return `${SOCIAL_POSTS_API}?${params.toString()}`
+}
+
+/** يبني رابط تفصيل منشور واحد. */
+export function socialPostUrl(id: string): string {
+  return `${SOCIAL_POSTS_API}/${encodeURIComponent(id)}`
+}
+
+/** يبني رابط قوالب المنشورات لمنصة. */
+export function socialTemplatesUrl(platform = 'telegram'): string {
+  return `${SOCIAL_TEMPLATES_API}?platform=${encodeURIComponent(platform)}`
+}
+
+/** قائمة المنشورات (W3 يستهلكها للجدول). لا تُسقِط على mock كي لا تُوهم المستخدم. */
+export function useSocialPosts(query: SocialPostsQuery = {}) {
+  const url = socialPostsUrl(query)
   const { data, loading, error, refetch } = useFetch<
     Envelope<SocialPostListItem[]> & { pagination?: SocialPagination }
   >(url)
@@ -307,7 +330,7 @@ export function useSocialPosts(query: SocialPostsQuery = {}) {
 /** تفصيل منشور واحد. */
 export function useSocialPost(id: string | null) {
   const { data, loading, error, refetch } = useFetch<Envelope<SocialPostListItem>>(
-    id ? `/api/admin/social/posts/${id}` : null,
+    id ? socialPostUrl(id) : null,
   )
   return { post: data?.data ?? null, loading, error, refetch }
 }
@@ -315,7 +338,7 @@ export function useSocialPost(id: string | null) {
 /** قوالب المنشورات (W3 يستهلكها). */
 export function useSocialPostTemplates(platform = 'telegram') {
   const { data, loading, error, refetch } = useFetch<Envelope<SocialPostTemplateItem[]>>(
-    `/api/admin/social/post-templates?platform=${platform}`,
+    socialTemplatesUrl(platform),
   )
   return { templates: data?.data ?? [], loading, error, refetch }
 }
