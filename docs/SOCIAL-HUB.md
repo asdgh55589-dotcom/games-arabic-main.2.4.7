@@ -10,12 +10,15 @@
 | `/admin/social` | لمحة عامة: عدّادات، شبكة المنصات، المنشورات المجدولة والأخيرة | `admin` |
 | `/admin/social/channels` | قائمة المنصات (مفعّل / قريباً) وزر الإدارة | `admin` |
 | `/admin/social/telegram` | مركز تيليجرام: مؤشرات، مخطط النشر اليومي، الوجهات، روابط سريعة | `admin` |
-| `/admin/social/telegram/posts` | منشورات تيليجرام | `manager` |
-| `/admin/social/telegram/templates` | قوالب تيليجرام | `manager` |
 
-> عناصر التنقّل في الشريط الجانبي تتبع نفس الصلاحيات: صفحات المركز تظهر بوصف
-> `adminOnly`، وصفحات المنشورات/القوالب بوصف `managerOnly`. لا صفحة أوسع من الـ API
-> الذي تستهلكه.
+> الصفحات أعلاه هي المسجّلة والمشحونة فعلاً في هذا الإصدار. صفحات
+> `/admin/social/telegram/posts` (منشورات) و`/admin/social/telegram/templates`
+> (قوالب) رتبتها `manager` وتُسجَّل في السجل مع هبوط مسارات العامل **W3** — لا
+> نُسجّل صفحات ولا روابط قبل وجودها (لا روابط ميتة ولا منح صلاحية لصفحة مفقودة).
+
+> عناصر التنقّل في الشريط الجانبي تتبع نفس الصلاحيات: صفحات اللمحة/المركز تظهر
+> بوصف `adminOnly`، وتُضاف عناصر المنشورات/القوالب مع هبوط صفحاتها. لا صفحة أوسع من
+> الـ API الذي تستهلكه.
 
 ## الطبقة البيانية — `src/hooks/use-social.ts`
 
@@ -23,15 +26,17 @@
 
 - `useSocialOverview()` → `GET /api/admin/social/overview`
 - `useSocialStats(range)` → `GET /api/admin/social/stats?platform=telegram&range=7d|30d|90d`
-- `useSocialPosts(query)` / `useSocialPost(id)` / `useSocialPostTemplates(query)`
+- `useSocialPosts(query)` / `useSocialPost(id)` / `useSocialPostTemplates(query)` — يستهلكها W3
 
-> **مسار ↔ صفحة:** تتبع مسارات الـ API تدرّج الصفحات في السجل، لذا فإن
-> المنشورات/القوالب على `/api/admin/social/telegram/posts` و
-> `/api/admin/social/telegram/templates` (لا `/api/admin/social/posts`). هذا شرط
-> لعمل حاجز claim الصفحات في `proxy.ts` عبر `apiPathToAdminPath` +
-> `findPageForPath`: المسار يُنسب لمفتاح `social-telegram-posts` /
-> `social-telegram-templates` (رتبة `manager`) بدل المفتاح العام `social` (رتبة `admin`).
-> نبني الروابط عبر `socialPostsUrl` / `socialPostUrl` / `socialTemplatesUrl` لتفادي الانحراف.
+> **مسار ↔ صفحة:** تتبع مسارات الـ API تدرّج الصفحات، لذا فإن المنشورات/القوالب
+> تُبنى على `/api/admin/social/telegram/posts` و
+> `/api/admin/social/telegram/templates` (لا `/api/admin/social/posts`) عبر
+> `socialPostsUrl` / `socialPostUrl` / `socialTemplatesUrl` لتفادي الانحراف. هذا
+> شرط لعمل حاجز claim الصفحات في `proxy.ts` عبر `apiPathToAdminPath` +
+> `findPageForPath`: بمجرّد تسجيل W3 لصفحتي المنشورات/القوالب يُنسب المسار لمفتاح
+> `social-telegram-posts` / `social-telegram-templates` (رتبة `manager`) بدل
+> المفتاح العام `social` (رتبة `admin`). قبل التسجيل تُنسب لصفحة المركز
+> `social-telegram` (أطول بادئة مسجّلة) وليس للجذر `social`.
 
 ### سلوك البيانات التجريبية
 

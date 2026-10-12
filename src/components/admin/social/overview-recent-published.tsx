@@ -1,14 +1,14 @@
 'use client'
 
 import { CheckCircle2 } from 'lucide-react'
-import Link from 'next/link'
 import { getAdminSocialPlatform } from '@/components/admin/social/platform-card'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { SocialOverviewPublishedItem } from '@/hooks/use-social'
 import { formatArDateTime } from '@/lib/notifications/admin-labels'
 
-/** قائمة «آخر المنشورات المنشورة» في صفحة اللمحة. */
+/** قائمة «آخر المنشورات المنشورة» في صفحة اللمحة.
+ *  بلا روابط لصفحة المنشورات حتى تهبط مسارات W3 (لا روابط ميتة). */
 export function OverviewRecentPublished({ items }: { items: SocialOverviewPublishedItem[] }) {
   return (
     <Card>
@@ -17,9 +17,6 @@ export function OverviewRecentPublished({ items }: { items: SocialOverviewPublis
           <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           آخر المنشورات
         </CardTitle>
-        <Link href="/admin/social/telegram/posts" className="text-xs text-primary hover:underline">
-          عرض الكل
-        </Link>
       </CardHeader>
       <CardContent className="p-0">
         {items.length === 0 ? (
@@ -29,11 +26,7 @@ export function OverviewRecentPublished({ items }: { items: SocialOverviewPublis
         ) : (
           <div className="divide-y divide-border-light">
             {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/admin/social/telegram/posts/${item.id}`}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-background-secondary"
-              >
+              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-medium text-foreground">
                     {item.title || 'بدون عنوان'}
@@ -49,7 +42,7 @@ export function OverviewRecentPublished({ items }: { items: SocialOverviewPublis
                   </span>
                   <Badge className="bg-green-100 text-green-700">منشور</Badge>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

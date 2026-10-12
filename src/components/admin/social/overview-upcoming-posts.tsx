@@ -1,7 +1,6 @@
 'use client'
 
 import { CalendarClock } from 'lucide-react'
-import Link from 'next/link'
 import { getAdminSocialPlatform } from '@/components/admin/social/platform-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -15,7 +14,8 @@ import {
 import type { SocialOverviewScheduledItem } from '@/hooks/use-social'
 import { formatArDateTime } from '@/lib/notifications/admin-labels'
 
-/** جدول «أقرب المنشورات المجدولة» في صفحة اللمحة. */
+/** جدول «أقرب المنشورات المجدولة» في صفحة اللمحة.
+ *  بلا روابط لصفحة المنشورات حتى تهبط مسارات W3 (لا روابط ميتة). */
 export function OverviewUpcomingPosts({ items }: { items: SocialOverviewScheduledItem[] }) {
   return (
     <Card>
@@ -24,9 +24,6 @@ export function OverviewUpcomingPosts({ items }: { items: SocialOverviewSchedule
           <CalendarClock className="h-4 w-4 text-muted-foreground" />
           أقرب المنشورات المجدولة
         </CardTitle>
-        <Link href="/admin/social/telegram/posts" className="text-xs text-primary hover:underline">
-          عرض الكل
-        </Link>
       </CardHeader>
       <CardContent className="p-0">
         {items.length === 0 ? (
@@ -45,13 +42,8 @@ export function OverviewUpcomingPosts({ items }: { items: SocialOverviewSchedule
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="ps-4">
-                    <Link
-                      href={`/admin/social/telegram/posts/${item.id}`}
-                      className="font-medium text-foreground hover:text-primary"
-                    >
-                      {item.title || 'بدون عنوان'}
-                    </Link>
+                  <TableCell className="ps-4 font-medium text-foreground">
+                    {item.title || 'بدون عنوان'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatArDateTime(item.scheduledFor)}

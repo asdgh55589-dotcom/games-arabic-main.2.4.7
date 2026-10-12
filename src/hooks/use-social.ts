@@ -282,11 +282,13 @@ export interface SocialPostsQuery {
   limit?: number
 }
 
-// مسارات الـ API تتبع تدرّج الصفحات في السجل (`/admin/social/telegram/*`) حتى
-// ينسبها proxy عبر `apiPathToAdminPath` + `findPageForPath` إلى مفاتيح
-// `social-telegram-posts` / `social-telegram-templates` الصحيحة. لو بقي المسار
-// `/api/admin/social/posts` لنُسب إلى مفتاح `social` (صفحة admin) — فيُرفض
-// 403 لحامل `social-telegram-posts` فقط، ويمرّ حامل `social` إلى APIs manager.
+// مسارات الـ API تتبع تدرّج الصفحات (`/admin/social/telegram/*`) فلا تسقط إلى
+// الجذر. ملاحظة: صفحات المنشورات/القوالب لم تُسجَّل بعد (تُسجَّل مع هبوط مسارات
+// W3)، وعندها ينسبها proxy عبر `apiPathToAdminPath` + `findPageForPath` إلى
+// `social-telegram-posts` / `social-telegram-templates`. حتّى ذلك الحين تُنسب
+// لصفحة المركز `social-telegram` (أطول بادئة مسجّلة) — وهو سلوك مقبول مؤقتاً
+// لأنّ هذه الـ APIs لم تهبط بعد. لو استخدمنا `/api/admin/social/posts` لسقطت
+// للجذر `social` بشكل خاطئ بمجرّد إضافة الصفحات.
 const SOCIAL_POSTS_API = '/api/admin/social/telegram/posts'
 const SOCIAL_TEMPLATES_API = '/api/admin/social/telegram/templates'
 

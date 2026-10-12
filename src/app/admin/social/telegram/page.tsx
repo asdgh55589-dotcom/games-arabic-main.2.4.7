@@ -7,7 +7,6 @@ import {
   Clock,
   ExternalLink,
   FileText,
-  Send,
   TrendingUp,
   XCircle,
 } from 'lucide-react'
@@ -40,8 +39,7 @@ const RANGES: { value: SocialStatsRange; label: string }[] = [
 ]
 
 const QUICK_LINKS = [
-  { href: '/admin/social/telegram/posts', label: 'المنشورات', icon: Send },
-  { href: '/admin/social/telegram/templates', label: 'قوالب تيليجرام', icon: FileText },
+  // روابط المنشورات/القوالب تُضاف مع هبوط مسارات W3 (لا روابط ميتة).
   {
     href: '/admin/notifications/history?channel=telegram',
     label: 'سجل إشعارات تيليجرام',

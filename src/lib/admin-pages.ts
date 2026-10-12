@@ -74,13 +74,12 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
     label: 'السوشيال ميديا',
     pages: [
       // صفحات اللمحة والمركز: قراءة requireAdmin ⇒ minRole admin.
+      // تُسجَّل هنا فقط الصفحات التي شُحنت فعلاً — لا روابط ميتة ولا منح صلاحية
+      // لصفحة غير موجودة. تُضاف صفحات منشورات/قوالب تيليجرام (manager) مع
+      // هبوط مسارات W3 (‎/admin/social/telegram/posts|templates).
       p('/admin/social', 'نظرة عامة', 'admin'),
       p('/admin/social/channels', 'القنوات', 'admin'),
       p('/admin/social/telegram', 'تيليجرام', 'admin'),
-      // منشورات/قوالب تيليجرام: الطفرات requireManager ⇒ minRole manager
-      // (لا تمنح الصفحة صلاحية أوسع من الـ API الخاص بها).
-      p('/admin/social/telegram/posts', 'منشورات تيليجرام', 'manager'),
-      p('/admin/social/telegram/templates', 'قوالب تيليجرام', 'manager'),
     ],
   },
   {

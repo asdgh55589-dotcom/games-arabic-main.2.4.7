@@ -13,7 +13,7 @@ import { apiPathToAdminPath, findPageForPath } from '@/lib/admin-pages'
  * حرفياً حتى تحلّ البيانات الحقيقية محلّها بلا أي تعديل في الواجهة.
  */
 
-describe('use-social — مسارات الـ API تتبع صفحتها في السجل', () => {
+describe('use-social — مسارات الـ API متوافقة مع ترتيب الصفحات', () => {
   // نُحاكي ما يفعله `proxy.ts`: pathname → apiPathToAdminPath → findPageForPath.
   const toPageKey = (apiUrl: string) => {
     const path = new URL(apiUrl, 'https://x.test').pathname
@@ -21,17 +21,23 @@ describe('use-social — مسارات الـ API تتبع صفحتها في ال
     return adminPath ? (findPageForPath(adminPath)?.key ?? null) : null
   }
 
-  it('ينسب مسارات المنشورات إلى social-telegram-posts لا إلى social', () => {
-    expect(toPageKey(socialPostsUrl({}))).toBe('social-telegram-posts')
-    expect(toPageKey(socialPostsUrl({ status: 'scheduled', page: 2, limit: 20 }))).toBe(
-      'social-telegram-posts',
+  it('يبني مسارات منشورات/قوالب تحت بادئة /admin/social/telegram لا /admin/social', () => {
+    // تثبيت الشكل: المسار يتبع تسلسل الصفحات حتى تُسجَّل صفحاتها مع W3.
+    expect(socialPostsUrl({})).toContain('/api/admin/social/telegram/posts?')
+    expect(socialPostUrl('abc123')).toBe('/api/admin/social/telegram/posts/abc123')
+    expect(socialTemplatesUrl()).toBe('/api/admin/social/telegram/templates?platform=telegram')
+    expect(socialTemplatesUrl('telegram')).toBe(
+      '/api/admin/social/telegram/templates?platform=telegram',
     )
-    expect(toPageKey(socialPostUrl('abc123'))).toBe('social-telegram-posts')
   })
 
-  it('ينسب مسار القوالب إلى social-telegram-templates لا إلى social', () => {
-    expect(toPageKey(socialTemplatesUrl())).toBe('social-telegram-templates')
-    expect(toPageKey(socialTemplatesUrl('telegram'))).toBe('social-telegram-templates')
+  it('تُنسب حالياً لصفحة المركز social-telegram (لا للجذر social) ريثما تُسجَّل صفحات W3', () => {
+    // المسار مُبَادَأ عليه بشكل صحيح (تحت /telegram)، فلا يسقط للجذر `social`.
+    // عند تسجيل W3 لصفحتي المنشورات/القوالب تصبح النتيجة social-telegram-posts
+    // و social-telegram-templates.
+    expect(toPageKey(socialPostsUrl({}))).toBe('social-telegram')
+    expect(toPageKey(socialPostUrl('abc123'))).toBe('social-telegram')
+    expect(toPageKey(socialTemplatesUrl())).toBe('social-telegram')
   })
 })
 
