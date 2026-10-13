@@ -563,7 +563,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
-      <div className="mx-4 mt-2 grid grid-cols-2 gap-1.5 sm:gap-1.5">
+      <div className="mx-4 mt-1 grid grid-cols-2 gap-1.5 sm:gap-1.5">
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
           <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
             <Calendar className="h-3 w-3" />
@@ -703,7 +703,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== OPEN stacked sections — نفس تبويبات الكمبيوتر بنفس الترتيب — مدمجة وقابلة للطي ===== */}
-      <div id="mobile-details" className="mt-3 space-y-2.5 px-2 pb-6">
+      <div id="mobile-details" className="mt-2 space-y-2.5 px-2 pb-6">
         {/* الوصف */}
         <CollapsibleCard
           id="desc"
