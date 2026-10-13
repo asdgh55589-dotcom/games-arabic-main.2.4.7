@@ -123,7 +123,6 @@ export function ModDetailPage() {
 
   const [lastSlug, setLastSlug] = useState(slug)
   const [hasReported, setHasReported] = useState(false)
-  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
   if (slug !== lastSlug) {
     setLastSlug(slug)
     setActiveImage(0)
@@ -132,16 +131,6 @@ export function ModDetailPage() {
     setDownloadCount(null)
     setHasReported(false)
   }
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        const u = j?.data ?? j?.user ?? null
-        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
-      })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     return () => {
@@ -226,12 +215,6 @@ export function ModDetailPage() {
   const displaySummary = mod ? getDisplaySummary(mod) : ''
   const seriesDisplay = mod ? getSeriesDisplay(mod as any) : null
   const teamDisplay = mod ? getTeamDisplay(mod as any) : null
-  const showScheduled =
-    !!mod &&
-    shouldShowScheduledBanner(mod as any) &&
-    !!viewer &&
-    (viewer.id === mod.author?.id ||
-      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
   const safeActiveImage = Math.min(activeImage, Math.max(0, gallery.length - 1))
   // Banner = first gallery image (the header image in nexusmods)
   const bannerImage = gallery[0] || mod?.imageUrl || ''
@@ -246,6 +229,14 @@ export function ModDetailPage() {
 
   const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
   const { user } = useAuth()
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const viewer = user ? { id: user.id, role: user.role } : null
+  const showScheduled =
+    !!mod &&
+    shouldShowScheduledBanner(mod as any) &&
+    !!viewer &&
+    (viewer.id === mod.author?.id ||
+      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
   const [bookmarkPending, setBookmarkPending] = useState(false)
 
   useEffect(() => {
@@ -323,7 +314,10 @@ export function ModDetailPage() {
   }
 
   const hasVideos = useMemo(
-    () => ((mod?.videoGroups || []) as { videos?: unknown[] }[]).some((g) => (g.videos || []).length > 0),
+    () =>
+      ((mod?.videoGroups || []) as { videos?: unknown[] }[]).some(
+        (g) => (g.videos || []).length > 0,
+      ),
     [mod?.videoGroups],
   )
 
@@ -341,8 +335,7 @@ export function ModDetailPage() {
     })
   }
 
-  const compatLabel =
-    mod?.gameUpdateVersion || mod?.gameVersion || mod?.systemFirmware || null
+  const compatLabel = mod?.gameUpdateVersion || mod?.gameVersion || mod?.systemFirmware || null
   const isOfficial = (mod?.translationType || '').toLowerCase() === 'official'
 
   /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
@@ -363,8 +356,7 @@ export function ModDetailPage() {
       { label: 'المطور', value: 'Capcom' },
       { label: 'الناشر', value: 'Capcom' },
     ],
-    requirements:
-      'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
+    requirements: 'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
   } as const
   const progressPct =
     (mod as any)?.translationProgress ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.progress : 0)
@@ -502,17 +494,16 @@ export function ModDetailPage() {
                         blurDataURL={BLUR_PLACEHOLDER}
                         className="object-cover"
                         onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+                          const img = e.currentTarget as HTMLImageElement & {
+                            dataset: DOMStringMap
+                          }
                           if (!img.dataset.fallback) {
                             img.dataset.fallback = '1'
                             img.src = FALLBACK_GAME_IMAGE
                           }
                         }}
                       />
-                      <div
-                        className="absolute inset-0 bg-[#0B2A4A]/60"
-                        aria-hidden
-                      />
+                      <div className="absolute inset-0 bg-[#0B2A4A]/60" aria-hidden />
                       <div
                         className="absolute inset-0"
                         style={{
@@ -647,136 +638,134 @@ export function ModDetailPage() {
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}
                     <div className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8">
-                    <div className="translate-x-24">
-                      {/* سطر تعريفي صغير فوق العنوان: المنصة + حقل العنوان + الإصدار */}
-                      <p className="mb-1 text-[11px] sm:text-xs font-black tracking-wide text-primary">
-                        {mod.game.platform} • {mod.name} • v{mod.version}
-                      </p>
-                      {/* Title */}
-                      <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
-                        {(mod as { headline?: string }).headline || mod.name}
-                      </h1>
-                      {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
-                      <RateReviewBar
-                        slug={mod.slug}
-                        name={mod.name}
-                        rating={mod.rating ?? 0}
-                        ratingCount={mod.ratingCount ?? 0}
-                        recommendPct={recommendPct}
-                        viewerRole={viewer?.role}
-                        onReadReviews={scrollToComments}
-                      />
-                      {/* 3a — summary below title with description fallback */}
-                      {displaySummary !== '' && (
-                        <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
-                          {displaySummary}
+                      <div className="translate-x-24">
+                        {/* سطر تعريفي صغير فوق العنوان: المنصة + حقل العنوان + الإصدار */}
+                        <p className="mb-1 text-[11px] sm:text-xs font-black tracking-wide text-primary">
+                          {mod.game.platform} • {mod.name} • v{mod.version}
                         </p>
-                      )}
-                      {/* شارات الإصدار والقسم — سطر واحد بدون لف */}
-                      <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
-                        <Badge
-                          variant="outline"
-                          className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
-                        >
-                          v{mod.version}
-                        </Badge>
-                        {isOfficial && (
+                        {/* Title */}
+                        <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
+                          {(mod as { headline?: string }).headline || mod.name}
+                        </h1>
+                        {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
+                        <RateReviewBar
+                          slug={mod.slug}
+                          name={mod.name}
+                          rating={mod.rating ?? 0}
+                          ratingCount={mod.ratingCount ?? 0}
+                          recommendPct={recommendPct}
+                          viewerRole={viewer?.role}
+                          onReadReviews={scrollToComments}
+                        />
+                        {/* 3a — summary below title with description fallback */}
+                        {displaySummary !== '' && (
+                          <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
+                            {displaySummary}
+                          </p>
+                        )}
+                        {/* شارات الإصدار والقسم — سطر واحد بدون لف */}
+                        <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
                           <Badge
                             variant="outline"
-                            className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap"
+                            className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
                           >
-                            تعريب رسمي
+                            v{mod.version}
                           </Badge>
-                        )}
-                        {(mod as any).sectionRelation?.name && (
-                          <Link
-                            href={`/platform/${(mod as any).sectionRelation.key}`}
-                            className="shrink-0"
-                          >
+                          {isOfficial && (
                             <Badge
-                              variant="secondary"
-                              className="text-xs font-bold whitespace-nowrap hover:underline"
-                            >
-                              {(mod as any).sectionRelation.name}
-                            </Badge>
-                          </Link>
-                        )}
-                        {tags.length > 0 &&
-                          tags.map((t) => (
-                            <Badge
-                              key={t}
                               variant="outline"
-                              className="text-[11px] font-bold shrink-0 whitespace-nowrap"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap"
                             >
-                              #{t}
+                              تعريب رسمي
                             </Badge>
-                          ))}
-                      </div>
-                      {/* 3g — scheduled publishing indicator (owner/admin only) */}
-                      {showScheduled && (
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400">
-                          <span aria-hidden>⏰</span>
-                          <span>
-                            مجدول للنشر في:{' '}
-                            {formatArabicDate((mod as any).scheduledAt)}
-                          </span>
+                          )}
+                          {(mod as any).sectionRelation?.name && (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation.key}`}
+                              className="shrink-0"
+                            >
+                              <Badge
+                                variant="secondary"
+                                className="text-xs font-bold whitespace-nowrap hover:underline"
+                              >
+                                {(mod as any).sectionRelation.name}
+                              </Badge>
+                            </Link>
+                          )}
+                          {tags.length > 0 &&
+                            tags.map((t) => (
+                              <Badge
+                                key={t}
+                                variant="outline"
+                                className="text-[11px] font-bold shrink-0 whitespace-nowrap"
+                              >
+                                #{t}
+                              </Badge>
+                            ))}
                         </div>
-                      )}
-                      {/* تحذير توافق نسخة اللعبة */}
-                      {compatLabel && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                            يتطلب نسخة اللعبة: {compatLabel}
-                          </span>
-                        </div>
-                      )}
-                      {/* tags مدمجة في سطر الأوسمة فوق */}
-                      {(
-                        mod as unknown as {
-                          isOriginalWork?: boolean
-                          originalSource?: string | null
-                          originalAuthor?: string | null
-                        }
-                      ).isOriginalWork === false && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                            منشور من مصدر خارجي
-                          </span>
-                          {(mod as unknown as { originalAuthor?: string | null })
-                            .originalAuthor && (
-                            <span className="text-xs text-muted-foreground">
-                              • {(mod as unknown as { originalAuthor: string }).originalAuthor}
+                        {/* 3g — scheduled publishing indicator (owner/admin only) */}
+                        {showScheduled && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+                            <span aria-hidden>⏰</span>
+                            <span>
+                              مجدول للنشر في: {formatArabicDate((mod as any).scheduledAt)}
                             </span>
-                          )}
-                          {(mod as unknown as { originalSource?: string | null })
-                            .originalSource && (
-                            <>
-                              <span className="text-muted-foreground">—</span>
-                              {(
-                                mod as unknown as { originalSource: string }
-                              ).originalSource.startsWith('http') ? (
-                                <a
-                                  href={
-                                    (mod as unknown as { originalSource: string }).originalSource
-                                  }
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline truncate max-w-[200px]"
-                                >
-                                  {(mod as unknown as { originalSource: string }).originalSource}
-                                </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  {(mod as unknown as { originalSource: string }).originalSource}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-
+                          </div>
+                        )}
+                        {/* تحذير توافق نسخة اللعبة */}
+                        {compatLabel && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                              يتطلب نسخة اللعبة: {compatLabel}
+                            </span>
+                          </div>
+                        )}
+                        {/* tags مدمجة في سطر الأوسمة فوق */}
+                        {(
+                          mod as unknown as {
+                            isOriginalWork?: boolean
+                            originalSource?: string | null
+                            originalAuthor?: string | null
+                          }
+                        ).isOriginalWork === false && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                              منشور من مصدر خارجي
+                            </span>
+                            {(mod as unknown as { originalAuthor?: string | null })
+                              .originalAuthor && (
+                              <span className="text-xs text-muted-foreground">
+                                • {(mod as unknown as { originalAuthor: string }).originalAuthor}
+                              </span>
+                            )}
+                            {(mod as unknown as { originalSource?: string | null })
+                              .originalSource && (
+                              <>
+                                <span className="text-muted-foreground">—</span>
+                                {(
+                                  mod as unknown as { originalSource: string }
+                                ).originalSource.startsWith('http') ? (
+                                  <a
+                                    href={
+                                      (mod as unknown as { originalSource: string }).originalSource
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline truncate max-w-[200px]"
+                                  >
+                                    {(mod as unknown as { originalSource: string }).originalSource}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    {(mod as unknown as { originalSource: string }).originalSource}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
                       <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-5 pb-2 translate-x-24 sm:mt-8 sm:pb-4 lg:pb-6">
@@ -947,9 +936,9 @@ export function ModDetailPage() {
                           setHasReported(true)
                           try {
                             if (mod?.id) localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-      } catch {
-        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-      }
+                          } catch {
+                            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+                          }
                         }}
                       />
                     )}
@@ -961,7 +950,7 @@ export function ModDetailPage() {
               <div
                 dir="rtl"
                 id="mod-tabs"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8 scroll-mt-24"
+                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-4 sm:mt-6 scroll-mt-24"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList
@@ -1133,10 +1122,7 @@ export function ModDetailPage() {
                                 {5 - i}★
                               </span>
                               <div className="h-2 flex-1 bg-muted">
-                                <div
-                                  className="h-full bg-amber-500"
-                                  style={{ width: `${pct}%` }}
-                                />
+                                <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
                               </div>
                               <span className="w-8 shrink-0 text-left text-[10px] font-bold tabular-nums text-muted-foreground">
                                 {pct}%
@@ -1449,15 +1435,7 @@ const TITLE_ICONS: Record<string, React.ReactNode> = {
   minAndroid: <Smartphone className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
 }
 
-function DataItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
+function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div
       className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs dark:bg-gray-800 sm:text-sm"

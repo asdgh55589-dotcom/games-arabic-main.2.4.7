@@ -200,7 +200,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   )
 
   const scrollToVideos = () => {
-    document.getElementById('section-videos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document
+      .getElementById('section-videos')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const compatLabel = mod.gameUpdateVersion || mod.gameVersion || mod.systemFirmware || null
@@ -224,8 +226,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       { label: 'المطور', value: 'Capcom' },
       { label: 'الناشر', value: 'Capcom' },
     ],
-    requirements:
-      'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
+    requirements: 'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
   } as const
   const progressPct =
     (mod as any).translationProgress ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.progress : 0)
@@ -240,16 +241,8 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       : progressPct >= 50
         ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
         : 'bg-sky-500/10 text-sky-500'
-  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        const u = j?.data ?? j?.user ?? null
-        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
-      })
-      .catch(() => {})
-  }, [])
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const viewer = user ? { id: user.id, role: user.role } : null
   const showScheduled =
     shouldShowScheduledBanner(mod as any) &&
     !!viewer &&
@@ -297,9 +290,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           setEndorsed(true)
           try {
             localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-        }
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+          }
         }
       })
       .catch(() => {})
@@ -322,9 +315,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       if (result.data.endorsed) {
         try {
           localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-              } catch {
-                // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-              }
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+        }
         toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
@@ -462,7 +455,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         <p className="text-[10px] font-black tracking-wide text-primary">
           {mod.game.platform} • {mod.name} • v{mod.version}
         </p>
-        <h1 className="mt-0.5 text-lg font-black leading-snug text-foreground">{(mod as { headline?: string }).headline || mod.name}</h1>
+        <h1 className="mt-0.5 text-lg font-black leading-snug text-foreground">
+          {(mod as { headline?: string }).headline || mod.name}
+        </h1>
         {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
         <RateReviewBar
           slug={mod.slug}
@@ -495,10 +490,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
             </Badge>
           )}
           {(mod as any).sectionRelation?.name && (
-            <Link
-              href={`/platform/${(mod as any).sectionRelation.key}`}
-              className="shrink-0"
-            >
+            <Link href={`/platform/${(mod as any).sectionRelation.key}`} className="shrink-0">
               <Badge variant="secondary" className="text-[11px] font-bold hover:underline">
                 {(mod as any).sectionRelation.name}
               </Badge>
@@ -571,7 +563,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-1.5">
+      <div className="mx-4 mt-2 grid grid-cols-2 gap-1.5 sm:gap-1.5">
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
           <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
             <Calendar className="h-3 w-3" />
@@ -694,9 +686,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               setHasReported(true)
               try {
                 localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-          } catch {
-            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-          }
+              } catch {
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+              }
             }}
           >
             <Button
@@ -711,7 +703,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== OPEN stacked sections — نفس تبويبات الكمبيوتر بنفس الترتيب — مدمجة وقابلة للطي ===== */}
-      <div id="mobile-details" className="mt-4 space-y-2.5 px-2 pb-6">
+      <div id="mobile-details" className="mt-3 space-y-2.5 px-2 pb-6">
         {/* الوصف */}
         <CollapsibleCard
           id="desc"
