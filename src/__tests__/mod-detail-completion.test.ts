@@ -132,10 +132,10 @@ describe('detail page wiring (desktop + mobile)', () => {
     expect(mobile()).toMatch(/tags|parseTags/)
   })
 
-  it('both render category and section', () => {
-    expect(desktop()).toContain('category')
+  it('both render section (category badge intentionally removed by design)', () => {
+    // game-page-design: edition/rating/category badges removed to match reference;
+    // section link kept as the taxonomy entry point.
     expect(desktop()).toContain('sectionRelation')
-    expect(mobile()).toContain('category')
     expect(mobile()).toContain('sectionRelation')
   })
 
