@@ -624,7 +624,8 @@ function ModFormInner({ modId }: ModFormProps) {
       const data = await res.json()
       if (!res.ok)
         throw new Error(
-          data?.error?.message ||
+          extractVideoErrorMessage(data) ||
+            data?.error?.message ||
             (typeof data?.error === 'string' ? data.error : null) ||
             'فشل الحفظ',
         )
