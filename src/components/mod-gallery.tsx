@@ -96,6 +96,17 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
               sizes="(max-width: 768px) 50vw, 33vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               unoptimized
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement & {
+                  dataset: DOMStringMap
+                }
+                if (!target.dataset.fallback) {
+                  target.dataset.fallback = '1'
+                  target.src = FALLBACK_GAME_IMAGE
+                } else {
+                  target.style.display = 'none'
+                }
+              }}
             />
             {/* overlay عند الـ hover */}
             <div className="absolute inset-0 flex items-center justify-center bg-background/0 opacity-0 transition-all group-hover:bg-background/30 group-hover:opacity-100">
@@ -191,6 +202,17 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
               className="max-h-full max-w-full object-contain transition-transform duration-200"
               style={{ transform: `scale(${zoom})` }}
               unoptimized
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement & {
+                  dataset: DOMStringMap
+                }
+                if (!target.dataset.fallback) {
+                  target.dataset.fallback = '1'
+                  target.src = FALLBACK_GAME_IMAGE
+                } else {
+                  target.style.display = 'none'
+                }
+              }}
             />
 
             {/* سهم شمال (next في RTL) — كبير */}
@@ -223,7 +245,26 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
                       : 'border-transparent opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <Image src={img} alt="" fill sizes="80px" className="object-cover" loading="lazy" quality={75} />
+                  <Image
+                    src={img}
+                    alt=""
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    loading="lazy"
+                    quality={75}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement & {
+                        dataset: DOMStringMap
+                      }
+                      if (!target.dataset.fallback) {
+                        target.dataset.fallback = '1'
+                        target.src = FALLBACK_GAME_IMAGE
+                      } else {
+                        target.style.display = 'none'
+                      }
+                    }}
+                  />
                 </button>
               ))}
             </div>

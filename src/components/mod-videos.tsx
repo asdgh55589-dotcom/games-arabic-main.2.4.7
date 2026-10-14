@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
+import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { formatArabicDate, formatNumber } from '@/lib/format'
 import type { ModVideoGroup } from '@/lib/types'
 
@@ -115,6 +116,17 @@ export function ModVideos({ videoGroups }: ModVideosProps) {
                           src={video.thumbnail}
                           alt={video.title}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement & {
+                              dataset: DOMStringMap
+                            }
+                            if (!target.dataset.fallback) {
+                              target.dataset.fallback = '1'
+                              target.src = FALLBACK_GAME_IMAGE
+                            } else {
+                              target.style.display = 'none'
+                            }
+                          }}
                         />
                       ) : (
                         <div className="grid h-full place-items-center bg-secondary">
