@@ -11,6 +11,7 @@ import {
 } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 import { sanitizeUrl } from '@/lib/sanitize'
 
 interface RouteParams {
@@ -18,7 +19,7 @@ interface RouteParams {
 }
 
 // GET /api/users/[username]/profile — بيانات الملف الشخصي
-export async function GET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
     const viewer = await getOptionalSession()
@@ -145,28 +146,31 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const xpProgress =
       currMax === Infinity ? 100 : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
 
-    return ok(
-      {
-        profile: {
-          ...user,
-          stats: {
-            mods: user._count.mods,
-            totalDownloads,
-            totalEndorsements,
-            totalViews,
-            followersCount,
-            followingCount,
+    return withReadObserveHeaders(
+      req,
+      ok(
+        {
+          profile: {
+            ...user,
+            stats: {
+              mods: user._count.mods,
+              totalDownloads,
+              totalEndorsements,
+              totalViews,
+              followersCount,
+              followingCount,
+            },
+            onlineStatus,
+            xp: { ...xpLevel, progress: xpProgress },
+            isTranslator,
+            firstModDate,
+            rating: user.qualityScore,
           },
-          onlineStatus,
-          xp: { ...xpLevel, progress: xpProgress },
-          isTranslator,
-          firstModDate,
-          rating: user.qualityScore,
         },
-      },
-      {
-        headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' },
-      },
+        {
+          headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' },
+        },
+      ),
     )
   } catch (err: any) {
     logger.error({ err }, '[profile GET] failed')

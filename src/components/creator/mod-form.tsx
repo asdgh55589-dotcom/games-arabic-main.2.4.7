@@ -13,14 +13,12 @@ import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
 import { isSupportedVideoUrl } from '@/lib/oembed'
 import { extractVideoErrorMessage } from '@/lib/video-errors'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import {
-  isDataUrl,
-  uploadCroppedDataUrl,
-} from '@/lib/upload-cropped'
+import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
 import { ModFormActions } from './mod-form/actions'
 import { ModFormHeader } from './mod-form/header'
 import { ModFormBasicInfo } from './mod-form/basic-info'
@@ -81,7 +79,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [workflowHistory, setWorkflowHistory] = useState<any[]>([])
   const [versionHistory, setVersionHistory] = useState<any[]>([])
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
-  const [userRole, setUserRole] = useState('member')
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const { user } = useAuth()
+  const userRole = user?.role ?? 'member'
 
   // Wizard step: 1 = platform selection, 2 = full form
   const [step, setStep] = useState(isEdit ? 2 : 1)
@@ -180,16 +180,6 @@ export default function ModForm({ modId }: ModFormProps) {
       })
       .catch(() => {})
       .finally(() => setLoadingMeta(false))
-  }, [])
-
-  // جلب دور المستخدم
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.data?.role) setUserRole(data.data.role)
-      })
-      .catch(() => {})
   }, [])
 
   // لو تعديل: حمّل بيانات التعريب
@@ -479,11 +469,7 @@ export default function ModForm({ modId }: ModFormProps) {
       toast({ title: t.cropNotUploaded, variant: 'destructive' })
       return
     }
-    if (
-      isDataUrl(thumbnailUrl) ||
-      isDataUrl(imageUrl) ||
-      galleryUrls.some((u) => isDataUrl(u))
-    ) {
+    if (isDataUrl(thumbnailUrl) || isDataUrl(imageUrl) || galleryUrls.some((u) => isDataUrl(u))) {
       toast({ title: t.cropUploadFailed, variant: 'destructive' })
       return
     }
@@ -648,7 +634,9 @@ export default function ModForm({ modId }: ModFormProps) {
         breadcrumbHref="/creator/mods"
         breadcrumbLabel={t.breadcrumbMods}
         currentLabel={isEdit ? t.editMod : t.newMod}
-        statusBadge={isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ms-2" /> : undefined}
+        statusBadge={
+          isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ms-2" /> : undefined
+        }
         dir={dir}
         isEdit={isEdit}
         step={step}
@@ -665,16 +653,24 @@ export default function ModForm({ modId }: ModFormProps) {
       {/* Step indicator for new mods */}
       {!isEdit && (
         <div className="flex items-center gap-3 text-sm">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>1</span>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            1
+          </span>
           <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
             اختيار المنصة
           </span>
           <span className="text-muted-foreground">←</span>
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>2</span>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            2
+          </span>
           <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
             بيانات التعريب
           </span>
@@ -684,275 +680,272 @@ export default function ModForm({ modId }: ModFormProps) {
       {/* Step 1: Platform Selection */}
       {step === 1 && (
         <div className="rounded-xl border border-border bg-card/30 p-6">
-          <PlatformSelector
-            selected={platform}
-            onSelect={handlePlatformSelect}
-          />
+          <PlatformSelector selected={platform} onSelect={handlePlatformSelect} />
         </div>
       )}
 
       {/* Step 2: Full Mod Form */}
       {step === 2 && (
         <>
-      <ModFormBasicInfo
-        name={name}
-        setName={setName}
-        headline={headline}
-        setHeadline={setHeadline}
-        description={description}
-        setDescription={setDescription}
-        changelog={changelog}
-        setChangelog={setChangelog}
-        installGuide={installGuide}
-        setInstallGuide={setInstallGuide}
-        arabicTitle={arabicTitle}
-        setArabicTitle={setArabicTitle}
-        translationScope={translationScope}
-        setTranslationScope={setTranslationScope}
-        tags={tags}
-        setTags={setTags}
-        translationType={translationType}
-        setTranslationType={setTranslationType}
-        translationMethod={translationMethod}
-        setTranslationMethod={setTranslationMethod}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
-        platform={platform}
-        platformGameId={platformGameId}
-        setPlatformGameId={setPlatformGameId}
-        cusaId={cusaId}
-        setCusaId={setCusaId}
-        ppsaId={ppsaId}
-        setPpsaId={setPpsaId}
-        titleId={titleId}
-        setTitleId={setTitleId}
-        mediaId={mediaId}
-        setMediaId={setMediaId}
-        supportedFormat={supportedFormat}
-        setSupportedFormat={setSupportedFormat}
-        deviceModel={deviceModel}
-        setDeviceModel={setDeviceModel}
-        installType={installType}
-        setInstallType={setInstallType}
-        cpuArch={cpuArch}
-        setCpuArch={setCpuArch}
-        gameVersion={gameVersion}
-        setGameVersion={setGameVersion}
-        minAndroidVersion={minAndroidVersion}
-        setMinAndroidVersion={setMinAndroidVersion}
-        systemFirmware={systemFirmware}
-        setSystemFirmware={setSystemFirmware}
-        gameUpdateVersion={gameUpdateVersion}
-        setGameUpdateVersion={setGameUpdateVersion}
-        summary={summary}
-        setSummary={setSummary}
-        userRole={userRole}
-      />
+          <ModFormBasicInfo
+            name={name}
+            setName={setName}
+            headline={headline}
+            setHeadline={setHeadline}
+            description={description}
+            setDescription={setDescription}
+            changelog={changelog}
+            setChangelog={setChangelog}
+            installGuide={installGuide}
+            setInstallGuide={setInstallGuide}
+            arabicTitle={arabicTitle}
+            setArabicTitle={setArabicTitle}
+            translationScope={translationScope}
+            setTranslationScope={setTranslationScope}
+            tags={tags}
+            setTags={setTags}
+            translationType={translationType}
+            setTranslationType={setTranslationType}
+            translationMethod={translationMethod}
+            setTranslationMethod={setTranslationMethod}
+            compatibility={compatibility}
+            setCompatibility={setCompatibility}
+            platform={platform}
+            platformGameId={platformGameId}
+            setPlatformGameId={setPlatformGameId}
+            cusaId={cusaId}
+            setCusaId={setCusaId}
+            ppsaId={ppsaId}
+            setPpsaId={setPpsaId}
+            titleId={titleId}
+            setTitleId={setTitleId}
+            mediaId={mediaId}
+            setMediaId={setMediaId}
+            supportedFormat={supportedFormat}
+            setSupportedFormat={setSupportedFormat}
+            deviceModel={deviceModel}
+            setDeviceModel={setDeviceModel}
+            installType={installType}
+            setInstallType={setInstallType}
+            cpuArch={cpuArch}
+            setCpuArch={setCpuArch}
+            gameVersion={gameVersion}
+            setGameVersion={setGameVersion}
+            minAndroidVersion={minAndroidVersion}
+            setMinAndroidVersion={setMinAndroidVersion}
+            systemFirmware={systemFirmware}
+            setSystemFirmware={setSystemFirmware}
+            gameUpdateVersion={gameUpdateVersion}
+            setGameUpdateVersion={setGameUpdateVersion}
+            summary={summary}
+            setSummary={setSummary}
+            userRole={userRole}
+          />
 
-      <PlatformFieldsSection
-        platform={platform}
-        setPlatform={setPlatform}
-        platformGameId={platformGameId}
-        setPlatformGameId={setPlatformGameId}
-        cusaId={cusaId}
-        setCusaId={setCusaId}
-        ppsaId={ppsaId}
-        setPpsaId={setPpsaId}
-        titleId={titleId}
-        setTitleId={setTitleId}
-        mediaId={mediaId}
-        setMediaId={setMediaId}
-        supportedFormat={supportedFormat}
-        setSupportedFormat={setSupportedFormat}
-        systemFirmware={systemFirmware}
-        setSystemFirmware={setSystemFirmware}
-        gameUpdateVersion={gameUpdateVersion}
-        setGameUpdateVersion={setGameUpdateVersion}
-        deviceModel={deviceModel}
-        setDeviceModel={setDeviceModel}
-        installType={installType}
-        setInstallType={setInstallType}
-        cpuArch={cpuArch}
-        setCpuArch={setCpuArch}
-        gameVersion={gameVersion}
-        setGameVersion={setGameVersion}
-        minAndroidVersion={minAndroidVersion}
-        setMinAndroidVersion={setMinAndroidVersion}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
-        hidePlatformSelect={!isEdit}
-      />
+          <PlatformFieldsSection
+            platform={platform}
+            setPlatform={setPlatform}
+            platformGameId={platformGameId}
+            setPlatformGameId={setPlatformGameId}
+            cusaId={cusaId}
+            setCusaId={setCusaId}
+            ppsaId={ppsaId}
+            setPpsaId={setPpsaId}
+            titleId={titleId}
+            setTitleId={setTitleId}
+            mediaId={mediaId}
+            setMediaId={setMediaId}
+            supportedFormat={supportedFormat}
+            setSupportedFormat={setSupportedFormat}
+            systemFirmware={systemFirmware}
+            setSystemFirmware={setSystemFirmware}
+            gameUpdateVersion={gameUpdateVersion}
+            setGameUpdateVersion={setGameUpdateVersion}
+            deviceModel={deviceModel}
+            setDeviceModel={setDeviceModel}
+            installType={installType}
+            setInstallType={setInstallType}
+            cpuArch={cpuArch}
+            setCpuArch={setCpuArch}
+            gameVersion={gameVersion}
+            setGameVersion={setGameVersion}
+            minAndroidVersion={minAndroidVersion}
+            setMinAndroidVersion={setMinAndroidVersion}
+            compatibility={compatibility}
+            setCompatibility={setCompatibility}
+            hidePlatformSelect={!isEdit}
+          />
 
-      {/* أزرار تغيير الحالة */}
-      {isEdit && (
-        <WorkflowActions
-          modId={modId!}
-          currentStatus={workflowStatus}
-          userRole={userRole}
-          onStatusChange={(newStatus) => {
-            setWorkflowStatus(newStatus)
-            // إعادة تحميل سجل التاريخ
-            fetch(`/api/creator/mods/${modId}/workflow`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((data) => {
-                if (data?.data) setWorkflowHistory(data.data)
-              })
-              .catch(() => {})
-          }}
-        />
-      )}
+          {/* أزرار تغيير الحالة */}
+          {isEdit && (
+            <WorkflowActions
+              modId={modId!}
+              currentStatus={workflowStatus}
+              userRole={userRole}
+              onStatusChange={(newStatus) => {
+                setWorkflowStatus(newStatus)
+                // إعادة تحميل سجل التاريخ
+                fetch(`/api/creator/mods/${modId}/workflow`)
+                  .then((r) => (r.ok ? r.json() : null))
+                  .then((data) => {
+                    if (data?.data) setWorkflowHistory(data.data)
+                  })
+                  .catch(() => {})
+              }}
+            />
+          )}
 
-      <ModFormMedia
-        modId={modId}
-        imageUrl={imageUrl}
-        setImageUrl={setImageUrl}
-        thumbnailUrl={thumbnailUrl}
-        setThumbnailUrl={setThumbnailUrl}
-        galleryUrls={galleryUrls}
-        setGalleryUrls={setGalleryUrls}
-        cropperImage={cropperImage}
-        cropperOpen={cropperOpen}
-        setCropperOpen={setCropperOpen}
-        cropperAspect={cropperAspect}
-        cropperTarget={cropperTarget}
-        handleImageFileSelect={handleImageFileSelect}
-        handleCropComplete={handleCropComplete}
-        handleUrlCrop={handleUrlCrop}
-        videoGroups={videoGroups}
-        setVideoGroups={setVideoGroups}
-        fetchingVideoKey={fetchingVideoKey}
-        onFetchVideoMetadata={onFetchVideoMetadata}
-        uploadTitleBase={buildUploadTitle(name)}
-      />
+          <ModFormMedia
+            modId={modId}
+            imageUrl={imageUrl}
+            setImageUrl={setImageUrl}
+            thumbnailUrl={thumbnailUrl}
+            setThumbnailUrl={setThumbnailUrl}
+            galleryUrls={galleryUrls}
+            setGalleryUrls={setGalleryUrls}
+            cropperImage={cropperImage}
+            cropperOpen={cropperOpen}
+            setCropperOpen={setCropperOpen}
+            cropperAspect={cropperAspect}
+            cropperTarget={cropperTarget}
+            handleImageFileSelect={handleImageFileSelect}
+            handleCropComplete={handleCropComplete}
+            handleUrlCrop={handleUrlCrop}
+            videoGroups={videoGroups}
+            setVideoGroups={setVideoGroups}
+            fetchingVideoKey={fetchingVideoKey}
+            onFetchVideoMetadata={onFetchVideoMetadata}
+            uploadTitleBase={buildUploadTitle(name)}
+          />
 
-      <ModFormFiles
-        modId={modId}
-        version={version}
-        setVersion={setVersion}
-        fileSize={fileSize}
-        setFileSize={setFileSize}
-        fileFormat={fileFormat}
-        setFileFormat={setFileFormat}
-        releaseDate={releaseDate}
-        setReleaseDate={setReleaseDate}
-        isEdit={isEdit}
-        files={files}
-        setFiles={setFiles}
-        addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
-      />
+          <ModFormFiles
+            modId={modId}
+            version={version}
+            setVersion={setVersion}
+            fileSize={fileSize}
+            setFileSize={setFileSize}
+            fileFormat={fileFormat}
+            setFileFormat={setFileFormat}
+            releaseDate={releaseDate}
+            setReleaseDate={setReleaseDate}
+            isEdit={isEdit}
+            files={files}
+            setFiles={setFiles}
+            addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
+          />
 
-      <ModFormSettings
-        seriesId={seriesId}
-        setSeriesId={setSeriesId}
-        seriesList={seriesList}
-        teamId={teamId}
-        setTeamId={setTeamId}
-        teamsList={teamsList}
-        categoryId={categoryId}
-        setCategoryId={setCategoryId}
-        categoriesList={categoriesList}
-        sectionId={sectionId}
-        setSectionId={setSectionId}
-        sectionsList={sectionsList}
-        teamMembers={teamMembers}
-        setTeamMembers={setTeamMembers}
-        addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
-        contactLinks={contactLinks}
-        setContactLinks={setContactLinks}
-        addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
-        customTabs={customTabs}
-        setCustomTabs={setCustomTabs}
-        addEmptyTab={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}
-        slugify={slugify}
-      />
+          <ModFormSettings
+            seriesId={seriesId}
+            setSeriesId={setSeriesId}
+            seriesList={seriesList}
+            teamId={teamId}
+            setTeamId={setTeamId}
+            teamsList={teamsList}
+            categoryId={categoryId}
+            setCategoryId={setCategoryId}
+            categoriesList={categoriesList}
+            sectionId={sectionId}
+            setSectionId={setSectionId}
+            sectionsList={sectionsList}
+            teamMembers={teamMembers}
+            setTeamMembers={setTeamMembers}
+            addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
+            contactLinks={contactLinks}
+            setContactLinks={setContactLinks}
+            addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
+            customTabs={customTabs}
+            setCustomTabs={setCustomTabs}
+            addEmptyTab={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}
+            slugify={slugify}
+          />
 
-      <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
+          <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
 
-      {/* سجل الإصدارات */}
-      {isEdit && (
-        <Section
-          title={t.versions}
-          icon={<FileArchive className="h-4 w-4" />}
-          action={
-            <Button
-              size="sm"
-              className="min-h-[44px]"
-              variant="outline"
-              onClick={() => setNewVersionDialogOpen(true)}
-            >
-              <Plus className="me-1 h-3.5 w-3.5" />
-              {t.newVersion}
-            </Button>
-          }
-        >
-          <VersionHistory versions={versionHistory} />
-        </Section>
-      )}
-
-      {/* نافذة إصدار جديد */}
-      {isEdit && (
-        <NewVersionDialog
-          modId={modId!}
-          currentVersion={version}
-          open={newVersionDialogOpen}
-          onOpenChange={setNewVersionDialogOpen}
-          onCreated={() => {
-            // إعادة تحميل سجل الإصدارات
-            fetch(`/api/creator/mods/${modId}/versions`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((data) => {
-                if (data?.data) setVersionHistory(data.data)
-              })
-              .catch(() => {})
-          }}
-        />
-      )}
-
-      {/* سجل تغييرات الحالة */}
-      {isEdit && workflowHistory.length > 0 && (
-        <Section title={t.statusHistory} icon={<Clock className="h-4 w-4" />}>
-          <WorkflowHistory history={workflowHistory} />
-        </Section>
-      )}
-
-      {/* Changelog dialog for edits */}
-      {isEdit && modId && (
-        <ChangeTypeDialog
-          open={changeTypeDialogOpen}
-          onOpenChange={setChangeTypeDialogOpen}
-          saving={savingChangelog}
-          onSave={async ({ type, title, description: desc }) => {
-            setSavingChangelog(true)
-            try {
-              const res = await fetch(`/api/creator/mods/${modId}/changelog`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, title, description: desc }),
-              })
-              if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
+          {/* سجل الإصدارات */}
+          {isEdit && (
+            <Section
+              title={t.versions}
+              icon={<FileArchive className="h-4 w-4" />}
+              action={
+                <Button
+                  size="sm"
+                  className="min-h-[44px]"
+                  variant="outline"
+                  onClick={() => setNewVersionDialogOpen(true)}
+                >
+                  <Plus className="me-1 h-3.5 w-3.5" />
+                  {t.newVersion}
+                </Button>
               }
-              toast({ title: 'تم حفظ سجل التغييرات' })
-              setChangeTypeDialogOpen(false)
-              router.push('/creator/mods')
-              router.refresh()
-            } catch (err) {
-              toast({
-                title: 'خطأ',
-                description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
-                variant: 'destructive',
-              })
-            } finally {
-              setSavingChangelog(false)
-            }
-          }}
-        />
-      )}
+            >
+              <VersionHistory versions={versionHistory} />
+            </Section>
+          )}
 
-      <ModFormActions saving={saving} isEdit={isEdit} onSave={onSave} />
+          {/* نافذة إصدار جديد */}
+          {isEdit && (
+            <NewVersionDialog
+              modId={modId!}
+              currentVersion={version}
+              open={newVersionDialogOpen}
+              onOpenChange={setNewVersionDialogOpen}
+              onCreated={() => {
+                // إعادة تحميل سجل الإصدارات
+                fetch(`/api/creator/mods/${modId}/versions`)
+                  .then((r) => (r.ok ? r.json() : null))
+                  .then((data) => {
+                    if (data?.data) setVersionHistory(data.data)
+                  })
+                  .catch(() => {})
+              }}
+            />
+          )}
 
-      {/* End step 2 wrapper */}
+          {/* سجل تغييرات الحالة */}
+          {isEdit && workflowHistory.length > 0 && (
+            <Section title={t.statusHistory} icon={<Clock className="h-4 w-4" />}>
+              <WorkflowHistory history={workflowHistory} />
+            </Section>
+          )}
+
+          {/* Changelog dialog for edits */}
+          {isEdit && modId && (
+            <ChangeTypeDialog
+              open={changeTypeDialogOpen}
+              onOpenChange={setChangeTypeDialogOpen}
+              saving={savingChangelog}
+              onSave={async ({ type, title, description: desc }) => {
+                setSavingChangelog(true)
+                try {
+                  const res = await fetch(`/api/creator/mods/${modId}/changelog`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, title, description: desc }),
+                  })
+                  if (!res.ok) {
+                    const err = await res.json()
+                    throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
+                  }
+                  toast({ title: 'تم حفظ سجل التغييرات' })
+                  setChangeTypeDialogOpen(false)
+                  router.push('/creator/mods')
+                  router.refresh()
+                } catch (err) {
+                  toast({
+                    title: 'خطأ',
+                    description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
+                    variant: 'destructive',
+                  })
+                } finally {
+                  setSavingChangelog(false)
+                }
+              }}
+            />
+          )}
+
+          <ModFormActions saving={saving} isEdit={isEdit} onSave={onSave} />
+
+          {/* End step 2 wrapper */}
         </>
       )}
 
@@ -962,16 +955,13 @@ export default function ModForm({ modId }: ModFormProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
             <AlertDialogDescription>
-              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
-              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (العنوان،
-              العنوان بالعربي، الوصف) لن تتأثر.
+              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية (معرّف اللعبة، تحديث
+              النظام، إلخ). البيانات العامة (العنوان، العنوان بالعربي، الوصف) لن تتأثر.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPlatformChange}>
-              تغيير ومسح الحقول
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmPlatformChange}>تغيير ومسح الحقول</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

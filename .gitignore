@@ -21,6 +21,7 @@ coverage/
 
 # Logs
 *.log
+*.dump
 
 # PID files — runtime values, never commit
 *.pid

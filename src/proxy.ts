@@ -251,7 +251,18 @@ export async function proxy(req: NextRequest) {
     } catch {
       // best-effort metrics — never break the request
     }
-    log.info({ status, durationMs }, 'Proxy request completed')
+    log.info(
+      {
+        method: req.method,
+        route: req.nextUrl.pathname,
+        status,
+        total_ms: durationMs,
+        proxy_ms: durationMs,
+        req: requestId.slice(0, 8),
+        requestId,
+      },
+      'Proxy request completed',
+    )
   }
 }
 
@@ -503,6 +514,64 @@ async function proxyInner(req: NextRequest) {
           requestId,
         }),
       }).catch(() => {})
+    }
+  }
+
+  // ===== Rate limit for heavy public reads (GET, max 60/min per IP) — additive, fail-open =====
+  // Phase 2 batch T1+T2: protects the DB-heavy listing/search/home endpoints.
+  // Non-heavy GET /api/* reads are intentionally NOT limited in this batch —
+  // transparent X-RateLimit-* headers for them land at route level with T3+T4
+  // (proxy pass-through cannot stamp downstream 2xx responses).
+  // Segment-boundary match so /api/mods never swallows /api/mod-requests etc.
+  if (req.method === 'GET') {
+    const HEAVY_READ_PREFIXES = [
+      '/api/mods',
+      '/api/games',
+      '/api/search',
+      '/api/home',
+      '/api/sections',
+    ]
+    const isHeavyRead =
+      HEAVY_READ_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
+      (pathname.startsWith('/api/users/') && pathname.endsWith('/full-profile'))
+    if (isHeavyRead) {
+      try {
+        const rl = await withRedisCircuit(
+          async () =>
+            await Promise.race([
+              rateLimit(req, { limit: 60, window: 60, keyPrefix: 'read:heavy' }),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+            ]),
+          async () => null,
+        )
+        if (rl && !rl.success) {
+          return proxyJson(
+            req,
+            requestId,
+            'RATE_LIMITED',
+            'طلبات كتير جداً على القراءة، استنى شوية',
+            'Too many read requests — try again later',
+            429,
+            {
+              ...rateLimitHeaders(rl),
+              'Retry-After': String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))),
+            },
+          )
+        }
+      } catch (err) {
+        logger.error(
+          { event: 'proxy_read_rate_limit_failed', requestId, err },
+          '[Middleware] heavy-read rate limit failed',
+        )
+        fetch(`${req.nextUrl.origin}/api/telemetry/edge-error`, {
+          method: 'POST',
+          body: JSON.stringify({
+            message: ((err as Error)?.message ?? 'heavy-read rate limit failed').slice(0, 500),
+            route: pathname,
+            requestId,
+          }),
+        }).catch(() => {})
+      }
     }
   }
 

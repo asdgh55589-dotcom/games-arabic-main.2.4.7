@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { setCacheControl, withETag } from '@/lib/api-cache'
 import { internalError } from '@/lib/api-response'
 import { getActiveNews } from '@/lib/news-helpers'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 import { logger } from '@/lib/logger'
 
 // GET /api/news?type=ticker|featured — الأخبار النشطة
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
     const headers = new Headers()
     setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
-    return withETag(req, { data: { news } }, { headers })
+    return withReadObserveHeaders(req, await withETag(req, { data: { news } }, { headers }))
   } catch (err) {
     logger.error('[api/news] failed:', err)
     return internalError('Failed')

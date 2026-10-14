@@ -3,10 +3,11 @@ import { internalError, ok, unauthorized, validationFail } from '@/lib/api-respo
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 import { logger } from '@/lib/logger'
 
 // GET: List requests (public) — يعرض open + accepted + completed مرتبة حسب الشعبية
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const requests = await db.modRequest.findMany({
       include: {
@@ -16,7 +17,7 @@ export async function GET() {
       orderBy: [{ interestCount: 'desc' }, { createdAt: 'desc' }],
       take: 50,
     })
-    return ok({ requests })
+    return withReadObserveHeaders(req, ok({ requests }))
   } catch (err) {
     logger.error('[mod-requests GET] failed:', err)
     return internalError('فشل جلب الطلبات')

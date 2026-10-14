@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { WORKFLOW_STATUSES, type WorkflowStatus } from '@/lib/workflow'
 import { logger } from '@/lib/logger'
 
@@ -33,6 +34,12 @@ export async function PUT(req: NextRequest) {
 
       await db.mod.updateMany({ where: { id: { in: ids } }, data: updateData })
       const affected = await db.mod.count({ where: { id: { in: ids } } })
+      // Listing cache: publish/archive flips PUBLISHED membership.
+      const games = await db.mod.findMany({
+        where: { id: { in: ids } },
+        select: { gameId: true },
+      })
+      invalidateGameModsCache(games.map((g) => g.gameId)).catch(() => {})
       // Meilisearch sync (no-op without env, fire-and-forget)
       import('@/lib/meilisearch/indexer')
         .then((m) => {
@@ -58,6 +65,12 @@ export async function PUT(req: NextRequest) {
 
     // Count actually affected records
     const affected = await db.mod.count({ where: { id: { in: ids } } })
+    // Listing cache: featured/trending/latest flags render on cards.
+    const games = await db.mod.findMany({
+      where: { id: { in: ids } },
+      select: { gameId: true },
+    })
+    invalidateGameModsCache(games.map((g) => g.gameId)).catch(() => {})
     return ok({ success: true, updated: affected })
   } catch (err) {
     logger.error('[admin/mods/bulk PUT] failed:', err)
@@ -82,7 +95,12 @@ export async function DELETE(req: NextRequest) {
 
     // Count before deleting
     const toDelete = await db.mod.count({ where: { id: { in: ids } } })
+    const games = await db.mod.findMany({
+      where: { id: { in: ids } },
+      select: { gameId: true },
+    })
     await db.mod.deleteMany({ where: { id: { in: ids } } })
+    invalidateGameModsCache(games.map((g) => g.gameId)).catch(() => {})
 
     return ok({ success: true, deleted: toDelete })
   } catch (err) {

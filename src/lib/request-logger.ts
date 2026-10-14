@@ -69,7 +69,20 @@ export function withRequestLogger<TContext = unknown>(
       } catch {
         // best-effort metrics — never break the request
       }
-      log.info({ status, durationMs }, 'Request completed')
+      const [method, ...pathParts] = route.split(' ')
+      const pathname = pathParts.join(' ') || routeName
+      log.info(
+        {
+          method,
+          route: pathname,
+          status,
+          total_ms: durationMs,
+          app_ms: durationMs,
+          req: requestId.slice(0, 8),
+          requestId,
+        },
+        'Request completed',
+      )
     }
   }
 }

@@ -4,6 +4,7 @@ import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/ap
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { logger } from '@/lib/logger'
 import { notifyWorkflowChange } from '@/lib/mod-notifications'
 import { canApproveMods } from '@/lib/permissions'
@@ -108,6 +109,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       return updated
     })
+
+    // Listing cache: any status transition may add/remove the mod from the
+    // public PUBLISHED listing → bump its game's generation (best-effort).
+    invalidateGameModsCache(updatedMod.gameId).catch(() => {})
 
     // تسجيل في AuditLog (B2)
     try {

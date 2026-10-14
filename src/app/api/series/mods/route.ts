@@ -3,6 +3,7 @@ import { notFound, okPaginated, validationFail } from '@/lib/api-response'
 import { parsePagination, pickSort, serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 import { modCardSelect } from '@/lib/prisma-selects'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 const SORTS = ['downloads', 'endorsements', 'newest', 'updated', 'views'] as const
 
@@ -60,18 +61,21 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  return okPaginated(
-    serialize(mods),
-    {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit) || 1,
-    },
-    {
-      headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+  return withReadObserveHeaders(
+    req,
+    okPaginated(
+      serialize(mods),
+      {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
       },
-    },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        },
+      },
+    ),
   )
 }
