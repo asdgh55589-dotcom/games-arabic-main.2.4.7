@@ -1063,7 +1063,7 @@ export function ModDetailPage() {
                   </TabsList>
 
                   <TabsContent value="description" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading
                         icon={<FileText className="h-5 w-5" />}
                         title="عن هذا التعريب"
@@ -1079,7 +1079,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="quality" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <div className="flex items-start justify-between gap-2">
                         <SectionHeading icon={<Star className="h-5 w-5" />} title="جودة التعريب" />
                         <span
@@ -1152,7 +1152,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="changelog" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading icon={<Clock className="h-5 w-5" />} title="سجل التغييرات" />
                       <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -1212,7 +1212,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="install" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading icon={<Shield className="h-5 w-5" />} title="طريقة التركيب" />
                       {(mod as any).installGuide && (mod as any).installGuide.trim() !== '' ? (
                         <MarkdownRenderer content={(mod as any).installGuide} />
@@ -1244,7 +1244,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="translationTeam" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModTranslationTeam
                         teamMembers={mod.teamMembers || []}
                         contactLinks={mod.contactLinks || []}
@@ -1269,7 +1269,7 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="images" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModGallery
                         images={gallery.length > 0 ? gallery : [mod.imageUrl]}
                         modName={mod.name}
@@ -1278,19 +1278,19 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="videos" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModVideos videoGroups={mod.videoGroups || []} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="files" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="comments" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <CommentSectionBeacon slug={mod.slug} />
                       <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
                     </Card>
@@ -1303,7 +1303,7 @@ export function ModDetailPage() {
                       className="mt-0"
                       dir="rtl"
                     >
-                      <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                      <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                         <SectionHeading icon={<Layers className="h-5 w-5" />} title={tab.name} />
                         <MarkdownRenderer content={tab.content} />
                       </Card>

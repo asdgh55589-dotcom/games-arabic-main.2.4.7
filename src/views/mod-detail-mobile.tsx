@@ -1065,7 +1065,7 @@ function CollapsibleCard({
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </span>
       </button>
-      {open && <div className="border-t border-border/60 p-3">{children}</div>}
+      {open && <div className="border-t border-border/60 p-3 min-h-[150px]">{children}</div>}
     </Card>
   )
 }
