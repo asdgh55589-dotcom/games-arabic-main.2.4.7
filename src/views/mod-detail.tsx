@@ -1295,7 +1295,14 @@ export function ModDetailPage() {
           ) : null}
         </div>
       </div>
-      {mod && <ModDetailMobile mod={mod} />}
+      {mod && (
+        <ModDetailMobile
+          mod={mod}
+          relatedData={relatedData ?? null}
+          relatedLoading={relatedLoading}
+          neighborsData={neighborsData ?? null}
+        />
+      )}
     </>
   )
 }

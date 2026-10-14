@@ -100,7 +100,25 @@ const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2; color: string 
   minAndroid: { Icon: Smartphone, color: 'text-green-500' },
 }
 
-export function ModDetailMobile({ mod }: { mod: ModDetail }) {
+interface NeighborLink {
+  slug: string
+  name: string
+  headline?: string | null
+}
+
+export function ModDetailMobile({
+  mod,
+  relatedData: relatedDataProp,
+  relatedLoading: relatedLoadingProp,
+  neighborsData: neighborsDataProp,
+}: {
+  mod: ModDetail
+  relatedData?: PaginatedModsResponse | null
+  relatedLoading?: boolean
+  neighborsData?: {
+    data: { previous: NeighborLink | null; next: NeighborLink | null }
+  } | null
+}) {
   const router = useRouter()
   const { toast } = useToast()
   const gallery = parseGalleryUrls(mod.galleryUrls)
@@ -225,25 +243,28 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
     if (!mod?.game?.slug) return null
     return `/api/games/${mod.game.slug}/mods?sort=downloads&limit=6`
   }, [mod?.game?.slug])
-  const { data: relatedData, loading: relatedLoading } = useFetch<PaginatedModsResponse>(
-    relatedUrl,
-    [relatedUrl],
-  )
+  // Dedupe guard: when embedded in ModDetailPage the parent already fetches the
+  // same URL — reuse its result instead of firing a second request.
+  // (Standalone usage still fetches: props are simply left undefined.)
+  const hasRelatedProp = relatedDataProp !== undefined
+  const { data: relatedDataFetched, loading: relatedLoadingFetched } =
+    useFetch<PaginatedModsResponse>(hasRelatedProp ? null : relatedUrl, [
+      hasRelatedProp ? null : relatedUrl,
+    ])
+  const relatedData = hasRelatedProp ? relatedDataProp : relatedDataFetched
+  const relatedLoading = relatedLoadingProp ?? relatedLoadingFetched
   const filteredRelated = relatedData?.data?.filter((m) => m.id !== mod.id).slice(0, 4) || []
 
   // Neighbor navigation via the lightweight endpoint (2 rows, circular).
-  interface NeighborLink {
-    slug: string
-    name: string
-    headline?: string | null
-  }
   const neighborsUrl = useMemo(() => {
     if (!mod?.slug) return null
     return `/api/mods/${mod.slug}/neighbors`
   }, [mod?.slug])
-  const { data: neighborsData } = useFetch<{
+  const hasNeighborsProp = neighborsDataProp !== undefined
+  const { data: neighborsDataFetched } = useFetch<{
     data: { previous: NeighborLink | null; next: NeighborLink | null }
-  }>(neighborsUrl, [neighborsUrl])
+  }>(hasNeighborsProp ? null : neighborsUrl, [hasNeighborsProp ? null : neighborsUrl])
+  const neighborsData = hasNeighborsProp ? neighborsDataProp : neighborsDataFetched
   const prevMod = neighborsData?.data?.previous ?? null
   const nextMod = neighborsData?.data?.next ?? null
 
@@ -321,7 +342,15 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                   alt={mod.name}
                   className="h-full w-full scale-[1.06] object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = FALLBACK_GAME_IMAGE
+                    const target = e.currentTarget as HTMLImageElement & {
+                      dataset: DOMStringMap
+                    }
+                    if (!target.dataset.fallback) {
+                      target.dataset.fallback = '1'
+                      target.src = FALLBACK_GAME_IMAGE
+                    } else {
+                      target.style.display = 'none'
+                    }
                   }}
                 />
                 {/* ضباب أزرق 60% فوق البنر */}
@@ -388,7 +417,15 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 className="h-full w-full object-cover"
                 loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.src = FALLBACK_GAME_IMAGE
+                  const target = e.currentTarget as HTMLImageElement & {
+                    dataset: DOMStringMap
+                  }
+                  if (!target.dataset.fallback) {
+                    target.dataset.fallback = '1'
+                    target.src = FALLBACK_GAME_IMAGE
+                  } else {
+                    target.style.display = 'none'
+                  }
                 }}
               />
             ) : (
