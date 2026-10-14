@@ -1410,29 +1410,29 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
 
 /** عنصر بيانات — تسمية / قيمة بخلفية رمادية (نفس تصميم حقول المرجع) */
 
-/** Icons per platform-title key — monochrome white (no colors). */
+/** Icons per platform-title key (owner-approved title lists). */
 const TITLE_ICONS: Record<string, React.ReactNode> = {
-  title: <Gamepad2 className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  titleAr: <Languages className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  method: <User className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  type: <Shield className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  content: <Globe className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  releaseDate: <Calendar className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  size: <FileArchive className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  gameId: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  cusa: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  ppsa: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  titleId: <Hash className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  mediaId: <HardDrive className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  format: <FolderOpen className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  firmware: <Cpu className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  gameUpdate: <Tag className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  device: <Smartphone className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  compat: <CheckCircle className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  installType: <FileText className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  cpu: <Cpu className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  gameVersion: <Tag className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
-  minAndroid: <Smartphone className="h-4 w-4 shrink-0 text-zinc-800 dark:text-white" />,
+  title: <Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />,
+  titleAr: <Languages className="h-4 w-4 text-emerald-500 shrink-0" />,
+  method: <User className="h-4 w-4 text-violet-500 shrink-0" />,
+  type: <Shield className="h-4 w-4 text-purple-500 shrink-0" />,
+  content: <Globe className="h-4 w-4 text-sky-500 shrink-0" />,
+  releaseDate: <Calendar className="h-4 w-4 text-cyan-500 shrink-0" />,
+  size: <FileArchive className="h-4 w-4 text-rose-500 shrink-0" />,
+  gameId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  cusa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  ppsa: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  titleId: <Hash className="h-4 w-4 text-amber-500 shrink-0" />,
+  mediaId: <HardDrive className="h-4 w-4 text-slate-500 shrink-0" />,
+  format: <FolderOpen className="h-4 w-4 text-orange-500 shrink-0" />,
+  firmware: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameUpdate: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  device: <Smartphone className="h-4 w-4 text-teal-500 shrink-0" />,
+  compat: <CheckCircle className="h-4 w-4 text-teal-500 shrink-0" />,
+  installType: <FileText className="h-4 w-4 text-sky-500 shrink-0" />,
+  cpu: <Cpu className="h-4 w-4 text-indigo-500 shrink-0" />,
+  gameVersion: <Tag className="h-4 w-4 text-amber-500 shrink-0" />,
+  minAndroid: <Smartphone className="h-4 w-4 text-green-500 shrink-0" />,
 }
 
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

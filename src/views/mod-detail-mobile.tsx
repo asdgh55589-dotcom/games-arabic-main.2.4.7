@@ -77,29 +77,29 @@ interface PaginatedModsResponse {
   pagination: { page: number; limit: number; total: number; totalPages: number }
 }
 
-/** Icons per platform-title key — monochrome white (no colors). */
-const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2 }> = {
-  title: { Icon: Gamepad2 },
-  titleAr: { Icon: Languages },
-  method: { Icon: User },
-  type: { Icon: Shield },
-  content: { Icon: Globe },
-  releaseDate: { Icon: Calendar },
-  size: { Icon: FileArchive },
-  gameId: { Icon: Hash },
-  cusa: { Icon: Hash },
-  ppsa: { Icon: Hash },
-  titleId: { Icon: Hash },
-  mediaId: { Icon: HardDrive },
-  format: { Icon: FolderOpen },
-  firmware: { Icon: Cpu },
-  gameUpdate: { Icon: Tag },
-  device: { Icon: Smartphone },
-  compat: { Icon: CheckCircle },
-  installType: { Icon: FileText },
-  cpu: { Icon: Cpu },
-  gameVersion: { Icon: Tag },
-  minAndroid: { Icon: Smartphone },
+/** Icons per platform-title key — original colors. */
+const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2; color: string }> = {
+  title: { Icon: Gamepad2, color: 'text-blue-500' },
+  titleAr: { Icon: Languages, color: 'text-emerald-500' },
+  method: { Icon: User, color: 'text-violet-500' },
+  type: { Icon: Shield, color: 'text-purple-500' },
+  content: { Icon: Globe, color: 'text-sky-500' },
+  releaseDate: { Icon: Calendar, color: 'text-cyan-500' },
+  size: { Icon: FileArchive, color: 'text-rose-500' },
+  gameId: { Icon: Hash, color: 'text-amber-500' },
+  cusa: { Icon: Hash, color: 'text-amber-500' },
+  ppsa: { Icon: Hash, color: 'text-amber-500' },
+  titleId: { Icon: Hash, color: 'text-amber-500' },
+  mediaId: { Icon: HardDrive, color: 'text-slate-500' },
+  format: { Icon: FolderOpen, color: 'text-orange-500' },
+  firmware: { Icon: Cpu, color: 'text-indigo-500' },
+  gameUpdate: { Icon: Tag, color: 'text-amber-500' },
+  device: { Icon: Smartphone, color: 'text-teal-500' },
+  compat: { Icon: CheckCircle, color: 'text-teal-500' },
+  installType: { Icon: FileText, color: 'text-sky-500' },
+  cpu: { Icon: Cpu, color: 'text-indigo-500' },
+  gameVersion: { Icon: Tag, color: 'text-amber-500' },
+  minAndroid: { Icon: Smartphone, color: 'text-green-500' },
 }
 
 export function ModDetailMobile({ mod }: { mod: ModDetail }) {
@@ -552,7 +552,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] dark:bg-gray-800"
                 title={`${item.label}: ${item.value}`}
               >
-                <Icon className="h-3 w-3 shrink-0 text-zinc-800 dark:text-white" />
+                <Icon className={`h-3 w-3 shrink-0 ${meta.color}`} />
                 <span className="shrink-0 font-normal text-muted-foreground">{item.label}</span>
                 <span className="shrink-0 text-muted-foreground/50">/</span>
                 <span className="min-w-0 truncate font-bold text-foreground">{item.value}</span>
