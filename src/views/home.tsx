@@ -17,6 +17,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
 import { reportError } from '@/lib/error-reporting'
+import { HOME_TEAMS_STALE_MS, normalizeHomeData } from '@/lib/home-data'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'
 import { HomeMobile } from './home-mobile'
@@ -136,11 +137,31 @@ const FALLBACK_SECTIONS: SectionItem[] = [
 
 export function HomePage() {
   useDocumentTitle(null)
-  const { data, loading, showSkeleton } = useFetch<{ data: HomeData }>('/api/home')
+  const {
+    data,
+    loading,
+    error: homeError,
+    showSkeleton,
+    refetch: refetchHome,
+  } = useFetch<{ data: HomeData }>('/api/home')
   const [sections, setSections] = useState<SectionItem[]>(FALLBACK_SECTIONS)
+  const [sectionsLoading, setSectionsLoading] = useState(true)
 
-  const homeData = data?.data
+  // Fix 1 (LEDA-14): coerce nullable/malformed payloads to safe defaults —
+  // downstream `.length` / `.slice` / `.map` calls can never crash.
+  const homeData = normalizeHomeData(data?.data)
   const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // Fix 2 (LEDA-14): surface fetch failures instead of failing silently.
+  useEffect(() => {
+    if (homeError) {
+      reportError(new Error(homeError), { route: 'home', action: 'load-home' })
+    }
+  }, [homeError])
+
+  // Fix 4 (LEDA-14): the critical /api/home request goes first; teams and
+  // sections wait until it settles so one slow query cannot starve the rest.
+  const homeSettled = !loading
 
   // Sticky متأخر: يقيس طول الشريط الفعلي ويظبط نقطة الوقفة تلقائياً —
   // لو الشريط أطول من الشاشة يقف عند آخر قسم، ولو أقصر يقف تحت النافبار.
@@ -161,12 +182,30 @@ export function HomePage() {
     }
   }, [])
 
-  const { data: teamsData, loading: teamsLoading } = useFetch<{ data: TeamSummary[] }>('/api/teams')
+  // Fix 5 (LEDA-14): teams are semi-static — serve a 5-min SWR cache entry
+  // instantly and revalidate in the background (see use-fetch staleMs).
+  const {
+    data: teamsData,
+    loading: teamsLoading,
+    error: teamsError,
+    refetch: refetchTeams,
+  } = useFetch<{ data: TeamSummary[] }>(homeSettled ? '/api/teams' : null, [], {
+    staleMs: HOME_TEAMS_STALE_MS,
+  })
+  const teams = Array.isArray(teamsData?.data) ? teamsData.data : undefined
 
   useEffect(() => {
+    // Fix 3 (LEDA-14): sections fetch now tracks loading state with
+    // cancellation, and waits for the critical home payload first (Fix 4).
+    // FALLBACK_SECTIONS keep rendering meanwhile, so this only drives
+    // aria-busy + the mobile loading state — never a layout flash.
+    if (!homeSettled) return
+    let cancelled = false
+    setSectionsLoading(true)
     fetch('/api/sections')
       .then((r) => r.json())
       .then((json) => {
+        if (cancelled) return
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           setSections(json.data)
         }
@@ -175,13 +214,41 @@ export function HomePage() {
         // fallback sections stay visible — log the failure
         reportError(err, { route: 'home', action: 'load-sections' })
       })
-  }, [])
+      .finally(() => {
+        if (!cancelled) setSectionsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [homeSettled])
 
   return (
     <>
       <div className="hidden lg:block">
         <div dir="rtl" className="overflow-x-clip">
           <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
+          {/* Fix 2 (LEDA-14): failures are announced with a retry action
+              instead of rendering an endless/empty page silently. */}
+          {homeError && !loading ? (
+            <div
+              role="alert"
+              className="mx-auto flex max-w-[1840px] flex-wrap items-center justify-center gap-3 px-4 pt-4 text-center"
+            >
+              <p className="text-sm font-bold text-destructive">
+                {homeData
+                  ? 'تعذر تحديث المحتوى — قد تكون البيانات المعروضة قديمة'
+                  : 'تعذر تحميل محتوى الصفحة — تحقق من الاتصال وحاول مجدداً'}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchHome()}
+                className="min-h-[44px] font-bold"
+              >
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : null}
           {/* ===== Hero Slider — شريط متحرك يعرض أحدث التعريبات ===== */}
           {showSkeleton ? (
             <div className="h-[clamp(360px,52vh,580px)] w-full animate-pulse bg-secondary" />
@@ -233,7 +300,10 @@ export function HomePage() {
             </div>
 
             {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
-            <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+            <div
+              className="order-1 min-w-0 flex-1 space-y-8 lg:order-2"
+              aria-busy={sectionsLoading}
+            >
               {/* آخر الأخبار — قبل أقسام المنصات */}
               {!loading && (
                 <ErrorBoundary label="featured news" fallback={null}>
@@ -352,15 +422,15 @@ export function HomePage() {
                   href="/teams"
                 />
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-                  {teamsLoading ? (
+                  {teamsLoading && !teams?.length ? (
                     Array.from({ length: 4 }).map((_, i) => (
                       <div
                         key={i}
                         className="h-24 animate-pulse bg-secondary border-[3px] border-border sm:h-28"
                       />
                     ))
-                  ) : teamsData?.data?.length ? (
-                    teamsData.data.slice(0, 6).map((t) => (
+                  ) : teams?.length ? (
+                    teams.slice(0, 6).map((t) => (
                       <ErrorBoundary key={t.id} label="team card" fallback={null}>
                         <Link
                           href={`/teams/${t.slug}`}
@@ -386,6 +456,18 @@ export function HomePage() {
                         </Link>
                       </ErrorBoundary>
                     ))
+                  ) : teamsError ? (
+                    <div role="alert" className="col-span-full space-y-2 py-8 text-center text-sm">
+                      <p className="text-muted-foreground">تعذر تحميل فرق التعريب</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchTeams()}
+                        className="min-h-[44px] font-bold"
+                      >
+                        إعادة المحاولة
+                      </Button>
+                    </div>
                   ) : (
                     <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
                       لا توجد فرق تعريب بعد
@@ -398,11 +480,13 @@ export function HomePage() {
         </div>
       </div>
       <HomeMobile
-        homeData={homeData}
-        teams={teamsData?.data}
+        homeData={homeData ?? undefined}
+        teams={teams}
         sections={sections}
         loading={loading}
         teamsLoading={teamsLoading}
+        teamsError={teamsError}
+        sectionsLoading={sectionsLoading}
       />
     </>
   )

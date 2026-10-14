@@ -36,16 +36,29 @@ interface TeamSummary {
 }
 
 interface HomeMobileProps {
-  homeData?: HomeData
+  homeData?: Pick<
+    HomeData,
+    'latestMods' | 'trendingMods' | 'topEndorsed' | 'topSeries' | 'modsByPlatform'
+  >
   teams?: TeamSummary[]
   sections: SectionItem[]
   loading: boolean
   teamsLoading?: boolean
+  teamsError?: string | null
+  sectionsLoading?: boolean
 }
 
-export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }: HomeMobileProps) {
+export function HomeMobile({
+  homeData,
+  teams,
+  sections,
+  loading,
+  teamsLoading,
+  teamsError,
+  sectionsLoading,
+}: HomeMobileProps) {
   return (
-    <div className="lg:hidden" dir="rtl">
+    <div className="lg:hidden" dir="rtl" aria-busy={sectionsLoading}>
       <h1 className="sr-only">Arabic Games — تعريبات الألعاب</h1>
 
       {/* 1. HeroSlider (compact) */}
@@ -214,7 +227,7 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-2">
-          {teamsLoading ? (
+          {teamsLoading && !teams?.length ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-24 animate-pulse bg-secondary border-[2px] border-border" />
             ))
@@ -250,6 +263,10 @@ export function HomeMobile({ homeData, teams, sections, loading, teamsLoading }:
               </Link>
               </ErrorBoundary>
             ))
+          ) : teamsError ? (
+            <div role="alert" className="col-span-full py-6 text-center text-xs">
+              <p className="text-muted-foreground">تعذر تحميل فرق التعريب</p>
+            </div>
           ) : (
             <div className="col-span-full py-6 text-center text-xs text-muted-foreground">
               لا توجد فرق تعريب بعد
