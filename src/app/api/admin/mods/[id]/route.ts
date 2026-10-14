@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, canEditMod, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { parseIaUrl } from '@/lib/ia'
 import { calculateModQualityScore } from '@/lib/mod-quality'
 import { syncSeriesCounts } from '@/lib/series-helpers'
@@ -91,7 +92,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // التأكد إن التعريب موجود
     const existing = await db.mod.findUnique({
       where: { id },
-      select: { authorId: true, seriesId: true, teamId: true, slug: true, name: true },
+      select: {
+        authorId: true,
+        seriesId: true,
+        teamId: true,
+        slug: true,
+        name: true,
+        gameId: true,
+      },
     })
     if (!existing) {
       return notFound()
@@ -454,6 +462,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (newTeamId) await syncTeamCounts(newTeamId).catch(() => {})
     }
 
+    // Listing cache: edits may change PUBLISHED card fields (best-effort).
+    if (existing.gameId) invalidateGameModsCache(existing.gameId).catch(() => {})
+
     // ISR: revalidate public pages after mod update
     try {
       revalidatePath('/')
@@ -501,13 +512,13 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     const existing = await db.mod.findUnique({
       where: { id },
-      select: { id: true, seriesId: true, teamId: true },
+      select: { id: true, seriesId: true, teamId: true, gameId: true },
     })
     if (!existing) {
       return notFound()
     }
 
-    const { seriesId, teamId } = existing
+    const { seriesId, teamId, gameId } = existing
 
     // cascading deletes هتمسح كل الـ relations تلقائياً
     await db.mod.delete({ where: { id } })
@@ -515,6 +526,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     // مزامنة عدّادات السلسلة/الفريق بعد الحذف
     if (seriesId) await syncSeriesCounts(seriesId).catch(() => {})
     if (teamId) await syncTeamCounts(teamId).catch(() => {})
+    // Listing cache: the deleted mod may have been PUBLISHED (best-effort).
+    if (gameId) invalidateGameModsCache(gameId).catch(() => {})
 
     return ok({ success: true })
   } catch (err) {

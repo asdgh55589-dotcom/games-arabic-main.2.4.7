@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 // GET /api/mod-requests/search?q=keyword — بحث سريع عن طلبات مطابقة (public)
 export async function GET(req: NextRequest) {
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const q = searchParams.get('q')?.trim() || ''
 
-    if (q.length < 2) return ok({ requests: [] })
+    if (q.length < 2) return withReadObserveHeaders(req, ok({ requests: [] }))
 
     const requests = await db.modRequest.findMany({
       where: {
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
       take: 5,
     })
 
-    return ok({ requests })
+    return withReadObserveHeaders(req, ok({ requests }))
   } catch (err) {
     logger.error('[mod-requests/search GET] failed:', err)
     return internalError('فشل البحث')

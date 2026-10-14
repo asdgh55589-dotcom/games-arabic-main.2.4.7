@@ -3,6 +3,7 @@ import { internalError, notFound, ok } from '@/lib/api-response'
 import { recordTeamView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 // GET /api/teams/[slug] — تفاصيل فريق
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -65,28 +66,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       roleBreakdown[m.role] = (roleBreakdown[m.role] || 0) + 1
     }
 
-    return ok(
-      {
-        team: {
-          ...team,
-          stats: {
-            totalDownloads,
-            totalEndorsements,
-            totalViews,
-            profileViews: team.views, // مشاهدات صفحة الفريق نفسها
-            memberCount: team._count.memberships,
-            modCount: team._count.mods,
-            followersCount: team._count.follows,
-            platforms,
-            roleBreakdown,
+    return withReadObserveHeaders(
+      req,
+      ok(
+        {
+          team: {
+            ...team,
+            stats: {
+              totalDownloads,
+              totalEndorsements,
+              totalViews,
+              profileViews: team.views, // مشاهدات صفحة الفريق نفسها
+              memberCount: team._count.memberships,
+              modCount: team._count.mods,
+              followersCount: team._count.follows,
+              platforms,
+              roleBreakdown,
+            },
           },
         },
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        {
+          headers: {
+            'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+          },
         },
-      },
+      ),
     )
   } catch (err) {
     logger.error('[api/teams/[slug]] failed:', err)

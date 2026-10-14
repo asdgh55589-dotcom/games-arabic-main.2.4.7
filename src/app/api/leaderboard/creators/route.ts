@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
-export async function GET() {
+export async function GET(req?: NextRequest) {
   try {
     // 2 queries total (was 1 + 2×N per-creator fan-out, up to 41 on pool=5):
     // 1) aggregate published mods per author, 2) fetch the top authors' cards.
@@ -15,7 +16,10 @@ export async function GET() {
       take: 200,
     })
     const byAuthor = new Map(
-      groups.map((g) => [g.authorId, { publishedCount: g._count.id, totalDownloads: g._sum.downloads || 0 }]),
+      groups.map((g) => [
+        g.authorId,
+        { publishedCount: g._count.id, totalDownloads: g._sum.downloads || 0 },
+      ]),
     )
     const creators = await db.user.findMany({
       where: { id: { in: [...byAuthor.keys()] }, role: 'creator' },
@@ -43,10 +47,13 @@ export async function GET() {
       })
       .slice(0, 10)
 
-    return NextResponse.json(
+    // req is optional so unit tests can call GET() directly — real traffic
+    // always carries req and gets transparent X-RateLimit-* headers.
+    const res = NextResponse.json(
       { data: ranked },
       { headers: { 'Cache-Control': 'public, max-age=60' } },
     )
+    return req ? withReadObserveHeaders(req, res) : res
   } catch (err) {
     logger.error('[leaderboard/creators] failed:', err)
     return NextResponse.json({ error: 'failed' }, { status: 500 })

@@ -4,13 +4,14 @@ import { db } from '@/lib/db'
 import { calculateUserTier } from '@/lib/tier-engine'
 import { getTierConfig } from '@/lib/tiers'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 interface RouteParams {
   params: Promise<{ username: string }>
 }
 
 // GET /api/users/[username]/level — بيانات المستوى كما في صفحة /level السابقة
-export async function GET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
     const user = await db.user.findFirst({
@@ -28,16 +29,19 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const tierResult = await calculateUserTier(user.id)
     const currentConfig = getTierConfig(user.role, user.tier)
 
-    return ok({
-      user: {
-        username: user.username,
-        role: user.role,
-        tier: user.tier,
-      },
-      currentConfig,
-      tierProgress: tierResult,
-      tierHistory: user.tierHistory,
-    })
+    return withReadObserveHeaders(
+      req,
+      ok({
+        user: {
+          username: user.username,
+          role: user.role,
+          tier: user.tier,
+        },
+        currentConfig,
+        tierProgress: tierResult,
+        tierHistory: user.tierHistory,
+      }),
+    )
   } catch (err) {
     logger.error('[level GET] failed:', err)
     return internalError('فشل جلب بيانات المستوى')

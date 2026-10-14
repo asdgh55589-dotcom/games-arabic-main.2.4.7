@@ -3,6 +3,7 @@ import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -164,9 +165,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       a.month.localeCompare(b.month),
     )
 
-    return ok(
-      { comments, mods, modEdits, endorsements, monthlyStats },
-      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } },
+    return withReadObserveHeaders(
+      req,
+      ok(
+        { comments, mods, modEdits, endorsements, monthlyStats },
+        { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } },
+      ),
     )
   } catch (err) {
     logger.error('[activity GET] failed:', err)

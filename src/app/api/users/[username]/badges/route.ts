@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -16,7 +17,7 @@ interface Badge {
 }
 
 // GET /api/users/[username]/badges — شارات المستخدم
-export async function GET(_req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { username } = await params
 
@@ -96,9 +97,12 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       },
     ]
 
-    return ok(
-      { badges },
-      { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } },
+    return withReadObserveHeaders(
+      req,
+      ok(
+        { badges },
+        { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120' } },
+      ),
     )
   } catch (err) {
     logger.error('[badges GET] failed:', err)

@@ -3,6 +3,7 @@ import { setCacheControl, withETag } from '@/lib/api-cache'
 import { internalError } from '@/lib/api-response'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withReadObserveHeaders } from '@/lib/read-observe'
 
 // GET /api/series — قائمة بكل السلاسل (من Series model الجديد)
 export async function GET(req: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
     // Phase 3: ETag + Vary (TTL preserved: 300s fresh, 600s stale)
     const headers = new Headers()
     setCacheControl(headers, { type: 'public', maxAge: 300, swr: 600 })
-    return withETag(req, { data: series }, { headers })
+    return withReadObserveHeaders(req, await withETag(req, { data: series }, { headers }))
   } catch (err) {
     logger.error('[api/series] failed:', err)
     return internalError('Failed to fetch series')
