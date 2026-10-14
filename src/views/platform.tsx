@@ -36,7 +36,18 @@ export function PlatformPage() {
 
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('downloads')
+  const [official, setOfficial] = useState('all')
   const [page, setPage] = useState(1)
+
+  // Deep link: ?official=official|unofficial (e.g. from mod official badge) — client-only read.
+  useEffect(() => {
+    try {
+      const v = new URLSearchParams(window.location.search).get('official')
+      if (v === 'official' || v === 'unofficial') setOfficial(v)
+    } catch {
+      // best-effort: تجاهل قراءة الرابط
+    }
+  }, [])
 
   const debouncedSearch = useDebounced(search, 250)
 
@@ -47,15 +58,16 @@ export function PlatformPage() {
     params.set('page', String(page))
     params.set('limit', '24')
     if (debouncedSearch) params.set('search', debouncedSearch)
+    if (official !== 'all') params.set('translationType', official)
     return `/api/mods?${params.toString()}`
-  }, [platform, sort, page, debouncedSearch])
+  }, [platform, sort, page, debouncedSearch, official])
 
   const { data, loading } = useFetch<{
     data: ModSummary[]
     pagination: { page: number; limit: number; total: number; totalPages: number }
   }>(url, [url])
 
-  const filterKey = `${platform}:${debouncedSearch}:${sort}`
+  const filterKey = `${platform}:${debouncedSearch}:${sort}:${official}`
   const [lastFilterKey, setLastFilterKey] = useState(filterKey)
   if (filterKey !== lastFilterKey) {
     setLastFilterKey(filterKey)
@@ -91,6 +103,17 @@ export function PlatformPage() {
             <SelectItem value="newest">الأحدث</SelectItem>
             <SelectItem value="updated">المحدّثة حديثاً</SelectItem>
             <SelectItem value="views">الأكثر مشاهدة</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={official} onValueChange={setOfficial}>
+          <SelectTrigger className="h-10 w-[160px]" aria-label="رسمي / غير رسمي">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="official">تعريب رسمي</SelectItem>
+            <SelectItem value="unofficial">تعريب غير رسمي</SelectItem>
           </SelectContent>
         </Select>
       </div>

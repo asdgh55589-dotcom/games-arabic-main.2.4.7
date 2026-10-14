@@ -481,13 +481,30 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <Badge variant="outline" className="text-[11px] font-black tabular-nums">
             v{mod.version}
           </Badge>
-          {isOfficial && (
-            <Badge
-              variant="outline"
-              className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-black"
+          {isOfficial ? (
+            <Link
+              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
+              className="shrink-0"
             >
-              تعريب رسمي
-            </Badge>
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-black hover:underline cursor-pointer"
+              >
+                تعريب رسمي
+              </Badge>
+            </Link>
+          ) : (
+            <Link
+              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=unofficial`}
+              className="shrink-0"
+            >
+              <Badge
+                variant="outline"
+                className="border-muted-foreground/30 bg-muted/40 text-[11px] font-black hover:underline cursor-pointer"
+              >
+                تعريب غير رسمي
+              </Badge>
+            </Link>
           )}
           {(mod as any).sectionRelation?.name && (
             <Link href={`/platform/${(mod as any).sectionRelation.key}`} className="shrink-0">

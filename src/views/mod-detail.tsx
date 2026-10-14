@@ -671,13 +671,30 @@ export function ModDetailPage() {
                           >
                             v{mod.version}
                           </Badge>
-                          {isOfficial && (
-                            <Badge
-                              variant="outline"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap"
+                          {isOfficial ? (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
+                              className="shrink-0"
                             >
-                              تعريب رسمي
-                            </Badge>
+                              <Badge
+                                variant="outline"
+                                className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap hover:underline cursor-pointer"
+                              >
+                                تعريب رسمي
+                              </Badge>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=unofficial`}
+                              className="shrink-0"
+                            >
+                              <Badge
+                                variant="outline"
+                                className="border-muted-foreground/30 bg-muted/40 text-xs font-black shrink-0 whitespace-nowrap hover:underline cursor-pointer"
+                              >
+                                تعريب غير رسمي
+                              </Badge>
+                            </Link>
                           )}
                           {(mod as any).sectionRelation?.name && (
                             <Link
