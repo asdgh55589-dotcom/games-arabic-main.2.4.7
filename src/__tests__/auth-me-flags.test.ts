@@ -12,6 +12,11 @@ jest.mock('next/headers', () => ({
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
+  // withRequestLogger wrapper needs a request-scoped child logger (LEDA-8)
+  createRequestLogger: jest.fn(() => ({
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+  })),
+  logError: jest.fn(),
 }))
 
 const mockFindFirst = jest.fn()
@@ -24,6 +29,7 @@ jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(async () => ({ auth: { getUser: mockSbGetUser } })),
 }))
 
+import { NextRequest } from 'next/server'
 import { GET as meGET } from '@/app/api/auth/me/route'
 
 beforeEach(() => {
@@ -43,7 +49,7 @@ function row(overrides: Record<string, unknown> = {}) {
 describe('GET /api/auth/me security flags', () => {
   it('reports hasPassword + setup-complete for a fully set-up user (no hash leaked)', async () => {
     mockFindFirst.mockResolvedValue(row({ password: 'bcrypt-hash', email: 'e@m.io' }))
-    const res = await meGET()
+    const res = await meGET(new NextRequest('http://localhost/api/auth/me'), {})
     const body = (await res.json()) as { data: { user: Record<string, unknown> } }
     expect(body.data.user.hasPassword).toBe(true)
     expect(body.data.user.needsSecuritySetup).toBe(false)
@@ -52,7 +58,7 @@ describe('GET /api/auth/me security flags', () => {
 
   it('flags OAuth-only users as needing setup', async () => {
     mockFindFirst.mockResolvedValue(row({ password: null, email: 'telegram_5@telegram.local' }))
-    const res = await meGET()
+    const res = await meGET(new NextRequest('http://localhost/api/auth/me'), {})
     const body = (await res.json()) as { data: { user: Record<string, unknown> } }
     expect(body.data.user.hasPassword).toBe(false)
     expect(body.data.user.needsSecuritySetup).toBe(true)
