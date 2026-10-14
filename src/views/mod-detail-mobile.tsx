@@ -29,12 +29,10 @@ import {
   Rocket,
   Shield,
   Smartphone,
-  Star,
   Tag,
   ThumbsUp,
   User,
   Users,
-  XCircle,
   Youtube,
   Zap,
 } from 'lucide-react'
@@ -211,36 +209,10 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
   const DESIGN_PREVIEW = {
     enabled: true,
-    progress: 85,
     recommendPct: 94,
-    ratingDist: [68, 18, 8, 3, 3], // % النجوم 5..1
-    editionLabel: 'النسخة الذهبية',
-    scope: [
-      { label: 'واجهة وقوائم', done: true },
-      { label: 'الحوارات الرئيسية', done: true },
-      { label: 'النصوص الجانبية', done: true },
-      { label: 'دبلجة صوتية', done: false },
-    ],
-    gameMeta: [
-      { label: 'سنة الإصدار', value: '2023' },
-      { label: 'المطور', value: 'Capcom' },
-      { label: 'الناشر', value: 'Capcom' },
-    ],
-    requirements: 'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
   } as const
-  const progressPct =
-    (mod as any).translationProgress ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.progress : 0)
   const recommendPct =
     (mod as any).recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
-  const editionLabel =
-    (mod as any).repackLabel ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.editionLabel : null)
-  const progressStatus = progressPct >= 100 ? 'مكتمل' : progressPct >= 50 ? 'جزئي' : 'تجريبي'
-  const progressStatusBox =
-    progressPct >= 100
-      ? 'bg-emerald-500/10 text-emerald-500'
-      : progressPct >= 50
-        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-        : 'bg-sky-500/10 text-sky-500'
   // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
   const viewer = user ? { id: user.id, role: user.role } : null
   const showScheduled =
@@ -739,82 +711,6 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           ) : (
             <p className="text-xs text-muted-foreground">لا يوجد وصف متاح.</p>
           )}
-        </CollapsibleCard>
-
-        {/* جودة التعريب */}
-        <CollapsibleCard
-          id="quality"
-          title="جودة التعريب"
-          icon={<Star className="h-3.5 w-3.5" />}
-          iconBg="bg-orange-500/10 text-orange-500"
-        >
-          <div className="flex items-center gap-2">
-            <span
-              className={`ms-auto rounded px-1.5 py-px text-[10px] font-black ${progressStatusBox}`}
-            >
-              {progressStatus}
-            </span>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <div
-              className="h-2.5 flex-1 overflow-hidden rounded-none border border-border bg-muted"
-              role="progressbar"
-              aria-valuenow={progressPct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="نسبة اكتمال التعريب"
-            >
-              <div
-                className="h-full bg-gradient-to-l from-primary to-emerald-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <span className="text-[11px] font-black tabular-nums text-foreground">
-              {progressPct}%
-            </span>
-          </div>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="shrink-0 text-center">
-              <div className="text-2xl font-black tabular-nums leading-none text-foreground">
-                {recommendPct}%
-              </div>
-              <div className="mt-1 text-[9px] font-bold leading-tight text-muted-foreground">
-                يوصون
-                <br />
-                بالتعريب
-              </div>
-            </div>
-            <div className="flex-1 space-y-1">
-              {DESIGN_PREVIEW.ratingDist.map((pct, i) => (
-                <div key={5 - i} className="flex items-center gap-1.5">
-                  <span className="w-5 shrink-0 text-[9px] font-black tabular-nums text-muted-foreground">
-                    {5 - i}★
-                  </span>
-                  <div className="h-1.5 flex-1 bg-muted">
-                    <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="w-7 shrink-0 text-left text-[9px] font-bold tabular-nums text-muted-foreground">
-                    {pct}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-1.5">
-            {DESIGN_PREVIEW.scope.map((s) => (
-              <div
-                key={s.label}
-                className="flex items-center gap-1.5 rounded-none border border-border/60 px-2 py-1.5"
-              >
-                {s.done ? (
-                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                ) : (
-                  <XCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
-                )}
-                <span className="truncate text-[11px] font-bold text-foreground">{s.label}</span>
-              </div>
-            ))}
-          </div>
         </CollapsibleCard>
 
         {/* سجل التغييرات */}

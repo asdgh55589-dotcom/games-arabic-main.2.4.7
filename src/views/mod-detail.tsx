@@ -33,13 +33,11 @@ import {
   Send,
   Shield,
   Smartphone,
-  Star,
   Tag,
   ThumbsUp,
   Twitter,
   User,
   Users,
-  XCircle,
   Youtube,
   Zap,
 } from 'lucide-react'
@@ -341,36 +339,10 @@ export function ModDetailPage() {
   /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
   const DESIGN_PREVIEW = {
     enabled: true,
-    progress: 85,
     recommendPct: 94,
-    ratingDist: [68, 18, 8, 3, 3], // % النجوم 5..1
-    editionLabel: 'النسخة الذهبية',
-    scope: [
-      { label: 'واجهة وقوائم', done: true },
-      { label: 'الحوارات الرئيسية', done: true },
-      { label: 'النصوص الجانبية', done: true },
-      { label: 'دبلجة صوتية', done: false },
-    ],
-    gameMeta: [
-      { label: 'سنة الإصدار', value: '2023' },
-      { label: 'المطور', value: 'Capcom' },
-      { label: 'الناشر', value: 'Capcom' },
-    ],
-    requirements: 'يتطلب نسخة اللعبة الأصلية + مساحة 2GB حرة. لا يحتاج أي أدوات خارجية.',
   } as const
-  const progressPct =
-    (mod as any)?.translationProgress ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.progress : 0)
   const recommendPct =
     (mod as any)?.recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
-  const editionLabel =
-    (mod as any)?.repackLabel ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.editionLabel : null)
-  const progressStatus = progressPct >= 100 ? 'مكتمل' : progressPct >= 50 ? 'جزئي' : 'تجريبي'
-  const progressStatusBox =
-    progressPct >= 100
-      ? 'bg-emerald-500/10 text-emerald-500'
-      : progressPct >= 50
-        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-        : 'bg-sky-500/10 text-sky-500'
 
   const onEndorse = async () => {
     if (!mod) return
@@ -985,16 +957,6 @@ export function ModDetailPage() {
                       aria-hidden
                     />
                     <TabsTrigger
-                      value="quality"
-                      className="flex-none whitespace-nowrap rounded-lg px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer hover:bg-white/5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      جودة التعريب
-                    </TabsTrigger>
-                    <span
-                      className="mx-1 self-center h-4 w-px shrink-0 bg-muted-foreground/30"
-                      aria-hidden
-                    />
-                    <TabsTrigger
                       value="changelog"
                       className="flex-none whitespace-nowrap rounded-lg px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer hover:bg-white/5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                     >
@@ -1092,79 +1054,6 @@ export function ModDetailPage() {
                       )}
                       <Separator className="my-5 bg-border/50" />
                       <MarkdownRenderer content={mod.description} />
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="quality" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
-                      <div className="flex items-start justify-between gap-2">
-                        <SectionHeading icon={<Star className="h-5 w-5" />} title="جودة التعريب" />
-                        <span
-                          className={`mt-1 shrink-0 rounded px-2 py-0.5 text-[11px] font-black ${progressStatusBox}`}
-                        >
-                          {progressStatus}
-                        </span>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <div
-                          className="h-3 flex-1 overflow-hidden rounded-none border border-border bg-muted"
-                          role="progressbar"
-                          aria-valuenow={progressPct}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label="نسبة اكتمال التعريب"
-                        >
-                          <div
-                            className="h-full bg-gradient-to-l from-primary to-emerald-500"
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-black tabular-nums text-foreground">
-                          {progressPct}%
-                        </span>
-                      </div>
-                      <div className="mt-4 flex items-center gap-4">
-                        <div className="shrink-0 text-center">
-                          <div className="text-3xl font-black tabular-nums leading-none text-foreground">
-                            {recommendPct}%
-                          </div>
-                          <div className="mt-1 text-[10px] font-bold text-muted-foreground">
-                            يوصون بالتعريب
-                          </div>
-                        </div>
-                        <div className="flex-1 space-y-1.5">
-                          {DESIGN_PREVIEW.ratingDist.map((pct, i) => (
-                            <div key={5 - i} className="flex items-center gap-2">
-                              <span className="w-6 shrink-0 text-[10px] font-black tabular-nums text-muted-foreground">
-                                {5 - i}★
-                              </span>
-                              <div className="h-2 flex-1 bg-muted">
-                                <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="w-8 shrink-0 text-left text-[10px] font-bold tabular-nums text-muted-foreground">
-                                {pct}%
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-1.5">
-                        {DESIGN_PREVIEW.scope.map((s) => (
-                          <div
-                            key={s.label}
-                            className="flex items-center gap-2 rounded-none border border-border/60 px-2 py-1.5"
-                          >
-                            {s.done ? (
-                              <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
-                            ) : (
-                              <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-                            )}
-                            <span className="truncate text-xs font-bold text-foreground">
-                              {s.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
                     </Card>
                   </TabsContent>
 
