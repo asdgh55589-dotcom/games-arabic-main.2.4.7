@@ -197,17 +197,6 @@ export function ModDetailPage() {
   const prevMod = neighborsData?.data?.previous ?? null
   const nextMod = neighborsData?.data?.next ?? null
 
-  if (!loading && !mod) {
-    return (
-      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:py-20 text-center">
-        <h1 className="text-xl sm:text-2xl font-bold">Mod not found</h1>
-        <Button asChild className="mt-4">
-          <Link href="/">Back to Mods</Link>
-        </Button>
-      </div>
-    )
-  }
-
   const gallery = mod ? parseGalleryUrls(mod.galleryUrls) : []
   const tags = mod ? parseTags(mod.tags) : []
   const displaySummary = mod ? getDisplaySummary(mod) : ''
@@ -422,6 +411,19 @@ export function ModDetailPage() {
       left: dir === 'next' ? scrollAmount : -scrollAmount,
       behavior: 'smooth',
     })
+  }
+
+  // Not-found guard AFTER all hooks (rules-of-hooks: early return above
+  // useBookmarks/useAuth broke hook order on the missing-mod path).
+  if (!loading && !mod) {
+    return (
+      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:py-20 text-center">
+        <h1 className="text-xl sm:text-2xl font-bold">Mod not found</h1>
+        <Button asChild className="mt-4">
+          <Link href="/">Back to Mods</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
