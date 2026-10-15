@@ -643,6 +643,14 @@ export function ModDetailPage() {
                           >
                             v{mod.version}
                           </Badge>
+                          {mod.category?.name && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-bold shrink-0 whitespace-nowrap"
+                            >
+                              {mod.category.name}
+                            </Badge>
+                          )}
                           {isOfficial ? (
                             <Link
                               href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
@@ -939,7 +947,7 @@ export function ModDetailPage() {
               <div
                 dir="rtl"
                 id="mod-tabs"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-3 sm:mt-4 scroll-mt-24"
+                className="relative z-30 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-3 sm:mt-4 scroll-mt-24"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList

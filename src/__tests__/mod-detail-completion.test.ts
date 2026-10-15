@@ -132,11 +132,17 @@ describe('detail page wiring (desktop + mobile)', () => {
     expect(mobile()).toMatch(/tags|parseTags/)
   })
 
-  it('both render section (category badge intentionally removed by design)', () => {
-    // game-page-design: edition/rating/category badges removed to match reference;
-    // section link kept as the taxonomy entry point.
+  it('both render category and section', () => {
+    expect(desktop()).toContain('category')
     expect(desktop()).toContain('sectionRelation')
+    expect(mobile()).toContain('category')
     expect(mobile()).toContain('sectionRelation')
+  })
+
+  it('tabs strip sits above any overlapping hero/stats layer (clickable)', () => {
+    // Regression: a transparent overlapping layer stole tab clicks on desktop.
+    // The #mod-tabs wrapper must keep its own stacking context above neighbors.
+    expect(desktop()).toMatch(/id="mod-tabs"[\s\S]{0,200}?relative z-30|relative z-30[\s\S]{0,200}?id="mod-tabs"/)
   })
 
   it('both render version prominently and rating', () => {
