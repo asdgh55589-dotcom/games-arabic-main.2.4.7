@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
-import { REPORT_REASONS, type ReportTargetType } from '@/lib/reports/constants'
+import { REPORT_MOD_REASONS, REPORT_REASONS, type ReportTargetType } from '@/lib/reports/constants'
 import { ReportFormSchema } from '@/lib/schemas'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -44,6 +44,11 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
   const { user } = useAuth()
   const router = useRouter()
 
+  // Mod reports are malfunction reports (dead links, broken files, ...);
+  // comment/user reports keep the legacy conduct reasons.
+  const isMalfunction = targetType === 'mod'
+  const reasons = isMalfunction ? REPORT_MOD_REASONS : REPORT_REASONS
+
   const form = useForm<ReportFormInput>({
     resolver: zodResolver(ReportFormSchema),
     defaultValues: { reason: undefined as unknown as ReportFormInput['reason'], description: '' },
@@ -54,7 +59,9 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
     if (v && !user) {
       toast({
         title: 'سجّل الدخول',
-        description: 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
+        description: isMalfunction
+          ? 'يجب تسجيل الدخول للإبلاغ عن الأعطال'
+          : 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
         variant: 'destructive',
       })
       router.push('/login')
@@ -68,7 +75,9 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
     if (!user) {
       toast({
         title: 'سجّل الدخول',
-        description: 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
+        description: isMalfunction
+          ? 'يجب تسجيل الدخول للإبلاغ عن الأعطال'
+          : 'يجب تسجيل الدخول للإبلاغ عن المحتوى',
         variant: 'destructive',
       })
       router.push('/login')
@@ -149,10 +158,12 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flag className="h-5 w-5 text-destructive" />
-            الإبلاغ عن محتوى
+            {isMalfunction ? 'الإبلاغ عن عطل' : 'الإبلاغ عن محتوى'}
           </DialogTitle>
           <DialogDescription>
-            ساعدنا في الحفاظ على جودة المحتوى. جميع البلاغات تُفحص بسرية تامة.
+            {isMalfunction
+              ? 'ساعدنا نصلح العطل بسرعة. كل البلاغات تُفحص بسرية تامة.'
+              : 'ساعدنا في الحفاظ على جودة المحتوى. جميع البلاغات تُفحص بسرية تامة.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -163,15 +174,17 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>سبب البلاغ *</FormLabel>
+                  <FormLabel>{isMalfunction ? 'نوع العطل *' : 'سبب البلاغ *'}</FormLabel>
                   <FormControl>
                     <select
                       value={field.value || ''}
                       onChange={(e) => field.onChange(e.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="">اختر سبب البلاغ...</option>
-                      {Object.entries(REPORT_REASONS).map(([key, config]) => (
+                      <option value="">
+                        {isMalfunction ? 'اختر نوع العطل...' : 'اختر سبب البلاغ...'}
+                      </option>
+                      {Object.entries(reasons).map(([key, config]) => (
                         <option key={key} value={key}>
                           {config.label}
                         </option>
@@ -188,10 +201,16 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>تفاصيل إضافية (اختياري)</FormLabel>
+                  <FormLabel>
+                    {isMalfunction ? 'اشرح العطل (اختياري)' : 'تفاصيل إضافية (اختياري)'}
+                  </FormLabel>
                   <FormControl>
                     <textarea
-                      placeholder="اشرح المشكلة بالتفصيل..."
+                      placeholder={
+                        isMalfunction
+                          ? 'مثال: أي رابط لا يعمل؟ ما رسالة الخطأ التي تظهر؟'
+                          : 'اشرح المشكلة بالتفصيل...'
+                      }
                       rows={3}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
                       {...field}

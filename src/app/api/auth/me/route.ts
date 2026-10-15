@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { needsSecuritySetup } from '@/lib/onboarding'
 import { redisDel, redisGet, redisSet } from '@/lib/redis'
+import { withRequestLogger } from '@/lib/request-logger'
 import { createClient } from '@/lib/supabase/server'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
@@ -80,7 +81,7 @@ const NO_STORE = {
   headers: { 'Cache-Control': 'private, no-store, must-revalidate' },
 } as const
 
-export async function GET() {
+export const GET = withRequestLogger(async () => {
   try {
     // 1. محاولة Supabase Auth أولاً (بمهلة 3 ثوانٍ — لا تعلّق الطلب)
     try {
@@ -310,6 +311,7 @@ export async function GET() {
     return ok(mePayload, NO_STORE)
   } catch (err) {
     logger.error('[auth/me] failed', err)
+    // NOTE: request-logger child log is unavailable here (no req param) — global proxy log carries req context
     // حاول مسح الـ cookie الفاسد حتى لو الخطأ غير متوقع
     try {
       await clearRoleCookie()
@@ -318,4 +320,4 @@ export async function GET() {
     }
     return ok({ user: null }, NO_STORE)
   }
-}
+}, 'GET /api/auth/me')

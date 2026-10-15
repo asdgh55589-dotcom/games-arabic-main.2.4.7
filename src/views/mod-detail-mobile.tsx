@@ -1,6 +1,8 @@
 'use client'
 
 import {
+  Bookmark,
+  Bug,
   Calendar,
   CheckCircle,
   ChevronDown,
@@ -18,10 +20,13 @@ import {
   Globe,
   HardDrive,
   Hash,
+  Heart,
   Image as ImageIcon,
-  Languages,
   Layers,
+  Languages,
   MessageSquare,
+  Play,
+  Rocket,
   Shield,
   Smartphone,
   Tag,
@@ -29,6 +34,7 @@ import {
   User,
   Users,
   Youtube,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -43,17 +49,19 @@ import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
 import { ReportDialog } from '@/components/report-dialog'
+import { RateReviewBar } from '@/components/rate-review-bar'
+import { useAuth } from '@/contexts/auth-context'
+import { useBookmarks } from '@/contexts/bookmarks-context'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/hooks/use-toast'
-import { apiFetch } from '@/lib/api-client'
+import { ApiError, apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
 import { formatArabicDate, formatNumber, parseGalleryUrls, parseTags } from '@/lib/format'
 import {
-  formatRatingText,
   getDisplaySummary,
   getSeriesDisplay,
   getTeamDisplay,
@@ -67,32 +75,50 @@ interface PaginatedModsResponse {
   pagination: { page: number; limit: number; total: number; totalPages: number }
 }
 
-/** Icons + box colors per platform-title key (matches desktop mapping). */
-const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2; box: string }> = {
-  title: { Icon: Gamepad2, box: 'bg-blue-500/10 text-blue-500' },
-  titleAr: { Icon: Languages, box: 'bg-emerald-500/10 text-emerald-500' },
-  method: { Icon: User, box: 'bg-violet-500/10 text-violet-500' },
-  type: { Icon: Shield, box: 'bg-purple-500/10 text-purple-500' },
-  content: { Icon: Globe, box: 'bg-sky-500/10 text-sky-500' },
-  releaseDate: { Icon: Calendar, box: 'bg-cyan-500/10 text-cyan-500' },
-  size: { Icon: FileArchive, box: 'bg-rose-500/10 text-rose-500' },
-  gameId: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
-  cusa: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
-  ppsa: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
-  titleId: { Icon: Hash, box: 'bg-amber-500/10 text-amber-500' },
-  mediaId: { Icon: HardDrive, box: 'bg-slate-500/10 text-slate-500' },
-  format: { Icon: FolderOpen, box: 'bg-orange-500/10 text-orange-500' },
-  firmware: { Icon: Cpu, box: 'bg-indigo-500/10 text-indigo-500' },
-  gameUpdate: { Icon: Tag, box: 'bg-amber-500/10 text-amber-500' },
-  device: { Icon: Smartphone, box: 'bg-teal-500/10 text-teal-500' },
-  compat: { Icon: CheckCircle, box: 'bg-teal-500/10 text-teal-500' },
-  installType: { Icon: FileText, box: 'bg-sky-500/10 text-sky-500' },
-  cpu: { Icon: Cpu, box: 'bg-indigo-500/10 text-indigo-500' },
-  gameVersion: { Icon: Tag, box: 'bg-amber-500/10 text-amber-500' },
-  minAndroid: { Icon: Smartphone, box: 'bg-green-500/10 text-green-500' },
+/** Icons per platform-title key — original colors. */
+const MOBILE_TITLE_ICONS: Record<string, { Icon: typeof Gamepad2; color: string }> = {
+  title: { Icon: Gamepad2, color: 'text-blue-500' },
+  titleAr: { Icon: Languages, color: 'text-emerald-500' },
+  method: { Icon: User, color: 'text-violet-500' },
+  type: { Icon: Shield, color: 'text-purple-500' },
+  content: { Icon: Globe, color: 'text-sky-500' },
+  releaseDate: { Icon: Calendar, color: 'text-cyan-500' },
+  size: { Icon: FileArchive, color: 'text-rose-500' },
+  gameId: { Icon: Hash, color: 'text-amber-500' },
+  cusa: { Icon: Hash, color: 'text-amber-500' },
+  ppsa: { Icon: Hash, color: 'text-amber-500' },
+  titleId: { Icon: Hash, color: 'text-amber-500' },
+  mediaId: { Icon: HardDrive, color: 'text-slate-500' },
+  format: { Icon: FolderOpen, color: 'text-orange-500' },
+  firmware: { Icon: Cpu, color: 'text-indigo-500' },
+  gameUpdate: { Icon: Tag, color: 'text-amber-500' },
+  device: { Icon: Smartphone, color: 'text-teal-500' },
+  compat: { Icon: CheckCircle, color: 'text-teal-500' },
+  installType: { Icon: FileText, color: 'text-sky-500' },
+  cpu: { Icon: Cpu, color: 'text-indigo-500' },
+  gameVersion: { Icon: Tag, color: 'text-amber-500' },
+  minAndroid: { Icon: Smartphone, color: 'text-green-500' },
 }
 
-export function ModDetailMobile({ mod }: { mod: ModDetail }) {
+interface NeighborLink {
+  slug: string
+  name: string
+  headline?: string | null
+}
+
+export function ModDetailMobile({
+  mod,
+  relatedData: relatedDataProp,
+  relatedLoading: relatedLoadingProp,
+  neighborsData: neighborsDataProp,
+}: {
+  mod: ModDetail
+  relatedData?: PaginatedModsResponse | null
+  relatedLoading?: boolean
+  neighborsData?: {
+    data: { previous: NeighborLink | null; next: NeighborLink | null }
+  } | null
+}) {
   const router = useRouter()
   const { toast } = useToast()
   const gallery = parseGalleryUrls(mod.galleryUrls)
@@ -100,23 +126,113 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
   const displaySummary = getDisplaySummary(mod)
   const seriesDisplay = getSeriesDisplay(mod as any)
   const teamDisplay = getTeamDisplay(mod as any)
-  const ratingText = formatRatingText(mod.rating, mod.ratingCount)
   const bannerImage = gallery[0] || mod.imageUrl || FALLBACK_GAME_IMAGE
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
   const [endorsed, setEndorsed] = useState(false)
   const [endorsementCount, setEndorsementCount] = useState<number | null>(null)
   const [hasReported, setHasReported] = useState(false)
-  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
+  const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
+  const { user } = useAuth()
+  const [bookmarkPending, setBookmarkPending] = useState(false)
+
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        const u = j?.data ?? j?.user ?? null
-        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
+    registerModIds([mod.id])
+  }, [mod.id, registerModIds])
+
+  const bookmarked = isBookmarked(mod.id)
+
+  const handleBookmark = async () => {
+    if (bookmarkPending) return
+    if (!user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول لحفظ المفضلة',
+        variant: 'destructive',
       })
-      .catch(() => {})
-  }, [])
+      router.push('/login')
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+    setBookmarkPending(true)
+    try {
+      if (bookmarked) {
+        await apiFetch(`/api/bookmarks?modId=${mod.id}`, {
+          method: 'DELETE',
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تمت الإزالة من المفضلة', description: mod.name })
+      } else {
+        await apiFetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modId: mod.id }),
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تم الحفظ في المفضلة', description: mod.name })
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          toast({
+            title: 'سجّل الدخول',
+            description: 'انتهت الجلسة — سجّل الدخول ثم حاول مجدداً',
+            variant: 'destructive',
+          })
+          router.push('/login')
+        } else if (err.status === 409) {
+          if (!bookmarked) toggleBookmark(mod.id)
+          toast({ title: 'موجود بالفعل في المفضلة', description: mod.name })
+        } else if (err.status === 429) {
+          toast({
+            title: 'حاول مرة أخرى لاحقاً',
+            description: 'تجاوزت حد المحاولات',
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'خطأ', description: err.message, variant: 'destructive' })
+        }
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        toast({
+          title: 'خطأ في الاتصال',
+          description: 'انتهت المهلة — تحقق من اتصالك',
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'خطأ', description: 'تعذّر حفظ المفضلة', variant: 'destructive' })
+      }
+    } finally {
+      clearTimeout(timeout)
+      setBookmarkPending(false)
+    }
+  }
+
+  const hasVideos = useMemo(
+    () => (mod.videoGroups || []).some((g) => (g.videos || []).length > 0),
+    [mod.videoGroups],
+  )
+
+  const scrollToVideos = () => {
+    document
+      .getElementById('section-videos')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const compatLabel = mod.gameUpdateVersion || mod.gameVersion || mod.systemFirmware || null
+  const isOfficial = (mod.translationType || '').toLowerCase() === 'official'
+
+  /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
+  const DESIGN_PREVIEW = {
+    enabled: true,
+    recommendPct: 94,
+  } as const
+  const recommendPct =
+    (mod as any).recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const viewer = user ? { id: user.id, role: user.role } : null
   const showScheduled =
     shouldShowScheduledBanner(mod as any) &&
     !!viewer &&
@@ -127,25 +243,28 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
     if (!mod?.game?.slug) return null
     return `/api/games/${mod.game.slug}/mods?sort=downloads&limit=6`
   }, [mod?.game?.slug])
-  const { data: relatedData, loading: relatedLoading } = useFetch<PaginatedModsResponse>(
-    relatedUrl,
-    [relatedUrl],
-  )
+  // Dedupe guard: when embedded in ModDetailPage the parent already fetches the
+  // same URL — reuse its result instead of firing a second request.
+  // (Standalone usage still fetches: props are simply left undefined.)
+  const hasRelatedProp = relatedDataProp !== undefined
+  const { data: relatedDataFetched, loading: relatedLoadingFetched } =
+    useFetch<PaginatedModsResponse>(hasRelatedProp ? null : relatedUrl, [
+      hasRelatedProp ? null : relatedUrl,
+    ])
+  const relatedData = hasRelatedProp ? relatedDataProp : relatedDataFetched
+  const relatedLoading = relatedLoadingProp ?? relatedLoadingFetched
   const filteredRelated = relatedData?.data?.filter((m) => m.id !== mod.id).slice(0, 4) || []
 
   // Neighbor navigation via the lightweight endpoint (2 rows, circular).
-  interface NeighborLink {
-    slug: string
-    name: string
-    headline?: string | null
-  }
   const neighborsUrl = useMemo(() => {
     if (!mod?.slug) return null
     return `/api/mods/${mod.slug}/neighbors`
   }, [mod?.slug])
-  const { data: neighborsData } = useFetch<{
+  const hasNeighborsProp = neighborsDataProp !== undefined
+  const { data: neighborsDataFetched } = useFetch<{
     data: { previous: NeighborLink | null; next: NeighborLink | null }
-  }>(neighborsUrl, [neighborsUrl])
+  }>(hasNeighborsProp ? null : neighborsUrl, [hasNeighborsProp ? null : neighborsUrl])
+  const neighborsData = hasNeighborsProp ? neighborsDataProp : neighborsDataFetched
   const prevMod = neighborsData?.data?.previous ?? null
   const nextMod = neighborsData?.data?.next ?? null
 
@@ -164,9 +283,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           setEndorsed(true)
           try {
             localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-        }
+          } catch {
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+          }
         }
       })
       .catch(() => {})
@@ -189,9 +308,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       if (result.data.endorsed) {
         try {
           localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-              } catch {
-                // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-              }
+        } catch {
+          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+        }
         toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
@@ -202,19 +321,53 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
 
   return (
     <div className="lg:hidden" dir="rtl">
-      {/* ===== Wide image 16:9 — full width + breadcrumb over image (single line, no wrap) ===== */}
+      {/* ===== Wide image — حدود مكبرة + breadcrumb فوق الصورة + بوستر تحت المسار يمين ===== */}
       <div className="relative">
         <div className="overflow-hidden border-y border-border bg-card">
-          <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+          <div
+            className="relative aspect-[16/11] overflow-hidden bg-muted"
+            style={{
+              maskImage:
+                'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 5%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 9%, rgba(0,0,0,1) 91%, rgba(0,0,0,0) 100%)',
+              WebkitMaskImage:
+                'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 5%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 9%, rgba(0,0,0,1) 91%, rgba(0,0,0,0) 100%)',
+              maskComposite: 'intersect',
+              WebkitMaskComposite: 'source-in',
+            }}
+          >
             {bannerImage ? (
-              <img
-                src={bannerImage}
-                alt={mod.name}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = FALLBACK_GAME_IMAGE
-                }}
-              />
+              <>
+                <img
+                  src={bannerImage}
+                  alt={mod.name}
+                  className="h-full w-full scale-[1.06] object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement & {
+                      dataset: DOMStringMap
+                    }
+                    if (!target.dataset.fallback) {
+                      target.dataset.fallback = '1'
+                      target.src = FALLBACK_GAME_IMAGE
+                    } else {
+                      target.style.display = 'none'
+                    }
+                  }}
+                />
+                {/* ضباب أزرق 60% فوق البنر */}
+                <div
+                  className="absolute inset-0 bg-[#0B2A4A]/60 backdrop-blur-[1.5px]"
+                  aria-hidden
+                />
+                {/* تدرج سفلي للقراءة */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(to bottom, rgba(4,18,34,0.10) 0%, rgba(4,18,34,0.05) 35%, transparent 55%, rgba(0,0,0,0.55) 100%)',
+                  }}
+                  aria-hidden
+                />
+              </>
             ) : (
               <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
                 <ImageIcon className="h-8 w-8 min-h-[44px] min-w-[44px]" />
@@ -224,19 +377,19 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         </div>
         {/* Breadcrumb over image — single line, truncated, never wraps */}
         <nav
-          className="absolute inset-x-2 top-2 flex flex-nowrap items-center gap-1 overflow-hidden text-[10px] sm:text-xs text-muted-foreground/80"
+          className="absolute inset-x-2 top-2 z-20 flex flex-nowrap items-center gap-1 overflow-hidden text-[11px] sm:text-xs text-white/85"
           aria-label="مسار التنقل"
         >
           <button
             onClick={() => router.back()}
-            className="inline-flex shrink-0 items-center justify-center h-7 w-7 min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20 cursor-pointer"
+            className="inline-flex shrink-0 items-center justify-center h-7 w-7 min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20 cursor-pointer"
             aria-label="العودة للصفحة السابقة"
           >
             <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
           <Link
             href="/"
-            className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:text-foreground hover:border-white/20"
+            className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20"
           >
             <span className="text-[8px] sm:text-[10px] opacity-60">«</span>
             الرئيسية
@@ -244,21 +397,90 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <span className="shrink-0 text-primary/60 text-[10px]">‹</span>
           <Link
             href={`/platform/${mod.game.platform}`}
-            className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-background/60 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/80 hover:border-white/20 whitespace-nowrap"
+            className="inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:border-white/20 whitespace-nowrap"
             style={{ color: platformColor }}
           >
             ARABIC {mod.game.platform}
           </Link>
           <span className="shrink-0 text-primary/60 text-[10px]">‹</span>
-          <span className="min-w-0 flex-1 truncate inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
+          <span className="min-w-0 flex-1 truncate inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary border border-primary text-xs font-bold text-primary-foreground">
             {(mod as { headline?: string }).headline || mod.name}
           </span>
         </nav>
+        {/* البوستر — تحت المسار مباشرة، أقصى اليمين (start في RTL) */}
+        <div className="absolute start-3 top-[58px] z-10 w-[92px] sm:w-[108px]">
+          <div className="relative aspect-[2/3] overflow-hidden border-[2px] border-border bg-secondary shadow-[2px_2px_0_0_var(--border)]">
+            {mod.imageUrl ? (
+              <img
+                src={mod.imageUrl}
+                alt={mod.name}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement & {
+                    dataset: DOMStringMap
+                  }
+                  if (!target.dataset.fallback) {
+                    target.dataset.fallback = '1'
+                    target.src = FALLBACK_GAME_IMAGE
+                  } else {
+                    target.style.display = 'none'
+                  }
+                }}
+              />
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+                <Gamepad2 className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+            )}
+            {mod.game?.platform && (
+              <span
+                className="absolute top-1 start-1 inline-flex items-center rounded-none border border-black/50 px-1 py-px text-[8px] font-black uppercase leading-none text-white"
+                style={{ background: platformColor || 'var(--primary)' }}
+              >
+                {mod.game.platform}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* زر التريلر تحت البوستر */}
+      {hasVideos && (
+        <div className="mx-2 mt-2">
+          <button
+            onClick={scrollToVideos}
+            className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-none border-[2px] border-border bg-card py-2.5 text-xs font-black text-foreground shadow-[1px_1px_0_0_var(--border)] transition-all hover:bg-accent"
+            aria-label="التريلر لـ التعريب"
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+            التريلر لـ التعريب
+          </button>
+        </div>
+      )}
 
       {/* ===== العنوان + الملخص + الشارات (3a/3d/3i/3j/3k) ===== */}
       <div className="mx-2 mt-2 rounded-none border-[2px] border-border bg-card px-3 py-3 shadow-[1px_1px_0_0_var(--border)]">
-        <h1 className="text-lg font-black leading-snug text-foreground">{(mod as { headline?: string }).headline || mod.name}</h1>
+        <p className="text-[10px] font-black tracking-wide text-primary">
+          {mod.game.platform} • {mod.name} • v{mod.version}
+        </p>
+        <h1 className="mt-0.5 text-lg font-black leading-snug text-foreground">
+          {(mod as { headline?: string }).headline || mod.name}
+        </h1>
+        {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
+        <RateReviewBar
+          slug={mod.slug}
+          name={mod.name}
+          rating={mod.rating ?? 0}
+          ratingCount={mod.ratingCount ?? 0}
+          recommendPct={recommendPct}
+          viewerRole={viewer?.role}
+          onReadReviews={() =>
+            document
+              .getElementById('section-comments')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        />
         {displaySummary !== '' && (
           <p className="mt-1.5 text-[13px] font-medium leading-[1.8] text-foreground/90">
             {displaySummary}
@@ -268,23 +490,37 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           <Badge variant="outline" className="text-[11px] font-black tabular-nums">
             v{mod.version}
           </Badge>
-          {ratingText && (
-            <Badge
-              variant="outline"
-              className="border-amber-500/30 bg-amber-500/10 text-[11px] font-black tabular-nums"
+          {isOfficial ? (
+            <Link
+              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
+              className="shrink-0"
             >
-              ★ {ratingText}
-            </Badge>
-          )}
-          {mod.category?.name && (
-            <Badge variant="secondary" className="text-[11px] font-bold">
-              {mod.category.name}
-            </Badge>
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-black hover:underline cursor-pointer"
+              >
+                تعريب رسمي
+              </Badge>
+            </Link>
+          ) : (
+            <Link
+              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=unofficial`}
+              className="shrink-0"
+            >
+              <Badge
+                variant="outline"
+                className="border-muted-foreground/30 bg-muted/40 text-[11px] font-black hover:underline cursor-pointer"
+              >
+                تعريب غير رسمي
+              </Badge>
+            </Link>
           )}
           {(mod as any).sectionRelation?.name && (
-            <Badge variant="secondary" className="text-[11px] font-bold">
-              {(mod as any).sectionRelation.name}
-            </Badge>
+            <Link href={`/platform/${(mod as any).sectionRelation.key}`} className="shrink-0">
+              <Badge variant="secondary" className="text-[11px] font-bold hover:underline">
+                {(mod as any).sectionRelation.name}
+              </Badge>
+            </Link>
           )}
         </div>
         {tags.length > 0 && (
@@ -294,6 +530,14 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
                 #{t}
               </Badge>
             ))}
+          </div>
+        )}
+        {compatLabel && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+              يتطلب نسخة اللعبة: {compatLabel}
+            </span>
           </div>
         )}
         {showScheduled && (
@@ -322,28 +566,22 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         )}
       </div>
 
-      {/* ===== صندوق المعلومات — عناوين حسب المنصة (مشتركة 7 + خاصة) ===== */}
-      <div className="mx-2 mt-2 overflow-hidden rounded-none border-[2px] border-border bg-card shadow-[1px_1px_0_0_var(--border)]">
-        <div className="divide-y divide-border text-[11px]">
-          {getModTitles(mod, formatArabicDate).map((item, i) => {
+      {/* ===== صندوق المعلومات — عناوين حسب المنصة بنفس تصميم حقول المرجع ===== */}
+      <div className="mx-2 mt-6 rounded-none border-[2px] border-border bg-card p-2 shadow-[1px_1px_0_0_var(--border)]">
+        <div className="flex flex-wrap gap-x-1.5 gap-y-4">
+          {getModTitles(mod, formatArabicDate).map((item) => {
             const meta = MOBILE_TITLE_ICONS[item.key] || MOBILE_TITLE_ICONS.title
             const { Icon } = meta
             return (
               <div
                 key={item.key}
-                className={`flex items-center gap-2 px-2 py-1.5 ${i % 2 === 1 ? 'bg-muted/10' : ''}`}
+                className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] dark:bg-gray-800"
+                title={`${item.label}: ${item.value}`}
               >
-                <span className="flex items-center gap-2 font-black tracking-widest text-foreground/60">
-                  <span
-                    className={`grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border-2 border-border shadow-[1px_1px_0_0_var(--border)] ${meta.box}`}
-                  >
-                    <Icon className="h-3 w-3" />
-                  </span>
-                  {item.label}:
-                </span>
-                <span className="flex-1 min-w-0 truncate text-xs font-black text-foreground">
-                  {item.value}
-                </span>
+                <Icon className={`h-3 w-3 shrink-0 ${meta.color}`} />
+                <span className="shrink-0 font-normal text-muted-foreground">{item.label}</span>
+                <span className="shrink-0 text-muted-foreground/50">/</span>
+                <span className="min-w-0 truncate font-bold text-foreground">{item.value}</span>
               </div>
             )
           })}
@@ -351,7 +589,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== Stats grid 3×2 — النشر / مشاهدات / تحميلات / لايكات / الفريق / سلسلة ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-1.5">
+      <div className="mx-4 mt-1 grid grid-cols-2 gap-1.5 sm:gap-1.5">
         <div className="flex items-center gap-1.5 overflow-hidden rounded-none border-[2px] border-border bg-card px-2 py-1.5 shadow-[2px_2px_0_0_var(--border)]">
           <span className="grid h-6 w-6 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-none border border-border bg-cyan-500/10 text-cyan-500 shadow-[1px_1px_0_0_var(--border)]">
             <Calendar className="h-3 w-3" />
@@ -432,8 +670,8 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         </div>
       </div>
 
-      {/* ===== زرارين قصاد بعض: لايكات / الإبلاغ — مصغر ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
+      {/* ===== أزرار قصاد بعض: لايكات / حفظ / إبلاغ — مصغر ===== */}
+      <div className="mx-4 mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
         <Button
           onClick={onEndorse}
           className={`flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all ${
@@ -444,6 +682,19 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
         >
           <ThumbsUp className={`h-3.5 w-3.5 ${endorsed ? 'fill-current' : ''}`} />
           {endorsed ? 'تم الإعجاب' : 'لايكات'}
+        </Button>
+        <Button
+          onClick={handleBookmark}
+          disabled={bookmarkPending}
+          className={`flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all disabled:opacity-60 ${
+            bookmarked
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-card text-foreground border-border hover:bg-accent'
+          }`}
+          aria-label={bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+        >
+          <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? 'fill-current' : ''}`} />
+          {bookmarked ? 'محفوظ' : 'حفظ'}
         </Button>
         {hasReported ? (
           <Button
@@ -461,9 +712,9 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
               setHasReported(true)
               try {
                 localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-          } catch {
-            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-          }
+              } catch {
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
+              }
             }}
           >
             <Button
@@ -478,7 +729,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
       </div>
 
       {/* ===== OPEN stacked sections — نفس تبويبات الكمبيوتر بنفس الترتيب — مدمجة وقابلة للطي ===== */}
-      <div id="mobile-details" className="mt-4 space-y-2.5 px-2 pb-6">
+      <div id="mobile-details" className="mt-2 space-y-2.5 px-2 pb-6">
         {/* الوصف */}
         <CollapsibleCard
           id="desc"
@@ -506,33 +757,54 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
           icon={<Clock className="h-3.5 w-3.5" />}
           iconBg="bg-amber-500/10 text-amber-500"
         >
-          <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-card/40 px-3 py-1.5">
-            <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
-            <span className="text-sm font-bold tabular-nums text-foreground">v{mod.version}</span>
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-3 py-2">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+              <Tag className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-[11px] font-bold text-foreground/80">الإصدار الحالي</span>
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-black tabular-nums text-primary">
+              v{mod.version}
+            </span>
           </div>
           {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
             <ChangelogDisplay changelogs={(mod as any).changelogs} />
           ) : mod.changelog ? (
             <MarkdownRenderer content={mod.changelog} />
           ) : (
-            <ul className="space-y-2 text-sm font-bold text-foreground">
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> الإصدار الأول
-                العام
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاحات توافق
-                مع التعديلات الشائعة
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> تحسينات في
-                الأداء للأجهزة الضعيفة
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" /> إصلاح أخطاء
-                أبلغ عنها المجتمع
-              </li>
-            </ul>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-emerald-500/10 text-emerald-500">
+                  <Rocket className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  الإصدار الأول العام
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-sky-500/10 text-sky-500">
+                  <Shield className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  إصلاحات توافق مع التعديلات الشائعة
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-amber-500/10 text-amber-500">
+                  <Zap className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  تحسينات في الأداء للأجهزة الضعيفة
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-2 py-2">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-rose-500/10 text-rose-500">
+                  <Bug className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-bold leading-snug text-foreground">
+                  إصلاح أخطاء أبلغ عنها المجتمع
+                </span>
+              </div>
+            </div>
           )}
         </CollapsibleCard>
 
@@ -568,6 +840,22 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
             teamMembers={mod.teamMembers || []}
             contactLinks={mod.contactLinks || []}
           />
+          {/* زر دعم الفريق — معاينة تصميم فقط (Mock) */}
+          {DESIGN_PREVIEW.enabled && (
+            <button
+              onClick={() =>
+                toast({
+                  title: 'معاينة تصميم فقط',
+                  description: 'زر الدعم سيُفعّل بعد الاتفاق على التصميم',
+                })
+              }
+              className="mt-3 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-none border-[2px] border-amber-500 bg-amber-500/10 py-2.5 text-xs font-black text-amber-700 shadow-[2px_2px_0_0_var(--border)] transition-all hover:bg-amber-500/20 dark:text-amber-400 cursor-pointer"
+              aria-label="ادعم فريق التعريب (معاينة تصميم)"
+            >
+              <Heart className="h-3.5 w-3.5 fill-current" />
+              ادعم الفريق
+            </button>
+          )}
         </CollapsibleCard>
 
         {/* معرض الصور */}
@@ -694,6 +982,7 @@ export function ModDetailMobile({ mod }: { mod: ModDetail }) {
 }
 
 function CollapsibleCard({
+  id,
   title,
   icon,
   iconBg,
@@ -709,7 +998,7 @@ function CollapsibleCard({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <Card className="overflow-hidden border-border bg-card p-0">
+    <Card id={`section-${id}`} className="overflow-hidden border-border bg-card p-0 scroll-mt-20">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2 px-3 py-2.5 text-right transition-colors hover:bg-muted/20 cursor-pointer"
@@ -726,7 +1015,7 @@ function CollapsibleCard({
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </span>
       </button>
-      {open && <div className="border-t border-border/60 p-3">{children}</div>}
+      {open && <div className="border-t border-border/60 p-3 min-h-[150px]">{children}</div>}
     </Card>
   )
 }

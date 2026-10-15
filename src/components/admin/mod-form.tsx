@@ -5,13 +5,7 @@
 // admin APIs, plus admin-only extras (source section, workflow, versions).
 'use client'
 
-import {
-  Clock,
-  FileArchive,
-  Loader2,
-  Plus,
-  Save,
-} from 'lucide-react'
+import { Clock, FileArchive, Loader2, Plus, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -50,20 +44,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
-import {
-  normalizeTranslationType,
-  type TranslationType,
-} from '@/lib/schemas'
+import { useAuth } from '@/contexts/auth-context'
+import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
 import { extractVideoErrorMessage } from '@/lib/video-errors'
 import { isSupportedVideoUrl } from '@/lib/oembed'
 import { StudioLanguageProvider } from '@/lib/studio-i18n/context'
-import {
-  isDataUrl,
-  uploadCroppedDataUrl,
-} from '@/lib/upload-cropped'
-import {
-  PlatformFieldsSection,
-} from '@/components/shared/platform-fields-section'
+import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
+import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,7 +93,9 @@ function ModFormInner({ modId }: ModFormProps) {
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
   const [changeTypeDialogOpen, setChangeTypeDialogOpen] = useState(false)
   const [savingChangelog, setSavingChangelog] = useState(false)
-  const [userRole, setUserRole] = useState('member')
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const { user } = useAuth()
+  const userRole = user?.role ?? 'member'
 
   // Wizard step: 1 = platform selection, 2 = full form
   const [step, setStep] = useState(isEdit ? 2 : 1)
@@ -162,7 +151,9 @@ function ModFormInner({ modId }: ModFormProps) {
   const [files, setFiles] = useState<DownloadFile[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [contactLinks, setContactLinks] = useState<ContactLink[]>([])
-  const [videoGroups, setVideoGroups] = useState<import('@/components/creator/mod-form/primitives').VideoGroup[]>([])
+  const [videoGroups, setVideoGroups] = useState<
+    import('@/components/creator/mod-form/primitives').VideoGroup[]
+  >([])
   const [customTabs, setCustomTabs] = useState<CustomTab[]>([])
   const [fetchingVideoKey, setFetchingVideoKey] = useState<string | null>(null)
   const [cropperOpen, setCropperOpen] = useState(false)
@@ -204,16 +195,6 @@ function ModFormInner({ modId }: ModFormProps) {
       })
       .catch(() => {})
       .finally(() => setLoadingMeta(false))
-  }, [])
-
-  // جلب دور المستخدم
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.data?.role) setUserRole(data.data.role)
-      })
-      .catch(() => {})
   }, [])
 
   // لو تعديل: حمّل بيانات التعريب (عبر API الأدمن)
@@ -506,14 +487,13 @@ function ModFormInner({ modId }: ModFormProps) {
   const onSave = async () => {
     // Defense in depth: never persist base64.
     if (cropUploading) {
-      toast({ title: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ', variant: 'destructive' })
+      toast({
+        title: 'الصورة المقصوصة لم تُرفع بعد — انتظر اكتمال الرفع قبل الحفظ',
+        variant: 'destructive',
+      })
       return
     }
-    if (
-      isDataUrl(thumbnailUrl) ||
-      isDataUrl(imageUrl) ||
-      galleryUrls.some((u) => isDataUrl(u))
-    ) {
+    if (isDataUrl(thumbnailUrl) || isDataUrl(imageUrl) || galleryUrls.some((u) => isDataUrl(u))) {
       toast({ title: 'فشل رفع الصورة المقصوصة — حاول مرة أخرى', variant: 'destructive' })
       return
     }
@@ -644,7 +624,8 @@ function ModFormInner({ modId }: ModFormProps) {
       const data = await res.json()
       if (!res.ok)
         throw new Error(
-          data?.error?.message ||
+          extractVideoErrorMessage(data) ||
+            data?.error?.message ||
             (typeof data?.error === 'string' ? data.error : null) ||
             'فشل الحفظ',
         )
@@ -695,7 +676,9 @@ function ModFormInner({ modId }: ModFormProps) {
         breadcrumbHref="/admin/mods"
         breadcrumbLabel="التعريبات"
         currentLabel={isEdit ? 'تعديل تعريب' : 'تعريب جديد'}
-        statusBadge={isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ml-2" /> : undefined}
+        statusBadge={
+          isEdit ? <WorkflowStatusBadge status={workflowStatus} className="ml-2" /> : undefined
+        }
         dir="rtl"
         isEdit={isEdit}
         step={step}
@@ -712,16 +695,24 @@ function ModFormInner({ modId }: ModFormProps) {
       {/* Step indicator for new mods */}
       {!isEdit && (
         <div className="flex items-center gap-3 text-sm">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>1</span>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            1
+          </span>
           <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
             اختيار المنصة
           </span>
           <span className="text-muted-foreground">←</span>
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>2</span>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            2
+          </span>
           <span className={step >= 2 ? 'text-foreground' : 'text-muted-foreground'}>
             بيانات التعريب
           </span>
@@ -731,317 +722,314 @@ function ModFormInner({ modId }: ModFormProps) {
       {/* Step 1: Platform Selection — نفس مكوّن المنشئ (الألوان والأيقونات) */}
       {step === 1 && (
         <div className="rounded-xl border border-border bg-card/30 p-6">
-          <PlatformSelector
-            selected={platform}
-            onSelect={handlePlatformSelect}
-          />
+          <PlatformSelector selected={platform} onSelect={handlePlatformSelect} />
         </div>
       )}
 
       {/* Step 2: Full Form — نفس أقسام نموذج المنشئ بالترتيب */}
       {step === 2 && (
         <>
-      {/* أزرار تغيير الحالة */}
-      {isEdit && (
-        <WorkflowActions
-          modId={modId!}
-          currentStatus={workflowStatus}
-          userRole={userRole}
-          onStatusChange={(newStatus) => {
-            setWorkflowStatus(newStatus)
-            // إعادة تحميل سجل التاريخ
-            fetch(`/api/admin/mods/${modId}/workflow`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((data) => {
-                if (data?.data) setWorkflowHistory(data.data)
-              })
-              .catch(() => {})
-          }}
-        />
-      )}
-
-      <ModFormBasicInfo
-        name={name}
-        setName={setName}
-        headline={headline}
-        setHeadline={setHeadline}
-        description={description}
-        setDescription={setDescription}
-        changelog={changelog}
-        setChangelog={setChangelog}
-        installGuide={installGuide}
-        setInstallGuide={setInstallGuide}
-        arabicTitle={arabicTitle}
-        setArabicTitle={setArabicTitle}
-        translationScope={translationScope}
-        setTranslationScope={setTranslationScope}
-        tags={tags}
-        setTags={setTags}
-        translationType={translationType}
-        setTranslationType={setTranslationType}
-        translationMethod={translationMethod}
-        setTranslationMethod={setTranslationMethod}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
-        platform={platform}
-        platformGameId={platformGameId}
-        setPlatformGameId={setPlatformGameId}
-        cusaId={cusaId}
-        setCusaId={setCusaId}
-        ppsaId={ppsaId}
-        setPpsaId={setPpsaId}
-        titleId={titleId}
-        setTitleId={setTitleId}
-        mediaId={mediaId}
-        setMediaId={setMediaId}
-        supportedFormat={supportedFormat}
-        setSupportedFormat={setSupportedFormat}
-        deviceModel={deviceModel}
-        setDeviceModel={setDeviceModel}
-        installType={installType}
-        setInstallType={setInstallType}
-        cpuArch={cpuArch}
-        setCpuArch={setCpuArch}
-        gameVersion={gameVersion}
-        setGameVersion={setGameVersion}
-        minAndroidVersion={minAndroidVersion}
-        setMinAndroidVersion={setMinAndroidVersion}
-        systemFirmware={systemFirmware}
-        setSystemFirmware={setSystemFirmware}
-        gameUpdateVersion={gameUpdateVersion}
-        setGameUpdateVersion={setGameUpdateVersion}
-        summary={summary}
-        setSummary={setSummary}
-        userRole={userRole}
-      />
-
-      <PlatformFieldsSection
-        platform={platform}
-        setPlatform={setPlatform}
-        platformGameId={platformGameId}
-        setPlatformGameId={setPlatformGameId}
-        cusaId={cusaId}
-        setCusaId={setCusaId}
-        ppsaId={ppsaId}
-        setPpsaId={setPpsaId}
-        titleId={titleId}
-        setTitleId={setTitleId}
-        mediaId={mediaId}
-        setMediaId={setMediaId}
-        supportedFormat={supportedFormat}
-        setSupportedFormat={setSupportedFormat}
-        systemFirmware={systemFirmware}
-        setSystemFirmware={setSystemFirmware}
-        gameUpdateVersion={gameUpdateVersion}
-        setGameUpdateVersion={setGameUpdateVersion}
-        deviceModel={deviceModel}
-        setDeviceModel={setDeviceModel}
-        installType={installType}
-        setInstallType={setInstallType}
-        cpuArch={cpuArch}
-        setCpuArch={setCpuArch}
-        gameVersion={gameVersion}
-        setGameVersion={setGameVersion}
-        minAndroidVersion={minAndroidVersion}
-        setMinAndroidVersion={setMinAndroidVersion}
-        compatibility={compatibility}
-        setCompatibility={setCompatibility}
-        hidePlatformSelect={!isEdit}
-      />
-
-      <ModFormMedia
-        modId={modId}
-        imageUrl={imageUrl}
-        setImageUrl={setImageUrl}
-        thumbnailUrl={thumbnailUrl}
-        setThumbnailUrl={setThumbnailUrl}
-        galleryUrls={galleryUrls}
-        setGalleryUrls={setGalleryUrls}
-        cropperImage={cropperImage}
-        cropperOpen={cropperOpen}
-        setCropperOpen={setCropperOpen}
-        cropperAspect={cropperAspect}
-        cropperTarget={cropperTarget}
-        handleImageFileSelect={handleImageFileSelect}
-        handleCropComplete={handleCropComplete}
-        handleUrlCrop={handleUrlCrop}
-        videoGroups={videoGroups}
-        setVideoGroups={setVideoGroups}
-        fetchingVideoKey={fetchingVideoKey}
-        onFetchVideoMetadata={onFetchVideoMetadata}
-        uploadTitleBase={buildUploadTitle(name)}
-      />
-
-      <ModFormFiles
-        modId={modId}
-        version={version}
-        setVersion={setVersion}
-        fileSize={fileSize}
-        setFileSize={setFileSize}
-        fileFormat={fileFormat}
-        setFileFormat={setFileFormat}
-        releaseDate={releaseDate}
-        setReleaseDate={setReleaseDate}
-        isEdit={isEdit}
-        files={files}
-        setFiles={setFiles}
-        addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
-      />
-
-      <ModFormSettings
-        seriesId={seriesId}
-        setSeriesId={setSeriesId}
-        seriesList={seriesList}
-        teamId={teamId}
-        setTeamId={setTeamId}
-        teamsList={teamsList}
-        categoryId={categoryId}
-        setCategoryId={setCategoryId}
-        categoriesList={categoriesList}
-        sectionId={sectionId}
-        setSectionId={setSectionId}
-        sectionsList={sectionsList}
-        teamMembers={teamMembers}
-        setTeamMembers={setTeamMembers}
-        addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
-        contactLinks={contactLinks}
-        setContactLinks={setContactLinks}
-        addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
-        customTabs={customTabs}
-        setCustomTabs={setCustomTabs}
-        addEmptyTab={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}
-        slugify={slugify}
-      />
-
-      {/* ===== مصدر التعريب (خاص بالأدمن — يظهر بعد أقسام المنشئ) ===== */}
-      <Section title="مصدر التعريب">
-        <div className="flex items-center gap-3">
-          <Switch
-            id="admin-isOriginalWork"
-            checked={isOriginalWork}
-            onCheckedChange={setIsOriginalWork}
-          />
-          <Label htmlFor="admin-isOriginalWork" className="cursor-pointer">
-            هل هذا عمل أصلي؟
-          </Label>
-        </div>
-        {!isOriginalWork && (
-          <div className="space-y-4">
-            <Field label="المصدر الأصلي" required>
-              <Input
-                value={originalSource}
-                onChange={(e) => setOriginalSource(e.target.value)}
-                placeholder="رابط أو اسم المصدر الأصلي"
-              />
-            </Field>
-            <Field label="اسم المترجم الأصلي">
-              <Input
-                value={originalAuthor}
-                onChange={(e) => setOriginalAuthor(e.target.value)}
-                placeholder="اسم المترجم الأصلي"
-              />
-            </Field>
-          </div>
-        )}
-      </Section>
-
-      <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
-
-      {/* سجل الإصدارات */}
-      {isEdit && (
-        <Section
-          title="الإصدارات"
-          icon={<FileArchive className="h-4 w-4" />}
-          action={
-            <Button
-              size="sm"
-              className="min-h-[44px]"
-              variant="outline"
-              onClick={() => setNewVersionDialogOpen(true)}
-            >
-              <Plus className="ml-1 h-3.5 w-3.5" />
-              إصدار جديد
-            </Button>
-          }
-        >
-          <VersionHistory versions={versionHistory} />
-        </Section>
-      )}
-
-      {/* نافذة إصدار جديد */}
-      {isEdit && (
-        <NewVersionDialog
-          modId={modId!}
-          currentVersion={version}
-          open={newVersionDialogOpen}
-          onOpenChange={setNewVersionDialogOpen}
-          onCreated={() => {
-            // إعادة تحميل سجل الإصدارات
-            fetch(`/api/admin/mods/${modId}/versions`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((data) => {
-                if (data?.data) setVersionHistory(data.data)
-              })
-              .catch(() => {})
-          }}
-        />
-      )}
-
-      {/* سجل تغييرات الحالة */}
-      {isEdit && workflowHistory.length > 0 && (
-        <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
-          <WorkflowHistory history={workflowHistory} />
-        </Section>
-      )}
-
-      {/* Changelog dialog for edits */}
-      {isEdit && modId && (
-        <ChangeTypeDialog
-          open={changeTypeDialogOpen}
-          onOpenChange={setChangeTypeDialogOpen}
-          saving={savingChangelog}
-          onSave={async ({ type, title, description: desc }) => {
-            setSavingChangelog(true)
-            try {
-              const res = await fetch(`/api/admin/mods/${modId}/changelog`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, title, description: desc }),
-              })
-              if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
-              }
-              toast({ title: 'تم حفظ سجل التغييرات' })
-              setChangeTypeDialogOpen(false)
-              router.push('/admin/mods')
-              router.refresh()
-            } catch (err) {
-              toast({
-                title: 'خطأ',
-                description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
-                variant: 'destructive',
-              })
-            } finally {
-              setSavingChangelog(false)
-            }
-          }}
-        />
-      )}
-
-      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background/80 p-4 backdrop-blur">
-        <Button asChild variant="outline">
-          <Link href="/admin/mods">إلغاء</Link>
-        </Button>
-        <Button onClick={onSave} disabled={saving || !!loadError}>
-          {saving ? (
-            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="ml-2 h-4 w-4" />
+          {/* أزرار تغيير الحالة */}
+          {isEdit && (
+            <WorkflowActions
+              modId={modId!}
+              currentStatus={workflowStatus}
+              userRole={userRole}
+              onStatusChange={(newStatus) => {
+                setWorkflowStatus(newStatus)
+                // إعادة تحميل سجل التاريخ
+                fetch(`/api/admin/mods/${modId}/workflow`)
+                  .then((r) => (r.ok ? r.json() : null))
+                  .then((data) => {
+                    if (data?.data) setWorkflowHistory(data.data)
+                  })
+                  .catch(() => {})
+              }}
+            />
           )}
-          {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
-        </Button>
-      </div>
+
+          <ModFormBasicInfo
+            name={name}
+            setName={setName}
+            headline={headline}
+            setHeadline={setHeadline}
+            description={description}
+            setDescription={setDescription}
+            changelog={changelog}
+            setChangelog={setChangelog}
+            installGuide={installGuide}
+            setInstallGuide={setInstallGuide}
+            arabicTitle={arabicTitle}
+            setArabicTitle={setArabicTitle}
+            translationScope={translationScope}
+            setTranslationScope={setTranslationScope}
+            tags={tags}
+            setTags={setTags}
+            translationType={translationType}
+            setTranslationType={setTranslationType}
+            translationMethod={translationMethod}
+            setTranslationMethod={setTranslationMethod}
+            compatibility={compatibility}
+            setCompatibility={setCompatibility}
+            platform={platform}
+            platformGameId={platformGameId}
+            setPlatformGameId={setPlatformGameId}
+            cusaId={cusaId}
+            setCusaId={setCusaId}
+            ppsaId={ppsaId}
+            setPpsaId={setPpsaId}
+            titleId={titleId}
+            setTitleId={setTitleId}
+            mediaId={mediaId}
+            setMediaId={setMediaId}
+            supportedFormat={supportedFormat}
+            setSupportedFormat={setSupportedFormat}
+            deviceModel={deviceModel}
+            setDeviceModel={setDeviceModel}
+            installType={installType}
+            setInstallType={setInstallType}
+            cpuArch={cpuArch}
+            setCpuArch={setCpuArch}
+            gameVersion={gameVersion}
+            setGameVersion={setGameVersion}
+            minAndroidVersion={minAndroidVersion}
+            setMinAndroidVersion={setMinAndroidVersion}
+            systemFirmware={systemFirmware}
+            setSystemFirmware={setSystemFirmware}
+            gameUpdateVersion={gameUpdateVersion}
+            setGameUpdateVersion={setGameUpdateVersion}
+            summary={summary}
+            setSummary={setSummary}
+            userRole={userRole}
+          />
+
+          <PlatformFieldsSection
+            platform={platform}
+            setPlatform={setPlatform}
+            platformGameId={platformGameId}
+            setPlatformGameId={setPlatformGameId}
+            cusaId={cusaId}
+            setCusaId={setCusaId}
+            ppsaId={ppsaId}
+            setPpsaId={setPpsaId}
+            titleId={titleId}
+            setTitleId={setTitleId}
+            mediaId={mediaId}
+            setMediaId={setMediaId}
+            supportedFormat={supportedFormat}
+            setSupportedFormat={setSupportedFormat}
+            systemFirmware={systemFirmware}
+            setSystemFirmware={setSystemFirmware}
+            gameUpdateVersion={gameUpdateVersion}
+            setGameUpdateVersion={setGameUpdateVersion}
+            deviceModel={deviceModel}
+            setDeviceModel={setDeviceModel}
+            installType={installType}
+            setInstallType={setInstallType}
+            cpuArch={cpuArch}
+            setCpuArch={setCpuArch}
+            gameVersion={gameVersion}
+            setGameVersion={setGameVersion}
+            minAndroidVersion={minAndroidVersion}
+            setMinAndroidVersion={setMinAndroidVersion}
+            compatibility={compatibility}
+            setCompatibility={setCompatibility}
+            hidePlatformSelect={!isEdit}
+          />
+
+          <ModFormMedia
+            modId={modId}
+            imageUrl={imageUrl}
+            setImageUrl={setImageUrl}
+            thumbnailUrl={thumbnailUrl}
+            setThumbnailUrl={setThumbnailUrl}
+            galleryUrls={galleryUrls}
+            setGalleryUrls={setGalleryUrls}
+            cropperImage={cropperImage}
+            cropperOpen={cropperOpen}
+            setCropperOpen={setCropperOpen}
+            cropperAspect={cropperAspect}
+            cropperTarget={cropperTarget}
+            handleImageFileSelect={handleImageFileSelect}
+            handleCropComplete={handleCropComplete}
+            handleUrlCrop={handleUrlCrop}
+            videoGroups={videoGroups}
+            setVideoGroups={setVideoGroups}
+            fetchingVideoKey={fetchingVideoKey}
+            onFetchVideoMetadata={onFetchVideoMetadata}
+            uploadTitleBase={buildUploadTitle(name)}
+          />
+
+          <ModFormFiles
+            modId={modId}
+            version={version}
+            setVersion={setVersion}
+            fileSize={fileSize}
+            setFileSize={setFileSize}
+            fileFormat={fileFormat}
+            setFileFormat={setFileFormat}
+            releaseDate={releaseDate}
+            setReleaseDate={setReleaseDate}
+            isEdit={isEdit}
+            files={files}
+            setFiles={setFiles}
+            addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
+          />
+
+          <ModFormSettings
+            seriesId={seriesId}
+            setSeriesId={setSeriesId}
+            seriesList={seriesList}
+            teamId={teamId}
+            setTeamId={setTeamId}
+            teamsList={teamsList}
+            categoryId={categoryId}
+            setCategoryId={setCategoryId}
+            categoriesList={categoriesList}
+            sectionId={sectionId}
+            setSectionId={setSectionId}
+            sectionsList={sectionsList}
+            teamMembers={teamMembers}
+            setTeamMembers={setTeamMembers}
+            addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
+            contactLinks={contactLinks}
+            setContactLinks={setContactLinks}
+            addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
+            customTabs={customTabs}
+            setCustomTabs={setCustomTabs}
+            addEmptyTab={() => setCustomTabs((p) => [...p, { ...EMPTY_TAB }])}
+            slugify={slugify}
+          />
+
+          {/* ===== مصدر التعريب (خاص بالأدمن — يظهر بعد أقسام المنشئ) ===== */}
+          <Section title="مصدر التعريب">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="admin-isOriginalWork"
+                checked={isOriginalWork}
+                onCheckedChange={setIsOriginalWork}
+              />
+              <Label htmlFor="admin-isOriginalWork" className="cursor-pointer">
+                هل هذا عمل أصلي؟
+              </Label>
+            </div>
+            {!isOriginalWork && (
+              <div className="space-y-4">
+                <Field label="المصدر الأصلي" required>
+                  <Input
+                    value={originalSource}
+                    onChange={(e) => setOriginalSource(e.target.value)}
+                    placeholder="رابط أو اسم المصدر الأصلي"
+                  />
+                </Field>
+                <Field label="اسم المترجم الأصلي">
+                  <Input
+                    value={originalAuthor}
+                    onChange={(e) => setOriginalAuthor(e.target.value)}
+                    placeholder="اسم المترجم الأصلي"
+                  />
+                </Field>
+              </div>
+            )}
+          </Section>
+
+          <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
+
+          {/* سجل الإصدارات */}
+          {isEdit && (
+            <Section
+              title="الإصدارات"
+              icon={<FileArchive className="h-4 w-4" />}
+              action={
+                <Button
+                  size="sm"
+                  className="min-h-[44px]"
+                  variant="outline"
+                  onClick={() => setNewVersionDialogOpen(true)}
+                >
+                  <Plus className="ml-1 h-3.5 w-3.5" />
+                  إصدار جديد
+                </Button>
+              }
+            >
+              <VersionHistory versions={versionHistory} />
+            </Section>
+          )}
+
+          {/* نافذة إصدار جديد */}
+          {isEdit && (
+            <NewVersionDialog
+              modId={modId!}
+              currentVersion={version}
+              open={newVersionDialogOpen}
+              onOpenChange={setNewVersionDialogOpen}
+              onCreated={() => {
+                // إعادة تحميل سجل الإصدارات
+                fetch(`/api/admin/mods/${modId}/versions`)
+                  .then((r) => (r.ok ? r.json() : null))
+                  .then((data) => {
+                    if (data?.data) setVersionHistory(data.data)
+                  })
+                  .catch(() => {})
+              }}
+            />
+          )}
+
+          {/* سجل تغييرات الحالة */}
+          {isEdit && workflowHistory.length > 0 && (
+            <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
+              <WorkflowHistory history={workflowHistory} />
+            </Section>
+          )}
+
+          {/* Changelog dialog for edits */}
+          {isEdit && modId && (
+            <ChangeTypeDialog
+              open={changeTypeDialogOpen}
+              onOpenChange={setChangeTypeDialogOpen}
+              saving={savingChangelog}
+              onSave={async ({ type, title, description: desc }) => {
+                setSavingChangelog(true)
+                try {
+                  const res = await fetch(`/api/admin/mods/${modId}/changelog`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, title, description: desc }),
+                  })
+                  if (!res.ok) {
+                    const err = await res.json()
+                    throw new Error(err?.error?.message || 'فشل حفظ سجل التغييرات')
+                  }
+                  toast({ title: 'تم حفظ سجل التغييرات' })
+                  setChangeTypeDialogOpen(false)
+                  router.push('/admin/mods')
+                  router.refresh()
+                } catch (err) {
+                  toast({
+                    title: 'خطأ',
+                    description: err instanceof Error ? err.message : 'فشل حفظ سجل التغييرات',
+                    variant: 'destructive',
+                  })
+                } finally {
+                  setSavingChangelog(false)
+                }
+              }}
+            />
+          )}
+
+          <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background/80 p-4 backdrop-blur">
+            <Button asChild variant="outline">
+              <Link href="/admin/mods">إلغاء</Link>
+            </Button>
+            <Button onClick={onSave} disabled={saving || !!loadError}>
+              {saving ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              {isEdit ? 'حفظ التعديلات' : 'نشر التعريب'}
+            </Button>
+          </div>
         </>
       )}
 
@@ -1051,16 +1039,13 @@ function ModFormInner({ modId }: ModFormProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>تغيير المنصة</AlertDialogTitle>
             <AlertDialogDescription>
-              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية
-              (معرّف اللعبة، تحديث النظام، إلخ). البيانات العامة (العنوان،
-              العنوان بالعربي، الوصف) لن تتأثر.
+              تغيير المنصة سيؤدي إلى مسح جميع الحقول الخاصة بالمنصة الحالية (معرّف اللعبة، تحديث
+              النظام، إلخ). البيانات العامة (العنوان، العنوان بالعربي، الوصف) لن تتأثر.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPlatformChange}>
-              تغيير ومسح الحقول
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmPlatformChange}>تغيير ومسح الحقول</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

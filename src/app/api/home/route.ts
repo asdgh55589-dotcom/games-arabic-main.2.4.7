@@ -5,6 +5,7 @@ import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
 import { getHomeCache, getHomeCacheTtl, setHomeCache } from '@/lib/home-cache'
 import { logger } from '@/lib/logger'
+import { withRequestLogger } from '@/lib/request-logger'
 import { modCardSelect } from '@/lib/prisma-selects'
 import type { ModSummary, SeriesSummary } from '@/lib/types'
 import { Prisma } from '@prisma/client'
@@ -176,7 +177,7 @@ function toModSummary(r: PlatformModRow): ModSummary {
 //   4. trending mods · 5. top endorsed · 6. latest 2 per platform (lateral join)
 //   7. top 10 per platform (lateral join) · 8. top series
 // Results are cached shared (Redis, 300s) — repeat hits cost zero queries.
-export async function GET(req: NextRequest) {
+export const GET = withRequestLogger(async (req: NextRequest, _ctx: unknown, log) => {
   try {
     // Serve from shared cache if fresh
     const now = Date.now()
@@ -293,7 +294,8 @@ export async function GET(req: NextRequest) {
       modsByPlatform[key] = []
     }
     for (const row of latestRows) {
-      if (latestByPlatform[row.platform_key]) latestByPlatform[row.platform_key].push(toModSummary(row))
+      if (latestByPlatform[row.platform_key])
+        latestByPlatform[row.platform_key].push(toModSummary(row))
     }
     for (const row of platformRows) {
       if (modsByPlatform[row.platform_key]) modsByPlatform[row.platform_key].push(toModSummary(row))
@@ -341,7 +343,8 @@ export async function GET(req: NextRequest) {
     setCacheControl(headers, { type: 'public', maxAge: 30, swr: 120 })
     return withETag(req, { data: responseData }, { headers })
   } catch (err) {
+    log.error({ err }, '[api/home] failed')
     logger.error('[api/home] failed:', err)
     return internalError('Failed to load homepage data')
   }
-}
+}, 'GET /api/home')

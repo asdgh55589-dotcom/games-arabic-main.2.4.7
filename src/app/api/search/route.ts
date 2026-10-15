@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import { meili, meiliHealth } from '@/lib/meilisearch/client'
 import { modCardSelect } from '@/lib/prisma-selects'
 import { rateLimit, rateLimitHeaders, type RateLimitResult } from '@/lib/rate-limit'
+import { withRequestLogger } from '@/lib/request-logger'
 
 // Phase 3: shared headers for search responses — short public cache +
 // X-RateLimit-* on EVERY response (success and 429), not just errors.
@@ -23,7 +24,7 @@ function searchHeaders(rl: RateLimitResult): Headers {
 // يبحث في 4 كيانات (تعريبات/ألعاب/فرق/مستخدمين).
 // يستخدم Meilisearch عند توفره، وإلا Prisma fallback (case-insensitive).
 // العقد القديم محفوظ: mods + games موجودان دائمًا (teams/users/pagination مضافة).
-export async function GET(req: NextRequest) {
+export const GET = withRequestLogger(async (req: NextRequest) => {
   const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'search' })
   if (!rl.success) {
     const res = rateLimited()
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
   }
 
   return withETag(req, { data: await searchViaPrisma(args) }, { headers: searchHeaders(rl) })
-}
+}, 'GET /api/search')
 
 interface SearchArgs {
   q: string

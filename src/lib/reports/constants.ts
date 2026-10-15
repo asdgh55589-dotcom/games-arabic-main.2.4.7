@@ -20,6 +20,40 @@ export const REPORT_REASONS: Record<string, { label: string; priority: string; i
 
 export type ReportReason = keyof typeof REPORT_REASONS // kept for backward compat; also satisfies PrismaReportReason
 
+// Malfunction reasons for mod reports (max 7): dead links, broken files, install
+// problems, outdated info/translation, version mismatch + other. Shown when
+// targetType === 'mod'; comment/user reports keep the legacy REPORT_REASONS set.
+export const REPORT_MOD_REASONS: Record<string, { label: string; priority: string; icon: string }> = {
+  dead_links: { label: 'روابط ميّتة', priority: 'high', icon: 'Unlink' },
+  broken_files: { label: 'ملفات لا تعمل', priority: 'high', icon: 'FileX' },
+  install_issue: { label: 'مشاكل في التثبيت', priority: 'medium', icon: 'Wrench' },
+  outdated_info: { label: 'معلومات قديمة', priority: 'medium', icon: 'Info' },
+  outdated_translation: { label: 'تعريب قديم', priority: 'medium', icon: 'History' },
+  version_mismatch: { label: 'غير متوافق مع نسخة اللعبة', priority: 'medium', icon: 'AlertTriangle' },
+  other: { label: 'أخرى', priority: 'medium', icon: 'MoreHorizontal' },
+} as const
+
+export type ReportModReason = keyof typeof REPORT_MOD_REASONS
+
+// Label lookup for admin UI — covers malfunction + legacy keys, falls back to raw key.
+export function getReportReasonLabel(reason: string): string {
+  return (
+    REPORT_MOD_REASONS[reason]?.label || REPORT_REASONS[reason]?.label || reason
+  )
+}
+
+// Priority lookup for API — malfunction reasons first, then legacy.
+export function getReportReasonPriority(reason: string): string {
+  return (
+    REPORT_MOD_REASONS[reason]?.priority || REPORT_REASONS[reason]?.priority || 'medium'
+  )
+}
+
+// Validation set — union of both reason lists.
+export function isKnownReportReason(reason: string): boolean {
+  return reason in REPORT_MOD_REASONS || reason in REPORT_REASONS
+}
+
 export const REPORT_STATUSES: Record<string, { label: string; color: string }> = {
   new: { label: 'جديدة', color: 'bg-blue-500/10 text-blue-500' },
   under_review: { label: 'قيد المراجعة', color: 'bg-yellow-500/10 text-yellow-500' },

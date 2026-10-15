@@ -3,23 +3,20 @@ import { internalError, notFound, ok } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withRequestLogger } from '@/lib/request-logger'
 import { calculateUserTier } from '@/lib/tier-engine'
 
 interface RouteParams {
   params: Promise<{ username: string }>
 }
 
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export const GET = withRequestLogger(async (req: NextRequest, { params }: RouteParams, log) => {
   try {
-    console.time('[full-profile total]')
-
     const { username } = await params
     const { searchParams } = new URL(req.url)
     const limit = Math.min(10, parseInt(searchParams.get('limit') || '10'))
 
     const viewer = await getOptionalSession()
-
-    console.time('[full-profile user-query]')
 
     const user = await db.user.findFirst({
       where: { username: { equals: username, mode: 'insensitive' } },
@@ -70,13 +67,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
 
-    console.timeEnd('[full-profile user-query]')
-
     if (!user) {
       return notFound()
     }
-
-    console.time('[full-profile viewer-query]')
 
     const viewerPromise = Promise.resolve(viewer ? { id: viewer.id } : null)
 
@@ -113,8 +106,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       currMax === Infinity ? 100 : Math.round(((xpPoints - prevMax) / (currMax - prevMax)) * 100)
     const xp = { ...xpLevel, progress: xpProgress }
 
-    console.time('[full-profile counts-query]')
-
     const countsPromise = Promise.all([
       db.follow.count({ where: { followingId: user.id } }),
       db.follow.count({ where: { followerId: user.id } }),
@@ -138,10 +129,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const resolvedViewer = await viewerPromise
 
-    console.timeEnd('[full-profile viewer-query]')
-
-    console.time('[full-profile follow-query]')
-
     const followPromise = resolvedViewer
       ? db.follow.findFirst({
           where: {
@@ -164,9 +151,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       ])
 
     const isFollowing = Boolean(follow)
-
-    console.timeEnd('[full-profile counts-query]')
-    console.timeEnd('[full-profile follow-query]')
 
     const now = new Date()
 
@@ -214,8 +198,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     ]
 
-    console.time('[full-profile response]')
-
     const response = ok(
       {
         profile: {
@@ -248,12 +230,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     )
 
-    console.timeEnd('[full-profile response]')
-    console.timeEnd('[full-profile total]')
-
     return response
   } catch (error) {
+    log.error({ err: error }, '[full-profile GET] failed')
     logger.error({ err: error }, '[full-profile GET] failed')
     return internalError('Failed')
   }
-}
+}, 'GET /api/users/[username]/full-profile')

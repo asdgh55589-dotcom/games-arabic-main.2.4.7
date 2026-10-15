@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { authorPublicSelect, gameDetailSelect } from '@/lib/prisma-selects'
 import { CreateModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
@@ -99,6 +100,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     } catch (relErr) {
       logger.error('[creator/mods PATCH] relations failed:', relErr)
     }
+
+    // Listing cache: the edited mod may be PUBLISHED → bump its game's generation.
+    invalidateGameModsCache(updated.gameId).catch(() => {})
 
     return ok({ mod: updated, message: 'تم تحديث التعريب بنجاح' })
   } catch (err) {

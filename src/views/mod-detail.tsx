@@ -3,13 +3,15 @@
 import {
   Award,
   BarChart3,
+  Bookmark,
+  Bug,
   Calendar,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
-  Cpu,
   Crown,
+  Cpu,
   Download,
   ExternalLink,
   Eye,
@@ -21,20 +23,23 @@ import {
   Globe,
   HardDrive,
   Hash,
-  Languages,
+  Heart,
   Layers,
+  Languages,
   Maximize2,
   MessageSquare,
+  Play,
+  Rocket,
   Send,
   Shield,
   Smartphone,
-  Star,
   Tag,
   ThumbsUp,
   Twitter,
   User,
   Users,
   Youtube,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -50,7 +55,10 @@ import { ModDownloadSection } from '@/components/mod-download-section'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
+import { RateReviewBar } from '@/components/rate-review-bar'
 import { ReportButton } from '@/components/report-button'
+import { useAuth } from '@/contexts/auth-context'
+import { useBookmarks } from '@/contexts/bookmarks-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,7 +68,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { useToast } from '@/hooks/use-toast'
-import { apiFetch } from '@/lib/api-client'
+import { apiFetch, ApiError } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { BLUR_PLACEHOLDER } from '@/lib/image-placeholder'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
@@ -74,7 +82,6 @@ import {
 } from '@/lib/format'
 import { getModTitles } from '@/lib/platform-titles'
 import {
-  formatRatingText,
   getDisplaySummary,
   getSeriesDisplay,
   getTeamDisplay,
@@ -114,7 +121,6 @@ export function ModDetailPage() {
 
   const [lastSlug, setLastSlug] = useState(slug)
   const [hasReported, setHasReported] = useState(false)
-  const [viewer, setViewer] = useState<{ id: string; role: string } | null>(null)
   if (slug !== lastSlug) {
     setLastSlug(slug)
     setActiveImage(0)
@@ -123,16 +129,6 @@ export function ModDetailPage() {
     setDownloadCount(null)
     setHasReported(false)
   }
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        const u = j?.data ?? j?.user ?? null
-        if (u?.id) setViewer({ id: u.id, role: u.role || 'member' })
-      })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     return () => {
@@ -201,29 +197,11 @@ export function ModDetailPage() {
   const prevMod = neighborsData?.data?.previous ?? null
   const nextMod = neighborsData?.data?.next ?? null
 
-  if (!loading && !mod) {
-    return (
-      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:py-20 text-center">
-        <h1 className="text-xl sm:text-2xl font-bold">Mod not found</h1>
-        <Button asChild className="mt-4">
-          <Link href="/">Back to Mods</Link>
-        </Button>
-      </div>
-    )
-  }
-
   const gallery = mod ? parseGalleryUrls(mod.galleryUrls) : []
   const tags = mod ? parseTags(mod.tags) : []
   const displaySummary = mod ? getDisplaySummary(mod) : ''
   const seriesDisplay = mod ? getSeriesDisplay(mod as any) : null
   const teamDisplay = mod ? getTeamDisplay(mod as any) : null
-  const ratingText = mod ? formatRatingText(mod.rating, mod.ratingCount) : null
-  const showScheduled =
-    !!mod &&
-    shouldShowScheduledBanner(mod as any) &&
-    !!viewer &&
-    (viewer.id === mod.author?.id ||
-      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
   const safeActiveImage = Math.min(activeImage, Math.max(0, gallery.length - 1))
   // Banner = first gallery image (the header image in nexusmods)
   const bannerImage = gallery[0] || mod?.imageUrl || ''
@@ -235,6 +213,125 @@ export function ModDetailPage() {
   const shownEndorsements = endorsementCount ?? mod?.endorsements ?? 0
   const shownDownloads = downloadCount ?? mod?.downloads ?? 0
   const shownViews = mod?.views ?? 0
+
+  const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
+  const { user } = useAuth()
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const viewer = user ? { id: user.id, role: user.role } : null
+  const showScheduled =
+    !!mod &&
+    shouldShowScheduledBanner(mod as any) &&
+    !!viewer &&
+    (viewer.id === mod.author?.id ||
+      ['moderator', 'manager', 'admin', 'owner'].includes(viewer.role))
+  const [bookmarkPending, setBookmarkPending] = useState(false)
+
+  useEffect(() => {
+    if (mod?.id) registerModIds([mod.id])
+  }, [mod?.id, registerModIds])
+
+  const bookmarked = mod ? isBookmarked(mod.id) : false
+
+  const handleBookmark = async () => {
+    if (!mod || bookmarkPending) return
+    if (!user) {
+      toast({
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول لحفظ المفضلة',
+        variant: 'destructive',
+      })
+      router.push('/login')
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+    setBookmarkPending(true)
+    try {
+      if (bookmarked) {
+        await apiFetch(`/api/bookmarks?modId=${mod.id}`, {
+          method: 'DELETE',
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تمت الإزالة من المفضلة', description: mod.name })
+      } else {
+        await apiFetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modId: mod.id }),
+          signal: controller.signal,
+        })
+        toggleBookmark(mod.id)
+        toast({ title: 'تم الحفظ في المفضلة', description: mod.name })
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          toast({
+            title: 'سجّل الدخول',
+            description: 'انتهت الجلسة — سجّل الدخول ثم حاول مجدداً',
+            variant: 'destructive',
+          })
+          router.push('/login')
+        } else if (err.status === 409) {
+          if (!bookmarked) toggleBookmark(mod.id)
+          toast({ title: 'موجود بالفعل في المفضلة', description: mod.name })
+        } else if (err.status === 429) {
+          toast({
+            title: 'حاول مرة أخرى لاحقاً',
+            description: 'تجاوزت حد المحاولات',
+            variant: 'destructive',
+          })
+        } else {
+          toast({ title: 'خطأ', description: err.message, variant: 'destructive' })
+        }
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        toast({
+          title: 'خطأ في الاتصال',
+          description: 'انتهت المهلة — تحقق من اتصالك',
+          variant: 'destructive',
+        })
+      } else {
+        toast({ title: 'خطأ', description: 'تعذّر حفظ المفضلة', variant: 'destructive' })
+      }
+    } finally {
+      clearTimeout(timeout)
+      setBookmarkPending(false)
+    }
+  }
+
+  const hasVideos = useMemo(
+    () =>
+      ((mod?.videoGroups || []) as { videos?: unknown[] }[]).some(
+        (g) => (g.videos || []).length > 0,
+      ),
+    [mod?.videoGroups],
+  )
+
+  const scrollToVideos = () => {
+    setTab('videos')
+    requestAnimationFrame(() => {
+      document.getElementById('mod-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  const scrollToComments = () => {
+    setTab('comments')
+    requestAnimationFrame(() => {
+      document.getElementById('mod-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  const compatLabel = mod?.gameUpdateVersion || mod?.gameVersion || mod?.systemFirmware || null
+  const isOfficial = (mod?.translationType || '').toLowerCase() === 'official'
+
+  /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
+  const DESIGN_PREVIEW = {
+    enabled: true,
+    recommendPct: 94,
+  } as const
+  const recommendPct =
+    (mod as any)?.recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
 
   const onEndorse = async () => {
     if (!mod) return
@@ -316,6 +413,19 @@ export function ModDetailPage() {
     })
   }
 
+  // Not-found guard AFTER all hooks (rules-of-hooks: early return above
+  // useBookmarks/useAuth broke hook order on the missing-mod path).
+  if (!loading && !mod) {
+    return (
+      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:py-20 text-center">
+        <h1 className="text-xl sm:text-2xl font-bold">Mod not found</h1>
+        <Button asChild className="mt-4">
+          <Link href="/">Back to Mods</Link>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="hidden lg:block">
@@ -330,11 +440,21 @@ export function ModDetailPage() {
             <>
               {/* ===== HERO BANNER — standalone, fixed height ===== */}
               <div
-                className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[520px]"
+                className="relative overflow-hidden h-[360px] sm:h-[480px] md:h-[600px]"
                 dir="rtl"
               >
-                {/* Backdrop image — تعتيم خفيف جداً */}
-                <div className="absolute inset-0">
+                {/* Backdrop image — ضباب أزرق 60% + تلاشي الأطراف */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    maskImage:
+                      'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 4%, rgba(0,0,0,1) 96%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, rgba(0,0,0,0) 100%)',
+                    WebkitMaskImage:
+                      'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 4%, rgba(0,0,0,1) 96%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, rgba(0,0,0,0) 100%)',
+                    maskComposite: 'intersect',
+                    WebkitMaskComposite: 'source-in',
+                  }}
+                >
                   {bannerImage ? (
                     <>
                       <Image
@@ -348,18 +468,21 @@ export function ModDetailPage() {
                         blurDataURL={BLUR_PLACEHOLDER}
                         className="object-cover"
                         onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement & { dataset: DOMStringMap }
+                          const img = e.currentTarget as HTMLImageElement & {
+                            dataset: DOMStringMap
+                          }
                           if (!img.dataset.fallback) {
                             img.dataset.fallback = '1'
                             img.src = FALLBACK_GAME_IMAGE
                           }
                         }}
                       />
+                      <div className="absolute inset-0 bg-[#0B2A4A]/60" aria-hidden />
                       <div
                         className="absolute inset-0"
                         style={{
                           background:
-                            'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.06) 30%, transparent 55%, rgba(0,0,0,0.62) 100%)',
+                            'linear-gradient(to bottom, rgba(4,18,34,0.10) 0%, rgba(4,18,34,0.05) 30%, transparent 55%, rgba(0,0,0,0.62) 100%)',
                         }}
                       />
                     </>
@@ -377,19 +500,19 @@ export function ModDetailPage() {
 
                 {/* Breadcrumb — top-start with spacing from edge */}
                 <nav
-                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-10 flex flex-wrap items-center gap-1.5 sm:gap-2 text-start text-[10px] sm:text-xs text-muted-foreground/80"
+                  className="absolute top-3 sm:top-4 start-3 sm:start-6 z-20 flex flex-wrap items-center gap-1.5 sm:gap-2 text-start text-[11px] sm:text-sm text-white/85"
                   aria-label="مسار التنقل"
                 >
                   <button
                     onClick={() => router.back()}
-                    className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20 cursor-pointer"
+                    className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20 cursor-pointer"
                     aria-label="العودة للصفحة السابقة"
                   >
                     <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:text-foreground hover:border-white/20"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:text-foreground hover:border-white/20"
                   >
                     <span className="text-[8px] sm:text-[10px] opacity-60">«</span>
                     الرئيسية
@@ -397,13 +520,13 @@ export function ModDetailPage() {
                   <span className="text-primary/60 text-[10px]">‹</span>
                   <Link
                     href={`/platform/${mod.game.platform}`}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/40 backdrop-blur-sm border border-white/10 transition-all hover:bg-background/60 hover:border-white/20 whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#0B2A4A]/90 backdrop-blur-sm border border-white/10 transition-all hover:bg-[#0B2A4A] hover:border-white/20 whitespace-nowrap"
                     style={{ color: platformColor }}
                   >
                     ARABIC {mod.game.platform}
                   </Link>
                   <span className="text-primary/60 text-[10px]">‹</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 border border-primary/20 font-medium text-foreground">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary border border-primary text-xs sm:text-sm font-bold text-primary-foreground">
                     {(mod as { headline?: string }).headline || mod.name}
                   </span>
                 </nav>
@@ -415,8 +538,8 @@ export function ModDetailPage() {
                 className="relative z-10 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 -mt-[160px] sm:-mt-[280px] md:-mt-[360px]"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
-                  {/* POSTER COLUMN — RIGHT side in RTL */}
-                  <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start">
+                  {/* POSTER COLUMN — RIGHT side in RTL (مرفوعة تحت المسار مباشرة) */}
+                  <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start -translate-y-[128px] md:-translate-y-[160px] translate-x-14 lg:translate-x-20">
                     {/* Poster image */}
                     <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
                       {mod.imageUrl ? (
@@ -466,10 +589,21 @@ export function ModDetailPage() {
                         <ModTimeBadge result={getModBadges(mod)} />
                       </div>
                     </div>
+                    {/* زر التريلر تحت البوستر */}
+                    {hasVideos && (
+                      <button
+                        onClick={scrollToVideos}
+                        className="mt-3 flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-1.5 border-[2px] border-border bg-card py-2.5 text-xs font-black text-foreground shadow-[2px_2px_0_0_var(--border)] transition-all hover:bg-accent"
+                        aria-label="التريلر لـ التعريب"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        التريلر لـ التعريب
+                      </button>
+                    )}
                   </div>
 
-                  {/* TEXT COLUMN — beside poster */}
-                  <div className="text-right">
+                  {/* TEXT COLUMN — beside poster (مرفوع لفوق جنب الصورة) */}
+                  <div className="text-right -mt-36 sm:-mt-44">
                     {/* Badges row */}
                     <div className="mb-2 sm:mb-3 flex items-center gap-2 justify-end">
                       <ModPerformanceBadge result={getModBadges(mod)} />
@@ -477,128 +611,155 @@ export function ModDetailPage() {
                     </div>
 
                     {/* Title + stats + data — shared blurred backdrop, faded edges */}
-                    <div
-                      className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8 bg-black/50 backdrop-blur-sm"
-                      style={{
-                        maskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        WebkitMaskImage:
-                          'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 98%, rgba(0,0,0,0) 100%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)',
-                        maskComposite: 'intersect',
-                        WebkitMaskComposite: 'source-in',
-                      }}
-                    >
-                      {/* Title */}
-                      <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
-                        {(mod as { headline?: string }).headline || mod.name}
-                      </h1>
-                      {/* 3a — summary below title with description fallback */}
-                      {displaySummary !== '' && (
-                        <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
-                          {displaySummary}
+                    <div className="-mt-2 sm:-mt-3 ps-2 sm:ps-4 lg:ps-6 pe-5 sm:pe-8 lg:pe-10 pt-6 sm:pt-8 md:pt-10 pb-6 sm:pb-8">
+                      <div className="translate-x-24">
+                        {/* سطر تعريفي صغير فوق العنوان: المنصة + حقل العنوان + الإصدار */}
+                        <p className="mb-1 text-[11px] sm:text-xs font-black tracking-wide text-primary">
+                          {mod.game.platform} • {mod.name} • v{mod.version}
                         </p>
-                      )}
-                      {/* 3j — version + rating, 3d — category + section — سطر واحد بدون لف */}
-                      <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
-                        <Badge
-                          variant="outline"
-                          className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
-                        >
-                          v{mod.version}
-                        </Badge>
-                        {ratingText && (
+                        {/* Title */}
+                        <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
+                          {(mod as { headline?: string }).headline || mod.name}
+                        </h1>
+                        {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
+                        <RateReviewBar
+                          slug={mod.slug}
+                          name={mod.name}
+                          rating={mod.rating ?? 0}
+                          ratingCount={mod.ratingCount ?? 0}
+                          recommendPct={recommendPct}
+                          viewerRole={viewer?.role}
+                          onReadReviews={scrollToComments}
+                        />
+                        {/* 3a — summary below title with description fallback */}
+                        {displaySummary !== '' && (
+                          <p className="mt-2 max-w-[85%] text-sm sm:text-base font-medium leading-[1.8] text-foreground/90">
+                            {displaySummary}
+                          </p>
+                        )}
+                        {/* شارات الإصدار والقسم — سطر واحد بدون لف */}
+                        <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
                           <Badge
                             variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
+                            className="border-primary/30 bg-primary/10 text-xs font-black tabular-nums shrink-0 whitespace-nowrap"
                           >
-                            ★ {ratingText}
+                            v{mod.version}
                           </Badge>
-                        )}
-                        {mod.category?.name && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-bold shrink-0 whitespace-nowrap"
-                          >
-                            {mod.category.name}
-                          </Badge>
-                        )}
-                        {(mod as any).sectionRelation?.name && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-bold shrink-0 whitespace-nowrap"
-                          >
-                            {(mod as any).sectionRelation.name}
-                          </Badge>
-                        )}
-                        {tags.length > 0 &&
-                          tags.map((t) => (
-                            <Badge
-                              key={t}
-                              variant="outline"
-                              className="text-[11px] font-bold shrink-0 whitespace-nowrap"
+                          {isOfficial ? (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
+                              className="shrink-0"
                             >
-                              #{t}
-                            </Badge>
-                          ))}
-                      </div>
-                      {/* 3g — scheduled publishing indicator (owner/admin only) */}
-                      {showScheduled && (
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400">
-                          <span aria-hidden>⏰</span>
-                          <span>
-                            مجدول للنشر في:{' '}
-                            {formatArabicDate((mod as any).scheduledAt)}
-                          </span>
+                              <Badge
+                                variant="outline"
+                                className="border-emerald-500/30 bg-emerald-500/10 text-xs font-black shrink-0 whitespace-nowrap hover:underline cursor-pointer"
+                              >
+                                تعريب رسمي
+                              </Badge>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=unofficial`}
+                              className="shrink-0"
+                            >
+                              <Badge
+                                variant="outline"
+                                className="border-muted-foreground/30 bg-muted/40 text-xs font-black shrink-0 whitespace-nowrap hover:underline cursor-pointer"
+                              >
+                                تعريب غير رسمي
+                              </Badge>
+                            </Link>
+                          )}
+                          {(mod as any).sectionRelation?.name && (
+                            <Link
+                              href={`/platform/${(mod as any).sectionRelation.key}`}
+                              className="shrink-0"
+                            >
+                              <Badge
+                                variant="secondary"
+                                className="text-xs font-bold whitespace-nowrap hover:underline"
+                              >
+                                {(mod as any).sectionRelation.name}
+                              </Badge>
+                            </Link>
+                          )}
+                          {tags.length > 0 &&
+                            tags.map((t) => (
+                              <Badge
+                                key={t}
+                                variant="outline"
+                                className="text-[11px] font-bold shrink-0 whitespace-nowrap"
+                              >
+                                #{t}
+                              </Badge>
+                            ))}
                         </div>
-                      )}
-                      {/* tags مدمجة في سطر الأوسمة فوق */}
-                      {(
-                        mod as unknown as {
-                          isOriginalWork?: boolean
-                          originalSource?: string | null
-                          originalAuthor?: string | null
-                        }
-                      ).isOriginalWork === false && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                            منشور من مصدر خارجي
-                          </span>
-                          {(mod as unknown as { originalAuthor?: string | null })
-                            .originalAuthor && (
-                            <span className="text-xs text-muted-foreground">
-                              • {(mod as unknown as { originalAuthor: string }).originalAuthor}
+                        {/* 3g — scheduled publishing indicator (owner/admin only) */}
+                        {showScheduled && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+                            <span aria-hidden>⏰</span>
+                            <span>
+                              مجدول للنشر في: {formatArabicDate((mod as any).scheduledAt)}
                             </span>
-                          )}
-                          {(mod as unknown as { originalSource?: string | null })
-                            .originalSource && (
-                            <>
-                              <span className="text-muted-foreground">—</span>
-                              {(
-                                mod as unknown as { originalSource: string }
-                              ).originalSource.startsWith('http') ? (
-                                <a
-                                  href={
-                                    (mod as unknown as { originalSource: string }).originalSource
-                                  }
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline truncate max-w-[200px]"
-                                >
-                                  {(mod as unknown as { originalSource: string }).originalSource}
-                                </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  {(mod as unknown as { originalSource: string }).originalSource}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-
+                          </div>
+                        )}
+                        {/* تحذير توافق نسخة اللعبة */}
+                        {compatLabel && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                              يتطلب نسخة اللعبة: {compatLabel}
+                            </span>
+                          </div>
+                        )}
+                        {/* tags مدمجة في سطر الأوسمة فوق */}
+                        {(
+                          mod as unknown as {
+                            isOriginalWork?: boolean
+                            originalSource?: string | null
+                            originalAuthor?: string | null
+                          }
+                        ).isOriginalWork === false && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                              منشور من مصدر خارجي
+                            </span>
+                            {(mod as unknown as { originalAuthor?: string | null })
+                              .originalAuthor && (
+                              <span className="text-xs text-muted-foreground">
+                                • {(mod as unknown as { originalAuthor: string }).originalAuthor}
+                              </span>
+                            )}
+                            {(mod as unknown as { originalSource?: string | null })
+                              .originalSource && (
+                              <>
+                                <span className="text-muted-foreground">—</span>
+                                {(
+                                  mod as unknown as { originalSource: string }
+                                ).originalSource.startsWith('http') ? (
+                                  <a
+                                    href={
+                                      (mod as unknown as { originalSource: string }).originalSource
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline truncate max-w-[200px]"
+                                  >
+                                    {(mod as unknown as { originalSource: string }).originalSource}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    {(mod as unknown as { originalSource: string }).originalSource}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {/* Data grid — per-platform titles (shared 7 + platform extras) */}
-                      <div className="mt-4 sm:mt-5 md:mt-6 pb-2 sm:pb-4 lg:pb-6 grid w-[85%] grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
+                      <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-5 pb-2 translate-x-24 sm:mt-8 sm:pb-4 lg:pb-6">
                         {getModTitles(mod, formatArabicDate).map((item) => (
                           <DataItem
                             key={item.key}
@@ -616,7 +777,7 @@ export function ModDetailPage() {
               {/* ===== صندوق البيانات — مائل بدون حواف ناعمة وبارز بخطوط عريضة ===== */}
               <div
                 dir="rtl"
-                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-8 sm:-mt-12 lg:-mt-14"
+                className="relative z-20 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-[328px] pe-12 sm:pe-20 lg:pe-36 -mt-24 sm:-mt-32 lg:-mt-48"
               >
                 <div className="flex w-full flex-wrap lg:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-2 rounded-none border-[3px] border-border bg-card px-4 py-2.5 sm:px-6 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
                   {/* السلسلة — يفضّل seriesRelation ثم الاسم القديم */}
@@ -735,6 +896,19 @@ export function ModDetailPage() {
                       <ThumbsUp className={`h-3 w-3 ${endorsed ? 'fill-current' : ''}`} />
                       {endorsed ? 'تم الإعجاب' : 'أعجبني'}
                     </Button>
+                    <Button
+                      onClick={handleBookmark}
+                      disabled={bookmarkPending}
+                      className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap disabled:opacity-60 ${
+                        bookmarked
+                          ? 'bg-amber-500 text-white border-amber-500 cursor-pointer'
+                          : 'bg-card text-foreground border-border hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
+                      }`}
+                      aria-label={bookmarked ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+                    >
+                      <Bookmark className={`h-3 w-3 ${bookmarked ? 'fill-current' : ''}`} />
+                      {bookmarked ? 'محفوظ' : 'حفظ'}
+                    </Button>
                     {hasReported ? (
                       <Button
                         variant="outline"
@@ -753,9 +927,9 @@ export function ModDetailPage() {
                           setHasReported(true)
                           try {
                             if (mod?.id) localStorage.setItem(`ga_reported_mod_${mod.id}`, '1')
-      } catch {
-        // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-      }
+                          } catch {
+                            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
+                          }
                         }}
                       />
                     )}
@@ -766,7 +940,8 @@ export function ModDetailPage() {
               {/* ===== الأقسام (Tabs) — قسم مستقل بذاته ===== */}
               <div
                 dir="rtl"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-6 sm:mt-8"
+                id="mod-tabs"
+                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-3 sm:mt-4 scroll-mt-24"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList
@@ -869,7 +1044,7 @@ export function ModDetailPage() {
                   </TabsList>
 
                   <TabsContent value="description" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading
                         icon={<FileText className="h-5 w-5" />}
                         title="عن هذا التعريب"
@@ -885,12 +1060,18 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="changelog" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading icon={<Clock className="h-5 w-5" />} title="سجل التغييرات" />
-                      <div className="mb-5 inline-flex items-center gap-3 rounded-lg border border-white/15 bg-card/40 px-4 py-2.5">
+                      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <Tag className="h-4 w-4" />
+                        </span>
                         <span className="text-xs font-bold text-foreground/80">الإصدار الحالي</span>
-                        <span className="text-base font-bold tabular-nums text-foreground">
+                        <span className="rounded-md bg-primary/10 px-2.5 py-1 text-base font-black tabular-nums text-primary">
                           v{mod.version}
+                        </span>
+                        <span className="ms-auto text-[11px] font-bold text-muted-foreground">
+                          تاريخ النشر: {formatArabicDate(mod.releaseDate)}
                         </span>
                       </div>
                       {(mod as any).changelogs && (mod as any).changelogs.length > 0 ? (
@@ -900,30 +1081,46 @@ export function ModDetailPage() {
                           <MarkdownRenderer content={mod.changelog} />
                         </div>
                       ) : (
-                        <ul className="space-y-2.5 text-sm font-bold text-foreground">
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            الإصدار الأول العام
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            إصلاحات توافق مع التعديلات الشائعة
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            تحسينات في الأداء للأجهزة الضعيفة
-                          </li>
-                          <li className="flex gap-2.5">
-                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />{' '}
-                            إصلاح أخطاء أبلغ عنها المجتمع
-                          </li>
-                        </ul>
+                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                              <Rocket className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              الإصدار الأول العام
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-500/10 text-sky-500">
+                              <Shield className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              إصلاحات توافق مع التعديلات الشائعة
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-500">
+                              <Zap className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              تحسينات في الأداء للأجهزة الضعيفة
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3.5 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-500/10 text-rose-500">
+                              <Bug className="h-4 w-4" />
+                            </span>
+                            <span className="text-sm font-bold leading-relaxed text-foreground">
+                              إصلاح أخطاء أبلغ عنها المجتمع
+                            </span>
+                          </div>
+                        </div>
                       )}
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="install" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <SectionHeading icon={<Shield className="h-5 w-5" />} title="طريقة التركيب" />
                       {(mod as any).installGuide && (mod as any).installGuide.trim() !== '' ? (
                         <MarkdownRenderer content={(mod as any).installGuide} />
@@ -955,16 +1152,32 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="translationTeam" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModTranslationTeam
                         teamMembers={mod.teamMembers || []}
                         contactLinks={mod.contactLinks || []}
                       />
+                      {/* زر دعم الفريق — معاينة تصميم فقط (Mock) */}
+                      {DESIGN_PREVIEW.enabled && (
+                        <button
+                          onClick={() =>
+                            toast({
+                              title: 'معاينة تصميم فقط',
+                              description: 'زر الدعم سيُفعّل بعد الاتفاق على التصميم',
+                            })
+                          }
+                          className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-none border-[3px] border-amber-500 bg-amber-500/10 py-2.5 text-sm font-black text-amber-700 shadow-[3px_3px_0_0_var(--border)] transition-all hover:bg-amber-500/20 dark:text-amber-400 cursor-pointer"
+                          aria-label="ادعم فريق التعريب (معاينة تصميم)"
+                        >
+                          <Heart className="h-4 w-4 fill-current" />
+                          ادعم الفريق
+                        </button>
+                      )}
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="images" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModGallery
                         images={gallery.length > 0 ? gallery : [mod.imageUrl]}
                         modName={mod.name}
@@ -973,19 +1186,19 @@ export function ModDetailPage() {
                   </TabsContent>
 
                   <TabsContent value="videos" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModVideos videoGroups={mod.videoGroups || []} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="files" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="comments" className="mt-0" dir="rtl">
-                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                    <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                       <CommentSectionBeacon slug={mod.slug} />
                       <ModComments modSlug={mod.slug} modOwnerName={mod.author?.username} />
                     </Card>
@@ -998,7 +1211,7 @@ export function ModDetailPage() {
                       className="mt-0"
                       dir="rtl"
                     >
-                      <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7">
+                      <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
                         <SectionHeading icon={<Layers className="h-5 w-5" />} title={tab.name} />
                         <MarkdownRenderer content={tab.content} />
                       </Card>
@@ -1084,7 +1297,14 @@ export function ModDetailPage() {
           ) : null}
         </div>
       </div>
-      {mod && <ModDetailMobile mod={mod} />}
+      {mod && (
+        <ModDetailMobile
+          mod={mod}
+          relatedData={relatedData ?? null}
+          relatedLoading={relatedLoading}
+          neighborsData={neighborsData ?? null}
+        />
+      )}
     </>
   )
 }
@@ -1103,7 +1323,8 @@ function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string
   )
 }
 
-/** عنصر بيانات في شبكة المعلومات — أيقونة + تسمية + فاصلة + قيمة */
+/** عنصر بيانات — تسمية / قيمة بخلفية رمادية (نفس تصميم حقول المرجع) */
+
 /** Icons per platform-title key (owner-approved title lists). */
 const TITLE_ICONS: Record<string, React.ReactNode> = {
   title: <Gamepad2 className="h-4 w-4 text-blue-500 shrink-0" />,
@@ -1131,13 +1352,14 @@ const TITLE_ICONS: Record<string, React.ReactNode> = {
 
 function DataItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-muted-foreground shrink-0">{icon}</span>
-      <span className="w-[80px] sm:w-[100px] shrink-0 text-xs sm:text-sm font-bold text-foreground/80">
-        {label}:
-      </span>
-      <span className="text-foreground text-sm sm:text-base font-bold shrink-0">|</span>
-      <span className="text-xs sm:text-sm font-bold text-foreground">{value}</span>
+    <div
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs dark:bg-gray-800 sm:text-sm"
+      title={`${label}: ${value}`}
+    >
+      {icon}
+      <span className="shrink-0 font-normal text-muted-foreground">{label}</span>
+      <span className="shrink-0 text-muted-foreground/50">/</span>
+      <span className="min-w-0 truncate font-bold text-foreground">{value}</span>
     </div>
   )
 }

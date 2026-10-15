@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { rateLimited } from '@/lib/api-response'
 import { requireCronAuth } from '@/lib/cron-auth'
 import { db } from '@/lib/db'
+import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
+        gameId: true,
         scheduledAt: true,
         authorId: true,
       },
@@ -50,6 +52,7 @@ export async function GET(req: NextRequest) {
     }
 
     const published: { id: string; name: string }[] = []
+    const publishedGameIds = new Set<string>()
 
     for (const mod of dueMods) {
       try {
@@ -81,10 +84,14 @@ export async function GET(req: NextRequest) {
           .catch(() => {})
 
         published.push({ id: mod.id, name: mod.name })
+        if (mod.gameId) publishedGameIds.add(mod.gameId)
       } catch (err) {
         logger.error(`[scheduled-publish] Failed to publish mod ${mod.id}:`, err)
       }
     }
+
+    // Listing cache: newly PUBLISHED mods join game listings (best-effort).
+    invalidateGameModsCache([...publishedGameIds]).catch(() => {})
 
     return NextResponse.json({
       data: {

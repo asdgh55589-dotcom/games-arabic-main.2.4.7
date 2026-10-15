@@ -22,12 +22,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { timeAgo } from '@/lib/format'
-import type { ReportPriority, ReportReason, ReportTargetType } from '@/lib/reports/constants'
+import type { ReportPriority, ReportTargetType } from '@/lib/reports/constants'
 import {
+  REPORT_MOD_REASONS,
   REPORT_PRIORITIES,
   REPORT_REASONS,
   REPORT_STATUSES,
   REPORT_TARGET_TYPES,
+  getReportReasonLabel,
 } from '@/lib/reports/constants'
 
 interface ReportEntry {
@@ -202,11 +204,20 @@ export default function AdminReportsPage() {
           className="h-9 rounded-md border border-border bg-background-secondary px-3 text-sm text-foreground"
         >
           <option value="">كل الأسباب</option>
-          {Object.entries(REPORT_REASONS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v.label}
-            </option>
-          ))}
+          <optgroup label="أعطال التعريب">
+            {Object.entries(REPORT_MOD_REASONS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="سلوك ومحتوى">
+            {Object.entries(REPORT_REASONS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
+          </optgroup>
         </select>
         <select
           value={priorityFilter}
@@ -288,7 +299,7 @@ export default function AdminReportsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs">
-                        {REPORT_REASONS[report.reason as ReportReason]?.label || report.reason}
+                        {getReportReasonLabel(report.reason)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -341,7 +352,7 @@ export default function AdminReportsPage() {
                           report.targetType}
                       </span>
                       <span className="text-xs font-normal text-muted-foreground">
-                        • {REPORT_REASONS[report.reason as ReportReason]?.label || report.reason}
+                        • {getReportReasonLabel(report.reason)}
                       </span>
                     </div>
                     <ReportStatusBadge status={report.status as any} />
@@ -354,7 +365,7 @@ export default function AdminReportsPage() {
                         report.priority}
                     </span>
                     <Badge variant="outline" className="text-xs">
-                      {REPORT_REASONS[report.reason as ReportReason]?.label || report.reason}
+                      {getReportReasonLabel(report.reason)}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {timeAgo(report.createdAt)}

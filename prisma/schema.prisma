@@ -36,6 +36,12 @@ enum ReportReason {
   false_info
   technical
   other
+  dead_links
+  broken_files
+  install_issue
+  outdated_info
+  outdated_translation
+  version_mismatch
 }
 
 enum ReportPriority {

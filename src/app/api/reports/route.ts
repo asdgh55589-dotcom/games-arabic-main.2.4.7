@@ -12,7 +12,7 @@ import {
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { CreateReportSchema } from '@/lib/schemas'
-import { REPORT_REASONS } from '@/lib/reports/constants'
+import { getReportReasonLabel, getReportReasonPriority } from '@/lib/reports/constants'
 import { analyzeReportFraud } from '@/lib/reports/fraud-detection'
 import { checkFraudSpike } from '@/lib/reports/fraud-spike'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       return validationFail(evValidation.error || 'روابط الأدلة غير صالحة')
     }
 
-    const priority = REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.priority || 'medium'
+    const priority = getReportReasonPriority(reason)
 
     const report = await db.report.create({
       data: {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         reportId: report.id,
         targetType,
         targetTitle: targetId,
-        reason: REPORT_REASONS[reason as keyof typeof REPORT_REASONS]?.label || reason,
+        reason: getReportReasonLabel(reason),
       })
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification

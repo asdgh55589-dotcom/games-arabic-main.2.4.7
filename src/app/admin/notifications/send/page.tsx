@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import { CHANNEL_ORDER, channelLabel, formatArNumber } from '@/lib/notifications/admin-labels'
 import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications/types'
 import { ROLE_LABELS, ROLE_ORDER } from '@/lib/roles'
@@ -31,6 +32,8 @@ type Target = 'all' | 'role' | 'users'
 
 export default function SendNotificationPage() {
   const { toast } = useToast()
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const { user: authUser } = useAuth()
   const [type, setType] = useState('system_alert')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
@@ -161,9 +164,7 @@ export default function SendNotificationPage() {
   const testToMe = async () => {
     setTesting(true)
     try {
-      const meRes = await fetch('/api/auth/me')
-      const meBody = meRes.ok ? await meRes.json() : null
-      const meId = meBody?.data?.user?.id as string | undefined
+      const meId = authUser?.id
       if (!meId) throw new Error('تعذّر تحديد حسابك الحالي')
       const result = await sendToRecipients({
         type,

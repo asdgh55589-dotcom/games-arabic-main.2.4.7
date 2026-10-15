@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 
 interface SettingsData {
   [group: string]: {
@@ -128,25 +129,21 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeGroup, setActiveGroup] = useState('general')
-  const [userRole, setUserRole] = useState<string>('')
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Unified on useAuth() (SWR-cached, deduped) — no extra /api/auth/me request.
+  const { user: authUser } = useAuth()
+  const userRole = authUser?.role ?? ''
 
   const fetchSettings = async () => {
     setLoading(true)
     setLoadError(null)
     try {
-      const [settingsRes, userRes] = await Promise.all([
-        fetch('/api/admin/settings'),
-        fetch('/api/auth/me'),
-      ])
+      const settingsRes = await fetch('/api/admin/settings')
       if (!settingsRes.ok) throw new Error('فشل تحميل الإعدادات')
       const settingsJson = await settingsRes.json()
-      const userJson = userRes.ok ? await userRes.json() : null
       const loaded = settingsJson?.data?.settings || settingsJson?.settings
       if (loaded) setSettings(loaded)
       else if (!settingsJson?.data && !settingsJson?.settings) throw new Error('البيانات فارغة')
-      const user = userJson?.data?.user || userJson?.user
-      if (user) setUserRole(user.role)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'فشل تحميل الإعدادات')
     } finally {
