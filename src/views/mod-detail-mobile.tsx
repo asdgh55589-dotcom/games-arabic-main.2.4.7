@@ -490,6 +490,11 @@ export function ModDetailMobile({
           <Badge variant="outline" className="text-[11px] font-black tabular-nums">
             v{mod.version}
           </Badge>
+          {mod.category?.name && (
+            <Badge variant="secondary" className="text-[11px] font-bold">
+              {mod.category.name}
+            </Badge>
+          )}
           {isOfficial ? (
             <Link
               href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
