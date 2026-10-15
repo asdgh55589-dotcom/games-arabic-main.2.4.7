@@ -22,7 +22,7 @@ describe('use-social — مسارات الـ API متوافقة مع ترتيب 
   }
 
   it('يبني مسارات منشورات/قوالب تحت بادئة /admin/social/telegram لا /admin/social', () => {
-    // تثبيت الشكل: المسار يتبع تسلسل الصفحات حتى تُسجَّل صفحاتها مع W3.
+    // تثبيت الشكل: المسار يتبع تسلسل الصفحات المُسجَّل في admin-pages.
     expect(socialPostsUrl({})).toContain('/api/admin/social/telegram/posts?')
     expect(socialPostUrl('abc123')).toBe('/api/admin/social/telegram/posts/abc123')
     expect(socialTemplatesUrl()).toBe('/api/admin/social/telegram/templates?platform=telegram')
@@ -31,13 +31,11 @@ describe('use-social — مسارات الـ API متوافقة مع ترتيب 
     )
   })
 
-  it('تُنسب حالياً لصفحة المركز social-telegram (لا للجذر social) ريثما تُسجَّل صفحات W3', () => {
-    // المسار مُبَادَأ عليه بشكل صحيح (تحت /telegram)، فلا يسقط للجذر `social`.
-    // عند تسجيل W3 لصفحتي المنشورات/القوالب تصبح النتيجة social-telegram-posts
-    // و social-telegram-templates.
-    expect(toPageKey(socialPostsUrl({}))).toBe('social-telegram')
-    expect(toPageKey(socialPostUrl('abc123'))).toBe('social-telegram')
-    expect(toPageKey(socialTemplatesUrl())).toBe('social-telegram')
+  it('تُنسب لصفحتيها المُسجَّلتين social-telegram-posts / social-telegram-templates', () => {
+    // نفس مسار proxy: apiPathToAdminPath → findPageForPath (أطول بادئة).
+    expect(toPageKey(socialPostsUrl({}))).toBe('social-telegram-posts')
+    expect(toPageKey(socialPostUrl('abc123'))).toBe('social-telegram-posts')
+    expect(toPageKey(socialTemplatesUrl())).toBe('social-telegram-templates')
   })
 })
 
