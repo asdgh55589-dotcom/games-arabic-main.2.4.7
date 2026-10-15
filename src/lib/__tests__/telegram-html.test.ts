@@ -11,13 +11,14 @@
  * سلوك P3) عبر مقارنة مجموعة الوسوم بقائمة مُعلَّمة يدوياً.
  */
 import {
-  TELEGRAM_HTML_ALLOWED_TAGS,
-  TELEGRAM_MESSAGE_LIMITS,
-  TELEGRAM_RICH_HTML_ALLOWED_TAGS,
-  TELEGRAM_RICH_MESSAGE_LIMITS,
   countTelegramMessageChunks,
   isTelegramMediaTag,
   splitTelegramMessage,
+  TELEGRAM_HTML_ALLOWED_TAGS,
+  TELEGRAM_MESSAGE_LIMITS,
+  TELEGRAM_RICH_HTML_ALLOWED_TAGS,
+  TELEGRAM_RICH_HTML_FORBIDDEN_TAGS,
+  TELEGRAM_RICH_MESSAGE_LIMITS,
   validateTelegramHtmlTags,
   validateTelegramRichHtmlTags,
 } from '../telegram-html'
@@ -65,10 +66,7 @@ describe('classic Telegram HTML layer (parse_mode=HTML)', () => {
   })
 
   it('reports each unsupported tag once, in first-seen order', () => {
-    expect(validateTelegramHtmlTags('<foo>a</foo><bar>b</bar><foo>c</foo>')).toEqual([
-      'foo',
-      'bar',
-    ])
+    expect(validateTelegramHtmlTags('<foo>a</foo><bar>b</bar><foo>c</foo>')).toEqual(['foo', 'bar'])
   })
 
   it('returns an empty list for plain text and empty input', () => {
@@ -108,6 +106,23 @@ describe('rich Telegram HTML layer (Bot API 10.3)', () => {
 
   it('rejects the classic-only span tag', () => {
     expect(validateTelegramRichHtmlTags('<span class="tg-spoiler">x</span>')).toContain('span')
+  })
+
+  it('exposes a whitelist that is a strict superset of the classic one', () => {
+    for (const tag of TELEGRAM_HTML_ALLOWED_TAGS) {
+      if (tag === 'span') continue // span is classic-only (tg-spoiler wrapper)
+      expect(TELEGRAM_RICH_HTML_ALLOWED_TAGS.has(tag)).toBe(true)
+    }
+    // كتل الوسائط والبُنى الجديدة موجودة في الطبقة الغنية فقط.
+    for (const tag of ['img', 'video', 'audio', 'table', 'details', 'h1', 'tg-document']) {
+      expect(TELEGRAM_RICH_HTML_ALLOWED_TAGS.has(tag)).toBe(true)
+    }
+  })
+
+  it('keeps the whitelist and the forbidden list disjoint', () => {
+    for (const tag of TELEGRAM_RICH_HTML_ALLOWED_TAGS) {
+      expect(TELEGRAM_RICH_HTML_FORBIDDEN_TAGS.has(tag)).toBe(false)
+    }
   })
 })
 

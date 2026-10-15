@@ -37,7 +37,8 @@ function mappedColumnNames(body: string): string[] {
   const names: string[] = []
   for (const rawLine of body.split('\n')) {
     const line = rawLine.split('//')[0].trim()
-    if (!line || line.startsWith('model ') || line.startsWith('@@') || line.startsWith('}')) continue
+    if (!line || line.startsWith('model ') || line.startsWith('@@') || line.startsWith('}'))
+      continue
     const field = line.match(/^(\w+)\s+(\w+)(\??)(\[\])?/)
     if (!field) continue
     const [, name, typeName, , listMarker] = field
@@ -49,9 +50,7 @@ function mappedColumnNames(body: string): string[] {
 }
 
 function sqlCreateTableColumns(table: string): string[] {
-  const match = sql.match(
-    new RegExp(`CREATE TABLE "${table}" \\(\\n([\\s\\S]*?)\\n\\);`),
-  )
+  const match = sql.match(new RegExp(`CREATE TABLE "${table}" \\(\\n([\\s\\S]*?)\\n\\);`))
   if (!match) throw new Error(`CREATE TABLE "${table}" not found in ${MIGRATION}`)
   return match[1]
     .split('\n')
@@ -157,9 +156,7 @@ describe(`${MIGRATION} — social hub tables`, () => {
 
 describe('generated client exposes the social models', () => {
   const clientTypesPath = path.join(ROOT, 'node_modules/.prisma/client/index.d.ts')
-  const clientTypes = fs.existsSync(clientTypesPath)
-    ? fs.readFileSync(clientTypesPath, 'utf8')
-    : ''
+  const clientTypes = fs.existsSync(clientTypesPath) ? fs.readFileSync(clientTypesPath, 'utf8') : ''
 
   it('defines SocialPost / SocialPostTemplate / SocialTelegramBot', () => {
     expect(clientTypes).toContain('SocialPost')

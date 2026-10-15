@@ -5,11 +5,11 @@
  * أفاتار المفاتيح، والاقتدار (capabilities) بلا قدرات على منصة قادمة.
  */
 import {
-  SOCIAL_PLATFORM_KEYS,
-  SOCIAL_PLATFORMS,
   getActiveSocialPlatforms,
   getSocialPlatform,
   isSocialPlatformKey,
+  SOCIAL_PLATFORM_KEYS,
+  SOCIAL_PLATFORMS,
   type SocialPlatformKey,
 } from '../social/platforms'
 

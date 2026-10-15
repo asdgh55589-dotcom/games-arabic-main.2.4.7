@@ -273,8 +273,7 @@ describe('schema ↔ migration parity — new tables', () => {
   /** أعمدة ALTER ADD COLUMN اللاحقة لجدول موسّع (قد يحمل جملة ALTER أكثر من عمود). */
   function laterAlterColumns(table: string): SqlColumn[] {
     const stmtPattern = new RegExp(`ALTER TABLE "${table}" ([\\s\\S]*?);`, 'g')
-    const addPattern =
-      /ADD COLUMN\s+"([^"]+)"\s+([A-Z0-9()]+)(?:\s+DEFAULT\s+([^,\n]+))?/g
+    const addPattern = /ADD COLUMN\s+"([^"]+)"\s+([A-Z0-9()]+)(?:\s+DEFAULT\s+([^,\n]+))?/g
     const columns: SqlColumn[] = []
     for (const stmt of ALL_MIGRATIONS_SQL.matchAll(stmtPattern)) {
       for (const match of stmt[1].matchAll(addPattern)) {
@@ -340,9 +339,7 @@ describe('schema ↔ migration parity — social hub extension of TelegramDestin
   })
 
   it('adds bot_id (TEXT, nullable) and message_thread_id (INTEGER, nullable)', () => {
-    expect(socialSql).toContain(
-      'ALTER TABLE "telegram_destinations" ADD COLUMN     "bot_id" TEXT,',
-    )
+    expect(socialSql).toContain('ALTER TABLE "telegram_destinations" ADD COLUMN     "bot_id" TEXT,')
     expect(socialSql).toContain('ADD COLUMN     "message_thread_id" INTEGER;')
     // إضافي فقط — لا حذف ولا إعادة كتابة
     expect(socialSql).not.toMatch(/DROP\s+(TABLE|COLUMN|INDEX)/i)

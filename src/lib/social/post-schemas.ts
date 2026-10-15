@@ -19,7 +19,25 @@ export const PostCreateSchema = z.object({
   richDocument: z.unknown().nullable().optional(),
 })
 
-export const PostPatchSchema = PostCreateSchema.partial()
+/**
+ * PATCH — كل الحقول اختيارية بلا `.default()`.
+ *
+ * لا نستخدم `PostCreateSchema.partial()` لأن zod v4 يُبقي `.default()` عند
+ * `.partial()`: تحليل `{}` يعيد `{ platform: 'telegram' }` ويجعل حارس
+ * «لا توجد حقول للتعديل» ميتاً، فيُعاد platform قسراً. التعداد الصريح
+ * يضمن أن التعديل الجزئي يمسّ ما أرسله العميل فقط.
+ */
+export const PostPatchSchema = z.object({
+  platform: z.literal('telegram').optional(),
+  title: z.string().max(256, 'العنوان يتجاوز 256 حرفاً').optional(),
+  body: z.string().min(1, 'المحتوى مطلوب').optional(),
+  parseMode: z.enum(['HTML']).nullable().optional(),
+  mediaUrl: z.string().url('رابط غير صالح').nullable().optional(),
+  destinationId: z.string().min(1).nullable().optional(),
+  templateId: z.string().min(1).nullable().optional(),
+  botId: z.string().min(1).nullable().optional(),
+  richDocument: z.unknown().nullable().optional(),
+})
 
 export type PostCreateInput = z.infer<typeof PostCreateSchema>
 export type PostPatchInput = z.infer<typeof PostPatchSchema>
@@ -34,9 +52,7 @@ export const PostListQuerySchema = z.object({
 })
 
 export const ScheduleSchema = z.object({
-  scheduledFor: z.coerce.date({
-    errorMap: () => ({ message: 'موعد الجدولة غير صالح' }),
-  }),
+  scheduledFor: z.coerce.date({ error: 'موعد الجدولة غير صالح' }),
 })
 
 export const PostTemplateCreateSchema = z.object({
@@ -51,7 +67,21 @@ export const PostTemplateCreateSchema = z.object({
   isDefault: z.boolean().default(false),
 })
 
-export const PostTemplatePatchSchema = PostTemplateCreateSchema.partial()
+/**
+ * PATCH — بلا `.default()` لنفس سبب `PostPatchSchema`: وإلا فإن `{}` يعيد
+ * `{ platform, variables: [], isDefault: false }` ويمسح قيم القالب بلا طلب.
+ */
+export const PostTemplatePatchSchema = z.object({
+  platform: z.literal('telegram').optional(),
+  name: z.string().min(1, 'اسم القالب مطلوب').max(120).optional(),
+  title: z.string().max(256).nullable().optional(),
+  body: z.string().min(1, 'محتوى القالب مطلوب').optional(),
+  parseMode: z.enum(['HTML']).nullable().optional(),
+  richDocument: z.unknown().nullable().optional(),
+  mediaUrl: z.string().url('رابط غير صالح').nullable().optional(),
+  variables: z.array(z.string().max(64)).max(32).optional(),
+  isDefault: z.boolean().optional(),
+})
 
 export const BotCreateSchema = z.object({
   label: z.string().min(1, 'اسم البوت مطلوب').max(120),

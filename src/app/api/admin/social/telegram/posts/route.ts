@@ -54,13 +54,16 @@ export async function GET(req: NextRequest) {
     await requireAdmin()
 
     const { searchParams } = new URL(req.url)
+    // `searchParams.get` يعيد `null` عند غياب الوسيط، و`.optional()` في zod
+    // يقبل `undefined` فقط لا `null` — لذا نُطبّع القيم الغائبة إلى undefined.
+    const raw = (key: string): string | undefined => searchParams.get(key) ?? undefined
     const parsedQuery = PostListQuerySchema.safeParse({
-      platform: searchParams.get('platform'),
-      status: searchParams.get('status'),
-      from: searchParams.get('from'),
-      to: searchParams.get('to'),
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
+      platform: raw('platform'),
+      status: raw('status'),
+      from: raw('from'),
+      to: raw('to'),
+      page: raw('page'),
+      limit: raw('limit'),
     })
     if (!parsedQuery.success) {
       return fail('VALIDATION_ERROR', 'معايير التصفية غير صالحة', 422, parsedQuery.error.flatten())
