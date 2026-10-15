@@ -118,12 +118,24 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     // W2: مركز السوشيال ميديا (لمحة/قنوات/تيليجرام) — adminOnly.
-    // عناصر المنشورات/القوالب تُضاف مع هبوط صفحات W3 حتى لا نُشحن روابط ميتة.
+    // W3: منشورات/قوالب تيليجرام — managerOnly (تطابق requireManager).
     label: 'السوشيال ميديا',
     items: [
       { href: '/admin/social', label: 'نظرة عامة', icon: Share2, adminOnly: true, exact: true },
       { href: '/admin/social/channels', label: 'القنوات', icon: Radio, adminOnly: true },
       { href: '/admin/social/telegram', label: 'تيليجرام', icon: Send, adminOnly: true },
+      {
+        href: '/admin/social/telegram/posts',
+        label: 'منشورات',
+        icon: Newspaper,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/templates',
+        label: 'القوالب',
+        icon: FileText,
+        managerOnly: true,
+      },
     ],
   },
   {

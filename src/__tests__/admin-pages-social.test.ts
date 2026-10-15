@@ -12,9 +12,9 @@ import {
  * proxy أو تنزلق الصلاحيات. هذه الاختبارات تثبّت المفاتيح والرتب الدنيا وتؤكد
  * أن مسارات الـ API تُنسب للصفحة الصحيحة.
  *
- * ملاحظة: صفحات منشورات/قوالب تيليجرام تُسجَّل مع هبوط مسارات W3 فقط — لا
- * نُسجّل صفحات غير موجودة (كانت روابط ميتة تصل للـ 404 ومنح صلاحية لصفحة
- * مفقودة). هذه الاختبارات تثبّت الحالة الفعلية المُشحَنة.
+ * ملاحظة: صفحتا منشورات/قوالب تيليجرام (W3) مُسجَّلتان برتبة manager بعد هبوط
+ * مساراتهما — فحص «صفحة موجودة فعلاً» ما زال مطبّقاً: أي صفحة تُضاف للسجل
+ * لازم يكون لها route في الشجرة قبل التسجيل.
  */
 
 function page(key: string) {
@@ -33,15 +33,17 @@ describe('سجل صفحات السوشيال ميديا', () => {
     expect(page('social-telegram').minRole).toBe('admin')
   })
 
-  it('لا يسجّل صفحات منشورات/قوالب تيليجرام قبل وجود مساراتها (لا صفحات ميتة)', () => {
-    expect(ADMIN_PAGES_FLAT.find((d) => d.key === 'social-telegram-posts')).toBeUndefined()
-    expect(ADMIN_PAGES_FLAT.find((d) => d.key === 'social-telegram-templates')).toBeUndefined()
+  it('يسجّل صفحات منشورات/قوالب تيليجرام برتبة manager بعد هبوط W3', () => {
+    expect(page('social-telegram-posts').href).toBe('/admin/social/telegram/posts')
+    expect(page('social-telegram-posts').minRole).toBe('manager')
+    expect(page('social-telegram-templates').href).toBe('/admin/social/telegram/templates')
+    expect(page('social-telegram-templates').minRole).toBe('manager')
   })
 
   it('يضعها داخل مجموعة السوشيال ميديا', () => {
     const group = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('social'))
-    // 3 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام
-    expect(group.length).toBe(3)
+    // 5 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام + منشورات + قوالب
+    expect(group.length).toBe(5)
   })
 })
 
@@ -50,14 +52,20 @@ describe('findPageForPath على شجرة السوشيال', () => {
     expect(findPageForPath('/admin/social')?.key).toBe('social')
     expect(findPageForPath('/admin/social/channels')?.key).toBe('social-channels')
     expect(findPageForPath('/admin/social/telegram')?.key).toBe('social-telegram')
-    // لا صفحة منشورات/قوالب مُسجَّلة بعد ⇒ تُنسب لصفحة المركز (أطول بادئة).
-    expect(findPageForPath('/admin/social/telegram/posts')?.key).toBe('social-telegram')
+    // صفحات W3 مُسجَّلة الآن ⇒ مسار المنشورات/القوالب نفسه يذهب لصفحته.
+    expect(findPageForPath('/admin/social/telegram/posts')?.key).toBe('social-telegram-posts')
+    expect(findPageForPath('/admin/social/telegram/templates')?.key).toBe(
+      'social-telegram-templates',
+    )
   })
 
-  it('ينسب الصفحات الفرعية غير المسجّلة لصفحة المركز', () => {
-    expect(findPageForPath('/admin/social/telegram/posts/new')?.key).toBe('social-telegram')
-    expect(findPageForPath('/admin/social/telegram/posts/abc123')?.key).toBe('social-telegram')
-    expect(findPageForPath('/admin/social/telegram/templates')?.key).toBe('social-telegram')
+  it('ينسب الصفحات الفرعية غير المسجّلة لأطول بادئة', () => {
+    expect(findPageForPath('/admin/social/telegram/posts/new')?.key).toBe('social-telegram-posts')
+    expect(findPageForPath('/admin/social/telegram/posts/abc123')?.key).toBe(
+      'social-telegram-posts',
+    )
+    // مسار تيليجرام غير مُسجَّل يبقى تحت صفحة المركز.
+    expect(findPageForPath('/admin/social/telegram/other')?.key).toBe('social-telegram')
   })
 
   it('ينسب مسارات الـ API لصفحتها المناظرة', () => {
@@ -67,9 +75,10 @@ describe('findPageForPath على شجرة السوشيال', () => {
     }
     expect(toPage('/api/admin/social/overview')).toBe('social')
     expect(toPage('/api/admin/social/stats')).toBe('social')
-    // مسارات منشورات/قوالب تُنسب لصفحة المركز حتى تُسجّل صفحاتها مع W3.
-    expect(toPage('/api/admin/social/telegram/posts')).toBe('social-telegram')
-    expect(toPage('/api/admin/social/telegram/templates')).toBe('social-telegram')
+    // مسارات W3 تذهب لصفحتيها (manager) لا لصفحة المركز.
+    expect(toPage('/api/admin/social/telegram/posts')).toBe('social-telegram-posts')
+    expect(toPage('/api/admin/social/telegram/posts/abc123')).toBe('social-telegram-posts')
+    expect(toPage('/api/admin/social/telegram/templates')).toBe('social-telegram-templates')
   })
 })
 
@@ -80,8 +89,31 @@ describe('roleSeesPageByDefault', () => {
     expect(roleSeesPageByDefault('admin', page('social-telegram'))).toBe(true)
   })
 
+  it('يمنح manager خمس صفحات السوشيال (المركز + منشورات + قوالب)', () => {
+    for (const key of [
+      'social',
+      'social-channels',
+      'social-telegram',
+      'social-telegram-posts',
+      'social-telegram-templates',
+    ]) {
+      expect(roleSeesPageByDefault('manager', page(key))).toBe(true)
+    }
+  })
+
+  it('لا يمنح admin صفحتي المنشورات/القوالب (minRole manager)', () => {
+    expect(roleSeesPageByDefault('admin', page('social-telegram-posts'))).toBe(false)
+    expect(roleSeesPageByDefault('admin', page('social-telegram-templates'))).toBe(false)
+  })
+
   it('لا يمنح moderator أي صفحة من المركز', () => {
-    for (const key of ['social', 'social-channels', 'social-telegram']) {
+    for (const key of [
+      'social',
+      'social-channels',
+      'social-telegram',
+      'social-telegram-posts',
+      'social-telegram-templates',
+    ]) {
       expect(roleSeesPageByDefault('moderator', page(key))).toBe(false)
     }
   })
