@@ -255,11 +255,48 @@ describe('schema extensions — NotificationTemplate / NotificationJob', () => {
 })
 
 describe('schema ↔ migration parity — new tables', () => {
+  // كل ملفات الهجرة مرتّبة زمنياً — تُستخدم للجداول الموسّعة لاحقاً.
+  const ALL_MIGRATIONS_SQL = (() => {
+    const dir = path.join(ROOT, 'prisma/migrations')
+    if (!fs.existsSync(dir)) return sql
+    return fs
+      .readdirSync(dir)
+      .filter((name) => fs.existsSync(path.join(dir, name, 'migration.sql')))
+      .sort()
+      .map((name) => fs.readFileSync(path.join(dir, name, 'migration.sql'), 'utf8'))
+      .join('\n')
+  })()
+
+  /** جداول أُضيفت أعمدة/فهارس لاحقاً (Social Hub A0) — تُقارن ضد هجرتها هي. */
+  const EXTENDED_TABLES = new Set(['telegram_destinations'])
+
+  /** أعمدة ALTER ADD COLUMN اللاحقة لجدول موسّع (قد يحمل جملة ALTER أكثر من عمود). */
+  function laterAlterColumns(table: string): SqlColumn[] {
+    const stmtPattern = new RegExp(`ALTER TABLE "${table}" ([\\s\\S]*?);`, 'g')
+    const addPattern = /ADD COLUMN\s+"([^"]+)"\s+([A-Z0-9()]+)(?:\s+DEFAULT\s+([^,\n]+))?/g
+    const columns: SqlColumn[] = []
+    for (const stmt of ALL_MIGRATIONS_SQL.matchAll(stmtPattern)) {
+      for (const match of stmt[1].matchAll(addPattern)) {
+        columns.push({
+          name: match[1],
+          type: match[2].trim(),
+          nullable: true, // ADD COLUMN بدون NOT NULL ⇒ قابل للإلغاء دائماً
+          default: match[3] ? match[3].trim() : null,
+        })
+      }
+    }
+    return columns
+  }
+
   for (const { model, table } of NEW_MODELS) {
     describe(model, () => {
       const body = modelBody(model)
       const schemaColumns = parseSchemaColumns(body)
-      const sqlColumns = parseSqlCreateTable(table)
+      const extended = EXTENDED_TABLES.has(table)
+      const sqlColumns = extended
+        ? [...parseSqlCreateTable(table), ...laterAlterColumns(table)]
+        : parseSqlCreateTable(table)
+      const indexSql = extended ? ALL_MIGRATIONS_SQL : sql
 
       it('has exactly the schema columns, with matching type/nullability/default', () => {
         expect(sqlColumns.map((column) => column.name)).toEqual(
@@ -277,11 +314,62 @@ describe('schema ↔ migration parity — new tables', () => {
 
       it('creates every @@index / @@unique with the Prisma-computed name', () => {
         for (const index of indexStatements(body)) {
-          expect(sql).toContain(expectedIndexSql(table, index, schemaColumns))
+          const expected = expectedIndexSql(table, index, schemaColumns)
+          // الهجرات المولّدة آلياً تكتب `CREATE INDEX` بلا `IF NOT EXISTS`؛
+          // هجرة P1 المكتوبة يدوياً أضافتها. القيد نفسه، كتابتان مقبولتان.
+          const tolerated = [expected, expected.replace('IF NOT EXISTS ', '')]
+          expect(tolerated.some((candidate) => indexSql.includes(candidate))).toBe(true)
         }
       })
     })
   }
+})
+
+// ===== امتداد لاحق مشروعي: Social Hub A0 =====
+// `TelegramDestination` مُوسِع بعمودين اختياريين (bot_id / message_thread_id)
+// لدعم بوتات ومواضيع متعددة. الهجرة الإضافية التالية تحملهما، والاختبار
+// أعلاه يبقى مقفولاً على هجرة P1 نفسها (بلا تعديل سلوكي).
+describe('schema ↔ migration parity — social hub extension of TelegramDestination', () => {
+  const SOCIAL_HUB_MIGRATION = '20261008000000_social_hub'
+  const socialSqlPath = path.join(ROOT, 'prisma/migrations', SOCIAL_HUB_MIGRATION, 'migration.sql')
+  const socialSql = fs.existsSync(socialSqlPath) ? fs.readFileSync(socialSqlPath, 'utf8') : ''
+
+  it('exists', () => {
+    expect(fs.existsSync(socialSqlPath)).toBe(true)
+  })
+
+  it('adds bot_id (TEXT, nullable) and message_thread_id (INTEGER, nullable)', () => {
+    expect(socialSql).toContain('ALTER TABLE "telegram_destinations" ADD COLUMN     "bot_id" TEXT,')
+    expect(socialSql).toContain('ADD COLUMN     "message_thread_id" INTEGER;')
+    // إضافي فقط — لا حذف ولا إعادة كتابة
+    expect(socialSql).not.toMatch(/DROP\s+(TABLE|COLUMN|INDEX)/i)
+    expect(socialSql).not.toMatch(/ALTER\s+COLUMN/i)
+  })
+
+  it('declares the bot foreign key with SET NULL', () => {
+    expect(socialSql).toContain(
+      'ALTER TABLE "telegram_destinations" ADD CONSTRAINT "telegram_destinations_bot_id_fkey" FOREIGN KEY ("bot_id") REFERENCES "social_telegram_bots"("id") ON DELETE SET NULL ON UPDATE CASCADE;',
+    )
+  })
+
+  it('the two new columns are nullable and typed to match schema.prisma', () => {
+    const body = modelBody('TelegramDestination')
+    const columns = parseSchemaColumns(body)
+    const byField = new Map(columns.map((column) => [column.field, column]))
+    expect(byField.get('botId')).toMatchObject({
+      column: 'bot_id',
+      type: 'String',
+      nullable: true,
+    })
+    expect(byField.get('messageThreadId')).toMatchObject({
+      column: 'message_thread_id',
+      type: 'Int',
+      nullable: true,
+    })
+    // حقول العلاقات (jobs/posts/socialBot) ليست أعمدة
+    expect(byField.has('jobs')).toBe(false)
+    expect(byField.has('socialPosts')).toBe(false)
+  })
 })
 
 describe('generated client exposes the new models', () => {

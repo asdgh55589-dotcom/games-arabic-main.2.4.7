@@ -1225,11 +1225,20 @@ model TelegramDestination {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  jobs NotificationJob[]
+  // ===== Social Hub — دعم البوتات المتعددة والموضوعات (additive) =====
+  // botId = NULL  ⇒ البوت الافتراضي من env TELEGRAM_BOT_TOKEN (السلوك القديم كما هو).
+  // messageThreadId = NULL ⇒ بلا موضوع (القناة/المجموعة العادية).
+  botId           String?  @map("bot_id")
+  messageThreadId Int?     @map("message_thread_id") // موضوع داخل مجموعة forum (supergroup فقط)
+
+  jobs          NotificationJob[]
+  socialPosts   SocialPost[]
+  socialBot     SocialTelegramBot? @relation(fields: [botId], references: [id], onDelete: SetNull)
 
   @@index([status, verificationStatus])
   @@index([chatType])
   @@index([createdAt])
+  @@index([botId])
   @@map("telegram_destinations")
 }
 
@@ -1878,4 +1887,92 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ===== Social Hub — بوتات تليجرام متعددة (additive) =====
+// سجل بوتات مستقل: كل وجهة قد تشير إلى بوت معيّن (botId) أو إلى البوت
+// الافتراضي من env TELEGRAM_BOT_TOKEN حين botId = NULL.
+// التوكن يُخزَّن مشفّراً (AES-256-GCM — نفس نمط audit D.2 في lib/totp.ts)
+// ولا يظهر في أي استجابة API إطلاقاً.
+model SocialTelegramBot {
+  id          String   @id @default(cuid())
+  label       String // اسم العرض للبوت (مثال: "بوت الأخبار")
+  botUsername String?  @map("bot_username") // @username المستخرج من getMe إن عُرف
+  tokenEnc    String   @map("token_enc") // توكن البوت مشفّراً — لا يُقرأ إلا عبر lib/social/bot-token
+  status      String   @default("active") // active | disabled
+  notes       String?
+  createdById String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  destinations TelegramDestination[]
+  posts        SocialPost[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("social_telegram_bots")
+}
+
+// ===== منشورات السوشيال ميديا =====
+// منشور حر (ليس إشعاراً): تليجرام أولاً، وقابل للتوسّع لفيسبوك/يوتيوب بحقل platform.
+// النشر الفوري والجدولة يمرّان عبر محرّك واحد src/lib/social/publish.ts.
+model SocialPost {
+  id            String    @id @default(cuid())
+  platform      String    @default("telegram") // telegram | facebook | youtube (لاحقاً)
+  status        String    @default("draft")    // draft | scheduled | publishing | published | failed | canceled
+  title         String?
+  body          String
+  parseMode     String?   // "HTML" | null (نص عادي) — تليجرام
+
+  // ===== Rich Posts — Bot API 10.3 (tg-rich-messages) =====
+  // مستند كتل بنيوي (JSON) يُبنى عبر doc() → toHTML()/toInputRichMessage().
+  // حين يكون غير NULL يُنشر عبر sendRichMessage بدل sendMessage/sendPhoto.
+  richDocument Json? @map("rich_document")
+
+  mediaUrl      String?   @map("media_url")
+  mediaType     String?   @map("media_type")   // photo (الحالي) | video | document (توسيع لاحق)
+  destinationId String?   @map("destination_id")
+  botId         String?   @map("bot_id") // بوت معيّن لهذا المنشور (يتجاوز بوت الوجهة)
+  templateId    String?   @map("template_id")
+  scheduledFor  DateTime? @map("scheduled_for")
+  publishedAt   DateTime? @map("published_at")
+  externalId    String?   @map("external_id")  // message_id من تليجرام
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3) @map("max_attempts")
+  lastError     String?   @map("last_error")
+  createdById   String?   @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  destination TelegramDestination?  @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  template    SocialPostTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  bot         SocialTelegramBot?    @relation(fields: [botId], references: [id], onDelete: SetNull)
+
+  @@index([platform, status])
+  @@index([status, scheduledFor])
+  @@index([createdAt])
+  @@map("social_posts")
+}
+
+// ===== قوالب منشورات السوشيال =====
+// قوالب بداية لمحرر المنشورات؛ مستقلة عن قوالب الإشعارات (قرار D3).
+model SocialPostTemplate {
+  id          String   @id @default(cuid())
+  platform    String   @default("telegram")
+  name        String
+  title       String?
+  body        String
+  parseMode   String?  @map("parse_mode")
+  richDocument Json?   @map("rich_document")
+  mediaUrl    String?  @map("media_url")
+  variables   Json     @default("[]")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdById String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  posts SocialPost[]
+
+  @@index([platform])
+  @@map("social_post_templates")
 }

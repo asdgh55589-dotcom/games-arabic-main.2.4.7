@@ -38,6 +38,10 @@ import { generateEmailWrapper } from '@/infrastructure/templates/email-base'
 import { forbidden, notFound, unauthorized } from './api-response'
 import { db } from './db'
 import { logger } from './logger'
+// قواعد HTML الخاصة بتليجرام مُستخرجة إلى lib/telegram-html.ts (قرار D6) كي
+// تتشاركها دورة حياة القوالب ومحرّر المنشورات في Social Hub من نسخة واحدة.
+// القيم غير متغيّرة إطلاقاً — الاستيراد فقط، بلا تغيير سلوكي.
+import { ANY_TAG_RE, MEDIA_TAG_RE, TELEGRAM_HTML_ALLOWED_TAGS } from './telegram-html'
 
 // ===== Canonical channels =====
 
@@ -320,31 +324,9 @@ function projectAndValidate(title: string, bodyText: string): RichValidationResu
 }
 
 /**
- * Telegram official HTML tag whitelist (Bot API parse_mode=HTML supports only
- * these). Media/embed tags are never permitted — binding: media perms.
+ * قواعد HTML الخاصة بتليجرام (الوسم الرسمي parse_mode=HTML) تُقرأ من
+ * `lib/telegram-html.ts` — راجع الاستيراد أعلى الملف.
  */
-const TELEGRAM_HTML_ALLOWED_TAGS = new Set([
-  'b',
-  'strong',
-  'i',
-  'em',
-  'u',
-  'ins',
-  's',
-  'strike',
-  'del',
-  'a',
-  'code',
-  'pre',
-  'blockquote',
-  'tg-spoiler',
-  'tg-emoji',
-  'span', // class="tg-spoiler" wrapper
-])
-
-/** Tags that reference media — rejected in every parse mode (media perms). */
-const MEDIA_TAG_RE = /<(img|video|audio|iframe|embed|object|source|picture|track|svg|canvas)\b/i
-const ANY_TAG_RE = /<\/?([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>/g
 
 /**
  * Draft constructs: Handlebars block helpers, partials, comments and triple
