@@ -1,10 +1,11 @@
 /**
  * lib/cron-ledger.ts — Idempotency layer for cron jobs
  *
- * Prevents duplicate runs using a window key derived from the
- * current date/week/month.  Every call goes through the DB so
- * concurrent invocations are safe via the unique constraint on
- * (type, windowKey).
+ * Prevents duplicate runs using a window key written on the claimed row.
+ * Every call goes through the DB so concurrent invocations are safe via
+ * the unique constraint on (type, windowKey) — the windowKey is always
+ * persisted, and a completed OR in-progress row for the same window is
+ * treated as a duplicate.
  */
 
 import { db } from './db'
@@ -16,41 +17,51 @@ export interface ClaimResult {
 
 /**
  * Attempt to claim a run for the given job type + window key.
- * Returns { alreadyRan: true } if a completed job already exists for
- * this window, or { alreadyRan: false, jobId } on first successful claim.
- * Handles unique-constraint violations as duplicates.
+ * Returns { alreadyRan: true } when a completed OR an in-progress
+ * (pending/running) row already exists for THIS window — concurrent ticks
+ * in the same window are duplicates, not joiners — or
+ * { alreadyRan: false, jobId } on first successful claim.
+ * The windowKey is always persisted so the @@unique([type, windowKey])
+ * constraint applies (Postgres treats NULLs as distinct, so a NULL
+ * windowKey could never be rejected); unique-constraint violations from
+ * a lost race are reported as duplicates.
  */
-export async function claimRun(
-  jobName: string,
-  windowKey: string | null,
-): Promise<ClaimResult> {
+export async function claimRun(jobName: string, windowKey: string | null): Promise<ClaimResult> {
   try {
-    // Check if a completed job already exists for this window
-    const existing = await db.scheduledJob.findFirst({
-      where: { type: jobName, status: 'completed' },
+    // نطاق النافذة: النوع + النافذة معاً. بلا windowKey لا يميّز القيد
+    // الفريد شيئاً، فنطابق على النوع وحده (السلوك القديم للمتصلين
+    // الذين لا يمررون نافذة — لا متصل إنتاجي يفعل ذلك اليوم).
+    const scope = windowKey == null ? { type: jobName } : { type: jobName, windowKey }
+
+    // Check if a completed job already exists for THIS window
+    const completed = await db.scheduledJob.findFirst({
+      where: { ...scope, status: 'completed' },
       orderBy: { executedAt: 'desc' },
     })
 
-    if (existing) {
+    if (completed) {
       return { alreadyRan: true, jobId: null }
     }
 
-    // Use findFirst + create pattern (windowKey field requires migration)
-    const pending = await db.scheduledJob.findFirst({
+    // A pending/running row for the same window means a concurrent tick
+    // is already draining — skip instead of joining it (joining ran two
+    // publishers in parallel over the same queue and double-posted).
+    const inProgress = await db.scheduledJob.findFirst({
       where: {
-        type: jobName,
+        ...scope,
         status: { in: ['pending', 'running'] },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    if (pending) {
-      return { alreadyRan: false, jobId: pending.id }
+    if (inProgress) {
+      return { alreadyRan: true, jobId: null }
     }
 
     const job = await db.scheduledJob.create({
       data: {
         type: jobName,
+        windowKey,
         status: 'running',
         scheduledAt: new Date(),
       },
@@ -94,10 +105,7 @@ export async function failRun(jobId: string, error: unknown): Promise<void> {
  * Returns true when the last successful run is older than 2× intervalMs,
  * or when no completed run exists at all.
  */
-export async function needsCatchUp(
-  jobName: string,
-  intervalMs: number,
-): Promise<boolean> {
+export async function needsCatchUp(jobName: string, intervalMs: number): Promise<boolean> {
   const last = await db.scheduledJob.findFirst({
     where: { type: jobName, status: 'completed' },
     orderBy: { executedAt: 'desc' },
@@ -115,10 +123,7 @@ export async function needsCatchUp(
  * - weekly  → "YYYY-Www"   (ISO week)
  * - monthly → "YYYY-MM"
  */
-export function windowKeyFor(
-  type: 'daily' | 'weekly' | 'monthly',
-  now?: Date,
-): string {
+export function windowKeyFor(type: 'daily' | 'weekly' | 'monthly', now?: Date): string {
   const d = now ?? new Date()
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
