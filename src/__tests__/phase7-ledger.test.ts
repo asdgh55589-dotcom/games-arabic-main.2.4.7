@@ -49,7 +49,11 @@ describe('claimRun', () => {
     expect(result.jobId).toBe('job-1')
     expect(mockScheduledJob.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ type: 'daily_cleanup', status: 'running' }),
+        data: expect.objectContaining({
+          type: 'daily_cleanup',
+          windowKey: '2026-09-13',
+          status: 'running',
+        }),
       }),
     )
   })
@@ -64,6 +68,35 @@ describe('claimRun', () => {
 
     expect(result.alreadyRan).toBe(true)
     expect(result.jobId).toBeNull()
+    // فحص «المكتمل» مقيّد بالنافذة نفسها — لا يحجب نوافذ أخرى.
+    expect(mockScheduledJob.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          type: 'daily_cleanup',
+          windowKey: '2026-09-13',
+          status: 'completed',
+        }),
+      }),
+    )
+    expect(mockScheduledJob.create).not.toHaveBeenCalled()
+  })
+
+  it('a completed row in another window does not block this window', async () => {
+    // لا مكتمل ولا جارٍ لنافذة B → تُمنح المطالبة بمفتاح B مكتوباً.
+    mockScheduledJob.findFirst
+      .mockResolvedValueOnce(null) // no completed in window B
+      .mockResolvedValueOnce(null) // no in-progress in window B
+    mockScheduledJob.create.mockResolvedValue({ id: 'job-b', status: 'running' })
+
+    const result = await claimRun('daily_cleanup', '2026-09-14')
+
+    expect(result.alreadyRan).toBe(false)
+    expect(result.jobId).toBe('job-b')
+    expect(mockScheduledJob.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ type: 'daily_cleanup', windowKey: '2026-09-14' }),
+      }),
+    )
   })
 
   it('handles unique constraint violation as duplicate', async () => {
@@ -85,14 +118,16 @@ describe('claimRun', () => {
     await expect(claimRun('daily_cleanup', '2026-09-13')).rejects.toThrow('connection refused')
   })
 
-  it('returns existing pending job if one exists', async () => {
+  it('treats an in-progress row in the same window as a duplicate', async () => {
     mockScheduledJob.findFirst.mockResolvedValueOnce(null) // no completed
-    mockScheduledJob.findFirst.mockResolvedValueOnce({ id: 'pending-1', status: 'running' }) // pending exists
+    mockScheduledJob.findFirst.mockResolvedValueOnce({ id: 'running-1', status: 'running' }) // concurrent tick
 
-    const result = await claimRun('backup', null)
+    const result = await claimRun('social-publish:2026-10-15T14:00', '2026-10-15T14:00')
 
-    expect(result.alreadyRan).toBe(false)
-    expect(result.jobId).toBe('pending-1')
+    // tick ثانٍ في الدقيقة نفسها يُتخطى — لا ينضم ليفريغ بالتوازي.
+    expect(result.alreadyRan).toBe(true)
+    expect(result.jobId).toBeNull()
+    expect(mockScheduledJob.create).not.toHaveBeenCalled()
   })
 })
 

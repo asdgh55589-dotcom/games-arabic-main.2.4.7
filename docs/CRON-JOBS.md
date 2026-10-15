@@ -128,16 +128,29 @@ Drains **two** queues in one run (Social Hub update #3):
    have had no caller since polling was removed in Phase 7; this cron is their
    replacement entrypoint.
 
-**Idempotency + the `claimRun` windowKey defect.** `lib/cron-ledger.ts::claimRun`
-takes `(jobName, windowKey)` but **ignores `windowKey`**: it returns
-`alreadyRan` as soon as *any* completed row of that `jobName` exists, which
-would block every run after the first forever. That helper is shared with other
-crons and is not modified here, so this job **scopes the job name itself to the
-minute window**: `claimRun('social-publish:<YYYY-MM-DDTHH:mm>', <same window>)`.
-The completed-check then only matches rows from the same minute, and a
-concurrent duplicate tick hits the `(type, windowKey)` unique constraint and is
-reported as `skipped: 'duplicate'`. Stale `social-publish:*` ledger rows are
-pruned (older than 7 days) on every run so the table does not grow unbounded.
+**Idempotency (fixed — Phase 0).** `lib/cron-ledger.ts::claimRun`
+persists the `windowKey` on the claimed row, so the
+`@@unique([type, windowKey])` constraint genuinely applies (Postgres
+treats NULLs as distinct, so an unset key could never collide). Both the
+completed-check and the in-progress-check are scoped to the exact
+window: a second tick in the same minute finds the first tick's
+`running` (or already `completed`) row and is reported as
+`skipped: 'duplicate'` instead of draining in parallel. This job keeps
+scoping the job name itself to the minute window —
+`claimRun('social-publish:<YYYY-MM-DDTHH:mm>', <same window>)` — as
+defense in depth. Stale `social-publish:*` ledger rows are pruned
+(older than 7 days) on every run so the table does not grow unbounded.
+
+**Per-post atomic claim.** Before any network send,
+`publishSocialPost` performs a single conditional `updateMany` that
+moves the post to `status='publishing'`; the affected-row count is the
+arbiter, so two publishers can never both pass. A publisher that loses
+the race returns `skipped` (`already_published` when the row is already
+out, `in_progress` when a live claim holds it). The claim carries a
+15-minute lease: a `publishing` row older than that is treated as a
+crashed worker and may be reclaimed on the next manual publish attempt.
+(The cron drain itself selects `scheduled` rows; a crashed claim waits
+for a manual retry after the lease expires.)
 
 **Per-post retries.** A transport failure increments `SocialPost.attempts` and
 re-queues the post 5 minutes out (`backoff` matching `lib/scheduler.ts`). When

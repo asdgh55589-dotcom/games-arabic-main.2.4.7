@@ -6,6 +6,10 @@
  *
  * سلوك idempotency والمحاولات (الخطة §4.1):
  *  - منشور منشور مسبقاً (status='published' أو externalId موجود) → skipped.
+ *  - مطالبة ذرّية قبل الإرسال: `updateMany` مشروط ينقل إلى
+ *    `publishing`؛ ناشر موازٍ يجد الصف محجوزاً فيُتخطى
+ *    (`in_progress`) بدل الإرسال المكرر. عقد المطالبة 15 دقيقة —
+ *    صف `publishing` منتهي العقد يُستعاد (تعطّل العامل).
  *  - فشل إعدادي (لا وجهة ولا env) → failed بلا استهلاك محاولة.
  *  - فشل نقل (API) → attempts+1 وstatus='failed' عند بلوغ maxAttempts،
  *    وإلا يبقى مع إعادة جدولة now+5m (backoff مطابق لـ lib/scheduler.ts).
@@ -38,6 +42,7 @@ export interface PublishResult {
   /** معرّف منشور مكرر عند status='skipped'. */
   reason?:
     | 'already_published'
+    | 'in_progress'
     | 'unsupported_platform'
     | 'misconfigured'
     | 'validation'
@@ -45,6 +50,35 @@ export interface PublishResult {
 }
 
 const RETRY_DELAY_MS = 5 * 60_000
+
+/**
+ * مدة عقد المطالبة: صف `publishing` أقدم من هذا يُعدّ عملية انكسرت
+ * (تعطّل بين المطالبة والإرسال) وقابلًا للاستعادة. أطول بكثير من زمن
+ * إرسال واحد كي لا تُستعاد مطالبة ما تزال حيّة فيُرسل مكرراً.
+ */
+const PUBLISH_LEASE_MS = 15 * 60_000
+
+/**
+ * مطالبة ذرّية بصف المنشور قبل أي إرسال: تحديث مشروط واحد ينتقل إلى
+ * `publishing`، فعدّاد الصفوف هو الحَكَم — لا قراءة-ثم-كتابة. ناشر
+ * موازٍ (tick ثانٍ، أو زر يدوي) يجد الصف محجوزاً فيُتخطى بدل أن يرسل
+ * المحتوى ذاته مرتين. صفوف `publishing` منتهية العقد تُستعاد كي لا
+ * تبقى معلقة للأبد بعد تعطّل العامل.
+ */
+async function claimPostForPublish(postId: string): Promise<'claimed' | 'busy'> {
+  const leaseCutoff = new Date(Date.now() - PUBLISH_LEASE_MS)
+  const claimed = await db.socialPost.updateMany({
+    where: {
+      id: postId,
+      OR: [
+        { status: { notIn: ['published', 'publishing'] } },
+        { status: 'publishing', updatedAt: { lt: leaseCutoff } },
+      ],
+    },
+    data: { status: 'publishing', lastError: null },
+  })
+  return claimed.count > 0 ? 'claimed' : 'busy'
+}
 
 /** حلّ الهدف: وجهة مُتحقَّق منها، وإلا env TELEGRAM_CHANNEL_ID. */
 async function resolveTarget(post: {
@@ -241,7 +275,30 @@ export async function publishSocialPost(
     )
   }
 
-  // ===== الإرسال =====
+  // ===== الإرسال (بعد مطالبة ذرّية — لا قراءة-ثم-إرسال) =====
+  if ((await claimPostForPublish(postId)) === 'busy') {
+    // ناشر آخر سبقنا: إما نُشر فعلاً أو ما يزال يرسل ضمن العقد.
+    // نعيد القراءة لتمييز الحالتين في السبب.
+    const current = await db.socialPost.findUnique({
+      where: { id: postId },
+      select: { status: true, externalId: true },
+    })
+    if (current && (current.status === 'published' || current.externalId)) {
+      return {
+        ok: true,
+        status: 'skipped',
+        externalId: current.externalId ?? undefined,
+        reason: 'already_published',
+      }
+    }
+    return {
+      ok: true,
+      status: 'skipped',
+      externalId: undefined,
+      reason: 'in_progress',
+    }
+  }
+
   const sendResult = await sendTelegramPost({
     target: resolved.target,
     text: validation.preview.text,
