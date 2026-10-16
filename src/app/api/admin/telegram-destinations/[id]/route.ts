@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { fail, internalError, notFound, ok } from '@/lib/api-response'
+import { conflict, fail, internalError, notFound, ok } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -59,6 +59,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     const existing = await db.telegramDestination.findUnique({ where: { id } })
     if (!existing) return notFound('الوجهة غير موجودة')
+
+    // حارس الأرشيف: صف مؤرشف لا يُعدَّل أبداً عبر PATCH — وإلا أمكن
+    // إعادة تفعيل وجهة مخفية (نشطة لكن مستبعدة من القوائم) ما يزال
+    // محرك النشر يقبلها. الاستعادة حصراً عبر POST …/restore.
+    if (existing.archivedAt) {
+      return conflict('الوجهة مؤرشفة — لا يمكن تعديلها. استعدها أولاً عبر إجراء الاستعادة، ثم عدّلها')
+    }
 
     const raw = await req.json().catch(() => ({}))
     const parsed = PatchDestinationSchema.safeParse(raw)

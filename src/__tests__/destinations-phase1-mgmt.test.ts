@@ -46,6 +46,7 @@ import { db } from '@/lib/db'
 import { checkDestinationHealth } from '@/lib/social/destination-health'
 import { GET as botsGET } from '../app/api/admin/social/telegram/bots/route'
 import { POST as healthPOST } from '../app/api/admin/telegram-destinations/[id]/health/route'
+import { POST as restorePOST } from '../app/api/admin/telegram-destinations/[id]/restore/route'
 import { PATCH as destPATCH } from '../app/api/admin/telegram-destinations/[id]/route'
 import { POST as listPOST } from '../app/api/admin/telegram-destinations/route'
 
@@ -439,5 +440,65 @@ describe('المرحلة 1 — قائمة البوتات', () => {
       botUsername: 'mainbot',
       status: 'active',
     })
+  })
+})
+
+describe('المرحلة 1 — حارس الأرشيف والاستعادة الصريحة', () => {
+  const ARCHIVED_DEST = {
+    ...SUPERGROUP_DEST,
+    id: 'dest-arch',
+    status: 'disabled',
+    archivedAt: '2026-10-15T10:00:00.000Z',
+  }
+
+  it('PATCH على صف مؤرشف → 409 بلا أي كتابة (يمنع الزومبي النشط-المخفي)', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(ARCHIVED_DEST)
+
+    const res = await destPATCH(
+      makeReq('http://localhost/x', 'PATCH', { status: 'active' }),
+      routeParams('dest-arch'),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(409)
+    expect(JSON.stringify(body)).toMatch(/مؤرشفة/)
+    expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
+  })
+
+  it('الاستعادة تُفرغ الأرشيف وتعيد معلقة (لا نشطة أبداً) مع تدقيق', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(ARCHIVED_DEST)
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...ARCHIVED_DEST,
+      archivedAt: null,
+      status: 'pending',
+    })
+
+    const res = await restorePOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-arch'))
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(mockDb.telegramDestination.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'dest-arch' },
+        data: { archivedAt: null, status: 'pending' },
+      }),
+    )
+    expect(mockLogAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'TELEGRAM_DESTINATION_RESTORED' }),
+    )
+    expect(body.data.archivedAt).toBeNull()
+  })
+
+  it('الاستعادة على غير مؤرشفة → 409', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(SUPERGROUP_DEST)
+
+    const res = await restorePOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-sg'))
+    expect(res.status).toBe(409)
+    expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
+  })
+
+  it('الاستعادة على مفقودة → 404', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(null)
+
+    const res = await restorePOST(makeReq('http://localhost/x', 'POST'), routeParams('missing'))
+    expect(res.status).toBe(404)
   })
 })

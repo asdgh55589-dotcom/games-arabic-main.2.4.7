@@ -282,6 +282,30 @@ export default function TelegramDestinationsPage() {
     }
   }
 
+  async function handleRestore(d: Destination) {
+    setRowBusy(d.id, true)
+    try {
+      const res = await fetch(`/api/admin/telegram-destinations/${d.id}/restore`, {
+        method: 'POST',
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(apiErrorMessage(body, 'فشلت الاستعادة'))
+      toast({
+        title: 'استُعيدت الوجهة',
+        description: 'عادت بحالة معلقة — وثّقها وفعّلها متى شئت',
+      })
+      load()
+    } catch (err) {
+      toast({
+        title: 'فشلت الاستعادة',
+        description: err instanceof Error ? err.message : 'فشلت الاستعادة',
+        variant: 'destructive',
+      })
+    } finally {
+      setRowBusy(d.id, false)
+    }
+  }
+
   async function handleArchive(d: Destination) {
     if (
       !window.confirm(
@@ -532,6 +556,16 @@ export default function TelegramDestinationsPage() {
                         disabled={busy[d.id]}
                       >
                         أرشفة
+                      </Button>
+                    )}
+                    {d.archivedAt && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRestore(d)}
+                        disabled={busy[d.id]}
+                      >
+                        {busy[d.id] ? 'جارٍ…' : 'استعادة'}
                       </Button>
                     )}
                   </div>
