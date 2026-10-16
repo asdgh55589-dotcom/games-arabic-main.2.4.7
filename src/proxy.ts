@@ -27,6 +27,7 @@ import { trackRoute } from '@/lib/observability/middleware'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { withRedisCircuit } from '@/lib/redis-circuit-breaker'
+import { isStaff } from '@/lib/roles'
 import { updateSession } from '@/lib/supabase/middleware'
 import { getTokenVersionCache } from '@/lib/token-version-cache'
 
@@ -43,6 +44,28 @@ const JWT_SECRET = (() => {
 })()
 
 const PUBLIC_ADMIN_PATHS = ['/admin/login']
+
+/**
+ * Section 2 audit (items 8/10/15): trailing-slash-insensitive, segment-boundaried
+ * prefix checks for the /admin scope. Exact `includes(pathname)` misses
+ * `/admin/login/` (auth chain instead of pass-through); bare
+ * `startsWith('/admin')` over-matches `/adminfoo`. Both fail safe, but the
+ * normalized form removes the noise. roles.ts is pure (no Prisma/fs) so it
+ * stays Edge-safe — the staff vocabulary comes from isStaff (single source).
+ */
+function normalizePathname(p: string): string {
+  return p.length > 1 ? p.replace(/\/+$/, '') : p
+}
+
+export function isAdminPath(pathname: string): boolean {
+  const n = normalizePathname(pathname)
+  return n === '/admin' || n.startsWith('/admin/')
+}
+
+export function isApiAdminPath(pathname: string): boolean {
+  const n = normalizePathname(pathname)
+  return n === '/api/admin' || n.startsWith('/api/admin/')
+}
 
 interface RoleCookiePayload {
   userId?: string
@@ -418,10 +441,14 @@ async function proxyInner(req: NextRequest) {
           pathname.startsWith('/creator') ||
           pathname.startsWith('/settings')
         if (isProtected) {
-          const loginUrl = pathname.startsWith('/admin')
+          const loginUrl = isAdminPath(pathname)
             ? new URL('/admin/login', req.url)
             : new URL('/login', req.url)
-          const res = NextResponse.redirect(loginUrl)
+          // Section 2 item 13: preserve the original path for post-login return
+          // (/admin/login consumes ?from, /login consumes ?next).
+          if (isAdminPath(pathname)) loginUrl.searchParams.set('from', pathname)
+          else loginUrl.searchParams.set('next', pathname)
+          const res = NextResponse.redirect(loginUrl, 307)
           const clearDomain = process.env.COOKIE_DOMAIN || undefined
           const clearSecure = process.env.NODE_ENV === 'production'
           res.cookies.set('ga_session_ledger', '', {
@@ -652,14 +679,14 @@ async function proxyInner(req: NextRequest) {
   // ===== Onboarding gate (D.6-a) — members with ob===false funnel to /onboarding =====
   // Edge has no DB access: the ob claim in ga_admin_role carries the flag.
   // Missing claim (legacy cookies) = fail-open; server-side DB flag is truth.
-  // Pages → 302, API calls → 403 JSON (so fetch() callers can route client-side).
+  // Pages → 307, API calls → 403 JSON (so fetch() callers can route client-side).
   {
     const rolePayload = await getRoleFromCookie(req)
     const decision = getOnboardingGate(rolePayload?.role, rolePayload?.onboarded, pathname)
     if (decision === 'redirect') {
       const onboardingUrl = new URL(ONBOARDING_PATH, req.url)
       onboardingUrl.searchParams.set('from', pathname)
-      const redirectRes = NextResponse.redirect(onboardingUrl)
+      const redirectRes = NextResponse.redirect(onboardingUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       redirectRes.headers.set('x-auth-reason', 'onboarding_required')
       return withRequestId(redirectRes, requestId)
@@ -678,18 +705,16 @@ async function proxyInner(req: NextRequest) {
 
   // حماية /admin/* (مش /admin/login) — تحقق من role cookie فقط
   // لا نطلب Supabase user هنا — الـ cookie وحده كافٍ (يدعم Telegram + يمنع التعليق لو Supabase بطيء)
-  if (pathname.startsWith('/admin') && !PUBLIC_ADMIN_PATHS.includes(pathname)) {
+  // isAdminPath: segment-boundaried + يتجاهل trailing slash (فـ /admin/login/ معفاة مثل /admin/login)
+  if (isAdminPath(pathname) && !PUBLIC_ADMIN_PATHS.includes(normalizePathname(pathname))) {
     // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
     const rolePayload = await getRoleFromCookie(req, { strictTv: true })
-    if (
-      !rolePayload ||
-      !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
-    ) {
+    if (!rolePayload || !isStaff(rolePayload.role)) {
       const loginUrl = new URL('/admin/login', req.url)
       loginUrl.searchParams.set('from', pathname)
       if (!rolePayload?.role) loginUrl.searchParams.set('error', 'session_expired')
       else loginUrl.searchParams.set('error', 'insufficient_role')
-      const redirectRes = NextResponse.redirect(loginUrl)
+      const redirectRes = NextResponse.redirect(loginUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       if (req.cookies.has(ROLE_COOKIE_NAME) && !rolePayload?.role) {
         redirectRes.headers.set('x-auth-reason', 'invalid_jwt')
@@ -699,7 +724,10 @@ async function proxyInner(req: NextRequest) {
     if (rolePayload.tv !== undefined && rolePayload.tvVerified !== true) {
       const loginUrl = new URL('/admin/login', req.url)
       loginUrl.searchParams.set('token_check_failed', '1')
-      const redirectRes = NextResponse.redirect(loginUrl)
+      // Section 2 item 13: keep ?from so post-login returns to the wanted page
+      // (admin/login falls back to /admin when ?from is absent).
+      loginUrl.searchParams.set('from', pathname)
+      const redirectRes = NextResponse.redirect(loginUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       redirectRes.headers.set('x-auth-reason', 'token_version_unverified')
       console.error('[Proxy] Admin tvVerified failed — rejecting', {
@@ -720,7 +748,7 @@ async function proxyInner(req: NextRequest) {
         (rolePayload.pages as string[]).includes(d.key),
       ).map((d) => d.href)
       const target = allowedHrefs[0] ?? '/admin/login'
-      const redirectRes = NextResponse.redirect(new URL(target, req.url))
+      const redirectRes = NextResponse.redirect(new URL(target, req.url), 307)
       copyCookies(supabaseResponse, redirectRes)
       redirectRes.headers.set('x-auth-reason', 'page_forbidden')
       return withRequestId(redirectRes, requestId)
@@ -737,7 +765,9 @@ async function proxyInner(req: NextRequest) {
     ) {
       const securityUrl = new URL('/admin/security', req.url)
       securityUrl.searchParams.set('mfa_required', '1')
-      const redirectRes = NextResponse.redirect(securityUrl)
+      // Section 2 item 13: keep ?from so MFA setup can send staff back.
+      securityUrl.searchParams.set('from', pathname)
+      const redirectRes = NextResponse.redirect(securityUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       redirectRes.headers.set('x-auth-reason', 'mfa_required')
       return withRequestId(redirectRes, requestId)
@@ -745,13 +775,10 @@ async function proxyInner(req: NextRequest) {
   }
 
   // حماية /api/admin/* — تحقق من role cookie فقط
-  if (pathname.startsWith('/api/admin')) {
+  if (isApiAdminPath(pathname)) {
     // Audit D.2 admin tier: strictTv — tv present but cache unverifiable ⇒ reject.
     const rolePayload = await getRoleFromCookie(req, { strictTv: true })
-    if (
-      !rolePayload ||
-      !['moderator', 'admin', 'manager', 'owner'].includes(rolePayload.role as string)
-    ) {
+    if (!rolePayload || !isStaff(rolePayload.role)) {
       const status = rolePayload?.role ? 403 : 401
       const res = proxyJson(
         req,
@@ -822,14 +849,14 @@ async function proxyInner(req: NextRequest) {
     if (!rolePayload?.role) {
       const loginUrl = new URL('/login', req.url)
       loginUrl.searchParams.set('next', pathname)
-      const redirectRes = NextResponse.redirect(loginUrl)
+      const redirectRes = NextResponse.redirect(loginUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       return withRequestId(redirectRes, requestId)
     }
     const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
     if (!CREATOR_ONLY.includes(rolePayload.role)) {
       const becomeUrl = new URL('/become-creator/apply', req.url)
-      const redirectRes = NextResponse.redirect(becomeUrl)
+      const redirectRes = NextResponse.redirect(becomeUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       return withRequestId(redirectRes, requestId)
     }
@@ -886,7 +913,7 @@ async function proxyInner(req: NextRequest) {
     const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
     if (rolePayload?.role && !NEWS_PUBLISHERS.includes(rolePayload.role)) {
       const dashboardUrl = new URL('/creator', req.url)
-      const redirectRes = NextResponse.redirect(dashboardUrl)
+      const redirectRes = NextResponse.redirect(dashboardUrl, 307)
       copyCookies(supabaseResponse, redirectRes)
       return withRequestId(redirectRes, requestId)
     }
