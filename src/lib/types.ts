@@ -110,6 +110,8 @@ export interface ModFileLink {
   url: string
   label: string | null
   order: number
+  /** عدد نقرات التحميل الحقيقية لهذا الرابط (تُجمع server-side، صفر عند التعذر). */
+  downloadsCount?: number
 }
 
 export interface ModFile {
@@ -127,6 +129,36 @@ export interface ModFile {
   links: ModFileLink[]
   /** Real per-file download clicks (aggregated server-side, 0 when unavailable). */
   downloadsCount?: number
+  /** ملفات إضافية متداخلة داخل هذا الملف. */
+  children?: ModFile[]
+  /** عنوان قسم الملفات الإضافية داخل هذا الملف (null = الافتراضي). */
+  extrasLabel?: string | null
+}
+
+/** موقع تحميل متوافق — يُستخدم للتحقق عند "جلب الرابط". */
+export interface CompatibleSite {
+  id: string
+  name: string
+  domains: string[]
+  logoUrl: string | null
+  notes: string | null
+  enabled: boolean
+  order: number
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
+/** رابط موقع متوافق كإضافة للمود (خارجي أو متداخل داخل ملف). */
+export interface ModSiteLink {
+  id: string
+  modId: string
+  fileId: string | null
+  url: string
+  siteName: string | null
+  pageTitle: string | null
+  domain: string | null
+  order: number
+  createdAt: string | Date
 }
 
 export interface ModTeamMember {
@@ -256,6 +288,10 @@ export interface ModDetail extends ModSummary {
   sectionRelation?: { id: string; name: string; slug: string; key: string } | null
   changelogs?: ModChangelogEntry[]
   files: ModFile[]
+  /** روابط مواقع متوافقة خارجية (fileId null) — قسم الإضافات أسفل التبويبة. */
+  siteLinks?: ModSiteLink[]
+  /** عنوان قسم الإضافات الخارجية (null = الافتراضي). */
+  extrasLabel?: string | null
   teamMembers: ModTeamMember[]
   contactLinks: ModContactLink[]
   videoGroups: ModVideoGroup[]
