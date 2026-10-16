@@ -362,6 +362,60 @@ describe('المرحلة 1 — فحص الصحة', () => {
     const updateArg = mockDb.telegramDestination.update.mock.calls[0][0]
     expect(updateArg.data.messageThreadId).toBeUndefined()
   })
+
+  it('يخزّن username بلا @ — نفس صيغة مسار الإنشاء', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'env-token-value'
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce({
+      ...SUPERGROUP_DEST,
+      chatId: '@mygroup',
+      chatType: 'unknown',
+      username: null,
+    })
+    mockCheckHealth.mockResolvedValueOnce({
+      ok: true,
+      memberStatus: 'administrator',
+      canPost: true,
+      chat: { id: -100111, type: 'supergroup', title: 'مجموعة', username: 'mygroup' },
+    })
+    mockDb.socialPost.count.mockResolvedValueOnce(0)
+    mockDb.telegramDestination.update.mockResolvedValueOnce({ ...SUPERGROUP_DEST })
+
+    const res = await healthPOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-sg'))
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(mockDb.telegramDestination.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ chatType: 'supergroup', username: 'mygroup' }),
+      }),
+    )
+    expect(JSON.stringify(body)).not.toContain('@@')
+  })
+
+  it('يطبّع صفاً قديماً مخزناً بـ @handle إلى handle', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'env-token-value'
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce({
+      ...SUPERGROUP_DEST,
+      chatId: '@old',
+      chatType: 'supergroup',
+      username: '@old',
+    })
+    mockCheckHealth.mockResolvedValueOnce({
+      ok: true,
+      memberStatus: 'administrator',
+      canPost: true,
+      chat: { id: -100111, type: 'supergroup', title: 'مجموعة', username: 'old' },
+    })
+    mockDb.socialPost.count.mockResolvedValueOnce(0)
+    mockDb.telegramDestination.update.mockResolvedValueOnce({ ...SUPERGROUP_DEST })
+
+    const res = await healthPOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-sg'))
+    expect(res.status).toBe(200)
+    expect(mockDb.telegramDestination.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ username: 'old' }),
+      }),
+    )
+  })
 })
 
 describe('المرحلة 1 — قائمة البوتات', () => {

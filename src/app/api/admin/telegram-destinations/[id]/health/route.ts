@@ -77,7 +77,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       if (health.chat.title && health.chat.title !== destination.title) {
         updateData.title = health.chat.title
       }
-      const username = health.chat.username ? `@${health.chat.username}` : null
+      // الصيغة الموحدة في الجدول: handle بلا @ — كما يخزّنها مسار
+      // الإنشاء (parseResult.ref.username)، لأن chatId يحمل @ أصلاً.
+      // هذا يطبّع أيضاً أي صف قديم خُزّن بـ @handle في فحص لاحق.
+      const rawUsername =
+        typeof health.chat.username === 'string' ? health.chat.username.replace(/^@/, '') : ''
+      const username = rawUsername ? rawUsername : null
       if (username !== destination.username) {
         updateData.username = username
       }
