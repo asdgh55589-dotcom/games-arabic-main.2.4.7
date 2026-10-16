@@ -402,6 +402,9 @@ model Mod {
   cpuArch           String? // بنية المعالج المتوافقة — Android only (ARM64/ARMv7/x86)
   gameVersion       String? // رقم إصدار اللعبة المتوافق — Android only
   minAndroidVersion String? // الحد الأدنى لنظام الأندرويد — Android only
+  // عنوان قسم الإضافات الخارجية (null = الافتراضي "ملفات إضافية")
+  extrasLabel       String?
+  siteLinks         ModSiteLink[]
 
   @@index([authorId])
   @@index([gameId])
@@ -507,9 +510,17 @@ model ModFile {
   fileFormat  String
   order       Int           @default(0)
   links       ModFileLink[]
+  siteLinks   ModSiteLink[]
   createdAt   DateTime      @default(now())
+  // ملفات إضافية متداخلة داخل هذا الملف (قسم فرعي)
+  parentId    String?
+  parent      ModFile?      @relation("FileExtras", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ModFile[]     @relation("FileExtras")
+  // عنوان قسم الملفات الإضافية داخل هذا الملف (null = الافتراضي)
+  extrasLabel String?
 
   @@index([modId])
+  @@index([parentId])
 }
 
 // ===== روابط كل ملف تحميل =====
@@ -534,6 +545,43 @@ model ModFileLink {
 
   @@index([fileId])
   @@index([provider])
+}
+
+// ===== مواقع تحميل الألعاب المتوافقة (تُستخدم للتحقق عند "جلب الرابط") =====
+// ملاحظة: نستخدم Json للمصفوفة لأن السكيما الحالية لا تستخدم String[] إطلاقاً
+// (كل القوائم المخزنة Json) — نفس أسلوب evidenceUrls/filters/variables.
+model CompatibleSite {
+  id        String   @id @default(cuid())
+  name      String
+  domains   Json     @default("[]")
+  logoUrl   String?
+  // توصيات/ملاحظات الموقع (حتى 2000 حرف — يُفرض في الـ API)
+  notes     String?
+  enabled   Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ===== روابط مواقع متوافقة كإضافات للمود =====
+// fileId = null يعني قسم خارجي أسفل التبويبة، وقيمة تعني متداخل داخل ذلك الملف
+model ModSiteLink {
+  id        String   @id @default(cuid())
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  fileId    String?
+  // عند حذف الملف الأب تنتقل روابطه للقسم الخارجي بدل أن تُحذف
+  file      ModFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  url       String
+  siteName  String?
+  pageTitle String?
+  // نطاق مستخرج من الرابط (denormalized للفلترة السريعة)
+  domain    String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([modId])
+  @@index([fileId])
 }
 
 // ===== أقسام الفيديوهات (شرح/ترويجي/مراجعة) =====
