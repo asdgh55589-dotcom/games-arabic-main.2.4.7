@@ -94,7 +94,7 @@ export function resolveTelegramMethod(input: TelegramSendInput): TelegramSendMet
 }
 
 async function apiCall(
-  method: TelegramSendMethod,
+  method: TelegramSendMethod | 'editMessageText' | 'deleteMessage',
   token: string,
   body: Record<string, unknown>,
 ): Promise<TelegramApiResponse> {
@@ -154,4 +154,73 @@ export async function sendTelegramPost(input: TelegramSendInput): Promise<Telegr
   const messageId =
     typeof result.result?.message_id === 'number' ? result.result.message_id : undefined
   return { ok: true, method, messageId }
+}
+
+export interface TelegramEditInput {
+  token: string | null
+  chatId: string
+  messageId: number
+  text: string
+  parseMode?: 'HTML' | null
+}
+
+export interface TelegramEditResult {
+  ok: boolean
+  error?: string
+}
+
+/**
+ * تعديل رسالة مرسلة (editMessageText). لا يرمي — الفشل يعود ضمن النتيجة.
+ * التوكن للاستخدام الداخلي فقط ولا يُسجَّل.
+ */
+export async function editTelegramMessage(input: TelegramEditInput): Promise<TelegramEditResult> {
+  const token = resolveBotToken(input.token)
+  if (!token) {
+    return { ok: false, error: 'لا يوجد توكن بوت: عيّن TELEGRAM_BOT_TOKEN أو اربط ببوت مسجّل' }
+  }
+  const body: Record<string, unknown> = {
+    chat_id: input.chatId,
+    message_id: input.messageId,
+    text: input.text,
+  }
+  if (input.parseMode) body.parse_mode = input.parseMode
+  const result = await apiCall('editMessageText', token, body)
+  if (!result.ok) {
+    const description = result.description ?? 'خطأ غير معروف من تليجرام'
+    return {
+      ok: false,
+      error: result.error_code ? `${description} (code ${result.error_code})` : description,
+    }
+  }
+  return { ok: true }
+}
+
+export interface TelegramDeleteInput {
+  token: string | null
+  chatId: string
+  messageId: number
+}
+
+/**
+ * حذف رسالة مرسلة (deleteMessage). لا يرمي — الفشل يعود ضمن النتيجة.
+ */
+export async function deleteTelegramMessage(
+  input: TelegramDeleteInput,
+): Promise<TelegramEditResult> {
+  const token = resolveBotToken(input.token)
+  if (!token) {
+    return { ok: false, error: 'لا يوجد توكن بوت: عيّن TELEGRAM_BOT_TOKEN أو اربط ببوت مسجّل' }
+  }
+  const result = await apiCall('deleteMessage', token, {
+    chat_id: input.chatId,
+    message_id: input.messageId,
+  })
+  if (!result.ok) {
+    const description = result.description ?? 'خطأ غير معروف من تليجرام'
+    return {
+      ok: false,
+      error: result.error_code ? `${description} (code ${result.error_code})` : description,
+    }
+  }
+  return { ok: true }
 }

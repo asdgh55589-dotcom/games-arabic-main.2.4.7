@@ -1244,6 +1244,11 @@ model TelegramDestination {
   socialPosts   SocialPost[]
   socialBot     SocialTelegramBot? @relation(fields: [botId], references: [id], onDelete: SetNull)
 
+  // ===== Phase 3 — علاقات النشر المتعدد (حقول علاقات فقط) =====
+  publishRoutes  SocialPublishRoute[]   @relation("DestinationRoutes")
+  postTargets    SocialPostTarget[]     @relation("DestinationTargets")
+  postDeliveries SocialPostDelivery[]   @relation("DestinationDeliveries")
+
   @@index([status, verificationStatus])
   @@index([chatType])
   @@index([createdAt])
@@ -1917,6 +1922,11 @@ model SocialTelegramBot {
   destinations TelegramDestination[]
   posts        SocialPost[]
 
+  // ===== Phase 3 — علاقات النشر المتعدد (حقول علاقات فقط) =====
+  publishRoutes  SocialPublishRoute[]  @relation("SocialBotRoutes")
+  postTargets    SocialPostTarget[]    @relation("SocialBotTargets")
+  postDeliveries SocialPostDelivery[]  @relation("SocialBotDeliveries")
+
   @@index([status])
   @@index([createdAt])
   @@map("social_telegram_bots")
@@ -1957,6 +1967,10 @@ model SocialPost {
   template    SocialPostTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
   bot         SocialTelegramBot?    @relation(fields: [botId], references: [id], onDelete: SetNull)
 
+  // ===== Phase 3 — النشر المتعدد (additive: حقول علاقات فقط، بلا أعمدة جديدة) =====
+  targets    SocialPostTarget[]    @relation("PostTargets")
+  deliveries SocialPostDelivery[]  @relation("PostDeliveries")
+
   @@index([platform, status])
   @@index([status, scheduledFor])
   @@index([createdAt])
@@ -1984,4 +1998,74 @@ model SocialPostTemplate {
 
   @@index([platform])
   @@map("social_post_templates")
+}
+
+// ===== Phase 3 — التوجيه والنشر المتعدد (additive: جداول جديدة فقط) =====
+// SocialPublishRoute: قاعدة «منصة كونسول ← هدف نشر». SocialPostTarget: أهداف
+// المنشور الواحد (المرجع الحي للحالة). SocialPostDelivery: دفتر تسليم
+// غير قابل للتعديل (صف لكل محاولة إرسال — التاريخ يبقى للأبد).
+model SocialPublishRoute {
+  id            String   @id @default(cuid())
+  platformKey   String   @map("platform_key") // PC | PS5 | … (src/lib/constants PLATFORMS)
+  targetType    String   @map("target_type") // channel | group | topic
+  destinationId String   @map("destination_id")
+  destination   TelegramDestination @relation("DestinationRoutes", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId         String?  @map("bot_id")
+  bot           SocialTelegramBot? @relation("SocialBotRoutes", fields: [botId], references: [id], onDelete: SetNull)
+  threadId      Int?     @map("thread_id")
+  priority      Int      @default(0)
+  isDefault     Boolean  @default(false) @map("is_default")
+  isActive      Boolean  @default(true) @map("is_active")
+  validFrom     DateTime? @map("valid_from")
+  validUntil    DateTime? @map("valid_until")
+  createdById   String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([platformKey, isActive])
+  @@index([destinationId])
+  @@map("social_publish_routes")
+}
+
+model SocialPostTarget {
+  id                String   @id @default(cuid())
+  postId            String   @map("post_id")
+  post              SocialPost @relation("PostTargets", fields: [postId], references: [id], onDelete: Cascade)
+  destinationId     String   @map("destination_id")
+  destination       TelegramDestination @relation("DestinationTargets", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId             String?  @map("bot_id")
+  bot               SocialTelegramBot? @relation("SocialBotTargets", fields: [botId], references: [id], onDelete: SetNull)
+  threadId          Int?     @map("thread_id")
+  status            String   @default("pending") // pending | sending | sent | failed | skipped
+  externalMessageId String?  @map("external_message_id")
+  error             String?  @map("error")
+  attempts          Int      @default(0)
+  sentAt            DateTime? @map("sent_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([postId, destinationId, threadId])
+  @@index([postId, status])
+  @@map("social_post_targets")
+}
+
+model SocialPostDelivery {
+  id                String   @id @default(cuid())
+  postId            String   @map("post_id")
+  post              SocialPost @relation("PostDeliveries", fields: [postId], references: [id], onDelete: Cascade)
+  destinationId     String   @map("destination_id")
+  destination       TelegramDestination @relation("DestinationDeliveries", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId             String?  @map("bot_id")
+  bot               SocialTelegramBot? @relation("SocialBotDeliveries", fields: [botId], references: [id], onDelete: SetNull)
+  threadId          Int?     @map("thread_id")
+  status            String   @map("status") // sent | failed | skipped (صف للتاريخ — لا يُحدَّث)
+  externalMessageId String?  @map("external_message_id")
+  error             String?  @map("error")
+  attempts          Int      @default(0)
+  sentAt            DateTime? @map("sent_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([postId, createdAt])
+  @@index([destinationId])
+  @@map("social_post_deliveries")
 }
