@@ -5,7 +5,7 @@ import { ExternalLink, Image as ImageIcon, Play, X, Youtube } from 'lucide-react
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { cached } from '@/lib/cache'
-import { sanitizeHTML } from '@/lib/sanitize'
+import { sanitizeHTML } from '@/lib/sanitize-html'
 
 interface HomepageAd {
   id: string

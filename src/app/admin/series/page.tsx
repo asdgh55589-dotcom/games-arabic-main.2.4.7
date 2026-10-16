@@ -246,6 +246,9 @@ export default function AdminSeriesPage() {
                           src={s.bannerUrl || s.logoUrl}
                           alt=""
                           className="h-8 w-12 rounded object-cover"
+                          loading="lazy"
+                          width={48}
+                          height={32}
                         />
                       )}
                       <span className="font-medium">{s.name}</span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ar } from 'date-fns/locale'
+import { ar } from 'date-fns/locale/ar'
 import { ChevronRight, Clock, History, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

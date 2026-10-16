@@ -17,7 +17,9 @@ export function CreatorLeaderboardCard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/leaderboard/creators', { cache: 'no-store' })
+    // Section 4 item 27: leaderboard API is public max-age=60 — let the HTTP
+    // cache serve it instead of bypassing with no-store.
+    fetch('/api/leaderboard/creators')
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         const list = json?.data || json || []

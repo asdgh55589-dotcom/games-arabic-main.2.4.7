@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertCircle, Key, Loader2, Lock, Mail, ShieldCheck, User } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -207,10 +208,12 @@ function AdminLoginContent() {
 
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo.png"
             alt="ألعاب عربية"
+            width={40}
+            height={40}
+            priority
             className="mx-auto mb-3 h-10 w-auto object-contain"
           />
           <p className="mt-1 text-sm text-muted-foreground">لوحة تحكم نشر التعريبات</p>

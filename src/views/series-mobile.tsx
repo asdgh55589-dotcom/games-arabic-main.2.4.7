@@ -141,6 +141,8 @@ export function SeriesMobile({ data, loading }: SeriesMobileProps) {
                       src={s.logoUrl || s.bannerUrl}
                       alt=""
                       loading="lazy"
+                      width={48}
+                      height={48}
                       className="h-full w-full object-cover"
                     />
                   ) : (

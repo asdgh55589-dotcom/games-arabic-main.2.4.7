@@ -122,7 +122,9 @@ export default async function CreatorsPage({ searchParams }: PageProps) {
   }
   const orderBy = orderByMap[sortField] || { createdAt: 'desc' }
 
-  const [total, users, allTeams] = await Promise.all([
+  // Section 4 item 28: hero stats query is independent of the paginated list
+  // (different where, stats don't consume rows) — fold it into the same batch.
+  const [total, users, allTeams, allCreators] = await Promise.all([
     db.user.count({ where }),
     db.user.findMany({
       where,
@@ -152,6 +154,14 @@ export default async function CreatorsPage({ searchParams }: PageProps) {
       },
     }),
     db.team.findMany({ select: { id: true, name: true } }),
+    db.user.findMany({
+      where: { role: { in: ['creator', 'publisher'] } },
+      select: {
+        role: true,
+        banStatus: true,
+        mods: { where: { workflowStatus: 'PUBLISHED' }, select: { downloads: true } },
+      },
+    }),
   ])
 
   // Handle "none" team filter client-side already? Actually for "none" we need to exclude those with team
@@ -182,15 +192,8 @@ export default async function CreatorsPage({ searchParams }: PageProps) {
     }
   })
 
-  // Stats for hero (all creators/publishers, not just paginated)
-  const allCreators = await db.user.findMany({
-    where: { role: { in: ['creator', 'publisher'] } },
-    select: {
-      role: true,
-      banStatus: true,
-      mods: { where: { workflowStatus: 'PUBLISHED' }, select: { downloads: true } },
-    },
-  })
+  // Stats for hero (all creators/publishers, not just paginated) — fetched
+  // in the batch above.
   const stats = {
     creators: allCreators.filter((u) => u.role === 'creator').length,
     publishers: allCreators.filter((u) => u.role === 'publisher').length,
