@@ -6,6 +6,7 @@ const mockScheduledJob = {
   create: jest.fn(),
   findFirst: jest.fn(),
   update: jest.fn(),
+  deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
 }
 
 jest.mock('@/lib/db', () => ({
@@ -128,6 +129,50 @@ describe('claimRun', () => {
     expect(result.alreadyRan).toBe(true)
     expect(result.jobId).toBeNull()
     expect(mockScheduledJob.create).not.toHaveBeenCalled()
+  })
+
+  it('reaps same-window FAILED rows before claiming so the tick retries', async () => {
+    mockScheduledJob.findFirst
+      .mockResolvedValueOnce(null) // no completed
+      .mockResolvedValueOnce(null) // no live in-progress
+    mockScheduledJob.deleteMany.mockResolvedValueOnce({ count: 1 })
+    mockScheduledJob.create.mockResolvedValue({ id: 'job-retry', status: 'running' })
+
+    const result = await claimRun('weekly-backup', '2026-W42')
+
+    expect(result.alreadyRan).toBe(false)
+    expect(result.jobId).toBe('job-retry')
+    // الإزاحة تشمل الفاشلة في النطاق نفسه — وإلا اصطدم الإنشاء بالقيد الفريد.
+    expect(mockScheduledJob.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          type: 'weekly-backup',
+          windowKey: '2026-W42',
+          OR: expect.arrayContaining([expect.objectContaining({ status: 'failed' })]),
+        }),
+      }),
+    )
+    expect(mockScheduledJob.create).toHaveBeenCalled()
+  })
+
+  it('reaps stale running rows past the claim lease but keeps live ones', async () => {
+    mockScheduledJob.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null)
+    mockScheduledJob.deleteMany.mockResolvedValueOnce({ count: 1 })
+    mockScheduledJob.create.mockResolvedValue({ id: 'job-fresh', status: 'running' })
+
+    const before = Date.now()
+    const result = await claimRun('backup-cleanup', '2026-10-15')
+
+    expect(result.alreadyRan).toBe(false)
+    const reapArg = mockScheduledJob.deleteMany.mock.calls[0][0]
+    const orClauses = reapArg.where.OR as Array<Record<string, unknown>>
+    const staleClause = orClauses.find(
+      (c) => (c.status as Record<string, unknown>)?.in !== undefined,
+    ) as { createdAt: { lt: Date } }
+    // حد العقد ≈ 30 دقيقة خلت — يثبّت CLAIM_LEASE_MS ضد الانزلاق.
+    const cutoff = staleClause.createdAt.lt.getTime()
+    expect(cutoff).toBeLessThanOrEqual(before - 30 * 60_000 + 5_000)
+    expect(cutoff).toBeGreaterThanOrEqual(before - 30 * 60_000 - 5_000)
   })
 })
 

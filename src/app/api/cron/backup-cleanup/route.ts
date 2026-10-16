@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { requireCronAuth } from '@/lib/cron-auth'
-import { claimRun, completeRun } from '@/lib/cron-ledger'
 import { cleanupOldBackups } from '@/lib/backup'
+import { requireCronAuth } from '@/lib/cron-auth'
+import { claimRun, completeRun, failRun } from '@/lib/cron-ledger'
 import { logger } from '@/lib/logger'
 
 /**
@@ -28,6 +28,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted })
   } catch (error) {
     logger.error('[backup-cleanup] فشل التنظيف:', error)
+    // تحرير النافذة: بلا failRun يبقى الصف running ويحجب كل ticks اليوم.
+    if (jobId) {
+      try {
+        await failRun(jobId, error)
+      } catch {
+        // لا نُسقط رد الخطأ الأصلي بسبب فشل السجل
+      }
+    }
     return NextResponse.json({ error: 'فشل التنظيف' }, { status: 500 })
   }
 }

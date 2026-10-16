@@ -12,11 +12,12 @@
  *
  * Idempotency: `claimRun` + `completeRun`/`failRun` من `lib/cron-ledger.ts`.
  *
- * ⚠️ defect معروف في claimRun: تتجاهل `windowKey` وتعيد alreadyRan بعد أول
- * نجاح لنوع وظيفة. لذلك نستدعيها باسم **مُنscope بنافذة الدقيقة**:
- * `social-publish:<YYYY-MM-DDTHH:mm>` — فيصبح فحص "أنجزت من قبل" نطاقاً
- * للدقيقة نفسها لا للأبد. وننظّف صفوف `social-publish:*` الأقدم من 7 أيام
- * في كل تشغيل كي لا تتضخم الجدول. يُوثَّق في docs/CRON-JOBS.md.
+ * نستدعيها باسم **مُنscope بنافذة الدقيقة**:
+ * `social-publish:<YYYY-MM-DDTHH:mm>` — فحص «أنجزت من قبل» نطاقه الدقيقة
+ * نفسها: مكتمل أو جارٍ حيّ في الدقيقة ⇒ `skipped: 'duplicate'`، وصفوف
+ * ميتة (فاشلة أو جارية تجاوزت عقد المطالبة) تُزاح قبل المطالبة.
+ * وننظّف صفوف `social-publish:*` الأقدم من 7 أيام في كل تشغيل كي لا
+ * يتضخم الجدول. يُوثَّق في docs/CRON-JOBS.md.
  */
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'

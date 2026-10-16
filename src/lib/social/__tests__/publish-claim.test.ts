@@ -120,4 +120,42 @@ describe('publishSocialPost — المطالبة الذرّية', () => {
     expect(result).toMatchObject({ status: 'skipped', reason: 'already_published' })
     expect(mockSend).not.toHaveBeenCalled()
   })
+
+  it('صف publishing عمره 20 دقيقة يُستعاد ويُرسل مرة واحدة مع تثبيت حد العقد', async () => {
+    const twentyMinAgo = new Date(Date.now() - 20 * 60_000)
+    mockDb.socialPost.findUnique.mockResolvedValue({
+      ...scheduledRow,
+      status: 'publishing',
+      updatedAt: twentyMinAgo,
+    })
+    mockDb.socialPost.updateMany.mockResolvedValue({ count: 1 })
+
+    const before = Date.now()
+    const result = await publishSocialPost('p1', { source: 'cron' })
+
+    expect(result.status).toBe('published')
+    expect(mockSend).toHaveBeenCalledTimes(1)
+    // حد العقد ≈ 15 دقيقة خلت — يثبّت PUBLISH_LEASE_MS ضد الانزلاق.
+    const arg = mockDb.socialPost.updateMany.mock.calls[0][0]
+    const leaseClause = (arg.where.OR as Array<Record<string, unknown>>).find(
+      (c) => c.status === 'publishing',
+    ) as { updatedAt: { lt: Date } }
+    const cutoff = leaseClause.updatedAt.lt.getTime()
+    expect(cutoff).toBeLessThanOrEqual(before - 15 * 60_000 + 5_000)
+    expect(cutoff).toBeGreaterThanOrEqual(before - 15 * 60_000 - 5_000)
+  })
+
+  it('صف publishing عمره دقيقة واحدة → skipped/in_progress بلا إرسال', async () => {
+    const oneMinAgo = new Date(Date.now() - 60_000)
+    mockDb.socialPost.findUnique
+      .mockResolvedValueOnce({ ...scheduledRow, status: 'publishing', updatedAt: oneMinAgo })
+      .mockResolvedValueOnce({ status: 'publishing', externalId: null })
+    // قاعدة البيانات لا تطابق: العقد حيّ.
+    mockDb.socialPost.updateMany.mockResolvedValue({ count: 0 })
+
+    const result = await publishSocialPost('p1', { source: 'cron' })
+
+    expect(result).toMatchObject({ status: 'skipped', reason: 'in_progress' })
+    expect(mockSend).not.toHaveBeenCalled()
+  })
 })
