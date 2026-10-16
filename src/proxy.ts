@@ -444,8 +444,9 @@ async function proxyInner(req: NextRequest) {
           const loginUrl = isAdminPath(pathname)
             ? new URL('/admin/login', req.url)
             : new URL('/login', req.url)
-          // Section 2 item 13: preserve the original path for post-login return
-          // (/admin/login consumes ?from, /login consumes ?next).
+          // Section 2 item 13: preserve the original path for post-login return.
+          // /admin/login consumes ?from today; ?next on /login is set for the
+          // login flow to consume (currently lands on / when absent).
           if (isAdminPath(pathname)) loginUrl.searchParams.set('from', pathname)
           else loginUrl.searchParams.set('next', pathname)
           const res = NextResponse.redirect(loginUrl, 307)
