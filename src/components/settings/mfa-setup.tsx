@@ -36,7 +36,7 @@ export function MfaSetup({ onEnabled }: { onEnabled: () => void }) {
       const res = await fetch('/api/auth/mfa/setup', { method: 'POST' })
       const j = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(readMessage(j, 'تعذر بدء الإعداد'))
+        setError(readMessage(j, 'تعذّر بدء إعداد المصادقة — تحقق من الجلسة وحاول مجدداً'))
         return
       }
       setQrCode(j.data.qrCode)

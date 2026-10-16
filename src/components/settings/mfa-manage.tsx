@@ -106,7 +106,7 @@ export function MfaManage({
       })
       const j = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(readMessage(j, 'فشل التعطيل'))
+        setError(readMessage(j, 'تعذّر تعطيل المصادقة — تحقق من كلمة المرور أو الرمز وحاول مجدداً'))
         return
       }
       setNotice('تم تعطيل المصادقة الثنائية')

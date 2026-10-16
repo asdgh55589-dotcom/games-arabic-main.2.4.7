@@ -92,8 +92,12 @@ function AdminLoginContent() {
       setError({ message: 'تعذّر التحقق من الجلسة مؤقتاً. حاول مرة أخرى.' })
       return
     }
-    if (errorCode === 'auth_failed' || errorCode === 'no_session') {
+    if (errorCode === 'auth_failed') {
       setError({ message: 'فشل تسجيل الدخول عبر المزوّد. حاول مرة أخرى.' })
+      return
+    }
+    if (errorCode === 'no_session') {
+      setError({ message: 'انتهت جلستك، سجّل دخولك من جديد.' })
       return
     }
     // Plain ?from= (e.g. bookmarked first visit) is NOT an expiry — show no error.
@@ -117,7 +121,9 @@ function AdminLoginContent() {
       const data = await res.json()
       if (!res.ok) {
         const msg =
-          typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تسجيل الدخول'
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error?.message || 'تعذّر قراءة رد الخادم — تحقق من الاتصال وحاول مجدداً'
         const field = data?.field || data?.error?.details?.field
         setError({ message: msg, field })
         return
@@ -257,7 +263,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'username' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -287,7 +293,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'email' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -317,7 +323,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'password' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -347,12 +353,12 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'securityKey' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
             {error && !error.field && (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" aria-live="polite">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error.message}</span>
               </div>
@@ -403,7 +409,7 @@ function AdminLoginContent() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" aria-live="polite">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error.message}</span>
               </div>

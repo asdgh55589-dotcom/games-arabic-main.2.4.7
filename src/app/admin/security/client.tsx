@@ -50,7 +50,7 @@ export default function SecurityClient() {
       const res = await fetch('/api/auth/mfa/setup', { method: 'POST' })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(data?.error?.message || 'فشل إعداد المصادقة الثنائية')
+        setError(data?.error?.message || 'تعذّر بدء إعداد المصادقة — تحقق من الجلسة وحاول مجدداً')
         return
       }
       setSecret(data.data.secret)
@@ -121,7 +121,7 @@ export default function SecurityClient() {
         setError(
           (details && Object.values(details)[0]) ||
             (typeof data?.error === 'string' ? data.error : data?.error?.message) ||
-            'فشل تعطيل المصادقة',
+            'تعذّر تعطيل المصادقة — تحقق من كلمة المرور أو الرمز وحاول مجدداً',
         )
         return
       }

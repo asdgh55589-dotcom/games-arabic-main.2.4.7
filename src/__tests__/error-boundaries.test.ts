@@ -54,10 +54,11 @@ describe('global-error static fallback (SA-2)', () => {
   test('global-error file contains Arabic fallback + reset button', () => {
     const p = path.join(__dirname, '..', 'app', 'global-error.tsx')
     const src = fs.readFileSync(p, 'utf8')
-    // Reused byte-identical wording from src/app/error.tsx
-    expect(src).toContain('حدث خطأ ما')
-    expect(src).toContain('نعتذر، حدث خطأ غير متوقع. حاول مرة أخرى.')
+    // Reused wording from src/app/error.tsx (Section 3: specific page-load message)
+    expect(src).toContain('تعذّر تحميل الصفحة')
+    expect(src).toContain('حدث خطأ غير متوقع — تحقق من اتصالك بالإنترنت وحاول مجدداً.')
     expect(src).toContain('إعادة المحاولة')
+    expect(src).toContain('aria-live="polite"')
     // reset wiring + no-white-screen shell
     expect(src).toMatch(/reset/)
     expect(src).toContain('<html')
