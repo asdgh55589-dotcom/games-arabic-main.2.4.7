@@ -112,10 +112,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // الموضوع (اختياري): صالح فقط لمجموعات المنتدى.
+    // الموضوع (اختياري): صالح فقط لمجموعات المنتدى المؤكدة. صف جديد لم
+    // يُفحص أبداً ⇒ معرّف -100 غامض (قد يكون قناة) يُرفض حتى الفحص.
     const threadCheck = validateDestinationThread(
       parseResult.ref.chatType,
       parsed.data.messageThreadId,
+      { canonicalId: parseResult.ref.canonical, healthConfirmed: false },
     )
     if (!threadCheck.ok) {
       return fail(

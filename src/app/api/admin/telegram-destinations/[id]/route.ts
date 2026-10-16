@@ -95,9 +95,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       updateData.botId = data.botId
     }
 
-    // الموضوع: صالح فقط لمجموعات المنتدى حسب نوع الوجهة الحالي.
+    // الموضوع: صالح فقط لمجموعات المنتدى المؤكدة. نوع مُخمَّن من معرّف
+    // -100 بلا فحص صحة ناجح ما يزال غامضاً (قد يكون قناة).
     if (data.messageThreadId !== undefined) {
-      const threadCheck = validateDestinationThread(existing.chatType, data.messageThreadId)
+      const threadCheck = validateDestinationThread(existing.chatType, data.messageThreadId, {
+        canonicalId: existing.chatId,
+        healthConfirmed: existing.lastHealthAt != null && existing.lastHealthError == null,
+      })
       if (!threadCheck.ok) {
         return fail(
           'VALIDATION_ERROR',

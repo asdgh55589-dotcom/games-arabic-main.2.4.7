@@ -228,3 +228,33 @@ describe('validateDestinationThread — صلاحية الموضوع حسب ال�
     }
   })
 })
+
+describe('validateDestinationThread — غموض -100 (قناة أم مجموعة؟)', () => {
+  it('يرفض thread مع معرّف -100 غير مؤكد ويطلب الفحص أولاً', () => {
+    const r = validateDestinationThread('supergroup', 2, {
+      canonicalId: '-100123456',
+      healthConfirmed: false,
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('unconfirmed_supergroup')
+      expect(r.message).toMatch(/فحص الصحة/)
+    }
+  })
+
+  it('يقبل thread مع معرّف -100 بعد تأكيد الفحص', () => {
+    expect(
+      validateDestinationThread('supergroup', 2, {
+        canonicalId: '-100123456',
+        healthConfirmed: true,
+      }),
+    ).toEqual({ ok: true })
+  })
+
+  it('لا يطلب تأكيداً لمعرّف غير -100', () => {
+    expect(validateDestinationThread('group', 2, { canonicalId: '-12345' })).toEqual({
+      ok: true,
+    })
+    expect(validateDestinationThread('supergroup', 2)).toEqual({ ok: true })
+  })
+})

@@ -225,17 +225,27 @@ export function destinationReadiness(dest: DestinationReadinessInput): Destinati
   return { ready: true, reason: 'ok' }
 }
 
-export type DestinationThreadFailure = 'not_a_forum' | 'unknown_type' | 'invalid_thread'
+export type DestinationThreadFailure =
+  | 'not_a_forum'
+  | 'unknown_type'
+  | 'unconfirmed_supergroup'
+  | 'invalid_thread'
 
 /**
  * صلاحية ربط موضوع (message_thread_id) بنوع الوجهة — دالة نقية.
  * المواضيع موجودة فقط في مجموعات المنتدى (forum): عملياً supergroup،
  * ونقبل group لأن التصنيف المحلي إرشادي وقد تكون المجموعة تحوّلت.
  * القنوات/الخاص/البوتات/غير-المعروفة تُرفض برسالة عربية.
+ *
+ * غموض `-100`: القنوات والمجموعات الخارقة تشترك في بادئة `-100`
+ * (انظر classifyTelegramChatId)، والتصنيف المحلي يخمّن supergroup.
+ * لذلك لا يُقبل thread مع معرّف `-100` إلا بعد تأكيد فحص الصحة
+ * (healthConfirmed) — وإلا طُلب إنشاء الوجهة بلا موضوع ثم الفحص أولاً.
  */
 export function validateDestinationThread(
   chatType: string,
   messageThreadId: number | null | undefined,
+  opts?: { canonicalId?: string | null; healthConfirmed?: boolean },
 ): { ok: true } | { ok: false; reason: DestinationThreadFailure; message: string } {
   if (messageThreadId == null) return { ok: true }
   if (!Number.isInteger(messageThreadId) || messageThreadId < 1) {
@@ -258,6 +268,15 @@ export function validateDestinationThread(
       reason: 'not_a_forum',
       message:
         'المواضيع موجودة فقط داخل مجموعات المنتدى (supergroup) — لا تُربط بقناة أو محادثة خاصة',
+    }
+  }
+  const canonical = (opts?.canonicalId ?? '').trim()
+  if (!opts?.healthConfirmed && canonical.startsWith('-100')) {
+    return {
+      ok: false,
+      reason: 'unconfirmed_supergroup',
+      message:
+        'هذا المعرّف (-100…) قد يكون قناة — أنشئ الوجهة بلا موضوع ثم نفّذ فحص الصحة، وبعد التأكد أنها مجموعة أضف الموضوع',
     }
   }
   return { ok: true }

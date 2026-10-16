@@ -83,6 +83,20 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // شفاء ذاتي: النوع الفعلي (بعد المزامنة) ليس منتدى وموضوع مربوط —
+    // بيانات قديمة كانت ستفشل الإرسال دائماً. يُصفَّر مع إعلام صريح.
+    const effectiveType = (updateData.chatType as string | undefined) ?? destination.chatType
+    let threadCleared = false
+    if (
+      health.ok &&
+      destination.messageThreadId != null &&
+      effectiveType !== 'supergroup' &&
+      effectiveType !== 'group'
+    ) {
+      updateData.messageThreadId = null
+      threadCleared = true
+    }
+
     const updated = await db.telegramDestination.update({ where: { id }, data: updateData })
 
     await logAction({
@@ -97,6 +111,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         memberStatus: health.memberStatus ?? null,
         canPost: health.canPost ?? false,
         postCount,
+        threadCleared,
       }),
       request: req,
     })
@@ -109,6 +124,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       postCount,
       checkedAt: now.toISOString(),
       archivedAt: updated.archivedAt,
+      threadCleared,
       error: health.error ?? null,
     })
   } catch (err) {

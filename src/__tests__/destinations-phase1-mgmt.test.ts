@@ -81,6 +81,15 @@ const SUPERGROUP_DEST = {
   botId: null,
   messageThreadId: null,
   archivedAt: null,
+  // بلا فحص صحة ناجح ⇒ النوع «مخمّن» لا مؤكد (غموض -100).
+  lastHealthAt: null,
+  lastHealthError: null,
+}
+
+const CONFIRMED_SUPERGROUP_DEST = {
+  ...SUPERGROUP_DEST,
+  lastHealthAt: '2026-10-15T10:00:00.000Z',
+  lastHealthError: null,
 }
 
 const CHANNEL_DEST = { ...SUPERGROUP_DEST, id: 'dest-ch', chatId: '@chan', chatType: 'channel' }
@@ -91,14 +100,9 @@ beforeEach(() => {
 })
 
 describe('المرحلة 1 — تحقق المواضيع والبوت (إنشاء)', () => {
-  it('يقبل thread لبوت موجود على supergroup', async () => {
+  it('يرفض thread مع معرّف -100 غير مؤكد (قد يكون قناة) ويطلب الفحص أولاً', async () => {
     mockDb.telegramDestination.findUnique.mockResolvedValueOnce(null) // not existing
     mockDb.socialTelegramBot.findUnique.mockResolvedValueOnce({ id: 'bot-1' })
-    mockDb.telegramDestination.create.mockResolvedValueOnce({
-      ...SUPERGROUP_DEST,
-      botId: 'bot-1',
-      messageThreadId: 3,
-    })
 
     const res = await listPOST(
       makeReq('http://localhost/x', 'POST', {
@@ -107,10 +111,35 @@ describe('المرحلة 1 — تحقق المواضيع والبوت (إنشا�
         messageThreadId: 3,
       }),
     )
+    const body = await res.json()
+    expect(res.status).toBe(422)
+    expect(mockDb.telegramDestination.findUnique).toHaveBeenCalled()
+    expect(JSON.stringify(body)).toMatch(/فحص الصحة/)
+    expect(mockDb.telegramDestination.create).not.toHaveBeenCalled()
+  })
+
+  it('يقبل thread لمعرّف غير -100 (مجموعة عادية) مع بوت موجود', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(null) // not existing
+    mockDb.socialTelegramBot.findUnique.mockResolvedValueOnce({ id: 'bot-1' })
+    mockDb.telegramDestination.create.mockResolvedValueOnce({
+      ...SUPERGROUP_DEST,
+      chatId: '-12345',
+      chatType: 'group',
+      botId: 'bot-1',
+      messageThreadId: 2,
+    })
+
+    const res = await listPOST(
+      makeReq('http://localhost/x', 'POST', {
+        chatId: '-12345',
+        botId: 'bot-1',
+        messageThreadId: 2,
+      }),
+    )
     expect(res.status).toBe(200)
     expect(mockDb.telegramDestination.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ botId: 'bot-1', messageThreadId: 3 }),
+        data: expect.objectContaining({ botId: 'bot-1', messageThreadId: 2 }),
       }),
     )
   })
@@ -154,13 +183,13 @@ describe('المرحلة 1 — تحقق المواضيع والبوت (تعدي�
     expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
   })
 
-  it('يقبل thread صالحاً على supergroup ويخلي botId بـ null', async () => {
+  it('يقبل thread صالحاً على supergroup مؤكدة الفحص ويخلي botId بـ null', async () => {
     mockDb.telegramDestination.findUnique.mockResolvedValueOnce({
-      ...SUPERGROUP_DEST,
+      ...CONFIRMED_SUPERGROUP_DEST,
       botId: 'bot-1',
     })
     mockDb.telegramDestination.update.mockResolvedValueOnce({
-      ...SUPERGROUP_DEST,
+      ...CONFIRMED_SUPERGROUP_DEST,
       botId: null,
       messageThreadId: 7,
     })
@@ -175,6 +204,19 @@ describe('المرحلة 1 — تحقق المواضيع والبوت (تعدي�
         data: expect.objectContaining({ messageThreadId: 7, botId: null }),
       }),
     )
+  })
+
+  it('يرفض thread على supergroup غير مؤكدة الفحص (-100 غامض)', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(SUPERGROUP_DEST)
+
+    const res = await destPATCH(
+      makeReq('http://localhost/x', 'PATCH', { messageThreadId: 7 }),
+      routeParams('dest-sg'),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(422)
+    expect(JSON.stringify(body)).toMatch(/فحص الصحة/)
+    expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
   })
 })
 
@@ -263,6 +305,62 @@ describe('المرحلة 1 — فحص الصحة', () => {
         }),
       }),
     )
+  })
+
+  it('مزامنة النوع إلى قناة تُصفّر thread عالقاً وتُعلِم بذلك', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'env-token-value'
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce({
+      ...SUPERGROUP_DEST,
+      messageThreadId: 5,
+    })
+    mockCheckHealth.mockResolvedValueOnce({
+      ok: true,
+      memberStatus: 'administrator',
+      canPost: true,
+      chat: { id: -100111, type: 'channel', title: 'قناة' },
+    })
+    mockDb.socialPost.count.mockResolvedValueOnce(1)
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...SUPERGROUP_DEST,
+      messageThreadId: null,
+    })
+
+    const res = await healthPOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-sg'))
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.data.healthy).toBe(true)
+    expect(body.data.threadCleared).toBe(true)
+    expect(mockDb.telegramDestination.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ chatType: 'channel', messageThreadId: null }),
+      }),
+    )
+  })
+
+  it('لا يصفّر thread سليماً على supergroup مؤكدة', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'env-token-value'
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce({
+      ...CONFIRMED_SUPERGROUP_DEST,
+      messageThreadId: 5,
+    })
+    mockCheckHealth.mockResolvedValueOnce({
+      ok: true,
+      memberStatus: 'administrator',
+      canPost: true,
+      chat: { id: -100111, type: 'supergroup', title: 'مجموعة' },
+    })
+    mockDb.socialPost.count.mockResolvedValueOnce(1)
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...CONFIRMED_SUPERGROUP_DEST,
+      messageThreadId: 5,
+    })
+
+    const res = await healthPOST(makeReq('http://localhost/x', 'POST'), routeParams('dest-sg'))
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.data.threadCleared).toBe(false)
+    const updateArg = mockDb.telegramDestination.update.mock.calls[0][0]
+    expect(updateArg.data.messageThreadId).toBeUndefined()
   })
 })
 

@@ -257,7 +257,12 @@ export default function TelegramDestinationsPage() {
       const body = await res.json()
       if (!res.ok) throw new Error(apiErrorMessage(body, 'فشل فحص الصحة'))
       if (body.data.healthy) {
-        toast({ title: 'سليمة', description: `البوت ${body.data.memberStatus} ويستطيع النشر` })
+        toast({
+          title: 'سليمة',
+          description:
+            `البوت ${body.data.memberStatus} ويستطيع النشر` +
+            (body.data.threadCleared ? ' — صُفّر موضوع عالق (الوجهة ليست منتدى)' : ''),
+        })
       } else {
         toast({
           title: 'غير سليمة',
@@ -371,6 +376,9 @@ export default function TelegramDestinationsPage() {
               inputMode="numeric"
               className="w-28"
             />
+            <p className="text-[11px] text-muted-foreground">
+              للمجموعات المؤكدة فقط — معرّف -100 يحتاج فحص صحة أولاً
+            </p>
           </div>
           <Button onClick={handleCreate} disabled={!newChatId.trim() || creating}>
             {creating ? 'جارٍ…' : 'إضافة'}
@@ -600,7 +608,7 @@ export default function TelegramDestinationsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>الموضوع (للمجموعات الخارقة فقط)</Label>
+                <Label>الموضوع (للمجموعات المؤكدة فقط)</Label>
                 <Input
                   value={editThread}
                   onChange={(e) => setEditThread(e.target.value)}
@@ -608,6 +616,9 @@ export default function TelegramDestinationsPage() {
                   inputMode="numeric"
                   className="w-40"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  معرّف -100 غير مفحوص يُرفض — نفّذ فحص الصحة أولاً
+                </p>
               </div>
               <label className="flex cursor-pointer items-center gap-2 self-end text-sm">
                 <input
