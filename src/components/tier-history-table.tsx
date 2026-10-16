@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { ar } from 'date-fns/locale'
+import { ar } from 'date-fns/locale/ar'
 
 interface TierHistoryEntry {
   id: string

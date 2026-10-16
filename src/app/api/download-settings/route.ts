@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { setCacheControl } from '@/lib/api-cache'
 import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { AuthError, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -71,7 +72,10 @@ export async function GET() {
 
     const warningMessage = byKey.get(DOWNLOAD_WARNING_SETTING_KEY) || DEFAULT_WARNING_MESSAGE
 
-    return ok({ services, warningMessage })
+    // Section 4 item 27: trusted-hosts list is public and rarely changes.
+    const res = ok({ services, warningMessage })
+    setCacheControl(res.headers, { type: 'public', maxAge: 300, swr: 600 })
+    return res
   } catch (error) {
     reportError(error, { route: 'GET /api/download-settings' })
     logger.error({ err: error, route: 'GET /api/download-settings' }, 'Failed to load download settings')

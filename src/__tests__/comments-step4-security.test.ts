@@ -6,7 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { POST as modsPOST } from '@/app/api/mods/[slug]/comments/route';
 import { GET as adminGET } from '@/app/api/admin/comments/route';
-import { sanitizeHTML, sanitizeUrl } from '@/lib/sanitize';
+import { sanitizeHTML } from '@/lib/sanitize-html';
+import { sanitizeUrl } from '@/lib/sanitize';
 
 jest.mock('@/lib/db', () => ({
   db: {

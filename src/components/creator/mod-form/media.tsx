@@ -18,7 +18,6 @@ import {
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { useRef, useState } from 'react'
-import { ImageCropper } from '@/components/admin/image-cropper'
 import { ImageUpload } from '@/components/admin/image-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +26,13 @@ import { isVimeoUrl } from '@/lib/oembed'
 import { useToast } from '@/hooks/use-toast'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import { Section } from './primitives'
+
+// Section 4 item 24: react-easy-crop (~50KB) loads only when the user opens
+// the cropper — same dynamic pattern as the Uppy/IA panels in this file.
+const ImageCropper = dynamic(
+  () => import('@/components/admin/image-cropper').then((m) => m.ImageCropper),
+  { ssr: false },
+)
 
 import type { VideoGroup } from './primitives'
 

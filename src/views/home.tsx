@@ -2,8 +2,8 @@
 
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { AdSection } from '@/components/ad-section'
 import { CreatorLeaderboardCard } from '@/components/creator-leaderboard-card'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { HeroSlider } from '@/components/hero-slider'
@@ -21,6 +21,12 @@ import { HOME_TEAMS_STALE_MS, normalizeHomeData } from '@/lib/home-data'
 import { getSectionIcon } from '@/lib/section-icons'
 import type { HomeData } from '@/lib/types'
 import { HomeMobile } from './home-mobile'
+
+// Section 4 item 24: ads pull sanitize-html (~150KB) and are below-fold +
+// client-fetched — keep them out of the first-paint bundle.
+const AdSection = dynamic(() => import('@/components/ad-section').then((m) => m.AdSection), {
+  ssr: false,
+})
 
 interface SectionItem {
   id: string

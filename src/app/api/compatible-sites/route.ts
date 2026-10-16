@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { setCacheControl } from '@/lib/api-cache'
 import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { AuthError, requireAdmin } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -49,7 +50,10 @@ export async function GET() {
       select: { id: true, name: true, domains: true, logoUrl: true, notes: true },
       orderBy: { order: 'asc' },
     })
-    return ok(rows.map(toPublicSite))
+    // Section 4 item 27: enabled-sites list is public and rarely changes.
+    const res = ok(rows.map(toPublicSite))
+    setCacheControl(res.headers, { type: 'public', maxAge: 300, swr: 600 })
+    return res
   } catch (error) {
     // فشل DB لا يكسر الواجهة — نرجع قائمة فارغة
     reportError(error, { route: 'GET /api/compatible-sites' })

@@ -96,16 +96,28 @@ async function searchViaMeili({ q, platforms, minTier, limit, page, want }: Sear
   let users: unknown[] = []
   let total = 0
 
-  if (want('mod')) {
-    const filters: string[] = ["workflowStatus = 'PUBLISHED'"]
-    if (platforms.length) filters.push(`platform IN [${platforms.map((p) => `'${p}'`).join(', ')}]`)
-    if (minTier) filters.push(`tier >= ${minTier}`)
-    const res = await meili!.index('mods').search(q, {
-      limit,
-      offset: (page - 1) * limit,
-      filter: filters,
-      sort: ['downloads:desc'],
-    })
+  // Section 4 item 28: the four index searches are independent (same q/limit,
+  // disjoint indices) — run them concurrently instead of sequentially.
+  const modsFilters: string[] = ["workflowStatus = 'PUBLISHED'"]
+  if (platforms.length)
+    modsFilters.push(`platform IN [${platforms.map((p) => `'${p}'`).join(', ')}]`)
+  if (minTier) modsFilters.push(`tier >= ${minTier}`)
+  const [modsRes, gamesRes, teamsRes, usersRes] = await Promise.all([
+    want('mod')
+      ? meili!.index('mods').search(q, {
+          limit,
+          offset: (page - 1) * limit,
+          filter: modsFilters,
+          sort: ['downloads:desc'],
+        })
+      : null,
+    want('game') ? meili!.index('games').search(q, { limit }) : null,
+    want('team') ? meili!.index('teams').search(q, { limit }) : null,
+    want('user') ? meili!.index('users').search(q, { limit }) : null,
+  ])
+
+  if (modsRes) {
+    const res = modsRes
     total = res.estimatedTotalHits ?? 0
     const ids = res.hits.map((h) => (h as { id: string }).id)
     if (ids.length) {
@@ -119,25 +131,22 @@ async function searchViaMeili({ q, platforms, minTier, limit, page, want }: Sear
     }
   }
 
-  if (want('game')) {
-    const res = await meili!.index('games').search(q, { limit })
-    games = res.hits.map((h) => {
+  if (gamesRes) {
+    games = gamesRes.hits.map((h) => {
       const { id, name, tagline, platform } = h as Record<string, unknown>
       return { id, name, tagline, platform }
     })
   }
 
-  if (want('team')) {
-    const res = await meili!.index('teams').search(q, { limit })
-    teams = res.hits.map((h) => {
+  if (teamsRes) {
+    teams = teamsRes.hits.map((h) => {
       const { id, name, modCount, isOfficial } = h as Record<string, unknown>
       return { id, name, modCount, isOfficial }
     })
   }
 
-  if (want('user')) {
-    const res = await meili!.index('users').search(q, { limit })
-    users = res.hits.map((h) => {
+  if (usersRes) {
+    users = usersRes.hits.map((h) => {
       const { id, username, displayName } = h as Record<string, unknown>
       return { id, username, displayName }
     })
@@ -188,68 +197,69 @@ async function searchViaPrisma({
     ...authorWhere,
   }
 
-  const [total, mods] = want('mod')
-    ? await Promise.all([
-        db.mod.count({ where: modsWhere }),
-        db.mod.findMany({
-          where: modsWhere,
-          skip: (page - 1) * limit,
+  // Section 4 item 28: all four table queries are independent (same q/limit,
+  // disjoint tables) — one Promise.all instead of a sequential chain.
+  const [[total, mods], games, teams, users] = await Promise.all([
+    want('mod')
+      ? Promise.all([
+          db.mod.count({ where: modsWhere }),
+          db.mod.findMany({
+            where: modsWhere,
+            skip: (page - 1) * limit,
+            take: limit,
+            orderBy: { downloads: 'desc' },
+            select: modCardSelect,
+          }),
+        ])
+      : Promise.resolve([0, []] as [number, never[]]),
+    want('game')
+      ? db.game.findMany({
+          where: {
+            ...(q
+              ? {
+                  OR: [
+                    { name: { contains: q, mode: 'insensitive' } },
+                    { tagline: { contains: q, mode: 'insensitive' } },
+                    { description: { contains: q, mode: 'insensitive' } },
+                  ],
+                }
+              : {}),
+            ...(platforms.length > 0 ? { platform: { in: platforms } } : {}),
+          },
           take: limit,
-          orderBy: { downloads: 'desc' },
-          select: modCardSelect,
-        }),
-      ])
-    : [0, []]
-
-  const games = want('game')
-    ? await db.game.findMany({
-        where: {
-          ...(q
+          orderBy: { totalDownloads: 'desc' },
+        })
+      : Promise.resolve([]),
+    want('team')
+      ? db.team.findMany({
+          where: q
             ? {
                 OR: [
                   { name: { contains: q, mode: 'insensitive' } },
-                  { tagline: { contains: q, mode: 'insensitive' } },
                   { description: { contains: q, mode: 'insensitive' } },
                 ],
               }
-            : {}),
-          ...(platforms.length > 0 ? { platform: { in: platforms } } : {}),
-        },
-        take: limit,
-        orderBy: { totalDownloads: 'desc' },
-      })
-    : []
-
-  const teams = want('team')
-    ? await db.team.findMany({
-        where: q
-          ? {
-              OR: [
-                { name: { contains: q, mode: 'insensitive' } },
-                { description: { contains: q, mode: 'insensitive' } },
-              ],
-            }
-          : {},
-        take: limit,
-        orderBy: { modCount: 'desc' },
-        select: { id: true, name: true, slug: true, modCount: true, isOfficial: true },
-      })
-    : []
-
-  const users = want('user')
-    ? await db.user.findMany({
-        where: q
-          ? {
-              OR: [
-                { username: { contains: q, mode: 'insensitive' } },
-                { displayName: { contains: q, mode: 'insensitive' } },
-              ],
-            }
-          : {},
-        take: limit,
-        select: { id: true, username: true, displayName: true, avatarUrl: true },
-      })
-    : []
+            : {},
+          take: limit,
+          orderBy: { modCount: 'desc' },
+          select: { id: true, name: true, slug: true, modCount: true, isOfficial: true },
+        })
+      : Promise.resolve([]),
+    want('user')
+      ? db.user.findMany({
+          where: q
+            ? {
+                OR: [
+                  { username: { contains: q, mode: 'insensitive' } },
+                  { displayName: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {},
+          take: limit,
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        })
+      : Promise.resolve([]),
+  ])
 
   return {
     mods: serialize(mods),

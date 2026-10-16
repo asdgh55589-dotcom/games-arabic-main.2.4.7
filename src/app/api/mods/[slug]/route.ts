@@ -161,45 +161,59 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Per-file + per-link download counts (real DownloadClick rows) for the Stremio-style
   // download cards. Fail-open: cards fall back to 0 on error.
-  let fileDownloads: Record<string, number> = {}
-  let linkDownloads: Record<string, number> = {}
-  try {
-    const rows = await db.downloadClick.groupBy({
-      by: ['fileId'],
-      where: { modId: mod.id },
-      _count: { _all: true },
-    })
-    for (const row of rows) {
-      if (row.fileId) fileDownloads[row.fileId] = row._count._all
+  // Section 4 item 28: the three aggregations are independent (same mod.id,
+  // disjoint tables) — run them concurrently with identical fail-open semantics.
+  const loadFileDownloads = async (): Promise<Record<string, number>> => {
+    const counts: Record<string, number> = {}
+    try {
+      const rows = await db.downloadClick.groupBy({
+        by: ['fileId'],
+        where: { modId: mod.id },
+        _count: { _all: true },
+      })
+      for (const row of rows) {
+        if (row.fileId) counts[row.fileId] = row._count._all
+      }
+    } catch (err) {
+      logger.error({ err }, '[mods/:slug] failed to aggregate per-file downloads')
     }
-  } catch (err) {
-    logger.error({ err }, '[mods/:slug] failed to aggregate per-file downloads')
+    return counts
   }
-  try {
-    // عدّادات تحميل لكل رابط (linkId) — تُلحق بكل ModFileLink
-    const linkRows = await db.downloadClick.groupBy({
-      by: ['linkId'],
-      where: { modId: mod.id },
-      _count: { _all: true },
-    })
-    for (const row of linkRows) {
-      if (row.linkId) linkDownloads[row.linkId] = row._count._all
+  const loadLinkDownloads = async (): Promise<Record<string, number>> => {
+    const counts: Record<string, number> = {}
+    try {
+      // عدّادات تحميل لكل رابط (linkId) — تُلحق بكل ModFileLink
+      const linkRows = await db.downloadClick.groupBy({
+        by: ['linkId'],
+        where: { modId: mod.id },
+        _count: { _all: true },
+      })
+      for (const row of linkRows) {
+        if (row.linkId) counts[row.linkId] = row._count._all
+      }
+    } catch (err) {
+      logger.error({ err }, '[mods/:slug] failed to aggregate per-link downloads')
     }
-  } catch (err) {
-    logger.error({ err }, '[mods/:slug] failed to aggregate per-link downloads')
+    return counts
   }
-  // روابط مواقع متوافقة كإضافات: الخارجية (fileId null) أسفل التبويبة
-  // والمتداخلة (fileId قيمة) داخل ملفها — fail-open بقائمة فارغة
-  let siteLinks: unknown[] = []
-  try {
-    siteLinks = await db.modSiteLink.findMany({
-      where: { modId: mod.id },
-      orderBy: { order: 'asc' },
-    })
-  } catch (err) {
-    logger.error({ err }, '[mods/:slug] failed to load site links')
-    siteLinks = []
+  const loadSiteLinks = async (): Promise<unknown[]> => {
+    // روابط مواقع متوافقة كإضافات: الخارجية (fileId null) أسفل التبويبة
+    // والمتداخلة (fileId قيمة) داخل ملفها — fail-open بقائمة فارغة
+    try {
+      return await db.modSiteLink.findMany({
+        where: { modId: mod.id },
+        orderBy: { order: 'asc' },
+      })
+    } catch (err) {
+      logger.error({ err }, '[mods/:slug] failed to load site links')
+      return []
+    }
   }
+  const [fileDownloads, linkDownloads, siteLinks] = await Promise.all([
+    loadFileDownloads(),
+    loadLinkDownloads(),
+    loadSiteLinks(),
+  ])
   const withLinkCounts = (links: Array<{ id: string }>) =>
     links.map((l) => ({ ...l, downloadsCount: linkDownloads[(l as { id: string }).id] ?? 0 }))
   const modWithFileCounts = {

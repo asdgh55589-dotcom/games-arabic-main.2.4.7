@@ -20,13 +20,19 @@ import {
   X,
 } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
 import { ImageUpload } from '@/components/admin/image-upload'
-import { CropModal } from '@/components/crop-modal'
 import { MfaManage, type MfaStatus } from '@/components/settings/mfa-manage'
+
+// Section 4 item 24: react-easy-crop (~50KB) loads only when the user opens
+// the avatar/banner crop dialog.
+const CropModal = dynamic(() => import('@/components/crop-modal').then((m) => m.CropModal), {
+  ssr: false,
+})
 import { MfaSetup } from '@/components/settings/mfa-setup'
 import { SetupPasswordCard } from '@/components/settings/setup-password-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -1006,6 +1012,7 @@ export function SettingsPage() {
                           src={displayBanner}
                           alt="banner"
                           className="h-full w-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="h-full w-full bg-muted/30" />
