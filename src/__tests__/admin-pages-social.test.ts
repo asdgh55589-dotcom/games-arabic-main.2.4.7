@@ -45,10 +45,15 @@ describe('سجل صفحات السوشيال ميديا', () => {
     expect(page('social-telegram-destinations').minRole).toBe('manager')
   })
 
+  it('يسجّل صفحة التوجيه برتبة manager بعد هبوط المرحلة 3', () => {
+    expect(page('social-telegram-routing').href).toBe('/admin/social/telegram/routing')
+    expect(page('social-telegram-routing').minRole).toBe('manager')
+  })
+
   it('يضعها داخل مجموعة السوشيال ميديا', () => {
     const group = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('social'))
-    // 6 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام + منشورات + قوالب + وجهات
-    expect(group.length).toBe(6)
+    // 7 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام + منشورات + قوالب + وجهات + توجيه
+    expect(group.length).toBe(7)
   })
 })
 
@@ -65,6 +70,7 @@ describe('findPageForPath على شجرة السوشيال', () => {
     expect(findPageForPath('/admin/social/telegram/destinations')?.key).toBe(
       'social-telegram-destinations',
     )
+    expect(findPageForPath('/admin/social/telegram/routing')?.key).toBe('social-telegram-routing')
   })
 
   it('ينسب الصفحات الفرعية غير المسجّلة لأطول بادئة', () => {
