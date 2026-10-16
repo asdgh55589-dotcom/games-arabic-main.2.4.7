@@ -6,7 +6,7 @@ import { LoginForm } from '@/components/official-login/login-form'
  * item — centered muted column, brand row, max-w-sm form. Only the brand
  * (site logo + Arabic name) and direction (RTL) changed.
  */
-export function OfficialLoginPage() {
+export function OfficialLoginPage({ initialError = null }: { initialError?: string | null }) {
   return (
     <div
       dir="rtl"
@@ -19,7 +19,7 @@ export function OfficialLoginPage() {
           </span>
           ألعاب بالعربي
         </a>
-        <LoginForm />
+        <LoginForm initialError={initialError} />
       </div>
     </div>
   )

@@ -12,13 +12,13 @@ export const AUTH_ERRORS: Record<string, string> = {
   USER_BANNED: 'الحساب ده موقوف',
   TELEGRAM_FAILED: 'فشل التحقق من تليجرام، جرّب تاني',
   GOOGLE_FAILED: 'فشل الدخول بجوجل، جرّب تاني',
-  SESSION_EXPIRED: 'انتهت الجلسة، سجل دخول تاني',
+  SESSION_EXPIRED: 'انتهت جلستك، سجّل دخولك من جديد',
   RATE_LIMITED: 'محاولات كتير جداً، استنى شوية',
 } as const
 
 export type AuthErrorCode = keyof typeof AUTH_ERRORS
 
-export function getAuthErrorMessage(code: string, fallback = 'حصل خطأ، جرّب تاني'): string {
+export function getAuthErrorMessage(code: string, fallback = 'حدث خطأ غير متوقع — حاول مجدداً'): string {
   return AUTH_ERRORS[code] ?? fallback
 }
 

@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
 
     // فحص الصلاحية BEFORE تسجيل الدخول — مش مسموح لـ member الدخول
     if (neonUser.role === 'member') {
-      return forbidden('صلاحيات غير كافية')
+      return forbidden('هذا الحساب عضو وليس مشرفاً — سجّل الدخول بحساب مشرف أو أعلى')
     }
 
     // تسجيل الدخول عبر Supabase Auth
@@ -290,7 +290,7 @@ export async function POST(req: NextRequest) {
 
       const supabaseId = await createSupabaseAuthUser(neonUser.email, password, neonUser.username)
       if (!supabaseId) {
-        return unauthorized('تعذر العثور على الحساب في نظام الدخول')
+        return unauthorized('تعذّر تجهيز حساب الدخول — حاول مجدداً لاحقاً')
       }
 
       // ربط الحساب في Neon DB
@@ -308,7 +308,7 @@ export async function POST(req: NextRequest) {
       authError = retry.error
 
       if (authError || !authData.user) {
-        return unauthorized('تعذر تسجيل الدخول، حاول مجدداً')
+        return unauthorized('تعذّر إنشاء جلسة الدخول — تحقق من الاتصال وحاول مجدداً')
       }
     }
 
@@ -383,6 +383,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error({ err }, '[auth/login] failed')
     reportError(err, { route: 'POST /api/auth/login' })
-    return internalError('حدث خطأ، حاول مجدداً')
+    return internalError('حدث خطأ في الخادم أثناء تسجيل الدخول — حاول مجدداً')
   }
 }
