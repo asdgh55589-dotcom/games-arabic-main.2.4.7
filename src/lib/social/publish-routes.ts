@@ -8,14 +8,14 @@
  *  - البوت المُسنَد موجود إن ذُكر (الحالة تُفحص عند الإرسال لا هنا).
  */
 
-import { db } from '@/lib/db'
 import { PLATFORMS } from '@/lib/constants'
+import { db } from '@/lib/db'
 import { validateDestinationThread } from '@/lib/telegram-destinations'
 
 export const ROUTE_TARGET_TYPES = ['channel', 'group', 'topic'] as const
 export type RouteTargetType = (typeof ROUTE_TARGET_TYPES)[number]
 
-export const PLATFORM_KEYS = new Set(PLATFORMS.map((p) => p.key))
+export const PLATFORM_KEYS: Set<string> = new Set(PLATFORMS.map((p) => p.key))
 
 export interface RouteTargetCheck {
   ok: boolean
@@ -78,8 +78,7 @@ export async function checkRouteTarget(input: {
     }
     const threadCheck = validateDestinationThread(chatType, input.threadId, {
       canonicalId: destination.chatId,
-      healthConfirmed:
-        destination.lastHealthAt != null && destination.lastHealthError == null,
+      healthConfirmed: destination.lastHealthAt != null && destination.lastHealthError == null,
     })
     if (!threadCheck.ok) {
       return {
@@ -97,7 +96,8 @@ export async function checkRouteTarget(input: {
       select: { id: true },
     })
     if (!bot) {
-      const message = 'البوت المحدد غير موجود —�محدد غير موجود — اختر بوتاً من القائمة أو اتركه فارغاً'
+      const message =
+        'البوت المحدد غير موجود —�محدد غير موجود — اختر بوتاً من القائمة أو اتركه فارغاً'
       return { ok: false, code: 'VALIDATION_ERROR', message, details: { botId: message } }
     }
   }

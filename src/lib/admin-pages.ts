@@ -84,6 +84,8 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
       p('/admin/social/telegram/templates', 'القوالب', 'manager'),
       // المرحلة 1: صفحة إدارة الوجهات (manager-only مثل المنشورات).
       p('/admin/social/telegram/destinations', 'الوجهات', 'manager'),
+      // المرحلة 3: مصفوفة التوجيه (manager-only).
+      p('/admin/social/telegram/routing', 'التوجيه', 'manager'),
     ],
   },
   {

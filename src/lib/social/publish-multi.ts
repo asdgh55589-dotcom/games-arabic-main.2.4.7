@@ -17,13 +17,14 @@ import { logAction } from '@/lib/audit'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { botTokenFingerprint, resolveTargetBot, throttleBotSend } from './bot-resolve'
-import { PUBLISH_LEASE_MS, publishSocialPost, type PublishActor, type PublishOptions } from './publish'
-import { isRichPostSpec, toRichMessageInput } from './rich-post'
 import {
-  deleteTelegramMessage,
-  editTelegramMessage,
-  sendTelegramPost,
-} from './telegram-send'
+  PUBLISH_LEASE_MS,
+  type PublishActor,
+  type PublishOptions,
+  publishSocialPost,
+} from './publish'
+import { isRichPostSpec, toRichMessageInput } from './rich-post'
+import { deleteTelegramMessage, editTelegramMessage, sendTelegramPost } from './telegram-send'
 import { validateSocialPost } from './validate-post'
 
 export type MultiTargetStatus = 'sent' | 'failed' | 'skipped'
@@ -59,7 +60,7 @@ async function claimPostTarget(targetId: string): Promise<'claimed' | 'busy'> {
         { status: 'sending', updatedAt: { lt: leaseCutoff } },
       ],
     },
-    data: { status: 'sending', lastError: null },
+    data: { status: 'sending', error: null },
   })
   return claimed.count > 0 ? 'claimed' : 'busy'
 }
@@ -262,7 +263,12 @@ export async function publishSocialPostMulti(
 
     // أهلية الوجهة (مطابق لمسار publish.ts الأحادي).
     const dest = target.destination
-    if (!dest || dest.archivedAt || dest.status !== 'active' || dest.verificationStatus !== 'verified') {
+    if (
+      !dest ||
+      dest.archivedAt ||
+      dest.status !== 'active' ||
+      dest.verificationStatus !== 'verified'
+    ) {
       const error = !dest
         ? 'الوجهة المرتبطة بالهدف غير موجودة'
         : dest.archivedAt
@@ -395,7 +401,10 @@ export async function publishSocialPostMulti(
   const finalStates = new Map<string, string>()
   for (const t of targets) {
     const r = results.find((x) => x.targetId === t.id)
-    finalStates.set(t.id, r?.status === 'sent' ? 'sent' : r?.status === 'failed' ? 'failed' : t.status)
+    finalStates.set(
+      t.id,
+      r?.status === 'sent' ? 'sent' : r?.status === 'failed' ? 'failed' : t.status,
+    )
   }
   // أهداف كانت sent قبل التشغيل تبقى sent.
   for (const t of targets) {
@@ -406,9 +415,7 @@ export async function publishSocialPostMulti(
   const states = [...finalStates.values()]
   const allSent = states.length > 0 && states.every((s) => s === 'sent')
   const allFailed = states.length > 0 && states.every((s) => s === 'failed')
-  const errors = results
-    .map((r) => r.error)
-    .filter((e): e is string => Boolean(e))
+  const errors = results.map((r) => r.error).filter((e): e is string => Boolean(e))
   const aggregated = errors.length > 0 ? [...new Set(errors)].join(' | ').slice(0, 500) : null
 
   if (allSent) {
@@ -506,7 +513,12 @@ export async function editSentMessages(
     select: { id: true, body: true, parseMode: true },
   })
   if (!post) {
-    return { ok: false, edited: 0, failed: 0, failures: [{ targetId: '', error: 'المنشور غير موجود' }] }
+    return {
+      ok: false,
+      edited: 0,
+      failed: 0,
+      failures: [{ targetId: '', error: 'المنشور غير موجود' }],
+    }
   }
   const text = (opts.text ?? post.body ?? '').trim()
   if (!text) {
