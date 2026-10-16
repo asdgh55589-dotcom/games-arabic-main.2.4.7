@@ -5,7 +5,7 @@
  * The route answers 410 LOGIN_METHOD_DISABLED for every request without
  * touching the database, so no credential can authenticate through it.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 import { POST as identifierPOST } from '@/app/api/auth/login-identifier/route'
 

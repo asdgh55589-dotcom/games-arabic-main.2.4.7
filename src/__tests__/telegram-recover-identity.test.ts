@@ -7,7 +7,7 @@
  * - returning Telegram login looks up by NUMERIC providerAccountId and
  *   refreshes display fields on username change (linking untouched)
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 process.env.TELEGRAM_BOT_TOKEN = 'test-bot-token'
 
 jest.mock('@/lib/logger', () => ({

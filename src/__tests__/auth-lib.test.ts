@@ -1,4 +1,4 @@
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 // Override the global jose mock with real JWT functionality
 jest.mock('jose', () => {
@@ -785,6 +785,16 @@ describe('getJWTSecret', () => {
     delete process.env.JWT_SECRET
     expect(() => getJWTSecret()).toThrow('JWT_SECRET environment variable is required')
     process.env.JWT_SECRET = original
+  })
+
+  it('يرمي Error عندما JWT_SECRET أقصر من 32 حرف', () => {
+    const original = process.env.JWT_SECRET
+    process.env.JWT_SECRET = 'short'
+    try {
+      expect(() => getJWTSecret()).toThrow(/at least 32/)
+    } finally {
+      process.env.JWT_SECRET = original
+    }
   })
 })
 

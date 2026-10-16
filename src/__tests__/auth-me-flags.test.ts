@@ -4,7 +4,7 @@
  * - hasPassword: true only when a Neon hash exists (hash itself NEVER serialized)
  * - needsSecuritySetup: true when no password OR synthetic Telegram email
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 jest.mock('next/headers', () => ({
   cookies: jest.fn().mockResolvedValue({ get: jest.fn(), set: jest.fn() }),

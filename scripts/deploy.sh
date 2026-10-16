@@ -76,6 +76,16 @@ env_val() {
   printf '%s' "present"
 }
 
+# Length check without printing the value (names + length only).
+env_len() {
+  local key="$1" file="${2:-$ENV_FILE}" line val
+  line="$(grep -E "^${key}=" "$file" 2>/dev/null | tail -n 1 || true)"
+  [ -z "$line" ] && return 1
+  val="${line#*=}"
+  val="${val%\"}"; val="${val#\"}"; val="${val%\'}"; val="${val#\'}"
+  printf '%s' "${#val}"
+}
+
 ar_why() {
   case "$1" in
     DATABASE_URL) echo "رابط قاعدة بيانات PostgreSQL (Neon للإنتاج)" ;;
@@ -118,6 +128,13 @@ env_check() {
     return 1
   fi
   # JWT length sanity (names only, never values)
+  local jwt_len
+  jwt_len="$(env_len "JWT_SECRET" 2>/dev/null || echo 0)"
+  if [ "${jwt_len}" -lt 32 ]; then
+    echo "INVALID JWT_SECRET — must be at least 32 characters (length: ${jwt_len}). Generate with: openssl rand -hex 32"
+    echo "env check FAILED — JWT_SECRET too short."
+    return 1
+  fi
   echo "All required keys present."
   return 0
 }

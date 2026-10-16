@@ -8,7 +8,7 @@
  * - passwordless + valid TOTP → 200 + audit(method=totp)
  * - passwordless without TOTP → 422
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest-4b'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-4b-32-chars!!'
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },

@@ -13,7 +13,7 @@
  * - legacy users (no token history) keep recovery unchanged (no regression)
  * - resend is authed, rotates old tokens, max 3/hour per user
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 import { createHash } from 'crypto'
 
