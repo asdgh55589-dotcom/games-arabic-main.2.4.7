@@ -148,7 +148,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     })
   }
 
-  return ok(serialize(mod), {
+  // Per-file download counts (real DownloadClick rows) for the Stremio-style
+  // download cards. Fail-open: cards fall back to 0 on error.
+  let fileDownloads: Record<string, number> = {}
+  try {
+    const rows = await db.downloadClick.groupBy({
+      by: ['fileId'],
+      where: { modId: mod.id },
+      _count: { _all: true },
+    })
+    for (const row of rows) {
+      if (row.fileId) fileDownloads[row.fileId] = row._count._all
+    }
+  } catch (err) {
+    logger.error({ err }, '[mods/:slug] failed to aggregate per-file downloads')
+  }
+  const modWithFileCounts = {
+    ...mod,
+    files: mod.files.map((f) => ({ ...f, downloadsCount: fileDownloads[f.id] ?? 0 })),
+  }
+
+  return ok(serialize(modWithFileCounts), {
     headers: {
       'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
     },

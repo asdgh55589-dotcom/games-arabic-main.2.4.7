@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Download, ImageOff, X, ZoomIn, ZoomOut } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Card } from '@/components/ui/card'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 
@@ -42,6 +43,15 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
   const panStart = useRef<{ x: number; y: number; px: number; py: number } | null>(null)
 
   const isOpen = lightboxIndex !== null
+
+  // Portal mount guard — the lightbox renders into document.body so it escapes
+  // any ancestor stacking context (e.g. #mod-tabs z-30) and always sits above
+  // the sticky navbar.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   const resetView = useCallback(() => {
     setZoom(MIN_ZOOM)
@@ -240,9 +250,10 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
         ))}
       </div>
 
-      {/* Lightbox modal — full screen */}
-      {isOpen && lightboxIndex !== null && (
-        <div className="fixed inset-0 z-[200] flex flex-col bg-black" onClick={closeLightbox}>
+      {/* Lightbox modal — full screen (portal to body: above navbar) */}
+      {isOpen && lightboxIndex !== null && mounted
+        ? createPortal(
+            <div className="fixed inset-0 z-[200] flex flex-col bg-black" onClick={closeLightbox}>
           {/* شريط علوي — العداد + الدقة + التفاصيل | أزرار التحكم */}
           <div
             className="flex items-center justify-between gap-2 bg-black/80 px-3 py-2.5 backdrop-blur sm:px-4"
@@ -401,8 +412,10 @@ export function ModGallery({ images, modName }: ModGalleryProps) {
               ))}
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )
+        : null}
     </>
   )
 }

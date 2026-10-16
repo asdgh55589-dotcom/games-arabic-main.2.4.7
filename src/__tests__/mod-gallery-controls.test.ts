@@ -35,4 +35,11 @@ describe('gallery lightbox controls', () => {
     expect(gallery()).toMatch(/thumbsRef/)
     expect(gallery()).toMatch(/scrollIntoView/)
   })
+
+  it('renders the lightbox in a body portal (above the sticky navbar)', () => {
+    // Regression: #mod-tabs z-30 created a stacking context that trapped the
+    // lightbox under the navbar. Portal to document.body escapes it.
+    expect(gallery()).toMatch(/createPortal/)
+    expect(gallery()).toMatch(/document\.body/)
+  })
 })
