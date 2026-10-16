@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/chart'
 import type { SocialStatsData } from '@/hooks/use-social'
 
-/** ملخّص الوجهات والإشعارات — نُقل إلى telegram-destinations (بلا recharts). */
-export { TelegramDestinations } from './telegram-destinations'
+/** NOTE: TelegramDestinations lives in ./telegram-destinations (recharts-free).
+ * Import it from there — never re-export it here, or the chart chunk (recharts)
+ * rides along with the light summary again. */
 
 const chartConfig = {
   published: { label: 'منشور', color: 'var(--primary)' },
