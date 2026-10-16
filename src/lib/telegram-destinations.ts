@@ -224,3 +224,41 @@ export function destinationReadiness(dest: DestinationReadinessInput): Destinati
   }
   return { ready: true, reason: 'ok' }
 }
+
+export type DestinationThreadFailure = 'not_a_forum' | 'unknown_type' | 'invalid_thread'
+
+/**
+ * صلاحية ربط موضوع (message_thread_id) بنوع الوجهة — دالة نقية.
+ * المواضيع موجودة فقط في مجموعات المنتدى (forum): عملياً supergroup،
+ * ونقبل group لأن التصنيف المحلي إرشادي وقد تكون المجموعة تحوّلت.
+ * القنوات/الخاص/البوتات/غير-المعروفة تُرفض برسالة عربية.
+ */
+export function validateDestinationThread(
+  chatType: string,
+  messageThreadId: number | null | undefined,
+): { ok: true } | { ok: false; reason: DestinationThreadFailure; message: string } {
+  if (messageThreadId == null) return { ok: true }
+  if (!Number.isInteger(messageThreadId) || messageThreadId < 1) {
+    return {
+      ok: false,
+      reason: 'invalid_thread',
+      message: 'رقم الموضوع يجب أن يكون عدداً صحيحاً موجباً (1 للموضوع العام فأعلى)',
+    }
+  }
+  if (chatType === 'unknown') {
+    return {
+      ok: false,
+      reason: 'unknown_type',
+      message: 'نوع الوجهة غير معروف — نفّذ فحص الصحة أولاً لمعرفة النوع الحقيقي قبل ربط موضوع',
+    }
+  }
+  if (chatType !== 'supergroup' && chatType !== 'group') {
+    return {
+      ok: false,
+      reason: 'not_a_forum',
+      message:
+        'المواضيع موجودة فقط داخل مجموعات المنتدى (supergroup) — لا تُربط بقناة أو محادثة خاصة',
+    }
+  }
+  return { ok: true }
+}
