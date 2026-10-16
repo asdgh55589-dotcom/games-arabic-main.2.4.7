@@ -12,7 +12,7 @@
  * RED phase — written before verification; duplicates are prevented by
  * unique constraints + lookup order, asserted here end-to-end.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 // Override the global jose mock with real HMAC functionality (same pattern
 // as auth-lib.test.ts) so stale-tv rejection is proven with real signatures.
@@ -205,7 +205,7 @@ import { getSession } from '@/lib/auth'
 import { performTelegramLogin } from '@/lib/telegram-login'
 
 const { NextRequest } = jest.requireActual('next/server') as typeof import('next/server')
-const TEST_SECRET = new TextEncoder().encode('test-secret-key-for-jest')
+const TEST_SECRET = new TextEncoder().encode('test-secret-key-for-jest-32-chars!')
 
 beforeEach(() => {
   users.clear()

@@ -36,6 +36,9 @@ const JWT_SECRET = (() => {
   if (!secret) {
     throw new Error('JWT_SECRET environment variable is required')
   }
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters (generate with: openssl rand -hex 32)')
+  }
   return new TextEncoder().encode(secret)
 })()
 
@@ -419,12 +422,35 @@ async function proxyInner(req: NextRequest) {
             ? new URL('/admin/login', req.url)
             : new URL('/login', req.url)
           const res = NextResponse.redirect(loginUrl)
-          res.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
-          res.cookies.set('ga_admin_role', '', { path: '/', maxAge: 0 })
+          const clearDomain = process.env.COOKIE_DOMAIN || undefined
+          const clearSecure = process.env.NODE_ENV === 'production'
+          res.cookies.set('ga_session_ledger', '', {
+            path: '/',
+            maxAge: 0,
+            httpOnly: true,
+            secure: clearSecure,
+            sameSite: 'lax',
+            ...(clearDomain ? { domain: clearDomain } : {}),
+          })
+          res.cookies.set('ga_admin_role', '', {
+            path: '/',
+            maxAge: 0,
+            httpOnly: true,
+            secure: clearSecure,
+            sameSite: 'lax',
+            ...(clearDomain ? { domain: clearDomain } : {}),
+          })
           copyCookies(supabaseResponse, res)
           return withRequestId(res, requestId)
         } else {
-          supabaseResponse.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
+          supabaseResponse.cookies.set('ga_session_ledger', '', {
+            path: '/',
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
+          })
         }
       }
     }

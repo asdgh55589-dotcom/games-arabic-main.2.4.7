@@ -8,7 +8,7 @@
  *   anonymous → 401
  * - GET /mfa/status: new fields (mfaEnabledAt, lastMfaLoginAt) present
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest-4c'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-4c-32-chars!!'
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },

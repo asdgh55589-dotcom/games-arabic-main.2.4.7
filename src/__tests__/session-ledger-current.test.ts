@@ -7,7 +7,7 @@
  * session. These tests pin: currentSessionId === row id matching the
  * presented cookie token, null when unknown.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },

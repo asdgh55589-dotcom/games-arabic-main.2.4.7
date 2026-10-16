@@ -8,7 +8,7 @@
  * - login alerts fire on IP change, stay silent on same IP
  * - Telegram username change keeps the numeric-linked account
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 process.env.TELEGRAM_BOT_TOKEN = 'test-bot-token'
 
 jest.mock('@/lib/logger', () => ({

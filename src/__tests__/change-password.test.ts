@@ -4,7 +4,7 @@
  * - wrong current password → 422, nothing changes, sessions untouched
  * - correct current password → 200, other sessions invalidated, current kept
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },

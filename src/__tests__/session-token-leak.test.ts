@@ -2,7 +2,7 @@
  * CRITICAL audit fix — session bearer tokens must NEVER appear in JSON bodies.
  * Tokens travel ONLY in the httpOnly ga_session_ledger cookie.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 jest.mock('@/lib/logger', () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },

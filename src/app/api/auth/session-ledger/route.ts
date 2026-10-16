@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
       sameSite: 'lax',
       path: '/',
       expires: row.expiresAt,
+      domain: process.env.COOKIE_DOMAIN || undefined,
     })
     return res
   } catch (err) {

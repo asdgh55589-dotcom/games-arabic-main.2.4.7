@@ -11,7 +11,7 @@
  * - Supabase signOut is called
  * - unauthenticated logout still revokes the presented ledger token
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 const mockRequireAuth = jest.fn()
 const mockInvalidate = jest.fn()
