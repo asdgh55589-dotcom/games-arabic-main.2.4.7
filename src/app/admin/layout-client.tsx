@@ -136,6 +136,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: FileText,
         managerOnly: true,
       },
+      {
+        href: '/admin/social/telegram/destinations',
+        label: 'الوجهات',
+        icon: Link2,
+        managerOnly: true,
+      },
     ],
   },
   {

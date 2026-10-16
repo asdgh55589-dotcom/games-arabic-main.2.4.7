@@ -1231,6 +1231,15 @@ model TelegramDestination {
   botId           String?  @map("bot_id")
   messageThreadId Int?     @map("message_thread_id") // موضوع داخل مجموعة forum (supergroup فقط)
 
+  // ===== Phase 1 — صحة الوجهة والأرشفة الناعمة (additive) =====
+  // lastHealthAt/Error: آخر فحص getChat/getChatMember. postCount: عدد
+  // المنشورات المرتبطة (مخبأ يُحدَّث عند الفحص). archivedAt: أرشفة ناعمة
+  // بدل الحذف الفيزيائي — الصف يبقى للتاريخ وتُخفى عن القوائم.
+  lastHealthAt    DateTime? @map("last_health_at")
+  lastHealthError String?   @map("last_health_error")
+  postCount       Int       @default(0) @map("post_count")
+  archivedAt      DateTime? @map("archived_at")
+
   jobs          NotificationJob[]
   socialPosts   SocialPost[]
   socialBot     SocialTelegramBot? @relation(fields: [botId], references: [id], onDelete: SetNull)

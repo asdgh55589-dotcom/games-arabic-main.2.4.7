@@ -16,6 +16,14 @@ jest.mock('@/lib/db', () => ({
       updateMany: jest.fn(),
       delete: jest.fn(),
     },
+    socialPost: {
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+      count: jest.fn(),
+    },
+    socialTelegramBot: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -54,10 +62,19 @@ const mockDb = db as unknown as {
   telegramDestination: {
     findUnique: jest.Mock
     findMany: jest.Mock
+    findFirst: jest.Mock
     create: jest.Mock
     update: jest.Mock
     updateMany: jest.Mock
     delete: jest.Mock
+  }
+  socialPost: {
+    findMany: jest.Mock
+    updateMany: jest.Mock
+    count: jest.Mock
+  }
+  socialTelegramBot: {
+    findUnique: jest.Mock
   }
 }
 const mockRequireManager = requireManager as jest.Mock
@@ -130,8 +147,23 @@ describe('GET /api/admin/telegram-destinations', () => {
 
     await listGET(makeReq('http://localhost/api/admin/telegram-destinations?status=pending'))
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: 'pending' } }),
+      expect.objectContaining({ where: { status: 'pending', archivedAt: null } }),
     )
+  })
+
+  it('excludes archived destinations by default, includes them on request', async () => {
+    const mockFindMany = jest.fn().mockResolvedValue([])
+    mockDb.telegramDestination.findMany = mockFindMany as never
+
+    await listGET(makeReq('http://localhost/api/admin/telegram-destinations'))
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ archivedAt: null }) }),
+    )
+
+    mockFindMany.mockClear()
+    await listGET(makeReq('http://localhost/api/admin/telegram-destinations?includeArchived=true'))
+    const where = mockFindMany.mock.calls[0][0].where as Record<string, unknown>
+    expect(where.archivedAt).toBeUndefined()
   })
 
   it('returns 401 when the caller is not signed in', async () => {
@@ -299,17 +331,70 @@ describe('GET/PATCH/DELETE /api/admin/telegram-destinations/[id]', () => {
     expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
   })
 
-  it('DELETE removes the destination and audits (happy path)', async () => {
+  it('DELETE archives softly (no physical delete) and audits ARCHIVED', async () => {
     mockDb.telegramDestination.findUnique.mockResolvedValueOnce(PENDING_DEST)
-    mockDb.telegramDestination.delete.mockResolvedValueOnce(PENDING_DEST)
+    mockDb.telegramDestination.findFirst.mockResolvedValueOnce(null) // no fallback default
+    mockDb.socialPost.findMany.mockResolvedValueOnce([])
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...PENDING_DEST,
+      archivedAt: new Date(),
+      status: 'disabled',
+    })
 
     const res = await destDELETE(makeReq('http://localhost/x', 'DELETE'), routeParams('dest-2'))
     const data = await res.json()
     expect(res.status).toBe(200)
-    expect(data.data.success).toBe(true)
-    expect(mockLogAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'TELEGRAM_DESTINATION_DELETED' }),
+    expect(data.data.archived).toBe(true)
+    expect(mockDb.telegramDestination.delete).not.toHaveBeenCalled()
+    expect(mockDb.telegramDestination.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'disabled', isDefault: false }),
+      }),
     )
+    expect(mockLogAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'TELEGRAM_DESTINATION_ARCHIVED' }),
+    )
+  })
+
+  it('DELETE relinks scheduled posts to the fallback default', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(PENDING_DEST)
+    mockDb.telegramDestination.findFirst.mockResolvedValueOnce({ id: 'default-9' })
+    mockDb.socialPost.findMany.mockResolvedValueOnce([{ id: 'p1' }, { id: 'p2' }])
+    mockDb.socialPost.updateMany.mockResolvedValueOnce({ count: 2 })
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...PENDING_DEST,
+      archivedAt: new Date(),
+    })
+
+    const res = await destDELETE(makeReq('http://localhost/x', 'DELETE'), routeParams('dest-2'))
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(mockDb.socialPost.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ destinationId: 'dest-2', status: 'scheduled' }),
+        data: { destinationId: 'default-9' },
+      }),
+    )
+    expect(data.data.relinked).toBe(2)
+    expect(data.data.frozen).toBe(0)
+    expect(data.data.warning).toBeNull()
+  })
+
+  it('DELETE freezes with an explicit warning when no fallback default exists', async () => {
+    mockDb.telegramDestination.findUnique.mockResolvedValueOnce(PENDING_DEST)
+    mockDb.telegramDestination.findFirst.mockResolvedValueOnce(null)
+    mockDb.socialPost.findMany.mockResolvedValueOnce([{ id: 'p1' }])
+    mockDb.telegramDestination.update.mockResolvedValueOnce({
+      ...PENDING_DEST,
+      archivedAt: new Date(),
+    })
+
+    const res = await destDELETE(makeReq('http://localhost/x', 'DELETE'), routeParams('dest-2'))
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(mockDb.socialPost.updateMany).not.toHaveBeenCalled()
+    expect(data.data.frozen).toBe(1)
+    expect(data.data.warning).toMatch(/لن يُرسل حتى يُعاد ربطه/)
   })
 
   it('DELETE returns 404 for a missing destination', async () => {
@@ -317,6 +402,7 @@ describe('GET/PATCH/DELETE /api/admin/telegram-destinations/[id]', () => {
     const res = await destDELETE(makeReq('http://localhost/x', 'DELETE'), routeParams('missing'))
     expect(res.status).toBe(404)
     expect(mockDb.telegramDestination.delete).not.toHaveBeenCalled()
+    expect(mockDb.telegramDestination.update).not.toHaveBeenCalled()
   })
 
   it('PATCH returns 401 when the caller is not signed in', async () => {
