@@ -125,6 +125,8 @@ export interface ModFile {
   fileFormat: string
   order: number
   links: ModFileLink[]
+  /** Real per-file download clicks (aggregated server-side, 0 when unavailable). */
+  downloadsCount?: number
 }
 
 export interface ModTeamMember {

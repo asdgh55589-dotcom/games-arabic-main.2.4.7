@@ -892,7 +892,11 @@ export function ModDetailMobile({
           iconBg="bg-sky-500/10 text-sky-500"
           defaultOpen
         >
-          <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
+          <ModDownloadSection
+            files={mod.files || []}
+            modSlug={mod.slug}
+            stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
+          />
         </CollapsibleCard>
 
         {/* تبويبات مخصصة */}

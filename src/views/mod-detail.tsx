@@ -1201,7 +1201,11 @@ export function ModDetailPage() {
 
                   <TabsContent value="files" className="mt-0" dir="rtl">
                     <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
-                      <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
+                      <ModDownloadSection
+                        files={mod.files || []}
+                        modSlug={mod.slug}
+                        stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
+                      />
                     </Card>
                   </TabsContent>
 
