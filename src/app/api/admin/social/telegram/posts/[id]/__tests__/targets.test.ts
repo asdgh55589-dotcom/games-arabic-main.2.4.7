@@ -74,6 +74,7 @@ const mockDb = db as unknown as {
     findFirst: jest.Mock
     create: jest.Mock
     update: jest.Mock
+    updateMany: jest.Mock
     delete: jest.Mock
   }
   socialPostDelivery: { create: jest.Mock; count: jest.Mock }
