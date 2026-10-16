@@ -645,6 +645,14 @@ export function ModDetailPage() {
                           >
                             v{mod.version}
                           </Badge>
+                          {mod.category?.name && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-bold shrink-0 whitespace-nowrap"
+                            >
+                              {mod.category.name}
+                            </Badge>
+                          )}
                           {isOfficial ? (
                             <Link
                               href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
@@ -941,7 +949,7 @@ export function ModDetailPage() {
               <div
                 dir="rtl"
                 id="mod-tabs"
-                className="me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-3 sm:mt-4 scroll-mt-24"
+                className="relative z-30 me-auto ms-8 sm:ms-16 lg:ms-32 ps-4 sm:ps-6 lg:ps-8 pe-12 sm:pe-20 lg:pe-36 mt-3 sm:mt-4 scroll-mt-24"
               >
                 <Tabs value={tab} onValueChange={setTab} className="gap-0">
                   <TabsList
@@ -1193,7 +1201,11 @@ export function ModDetailPage() {
 
                   <TabsContent value="files" className="mt-0" dir="rtl">
                     <Card className="rounded-t-none border border-t-2 border-border border-t-orange-500 bg-card p-5 sm:p-7 min-h-[300px]">
-                      <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
+                      <ModDownloadSection
+                        files={mod.files || []}
+                        modSlug={mod.slug}
+                        stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
+                      />
                     </Card>
                   </TabsContent>
 

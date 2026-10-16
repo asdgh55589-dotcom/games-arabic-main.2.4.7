@@ -490,6 +490,11 @@ export function ModDetailMobile({
           <Badge variant="outline" className="text-[11px] font-black tabular-nums">
             v{mod.version}
           </Badge>
+          {mod.category?.name && (
+            <Badge variant="secondary" className="text-[11px] font-bold">
+              {mod.category.name}
+            </Badge>
+          )}
           {isOfficial ? (
             <Link
               href={`/platform/${(mod as any).sectionRelation?.key || mod.game.platform}?official=official`}
@@ -887,7 +892,11 @@ export function ModDetailMobile({
           iconBg="bg-sky-500/10 text-sky-500"
           defaultOpen
         >
-          <ModDownloadSection files={mod.files || []} modSlug={mod.slug} />
+          <ModDownloadSection
+            files={mod.files || []}
+            modSlug={mod.slug}
+            stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
+          />
         </CollapsibleCard>
 
         {/* تبويبات مخصصة */}
