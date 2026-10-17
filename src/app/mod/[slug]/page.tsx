@@ -23,20 +23,12 @@ const getModData = cache(async (slug: string) => {
   }
 })
 
+// Build-time pre-rendering of mod pages is disabled: the mod detail route now
+// runs heavier queries (children, siteLinks, per-link download counts) and
+// pre-rendering 100 pages during `next build` exhausted the Aiven connection
+// pool. Pages are generated on first request and cached via ISR (revalidate).
 export async function generateStaticParams() {
-  try {
-    const { db } = await import('@/lib/db')
-    const topMods = await db.mod.findMany({
-      where: { workflowStatus: 'PUBLISHED' },
-      orderBy: { downloads: 'desc' },
-      take: 100,
-      select: { slug: true },
-    })
-    return topMods.map((mod) => ({ slug: mod.slug }))
-  } catch (error) {
-    console.error('[generateStaticParams:mod] Failed:', error)
-    return []
-  }
+  return []
 }
 
 interface ModPageProps {
