@@ -28,7 +28,8 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:resolve:rolled-back": "prisma migrate resolve --rolled-back",
-    "db:resolve:applied": "prisma migrate resolve --applied"
+    "db:resolve:applied": "prisma migrate resolve --applied",
+    "build:standalone": "next build && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",

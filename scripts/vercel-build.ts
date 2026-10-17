@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 const env = process.env["VERCEL_ENV"] ?? "development";
 
 function run(cmd: string) {
-  console.warn(`[vercel-build] Running: ${cmd}`);
+  console.log(`[vercel-build] Running: ${cmd}`);
   execSync(cmd, { stdio: "inherit" });
 }
 
