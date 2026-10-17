@@ -120,9 +120,11 @@ retries requeue until `maxRetries = 3`.
 
 Drains **two** queues in one run (Social Hub update #3):
 
-1. **`social_posts`** — rows with `platform='telegram'`, `status='scheduled'`
-   and `scheduled_for <= now` (bounded batch of 50), each published through
-   `lib/social/publish.ts::publishSocialPost(id, { source: 'cron' })`.
+1. **`social_posts`** — rows with `platform='telegram'`, `status='scheduled'`,
+   `archived_at IS NULL` (Phase 5: archived posts are skipped even when their
+   kept `status` is scheduled; restoring from the archive page re-exposes
+   them) and `scheduled_for <= now` (bounded batch of 50), each published
+   through `lib/social/publish.ts::publishSocialPost(id, { source: 'cron' })`.
 2. **`scheduled_jobs` (legacy)** — pending `telegram_post` rows due now
    (bounded batch of 25), executed via `lib/scheduler.ts::executeJob`. These
    have had no caller since polling was removed in Phase 7; this cron is their

@@ -154,7 +154,12 @@ describe('activateScheduleProject — التفعيل', () => {
 
     expect(mockDb.socialPost.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: 'scheduled', platform: 'telegram' }),
+        data: expect.objectContaining({
+          status: 'scheduled',
+          platform: 'telegram',
+          // مرآة وضعية النشر (Phase 5).
+          siteMode: 'both',
+        }),
       }),
     )
     expect(mockDb.socialPostTarget.create).toHaveBeenCalledWith(

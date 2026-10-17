@@ -329,6 +329,8 @@ export async function activateScheduleProject(projectId: string, actorId: string
   }
 
   // الجانب الاجتماعي: إنشاء/تحديث المنشور المجدول بأهدافه.
+  // لقطة المحتوى تُلتقط الآن (الاسم/النص/الأهداف) — التحرير لاحقاً للقالب
+  // أو لأي إعدادات لن يغيّر ما سيُنشر؛ لذا أرشفة قالب بعد الجدولة آمنة.
   let postId = project.postId
   if (mode !== 'site_only') {
     const mod = project.mod
@@ -344,6 +346,8 @@ export async function activateScheduleProject(projectId: string, actorId: string
       scheduledFor: project.socialPublishAt,
       // احتياطي المسار الأحادي: أول وجهة (المحرك المتعدد هو المرجع الفعلي).
       destinationId: snapshots[0]?.destinationId ?? null,
+      // مرآة سريعة لوضعية النشر (Phase 5) — قراءة عرض لا تُؤثر على المحرك.
+      siteMode: mode,
     }
     if (postId) {
       await db.socialPost.update({ where: { id: postId }, data: postData })

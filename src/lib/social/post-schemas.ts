@@ -17,6 +17,8 @@ export const PostCreateSchema = z.object({
   botId: z.string().min(1).nullable().optional(),
   /** مواصفة الرسائل الغنية (Bot API 10.3) — إضافة فوق النص الكلاسيكي. */
   richDocument: z.unknown().nullable().optional(),
+  /** Phase 5 — مرآة وضعية النشر (تُضبط عادةً من مشاريع الجدولة). */
+  siteMode: z.enum(['site_only', 'social_only', 'both']).nullable().optional(),
 })
 
 /**
@@ -37,6 +39,7 @@ export const PostPatchSchema = z.object({
   templateId: z.string().min(1).nullable().optional(),
   botId: z.string().min(1).nullable().optional(),
   richDocument: z.unknown().nullable().optional(),
+  siteMode: z.enum(['site_only', 'social_only', 'both']).nullable().optional(),
 })
 
 export type PostCreateInput = z.infer<typeof PostCreateSchema>

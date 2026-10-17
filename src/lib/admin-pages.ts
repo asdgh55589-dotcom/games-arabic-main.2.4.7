@@ -86,6 +86,10 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
       p('/admin/social/telegram/destinations', 'الوجهات', 'manager'),
       // المرحلة 3: مصفوفة التوجيه (manager-only).
       p('/admin/social/telegram/routing', 'التوجيه', 'manager'),
+      // المرحلة 5: الأرشيف (منشورات + قوالب) — manager-only،
+      // الخلود: الاستعادة والتصدير/الاستيراد من هنا فقط.
+      p('/admin/social/telegram/archive', 'أرشيف المنشورات', 'manager'),
+      p('/admin/social/telegram/templates/archive', 'أرشيف القوالب', 'manager'),
     ],
   },
   {

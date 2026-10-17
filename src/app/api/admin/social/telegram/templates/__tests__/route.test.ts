@@ -16,6 +16,12 @@ jest.mock('@/lib/db', () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    socialPostTemplateVersion: {
+      aggregate: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
   },
 }))
 
@@ -49,6 +55,12 @@ const mockDb = db as unknown as {
     update: jest.Mock
     delete: jest.Mock
   }
+  socialPostTemplateVersion: {
+    aggregate: jest.Mock
+    create: jest.Mock
+    findFirst: jest.Mock
+    findMany: jest.Mock
+  }
 }
 
 function makeReq(url: string, body?: unknown, method = 'GET') {
@@ -70,6 +82,8 @@ const tplRow = (over: Record<string, unknown> = {}) => ({
   mediaUrl: null,
   variables: [],
   isDefault: false,
+  isArchived: false,
+  archivedAt: null,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
   ...over,
@@ -79,6 +93,9 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockRequireAdmin.mockResolvedValue({ id: 'admin-1', username: 'admin', role: 'admin' })
   mockRequireManager.mockResolvedValue({ id: 'mgr-1', username: 'mgr', role: 'manager' })
+  // الخلود: لقطة v1 عند كل إنشاء/تعديل — aggregate يعيد إصدارات سابقة 0.
+  mockDb.socialPostTemplateVersion.aggregate.mockResolvedValue({ _max: { version: null } })
+  mockDb.socialPostTemplateVersion.create.mockResolvedValue({ id: 'v-1', version: 1 })
 })
 
 describe('GET templates', () => {
@@ -104,12 +121,23 @@ describe('GET templates', () => {
 })
 
 describe('POST templates — invariant الافتراضي الواحد', () => {
-  it('ينشئ قالباً جديداً → 201', async () => {
+  it('ينشئ قالباً جديداً غير مؤرشف + لقطة v1 → 201', async () => {
     mockDb.socialPostTemplate.create.mockResolvedValue(tplRow())
     const res = await POST(makeReq('http://x/templates', { name: 'قالب', body: 'متن' }, 'POST'))
     const data = await res.json()
     expect(res.status).toBe(201)
     expect(data.data.name).toBe('قالب')
+    // الخلود: المُنشأ isArchived=false دائماً ويحصل على لقطة v1.
+    expect(mockDb.socialPostTemplate.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isArchived: false, archivedAt: null }),
+      }),
+    )
+    expect(mockDb.socialPostTemplateVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ version: 1, templateId: 'tpl-1' }),
+      }),
+    )
   })
 
   it('اسم مفقود → 422 برسالة عربية', async () => {
@@ -153,13 +181,48 @@ describe('PATCH/DELETE templates/[id]', () => {
     expect(mockDb.socialPostTemplate.update).not.toHaveBeenCalled()
   })
 
-  it('DELETE → 200 ويحذف', async () => {
+  it('PATCH يحدّث + يُنشئ نسخة جديدة تلقائياً', async () => {
     mockDb.socialPostTemplate.findUnique.mockResolvedValue(tplRow())
-    mockDb.socialPostTemplate.delete.mockResolvedValue({})
+    mockDb.socialPostTemplate.update.mockResolvedValue(tplRow({ name: 'معدّل' }))
+    mockDb.socialPostTemplateVersion.aggregate.mockResolvedValue({ _max: { version: 3 } })
+    const res = await PATCH(
+      makeReq('http://x/templates/tpl-1', { name: 'معدّل' }, 'PATCH'),
+      ctx('tpl-1'),
+    )
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.data.name).toBe('معدّل')
+    expect(mockDb.socialPostTemplateVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ version: 4, changeNote: 'تعديل القالب' }),
+      }),
+    )
+  })
+
+  it('DELETE → أرشفة ناعمة (لا حذف فيزيائي أبداً)', async () => {
+    mockDb.socialPostTemplate.findUnique.mockResolvedValue(tplRow())
+    mockDb.socialPostTemplate.update.mockResolvedValue(
+      tplRow({ isArchived: true, archivedAt: new Date('2026-10-17T00:00:00Z') }),
+    )
     const res = await DELETE(makeReq('http://x/templates/tpl-1', undefined, 'DELETE'), ctx('tpl-1'))
     const data = await res.json()
     expect(res.status).toBe(200)
-    expect(data.data.deleted).toBe(true)
+    expect(data.data.isArchived).toBe(true)
+    // الخلود: delete فيزيائي لا يُستدعى إطلاقاً.
+    expect(mockDb.socialPostTemplate.delete).not.toHaveBeenCalled()
+    expect(mockDb.socialPostTemplate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'tpl-1' },
+        data: expect.objectContaining({ isArchived: true }),
+      }),
+    )
+  })
+
+  it('DELETE لقالب مؤرشف أصلاً → 409', async () => {
+    mockDb.socialPostTemplate.findUnique.mockResolvedValue(tplRow({ isArchived: true }))
+    const res = await DELETE(makeReq('http://x/templates/tpl-1', undefined, 'DELETE'), ctx('tpl-1'))
+    expect(res.status).toBe(409)
+    expect(mockDb.socialPostTemplate.update).not.toHaveBeenCalled()
   })
 
   it('GET واحد غير موجود → 404', async () => {

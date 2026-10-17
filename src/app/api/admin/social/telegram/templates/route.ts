@@ -7,13 +7,21 @@
  * مسار مُحاذى مع صفحات W2 (`socialTemplatesUrl`) — لا يُعاد تسميته.
  */
 import type { NextRequest } from 'next/server'
-import { fail, forbidden, internalError, ok, okPaginated, unauthorized } from '@/lib/api-response'
+import {
+  fail,
+  forbidden,
+  internalError,
+  ok,
+  okPaginatedWithMeta,
+  unauthorized,
+} from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAdmin, requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { PostTemplateCreateSchema } from '@/lib/social/post-schemas'
 import { serializeTemplate } from '@/lib/social/serialize'
+import { snapshotTemplateVersion } from '@/lib/social/template-versions'
 
 const FIELD_AR: Record<string, string> = {
   platform: 'المنصة غير صالحة',
@@ -50,8 +58,14 @@ export async function GET(req: NextRequest) {
     const platform = searchParams.get('platform') ?? 'telegram'
     const page = Number(searchParams.get('page') ?? '1') || 1
     const limit = Math.min(Number(searchParams.get('limit') ?? '50') || 50, 100)
+    // الخلود: القوائم الافتراضية تستبعد المؤرشف (يظهر في صفحة الأرشيف فقط).
+    const includeArchived = searchParams.get('includeArchived') === 'true'
+    const archivedOnly = searchParams.get('archivedOnly') === 'true'
 
-    const where = { platform }
+    const where = {
+      platform,
+      ...(archivedOnly ? { isArchived: true } : includeArchived ? {} : { isArchived: false }),
+    }
     const [templates, total] = await Promise.all([
       db.socialPostTemplate.findMany({
         where,
@@ -62,12 +76,25 @@ export async function GET(req: NextRequest) {
       db.socialPostTemplate.count({ where }),
     ])
 
-    return okPaginated(templates.map(serializeTemplate), {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit) || 0,
+    // اقتراح اختياري: القالب الافتراضي المرشح (غير المؤرشف) لهذه المنصة —
+    // يُبرز في المنتقيات تلقائياً (الفئة 5 خطوة 11).
+    const suggestedDefault = await db.socialPostTemplate.findFirst({
+      where: { platform, isDefault: true, isArchived: false },
+      select: { id: true, name: true },
     })
+
+    return okPaginatedWithMeta(
+      templates.map(serializeTemplate),
+      {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 0,
+      },
+      {
+        suggestedDefault: suggestedDefault ?? null,
+      },
+    )
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
@@ -137,8 +164,14 @@ export async function POST(req: NextRequest) {
         variables: input.variables,
         isDefault: input.isDefault,
         createdById: user.id,
+        // الخلود: الجديد دائماً غير مؤرشف ويظهر فوراً في المنتقيات.
+        isArchived: false,
+        archivedAt: null,
       },
     })
+
+    // لقطة v1 تلقائياً عند الإنشاء (إصدارات غير قابلة للتعديل).
+    await snapshotTemplateVersion(template, user, 'إنشاء القالب')
 
     await logAction({
       userId: user.id,

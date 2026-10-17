@@ -2009,6 +2009,8 @@ model SocialPost {
 
   mediaUrl      String?   @map("media_url")
   mediaType     String?   @map("media_type")   // photo (الحالي) | video | document (توسيع لاحق)
+  // احتياطي المسار الأحادي القديم (قراءة فقط) — المرجع الفعلي للأهداف هو
+  // SocialPostTarget; يبقى عموداً منعاً لكسر التوقعات القديمة.
   destinationId String?   @map("destination_id")
   botId         String?   @map("bot_id") // بوت معيّن لهذا المنشور (يتجاوز بوت الوجهة)
   templateId    String?   @map("template_id")
@@ -2021,6 +2023,13 @@ model SocialPost {
   createdById   String?   @map("created_by")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // ===== Phase 5 — الأرشفة + مرآة وضعية النشر =====
+  // الأرشفة حالت عرض فقط: يُخفى من كل القوائم عدا صفحة الأرشيف، والاستعادة
+  // تعيد لآخر حالة قبل الأرشفة (status لا يتغير). المكرون يستثني المؤرشف.
+  archivedAt DateTime? @map("archived_at")
+  // مرآة سريعة لوضعية النشر (site_only|social_only|both) من مشروع الجدولة.
+  siteMode String? @map("site_mode")
 
   destination TelegramDestination?  @relation(fields: [destinationId], references: [id], onDelete: SetNull)
   template    SocialPostTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
@@ -2037,11 +2046,13 @@ model SocialPost {
   @@index([platform, status])
   @@index([status, scheduledFor])
   @@index([createdAt])
+  @@index([archivedAt])
   @@map("social_posts")
 }
 
 // ===== قوالب منشورات السوشيال =====
 // قوالب بداية لمحرر المنشورات؛ مستقلة عن قوالب الإشعارات (قرار D3).
+// Phase 5 — قاعدة «الخلود»: لا حذف فيزيائي أبداً — أرشفة ناعمة فقط.
 model SocialPostTemplate {
   id          String   @id @default(cuid())
   platform    String   @default("telegram")
@@ -2057,10 +2068,42 @@ model SocialPostTemplate {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  posts SocialPost[]
+  // الأرشيف الناعم: المؤرشف يختفي عن القوائم الجديدة فقط — يبقى في
+  // قاعدة البيانات للأبد، والمنشورات الرجعية تحمل محتواها بنفسها.
+  isArchived Boolean  @default(false) @map("is_archived")
+  archivedAt DateTime? @map("archived_at")
+
+  posts    SocialPost[]
+  versions SocialPostTemplateVersion[]
 
   @@index([platform])
+  @@index([isArchived])
   @@map("social_post_templates")
+}
+
+// ===== Phase 5 — إصدارات القالب (لقطة غير قابلة للتعديل عند كل حفظ) =====
+// على غرار NotificationTemplateVersion: كل حفظ يُنشئ نسخة جديدة، والتراجع
+// يستعيد المحتوى عبر نسخة جديدة (لا يمحو التاريخ أبداً).
+model SocialPostTemplateVersion {
+  id           String   @id @default(cuid())
+  templateId   String   @map("template_id")
+  version      Int
+  name         String
+  title        String?
+  body         String
+  parseMode    String?  @map("parse_mode")
+  richDocument Json?    @map("rich_document")
+  mediaUrl     String?  @map("media_url")
+  variables    Json     @default("[]")
+  isDefault    Boolean  @default(false) @map("is_default")
+  changedBy    String?  @map("changed_by")
+  changeNote   String?  @map("change_note")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  template SocialPostTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("social_post_template_versions")
 }
 
 // ===== Phase 3 — التوجيه والنشر المتعدد (additive: جداول جديدة فقط) =====

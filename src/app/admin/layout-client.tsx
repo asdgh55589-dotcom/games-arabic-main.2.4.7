@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Archive,
   Award,
   BarChart3,
   Bell,
@@ -147,6 +148,18 @@ const NAV_GROUPS: NavGroup[] = [
         href: '/admin/social/telegram/routing',
         label: 'التوجيه',
         icon: Route,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/archive',
+        label: 'أرشيف المنشورات',
+        icon: Archive,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/templates/archive',
+        label: 'أرشيف القوالب',
+        icon: Archive,
         managerOnly: true,
       },
     ],
