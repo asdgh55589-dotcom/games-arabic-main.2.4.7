@@ -12,6 +12,7 @@ import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import * as cloudinaryLib from '@/lib/cloudinary'
 import { db } from '@/lib/db'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 
 type CloudinarySA1 = {
@@ -145,7 +146,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return ok({ url: uploaded.url, publicId: uploaded.publicId })
   } catch (err) {
     logger.error('[banner upload] failed:', err)
-    return internalError('Failed')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 

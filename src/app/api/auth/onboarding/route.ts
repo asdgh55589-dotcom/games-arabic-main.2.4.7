@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -10,6 +10,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername } from '@/lib/username-generator'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 const OnboardingSaveSchema = z
   .object({
@@ -194,6 +195,7 @@ export async function PATCH(req: NextRequest) {
     })
   } catch (err) {
     logger.error('[onboarding PATCH] failed:', err instanceof Error ? err.message : 'unknown')
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

@@ -1,9 +1,10 @@
 import type { NextRequest } from 'next/server'
-import { forbidden, internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
 import { UpdateMemberRoleSchema } from '@/lib/validation/team'
@@ -140,7 +141,8 @@ export async function PATCH(req: NextRequest) {
     return ok({ member: updated, message: 'تم تحديث دور العضو' })
   } catch (err) {
     logger.error({ err }, '[creator/team/members PATCH] failed')
-    return internalError('فشل تحديث دور العضو')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 
@@ -217,6 +219,7 @@ export async function DELETE(req: NextRequest) {
     return ok({ success: true, message: 'تمت إزالة العضو' })
   } catch (err) {
     logger.error({ err }, '[creator/team/members DELETE] failed')
-    return internalError('فشل إزالة العضو')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

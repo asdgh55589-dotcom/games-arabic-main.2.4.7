@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import {
+  fail,
   forbidden,
-  internalError,
   notFound,
   ok,
   unauthorized,
@@ -14,6 +14,7 @@ import {
   updateCommentText,
 } from '@/lib/comments/repository'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { UpdateCommentSchema } from '@/lib/schemas'
 
 interface RouteParams {
@@ -48,7 +49,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return ok(await updateCommentText(id, parsed.data.text))
   } catch (err) {
     logger.error({ err }, '[comment PATCH] failed')
-    return internalError('فشل تعديل التعليق')
+    const { message, status, code } = handlePrismaError(err, {
+      fallbackMessage: 'فشل تعديل التعليق',
+    })
+    return fail(code, message, status)
   }
 }
 
@@ -77,6 +81,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return ok(await deleteCommentSubtree(id, comment.modId))
   } catch (err) {
     logger.error({ err }, '[comment DELETE] failed')
-    return internalError('فشل حذف التعليق')
+    const { message, status, code } = handlePrismaError(err, {
+      fallbackMessage: 'فشل حذف التعليق',
+    })
+    return fail(code, message, status)
   }
 }

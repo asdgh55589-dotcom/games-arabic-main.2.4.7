@@ -8,11 +8,12 @@ import {
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
-import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import * as cloudinaryLib from '@/lib/cloudinary'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 
 type CloudinarySA1 = {
@@ -22,10 +23,7 @@ type CloudinarySA1 = {
   ) => Promise<{ url: string; publicId: string }>
   deleteFromCloudinary: (publicId: string) => Promise<{ ok: boolean }>
   isCloudinaryEnabled: () => boolean
-  checkAvatarQuota: (
-    userId: string,
-    bytes: number,
-  ) => Promise<{ ok: boolean; reasonAr?: string }>
+  checkAvatarQuota: (userId: string, bytes: number) => Promise<{ ok: boolean; reasonAr?: string }>
 }
 
 const { uploadToCloudinary, deleteFromCloudinary, isCloudinaryEnabled, checkAvatarQuota } =
@@ -148,7 +146,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     logger.error('[avatar POST] failed:', err)
     reportError(err, { route: 'POST /api/users/[username]/avatar' })
-    return internalError('Failed')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 

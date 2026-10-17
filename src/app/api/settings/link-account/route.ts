@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
   conflict,
+  fail,
   forbidden,
-  internalError,
   unauthorized,
   validationFail,
 } from '@/lib/api-response'
@@ -11,6 +11,7 @@ import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { reportError } from '@/lib/error-reporting'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest) {
     }
     reportError(err, { route: 'POST /api/settings/link-account' })
     logger.error({ err, route: 'POST /api/settings/link-account' }, 'Failed to link account')
-    return internalError('Failed to link account')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

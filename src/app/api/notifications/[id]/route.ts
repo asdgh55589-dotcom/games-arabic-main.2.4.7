@@ -1,8 +1,9 @@
 import type { NextRequest } from 'next/server'
-import { internalError, notFound, ok, unauthorized } from '@/lib/api-response'
+import { fail, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -67,6 +68,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return ok({ success: true })
   } catch (err) {
     logger.error('[notification DELETE] failed:', err)
-    return internalError('Failed')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
