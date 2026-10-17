@@ -385,6 +385,17 @@ model Mod {
   scheduledPost        String? // المنشور المولد للنشر
   scheduledSent        Boolean               @default(false)
   scheduledSentAt      DateTime?
+
+  // ===== Phase 4 — الجدولة الموحدة (additive) =====
+  // publishMode: نطاق الجدولة (both افتراضياً). socialPostId: المنشور
+  // الاجتماعي المولَّد عند التفعيل. socialScheduledAt: مرآة سريعة
+  // لموعد الجانب الاجتماعي.
+  publishMode       String    @default("both") @map("publish_mode") // site_only | social_only | both
+  socialPostId      String?   @map("social_post_id")
+  socialPost        SocialPost? @relation("ModSocialPost", fields: [socialPostId], references: [id], onDelete: SetNull)
+  socialScheduledAt DateTime? @map("social_scheduled_at")
+  scheduleProjects  SocialScheduleProject[]
+
   requests             ModRequest[]
 
   // Platform-specific localization fields (all optional, per-platform)
@@ -1971,6 +1982,10 @@ model SocialPost {
   targets    SocialPostTarget[]    @relation("PostTargets")
   deliveries SocialPostDelivery[]  @relation("PostDeliveries")
 
+  // ===== Phase 4 — روابط الجدولة الموحدة (حقول علاقات فقط) =====
+  mods             Mod[]                    @relation("ModSocialPost")
+  scheduleProjects SocialScheduleProject[]  @relation("PostScheduleProjects")
+
   @@index([platform, status])
   @@index([status, scheduledFor])
   @@index([createdAt])
@@ -2068,4 +2083,31 @@ model SocialPostDelivery {
   @@index([postId, createdAt])
   @@index([destinationId])
   @@map("social_post_deliveries")
+}
+
+// ===== Phase 4 — مهمة الجدولة الموحدة (additive: جدول جديد فقط) =====
+// تربط مود (النشر على الموقع) بمنشور اجتماعي (النشر على المنصات) تحت
+// وضعية واحدة: site_only | social_only | both (الافتراضي). المصدر
+// الوحيد المعتمد لكروني الموقع والاجتماعي معاً — المسارات القديمة
+// (Mod.scheduledAt / SocialPost.scheduledFor) تبقى للتوافق.
+model SocialScheduleProject {
+  id              String    @id @default(cuid())
+  modId           String?   @map("mod_id")
+  mod             Mod?      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  postId          String?   @map("post_id")
+  post            SocialPost? @relation("PostScheduleProjects", fields: [postId], references: [id], onDelete: SetNull)
+  mode            String    @default("both") @map("mode") // site_only | social_only | both
+  sitePublishAt   DateTime? @map("site_publish_at")
+  socialPublishAt DateTime? @map("social_publish_at")
+  targetIds       Json      @default("[]") @map("target_ids") // [{destinationId, threadId?, botId?}] لقطة وقت الجدولة
+  createdById     String?   @map("created_by")
+  status          String    @default("draft") @map("status") // draft | scheduled | running | done | failed | canceled
+  error           String?   @map("error")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([modId])
+  @@index([postId])
+  @@map("social_schedule_projects")
 }

@@ -152,6 +152,17 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'النشر المجدول',
+    items: [
+      {
+        href: '/admin/publish/schedule',
+        label: 'مهام الجدولة',
+        icon: Clock,
+        managerOnly: true,
+      },
+    ],
+  },
+  {
     label: 'النظام',
     items: [
       { href: '/admin/search', label: 'بحث متقدم', icon: Search, adminOnly: true },
