@@ -275,7 +275,7 @@ describe('template-type-registry', () => {
   it('covers every NotificationType exactly once', () => {
     const enumValues = Object.values(NotificationType)
     expect(Object.keys(TEMPLATE_TYPE_REGISTRY)).toHaveLength(enumValues.length)
-    expect(enumValues.length).toBe(20)
+    expect(enumValues.length).toBe(24)
     for (const type of enumValues) {
       const registration = TEMPLATE_TYPE_REGISTRY[type]
       expect(registration).toBeDefined()
@@ -319,12 +319,12 @@ describe('template-type-registry', () => {
 
   it('reconciles the three type universes with pinned counts', () => {
     expect(TYPE_UNIVERSE_COUNTS).toEqual({
-      canonical: 20,
+      canonical: 24,
       legacyNotificationTypes: 23,
       securityRouterTypes: 9,
       sharedWithLegacy: 14,
       legacyOnly: 9,
-      canonicalOnly: 6,
+      canonicalOnly: 10,
     })
     expect(LEGACY_NOTIFICATION_TYPES).toHaveLength(TYPE_UNIVERSE_COUNTS.legacyNotificationTypes)
     expect(SECURITY_ROUTER_TYPES).toHaveLength(TYPE_UNIVERSE_COUNTS.securityRouterTypes)

@@ -31,9 +31,11 @@ import { requireCronAuth } from '@/lib/cron-auth'
 import { claimRun, completeRun, failRun } from '@/lib/cron-ledger'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { classifyTransportError, type PublishErrorScope } from '@/lib/publish-errors'
 import { completeProjectSide } from '@/lib/schedule-projects'
 import { executeJob } from '@/lib/scheduler'
 import { publishSocialPost } from '@/lib/social/publish'
+import { recordPublishError } from '@/lib/social/publish-error-events'
 import { publishSocialPostMulti } from '@/lib/social/publish-multi'
 
 const BATCH_SIZE = 50
@@ -92,7 +94,7 @@ export async function GET(req: NextRequest) {
     let published = 0
     let failed = 0
     let skipped = 0
-    const failures: Array<{ id: string; error?: string }> = []
+    const failures: Array<{ id: string; error?: string; code?: string }> = []
     const publishedIds: string[] = []
     const failedIds: string[] = []
 
@@ -106,9 +108,11 @@ export async function GET(req: NextRequest) {
         if (multi.published > 0) publishedIds.push(post.id)
         if (multi.failed > 0) {
           failedIds.push(post.id)
+          const failing = multi.targets.find((t) => t.error)
           failures.push({
             id: post.id,
-            error: multi.error ?? multi.targets.find((t) => t.error)?.error,
+            error: multi.error ?? failing?.error,
+            code: failing?.code ?? multi.targets.find((t) => t.code)?.code,
           })
         }
       } else {
@@ -120,7 +124,12 @@ export async function GET(req: NextRequest) {
         else {
           failed += 1
           failedIds.push(post.id)
-          failures.push({ id: post.id, error: result.error })
+          failures.push({
+            id: post.id,
+            error: result.error,
+            // مرحلة 6: رمز الكتالوج المرافق لعمود failures في الرد.
+            code: classifyTransportError(result.error ?? undefined),
+          })
         }
       }
     }
@@ -176,10 +185,27 @@ export async function GET(req: NextRequest) {
           select: { status: true },
         })
         if (after?.status === 'completed') legacyExecuted += 1
-        else legacyFailed += 1
+        else if (after?.status === 'failed') {
+          // أُعيدت الجدولة أو فشلت نهائياً — ندوّن حدثاً
+          // فشل المهمة القديمة سقها منشور أو رُدّت للانتظار.
+          legacyFailed += 1
+          await recordPublishError({
+            code: 'legacy_job_failed',
+            scope: 'schedule' as PublishErrorScope,
+            refId: job.id,
+            message: `الحالة بعد التنفيذ: ${after.status}`,
+          })
+        } else legacyFailed += 1
       } catch (err) {
         legacyFailed += 1
         logger.warn(`[social-publish] legacy job ${job.id} failed:`, err)
+        // مرحلة 6: كاتالوج أخطاء النشر يغطي المهام القديمة أيضاً (بلا إشعار).
+        await recordPublishError({
+          code: 'legacy_job_failed',
+          scope: 'schedule' as PublishErrorScope,
+          refId: job.id,
+          message: err instanceof Error ? err.message : String(err),
+        })
       }
     }
 

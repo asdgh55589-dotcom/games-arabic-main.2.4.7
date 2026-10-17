@@ -143,3 +143,26 @@ describe('صفحة مهام الجدولة (المرحلة 4)', () => {
     expect(findPageForPath('/admin/publish/schedule')?.key).toBe('publish-schedule')
   })
 })
+
+describe('صفحات مركز الأخطاء والمساعدة (المرحلة 6)', () => {
+  it('مركز الأخطاء مسجل برتبة admin (قراءة requireAdmin)', () => {
+    expect(page('publish-errors').href).toBe('/admin/publish/errors')
+    expect(page('publish-errors').minRole).toBe('admin')
+    expect(findPageForPath('/admin/publish/errors')?.key).toBe('publish-errors')
+  })
+
+  it('مساعدة النشر ثابتة برتبة manager للقراءة', () => {
+    expect(page('publish-help').href).toBe('/admin/publish/help')
+    expect(page('publish-help').minRole).toBe('manager')
+    expect(findPageForPath('/admin/publish/help')?.key).toBe('publish-help')
+  })
+
+  it('مجموعة النشر المجدول تحمل 3 صفحات الآن', () => {
+    const publishPages = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('publish'))
+    expect(publishPages.map((d) => d.key).sort()).toEqual([
+      'publish-errors',
+      'publish-help',
+      'publish-schedule',
+    ])
+  })
+})

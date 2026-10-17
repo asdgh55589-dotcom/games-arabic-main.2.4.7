@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       actor: { id: user.id, username: user.username },
     })
 
+    // مرحلة 6: رمز كل هدف يمرّ في الرد (مركز الأخطاء/المحرر يعرضان السبب والإصلاح).
     return ok({
       published: result.published,
       failed: result.failed,

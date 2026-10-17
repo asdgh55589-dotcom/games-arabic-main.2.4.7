@@ -1,6 +1,6 @@
 /**
  * Seed Notification Templates Validation — التحقق من قوالب الإشعارات
- * Verifies that all 20 templates have valid Handlebars syntax.
+ * Verifies that all 24 templates have valid Handlebars syntax.
  */
 
 import Handlebars from 'handlebars'
@@ -147,17 +147,48 @@ const templates = [
     bodyTemplate: '{{announcementMessage}}',
     variables: ['announcementMessage'],
   },
+  // ===== أدوات النشر (مرحلة 6) — نسخة مطابقة من prisma/seed-notification-templates.ts =====
+  {
+    type: 'social_publish_failed',
+    channel: 'in_app',
+    titleTemplate: 'فشل نشر المنشور "{{postTitle}}"',
+    bodyTemplate:
+      'تعذّر نشر المنشور "{{postTitle}}": {{errorText}}. كيف أصلحه: {{fixText}} (المرجع: {{errorRef}})',
+    variables: ['postTitle', 'errorText', 'fixText', 'errorRef'],
+  },
+  {
+    type: 'social_publish_succeeded',
+    channel: 'in_app',
+    titleTemplate: 'نجح نشر المنشور "{{postTitle}}"',
+    bodyTemplate: 'نُشر المنشور "{{postTitle}}" بنجاح إلى {{targetCount}} وجهة',
+    variables: ['postTitle', 'targetCount'],
+  },
+  {
+    type: 'publish_degraded',
+    channel: 'in_app',
+    titleTemplate: '⚠️ تدهور متكرر في {{entityLabel}}',
+    bodyTemplate: 'تراكمت {{failureCount}} إخفاقات متتالية على {{entityLabel}}. {{lastErrorText}}',
+    variables: ['entityLabel', 'failureCount', 'lastErrorText'],
+  },
+  {
+    type: 'publish_digest',
+    channel: 'in_app',
+    titleTemplate: '📊 تقرير النشر — {{periodLabel}}',
+    bodyTemplate:
+      '{{publishedCount}} نجاح / {{failedCount}} فشل / {{archivedCount}} أرشفة / {{openErrors}} خطأ مفتوح',
+    variables: ['publishedCount', 'failedCount', 'archivedCount', 'openErrors', 'periodLabel'],
+  },
 ]
 
 describe('Seed Notification Templates', () => {
-  it('should have exactly 20 templates', () => {
-    expect(templates).toHaveLength(20)
+  it('should have exactly 24 templates', () => {
+    expect(templates).toHaveLength(24)
   })
 
   it('should have all unique type:channel combinations', () => {
     const keys = templates.map((t) => `${t.type}:${t.channel}`)
     const unique = new Set(keys)
-    expect(unique.size).toBe(20)
+    expect(unique.size).toBe(24)
   })
 
   describe('Handlebars syntax validation', () => {

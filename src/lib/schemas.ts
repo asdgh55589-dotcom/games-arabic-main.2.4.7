@@ -474,6 +474,11 @@ export const NotificationTypeSchema = z.enum([
   'admin_report',
   'admin_milestone',
   'system_announcement',
+  // أدوات النشر (مرحلة 6) — توازن مع domain NotificationType.
+  'social_publish_failed',
+  'social_publish_succeeded',
+  'publish_degraded',
+  'publish_digest',
 ])
 
 export const NotificationChannelSchema = z.enum(['in_app', 'email', 'telegram'])

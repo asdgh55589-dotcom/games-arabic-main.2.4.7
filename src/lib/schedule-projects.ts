@@ -12,6 +12,8 @@
  */
 
 import { db } from '@/lib/db'
+import { classifyTransportError, type PublishErrorScope } from '@/lib/publish-errors'
+import { recordPublishError } from '@/lib/social/publish-error-events'
 import { resolvePlatformRoutes } from '@/lib/social/route-resolve'
 import { validateDestinationThread } from '@/lib/telegram-destinations'
 
@@ -573,6 +575,14 @@ export async function completeProjectSide(
     await db.socialScheduleProject.update({
       where: { id: projectId },
       data: { status: 'failed', error: `${side}: ${error}`.slice(0, 500) },
+    })
+    // مرحلة 6: فشل الجانب داخل مشروع الجدولة ← حدث نطاق schedule (بلا إشعار —
+    // النشر نفسه يرسل تنبيهاته).
+    await recordPublishError({
+      code: classifyTransportError(error),
+      scope: 'schedule' as PublishErrorScope,
+      refId: projectId,
+      message: `${side}: ${error}`,
     })
     return
   }

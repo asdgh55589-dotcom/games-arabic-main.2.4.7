@@ -1,8 +1,8 @@
 /**
  * Seed Notification Templates — زراعة قوالب الإشعارات
- * Seeds 20 in_app + 20 email notification templates with Arabic RTL content.
+ * Seeds 24 in_app + 24 email notification templates with Arabic RTL content.
  *
- * Email rows mirror the 20 in_app types (same `type` values, channel='email')
+ * Email rows mirror the 24 in_app types (same `type` values, channel='email')
  * with Arabic subjects and RTL HTML bodies. Bodies use the same minimal RTL
  * wrapper as the Handlebars email renderer output (no dependency on
  * email-base at seed time — the renderer wraps DB bodies in
@@ -160,6 +160,37 @@ const templates = [
     bodyTemplate: '{{announcementMessage}}',
     variables: ['announcementMessage'],
   },
+  // ===== أدوات النشر (مرحلة 6) — متغيراتها مطابقة لـ VARIABLE_CONTRACTS =====
+  {
+    type: 'social_publish_failed',
+    channel: 'in_app',
+    titleTemplate: 'فشل نشر المنشور "{{postTitle}}"',
+    bodyTemplate:
+      'تعذّر نشر المنشور "{{postTitle}}": {{errorText}}. كيف أصلحه: {{fixText}} (المرجع: {{errorRef}})',
+    variables: ['postTitle', 'errorText', 'fixText', 'errorRef'],
+  },
+  {
+    type: 'social_publish_succeeded',
+    channel: 'in_app',
+    titleTemplate: 'نجح نشر المنشور "{{postTitle}}"',
+    bodyTemplate: 'نُشر المنشور "{{postTitle}}" بنجاح إلى {{targetCount}} وجهة',
+    variables: ['postTitle', 'targetCount'],
+  },
+  {
+    type: 'publish_degraded',
+    channel: 'in_app',
+    titleTemplate: '⚠️ تدهور متكرر في {{entityLabel}}',
+    bodyTemplate: 'تراكمت {{failureCount}} إخفاقات متتالية على {{entityLabel}}. {{lastErrorText}}',
+    variables: ['entityLabel', 'failureCount', 'lastErrorText'],
+  },
+  {
+    type: 'publish_digest',
+    channel: 'in_app',
+    titleTemplate: '📊 تقرير النشر — {{periodLabel}}',
+    bodyTemplate:
+      '{{publishedCount}} نجاح / {{failedCount}} فشل / {{archivedCount}} أرشفة / {{openErrors}} خطأ مفتوح',
+    variables: ['publishedCount', 'failedCount', 'archivedCount', 'openErrors', 'periodLabel'],
+  },
 ]
 
 // Email-channel mirrors of the 20 in_app types above (same types, Arabic
@@ -305,6 +336,42 @@ const emailTemplates = [
     titleTemplate: '📢 إعلان',
     bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">📢 إعلان من الإدارة</h2><p style="color:#333;font-size:16px;line-height:1.6;">{{announcementMessage}}</p></div>`,
     variables: ['announcementMessage'],
+  },
+  // ===== أدوات النشر (مرحلة 6) =====
+  {
+    type: 'social_publish_failed',
+    channel: 'email',
+    titleTemplate: 'فشل نشر المنشور "{{postTitle}}"',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">⚠️ فشل نشر اجتماعي</h2><p style="color:#333;font-size:16px;line-height:1.6;">تعذّر نشر المنشور "<strong>{{postTitle}}</strong>".</p><p style="color:#333;font-size:16px;line-height:1.6;">السبب: {{errorText}}</p><div style="background-color:#e2f3ff;border:1px solid #90caf9;padding:16px;margin:16px 0;border-radius:4px;"><p style="color:#0d47a1;margin:0;">كيف أصلحه: {{fixText}} (المرجع: {{errorRef}})</p></div></div>`,
+    variables: ['recipientName', 'postTitle', 'errorText', 'fixText', 'errorRef'],
+  },
+  {
+    type: 'social_publish_succeeded',
+    channel: 'email',
+    titleTemplate: 'نجاح نشر المنشور "{{postTitle}}"',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">✅ نجاح نشر اجتماعي</h2><p style="color:#333;font-size:16px;line-height:1.6;">نُشر المنشور "<strong>{{postTitle}}</strong>" بنجاح إلى <strong>{{targetCount}}</strong> وجهة.</p></div>`,
+    variables: ['recipientName', 'postTitle', 'targetCount'],
+  },
+  {
+    type: 'publish_degraded',
+    channel: 'email',
+    titleTemplate: '⚠️ تدهور متكرر في {{entityLabel}}',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">⚠️ تدهور متكرر في النشر</h2><p style="color:#333;font-size:16px;line-height:1.6;">تراكمت <strong>{{failureCount}}</strong> إخفاقات متتالية على <strong>{{entityLabel}}</strong>.</p><p style="color:#333;font-size:16px;line-height:1.6;">{{lastErrorText}}</p></div>`,
+    variables: ['recipientName', 'entityLabel', 'failureCount', 'lastErrorText'],
+  },
+  {
+    type: 'publish_digest',
+    channel: 'email',
+    titleTemplate: '📊 تقرير النشر — {{periodLabel}}',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">📊 تقرير النشر — {{periodLabel}}</h2><p style="color:#333;font-size:16px;line-height:1.6;">نجاح: <strong>{{publishedCount}}</strong> — فشل: <strong>{{failedCount}}</strong> — أرشفة: <strong>{{archivedCount}}</strong> — أخطاء مفتوحة: <strong>{{openErrors}}</strong></p></div>`,
+    variables: [
+      'recipientName',
+      'publishedCount',
+      'failedCount',
+      'archivedCount',
+      'openErrors',
+      'periodLabel',
+    ],
   },
 ]
 

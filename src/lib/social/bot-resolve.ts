@@ -22,6 +22,8 @@ export interface BotResolveResult {
   /** التوكن الصريح للإرسال — داخلي فقط. */
   token?: string | null
   error?: string
+  /** مرحلة 6: رمز الكتالوج (publish-errors.ts) عند الفشل. */
+  code?: 'bot_missing' | 'bot_not_active' | 'bot_token_decrypt'
 }
 
 /**
@@ -44,21 +46,37 @@ export async function resolveTargetBot(input: {
       select: { id: true, status: true, tokenEnc: true },
     })
     if (!bot) {
-      return { ok: false, error: 'البوت المُسنَد غير موجود — أعد الإسناد من إدارة الوجهات' }
+      return {
+        ok: false,
+        error: 'البوت المُسنَد غير موجود — أعد الإسناد من إدارة الوجهات',
+        code: 'bot_missing',
+      }
     }
     if (bot.status !== 'active') {
-      return { ok: false, error: 'البوت المُسنَد غير نشط — فعّله أو أسند بوتاً آخر' }
+      return {
+        ok: false,
+        error: 'البوت المُسنَد غير نشط — فعّله أو أسند بوتاً آخر',
+        code: 'bot_not_active',
+      }
     }
     try {
       return { ok: true, source, botId: bot.id, token: decryptBotToken(bot.tokenEnc) }
     } catch {
-      return { ok: false, error: 'تعذّر فك تشفير توكن البوت — أعد إدخاله من إدارة البوتات' }
+      return {
+        ok: false,
+        error: 'تعذّر فك تشفير توكن البوت — أعد إدخاله من إدارة البوتات',
+        code: 'bot_token_decrypt',
+      }
     }
   }
 
   const envToken = process.env.TELEGRAM_BOT_TOKEN || null
   if (!envToken) {
-    return { ok: false, error: 'لا بوت مسند ولا TELEGRAM_BOT_TOKEN — أسند بوتاً أولاً' }
+    return {
+      ok: false,
+      error: 'لا بوت مسند ولا TELEGRAM_BOT_TOKEN — أسند بوتاً أولاً',
+      code: 'bot_missing',
+    }
   }
   return { ok: true, source: 'env', botId: null, token: envToken }
 }
