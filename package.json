@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=1536' bun --env-file=.env.local --env-file=.env next dev -p 3000 --turbopack 2>&1 | tee dev.log",
-    "build": "npx prisma generate && npx prisma migrate deploy && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build": "next build",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "check": "biome check src",
     "check:fix": "biome check src --fix",
@@ -23,7 +23,13 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "seed:templates": "npx tsx prisma/seed-notification-templates.ts",
-    "seed:email-templates": "npx tsx prisma/seed-email-templates.ts"
+    "seed:email-templates": "npx tsx prisma/seed-email-templates.ts",
+    "postinstall": "prisma generate",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:resolve:rolled-back": "prisma migrate resolve --rolled-back",
+    "db:resolve:applied": "prisma migrate resolve --applied",
+    "build:standalone": "next build && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
