@@ -146,7 +146,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     logger.error('[avatar POST] failed:', err)
     reportError(err, { route: 'POST /api/users/[username]/avatar' })
-    const { message, status, code } = handlePrismaError(err)
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/users/[username]/avatar'
+    })
     return fail(code, message, status)
   }
 }

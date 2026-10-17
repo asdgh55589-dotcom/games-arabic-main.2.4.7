@@ -164,7 +164,9 @@ export async function POST(req: NextRequest) {
     }
     reportError(err, { route: 'POST /api/settings/link-account' })
     logger.error({ err, route: 'POST /api/settings/link-account' }, 'Failed to link account')
-    const { message, status, code } = handlePrismaError(err)
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/settings/link-account'
+    })
     return fail(code, message, status)
   }
 }

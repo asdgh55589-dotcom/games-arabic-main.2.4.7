@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { handlePrismaError } from '@/lib/prisma-errors'
+import * as reporting from '@/lib/error-reporting'
 
 describe('handlePrismaError (Section 7)', () => {
   it('P2002 unique constraint → 409 + Arabic message', () => {
@@ -67,5 +68,43 @@ describe('handlePrismaError (Section 7)', () => {
     const r = handlePrismaError(err)
     expect(r.status).toBe(409)
     expect(r.message).not.toContain('dup detail')
+  })
+})
+
+describe('handlePrismaError — domain-error passthrough (review R2)', () => {
+  it('AuthError 401 passes through as 401, not 500', () => {
+    const err = Object.assign(new Error('Unauthorized'), { name: 'AuthError', status: 401 })
+    const r = handlePrismaError(err)
+    expect(r.status).toBe(401)
+    expect(r.code).toBe('UNAUTHORIZED')
+    expect(r.message).toBe('يجب تسجيل الدخول')
+  })
+
+  it('AuthError 403 passes through as 403 with the caller fallback', () => {
+    const err = Object.assign(new Error('Forbidden'), { name: 'AuthError', status: 403 })
+    const r = handlePrismaError(err, { fallbackMessage: 'ليس لديك صلاحية' })
+    expect(r.status).toBe(403)
+    expect(r.code).toBe('FORBIDDEN')
+    expect(r.message).toBe('ليس لديك صلاحية')
+  })
+
+  it('a non-AuthError domain error does not fake a 401', () => {
+    const err = Object.assign(new Error('Provision failed'), { name: 'ProvisionError', status: 503 })
+    expect(handlePrismaError(err).status).toBe(500)
+  })
+})
+
+describe('handlePrismaError — single Sentry report (review R1)', () => {
+  it('alreadyReported suppresses the util-level reportError', () => {
+    const spy = jest.spyOn(reporting, 'reportError').mockImplementation(() => 'sent')
+    const connErr = Object.assign(new Error("Can't reach database server at db.internal:5432"), {
+      code: 'P1001',
+    })
+    handlePrismaError(connErr, { alreadyReported: true })
+    expect(spy).not.toHaveBeenCalled()
+
+    handlePrismaError(connErr)
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
   })
 })

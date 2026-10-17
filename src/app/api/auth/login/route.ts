@@ -383,7 +383,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error({ err }, '[auth/login] failed')
     reportError(err, { route: 'POST /api/auth/login' })
-    const { message, status, code } = handlePrismaError(err)
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/auth/login'
+    })
     return fail(code, message, status)
   }
 }

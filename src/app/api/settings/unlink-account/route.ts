@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
     }
     reportError(err, { route: 'POST /api/settings/unlink-account' })
     logger.error({ err, route: 'POST /api/settings/unlink-account' }, 'Failed to unlink account')
-    const { message, status, code } = handlePrismaError(err)
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/settings/unlink-account'
+    })
     return fail(code, message, status)
   }
 }

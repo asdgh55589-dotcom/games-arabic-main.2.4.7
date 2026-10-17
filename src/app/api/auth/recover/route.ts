@@ -166,7 +166,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error('[recover] failed:', err instanceof Error ? err.message : 'unknown')
     reportError(err, { route: 'POST /api/auth/recover' })
-    const { message, status, code } = handlePrismaError(err)
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/auth/recover'
+    })
     return fail(code, message, status)
   }
 }

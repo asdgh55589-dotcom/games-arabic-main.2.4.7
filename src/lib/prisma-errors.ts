@@ -15,6 +15,14 @@ export interface HandlePrismaErrorOptions {
    * string. Prisma errors always use their precise translation.
    */
   fallbackMessage?: string
+  /**
+   * Route tag for Sentry. Pass the caller's own route when it already calls
+   * reportError() for this catch — otherwise the same failure is reported
+   * twice (dedup keys on `${route}::${message}`) and splits into two issues.
+   */
+  route?: string
+  /** Set when the caller already reported this error to Sentry. */
+  alreadyReported?: boolean
 }
 
 const GENERIC_500 = 'حدث خطأ داخلي في الخادم'
@@ -30,6 +38,30 @@ export function handlePrismaError(
   options: HandlePrismaErrorOptions = {},
 ): PrismaErrorResult {
   const fallback = options.fallbackMessage ?? GENERIC_500
+  const ctx = { route: options.route ?? 'prisma' }
+  const report = (err: unknown, action: string) => {
+    if (options.alreadyReported) return
+    reportError(err, { ...ctx, action })
+  }
+
+  // Passthrough for the app's own domain errors (AuthError/ProvisionError/…)
+  // so this catch-all never destroys an intentional 401/403/422 status.
+  // Duck-typed on name+status to avoid importing '@/lib/auth' (which would
+  // pull Prisma into any consumer's import graph).
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { name?: unknown }).name === 'AuthError' &&
+    typeof (error as { status?: unknown }).status === 'number'
+  ) {
+    const status = (error as { status: number }).status
+    return {
+      message: status === 401 ? 'يجب تسجيل الدخول' : fallback,
+      status,
+      code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN',
+    }
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case 'P2002':
@@ -40,10 +72,10 @@ export function handlePrismaError(
         return { message: 'لا يمكن إتمام العملية لارتباطها بعناصر أخرى', status: 400, code: 'P2003' }
       case 'P1001':
       case 'P1017':
-        reportError(error, { route: 'prisma', action: `conn:${error.code}` })
+        report(error, `conn:${error.code}`)
         return { message: 'تعذر الاتصال بقاعدة البيانات، يرجى المحاولة لاحقاً', status: 503, code: error.code }
       default:
-        reportError(error, { route: 'prisma', action: `known:${error.code}` })
+        report(error, `known:${error.code}`)
         return { message: fallback, status: 500, code: error.code }
     }
   }
@@ -57,12 +89,16 @@ export function handlePrismaError(
     code === 'P1001' ||
     code === 'P1017'
   ) {
-    reportError(error, { route: 'prisma', action: 'init' })
-    return { message: 'تعذر الاتصال بقاعدة البيانات، يرجى المحاولة لاحقاً', status: 503, code: 'P1001' }
+    report(error, 'init')
+    return {
+      message: 'تعذر الاتصال بقاعدة البيانات، يرجى المحاولة لاحقاً',
+      status: 503,
+      code: typeof code === 'string' ? code : 'P1001',
+    }
   }
 
   if (error instanceof Prisma.PrismaClientUnknownRequestError) {
-    reportError(error, { route: 'prisma', action: 'unknown' })
+    report(error, 'unknown')
     return { message: fallback, status: 500, code: 'P_UNKNOWN' }
   }
 
@@ -70,6 +106,6 @@ export function handlePrismaError(
     return { message: 'بيانات غير صالحة', status: 400, code: 'P_VALIDATION' }
   }
 
-  reportError(error, { route: 'prisma', action: 'unhandled' })
+  report(error, 'unhandled')
   return { message: fallback, status: 500, code: 'P_INTERNAL' }
 }
