@@ -55,8 +55,8 @@ export function SectionCards() {
           if (!cancelled) setStatus("error")
           return
         }
-        const aj = await a.json()
-        const sj = await s.json()
+        // Section 4 item 28: independent body parses — decode concurrently.
+        const [aj, sj] = await Promise.all([a.json(), s.json()])
         if (cancelled) return
         const hasData = Boolean(aj?.data) || Boolean(sj?.data?.totals)
         if (!hasData) {

@@ -13,7 +13,7 @@
  * - OAuth methods untouched (no role/tokenVersion/OAuthAccount changes)
  * - audit event emitted
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 import bcrypt from 'bcryptjs'
 

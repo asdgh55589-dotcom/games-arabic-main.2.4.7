@@ -385,6 +385,9 @@ export default function AdminUsersPage() {
                       src={u.avatarUrl}
                       alt=""
                       className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+                      loading="lazy"
+                      width={48}
+                      height={48}
                     />
                   ) : (
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 text-sm font-black text-primary">

@@ -58,6 +58,9 @@ function getTotpKey(): Buffer {
   if (!secret) {
     throw new Error('JWT_SECRET environment variable is required (totp-at-rest)')
   }
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters (totp-at-rest)')
+  }
   return createHash('sha256').update(`mfa-totp-v1:${secret}`).digest()
 }
 

@@ -341,6 +341,9 @@ export function ModDetailMobile({
                   src={bannerImage}
                   alt={mod.name}
                   className="h-full w-full scale-[1.06] object-cover"
+                  fetchPriority="high"
+                  width={1200}
+                  height={630}
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement & {
                       dataset: DOMStringMap
@@ -896,6 +899,8 @@ export function ModDetailMobile({
             files={mod.files || []}
             modSlug={mod.slug}
             stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
+            siteLinks={mod.siteLinks || []}
+            extrasLabel={mod.extrasLabel ?? null}
           />
         </CollapsibleCard>
 

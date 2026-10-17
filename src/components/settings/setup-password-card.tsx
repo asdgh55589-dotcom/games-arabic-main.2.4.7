@@ -92,7 +92,7 @@ export function SetupPasswordCard() {
       })
       const j = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(readError(j, 'فشل الحفظ'))
+        setError(readError(j, 'تعذّر حفظ بيانات الأمان — تحقق من الجلسة وحاول مجدداً'))
         return
       }
       const data = (j as { data?: { needsVerification?: boolean; verificationSent?: boolean } })?.data
@@ -125,7 +125,7 @@ export function SetupPasswordCard() {
     try {
       const res = await fetch('/api/auth/verify-email', { method: 'DELETE' })
       if (!res.ok) {
-        setError('تعذر الإلغاء، حاول مجدداً')
+        setError('تعذّر إلغاء البريد المعلق — تحقق من الجلسة وحاول مجدداً')
         return
       }
       setNotice('تم إلغاء تغيير البريد المعلق')
@@ -145,7 +145,7 @@ export function SetupPasswordCard() {
       const res = await fetch('/api/auth/verify-email/resend', { method: 'POST' })
       const j = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(readError(j, 'فشل إعادة الإرسال'))
+        setError(readError(j, 'تعذّر إعادة إرسال رابط التحقق — تحقق من البريد والاتصال'))
         return
       }
       if ((j as { data?: { already?: boolean } })?.data?.already) {
@@ -317,7 +317,7 @@ export function SetupPasswordCard() {
             {notice}
           </p>
         )}
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <p className="text-xs text-destructive" aria-live="polite">{error}</p>}
         <Button
           type="submit"
           variant="outline"

@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   reactCompiler: true,
+  // Section 4 item 30: explicit (Next defaults true) — self-documents the
+  // compression guarantee so a future default change can't silently disable it.
+  compress: true,
   // Server-only heavy deps stay external (never bundled into route chunks).
   // Constraint: none of these may ALSO be in optimizePackageImports.
   serverExternalPackages: [

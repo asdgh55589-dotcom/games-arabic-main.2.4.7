@@ -30,9 +30,13 @@ function GoogleIcon({ className }: { className?: string }) {
  * auto-verifies the email (see /api/auth/callback) — no verification
  * messages are ever shown for this flow.
  */
-export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
+export function LoginForm({
+  className,
+  initialError = null,
+  ...props
+}: React.ComponentPropsWithoutRef<'div'> & { initialError?: string | null }) {
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
 
   async function handleGoogle() {
     setBusy(true)
@@ -51,8 +55,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         setBusy(false)
       }
       // Redirects automatically on success — ledger is created in /api/auth/callback
-    } catch {
-      setError(getAuthErrorMessage('GOOGLE_FAILED'))
+    } catch (e) {
+      // Network failures deserve a specific message instead of the generic one.
+      const msg = e instanceof Error ? e.message : ''
+      if (/network|fetch|Failed to fetch|offline/i.test(msg)) {
+        setError('تعذّر الاتصال — تحقق من الإنترنت وحاول مجدداً')
+      } else {
+        setError(getAuthErrorMessage('GOOGLE_FAILED'))
+      }
       setBusy(false)
     }
   }
@@ -70,7 +80,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               <GoogleIcon />
               {busy ? 'جارٍ التحويل…' : 'الدخول عبر Google'}
             </Button>
-            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="text-center text-sm text-destructive" aria-live="polite">
+                {error}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

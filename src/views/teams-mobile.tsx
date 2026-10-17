@@ -138,6 +138,8 @@ export function TeamsMobile({ data, loading }: TeamsMobileProps) {
                       src={t.logoUrl || t.bannerUrl}
                       alt=""
                       loading="lazy"
+                      width={48}
+                      height={48}
                       className="h-full w-full object-cover"
                     />
                   ) : (

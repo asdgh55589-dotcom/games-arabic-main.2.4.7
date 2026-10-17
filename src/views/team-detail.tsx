@@ -176,6 +176,7 @@ export function TeamDetailPage() {
                             src={team.logoUrl}
                             alt={team.name}
                             className="h-full w-full object-cover"
+                            loading="lazy"
                           />
                         </div>
                       </div>
@@ -513,6 +514,9 @@ function MembersTab({ team }: { team: TeamDetail }) {
                     src={avatar}
                     alt=""
                     className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-700"
+                    loading="lazy"
+                    width={40}
+                    height={40}
                   />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-sm font-bold text-slate-300">
@@ -637,6 +641,9 @@ function StatsTab({ team }: { team: TeamDetail }) {
                               src={avatar}
                               alt=""
                               className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-700"
+                              loading="lazy"
+                              width={28}
+                              height={28}
                             />
                           ) : (
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-slate-300">

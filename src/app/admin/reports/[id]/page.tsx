@@ -470,6 +470,9 @@ export default function AdminReportDetailPage() {
                           src={url}
                           alt={`دليل ${i + 1}`}
                           className="h-20 w-20 w-full object-cover"
+                          loading="lazy"
+                          width={80}
+                          height={80}
                           onError={(e) => {
                             const t = e.currentTarget as HTMLImageElement & { _fallback?: boolean }
                             if (!t._fallback) {

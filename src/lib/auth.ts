@@ -39,6 +39,9 @@ export const getJWTSecret = (): Uint8Array => {
   if (!secret) {
     throw new Error('JWT_SECRET environment variable is required')
   }
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters (generate with: openssl rand -hex 32)')
+  }
   return new TextEncoder().encode(secret)
 }
 

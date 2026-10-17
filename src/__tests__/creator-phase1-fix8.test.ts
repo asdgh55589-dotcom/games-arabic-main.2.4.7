@@ -1,7 +1,7 @@
 /**
  * PART 2 Phase 1 — Fix 8 tests: ban info + suspended page wiring.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest';
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!';
 
 jest.mock('@/lib/db', () => ({
   db: {

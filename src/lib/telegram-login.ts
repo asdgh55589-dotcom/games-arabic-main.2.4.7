@@ -309,6 +309,6 @@ export async function performTelegramLogin(
       reportError: () => 'skipped' as const,
     }))
     reportError(err, { route: 'performTelegramLogin' })
-    return { ok: false, status: 'error', error: 'حدث خطأ أثناء تسجيل الدخول' }
+    return { ok: false, status: 'error', error: 'تعذّر تسجيل الدخول عبر Telegram — تحقق من الاتصال وحاول مجدداً' }
   }
 }

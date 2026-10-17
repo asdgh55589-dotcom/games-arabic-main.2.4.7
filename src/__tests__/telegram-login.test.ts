@@ -7,7 +7,7 @@
  * reuse-by-link, attach-link-by-synthetic-email, create, ban gate, ledger.
  */
 
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 const mockOAFindUnique = jest.fn()
 const mockOACreate = jest.fn()

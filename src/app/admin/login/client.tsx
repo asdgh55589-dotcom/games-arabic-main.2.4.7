@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertCircle, Key, Loader2, Lock, Mail, ShieldCheck, User } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -92,8 +93,12 @@ function AdminLoginContent() {
       setError({ message: 'تعذّر التحقق من الجلسة مؤقتاً. حاول مرة أخرى.' })
       return
     }
-    if (errorCode === 'auth_failed' || errorCode === 'no_session') {
+    if (errorCode === 'auth_failed') {
       setError({ message: 'فشل تسجيل الدخول عبر المزوّد. حاول مرة أخرى.' })
+      return
+    }
+    if (errorCode === 'no_session') {
+      setError({ message: 'انتهت جلستك، سجّل دخولك من جديد.' })
       return
     }
     // Plain ?from= (e.g. bookmarked first visit) is NOT an expiry — show no error.
@@ -117,7 +122,9 @@ function AdminLoginContent() {
       const data = await res.json()
       if (!res.ok) {
         const msg =
-          typeof data?.error === 'string' ? data.error : data?.error?.message || 'فشل تسجيل الدخول'
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error?.message || 'تعذّر قراءة رد الخادم — تحقق من الاتصال وحاول مجدداً'
         const field = data?.field || data?.error?.details?.field
         setError({ message: msg, field })
         return
@@ -201,10 +208,12 @@ function AdminLoginContent() {
 
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo.png"
             alt="ألعاب عربية"
+            width={40}
+            height={40}
+            priority
             className="mx-auto mb-3 h-10 w-auto object-contain"
           />
           <p className="mt-1 text-sm text-muted-foreground">لوحة تحكم نشر التعريبات</p>
@@ -257,7 +266,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'username' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -287,7 +296,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'email' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -317,7 +326,7 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'password' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
@@ -347,12 +356,12 @@ function AdminLoginContent() {
                 />
               </div>
               {error?.field === 'securityKey' && (
-                <p className="text-red-500 text-sm mt-1">{error.message}</p>
+                <p className="text-red-500 text-sm mt-1" aria-live="polite">{error.message}</p>
               )}
             </div>
 
             {error && !error.field && (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" aria-live="polite">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error.message}</span>
               </div>
@@ -403,7 +412,7 @@ function AdminLoginContent() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" aria-live="polite">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error.message}</span>
               </div>
