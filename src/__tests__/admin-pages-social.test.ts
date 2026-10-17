@@ -52,8 +52,11 @@ describe('سجل صفحات السوشيال ميديا', () => {
 
   it('يضعها داخل مجموعة السوشيال ميديا', () => {
     const group = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('social'))
-    // 7 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام + منشورات + قوالب + وجهات + توجيه
-    expect(group.length).toBe(7)
+    // 9 صفحات مسجّلة: لمحة + قنوات + تيليجرام + منشورات + قوالب + وجهات + توجيه
+    // + أرشيف المنشورات + أرشيف القوالب (Phase 5).
+    expect(group.length).toBe(9)
+    expect(page('social-telegram-archive').minRole).toBe('manager')
+    expect(page('social-telegram-templates-archive').minRole).toBe('manager')
   })
 })
 

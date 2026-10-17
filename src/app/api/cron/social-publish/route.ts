@@ -76,10 +76,12 @@ export async function GET(req: NextRequest) {
     })
 
     // ===== 1) منشورات Social Hub المستحقة =====
+    // المؤرشف (archivedAt != null) مستثنى — الأرشفة توقف الجدولة أيضاً.
     const duePosts = await db.socialPost.findMany({
       where: {
         platform: 'telegram',
         status: 'scheduled',
+        archivedAt: null,
         scheduledFor: { lte: now },
       },
       orderBy: { scheduledFor: 'asc' },

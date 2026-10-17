@@ -9,6 +9,16 @@
 jest.mock('@/lib/db', () => ({
   db: {
     socialPost: { findUnique: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
+    // الخلود (Phase 5): النشر لا يقرأ القالب أبداً (لقطة المحتوى تُلتقط عند
+    // الحفظ/الجدولة). أي قراءة قالب من مسار النشر تُفجّر الاختبار.
+    socialPostTemplate: {
+      findUnique: jest.fn(() => {
+        throw new Error('publish must not re-read the template (snapshot at save time)')
+      }),
+      findFirst: jest.fn(() => {
+        throw new Error('publish must not re-read the template (snapshot at save time)')
+      }),
+    },
   },
 }))
 
@@ -157,5 +167,17 @@ describe('publishSocialPost — المطالبة الذرّية', () => {
 
     expect(result).toMatchObject({ status: 'skipped', reason: 'in_progress' })
     expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it('منشور مرتبط بقالب مؤرشف يحتفظ بنشره (لقطة وقت الحفظ — الخلود)', async () => {
+    // post.templateId يشير لقالب، والقالب مؤرشف منذ الجدولة — النشر يعمل
+    // أبداً بلا قراءة قالب (mock db يرمي لو قُرئ).
+    mockDb.socialPost.findUnique.mockResolvedValue({ ...scheduledRow, templateId: 'tpl-archived' })
+    mockDb.socialPost.updateMany.mockResolvedValue({ count: 1 })
+
+    const result = await publishSocialPost('p1', { source: 'cron' })
+
+    expect(result.status).toBe('published')
+    expect(mockSend).toHaveBeenCalledTimes(1)
   })
 })

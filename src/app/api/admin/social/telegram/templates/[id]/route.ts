@@ -1,10 +1,11 @@
 /**
- * /api/admin/social/telegram/templates/[id] — تفصيل/تعديل/حذف قالب منشور.
+ * /api/admin/social/telegram/templates/[id] — تفصيل/تعديل/أرشفة قالب منشور.
  *
  * GET    (requireAdmin)   — تفصيل قالب.
- * PATCH  (requireManager) — تعديل. `isDefault` يفحص نصف التعارض.
- * DELETE (requireManager) — حذف (يُمنع حذف الافتراضي الوحيد بلا بديل؟ — يُسمح،
- *                           القالب ليس مفتاحاً أجنبياً مقيّداً).
+ * PATCH  (requireManager) — تعديل (يُنشئ نسخة جديدة تلقائياً). `isDefault` يفحص نصف التعارض.
+ * DELETE (requireManager) — أرشفة ناعمة فقط (الخلود: لا حذف فيزيائي أبداً) —
+ *                           المؤرشف يختفي عن القوائم الجديدة ويبقى صفه للأبد،
+ *                           والاستعادة من صفحة الأرشيف.
  */
 import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/lib/api-response'
@@ -14,6 +15,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { PostTemplatePatchSchema } from '@/lib/social/post-schemas'
 import { serializeTemplate } from '@/lib/social/serialize'
+import { snapshotTemplateVersion } from '@/lib/social/template-versions'
 
 const FIELD_AR: Record<string, string> = {
   platform: 'المنصة غير صالحة',
@@ -138,6 +140,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const updated = await db.socialPostTemplate.update({ where: { id }, data })
 
+    // لقطة جديدة عند كل حفظ (تطوير القوالب الأبدية — لا يفقد التاريخ أبداً).
+    await snapshotTemplateVersion(updated, user, 'تعديل القالب')
+
     await logAction({
       userId: user.id,
       username: user.username,
@@ -165,25 +170,41 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
 
     const existing = await db.socialPostTemplate.findUnique({ where: { id } })
     if (!existing) return notFound('القالب غير موجود', req.nextUrl.pathname)
+    if (existing.isArchived) {
+      return fail(
+        'CONFLICT',
+        'القالب مؤرشف بالفعل — أعد الاطلاع عليه من صفحة الأرشيف',
+        409,
+        undefined,
+        undefined,
+        req.nextUrl.pathname,
+      )
+    }
 
-    await db.socialPostTemplate.delete({ where: { id } })
+    // الخلود: أرشفة ناعمة فقط — لا حذف فيزيائي أبداً (Category-5 خطوة 3).
+    const updated = await db.socialPostTemplate.update({
+      where: { id },
+      data: { isArchived: true, archivedAt: new Date() },
+    })
 
     await logAction({
       userId: user.id,
       username: user.username,
-      action: 'delete',
+      action: 'archive_template',
       entity: 'social_post_template',
       entityId: id,
-      details: `حذف قالب منشور: ${existing.name}`,
+      details: `أرشفة قالب منشور (ناعم): ${existing.name}`,
+      before: { isArchived: false },
+      after: { isArchived: true },
       request: req,
     })
 
-    return ok({ deleted: true, id })
+    return ok(serializeTemplate(updated as unknown as Record<string, unknown>))
   } catch (err) {
     const status = (err as { status?: number })?.status
     if (status === 401) return unauthorized('سجّل الدخول أولاً')
     if (status === 403) return forbidden('غير مصرح — حذف القوالب للمديرين فقط')
     logger.error('[admin/social/telegram/templates/[id] DELETE] failed:', err)
-    return internalError('تعذّر حذف القالب')
+    return internalError('تعذّر أرشفة القالب')
   }
 }
