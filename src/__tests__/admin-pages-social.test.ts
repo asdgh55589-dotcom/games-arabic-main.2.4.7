@@ -132,3 +132,11 @@ describe('roleSeesPageByDefault', () => {
     }
   })
 })
+
+describe('صفحة مهام الجدولة (المرحلة 4)', () => {
+  it('مسجلة برتبة manager في مجموعة النشر المجدول', () => {
+    expect(page('publish-schedule').href).toBe('/admin/publish/schedule')
+    expect(page('publish-schedule').minRole).toBe('manager')
+    expect(findPageForPath('/admin/publish/schedule')?.key).toBe('publish-schedule')
+  })
+})

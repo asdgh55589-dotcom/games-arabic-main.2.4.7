@@ -89,6 +89,11 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
     ],
   },
   {
+    // المرحلة 4: صفحة الجدولة الموحدة للأدمن العامل (manager-only).
+    label: 'النشر المجدول',
+    pages: [p('/admin/publish/schedule', 'مهام الجدولة', 'manager')],
+  },
+  {
     label: 'النظام',
     pages: [
       p('/admin/search', 'بحث متقدم', 'admin'),

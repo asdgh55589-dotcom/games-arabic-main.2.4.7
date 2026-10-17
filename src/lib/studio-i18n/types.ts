@@ -441,6 +441,27 @@ export interface StudioDict {
     scheduledDate: string
     scheduledTime: string
     scheduledPreview: string
+    scheduleMode: string
+    modeSiteOnly: string
+    modeSocialOnly: string
+    modeBoth: string
+    modeBothHint: string
+    scheduleStepTime: string
+    scheduleStepTargets: string
+    scheduleTimezone: string
+    scheduleSocialPlatforms: string
+    scheduleInferredTargets: string
+    scheduleManualOverride: string
+    scheduleUseInferred: string
+    scheduleNoTargets: string
+    scheduleThread: string
+    scheduleBot: string
+    schedulePreviewWill: string
+    scheduleDryRun: string
+    scheduleDryRunPass: string
+    scheduleDryRunFail: string
+    scheduleAddTarget: string
+    scheduleFutureOnly: string
     summaryLabel: string
     summaryHint: string
     summaryPlaceholder: string

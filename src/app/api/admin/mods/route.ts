@@ -4,15 +4,15 @@ import { forbidden, internalError, ok, okPaginated, validationFail } from '@/lib
 import { parsePagination, pickSort } from '@/lib/api-utils'
 import { requireCreator, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { reportError } from '@/lib/error-reporting'
+import { parseIaUrl } from '@/lib/ia'
 import { logger } from '@/lib/logger'
 import { calculateModQualityScore } from '@/lib/mod-quality'
 import { canCreateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
-import { parseIaUrl } from '@/lib/ia'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
-import { reportError } from '@/lib/error-reporting'
 import { slugify } from '@/lib/utils'
 
 const SORTS = ['newest', 'oldest', 'downloads', 'endorsements', 'views', 'name'] as const
@@ -238,6 +238,8 @@ export async function POST(req: NextRequest) {
           isLatest: true,
           releaseDate: data.releaseDate ? new Date(data.releaseDate) : new Date(),
           scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+          // undefined ⇒ default قاعدة البيانات (both).
+          publishMode: (data as { publishMode?: string }).publishMode ?? undefined,
           qualityScore,
         },
       })

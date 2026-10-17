@@ -251,6 +251,9 @@ export const CreateModSchema = z.object({
     .refine((v) => !Number.isNaN(Date.parse(v)), 'تاريخ النشر المجدول غير صالح')
     .optional()
     .nullable(),
+  // المرحلة 4: نطاق الجدولة — بلا default في zod (القيمة الافتراضية both
+  // على مستوى قاعدة البيانات؛ default هنا سيتسرب عبر .partial()).
+  publishMode: z.enum(['site_only', 'social_only', 'both']).optional(),
   slug: z.string().optional(),
   changelog: z.string().optional(),
   installGuide: z.string().optional(),

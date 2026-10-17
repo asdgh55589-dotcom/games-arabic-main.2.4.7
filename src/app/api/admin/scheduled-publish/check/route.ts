@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
+import { completeProjectSide } from '@/lib/schedule-projects'
 
 /**
  * GET /api/admin/scheduled-publish/check
@@ -31,12 +32,20 @@ export async function GET(req: NextRequest) {
   try {
     const now = new Date()
 
-    // Find mods that are scheduled and due
+    // Find mods that are scheduled and due.
+    // المرحلة 4: المودات المرتبطة بمشروع جدولة نشط يشمل الموقع تُنشر عبر
+    // المشروع حصراً (مصدر الحقيقة الواحد) — تُستبعد من المسار القديم.
     const dueMods = await db.mod.findMany({
       where: {
         scheduledAt: { lte: now },
         workflowStatus: { not: 'PUBLISHED' },
         scheduledSent: false,
+        scheduleProjects: {
+          none: {
+            status: { in: ['scheduled', 'running'] },
+            mode: { in: ['site_only', 'both'] },
+          },
+        },
       },
       select: {
         id: true,
@@ -47,12 +56,34 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    if (dueMods.length === 0) {
-      return NextResponse.json({ data: { published: 0, mods: [] } })
+    // ===== مشاريع الجدولة المستحقة (الجانب الموقعي) =====
+    const dueProjects = await db.socialScheduleProject.findMany({
+      where: {
+        status: { in: ['scheduled', 'running'] },
+        mode: { in: ['site_only', 'both'] },
+        sitePublishAt: { lte: now },
+      },
+      include: {
+        mod: {
+          select: {
+            id: true,
+            name: true,
+            gameId: true,
+            scheduledAt: true,
+            authorId: true,
+            workflowStatus: true,
+          },
+        },
+      },
+    })
+
+    if (dueMods.length === 0 && dueProjects.length === 0) {
+      return NextResponse.json({ data: { published: 0, mods: [], projects: [] } })
     }
 
     const published: { id: string; name: string }[] = []
     const publishedGameIds = new Set<string>()
+    const projectsDone: string[] = []
 
     for (const mod of dueMods) {
       try {
@@ -90,6 +121,57 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // مشاريع الجدولة: نفس خطوات النشر للمود المرتبط، ثم إكمال الجانب الموقعي.
+    for (const project of dueProjects) {
+      const mod = project.mod
+      if (!mod || mod.workflowStatus === 'PUBLISHED') {
+        await completeProjectSide(project.id, 'site')
+        if (!mod) continue
+        projectsDone.push(project.id)
+        continue
+      }
+      try {
+        await db.mod.update({
+          where: { id: mod.id },
+          data: {
+            workflowStatus: 'PUBLISHED',
+            publishedAt: now,
+            scheduledSent: true,
+            scheduledSentAt: now,
+          },
+        })
+
+        await db.auditLog
+          .create({
+            data: {
+              userId: mod.authorId,
+              action: 'MOD_SCHEDULED_PUBLISH',
+              entity: 'mod',
+              entityId: mod.id,
+              details: JSON.stringify({
+                modName: mod.name,
+                scheduledAt: mod.scheduledAt,
+                publishedAt: now,
+                projectId: project.id,
+              }),
+            },
+          })
+          .catch(() => {})
+
+        published.push({ id: mod.id, name: mod.name })
+        if (mod.gameId) publishedGameIds.add(mod.gameId)
+        await completeProjectSide(project.id, 'site')
+        projectsDone.push(project.id)
+      } catch (err) {
+        logger.error(`[scheduled-publish] Failed to publish project ${project.id}:`, err)
+        await completeProjectSide(
+          project.id,
+          'site',
+          err instanceof Error ? err.message : String(err),
+        )
+      }
+    }
+
     // Listing cache: newly PUBLISHED mods join game listings (best-effort).
     invalidateGameModsCache([...publishedGameIds]).catch(() => {})
 
@@ -97,6 +179,7 @@ export async function GET(req: NextRequest) {
       data: {
         published: published.length,
         mods: published,
+        projects: projectsDone,
       },
     })
   } catch (err) {

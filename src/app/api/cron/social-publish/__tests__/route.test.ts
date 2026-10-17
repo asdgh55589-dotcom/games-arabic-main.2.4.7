@@ -9,7 +9,8 @@
 
 jest.mock('@/lib/db', () => ({
   db: {
-    socialPost: { findMany: jest.fn() },
+    socialPost: { findMany: jest.fn(), findUnique: jest.fn() },
+    socialScheduleProject: { findMany: jest.fn() },
     scheduledJob: {
       deleteMany: jest.fn(),
       findMany: jest.fn(),
@@ -30,6 +31,15 @@ jest.mock('@/lib/scheduler', () => ({ executeJob: jest.fn().mockResolvedValue(un
 
 jest.mock('@/lib/social/publish', () => ({ publishSocialPost: jest.fn() }))
 
+// publish-multi يسحب سلسلة ESM (tg-rich-messages) — يُحاكى كالمسار الأحادي.
+jest.mock('@/lib/social/publish-multi', () => ({
+  publishSocialPostMulti: jest.fn(),
+}))
+
+jest.mock('@/lib/schedule-projects', () => ({
+  completeProjectSide: jest.fn().mockResolvedValue(undefined),
+}))
+
 jest.mock('@/lib/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }))
@@ -38,8 +48,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/cron-auth'
 import { claimRun, completeRun, failRun } from '@/lib/cron-ledger'
 import { db } from '@/lib/db'
+import { completeProjectSide } from '@/lib/schedule-projects'
 import { executeJob } from '@/lib/scheduler'
 import { publishSocialPost } from '@/lib/social/publish'
+import { publishSocialPostMulti } from '@/lib/social/publish-multi'
 import { GET } from '../route'
 
 const mockAuth = requireCronAuth as jest.Mock
@@ -48,8 +60,11 @@ const mockComplete = completeRun as jest.Mock
 const mockFail = failRun as jest.Mock
 const mockExecute = executeJob as jest.Mock
 const mockPublish = publishSocialPost as jest.Mock
+const mockMulti = publishSocialPostMulti as jest.Mock
+const mockCompleteSide = completeProjectSide as jest.Mock
 const mockDb = db as unknown as {
-  socialPost: { findMany: jest.Mock }
+  socialPost: { findMany: jest.Mock; findUnique: jest.Mock }
+  socialScheduleProject: { findMany: jest.Mock }
   scheduledJob: { deleteMany: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock }
 }
 
@@ -61,9 +76,11 @@ beforeEach(() => {
   mockClaim.mockResolvedValue({ alreadyRan: false, jobId: 'ledger-1' })
   mockDb.scheduledJob.deleteMany.mockResolvedValue({ count: 0 })
   mockDb.socialPost.findMany.mockResolvedValue([])
+  mockDb.socialScheduleProject.findMany.mockResolvedValue([])
   mockDb.scheduledJob.findMany.mockResolvedValue([])
   mockDb.scheduledJob.findUnique.mockResolvedValue({ status: 'completed' })
   mockPublish.mockResolvedValue({ ok: true, status: 'published', externalId: 'tg-1' })
+  mockMulti.mockResolvedValue({ ok: true, published: 1, failed: 0, skipped: 0, targets: [] })
 })
 
 describe('cron/social-publish — المصادقة', () => {
@@ -188,5 +205,62 @@ describe('cron/social-publish — التنظيف والـ ledger', () => {
 
     expect(res.status).toBe(500)
     expect(mockFail).toHaveBeenCalled()
+  })
+})
+
+describe('cron/social-publish — التفريغ المتعدد والمطابقة (المرحلة 4)', () => {
+  it('منشور ذو أهداف → المحرك المتعدد لا الأحادي', async () => {
+    mockDb.socialPost.findMany.mockResolvedValue([{ id: 'p9', targets: [{ id: 't1' }] }])
+    mockMulti.mockResolvedValue({ ok: true, published: 1, failed: 0, skipped: 0, targets: [] })
+
+    const res = await GET(makeReq())
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(mockMulti).toHaveBeenCalledWith('p9', { source: 'cron' })
+    expect(mockPublish).not.toHaveBeenCalled()
+    expect(body.data.published).toBe(1)
+  })
+
+  it('بلا أهداف → المسار الأحادي (توافق)', async () => {
+    mockDb.socialPost.findMany.mockResolvedValue([{ id: 'p1', targets: [] }])
+    mockPublish.mockResolvedValue({ ok: true, status: 'published', externalId: 'tg-1' })
+
+    await GET(makeReq())
+
+    expect(mockPublish).toHaveBeenCalledWith('p1', { source: 'cron' })
+    expect(mockMulti).not.toHaveBeenCalled()
+  })
+
+  it('مشروع مرتبط بمنشور نُشر → إكمال الجانب الاجتماعي', async () => {
+    mockDb.socialPost.findMany.mockResolvedValue([{ id: 'p1', targets: [] }])
+    mockPublish.mockResolvedValue({ ok: true, status: 'published', externalId: 'tg-1' })
+    mockDb.socialScheduleProject.findMany.mockResolvedValue([{ id: 'proj-1', postId: 'p1' }])
+
+    await GET(makeReq())
+
+    expect(mockCompleteSide).toHaveBeenCalledWith('proj-1', 'social')
+  })
+
+  it('مشروع مرتبط بمنشور فشل نهائياً → فشل الجانب مع السبب', async () => {
+    mockDb.socialPost.findMany.mockResolvedValue([{ id: 'p1', targets: [] }])
+    mockPublish.mockResolvedValue({ ok: false, status: 'failed', error: 'timeout' })
+    mockDb.socialScheduleProject.findMany.mockResolvedValue([{ id: 'proj-1', postId: 'p1' }])
+    mockDb.socialPost.findUnique.mockResolvedValue({ status: 'failed' })
+
+    await GET(makeReq())
+
+    expect(mockCompleteSide).toHaveBeenCalledWith('proj-1', 'social', 'timeout')
+  })
+
+  it('منشور فشل قابل لإعادة المحاولة → المشروع يُترك مجدولاً', async () => {
+    mockDb.socialPost.findMany.mockResolvedValue([{ id: 'p1', targets: [] }])
+    mockPublish.mockResolvedValue({ ok: false, status: 'failed', error: 'timeout' })
+    mockDb.socialScheduleProject.findMany.mockResolvedValue([{ id: 'proj-1', postId: 'p1' }])
+    mockDb.socialPost.findUnique.mockResolvedValue({ status: 'scheduled' })
+
+    await GET(makeReq())
+
+    expect(mockCompleteSide).not.toHaveBeenCalled()
   })
 })

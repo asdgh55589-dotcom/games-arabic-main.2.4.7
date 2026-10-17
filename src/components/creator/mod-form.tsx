@@ -11,23 +11,7 @@ import { VersionHistory } from '@/components/admin/mods/version-history'
 import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
 import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/contexts/auth-context'
-import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
-import { isSupportedVideoUrl } from '@/lib/oembed'
-import { extractVideoErrorMessage } from '@/lib/video-errors'
-import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
-import { ModFormActions } from './mod-form/actions'
-import { ModFormHeader } from './mod-form/header'
-import { ModFormBasicInfo } from './mod-form/basic-info'
-import { ModFormFiles, ModFormSchedule } from './mod-form/files'
-import { ModFormMedia } from './mod-form/media'
-import { ModFormSettings } from './mod-form/settings'
-import { ChangeTypeDialog, type ChangeType } from './mod-form/change-type-dialog'
 import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
-import { PlatformSelector } from './mod-form/platform-selector'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,25 +22,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { useToast } from '@/hooks/use-toast'
+import { isSupportedVideoUrl } from '@/lib/oembed'
+import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
+import { extractVideoErrorMessage } from '@/lib/video-errors'
+import { ModFormActions } from './mod-form/actions'
+import { ModFormBasicInfo } from './mod-form/basic-info'
+import { type ChangeType, ChangeTypeDialog } from './mod-form/change-type-dialog'
 import {
+  ModFormFiles,
+  ModFormSchedule,
+  type ScheduleWizardValue,
+  saveModSchedule,
+} from './mod-form/files'
+import { ModFormHeader } from './mod-form/header'
+import { ModFormMedia } from './mod-form/media'
+import { PlatformSelector } from './mod-form/platform-selector'
+import {
+  buildUploadTitle,
+  type ContactLink,
+  type CustomTab,
+  type DownloadFile,
   EMPTY_CONTACT,
   EMPTY_FILE,
   EMPTY_GROUP,
   EMPTY_MEMBER,
   EMPTY_TAB,
-  Section,
-  buildUploadTitle,
   formatArabicTitle,
   hasTitleYear,
-  slugify,
-  type ContactLink,
-  type CustomTab,
-  type DownloadFile,
+  Section,
   type SeriesOpt,
+  slugify,
   type TeamMember,
   type TeamOpt,
   type VideoGroup,
 } from './mod-form/primitives'
+import { ModFormSettings } from './mod-form/settings'
 
 interface ModFormProps {
   modId?: string // لو موجود → تعديل، لو مش موجود → إنشاء
@@ -112,7 +117,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().split('T')[0])
-  const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+  // المرحلة 4: حالة معالج الجدولة (null = بلا جدولة). scheduledAt
+  // يُشتق منها عند الحفظ للتوافق (اجتماعي-فقط ⇒ null حتى لا ينشر الموقع).
+  const [schedule, setSchedule] = useState<ScheduleWizardValue | null>(null)
 
   // Platform-specific fields
   const [platform, setPlatform] = useState('')
@@ -218,9 +225,18 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
-        setScheduledAt(
-          (m as any).scheduledAt ? new Date((m as any).scheduledAt).toISOString() : null,
-        )
+        // إرث scheduledAt ⇒ وضعية موقع-فقط (يحافظ على السلوك القديم حرفياً).
+        if ((m as any).scheduledAt) {
+          const iso = new Date((m as any).scheduledAt).toISOString()
+          setSchedule({
+            mode: 'site_only',
+            datetime: iso,
+            manualTargets: [],
+            useManualTargets: false,
+          })
+        } else {
+          setSchedule(null)
+        }
         setPlatform(m.game?.platform || '')
         setTranslationMethod((m as any).translationMethod || '')
         setPlatformGameId((m as any).platformGameId || '')
@@ -545,7 +561,15 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
-      scheduledAt: scheduledAt || null,
+      // المرحلة 4: scheduledAt مشتق من المعالج (اجتماعي-فقط ⇒ null)،
+      // ووضعية النشر تُحفظ صراحةً.
+      scheduledAt:
+        schedule == null
+          ? null
+          : schedule.mode === 'social_only'
+            ? null
+            : (schedule.datetime ?? null),
+      publishMode: schedule?.mode ?? undefined,
       translationMethod: translationMethod || null,
       platformGameId: platformGameId || null,
       cusaId: cusaId || null,
@@ -592,6 +616,29 @@ export default function ModForm({ modId }: ModFormProps) {
         title: t.saved,
         description: isEdit ? t.updated : t.publishedOk,
       })
+
+      // المرحلة 4: حفظ الجدولة بعد نجاح حفظ المود (يحتاج modId).
+      // فشل الجدولة لا يُسقط حفظ المود — رسالة منفصلة.
+      if (schedule?.datetime) {
+        const savedId =
+          (isEdit && modId ? modId : null) ?? (data?.data?.id as string | undefined) ?? null
+        if (savedId) {
+          try {
+            await saveModSchedule({
+              saveUrl: '/api/creator/schedule-projects',
+              modId: savedId,
+              value: schedule,
+            })
+            toast({ title: t.scheduledPublish, description: t.scheduleDryRunPass })
+          } catch (scheduleErr) {
+            toast({
+              title: t.scheduledPublish,
+              description: scheduleErr instanceof Error ? scheduleErr.message : t.saveFailed,
+              variant: 'destructive',
+            })
+          }
+        }
+      }
 
       // Show changelog dialog when editing an existing mod
       if (isEdit && modId) {
@@ -859,7 +906,13 @@ export default function ModForm({ modId }: ModFormProps) {
             slugify={slugify}
           />
 
-          <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
+          <ModFormSchedule
+            platform={platform}
+            value={schedule}
+            onChange={setSchedule}
+            inferUrl="/api/creator/schedule-projects/infer"
+            allowTargetOverride={false}
+          />
 
           {/* سجل الإصدارات */}
           {isEdit && (
