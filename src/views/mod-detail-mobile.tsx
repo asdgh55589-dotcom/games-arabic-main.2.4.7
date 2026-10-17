@@ -898,7 +898,6 @@ export function ModDetailMobile({
           <ModDownloadSection
             files={mod.files || []}
             modSlug={mod.slug}
-            stats={{ views: mod.views ?? 0, downloads: mod.downloads ?? 0 }}
             siteLinks={mod.siteLinks || []}
             extrasLabel={mod.extrasLabel ?? null}
           />

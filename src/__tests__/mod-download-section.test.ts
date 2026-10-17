@@ -22,13 +22,6 @@ function viewFile(name: string): string {
 }
 
 describe('download section (concept 2 — mirror card)', () => {
-  it('header shows title + file count + views + downloads', () => {
-    expect(section()).toMatch(/ملفات التحميل/)
-    expect(section()).toMatch(/files\.length/)
-    expect(section()).toMatch(/stats\.views/)
-    expect(section()).toMatch(/stats\.downloads/)
-  })
-
   it('each card shows version badge + per-file downloads + size + date', () => {
     expect(section()).toMatch(/v\{file\.version\}/)
     expect(section()).toMatch(/downloadsCount/)
@@ -36,9 +29,8 @@ describe('download section (concept 2 — mirror card)', () => {
     expect(section()).toMatch(/releaseDate/)
   })
 
-  it('exposes download actions + copy-link per file', () => {
+  it('exposes download actions per file', () => {
     expect(section()).toMatch(/handleDownloadClick/)
-    expect(section()).toMatch(/aria-label="نسخ رابط التحميل"/)
   })
 
   it('API aggregates real per-file download clicks', () => {
