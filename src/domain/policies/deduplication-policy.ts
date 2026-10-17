@@ -41,6 +41,14 @@ export const DEFAULT_DEDUPLICATION_CONFIG: DeduplicationConfig = {
     [NotificationType.AdminReport]: 30,
     [NotificationType.AdminMilestone]: 0,
     [NotificationType.SystemAnnouncement]: 0,
+    // مرحلة 6 — أدوات النشر:
+    // فشل النشر: على الأقل 30 دقيقة بين إشعاري فشل (السماح بالإعادة عبر
+    // المركز). النجاح الخفيف: بلا تكرار (0). تدهور الكيان: 60 دقيقة (نبضة
+    // واحدة سيقها per-streak notifiedAt). التقرير الدوري: بلا تكرار (0).
+    [NotificationType.SocialPublishFailed]: 30,
+    [NotificationType.SocialPublishSucceeded]: 0,
+    [NotificationType.PublishDegraded]: 60,
+    [NotificationType.PublishDigest]: 0,
   },
 }
 

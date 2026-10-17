@@ -46,6 +46,23 @@ All 20 notification types in the system, organized by category.
 |------|-------------|---------|-----------|----------|-------------|
 | `system_announcement` | إعلان النظام | Admin broadcasts announcement | All users | in_app, email | none (skip dedup) |
 
+## Social Hub — Publish (Phase 6)
+
+Added alongside the publish error center. All four are mirrored in the zod
+`NotificationType` enum (`src/lib/schemas.ts`), the settings toggles
+(`src/views/notification-settings.tsx`), and seeded for **both** channel
+templates in `prisma/seed-notification-templates.ts`.
+
+| Type | Arabic Label | Trigger | Recipient | Channels | Dedup Window |
+|------|-------------|---------|-----------|----------|-------------|
+| `social_publish_failed` | فشل نشر اجتماعي | Post reached a terminal publish failure (attempts exhausted / all targets failed) | Author + content managers (moderator+) | in_app, email | 30 min |
+| `social_publish_succeeded` | نجاح نشر اجتماعي | Post published to **all** targets | Author | in_app | none |
+| `publish_degraded` | تدهور نشر متكرر | 3+ open publish errors stacked on the same entity | Content managers | in_app, email | 60 min (one pulse per streak) |
+| `publish_digest` | تقرير دوري للنشر | Daily/weekly publish digest cron | Content managers | in_app, email | none (cron window is idempotent) |
+
+> Notification delivery is best-effort: if it fails, the publish flow is never
+> interrupted. See `docs/SOCIAL-HUB.md` for the wiring and the admin runbook.
+
 ## Auto-Generated Notifications
 
 These are created automatically by the report system:

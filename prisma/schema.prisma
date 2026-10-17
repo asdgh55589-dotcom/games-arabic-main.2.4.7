@@ -2203,3 +2203,31 @@ model SocialScheduleProject {
   @@index([postId])
   @@map("social_schedule_projects")
 }
+
+// ===== Phase 6 — مركز أخطاء النشر =====
+// PublishErrorEvent: صف لكل فشل عبر الكتالوج (src/lib/publish-errors.ts) —
+// النطاق/المرجع/السبب/الإصلاح/قابلية الإعادة، مع الاستعلام عن غير المحلول.
+// الحل: يدوي (requireManager) أو تلقائي عند نجاح النشر/الإعادة (resolvedBy
+// خالٍ تعني «تلقائي»). index (resolvedAt, createdAt) يخدم قائمة غير المحلول
+// والتقرير الدوري معاً.
+model PublishErrorEvent {
+  id         String    @id @default(cuid())
+  code       String    // رمز الكتالوج (publish-errors.ts)
+  scope      String    // post | route | bot | destination | schedule
+  refId      String?   @map("ref_id") // post/bot/destination/route/schedule-project id
+  message    String?   // نص خام مقتضب بلا توكن (يُقنَّع قبل الكتابة)
+  causeAr    String    @map("cause_ar")
+  fixAr      String    @map("fix_ar")
+  retryable  Boolean   @default(false)
+  attempt    Int       @default(0)
+  notifiedAt DateTime? @map("notified_at")
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by") // user id أو null = تلقائي
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([resolvedAt, createdAt])
+  @@index([scope, refId])
+  @@index([code])
+  @@map("publish_error_events")
+}

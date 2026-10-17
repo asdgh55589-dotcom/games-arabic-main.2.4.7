@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/hooks/use-toast'
+import { publishErrorDef } from '@/lib/publish-errors'
 
 interface ScheduledJob {
   id: string
@@ -41,6 +43,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function SchedulerPage() {
+  const { toast } = useToast()
   const [jobs, setJobs] = useState<ScheduledJob[]>([])
   const [stats, setStats] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -70,11 +73,26 @@ export default function SchedulerPage() {
 
   const handleCancel = async (id: string) => {
     if (!confirm('هل تريد إلغاء هذه المهمة؟')) return
+    // مرحلة 6 (الفئة 7 بند 12): لا alert() — إرشاد منظّم من كتالوج الأخطاء.
+    const def = publishErrorDef('legacy_job_failed')
     try {
-      await fetch(`/api/admin/scheduler?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/scheduler?id=${id}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast({
+          title: 'فشل إلغاء المهمة',
+          description: `${body?.error?.message || def.causeAr}\nكيف أصلحه: ${def.fixAr}`,
+          variant: 'destructive',
+        })
+        return
+      }
       fetchJobs()
-    } catch (err) {
-      alert('فشل الإلغاء')
+    } catch {
+      toast({
+        title: 'فشل إلغاء المهمة',
+        description: `تعذّر الوصول للخادم\nكيف أصلحه: ${def.fixAr}`,
+        variant: 'destructive',
+      })
     }
   }
 

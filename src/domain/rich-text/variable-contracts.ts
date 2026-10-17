@@ -104,6 +104,25 @@ export const VARIABLE_CONTRACTS: Record<NotificationType, readonly RichVariableD
   [NotificationType.AdminReport]: [messageVar('reason')],
   [NotificationType.AdminMilestone]: [messageVar('milestoneMessage')],
   [NotificationType.SystemAnnouncement]: [messageVar('announcementMessage')],
+  [NotificationType.SocialPublishFailed]: [
+    nameVar('postTitle'),
+    messageVar('errorText'),
+    messageVar('fixText'),
+    nameVar('errorRef'),
+  ],
+  [NotificationType.SocialPublishSucceeded]: [nameVar('postTitle'), intVar('targetCount')],
+  [NotificationType.PublishDegraded]: [
+    nameVar('entityLabel'),
+    intVar('failureCount'),
+    messageVar('lastErrorText'),
+  ],
+  [NotificationType.PublishDigest]: [
+    intVar('publishedCount'),
+    intVar('failedCount'),
+    intVar('archivedCount'),
+    intVar('openErrors'),
+    nameVar('periodLabel'),
+  ],
 }
 
 /** Look up a contract; unknown/unseeded type → undefined (never a default). */

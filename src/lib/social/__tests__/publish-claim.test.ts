@@ -41,6 +41,22 @@ jest.mock('@/lib/social/validate-post', () => ({
   })),
 }))
 
+// مرحلة 6: مسجّل أخطاء النشر مُحاكاة — هذه الاختبارات تُثبت المطالبة/الانحدار
+// وليس كتالوج الأحداث (اختباراته منفصلة).
+jest.mock('@/lib/social/publish-error-events', () => ({
+  recordPublishError: jest
+    .fn()
+    .mockResolvedValue({ eventId: null, degraded: false, alreadyOpen: false }),
+  resolvePublishErrorsOpen: jest.fn().mockResolvedValue(0),
+  notifyPublishFailure: jest.fn().mockResolvedValue(undefined),
+  notifyPublishSuccess: jest.fn().mockResolvedValue(undefined),
+  alertDegraded: jest.fn().mockResolvedValue(undefined),
+  contentManagers: jest.fn().mockResolvedValue([]),
+  sendToService: jest.fn().mockResolvedValue(undefined),
+  getDegradedEntities: jest.fn().mockResolvedValue([]),
+  resolveEventManually: jest.fn().mockResolvedValue({ ok: true }),
+}))
+
 jest.mock('@/lib/audit', () => ({ logAction: jest.fn().mockResolvedValue(undefined) }))
 jest.mock('@/lib/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },

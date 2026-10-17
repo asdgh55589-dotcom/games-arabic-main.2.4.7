@@ -16,6 +16,11 @@
 import { logAction } from '@/lib/audit'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import {
+  classifyTransportError,
+  type PublishErrorScope,
+  publishErrorDef,
+} from '@/lib/publish-errors'
 import { botTokenFingerprint, resolveTargetBot, throttleBotSend } from './bot-resolve'
 import {
   PUBLISH_LEASE_MS,
@@ -23,6 +28,12 @@ import {
   type PublishOptions,
   publishSocialPost,
 } from './publish'
+import {
+  notifyPublishFailure,
+  notifyPublishSuccess,
+  recordPublishError,
+  resolvePublishErrorsOpen,
+} from './publish-error-events'
 import { isRichPostSpec, toRichMessageInput } from './rich-post'
 import { deleteTelegramMessage, editTelegramMessage, sendTelegramPost } from './telegram-send'
 import { validateSocialPost } from './validate-post'
@@ -35,6 +46,8 @@ export interface MultiTargetResult {
   status: MultiTargetStatus
   externalMessageId?: string
   error?: string
+  /** مرحلة 6: رمز الكتالوج للعرض في لوحة الأخطاء/المحرر. */
+  code?: string
 }
 
 export interface MultiPublishResult {
@@ -85,15 +98,51 @@ interface LoadedTarget {
 
 /** فشل إعدادي على مستوى الهدف: يُعلَّم failed بلا استهلاك محاولة. */
 async function markTargetMisconfigured(
+  postId: string,
   targetId: string,
   error: string,
+  code: string,
+  refs: { destinationId: string | null; botId: string | null } = {
+    destinationId: null,
+    botId: null,
+  },
 ): Promise<MultiTargetResult & { destinationId: string }> {
   const target = await db.socialPostTarget.update({
     where: { id: targetId },
     data: { status: 'failed', error },
     select: { id: true, destinationId: true },
   })
-  return { targetId: target.id, destinationId: target.destinationId, status: 'failed', error }
+
+  // مرحلة 6: نفس الرمز على نطاقات الكيان (بلا إشعار هنا — تجميع المنشور يعالج).
+  await recordPublishError({
+    code,
+    scope: 'post' as PublishErrorScope,
+    refId: postId,
+    message: error,
+  })
+  const def = publishErrorDef(code)
+  await recordPublishError({
+    code,
+    scope: 'destination' as PublishErrorScope,
+    refId: refs.destinationId ?? target.destinationId,
+    message: error,
+  })
+  if (refs.botId) {
+    await recordPublishError({
+      code,
+      scope: 'bot' as PublishErrorScope,
+      refId: refs.botId,
+      message: error,
+    })
+  }
+
+  return {
+    targetId: target.id,
+    destinationId: target.destinationId,
+    status: 'failed',
+    error,
+    code: def.code,
+  }
 }
 
 /**
@@ -122,6 +171,7 @@ export async function publishSocialPostMulti(
       attempts: true,
       maxAttempts: true,
       scheduledFor: true,
+      createdById: true,
     },
   })
 
@@ -198,18 +248,20 @@ export async function publishSocialPostMulti(
   const richSpec = isRichPostSpec(post.richDocument) ? post.richDocument : null
   if (post.richDocument != null && !richSpec) {
     const error = 'مواصفة الرسالة الغنية غير صالحة — عدّل المنشور ثم أعد النشر'
-    await failPostContent(postId, targets, error, actor)
+    await failPostContent(postId, targets, error, actor, 'rich_spec_invalid')
+    const richResults = targets.map((t) => ({
+      targetId: t.id,
+      destinationId: t.destinationId,
+      status: 'failed' as const,
+      error,
+      code: 'rich_spec_invalid' as const,
+    }))
     return {
       ok: false,
       published: 0,
       failed: targets.length,
       skipped: 0,
-      targets: targets.map((t) => ({
-        targetId: t.id,
-        destinationId: t.destinationId,
-        status: 'failed' as const,
-        error,
-      })),
+      targets: richResults,
       error,
     }
   }
@@ -229,18 +281,20 @@ export async function publishSocialPostMulti(
       ? validation.issues.map((issue) => issue.message).join(' | ')
       : 'التعليق مع الوسائط يتجاوز 1024 حرفاً — قصّر النص أو أزل الوسائط'
     const error = `فشل التحقق: ${detail}`
-    await failPostContent(postId, targets, error, actor)
+    await failPostContent(postId, targets, error, actor, 'validation_failed')
+    const targetResults = targets.map((t) => ({
+      targetId: t.id,
+      destinationId: t.destinationId,
+      status: 'failed' as const,
+      error,
+      code: 'validation_failed' as const,
+    }))
     return {
       ok: false,
       published: 0,
       failed: targets.length,
       skipped: 0,
-      targets: targets.map((t) => ({
-        targetId: t.id,
-        destinationId: t.destinationId,
-        status: 'failed' as const,
-        error,
-      })),
+      targets: targetResults,
       error,
     }
   }
@@ -274,7 +328,17 @@ export async function publishSocialPostMulti(
         : dest.archivedAt
           ? 'الوجهة مؤرشفة — أعد ربط الهدف لوجهة نشطة'
           : `الوجهة غير مؤهلة للإرسال (status=${dest.status})`
-      results.push(await markTargetMisconfigured(target.id, error))
+      const code = !dest
+        ? 'destination_missing'
+        : dest.archivedAt
+          ? 'destination_archived'
+          : 'destination_not_qualified'
+      results.push(
+        await markTargetMisconfigured(postId, target.id, error, code, {
+          destinationId: target.destinationId,
+          botId: target.botId,
+        }),
+      )
       continue
     }
 
@@ -309,7 +373,15 @@ export async function publishSocialPostMulti(
       destinationBotId: dest.botId,
     })
     if (!resolved.ok || !resolved.token) {
-      results.push(await markTargetMisconfigured(target.id, resolved.error ?? 'تعذّر حل البوت'))
+      results.push(
+        await markTargetMisconfigured(
+          postId,
+          target.id,
+          resolved.error ?? 'تعذّر حل البوت',
+          resolved.code ?? 'bot_missing',
+          { destinationId: target.destinationId, botId: resolved.botId ?? target.botId },
+        ),
+      )
       continue
     }
 
@@ -367,6 +439,7 @@ export async function publishSocialPostMulti(
     const error = sendResult.error ?? 'فشل الإرسال إلى تليجرام'
     const nextAttempts = target.attempts + 1
     const exhausted = nextAttempts >= post.maxAttempts
+    const transportCode = classifyTransportError(error)
     await db.socialPostTarget.update({
       where: { id: target.id },
       data: {
@@ -386,6 +459,33 @@ export async function publishSocialPostMulti(
         attempts: nextAttempts,
       },
     })
+
+    // مرحلة 6: حدث لكل نطاق (منشور + وجهة + بوت) — أحداث وجهة/بوت تغذي
+    // عدّاد التدهور (3 متتالية) وكذلك لوحة الصحة.
+    await recordPublishError({
+      code: transportCode,
+      scope: 'post' as PublishErrorScope,
+      refId: postId,
+      message: error,
+      attempt: nextAttempts,
+    })
+    await recordPublishError({
+      code: transportCode,
+      scope: 'destination' as PublishErrorScope,
+      refId: target.destinationId,
+      message: error,
+      attempt: nextAttempts,
+    })
+    if (resolved.botId) {
+      await recordPublishError({
+        code: transportCode,
+        scope: 'bot' as PublishErrorScope,
+        refId: resolved.botId,
+        message: error,
+        attempt: nextAttempts,
+      })
+    }
+
     logger.warn(
       `[social-publish-multi] target ${target.id} of post ${postId} failed (attempt ${nextAttempts}/${post.maxAttempts}): ${error}`,
     )
@@ -394,6 +494,7 @@ export async function publishSocialPostMulti(
       destinationId: target.destinationId,
       status: exhausted ? 'failed' : 'skipped',
       error,
+      code: transportCode,
     })
   }
 
@@ -430,6 +531,22 @@ export async function publishSocialPostMulti(
         lastError: null,
       },
     })
+
+    // مرحلة 6: نجاح كامل ← حالة الأحداث المفتوحة تلقائياً + إشعار خفيف
+    // قابِل للكتم للمؤلف في التطبيق فقط.
+    const destinationIds = targets.map((t) => t.destinationId)
+    const botIds = [...new Set(targets.map((t) => t.botId).filter((x): x is string => Boolean(x)))]
+    await resolvePublishErrorsOpen([
+      { scope: 'post' as PublishErrorScope, refId: postId },
+      ...destinationIds.map((id) => ({ scope: 'destination' as PublishErrorScope, refId: id })),
+      ...botIds.map((id) => ({ scope: 'bot' as PublishErrorScope, refId: id })),
+    ])
+    await notifyPublishSuccess({
+      postId,
+      postTitle: post.title,
+      authorId: post.createdById ?? null,
+      targetCount: targets.length,
+    })
   } else if (allFailed) {
     await db.socialPost.update({
       where: { id: postId },
@@ -438,6 +555,17 @@ export async function publishSocialPostMulti(
         lastError: aggregated,
         attempts: attempted ? { increment: 1 } : undefined,
       },
+    })
+
+    // مرحلة 6: فشل نهائي لكل الأهداف ← إشعار المؤلف + المدراء.
+    const firstCode = results.find((r) => r.code)?.code
+    const def = publishErrorDef(firstCode)
+    await notifyPublishFailure({
+      postId,
+      postTitle: post.title,
+      errorText: aggregated ?? 'فشل النشر على كل الوجهات',
+      code: firstCode,
+      fixAr: def.fixAr,
     })
   } else if (attempted || aggregated) {
     await db.socialPost.update({
@@ -472,6 +600,7 @@ async function failPostContent(
   targets: LoadedTarget[],
   error: string,
   actor: PublishActor | undefined,
+  code = 'validation_failed',
 ): Promise<void> {
   await db.socialPost.update({
     where: { id: postId },
@@ -481,6 +610,22 @@ async function failPostContent(
     where: { postId, status: { in: ['pending', 'failed'] } },
     data: { status: 'failed', error },
   })
+
+  // مرحلة 6: حدث + إشعار (فشل نهائي أيقدها الكتالوج).
+  const def = publishErrorDef(code)
+  await recordPublishError({
+    code,
+    scope: 'post' as PublishErrorScope,
+    refId: postId,
+    message: error,
+  })
+  await notifyPublishFailure({
+    postId,
+    errorText: error,
+    code,
+    fixAr: def.fixAr,
+  })
+
   if (actor?.id) {
     await logAction({
       userId: actor.id,
