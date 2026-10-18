@@ -93,6 +93,7 @@ interface LoadedTarget {
     archivedAt: Date | null
     botId: string | null
     messageThreadId: number | null
+    chatType: string
   } | null
 }
 
