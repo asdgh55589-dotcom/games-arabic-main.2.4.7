@@ -848,10 +848,17 @@ async function proxyInner(req: NextRequest) {
   if (pathname.startsWith('/creator')) {
     const rolePayload = await getRoleFromCookie(req)
     if (!rolePayload?.role) {
-      const loginUrl = new URL('/login', req.url)
-      loginUrl.searchParams.set('next', pathname)
-      const redirectRes = NextResponse.redirect(loginUrl, 307)
+      // كوكي ga_admin_role ثابت 7 أيام ولا يُجدَّد، بينما جلسة Supabase
+      // تُجدَّد تلقائياً. عند انتهاء الكوكي يبقى المستخدم مسجّلاً لكنه يُطرد
+      // هنا. إن كانت جلسته Supabase صالحة → قفزة علاج تعيد إصدار الكوكي من DB
+      // ثم ترجّعه لنفس الصفحة، بدل إجباره على تسجيل دخول يدوي.
+      const bounceTo = user
+        ? new URL('/api/auth/heal-role', req.url)
+        : new URL('/login', req.url)
+      bounceTo.searchParams.set('next', pathname)
+      const redirectRes = NextResponse.redirect(bounceTo, 307)
       copyCookies(supabaseResponse, redirectRes)
+      redirectRes.headers.set('x-auth-reason', user ? 'role_cookie_stale' : 'no_session')
       return withRequestId(redirectRes, requestId)
     }
     const CREATOR_ONLY = ['creator', 'publisher', 'moderator', 'admin', 'manager', 'owner']
