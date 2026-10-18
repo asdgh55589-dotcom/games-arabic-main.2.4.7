@@ -2103,6 +2103,7 @@ model SocialPostTemplateVersion {
 
   template SocialPostTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
+  @@unique([templateId, version])
   @@index([templateId])
   @@map("social_post_template_versions")
 }

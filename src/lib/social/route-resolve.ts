@@ -69,11 +69,16 @@ export async function resolvePlatformRoutes(
   let excluded = 0
   for (const rule of rules) {
     const dest = rule.destination
+    const effectiveThread = rule.threadId ?? dest?.messageThreadId ?? null
+    const threadOk =
+      effectiveThread == null ||
+      (dest != null && (dest.chatType === 'group' || dest.chatType === 'supergroup'))
     const usable =
       dest &&
       !dest.archivedAt &&
       dest.status === 'active' &&
       dest.verificationStatus === 'verified' &&
+      threadOk &&
       (!rule.botId || (rule.bot && rule.bot.status === 'active'))
     if (!usable || !dest) {
       excluded += 1

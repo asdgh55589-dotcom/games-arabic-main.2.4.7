@@ -34,11 +34,9 @@ export async function resolveTargetBot(input: {
   destinationBotId?: string | null
 }): Promise<BotResolveResult> {
   const tryBotId = input.targetBotId ?? input.destinationBotId ?? null
-  const source: BotResolveSource = input.targetBotId
-    ? 'target'
-    : input.destinationBotId
-      ? 'destination'
-      : 'env'
+  // M3: مصدر التوكن يُحدَّد من whichever id actually used (null/undefined aware).
+  const source: BotResolveSource =
+    input.targetBotId != null ? 'target' : input.destinationBotId != null ? 'destination' : 'env'
 
   if (tryBotId) {
     const bot = await db.socialTelegramBot.findUnique({

@@ -58,23 +58,32 @@ export async function snapshotTemplateVersion(
   actor: TemplateVersionActor = {},
   changeNote: string,
 ): Promise<number> {
-  const version = await nextVersionNumber(template.id)
-  await db.socialPostTemplateVersion.create({
-    data: {
-      templateId: template.id,
-      version,
-      changedBy: actor.id ?? null,
-      changeNote,
-      name: template.name,
-      title: template.title,
-      body: template.body,
-      parseMode: template.parseMode,
-      richDocument: (template.richDocument ?? undefined) as never,
-      mediaUrl: template.mediaUrl,
-      variables: (template.variables ?? []) as never,
-    },
-  })
-  return version
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const version = await nextVersionNumber(template.id)
+    try {
+      await db.socialPostTemplateVersion.create({
+        data: {
+          templateId: template.id,
+          version,
+          changedBy: actor.id ?? null,
+          changeNote,
+          name: template.name,
+          title: template.title,
+          body: template.body,
+          parseMode: template.parseMode,
+          richDocument: (template.richDocument ?? undefined) as never,
+          mediaUrl: template.mediaUrl,
+          variables: (template.variables ?? []) as never,
+        },
+      })
+      return version
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code
+      if (code === 'P2002' && attempt === 0) continue
+      throw err
+    }
+  }
+  throw new Error('تعذّر إنشاء إصدار القالب — تعارض تزامن')
 }
 
 /** إنشاء قالب جديد (الخلود: isArchived=false دائماً) مع لقطة v1. */

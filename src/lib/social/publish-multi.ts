@@ -197,6 +197,7 @@ export async function publishSocialPostMulti(
           archivedAt: true,
           botId: true,
           messageThreadId: true,
+          chatType: true,
         },
       },
     },
@@ -315,8 +316,24 @@ export async function publishSocialPostMulti(
       continue
     }
 
-    // أهلية الوجهة (مطابق لمسار publish.ts الأحادي).
     const dest = target.destination
+    const effectiveThread = target.threadId ?? dest?.messageThreadId ?? null
+    if (
+      dest &&
+      effectiveThread != null &&
+      dest.chatType !== 'group' &&
+      dest.chatType !== 'supergroup'
+    ) {
+      const error = 'الموضوع مربوط بوجهة ليست مجموعة منتدى — أزل الموضوع أو نفّذ فحص الصحة'
+      const code = 'destination_thread_invalid'
+      results.push(
+        await markTargetMisconfigured(postId, target.id, error, code, {
+          destinationId: target.destinationId,
+          botId: target.botId,
+        }),
+      )
+      continue
+    }
     if (
       !dest ||
       dest.archivedAt ||

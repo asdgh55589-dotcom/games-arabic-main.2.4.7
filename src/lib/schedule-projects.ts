@@ -270,9 +270,10 @@ async function checkSnapshotTarget(target: ScheduleTargetSnapshot): Promise<stri
   if (target.botId) {
     const bot = await db.socialTelegramBot.findUnique({
       where: { id: target.botId },
-      select: { id: true },
+      select: { id: true, status: true },
     })
     if (!bot) return 'البوت المحدد غير موجود'
+    if (bot.status !== 'active') return 'البوت المحدد غير نشط'
   }
   return null
 }
@@ -530,7 +531,7 @@ export async function dryRunScheduleCheck(input: DryRunInput): Promise<{
         where: { id: botId },
         select: { status: true },
       })
-      if (!bot || bot.status !== 'active') {
+      if (bot?.status !== 'active') {
         allOk = false
         checks.push({ label, ok: false, message: 'البوت غير موجود أو غير نشط' })
         continue

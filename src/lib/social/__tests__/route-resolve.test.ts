@@ -95,7 +95,7 @@ describe('resolvePlatformRoutes', () => {
 
   it('يرث thread الوجهة عند غياب thread القاعدة', async () => {
     mockFindMany.mockResolvedValue([
-      rule({ id: 't1', targetType: 'topic', destination: dest({ messageThreadId: 9 }) }),
+      rule({ id: 't1', targetType: 'topic', destination: dest({ chatType: 'supergroup', messageThreadId: 9 }) }),
     ])
 
     const out = await resolvePlatformRoutes('X360')

@@ -29,6 +29,10 @@ export interface SocialPostDto {
   siteMode: string | null
   createdAt: Date
   updatedAt: Date
+  /** M1 — وجهة الإرسال (إن وُجدت) لعرضها في الواجهة. */
+  destination?: { id: string; chatId: string; title: string | null } | null
+  /** M1 — القالب المرتبط (إن وُجد). */
+  template?: { id: string; name: string } | null
 }
 
 export function serializePost(post: Record<string, unknown>): SocialPostDto {
@@ -54,6 +58,9 @@ export function serializePost(post: Record<string, unknown>): SocialPostDto {
     siteMode: (post.siteMode as string | null) ?? null,
     createdAt: post.createdAt as Date,
     updatedAt: post.updatedAt as Date,
+    destination:
+      (post.destination as { id: string; chatId: string; title: string | null } | null) ?? null,
+    template: (post.template as { id: string; name: string } | null) ?? null,
   }
 }
 

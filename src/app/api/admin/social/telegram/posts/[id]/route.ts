@@ -49,7 +49,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     await requireAdmin()
     const { id } = await ctx.params
 
-    const post = await db.socialPost.findUnique({ where: { id } })
+    const post = await db.socialPost.findUnique({
+      where: { id },
+      include: {
+        destination: { select: { id: true, chatId: true, title: true } },
+        template: { select: { id: true, name: true } },
+      },
+    })
     if (!post) return notFound('المنشور غير موجود', _req.nextUrl.pathname)
 
     return ok(serializePost(post as unknown as Record<string, unknown>))
