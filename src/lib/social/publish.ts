@@ -21,6 +21,7 @@ import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import type { PublishErrorScope } from '@/lib/publish-errors'
 import { classifyTransportError, publishErrorDef } from '@/lib/publish-errors'
+import { botTokenFingerprint, throttleBotSend } from './bot-resolve'
 import { decryptBotToken } from './bot-token'
 import {
   notifyPublishFailure,
@@ -110,6 +111,8 @@ async function resolveTarget(post: {
         verificationStatus: true,
         messageThreadId: true,
         botId: true,
+        archivedAt: true,
+        chatType: true,
       },
     })
     if (!destination) {
@@ -117,6 +120,26 @@ async function resolveTarget(post: {
         target: null,
         error: 'الوجهة المرتبطة بالمنشور غير موجودة',
         code: 'destination_missing',
+        refId: post.destinationId,
+      }
+    }
+    if (destination.archivedAt) {
+      return {
+        target: null,
+        error: 'الوجهة مؤرشفة — أعد ربط المنشور بوجهة نشطة',
+        code: 'destination_archived',
+        refId: post.destinationId,
+      }
+    }
+    if (
+      destination.messageThreadId != null &&
+      destination.chatType !== 'group' &&
+      destination.chatType !== 'supergroup'
+    ) {
+      return {
+        target: null,
+        error: 'الموضوع مربوط بوجهة ليست مجموعة منتدى — أزل الموضوع أو نفّذ فحص الصحة',
+        code: 'destination_thread_invalid',
         refId: post.destinationId,
       }
     }
@@ -386,6 +409,9 @@ export async function publishSocialPost(
       reason: 'in_progress',
     }
   }
+
+  const resolvedToken = resolved.target.botToken || process.env.TELEGRAM_BOT_TOKEN || ''
+  if (resolvedToken) await throttleBotSend(botTokenFingerprint(resolvedToken))
 
   const sendResult = await sendTelegramPost({
     target: resolved.target,

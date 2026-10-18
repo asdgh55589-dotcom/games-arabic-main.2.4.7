@@ -90,6 +90,10 @@ export async function GET(req: NextRequest) {
     const [posts, total] = await Promise.all([
       db.socialPost.findMany({
         where,
+        include: {
+          destination: { select: { id: true, chatId: true, title: true } },
+          template: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
