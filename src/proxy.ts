@@ -38,7 +38,9 @@ const JWT_SECRET = (() => {
     throw new Error('JWT_SECRET environment variable is required')
   }
   if (secret.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters (generate with: openssl rand -hex 32)')
+    throw new Error(
+      'JWT_SECRET must be at least 32 characters (generate with: openssl rand -hex 32)',
+    )
   }
   return new TextEncoder().encode(secret)
 })()
@@ -852,9 +854,7 @@ async function proxyInner(req: NextRequest) {
       // تُجدَّد تلقائياً. عند انتهاء الكوكي يبقى المستخدم مسجّلاً لكنه يُطرد
       // هنا. إن كانت جلسته Supabase صالحة → قفزة علاج تعيد إصدار الكوكي من DB
       // ثم ترجّعه لنفس الصفحة، بدل إجباره على تسجيل دخول يدوي.
-      const bounceTo = user
-        ? new URL('/api/auth/heal-role', req.url)
-        : new URL('/login', req.url)
+      const bounceTo = user ? new URL('/api/auth/heal-role', req.url) : new URL('/login', req.url)
       bounceTo.searchParams.set('next', pathname)
       const redirectRes = NextResponse.redirect(bounceTo, 307)
       copyCookies(supabaseResponse, redirectRes)
