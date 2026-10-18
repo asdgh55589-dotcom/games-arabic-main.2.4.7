@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import {
   conflict,
+  fail,
   forbidden,
   internalError,
   notFound,
@@ -12,6 +13,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
 import {
@@ -273,6 +275,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     logger.error({ err }, '[creator/team/invites POST] failed')
-    return internalError('فشل إنشاء الدعوة')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

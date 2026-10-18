@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
@@ -11,6 +11,7 @@ import {
   recordMfaFailure,
 } from '@/lib/mfa-defense'
 import { verifyMFAToken } from '@/lib/mfa-token'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
 
 export async function POST(req: NextRequest) {
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     logger.error('[mfa login] failed:', err)
-    return internalError('حدث خطأ أثناء التحقق')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

@@ -1,9 +1,17 @@
 import type { NextRequest } from 'next/server'
-import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import {
+  fail,
+  forbidden,
+  internalError,
+  ok,
+  unauthorized,
+  validationFail,
+} from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
+import { isAuthDateValid, verifyTelegramAuth } from '@/lib/telegram-verify'
 
 interface RouteParams {
   params: Promise<{ username: string }>
@@ -103,7 +111,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return ok({ success: true, message: 'تم ربط حساب Telegram بنجاح' })
   } catch (err) {
     logger.error('[link-telegram] failed:', err)
-    return internalError('حدث خطأ أثناء ربط الحساب')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 
@@ -133,7 +142,8 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return ok({ success: true, message: 'تم إلغاء ربط Telegram بنجاح' })
   } catch (err) {
     logger.error('[unlink-telegram] failed:', err)
-    return internalError('حدث خطأ أثناء إلغاء الربط')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 

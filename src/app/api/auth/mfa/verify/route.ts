@@ -1,10 +1,11 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { encryptRecoveryCodes, generateRecoveryCodes } from '@/lib/recovery-codes'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true, recoveryCodes })
   } catch (err) {
     logger.error('[mfa verify] failed:', err)
-    return internalError('حدث خطأ أثناء التحقق')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

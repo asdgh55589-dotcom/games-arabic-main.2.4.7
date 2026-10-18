@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import {
   conflict,
+  fail,
   forbidden,
   internalError,
   notFound,
@@ -11,6 +12,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { can } from '@/lib/permissions'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { slugify } from '@/lib/utils'
@@ -139,7 +141,8 @@ export async function POST(req: NextRequest) {
       return conflict('تعارض في بيانات الفريق — حاول مجدداً')
     }
     logger.error({ err }, '[creator/team POST] failed')
-    return internalError('فشل إنشاء الفريق')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 
@@ -202,6 +205,7 @@ export async function PATCH(req: NextRequest) {
     return ok({ team, message: 'تم حفظ إعدادات الفريق' })
   } catch (err) {
     logger.error({ err }, '[creator/team PATCH] failed')
-    return internalError('فشل حفظ إعدادات الفريق')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

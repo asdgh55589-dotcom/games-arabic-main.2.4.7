@@ -4,7 +4,6 @@ import {
   accountLocked,
   fail,
   forbidden,
-  internalError,
   ok,
   rateLimited,
   unauthorized,
@@ -34,6 +33,7 @@ import {
   sleep,
   specificErrorAllowed,
 } from '@/lib/login-defense'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { LoginSchema } from '@/lib/schemas'
 import { hashSecurityKey, isSecurityKeyExpired, verifySecurityKey } from '@/lib/security-key'
@@ -383,6 +383,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error({ err }, '[auth/login] failed')
     reportError(err, { route: 'POST /api/auth/login' })
-    return internalError('حدث خطأ في الخادم أثناء تسجيل الدخول — حاول مجدداً')
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/auth/login'
+    })
+    return fail(code, message, status)
   }
 }

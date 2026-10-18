@@ -1,11 +1,12 @@
 import { createHash } from 'crypto'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { rateLimit } from '@/lib/rate-limit'
 
@@ -151,7 +152,8 @@ export async function POST(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     logger.error({ err }, '[verify-email POST] failed')
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 
@@ -182,6 +184,7 @@ export async function DELETE() {
     return ok({ success: true, cleared: cleared.count })
   } catch (err) {
     logger.error({ err }, '[verify-email DELETE] failed')
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
