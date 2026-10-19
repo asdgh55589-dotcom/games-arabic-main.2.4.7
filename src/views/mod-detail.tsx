@@ -52,7 +52,6 @@ import { ModCard, ModCardSkeleton } from '@/components/mod-card'
 import { ModComments } from '@/components/mod-comments'
 import { CommentSectionBeacon } from '@/components/comment-section-beacon'
 import { ModDownloadSection } from '@/components/mod-download-section'
-import { ModReactions } from '@/components/mod-reactions'
 import { ModGallery } from '@/components/mod-gallery'
 import { ModTranslationTeam } from '@/components/mod-translation-team'
 import { ModVideos } from '@/components/mod-videos'
@@ -879,7 +878,28 @@ export function ModDetailPage() {
                   </span>
 
                   {/* الأزرار — مجمّعة في جهة واحدة */}
-                  <div className="ms-auto flex items-center gap-2 skew-x-[0.4deg]">
+                  <div className="ms-auto flex items-center gap-0 skew-x-[0.4deg]">
+                    {(['fire', 'sparkle', 'thumbsup', 'thumbsdown'] as const).map((r) => {
+                      const emoji = r === 'fire' ? '🔥' : r === 'sparkle' ? '✨' : r === 'thumbsup' ? '👍' : '👎'
+                      const label = r === 'fire' ? 'ممتاز' : r === 'sparkle' ? 'جيد جداً' : r === 'thumbsup' ? 'يصلح' : 'لا يُنصح'
+                      const count = reactions[r]
+                      const active = userReaction === r
+                      return (
+                        <Button
+                          key={r}
+                          onClick={() => onReact(r)}
+                          className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap ${
+                            active
+                              ? 'bg-primary text-white border-primary cursor-pointer'
+                              : 'bg-card text-foreground border-border hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
+                          }`}
+                        >
+                          <span className="text-base leading-none">{emoji}</span>
+                          <span className="tabular-nums">{formatNumber(count)}</span>
+                          <span className="sr-only">{label}</span>
+                        </Button>
+                      )
+                    })}
                     <Button
                       onClick={handleBookmark}
                       disabled={bookmarkPending}
@@ -919,12 +939,6 @@ export function ModDetailPage() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* ===== تقييم التعريب (RAWG-style) ===== */}
-              <div className="mt-4 rounded-none border-[3px] border-border bg-card px-4 py-3 shadow-[4px_4px_0_0_var(--border)] -skew-x-[0.4deg]">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-foreground/60">تقييم التعريب</p>
-                <ModReactions reactions={reactions} userReaction={userReaction} onReact={onReact} />
               </div>
 
               {/* ===== الأقسام (Tabs) — قسم مستقل بذاته ===== */}
