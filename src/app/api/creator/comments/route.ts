@@ -3,11 +3,19 @@ import { ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { creatorListComments } from '@/lib/comments/repository'
 import { CommentFilterSchema, parseFilterParam } from '@/lib/creator-query'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return error!
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:comments:${user.id}`,
+  })
+  if (limited) return limited
 
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
@@ -29,5 +37,5 @@ export async function GET(req: NextRequest) {
       total,
       totalPages: Math.ceil(total / limit) || 1,
     },
-  })
+  }, { headers: { 'Cache-Control': 'private, max-age=30' } })
 }

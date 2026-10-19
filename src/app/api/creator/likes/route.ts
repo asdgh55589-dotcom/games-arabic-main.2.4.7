@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const RANGES = [7, 30, 90] as const
 
@@ -17,6 +18,13 @@ export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return validationFail('يجب تسجيل الدخول')
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:likes:${user.id}`,
+  })
+  if (limited) return limited
 
   const range = Number(new URL(req.url).searchParams.get('range')) || 30
   if (!RANGES.includes(range as (typeof RANGES)[number])) {
@@ -119,5 +127,5 @@ export async function GET(req: NextRequest) {
       (a, b) => b.endorsements + b.commentLikes + b.ratings - (a.endorsements + a.commentLikes + a.ratings),
     ),
     recent,
-  })
+  }, { headers: { 'Cache-Control': 'private, max-age=30' } })
 }

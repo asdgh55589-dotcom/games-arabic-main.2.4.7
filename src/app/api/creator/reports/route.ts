@@ -3,6 +3,7 @@ import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canReadOwnReports } from '@/lib/permissions'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { parseFilterParam, ReportStatusFilterSchema } from '@/lib/creator-query'
 
 // GET /api/creator/reports?status=&page=&limit= — OUTCOME-ONLY follow-up.
@@ -17,6 +18,13 @@ export async function GET(req: NextRequest) {
   if (!canReadOwnReports(user.role)) {
     return forbidden('لا تملك صلاحية قراءة البلاغات')
   }
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:reports:${user.id}`,
+  })
+  if (limited) return limited
 
   const params = new URL(req.url).searchParams
   const statusParsed = parseFilterParam(params, 'status', ReportStatusFilterSchema, 'all')
@@ -92,5 +100,5 @@ export async function GET(req: NextRequest) {
   return ok({
     reports,
     pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
-  })
+  }, { headers: { 'Cache-Control': 'private, max-age=30' } })
 }

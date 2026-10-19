@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
@@ -9,6 +10,13 @@ export async function GET(req: NextRequest) {
     const { user, error } = await requireCreatorStudio(req)
     if (error) return error
     if (!user) return forbidden('يجب تسجيل الدخول')
+
+    const limited = await rateLimitMiddleware(req, {
+      limit: 60,
+      window: 60,
+      keyPrefix: `creator:stats:${user.id}`,
+    })
+    if (limited) return limited
 
     const authorWhere = { authorId: user.id }
     const publishedWhere = { authorId: user.id, workflowStatus: 'PUBLISHED' }
@@ -83,7 +91,7 @@ export async function GET(req: NextRequest) {
         createdAt: m.createdAt,
         isOriginalWork: m.isOriginalWork,
       })),
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error('[creator/stats GET] failed:', err)
     return internalError('فشل جلب الإحصائيات')
