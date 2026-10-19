@@ -146,6 +146,9 @@ function ModFormInner({ modId }: ModFormProps) {
   const [titleId, setTitleId] = useState('')
   const [mediaId, setMediaId] = useState('')
   const [supportedFormat, setSupportedFormat] = useState('')
+  const [trailerUrl, setTrailerUrl] = useState('')
+  const [supportUrl, setSupportUrl] = useState('')
+  const [extrasLabel, setExtrasLabel] = useState('')
   const [systemFirmware, setSystemFirmware] = useState('')
   const [gameUpdateVersion, setGameUpdateVersion] = useState('')
   const [deviceModel, setDeviceModel] = useState('')
@@ -262,6 +265,9 @@ function ModFormInner({ modId }: ModFormProps) {
         setTitleId((m as any).titleId || '')
         setMediaId((m as any).mediaId || '')
         setSupportedFormat((m as any).supportedFormat || '')
+        setTrailerUrl((m as any).trailerUrl || '')
+        setSupportUrl((m as any).supportUrl || '')
+        setExtrasLabel((m as any).extrasLabel || '')
         setSystemFirmware((m as any).systemFirmware || '')
         setGameUpdateVersion((m as any).gameUpdateVersion || '')
         setDeviceModel((m as any).deviceModel || '')
@@ -610,6 +616,9 @@ function ModFormInner({ modId }: ModFormProps) {
       titleId: titleId || null,
       mediaId: mediaId || null,
       supportedFormat: supportedFormat || null,
+      trailerUrl: trailerUrl || null,
+      supportUrl: supportUrl || null,
+      extrasLabel: extrasLabel || null,
       systemFirmware: systemFirmware || null,
       gameUpdateVersion: gameUpdateVersion || null,
       deviceModel: deviceModel || null,
@@ -845,6 +854,24 @@ function ModFormInner({ modId }: ModFormProps) {
             setSummary={setSummary}
             userRole={userRole}
           />
+
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">روابط إضافية</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط التريلر (YouTube/Vimeo)</label>
+                <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={trailerUrl} onChange={(e) => setTrailerUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط دعم الفريق (PayPal/Ko-fi/...)</label>
+                <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={supportUrl} onChange={(e) => setSupportUrl(e.target.value)} placeholder="https://ko-fi.com/..." />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
+            </div>
+          </div>
 
           <PlatformFieldsSection
             platform={platform}

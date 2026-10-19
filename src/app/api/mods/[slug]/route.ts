@@ -85,6 +85,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       minAndroidVersion: true,
       // عنوان قسم الإضافات الخارجية (null = الافتراضي "ملفات إضافية")
       extrasLabel: true,
+      trailerUrl: true,
+      supportUrl: true,
       workflowStatus: true,
       scheduledAt: true,
       releaseDate: true,

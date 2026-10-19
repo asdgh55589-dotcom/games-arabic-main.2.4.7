@@ -703,6 +703,24 @@ export function ModDetailMobile({
             </Button>
           )
         })}
+        {mod?.trailerUrl && (
+          <Button
+            onClick={() => window.open(mod.trailerUrl!, '_blank', 'noopener,noreferrer')}
+            className="flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all bg-card text-foreground border-border hover:bg-accent"
+          >
+            <Play className="h-3.5 w-3.5" />
+            تريلر
+          </Button>
+        )}
+        {mod?.supportUrl && (
+          <Button
+            onClick={() => window.open(mod.supportUrl!, '_blank', 'noopener,noreferrer')}
+            className="flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all bg-rose-600 text-white border-rose-600"
+          >
+            <Heart className="h-3.5 w-3.5 fill-current" />
+            دعم الفريق
+          </Button>
+        )}
         <Button
           onClick={handleBookmark}
           disabled={bookmarkPending}
