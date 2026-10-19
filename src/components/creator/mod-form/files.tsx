@@ -786,6 +786,122 @@ export function ModFormFiles(p: Props) {
                   />
                 </Field>
 
+                <Field label="عنوان قسم الإضافات (اختياري)">
+                  <Input
+                    value={file.extrasLabel || ''}
+                    onChange={(e) =>
+                      p.setFiles((prev) =>
+                        prev.map((f, idx) => (idx === i ? { ...f, extrasLabel: e.target.value } : f)),
+                      )
+                    }
+                    placeholder="ملفات إضافية"
+                  />
+                </Field>
+                <Field label="الملف الأب (تداخل)">
+                  <select
+                    value={file.parentId == null ? '' : String(file.parentId)}
+                    onChange={(e) =>
+                      p.setFiles((prev) =>
+                        prev.map((f, idx) =>
+                          idx === i ? { ...f, parentId: e.target.value === '' ? null : e.target.value } : f,
+                        ),
+                      )
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    <option value="">— بدون (ملف رئيسي) —</option>
+                    {p.files.map((pf, pi) => {
+                      if (pi === i) return null
+                      return (
+                        <option key={pi} value={String(pi)}>
+                          {pf.title || `ملف ${pi + 1}`}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </Field>
+
+                {/* site links (extras) for this file */}
+                <div className="mt-3 rounded border border-border/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">روابط مواقع (إضافات متداخلة)</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 min-h-[44px]"
+                      onClick={() =>
+                        p.setFiles((prev) =>
+                          prev.map((f, idx) =>
+                            idx === i ? { ...f, siteLinks: [...(f.siteLinks || []), { url: '', siteName: '', pageTitle: '', domain: null }] } : f,
+                          ),
+                        )
+                      }
+                    >
+                      <Plus className="me-1 h-3 w-3" /> إضافة
+                    </Button>
+                  </div>
+                  {(file.siteLinks || []).map((sl, j) => (
+                    <div key={j} className="flex items-center gap-2">
+                      <Input
+                        value={sl.url}
+                        onChange={(e) =>
+                          p.setFiles((prev) =>
+                            prev.map((f, idx) =>
+                              idx === i
+                                ? { ...f, siteLinks: (f.siteLinks || []).map((x, lidx) => lidx === j ? { ...x, url: e.target.value } : x) }
+                                : f,
+                            ),
+                          )
+                        }
+                        placeholder="https://..."
+                        className="flex-1"
+                      />
+                      <Input
+                        value={sl.siteName || ''}
+                        onChange={(e) =>
+                          p.setFiles((prev) =>
+                            prev.map((f, idx) =>
+                              idx === i
+                                ? { ...f, siteLinks: (f.siteLinks || []).map((x, lidx) => lidx === j ? { ...x, siteName: e.target.value } : x) }
+                                : f,
+                            ),
+                          )
+                        }
+                        placeholder="اسم الموقع"
+                        className="w-28"
+                      />
+                      <Input
+                        value={sl.pageTitle || ''}
+                        onChange={(e) =>
+                          p.setFiles((prev) =>
+                            prev.map((f, idx) =>
+                              idx === i
+                                ? { ...f, siteLinks: (f.siteLinks || []).map((x, lidx) => lidx === j ? { ...x, pageTitle: e.target.value } : x) }
+                                : f,
+                            ),
+                          )
+                        }
+                        placeholder="عنوان الصفحة"
+                        className="w-32"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-400 shrink-0"
+                        onClick={() =>
+                          p.setFiles((prev) =>
+                            prev.map((f, idx) =>
+                              idx === i ? { ...f, siteLinks: (f.siteLinks || []).filter((_, lidx) => lidx !== j) } : f,
+                            ),
+                          )
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
                 {/* file links */}
                 <div className="mt-3">
                   <div className="mb-2 flex items-center justify-between">

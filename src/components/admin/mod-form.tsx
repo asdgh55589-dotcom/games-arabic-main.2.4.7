@@ -5,7 +5,7 @@
 // admin APIs, plus admin-only extras (source section, workflow, versions).
 'use client'
 
-import { Clock, FileArchive, Loader2, Plus, Save } from 'lucide-react'
+import { Clock, FileArchive, Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -158,6 +158,7 @@ function ModFormInner({ modId }: ModFormProps) {
   const [minAndroidVersion, setMinAndroidVersion] = useState('')
 
   const [files, setFiles] = useState<DownloadFile[]>([])
+  const [siteLinks, setSiteLinks] = useState<any[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [contactLinks, setContactLinks] = useState<ContactLink[]>([])
   const [videoGroups, setVideoGroups] = useState<
@@ -291,6 +292,8 @@ function ModFormInner({ modId }: ModFormProps) {
                 fileSize: f.fileSize,
                 fileFormat: f.fileFormat,
                 links: f.links?.map((l: any) => ({ url: l.url, label: l.label })) || [],
+                parentId: f.parentId ? String((m.files || []).findIndex((x: any) => x.id === f.parentId)) : null,
+                extrasLabel: f.extrasLabel || null,
               }))
             : [],
         )
@@ -871,6 +874,25 @@ function ModFormInner({ modId }: ModFormProps) {
               <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
               <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
             </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">روابط مواقع متوافقة (إضافات)</h3>
+            <div className="space-y-2">
+              {siteLinks.map((sl: any, i: number) => (
+                <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
+                  <Input value={sl.url} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
+                  <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
+                  <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => setSiteLinks((p: any[]) => p.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSiteLinks((p: any[]) => [...p, { url: '', siteName: '', pageTitle: '', domain: null }])}>
+              <Plus className="me-1 h-3 w-3" /> إضافة رابط موقع
+            </Button>
           </div>
 
           <PlatformFieldsSection

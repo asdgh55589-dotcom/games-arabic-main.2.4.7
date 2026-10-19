@@ -48,6 +48,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
           include: { videos: { orderBy: { order: 'asc' } } },
         },
         customTabs: { orderBy: { order: 'asc' } },
+        siteLinks: { orderBy: { order: 'asc' } },
         workflowHistory: {
           orderBy: { changedAt: 'desc' },
           take: 20,
