@@ -129,8 +129,8 @@ export function ModDetailMobile({
   const bannerImage = gallery[0] || mod.imageUrl || FALLBACK_GAME_IMAGE
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
-  const [endorsed, setEndorsed] = useState(false)
-  const [endorsementCount, setEndorsementCount] = useState<number | null>(null)
+  const [userReaction, setUserReaction] = useState<string | null>(null)
+  const [reactions, setReactions] = useState<{ fire: number; sparkle: number; thumbsup: number; thumbsdown: number }>({ fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 })
   const [hasReported, setHasReported] = useState(false)
   const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
   const { user } = useAuth()
@@ -271,7 +271,6 @@ export function ModDetailMobile({
   useEffect(() => {
     if (!mod?.slug) return
     try {
-      if (localStorage.getItem(`ga_endorsed_${mod.slug}`) === '1') setEndorsed(true)
       if (localStorage.getItem(`ga_reported_mod_${mod.id}`) === '1') setHasReported(true)
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
@@ -279,38 +278,41 @@ export function ModDetailMobile({
     fetch(`/api/mods/${mod.slug}/endorse`)
       .then((r) => r.json())
       .then((j) => {
-        if (j?.data?.endorsed) {
-          setEndorsed(true)
-          try {
-            localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-          } catch {
-            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-          }
+        if (j?.data) {
+          setUserReaction(j.data.reaction ?? null)
+          if (j.data.reactions) setReactions(j.data.reactions)
         }
       })
       .catch(() => {})
   }, [mod?.slug, mod?.id])
 
-  const onEndorse = async () => {
-    if (endorsed) {
+  useEffect(() => {
+    if (mod?.reactions) {
+      const allZero = reactions.fire === 0 && reactions.sparkle === 0 && reactions.thumbsup === 0 && reactions.thumbsdown === 0
+      if (allZero) setReactions(mod.reactions)
+    }
+  }, [mod?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onReact = async (reaction: string) => {
+    if (!viewer) {
       toast({
-        title: 'لقد قمت بالإعجاب بهذا التعريب مسبقاً',
-        description: 'لا يمكنك الإعجاب مرة أخرى',
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول للإعجاب',
+        variant: 'destructive',
       })
+      router.push('/login')
       return
     }
     try {
       const result = await apiFetch<EndorseResponse>(`/api/mods/${mod.slug}/endorse`, {
         method: 'POST',
+        body: JSON.stringify({ reaction }),
       })
-      setEndorsed(result.data.endorsed)
-      setEndorsementCount(result.data.endorsements)
-      if (result.data.endorsed) {
-        try {
-          localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail mobile operation
-        }
+      setUserReaction(result.data.reaction)
+      setReactions(result.data.reactions)
+      if (result.data.reaction === null) {
+        toast({ title: 'تم إلغاء التأييد', description: 'تمت إزالة إعجابك' })
+      } else {
         toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
@@ -679,18 +681,28 @@ export function ModDetailMobile({
       </div>
 
       {/* ===== أزرار قصاد بعض: لايكات / حفظ / إبلاغ — مصغر ===== */}
-      <div className="mx-4 mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
-        <Button
-          onClick={onEndorse}
-          className={`flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all ${
-            endorsed
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-primary text-primary-foreground border-primary hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_var(--border)]'
-          }`}
-        >
-          <ThumbsUp className={`h-3.5 w-3.5 ${endorsed ? 'fill-current' : ''}`} />
-          {endorsed ? 'تم الإعجاب' : 'لايكات'}
-        </Button>
+      <div className="mx-4 mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+        {(['fire', 'sparkle', 'thumbsup', 'thumbsdown'] as const).map((r) => {
+          const emoji = r === 'fire' ? '🔥' : r === 'sparkle' ? '✨' : r === 'thumbsup' ? '👍' : '👎'
+          const label = r === 'fire' ? 'ممتاز' : r === 'sparkle' ? 'جيد جداً' : r === 'thumbsup' ? 'يصلح' : 'لا يُنصح'
+          const count = reactions[r]
+          const active = userReaction === r
+          return (
+            <Button
+              key={r}
+              onClick={() => onReact(r)}
+              className={`flex items-center justify-center gap-1.5 rounded-none border-[2px] py-2.5 text-xs font-black shadow-[2px_2px_0_0_var(--border)] transition-all ${
+                active
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-card text-foreground border-border hover:bg-accent'
+              }`}
+            >
+              <span>{emoji}</span>
+              <span className="tabular-nums">{formatNumber(count)}</span>
+              <span className="sr-only">{label}</span>
+            </Button>
+          )
+        })}
         <Button
           onClick={handleBookmark}
           disabled={bookmarkPending}

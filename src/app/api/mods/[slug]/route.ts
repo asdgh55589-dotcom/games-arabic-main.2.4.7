@@ -45,8 +45,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       fileSize: true,
       fileFormat: true,
       downloads: true,
-      endorsements: true,
-      views: true,
+       endorsements: true,
+       reactionFire: true,
+       reactionSparkle: true,
+       reactionThumbsUp: true,
+       reactionThumbsDown: true,
+       views: true,
       comments: true,
       rating: true,
       ratingCount: true,
@@ -214,11 +218,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     loadLinkDownloads(),
     loadSiteLinks(),
   ])
-  const withLinkCounts = (links: Array<{ id: string }>) =>
+   const withLinkCounts = (links: Array<{ id: string }>) =>
     links.map((l) => ({ ...l, downloadsCount: linkDownloads[(l as { id: string }).id] ?? 0 }))
-  const modWithFileCounts = {
-    ...mod,
-    files: mod.files.map((f) => ({
+   const modWithFileCounts = {
+     ...mod,
+     reactions: {
+       fire: mod.reactionFire,
+       sparkle: mod.reactionSparkle,
+       thumbsup: mod.reactionThumbsUp,
+       thumbsdown: mod.reactionThumbsDown,
+     },
+     files: (mod.files ?? []).map((f) => ({
       ...f,
       downloadsCount: fileDownloads[f.id] ?? 0,
       links: withLinkCounts((f as { links: Array<{ id: string }> }).links ?? []),
