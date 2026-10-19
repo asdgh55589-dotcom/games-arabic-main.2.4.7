@@ -105,8 +105,8 @@ export function ModDetailPage() {
   const router = useRouter()
   const slug = (params.slug as string) || ''
   const [tab, setTab] = useState('description')
-  const [endorsed, setEndorsed] = useState(false)
-  const [endorsementCount, setEndorsementCount] = useState<number | null>(null)
+  const [userReaction, setUserReaction] = useState<string | null>(null)
+  const [reactions, setReactions] = useState<{ fire: number; sparkle: number; thumbsup: number; thumbsdown: number }>({ fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 })
   const [downloadCount, setDownloadCount] = useState<number | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [activeImage, setActiveImage] = useState(0)
@@ -124,8 +124,8 @@ export function ModDetailPage() {
   if (slug !== lastSlug) {
     setLastSlug(slug)
     setActiveImage(0)
-    setEndorsed(false)
-    setEndorsementCount(null)
+    setUserReaction(null)
+    setReactions({ fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 })
     setDownloadCount(null)
     setHasReported(false)
   }
@@ -145,11 +145,6 @@ export function ModDetailPage() {
   // استرجاع حالة الإعجاب والإبلاغ بعد التحديث/العودة — localStorage + API
   useEffect(() => {
     if (!slug) return
-    try {
-      if (localStorage.getItem(`ga_endorsed_${slug}`) === '1') setEndorsed(true)
-    } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-    }
     if (mod?.id) {
       try {
         if (localStorage.getItem(`ga_reported_mod_${mod.id}`) === '1') setHasReported(true)
@@ -160,17 +155,21 @@ export function ModDetailPage() {
     fetch(`/api/mods/${slug}/endorse`)
       .then((r) => r.json())
       .then((j) => {
-        if (j?.data?.endorsed) {
-          setEndorsed(true)
-          try {
-            localStorage.setItem(`ga_endorsed_${slug}`, '1')
-          } catch {
-            // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-          }
+        if (j?.data) {
+          setUserReaction(j.data.reaction ?? null)
+          if (j.data.reactions) setReactions(j.data.reactions)
         }
       })
       .catch(() => {})
   }, [slug, mod?.id])
+
+  // Initialize reactions from mod when available
+  useEffect(() => {
+    if (mod?.reactions) {
+      const allZero = reactions.fire === 0 && reactions.sparkle === 0 && reactions.thumbsup === 0 && reactions.thumbsdown === 0
+      if (allZero) setReactions(mod.reactions)
+    }
+  }, [mod?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const relatedUrl = useMemo(() => {
     if (!mod?.game?.slug) return null
@@ -210,7 +209,7 @@ export function ModDetailPage() {
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
 
-  const shownEndorsements = endorsementCount ?? mod?.endorsements ?? 0
+  const shownEndorsements = mod?.endorsements ?? 0
   const shownDownloads = downloadCount ?? mod?.downloads ?? 0
   const shownViews = mod?.views ?? 0
 
@@ -333,41 +332,28 @@ export function ModDetailPage() {
   const recommendPct =
     (mod as any)?.recommendPct ?? (DESIGN_PREVIEW.enabled ? DESIGN_PREVIEW.recommendPct : 0)
 
-  const onEndorse = async () => {
+  const onReact = async (reaction: string) => {
     if (!mod) return
-    if (endorsed) {
+    if (!viewer) {
       toast({
-        title: 'لقد قمت بالإعجاب بهذا التعريب مسبقاً',
-        description: 'لا يمكنك الإعجاب مرة أخرى',
+        title: 'سجّل الدخول',
+        description: 'يجب تسجيل الدخول للإعجاب',
+        variant: 'destructive',
       })
+      router.push('/login')
       return
     }
     try {
       const result = await apiFetch<EndorseResponse>(`/api/mods/${mod.slug}/endorse`, {
         method: 'POST',
+        body: JSON.stringify({ reaction }),
       })
-      setEndorsed(result.data.endorsed)
-      setEndorsementCount(result.data.endorsements)
-      if (result.data.endorsed) {
-        try {
-          localStorage.setItem(`ga_endorsed_${mod.slug}`, '1')
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-        }
-        toast({
-          title: 'تم التأييد',
-          description: 'شكراً لدعمك لمؤلف هذا التعريب',
-        })
+      setUserReaction(result.data.reaction)
+      setReactions(result.data.reactions)
+      if (result.data.reaction === null) {
+        toast({ title: 'تم إلغاء التأييد', description: 'تمت إزالة إعجابك' })
       } else {
-        try {
-          localStorage.removeItem(`ga_endorsed_${mod.slug}`)
-        } catch {
-          // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod detail operation
-        }
-        toast({
-          title: 'تم إلغاء التأييد',
-          description: 'تمت إزالة إعجابك',
-        })
+        toast({ title: 'تم التأييد', description: 'شكراً لدعمك لمؤلف هذا التعريب' })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'تعذر تحديث الإعجاب'
@@ -893,17 +879,27 @@ export function ModDetailPage() {
 
                   {/* الأزرار — مجمّعة في جهة واحدة */}
                   <div className="ms-auto flex items-center gap-2 skew-x-[0.4deg]">
-                    <Button
-                      onClick={onEndorse}
-                      className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap ${
-                        endorsed
-                          ? 'bg-blue-600 text-white border-blue-600 cursor-pointer'
-                          : 'bg-primary text-primary-foreground border-primary hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
-                      }`}
-                    >
-                      <ThumbsUp className={`h-3 w-3 ${endorsed ? 'fill-current' : ''}`} />
-                      {endorsed ? 'تم الإعجاب' : 'أعجبني'}
-                    </Button>
+                    {(['fire', 'sparkle', 'thumbsup', 'thumbsdown'] as const).map((r) => {
+                      const emoji = r === 'fire' ? '🔥' : r === 'sparkle' ? '✨' : r === 'thumbsup' ? '👍' : '👎'
+                      const label = r === 'fire' ? 'ممتاز' : r === 'sparkle' ? 'جيد جداً' : r === 'thumbsup' ? 'يصلح' : 'لا يُنصح'
+                      const count = reactions[r]
+                      const active = userReaction === r
+                      return (
+                        <Button
+                          key={r}
+                          onClick={() => onReact(r)}
+                          className={`gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap ${
+                            active
+                              ? 'bg-primary text-white border-primary cursor-pointer'
+                              : 'bg-card text-foreground border-border hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]'
+                          }`}
+                        >
+                          <span>{emoji}</span>
+                          <span className="tabular-nums">{formatNumber(count)}</span>
+                          <span className="sr-only">{label}</span>
+                        </Button>
+                      )
+                    })}
                     <Button
                       onClick={handleBookmark}
                       disabled={bookmarkPending}

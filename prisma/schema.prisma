@@ -317,6 +317,10 @@ model Mod {
   fileFormat           String // 7z | zip | rar
   downloads            Int                   @default(0)
   endorsements         Int                   @default(0)
+  reactionFire         Int                   @default(0)
+  reactionSparkle      Int                   @default(0)
+  reactionThumbsUp     Int                   @default(0)
+  reactionThumbsDown   Int                   @default(0)
   views                Int                   @default(0)
   comments             Int                   @default(0)
   rating               Float                 @default(0)
@@ -497,7 +501,7 @@ model Endorsement {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   modId     String
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
-  value     String   @default("up") // up | down
+  value     String   @default("thumbsup") // 'fire'|'sparkle'|'thumbsup'|'thumbsdown'
   createdAt DateTime @default(now())
 
   @@unique([userId, modId])

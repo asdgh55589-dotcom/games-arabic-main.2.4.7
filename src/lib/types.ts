@@ -71,6 +71,7 @@ export interface ModSummary {
   fileFormat: string
   downloads: number
   endorsements: number
+  reactions?: { fire: number; sparkle: number; thumbsup: number; thumbsdown: number }
   views: number
   comments: number
   rating: number
@@ -291,8 +292,10 @@ export interface ModDetail extends ModSummary {
   /** روابط مواقع متوافقة خارجية (fileId null) — قسم الإضافات أسفل التبويبة. */
   siteLinks?: ModSiteLink[]
   /** عنوان قسم الإضافات الخارجية (null = الافتراضي). */
-  extrasLabel?: string | null
-  teamMembers: ModTeamMember[]
+   extrasLabel?: string | null
+   reactions?: { fire: number; sparkle: number; thumbsup: number; thumbsdown: number }
+   userReaction?: string | null
+   teamMembers: ModTeamMember[]
   contactLinks: ModContactLink[]
   videoGroups: ModVideoGroup[]
   customTabs: ModCustomTab[]
@@ -343,7 +346,9 @@ export interface HomeData {
 export interface EndorseResponse {
   data: {
     endorsed: boolean
+    reaction: string | null
     endorsements: number
+    reactions: { fire: number; sparkle: number; thumbsup: number; thumbsdown: number }
   }
 }
 
