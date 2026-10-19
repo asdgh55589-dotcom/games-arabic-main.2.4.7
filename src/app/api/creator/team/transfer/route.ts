@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 // GET /api/creator/team/transfer — pending ownership nomination status.
 // Owner-only. Transfer nominations live in TeamInvitation with role 'owner'
@@ -12,6 +13,13 @@ export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:team-transfer:${user.id}`,
+  })
+  if (limited) return limited
 
   try {
     const owned = await getOwnedTeam(user.id)
@@ -26,7 +34,7 @@ export async function GET(req: NextRequest) {
         createdAt: true,
       },
     })
-    return ok({ pending })
+    return ok({ pending }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error({ err }, '[creator/team/transfer GET] failed')
     return internalError('فشل جلب حالة النقل')

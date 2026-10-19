@@ -14,6 +14,13 @@ export async function GET(req: NextRequest) {
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
 
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:team-members-list:${user.id}`,
+  })
+  if (limited) return limited
+
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
@@ -57,7 +64,7 @@ export async function GET(req: NextRequest) {
       limit,
       total,
       totalPages: Math.ceil(total / limit) || 1,
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error({ err }, '[creator/team/members GET] failed')
     return internalError('فشل جلب أعضاء الفريق')

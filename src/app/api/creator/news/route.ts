@@ -12,6 +12,13 @@ export async function GET(req: NextRequest) {
   if (error) return error
   if (!user) return validationFail('يجب تسجيل الدخول')
 
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:news:${user.id}`,
+  })
+  if (limited) return limited
+
   const rows = await db.news.findMany({
     where: { authorId: user.id },
     orderBy: { createdAt: 'desc' },
@@ -23,7 +30,7 @@ export async function GET(req: NextRequest) {
       publishAt: true, expiresAt: true, createdAt: true, updatedAt: true,
     },
   })
-  return ok({ news: rows })
+  return ok({ news: rows }, { headers: { 'Cache-Control': 'private, max-age=30' } })
 }
 
 const CATEGORIES = ['general', 'update', 'announcement', 'event'] as const

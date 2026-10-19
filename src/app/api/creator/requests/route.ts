@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 import { parseFilterParam, RequestStatusFilterSchema } from '@/lib/creator-query'
@@ -11,6 +12,13 @@ export async function GET(req: NextRequest) {
     const { user, error } = await requireCreatorStudio(req)
     if (error) return error
     if (!user) return error!
+
+    const limited = await rateLimitMiddleware(req, {
+      limit: 60,
+      window: 60,
+      keyPrefix: `creator:requests:${user.id}`,
+    })
+    if (limited) return limited
 
     const { searchParams } = new URL(req.url)
     // E4 — central Zod whitelist. Free strings never reach Prisma.
@@ -48,7 +56,7 @@ export async function GET(req: NextRequest) {
     return ok({
       requests,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error('[creator/requests GET] failed:', err)
     reportError(err, { route: 'GET /api/creator/requests' })

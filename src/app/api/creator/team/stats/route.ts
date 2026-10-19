@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 // GET /api/creator/team/stats — aggregated statistics for the owned team.
 // Owner-only. Read-only; no rate limit. Computed live from the team's mods
@@ -12,6 +13,13 @@ export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:team-stats:${user.id}`,
+  })
+  if (limited) return limited
 
   try {
     const owned = await getOwnedTeam(user.id)
@@ -31,6 +39,7 @@ export async function GET(req: NextRequest) {
           qualityScore: true,
           createdAt: true,
         },
+        take: 500,
       }),
       db.teamMembership.count({ where: { teamId: owned.id } }),
       db.teamFollow.count({ where: { teamId: owned.id } }),
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest) {
       lowestMods: byRatingAsc.slice(0, 5).map(slim),
       memberCount,
       followsCount,
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error({ err }, '[creator/team/stats GET] failed')
     return internalError('فشل جلب إحصائيات الفريق')

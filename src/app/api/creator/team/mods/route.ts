@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
 
 // GET /api/creator/team/mods — mods linked to the owned team.
@@ -12,6 +13,13 @@ export async function GET(req: NextRequest) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return forbidden('يجب تسجيل الدخول')
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 60,
+    window: 60,
+    keyPrefix: `creator:team-mods-list:${user.id}`,
+  })
+  if (limited) return limited
 
   try {
     const owned = await getOwnedTeam(user.id)
@@ -52,6 +60,7 @@ export async function GET(req: NextRequest) {
     return okPaginated(
       mods.map((m) => ({ ...m, isOwn: m.authorId === user.id })),
       { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+      { headers: { 'Cache-Control': 'private, max-age=30' } },
     )
   } catch (err) {
     logger.error({ err }, '[creator/team/mods GET] failed')

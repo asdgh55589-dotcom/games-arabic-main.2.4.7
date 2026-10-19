@@ -7,11 +7,6 @@ import { logger } from '@/lib/logger'
 
 const RANGES = new Set([7, 30, 90])
 
-// Per-user payload: fail-closed caching posture.
-const PRIVATE_NO_STORE = {
-  headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
-} as const
-
 // GET /api/creator/analytics/history?range=7|30|90 — المشاهدات والتحميلات اليومية
 export async function GET(req: NextRequest) {
   try {
@@ -56,23 +51,37 @@ export async function GET(req: NextRequest) {
     const commentClicksBuckets = buckets.map((b) => ({ ...b }))
 
     if (modIds.length > 0) {
+      const TAKE_LIMIT = 5000
       const [viewRows, downloadRows, clickRows, totalViews, totalDownloads, totalCommentClicks] = await Promise.all([
         db.modView.findMany({
           where: { modId: { in: modIds }, viewedAt: { gte: start } },
           select: { viewedAt: true },
+          take: TAKE_LIMIT,
         }),
         db.downloadClick.findMany({
           where: { modId: { in: modIds }, createdAt: { gte: start } },
           select: { createdAt: true },
+          take: TAKE_LIMIT,
         }),
         db.commentSectionClick.findMany({
           where: { modId: { in: modIds }, createdAt: { gte: start } },
           select: { createdAt: true },
+          take: TAKE_LIMIT,
         }),
         db.modView.count({ where: { modId: { in: modIds }, viewedAt: { gte: start } } }),
         db.downloadClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
         db.commentSectionClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
       ])
+
+      if (viewRows.length === TAKE_LIMIT) {
+        logger.warn(`[creator/analytics/history] user ${user.id}: view rows truncated at ${TAKE_LIMIT}`)
+      }
+      if (downloadRows.length === TAKE_LIMIT) {
+        logger.warn(`[creator/analytics/history] user ${user.id}: download rows truncated at ${TAKE_LIMIT}`)
+      }
+      if (clickRows.length === TAKE_LIMIT) {
+        logger.warn(`[creator/analytics/history] user ${user.id}: click rows truncated at ${TAKE_LIMIT}`)
+      }
 
       for (const row of viewRows) {
         const idx = indexByDay.get(row.viewedAt.toISOString().slice(0, 10))
@@ -89,13 +98,13 @@ export async function GET(req: NextRequest) {
 
       return ok(
         { views: viewsBuckets, downloads: downloadsBuckets, commentClicks: commentClicksBuckets, totalViews, totalDownloads, totalCommentClicks },
-        PRIVATE_NO_STORE,
+        { headers: { 'Cache-Control': 'private, max-age=30' } },
       )
     }
 
     return ok(
       { views: viewsBuckets, downloads: downloadsBuckets, commentClicks: commentClicksBuckets, totalViews: 0, totalDownloads: 0, totalCommentClicks: 0 },
-      PRIVATE_NO_STORE,
+      { headers: { 'Cache-Control': 'private, max-age=30' } },
     )
   } catch (err) {
     logger.error('[creator/analytics/history GET] failed:', err)
