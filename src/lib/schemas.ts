@@ -285,6 +285,18 @@ export const CreateModSchema = z.object({
         title: z.string().min(1, 'عنوان الملف مطلوب'),
         description: z.string().optional(),
         alert: z.string().optional(),
+        parentId: z.string().optional().nullable(),
+        extrasLabel: z.string().max(200).optional().nullable(),
+        siteLinks: z
+          .array(
+            z.object({
+              url: z.string().url('رابط غير صالح'),
+              siteName: z.string().optional().nullable(),
+              pageTitle: z.string().optional().nullable(),
+              domain: z.string().optional().nullable(),
+            }),
+          )
+          .optional(),
         version: z.string().optional(),
         releaseDate: z.string().optional(),
         fileSize: z.string().optional(),
@@ -325,6 +337,17 @@ export const CreateModSchema = z.object({
         label: z.string().optional(),
         url: z.string().url('رابط غير صالح'),
         order: z.number().optional(),
+      }),
+    )
+    .optional(),
+  siteLinks: z
+    .array(
+      z.object({
+        url: z.string().url('رابط غير صالح'),
+        siteName: z.string().optional().nullable(),
+        pageTitle: z.string().optional().nullable(),
+        domain: z.string().optional().nullable(),
+        fileId: z.string().optional().nullable(),
       }),
     )
     .optional(),
