@@ -293,6 +293,10 @@ export interface ModDetail extends ModSummary {
   siteLinks?: ModSiteLink[]
   /** عنوان قسم الإضافات الخارجية (null = الافتراضي). */
    extrasLabel?: string | null
+   /** رابط التريلر (YouTube/Vimeo). */
+   trailerUrl?: string | null
+   /** رابط دعم الفريق. */
+   supportUrl?: string | null
    reactions?: { fire: number; sparkle: number; thumbsup: number; thumbsdown: number }
    userReaction?: string | null
    teamMembers: ModTeamMember[]

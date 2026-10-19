@@ -303,6 +303,8 @@ model Mod {
   arabicTitle          String                @default("") // الاسم بالعربي
   translationScope     String                @default("") // نطاق التعريب
   compatibility        String                @default("") // التوافق
+  trailerUrl           String? // رابط التريلر (YouTube/Vimeo) — يظهر كزر «مشاهدة التريلر»
+  supportUrl           String? // رابط دعم الفريق (PayPal/Ko-fi/...) — يظهر كزر «دعم الفريق»
   authorId             String
   author               User                  @relation("AuthoredMods", fields: [authorId], references: [id])
   gameId               String

@@ -260,6 +260,9 @@ export const CreateModSchema = z.object({
   arabicTitle: z.string().optional(),
   translationScope: z.string().optional(),
   compatibility: z.string().optional(),
+  extrasLabel: z.string().max(200).optional().nullable(),
+  trailerUrl: z.string().url('رابط التريلر غير صالح').optional().nullable().or(z.literal('')),
+  supportUrl: z.string().url('رابط الدعم غير صالح').optional().nullable().or(z.literal('')),
   // Platform-specific localization fields (all optional, per-platform)
   translationMethod: z.string().optional(),
   platformGameId: z.string().optional(),

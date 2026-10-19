@@ -900,6 +900,24 @@ export function ModDetailPage() {
                         </Button>
                       )
                     })}
+                    {mod?.trailerUrl && (
+                      <Button
+                        onClick={() => window.open(mod.trailerUrl!, '_blank', 'noopener,noreferrer')}
+                        className="gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap bg-card text-foreground border-border hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        تريلر
+                      </Button>
+                    )}
+                    {mod?.supportUrl && (
+                      <Button
+                        onClick={() => window.open(mod.supportUrl!, '_blank', 'noopener,noreferrer')}
+                        className="gap-1 py-1 px-2.5 font-black border-[3px] transition-all text-[11px] rounded-none shadow-[3px_3px_0_0_var(--border)] whitespace-nowrap bg-rose-600 text-white border-rose-600 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_var(--border)]"
+                      >
+                        <Heart className="h-3 w-3 fill-current" />
+                        دعم الفريق
+                      </Button>
+                    )}
                     <Button
                       onClick={handleBookmark}
                       disabled={bookmarkPending}

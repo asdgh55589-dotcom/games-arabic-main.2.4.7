@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { isSupportedVideoUrl } from '@/lib/oembed'
@@ -130,6 +131,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [titleId, setTitleId] = useState('')
   const [mediaId, setMediaId] = useState('')
   const [supportedFormat, setSupportedFormat] = useState('')
+  const [trailerUrl, setTrailerUrl] = useState('')
+  const [supportUrl, setSupportUrl] = useState('')
+  const [extrasLabel, setExtrasLabel] = useState('')
   const [systemFirmware, setSystemFirmware] = useState('')
   const [gameUpdateVersion, setGameUpdateVersion] = useState('')
   const [deviceModel, setDeviceModel] = useState('')
@@ -245,6 +249,9 @@ export default function ModForm({ modId }: ModFormProps) {
         setTitleId((m as any).titleId || '')
         setMediaId((m as any).mediaId || '')
         setSupportedFormat((m as any).supportedFormat || '')
+        setTrailerUrl((m as any).trailerUrl || '')
+        setSupportUrl((m as any).supportUrl || '')
+        setExtrasLabel((m as any).extrasLabel || '')
         setSystemFirmware((m as any).systemFirmware || '')
         setGameUpdateVersion((m as any).gameUpdateVersion || '')
         setDeviceModel((m as any).deviceModel || '')
@@ -577,6 +584,9 @@ export default function ModForm({ modId }: ModFormProps) {
       titleId: titleId || null,
       mediaId: mediaId || null,
       supportedFormat: supportedFormat || null,
+      trailerUrl: trailerUrl || null,
+      supportUrl: supportUrl || null,
+      extrasLabel: extrasLabel || null,
       systemFirmware: systemFirmware || null,
       gameUpdateVersion: gameUpdateVersion || null,
       deviceModel: deviceModel || null,
@@ -822,6 +832,25 @@ export default function ModForm({ modId }: ModFormProps) {
             setCompatibility={setCompatibility}
             hidePlatformSelect={!isEdit}
           />
+
+          {/* روابط إضافية (تريلر + دعم فريق + عنوان قسم الإضافات) */}
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">روابط إضافية</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط التريلر (YouTube/Vimeo)</label>
+                <Input value={trailerUrl} onChange={(e) => setTrailerUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط دعم الفريق (PayPal/Ko-fi/...)</label>
+                <Input value={supportUrl} onChange={(e) => setSupportUrl(e.target.value)} placeholder="https://ko-fi.com/..." />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <Input value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
+            </div>
+          </div>
 
           {/* أزرار تغيير الحالة */}
           {isEdit && (
