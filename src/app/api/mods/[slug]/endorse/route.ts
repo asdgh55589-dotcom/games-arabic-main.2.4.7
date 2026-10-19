@@ -9,13 +9,6 @@ import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
 const ALLOWED = new Set(['fire', 'sparkle', 'thumbsup', 'thumbsdown'])
 
-function counterField(reaction: string): string {
-  if (reaction === 'fire') return 'reactionFire'
-  if (reaction === 'sparkle') return 'reactionSparkle'
-  if (reaction === 'thumbsup') return 'reactionThumbsUp'
-  return 'reactionThumbsDown'
-}
-
 function reactionsOf(m: {
   reactionFire: number
   reactionSparkle: number
@@ -110,9 +103,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       if (existing && existing.value === reaction) {
         // Remove
         await tx.endorsement.delete({ where: { id: existing.id } })
+        const removeData: Record<string, unknown> = { endorsements: { decrement: 1 } }
+        if (reaction === 'fire') removeData.reactionFire = { decrement: 1 }
+        else if (reaction === 'sparkle') removeData.reactionSparkle = { decrement: 1 }
+        else if (reaction === 'thumbsup') removeData.reactionThumbsUp = { decrement: 1 }
+        else removeData.reactionThumbsDown = { decrement: 1 }
         const updated = await tx.mod.update({
           where: { id: mod.id },
-          data: { [counterField(reaction)]: { decrement: 1 }, endorsements: { decrement: 1 } },
+          data: removeData as any,
           select: COUNT_SELECT,
         })
         if (mod.gameId) {
@@ -137,12 +135,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
       if (existing) {
         // Switch
-        const oldField = counterField(existing.value)
-        const newField = counterField(reaction)
         await tx.endorsement.update({ where: { id: existing.id }, data: { value: reaction } })
+        const switchData: Record<string, unknown> = {}
+        if (existing.value === 'fire') switchData.reactionFire = { decrement: 1 }
+        else if (existing.value === 'sparkle') switchData.reactionSparkle = { decrement: 1 }
+        else if (existing.value === 'thumbsup') switchData.reactionThumbsUp = { decrement: 1 }
+        else switchData.reactionThumbsDown = { decrement: 1 }
+        if (reaction === 'fire') switchData.reactionFire = { increment: 1 }
+        else if (reaction === 'sparkle') switchData.reactionSparkle = { increment: 1 }
+        else if (reaction === 'thumbsup') switchData.reactionThumbsUp = { increment: 1 }
+        else switchData.reactionThumbsDown = { increment: 1 }
         const updated = await tx.mod.update({
           where: { id: mod.id },
-          data: { [oldField]: { decrement: 1 }, [newField]: { increment: 1 } },
+          data: switchData as any,
           select: COUNT_SELECT,
         })
         return {
@@ -159,9 +164,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       await tx.endorsement.create({
         data: { userId, modId: mod.id, value: reaction },
       })
+      const addData: Record<string, unknown> = { endorsements: { increment: 1 } }
+      if (reaction === 'fire') addData.reactionFire = { increment: 1 }
+      else if (reaction === 'sparkle') addData.reactionSparkle = { increment: 1 }
+      else if (reaction === 'thumbsup') addData.reactionThumbsUp = { increment: 1 }
+      else addData.reactionThumbsDown = { increment: 1 }
       const updated = await tx.mod.update({
         where: { id: mod.id },
-        data: { [counterField(reaction)]: { increment: 1 }, endorsements: { increment: 1 } },
+        data: addData as any,
         select: COUNT_SELECT,
       })
       if (mod.gameId) {
@@ -237,7 +247,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       })
       const user = await getOptionalSession()
       let reaction: string | null = null
-      if (user && freshMod) {
+      if (user) {
         const m = await db.mod.findUnique({ where: { slug }, select: { id: true } })
         if (m) {
           const e = await db.endorsement.findUnique({
