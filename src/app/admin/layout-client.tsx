@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Archive,
   Award,
   BarChart3,
   Bell,
@@ -29,6 +30,7 @@ import {
   Package,
   PenTool,
   Radio,
+  Route,
   ScrollText,
   Search,
   Send,
@@ -134,6 +136,41 @@ const NAV_GROUPS: NavGroup[] = [
         href: '/admin/social/telegram/templates',
         label: 'القوالب',
         icon: FileText,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/destinations',
+        label: 'الوجهات',
+        icon: Link2,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/routing',
+        label: 'التوجيه',
+        icon: Route,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/archive',
+        label: 'أرشيف المنشورات',
+        icon: Archive,
+        managerOnly: true,
+      },
+      {
+        href: '/admin/social/telegram/templates/archive',
+        label: 'أرشيف القوالب',
+        icon: Archive,
+        managerOnly: true,
+      },
+    ],
+  },
+  {
+    label: 'النشر المجدول',
+    items: [
+      {
+        href: '/admin/publish/schedule',
+        label: 'مهام الجدولة',
+        icon: Clock,
         managerOnly: true,
       },
     ],
@@ -467,6 +504,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               src={user.avatarUrl}
               alt={user.username}
               className="h-8 w-8 rounded-full object-cover"
+              loading="lazy"
+              width={32}
+              height={32}
             />
           ) : (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-white">

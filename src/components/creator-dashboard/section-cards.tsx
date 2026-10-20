@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +14,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { RefreshCwIcon } from "lucide-react"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
+import { useToast } from "@/hooks/use-toast"
 
 interface Summary {
   totalViews: number
@@ -44,39 +47,62 @@ type CardsStatus = "loading" | "ready" | "error" | "empty"
 
 export function SectionCards() {
   const { dict, formatNumber } = useStudioLanguage()
+  const { toast } = useToast()
   const [summary, setSummary] = React.useState<Summary | null>(null)
   const [totals, setTotals] = React.useState<Totals | null>(null)
   const [status, setStatus] = React.useState<CardsStatus>("loading")
   const [reloadKey, setReloadKey] = React.useState(0)
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
+  const refreshPendingRef = React.useRef(false)
 
   React.useEffect(() => {
     let cancelled = false
     async function load() {
       setStatus("loading")
       try {
+        // KPI data is stale-tolerant (30s) — let HTTP caching do its job.
         const [a, s] = await Promise.all([
-          fetch("/api/creator/analytics?range=30", { cache: "no-store" }),
-          fetch("/api/creator/stats", { cache: "no-store" }),
+          fetch("/api/creator/analytics?range=30"),
+          fetch("/api/creator/stats"),
         ])
         if (!a.ok || !s.ok) {
-          if (!cancelled) setStatus("error")
+          if (!cancelled) {
+            setStatus("error")
+            if (refreshPendingRef.current) {
+              refreshPendingRef.current = false
+              setIsRefreshing(false)
+            }
+          }
           return
         }
-        const aj = await a.json()
-        const sj = await s.json()
+        // Section 4 item 28: independent body parses — decode concurrently.
+        const [aj, sj] = await Promise.all([a.json(), s.json()])
         if (cancelled) return
         const hasData = Boolean(aj?.data) || Boolean(sj?.data?.totals)
         if (!hasData) {
           setStatus("empty")
+          if (refreshPendingRef.current) {
+            refreshPendingRef.current = false
+            setIsRefreshing(false)
+          }
           return
         }
         if (aj?.data) setSummary(aj.data)
         if (sj?.data?.totals) setTotals(sj.data.totals)
         setStatus("ready")
+        if (refreshPendingRef.current) {
+          refreshPendingRef.current = false
+          setIsRefreshing(false)
+          toast({ title: dict.common.refreshSuccess })
+        }
       } catch (err) {
         if (!cancelled) {
           if (process.env.NODE_ENV === "development") console.error("[studio] section-cards load failed", err)
           setStatus("error")
+          if (refreshPendingRef.current) {
+            refreshPendingRef.current = false
+            setIsRefreshing(false)
+          }
         }
       }
     }
@@ -85,6 +111,12 @@ export function SectionCards() {
       cancelled = true
     }
   }, [reloadKey])
+
+  const handleRefresh = React.useCallback(() => {
+    refreshPendingRef.current = true
+    setIsRefreshing(true)
+    setReloadKey((k) => k + 1)
+  }, [])
 
   const viewsUp = (summary?.viewsChange ?? 0) >= 0
   const downloadsUp = (summary?.downloadsChange ?? 0) >= 0
@@ -256,24 +288,51 @@ export function SectionCards() {
     },
   ]
 
+  const cardLinks: Record<string, string> = {
+    published: "/creator/mods?status=published",
+    drafts: "/creator/mods?status=draft",
+    pending: "/creator/mods?status=pending",
+    rejected: "/creator/mods?status=rejected",
+    comments: "/creator/comments",
+  }
+
   return (
-    <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-2 gap-2 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card lg:px-6">
-      {cards.map((c) => (
-        <Card key={c.key} className="@container/card gap-1 py-3">
-          <CardHeader className="relative gap-0 px-3">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription className="truncate text-xs">{c.label}</CardDescription>
-              {c.badge}
-            </div>
-            <CardTitle className="text-xl font-semibold tabular-nums" dir="auto">
-              <span dir="ltr">{c.value}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardFooter className="px-3 pt-0 text-xs text-muted-foreground">
-            <div className="line-clamp-1">{c.hint}</div>
-          </CardFooter>
-        </Card>
-      ))}
+    <>
+      <div className="flex items-center justify-end px-4 lg:px-6">
+        <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+          <RefreshCwIcon className={`me-1 size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+          {dict.common.refresh}
+        </Button>
+      </div>
+      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-2 gap-2 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card lg:px-6">
+      {cards.map((c) => {
+        const link = cardLinks[c.key]
+        const card = (
+          <Card className="@container/card gap-1 py-3">
+            <CardHeader className="relative gap-0 px-3">
+              <div className="flex items-center justify-between gap-2">
+                <CardDescription className="truncate text-xs">{c.label}</CardDescription>
+                {c.badge}
+              </div>
+              <CardTitle className="text-xl font-semibold tabular-nums" dir="auto">
+                <span dir="ltr">{c.value}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardFooter className="px-3 pt-0 text-xs text-muted-foreground">
+              <div className="line-clamp-1">{c.hint}</div>
+            </CardFooter>
+          </Card>
+        )
+        if (link) {
+          return (
+            <Link key={c.key} href={link} className="block">
+              {card}
+            </Link>
+          )
+        }
+        return <React.Fragment key={c.key}>{card}</React.Fragment>
+      })}
     </div>
+    </>
   )
 }

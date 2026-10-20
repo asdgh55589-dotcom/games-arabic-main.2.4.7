@@ -51,6 +51,11 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.AdminReport]: 'بلاغ',
   [NotificationType.AdminMilestone]: 'إنجاز إداري',
   [NotificationType.SystemAnnouncement]: 'إعلان النظام',
+  // أدوات النشر (مرحلة 6) — إعدادات المستخدم تظهرها افتراضياً.
+  [NotificationType.SocialPublishFailed]: 'فشل نشر اجتماعي',
+  [NotificationType.SocialPublishSucceeded]: 'نجاح نشر اجتماعي',
+  [NotificationType.PublishDegraded]: 'تدهور نشر متكرر',
+  [NotificationType.PublishDigest]: 'تقرير دوري للنشر',
 }
 
 const TYPE_CATEGORIES: { label: string; types: NotificationType[] }[] = [
@@ -96,6 +101,16 @@ const TYPE_CATEGORIES: { label: string; types: NotificationType[] }[] = [
   {
     label: 'نظام',
     types: [NotificationType.SystemAnnouncement],
+  },
+  {
+    // مرحلة 6 — أدوات النشر: أخطاء الفشل، النجاح الخفيف، التدهور، والتقرير.
+    label: 'أدوات النشر',
+    types: [
+      NotificationType.SocialPublishFailed,
+      NotificationType.SocialPublishSucceeded,
+      NotificationType.PublishDegraded,
+      NotificationType.PublishDigest,
+    ],
   },
 ]
 

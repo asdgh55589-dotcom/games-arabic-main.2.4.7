@@ -26,13 +26,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const versions = await db.modVersion.findMany({
       where: { modId: id },
       orderBy: { createdAt: 'desc' },
+      take: 100,
       include: {
         createdByUser: { select: { id: true, username: true, avatarUrl: true } },
         _count: { select: { files: true } },
       },
     })
 
-    return ok(versions)
+    return ok(versions, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (err) {
     logger.error('[creator/mods/[id]/versions GET] failed:', err)
     return internalError('فشل جلب الإصدارات')

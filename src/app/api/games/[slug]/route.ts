@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { setCacheControl } from '@/lib/api-cache'
 import { notFound, ok } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
@@ -18,5 +19,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     return notFound('Game not found')
   }
 
-  return ok(serialize(game))
+  // Section 4 item 27: single game is public, cache like mods/[slug] (60/300).
+  const res = ok(serialize(game))
+  setCacheControl(res.headers, { type: 'public', maxAge: 60, swr: 300 })
+  return res
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Activity,
   Bell,
   CalendarClock,
   CheckCircle2,
@@ -11,11 +12,11 @@ import {
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SiTelegram } from 'react-icons/si'
 import { OverviewDemoBanner } from '@/components/admin/social/overview-demo-banner'
 import { OverviewStatCard } from '@/components/admin/social/overview-stat-card'
-import { TelegramDestinations } from '@/components/admin/social/telegram-stats'
+import { TelegramDestinations } from '@/components/admin/social/telegram-destinations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -54,6 +55,42 @@ const QUICK_LINKS = [
 export default function SocialTelegramPage() {
   const [range, setRange] = useState<SocialStatsRange>('30d')
   const { data, loading, isMock, refetch } = useSocialStats(range)
+
+  // مرحلة 6: بطاقة صحة النشر — قراءة one-shot من /api/admin/social/health.
+  const [health, setHealth] = useState<{
+    greenAll: boolean
+    degraded: number
+    botsGreen: number
+    botsTotal: number
+    destGreen: number
+    destTotal: number
+    routesGreen: number
+    routesTotal: number
+  } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/admin/social/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        if (cancelled || !body?.ok || !body?.data) return
+        const d = body.data
+        const green = (xs: Array<{ green: boolean }>) => xs.filter((x) => x.green).length
+        setHealth({
+          greenAll: d.summary?.greenAll ?? false,
+          degraded: d.summary?.degraded ?? 0,
+          botsGreen: green(d.bots ?? []),
+          botsTotal: (d.bots ?? []).length,
+          destGreen: green(d.destinations ?? []),
+          destTotal: (d.destinations ?? []).length,
+          routesGreen: green(d.routes ?? []),
+          routesTotal: (d.routes ?? []).length,
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const kpis = data?.kpis ?? { published: 0, failed: 0, scheduledUpcoming: 0, avgPerDay: 0 }
   const rangeLabel = RANGES.find((r) => r.value === range)?.label ?? range
@@ -96,6 +133,39 @@ export default function SocialTelegramPage() {
       </div>
 
       <OverviewDemoBanner show={isMock} />
+
+      {/* مرحلة 6: بطاقة صحة النشر (أخضر/أحمر لكل بوت/وجهة/قاعدة) */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex items-center gap-2">
+            <Activity
+              className={`h-4 w-4 ${health ? (health.greenAll ? 'text-green-600' : 'text-red-600') : 'text-muted-foreground'}`}
+            />
+            <h2 className="font-semibold text-foreground text-[14px]">صحة النشر</h2>
+            {health ? (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[12px] ${
+                  health.greenAll ? 'bg-green-500/15 text-green-600' : 'bg-red-500/15 text-red-600'
+                }`}
+              >
+                {health.greenAll ? 'كل شيء أخضر' : 'يوجد أعطال'}
+              </span>
+            ) : (
+              <Skeleton className="h-5 w-24" />
+            )}
+          </div>
+          {health ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              بوتات {health.botsGreen}/{health.botsTotal} · وجهات {health.destGreen}/
+              {health.destTotal} · قواعد {health.routesGreen}/{health.routesTotal}
+              {health.degraded > 0 ? ` · متدهور: ${health.degraded}` : ''}
+            </p>
+          ) : null}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/publish/errors">مركز أخطاء النشر</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {loading && !data ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ===== Report Enums — migrated from String to enum for DB-level safety =====
@@ -302,6 +303,8 @@ model Mod {
   arabicTitle          String                @default("") // الاسم بالعربي
   translationScope     String                @default("") // نطاق التعريب
   compatibility        String                @default("") // التوافق
+  trailerUrl           String? // رابط التريلر (YouTube/Vimeo) — يظهر كزر «مشاهدة التريلر»
+  supportUrl           String? // رابط دعم الفريق (PayPal/Ko-fi/...) — يظهر كزر «دعم الفريق»
   authorId             String
   author               User                  @relation("AuthoredMods", fields: [authorId], references: [id])
   gameId               String
@@ -316,6 +319,10 @@ model Mod {
   fileFormat           String // 7z | zip | rar
   downloads            Int                   @default(0)
   endorsements         Int                   @default(0)
+  reactionFire         Int                   @default(0)
+  reactionSparkle      Int                   @default(0)
+  reactionThumbsUp     Int                   @default(0)
+  reactionThumbsDown   Int                   @default(0)
   views                Int                   @default(0)
   comments             Int                   @default(0)
   rating               Float                 @default(0)
@@ -385,6 +392,17 @@ model Mod {
   scheduledPost        String? // المنشور المولد للنشر
   scheduledSent        Boolean               @default(false)
   scheduledSentAt      DateTime?
+
+  // ===== Phase 4 — الجدولة الموحدة (additive) =====
+  // publishMode: نطاق الجدولة (both افتراضياً). socialPostId: المنشور
+  // الاجتماعي المولَّد عند التفعيل. socialScheduledAt: مرآة سريعة
+  // لموعد الجانب الاجتماعي.
+  publishMode       String    @default("both") @map("publish_mode") // site_only | social_only | both
+  socialPostId      String?   @map("social_post_id")
+  socialPost        SocialPost? @relation("ModSocialPost", fields: [socialPostId], references: [id], onDelete: SetNull)
+  socialScheduledAt DateTime? @map("social_scheduled_at")
+  scheduleProjects  SocialScheduleProject[]
+
   requests             ModRequest[]
 
   // Platform-specific localization fields (all optional, per-platform)
@@ -402,6 +420,9 @@ model Mod {
   cpuArch           String? // بنية المعالج المتوافقة — Android only (ARM64/ARMv7/x86)
   gameVersion       String? // رقم إصدار اللعبة المتوافق — Android only
   minAndroidVersion String? // الحد الأدنى لنظام الأندرويد — Android only
+  // عنوان قسم الإضافات الخارجية (null = الافتراضي "ملفات إضافية")
+  extrasLabel       String?
+  siteLinks         ModSiteLink[]
 
   @@index([authorId])
   @@index([gameId])
@@ -482,7 +503,7 @@ model Endorsement {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   modId     String
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
-  value     String   @default("up") // up | down
+  value     String   @default("thumbsup") // 'fire'|'sparkle'|'thumbsup'|'thumbsdown'
   createdAt DateTime @default(now())
 
   @@unique([userId, modId])
@@ -507,9 +528,17 @@ model ModFile {
   fileFormat  String
   order       Int           @default(0)
   links       ModFileLink[]
+  siteLinks   ModSiteLink[]
   createdAt   DateTime      @default(now())
+  // ملفات إضافية متداخلة داخل هذا الملف (قسم فرعي)
+  parentId    String?
+  parent      ModFile?      @relation("FileExtras", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ModFile[]     @relation("FileExtras")
+  // عنوان قسم الملفات الإضافية داخل هذا الملف (null = الافتراضي)
+  extrasLabel String?
 
   @@index([modId])
+  @@index([parentId])
 }
 
 // ===== روابط كل ملف تحميل =====
@@ -534,6 +563,43 @@ model ModFileLink {
 
   @@index([fileId])
   @@index([provider])
+}
+
+// ===== مواقع تحميل الألعاب المتوافقة (تُستخدم للتحقق عند "جلب الرابط") =====
+// ملاحظة: نستخدم Json للمصفوفة لأن السكيما الحالية لا تستخدم String[] إطلاقاً
+// (كل القوائم المخزنة Json) — نفس أسلوب evidenceUrls/filters/variables.
+model CompatibleSite {
+  id        String   @id @default(cuid())
+  name      String
+  domains   Json     @default("[]")
+  logoUrl   String?
+  // توصيات/ملاحظات الموقع (حتى 2000 حرف — يُفرض في الـ API)
+  notes     String?
+  enabled   Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ===== روابط مواقع متوافقة كإضافات للمود =====
+// fileId = null يعني قسم خارجي أسفل التبويبة، وقيمة تعني متداخل داخل ذلك الملف
+model ModSiteLink {
+  id        String   @id @default(cuid())
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  fileId    String?
+  // عند حذف الملف الأب تنتقل روابطه للقسم الخارجي بدل أن تُحذف
+  file      ModFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  url       String
+  siteName  String?
+  pageTitle String?
+  // نطاق مستخرج من الرابط (denormalized للفلترة السريعة)
+  domain    String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([modId])
+  @@index([fileId])
 }
 
 // ===== أقسام الفيديوهات (شرح/ترويجي/مراجعة) =====
@@ -1231,9 +1297,23 @@ model TelegramDestination {
   botId           String?  @map("bot_id")
   messageThreadId Int?     @map("message_thread_id") // موضوع داخل مجموعة forum (supergroup فقط)
 
+  // ===== Phase 1 — صحة الوجهة والأرشفة الناعمة (additive) =====
+  // lastHealthAt/Error: آخر فحص getChat/getChatMember. postCount: عدد
+  // المنشورات المرتبطة (مخبأ يُحدَّث عند الفحص). archivedAt: أرشفة ناعمة
+  // بدل الحذف الفيزيائي — الصف يبقى للتاريخ وتُخفى عن القوائم.
+  lastHealthAt    DateTime? @map("last_health_at")
+  lastHealthError String?   @map("last_health_error")
+  postCount       Int       @default(0) @map("post_count")
+  archivedAt      DateTime? @map("archived_at")
+
   jobs          NotificationJob[]
   socialPosts   SocialPost[]
   socialBot     SocialTelegramBot? @relation(fields: [botId], references: [id], onDelete: SetNull)
+
+  // ===== Phase 3 — علاقات النشر المتعدد (حقول علاقات فقط) =====
+  publishRoutes  SocialPublishRoute[]   @relation("DestinationRoutes")
+  postTargets    SocialPostTarget[]     @relation("DestinationTargets")
+  postDeliveries SocialPostDelivery[]   @relation("DestinationDeliveries")
 
   @@index([status, verificationStatus])
   @@index([chatType])
@@ -1908,6 +1988,11 @@ model SocialTelegramBot {
   destinations TelegramDestination[]
   posts        SocialPost[]
 
+  // ===== Phase 3 — علاقات النشر المتعدد (حقول علاقات فقط) =====
+  publishRoutes  SocialPublishRoute[]  @relation("SocialBotRoutes")
+  postTargets    SocialPostTarget[]    @relation("SocialBotTargets")
+  postDeliveries SocialPostDelivery[]  @relation("SocialBotDeliveries")
+
   @@index([status])
   @@index([createdAt])
   @@map("social_telegram_bots")
@@ -1931,6 +2016,8 @@ model SocialPost {
 
   mediaUrl      String?   @map("media_url")
   mediaType     String?   @map("media_type")   // photo (الحالي) | video | document (توسيع لاحق)
+  // احتياطي المسار الأحادي القديم (قراءة فقط) — المرجع الفعلي للأهداف هو
+  // SocialPostTarget; يبقى عموداً منعاً لكسر التوقعات القديمة.
   destinationId String?   @map("destination_id")
   botId         String?   @map("bot_id") // بوت معيّن لهذا المنشور (يتجاوز بوت الوجهة)
   templateId    String?   @map("template_id")
@@ -1944,18 +2031,35 @@ model SocialPost {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  // ===== Phase 5 — الأرشفة + مرآة وضعية النشر =====
+  // الأرشفة حالت عرض فقط: يُخفى من كل القوائم عدا صفحة الأرشيف، والاستعادة
+  // تعيد لآخر حالة قبل الأرشفة (status لا يتغير). المكرون يستثني المؤرشف.
+  archivedAt DateTime? @map("archived_at")
+  // مرآة سريعة لوضعية النشر (site_only|social_only|both) من مشروع الجدولة.
+  siteMode String? @map("site_mode")
+
   destination TelegramDestination?  @relation(fields: [destinationId], references: [id], onDelete: SetNull)
   template    SocialPostTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
   bot         SocialTelegramBot?    @relation(fields: [botId], references: [id], onDelete: SetNull)
 
+  // ===== Phase 3 — النشر المتعدد (additive: حقول علاقات فقط، بلا أعمدة جديدة) =====
+  targets    SocialPostTarget[]    @relation("PostTargets")
+  deliveries SocialPostDelivery[]  @relation("PostDeliveries")
+
+  // ===== Phase 4 — روابط الجدولة الموحدة (حقول علاقات فقط) =====
+  mods             Mod[]                    @relation("ModSocialPost")
+  scheduleProjects SocialScheduleProject[]  @relation("PostScheduleProjects")
+
   @@index([platform, status])
   @@index([status, scheduledFor])
   @@index([createdAt])
+  @@index([archivedAt])
   @@map("social_posts")
 }
 
 // ===== قوالب منشورات السوشيال =====
 // قوالب بداية لمحرر المنشورات؛ مستقلة عن قوالب الإشعارات (قرار D3).
+// Phase 5 — قاعدة «الخلود»: لا حذف فيزيائي أبداً — أرشفة ناعمة فقط.
 model SocialPostTemplate {
   id          String   @id @default(cuid())
   platform    String   @default("telegram")
@@ -1971,8 +2075,166 @@ model SocialPostTemplate {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  posts SocialPost[]
+  // الأرشيف الناعم: المؤرشف يختفي عن القوائم الجديدة فقط — يبقى في
+  // قاعدة البيانات للأبد، والمنشورات الرجعية تحمل محتواها بنفسها.
+  isArchived Boolean  @default(false) @map("is_archived")
+  archivedAt DateTime? @map("archived_at")
+
+  posts    SocialPost[]
+  versions SocialPostTemplateVersion[]
 
   @@index([platform])
+  @@index([isArchived])
   @@map("social_post_templates")
+}
+
+// ===== Phase 5 — إصدارات القالب (لقطة غير قابلة للتعديل عند كل حفظ) =====
+// على غرار NotificationTemplateVersion: كل حفظ يُنشئ نسخة جديدة، والتراجع
+// يستعيد المحتوى عبر نسخة جديدة (لا يمحو التاريخ أبداً).
+model SocialPostTemplateVersion {
+  id           String   @id @default(cuid())
+  templateId   String   @map("template_id")
+  version      Int
+  name         String
+  title        String?
+  body         String
+  parseMode    String?  @map("parse_mode")
+  richDocument Json?    @map("rich_document")
+  mediaUrl     String?  @map("media_url")
+  variables    Json     @default("[]")
+  isDefault    Boolean  @default(false) @map("is_default")
+  changedBy    String?  @map("changed_by")
+  changeNote   String?  @map("change_note")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  template SocialPostTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId])
+  @@map("social_post_template_versions")
+}
+
+// ===== Phase 3 — التوجيه والنشر المتعدد (additive: جداول جديدة فقط) =====
+// SocialPublishRoute: قاعدة «منصة كونسول ← هدف نشر». SocialPostTarget: أهداف
+// المنشور الواحد (المرجع الحي للحالة). SocialPostDelivery: دفتر تسليم
+// غير قابل للتعديل (صف لكل محاولة إرسال — التاريخ يبقى للأبد).
+model SocialPublishRoute {
+  id            String   @id @default(cuid())
+  platformKey   String   @map("platform_key") // PC | PS5 | … (src/lib/constants PLATFORMS)
+  targetType    String   @map("target_type") // channel | group | topic
+  destinationId String   @map("destination_id")
+  destination   TelegramDestination @relation("DestinationRoutes", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId         String?  @map("bot_id")
+  bot           SocialTelegramBot? @relation("SocialBotRoutes", fields: [botId], references: [id], onDelete: SetNull)
+  threadId      Int?     @map("thread_id")
+  priority      Int      @default(0)
+  isDefault     Boolean  @default(false) @map("is_default")
+  isActive      Boolean  @default(true) @map("is_active")
+  validFrom     DateTime? @map("valid_from")
+  validUntil    DateTime? @map("valid_until")
+  createdById   String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([platformKey, isActive])
+  @@index([destinationId])
+  @@map("social_publish_routes")
+}
+
+model SocialPostTarget {
+  id                String   @id @default(cuid())
+  postId            String   @map("post_id")
+  post              SocialPost @relation("PostTargets", fields: [postId], references: [id], onDelete: Cascade)
+  destinationId     String   @map("destination_id")
+  destination       TelegramDestination @relation("DestinationTargets", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId             String?  @map("bot_id")
+  bot               SocialTelegramBot? @relation("SocialBotTargets", fields: [botId], references: [id], onDelete: SetNull)
+  threadId          Int?     @map("thread_id")
+  status            String   @default("pending") // pending | sending | sent | failed | skipped
+  externalMessageId String?  @map("external_message_id")
+  error             String?  @map("error")
+  attempts          Int      @default(0)
+  sentAt            DateTime? @map("sent_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([postId, destinationId, threadId])
+  @@index([postId, status])
+  @@map("social_post_targets")
+}
+
+model SocialPostDelivery {
+  id                String   @id @default(cuid())
+  postId            String   @map("post_id")
+  post              SocialPost @relation("PostDeliveries", fields: [postId], references: [id], onDelete: Cascade)
+  destinationId     String   @map("destination_id")
+  destination       TelegramDestination @relation("DestinationDeliveries", fields: [destinationId], references: [id], onDelete: Cascade)
+  botId             String?  @map("bot_id")
+  bot               SocialTelegramBot? @relation("SocialBotDeliveries", fields: [botId], references: [id], onDelete: SetNull)
+  threadId          Int?     @map("thread_id")
+  status            String   @map("status") // sent | failed | skipped (صف للتاريخ — لا يُحدَّث)
+  externalMessageId String?  @map("external_message_id")
+  error             String?  @map("error")
+  attempts          Int      @default(0)
+  sentAt            DateTime? @map("sent_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([postId, createdAt])
+  @@index([destinationId])
+  @@map("social_post_deliveries")
+}
+
+// ===== Phase 4 — مهمة الجدولة الموحدة (additive: جدول جديد فقط) =====
+// تربط مود (النشر على الموقع) بمنشور اجتماعي (النشر على المنصات) تحت
+// وضعية واحدة: site_only | social_only | both (الافتراضي). المصدر
+// الوحيد المعتمد لكروني الموقع والاجتماعي معاً — المسارات القديمة
+// (Mod.scheduledAt / SocialPost.scheduledFor) تبقى للتوافق.
+model SocialScheduleProject {
+  id              String    @id @default(cuid())
+  modId           String?   @map("mod_id")
+  mod             Mod?      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  postId          String?   @map("post_id")
+  post            SocialPost? @relation("PostScheduleProjects", fields: [postId], references: [id], onDelete: SetNull)
+  mode            String    @default("both") @map("mode") // site_only | social_only | both
+  sitePublishAt   DateTime? @map("site_publish_at")
+  socialPublishAt DateTime? @map("social_publish_at")
+  targetIds       Json      @default("[]") @map("target_ids") // [{destinationId, threadId?, botId?}] لقطة وقت الجدولة
+  createdById     String?   @map("created_by")
+  status          String    @default("draft") @map("status") // draft | scheduled | running | done | failed | canceled
+  error           String?   @map("error")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([modId])
+  @@index([postId])
+  @@map("social_schedule_projects")
+}
+
+// ===== Phase 6 — مركز أخطاء النشر =====
+// PublishErrorEvent: صف لكل فشل عبر الكتالوج (src/lib/publish-errors.ts) —
+// النطاق/المرجع/السبب/الإصلاح/قابلية الإعادة، مع الاستعلام عن غير المحلول.
+// الحل: يدوي (requireManager) أو تلقائي عند نجاح النشر/الإعادة (resolvedBy
+// خالٍ تعني «تلقائي»). index (resolvedAt, createdAt) يخدم قائمة غير المحلول
+// والتقرير الدوري معاً.
+model PublishErrorEvent {
+  id         String    @id @default(cuid())
+  code       String    // رمز الكتالوج (publish-errors.ts)
+  scope      String    // post | route | bot | destination | schedule
+  refId      String?   @map("ref_id") // post/bot/destination/route/schedule-project id
+  message    String?   // نص خام مقتضب بلا توكن (يُقنَّع قبل الكتابة)
+  causeAr    String    @map("cause_ar")
+  fixAr      String    @map("fix_ar")
+  retryable  Boolean   @default(false)
+  attempt    Int       @default(0)
+  notifiedAt DateTime? @map("notified_at")
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by") // user id أو null = تلقائي
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([resolvedAt, createdAt])
+  @@index([scope, refId])
+  @@index([code])
+  @@map("publish_error_events")
 }

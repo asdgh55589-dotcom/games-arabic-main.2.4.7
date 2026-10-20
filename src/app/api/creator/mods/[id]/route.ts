@@ -155,6 +155,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       include: {
         game: { select: gameDetailSelect },
         author: { select: authorPublicSelect },
+        files: {
+          orderBy: { order: 'asc' },
+          include: { links: { orderBy: { order: 'asc' } } },
+        },
+        siteLinks: { orderBy: { order: 'asc' } },
       },
     })
     if (!mod) return notFound('التعريب غير موجود')

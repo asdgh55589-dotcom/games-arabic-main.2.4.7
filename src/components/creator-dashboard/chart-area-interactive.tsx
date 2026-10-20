@@ -72,8 +72,7 @@ export function ChartAreaInteractive() {
       try {
         const range = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90
         const res = await fetch(
-          `/api/creator/analytics/history?range=${range}`,
-          { cache: "no-store" }
+          `/api/creator/analytics/history?range=${range}`
         )
         if (!res.ok) {
           if (!cancelled) setChartStatus("error")

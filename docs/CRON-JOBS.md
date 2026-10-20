@@ -1,6 +1,6 @@
 # Cron Jobs
 
-> Last updated: 2026-10-05
+> Last updated: 2026-10-18
 
 All cron endpoints are protected with Bearer token authentication via `$CRON_SECRET`.
 
@@ -15,13 +15,18 @@ All cron endpoints are protected with Bearer token authentication via `$CRON_SEC
 | notification-drain | `/api/cron/notification-drain` | `* * * * *` (Every minute) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batches) | Exponential backoff per job, `maxAttempts = 5` | `dead_letter` → visible in `/admin/notifications-health` |
 | template-publish | `/api/cron/template-publish` | `* * * * *` (Every minute — idle runs are a single indexed query) | `Bearer $CRON_SECRET` | ~8 s per run (bounded batch of 20) | Requeue until `maxRetries = 3`, then `failed` with `error` set | `ScheduledJob.status=failed` + error log; template stays a draft |
 | social-publish | `/api/cron/social-publish` | `* * * * *` (Every minute — idle runs are a single indexed query) | `Bearer $CRON_SECRET` | ~10 s per run (bounded batch of 50 posts + 25 legacy jobs) | Per-post `attempts` with 5 min backoff until `maxAttempts = 3`, then `SocialPost.status=failed` | `SocialPost.lastError` set + `publish_failed` audit row; post stays editable |
+| publish-digest | `/api/cron/publish-digest?type=daily` / `?type=weekly` | `0 5 * * *` (Daily 05:00) / `0 5 * * 6` (Sat 05:00) | `Bearer $CRON_SECRET` | < 5 s per run (counts + one notification per manager) | `failRun` on error; next tick retries the same window | PublishDigest InApp+Email rows per content manager visible in `/admin/notifications-history` |
 
-> **Scheduling note (P2):** there is no `vercel.json` in this repository, so the
-> `notification-drain` schedule above is a **suggested** cron entry, not an
-> installed one. Add it to whichever scheduler fronts the deployment (Vercel
-> `crons`, cron-job.org, …). Cadence matters more than precision: each run takes
-> a bounded batch and returns a `nextCursor`, so an unfinished backlog resumes
-> on the next tick instead of being re-scanned.
+> **Scheduling note (P2, corrected Phase 6):** `vercel.json` now exists but holds
+> only `buildCommand`/`installCommand` — it has **no `crons` block**, so every
+> schedule in the table above is a **suggested** entry, not an installed one. Add
+> it to whichever scheduler fronts the deployment (Vercel `crons`, cron-job.org,
+> …). Cadence matters more than precision: each run takes a bounded batch and
+> returns a `nextCursor`, so an unfinished backlog resumes on the next tick
+> instead of being re-scanned. The Phase 6 `publish-digest` job follows the same
+> rule; it is safe to call more often than the window because `claimRun`
+> (`publish-digest:<type>` + window key) makes repeat calls for the same window
+> return `skipped: 'duplicate'`.
 
 ## Invocation
 
@@ -120,9 +125,11 @@ retries requeue until `maxRetries = 3`.
 
 Drains **two** queues in one run (Social Hub update #3):
 
-1. **`social_posts`** — rows with `platform='telegram'`, `status='scheduled'`
-   and `scheduled_for <= now` (bounded batch of 50), each published through
-   `lib/social/publish.ts::publishSocialPost(id, { source: 'cron' })`.
+1. **`social_posts`** — rows with `platform='telegram'`, `status='scheduled'`,
+   `archived_at IS NULL` (Phase 5: archived posts are skipped even when their
+   kept `status` is scheduled; restoring from the archive page re-exposes
+   them) and `scheduled_for <= now` (bounded batch of 50), each published
+   through `lib/social/publish.ts::publishSocialPost(id, { source: 'cron' })`.
 2. **`scheduled_jobs` (legacy)** — pending `telegram_post` rows due now
    (bounded batch of 25), executed via `lib/scheduler.ts::executeJob`. These
    have had no caller since polling was removed in Phase 7; this cron is their
@@ -159,6 +166,25 @@ re-queues the post 5 minutes out (`backoff` matching `lib/scheduler.ts`). When
 caption over 1024 chars with media, or a misconfigured destination — fail
 immediately without burning the retry budget, because retrying them cannot
 succeed.
+
+### publish-digest (Phase 6)
+
+```json
+{
+  "ok": true, "type": "daily", "notified": 4,
+  "counts": { "delivered": 12, "failed": 2, "archived": 1, "openErrors": 3 },
+  "window": { "since": "...", "until": "..." }, "duration_ms": 120
+}
+```
+
+Sends every content manager (moderator+) one `publish_digest` InApp+Email
+notification summarizing the window: `delivered`/`failed` =
+`social_post_deliveries` rows by status, `archived` = `social_posts`
+archived in-window, `openErrors` = unresolved `publish_error_events`.
+`type=daily` (24 h; «اليوم») or `type=weekly` (7 days; «الأسبوع الماضي»).
+`claimRun('publish-digest:<type>', <window-key>)` makes repeat calls for
+the same window `skipped: 'duplicate'` — exactly one notification window.
+Failure → `ScheduledJob.status='failed'` + error, next tick retries.
 
 ## Monitoring
 

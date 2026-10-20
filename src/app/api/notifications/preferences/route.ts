@@ -1,9 +1,10 @@
 import type { Prisma } from '@prisma/client'
 import type { NextRequest } from 'next/server'
-import { internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { UpdatePreferencesSchema } from '@/lib/schemas'
 
 const DEFAULT_PREFERENCES = {
@@ -89,6 +90,7 @@ export async function PUT(req: NextRequest) {
   } catch (err) {
     if ((err as Error).message === 'AuthError') return unauthorized()
     logger.error({ err }, '[notifications preferences PUT] failed')
-    return internalError('Failed to save preferences')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

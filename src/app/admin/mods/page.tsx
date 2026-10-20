@@ -465,6 +465,9 @@ export default function AdminModsPage() {
                             src={mod.author.avatarUrl || ''}
                             alt=""
                             className="hidden h-8 w-8 rounded object-cover sm:block"
+                            loading="lazy"
+                            width={32}
+                            height={32}
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1">
@@ -592,6 +595,9 @@ export default function AdminModsPage() {
                     }
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                    loading="lazy"
+                    width={40}
+                    height={40}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1">

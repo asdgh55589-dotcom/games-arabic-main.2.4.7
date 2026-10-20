@@ -22,6 +22,9 @@ const mockMod = {
 const mockAuditLog = {
   create: jest.fn().mockResolvedValue({}),
 }
+const mockProjects = {
+  findMany: jest.fn(),
+}
 jest.mock('@/lib/db', () => ({
   db: {
     modChangelog: {
@@ -36,14 +39,20 @@ jest.mock('@/lib/db', () => ({
     auditLog: {
       create: (...a: unknown[]) => mockAuditLog.create(...a),
     },
+    socialScheduleProject: {
+      findMany: (...a: unknown[]) => mockProjects.findMany(...a),
+    },
   },
 }))
 
 jest.mock('@/lib/error-reporting', () => ({ reportError: jest.fn() }))
 
-import { POST as changelogPOST, GET as changelogGET } from '@/app/api/creator/mods/[id]/changelog/route'
-import { GET as scheduledPublishGET } from '@/app/api/admin/scheduled-publish/check/route'
 import { NextResponse } from 'next/server'
+import { GET as scheduledPublishGET } from '@/app/api/admin/scheduled-publish/check/route'
+import {
+  GET as changelogGET,
+  POST as changelogPOST,
+} from '@/app/api/creator/mods/[id]/changelog/route'
 
 const { NextRequest } = jest.requireActual('next/server') as typeof import('next/server')
 
@@ -72,7 +81,11 @@ describe('Changelog API', () => {
     it('creates a changelog entry with valid data', async () => {
       mockStudio.mockResolvedValue({ user: CREATOR })
       mockMod.findUnique.mockResolvedValue({ id: 'mod-1', authorId: 'u-1' })
-      mockChangelog.create.mockResolvedValue({ id: 'cl-1', type: 'update', title: 'Added features' })
+      mockChangelog.create.mockResolvedValue({
+        id: 'cl-1',
+        type: 'update',
+        title: 'Added features',
+      })
 
       const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
         type: 'update',
@@ -97,23 +110,35 @@ describe('Changelog API', () => {
     })
 
     it('returns 401 without auth', async () => {
-      mockStudio.mockResolvedValue({ user: null, error: new NextResponse('Unauthorized', { status: 401 }) })
+      mockStudio.mockResolvedValue({
+        user: null,
+        error: new NextResponse('Unauthorized', { status: 401 }),
+      })
 
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { type: 'edit', title: 'Fix' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        type: 'edit',
+        title: 'Fix',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
       expect(res.status).toBe(401)
     })
 
     it('returns 400 when title is missing', async () => {
       mockStudio.mockResolvedValue({ user: CREATOR })
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { type: 'edit', title: '' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        type: 'edit',
+        title: '',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
       expect(res.status).toBe(422)
     })
 
     it('returns 400 when type is invalid', async () => {
       mockStudio.mockResolvedValue({ user: CREATOR })
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { type: 'invalid', title: 'Fix' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        type: 'invalid',
+        title: 'Fix',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
       expect(res.status).toBe(422)
     })
@@ -122,7 +147,10 @@ describe('Changelog API', () => {
       mockStudio.mockResolvedValue({ user: CREATOR })
       mockMod.findUnique.mockResolvedValue(null)
 
-      const req = postReq('http://localhost/api/creator/mods/missing/changelog', { type: 'edit', title: 'Fix' })
+      const req = postReq('http://localhost/api/creator/mods/missing/changelog', {
+        type: 'edit',
+        title: 'Fix',
+      })
       const res = await changelogPOST(req, paramsOf('missing'))
       expect(res.status).toBe(422)
     })
@@ -131,7 +159,10 @@ describe('Changelog API', () => {
       mockStudio.mockResolvedValue({ user: { ...CREATOR, id: 'u-other' } })
       mockMod.findUnique.mockResolvedValue({ id: 'mod-1', authorId: 'u-1' })
 
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { type: 'edit', title: 'Fix' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        type: 'edit',
+        title: 'Fix',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
       expect(res.status).toBe(403)
     })
@@ -139,9 +170,16 @@ describe('Changelog API', () => {
     it('allows admin to create changelog for any mod', async () => {
       mockStudio.mockResolvedValue({ user: ADMIN })
       mockMod.findUnique.mockResolvedValue({ id: 'mod-1', authorId: 'u-other' })
-      mockChangelog.create.mockResolvedValue({ id: 'cl-2', type: 'release', title: 'Major release' })
+      mockChangelog.create.mockResolvedValue({
+        id: 'cl-2',
+        type: 'release',
+        title: 'Major release',
+      })
 
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { type: 'release', title: 'Major release' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        type: 'release',
+        title: 'Major release',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
       expect(res.status).toBe(201)
     })
@@ -151,7 +189,9 @@ describe('Changelog API', () => {
       mockMod.findUnique.mockResolvedValue({ id: 'mod-1', authorId: 'u-1' })
       mockChangelog.create.mockResolvedValue({ id: 'cl-3' })
 
-      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', { title: 'Quick fix' })
+      const req = postReq('http://localhost/api/creator/mods/mod-1/changelog', {
+        title: 'Quick fix',
+      })
       const res = await changelogPOST(req, paramsOf('mod-1'))
 
       expect(res.status).toBe(201)
@@ -166,10 +206,18 @@ describe('Changelog API', () => {
   describe('GET /api/creator/mods/[id]/changelog', () => {
     it('returns changelogs for a mod', async () => {
       mockChangelog.findMany.mockResolvedValue([
-        { id: 'cl-1', type: 'release', title: 'v1.0', changedBy: { id: 'u-1', username: 'creator1', avatarUrl: null, role: 'creator' } },
+        {
+          id: 'cl-1',
+          type: 'release',
+          title: 'v1.0',
+          changedBy: { id: 'u-1', username: 'creator1', avatarUrl: null, role: 'creator' },
+        },
       ])
 
-      const res = await changelogGET(getReq('http://localhost/api/creator/mods/mod-1/changelog'), paramsOf('mod-1'))
+      const res = await changelogGET(
+        getReq('http://localhost/api/creator/mods/mod-1/changelog'),
+        paramsOf('mod-1'),
+      )
       const body = await res.json()
 
       expect(res.status).toBe(200)
@@ -199,6 +247,8 @@ function cronReq(url: string, secret: string | null = CRON_SECRET) {
 describe('Scheduled Publish Cron', () => {
   beforeEach(() => {
     process.env.CRON_SECRET = CRON_SECRET
+    // المرحلة 4: لا مشاريع — المسار القديم وحده يعمل كما كان.
+    mockProjects.findMany.mockResolvedValue([])
   })
 
   it('rejects an unauthenticated caller without publishing anything', async () => {
@@ -206,7 +256,9 @@ describe('Scheduled Publish Cron', () => {
       { id: 'mod-1', scheduledAt: new Date(Date.now() - 60000).toISOString(), name: 'test-mod' },
     ])
 
-      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check', null))
+    const res = await scheduledPublishGET(
+      cronReq('http://localhost/api/admin/scheduled-publish/check', null),
+    )
 
     expect(res.status).toBe(401)
     expect(mockMod.update).not.toHaveBeenCalled()
@@ -214,40 +266,44 @@ describe('Scheduled Publish Cron', () => {
 
   it('publishes mods that are past their scheduledAt', async () => {
     const pastDate = new Date(Date.now() - 60000).toISOString()
-    mockMod.findMany.mockResolvedValue([
-      { id: 'mod-1', scheduledAt: pastDate, slug: 'test-mod' },
-    ])
+    mockMod.findMany.mockResolvedValue([{ id: 'mod-1', scheduledAt: pastDate, slug: 'test-mod' }])
     mockMod.update.mockResolvedValue({})
 
-      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
-      const body = await res.json()
+    const res = await scheduledPublishGET(
+      cronReq('http://localhost/api/admin/scheduled-publish/check'),
+    )
+    const body = await res.json()
 
-      expect(res.status).toBe(200)
-      expect(body.data.published).toBe(1)
-      expect(mockMod.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'mod-1' },
-          data: expect.objectContaining({ workflowStatus: 'PUBLISHED', scheduledSent: true }),
-        }),
-      )
-    })
+    expect(res.status).toBe(200)
+    expect(body.data.published).toBe(1)
+    expect(mockMod.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'mod-1' },
+        data: expect.objectContaining({ workflowStatus: 'PUBLISHED', scheduledSent: true }),
+      }),
+    )
+  })
 
-    it('does not publish mods whose scheduledAt is in the future', async () => {
-      // When scheduledAt > now, the DB query filters them out, so findMany returns []
-      mockMod.findMany.mockResolvedValue([])
+  it('does not publish mods whose scheduledAt is in the future', async () => {
+    // When scheduledAt > now, the DB query filters them out, so findMany returns []
+    mockMod.findMany.mockResolvedValue([])
 
-      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
-      const body = await res.json()
+    const res = await scheduledPublishGET(
+      cronReq('http://localhost/api/admin/scheduled-publish/check'),
+    )
+    const body = await res.json()
 
-      expect(res.status).toBe(200)
-      expect(body.data.published).toBe(0)
-      expect(mockMod.update).not.toHaveBeenCalled()
-    })
+    expect(res.status).toBe(200)
+    expect(body.data.published).toBe(0)
+    expect(mockMod.update).not.toHaveBeenCalled()
+  })
 
-    it('returns published: 0 when no mods are scheduled', async () => {
-      mockMod.findMany.mockResolvedValue([])
+  it('returns published: 0 when no mods are scheduled', async () => {
+    mockMod.findMany.mockResolvedValue([])
 
-      const res = await scheduledPublishGET(cronReq('http://localhost/api/admin/scheduled-publish/check'))
+    const res = await scheduledPublishGET(
+      cronReq('http://localhost/api/admin/scheduled-publish/check'),
+    )
     const body = await res.json()
 
     expect(res.status).toBe(200)

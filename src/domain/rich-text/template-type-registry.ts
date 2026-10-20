@@ -5,10 +5,12 @@
  * AND the single place where the three overlapping notification-type
  * universes (architecture plan §2.5) are reconciled:
  *
- *  1. Schema template types (20) — `NotificationTypeSchema` in
+ *  1. Schema template types (24) — `NotificationTypeSchema` in
  *     src/lib/schemas.ts, the domain `NotificationType` enum, and the seed
- *     `in_app` rows all agree on these 20. They are exactly the registry
- *     keys. This is the CANONICAL universe.
+ *     `in_app` rows all agree on these 24. They are exactly the registry
+ *     keys. This is the CANONICAL universe. (مرحلة 6: أُضيفت 4 أنواع
+ *     أدوات النشر: social_publish_failed / social_publish_succeeded /
+ *     publish_degraded / publish_digest)
  *  2. Legacy notification types (23) — `NotificationType` in
  *     src/lib/notifications/types.ts. 14 are shared with the canonical set;
  *     9 are legacy-only workflow types (`mod_submitted`, …) with no template
@@ -106,6 +108,11 @@ export const TEMPLATE_TYPE_REGISTRY: Record<NotificationType, TemplateTypeRegist
   [NotificationType.AdminMilestone]: reg(NotificationType.AdminMilestone, 'admin'),
   // System
   [NotificationType.SystemAnnouncement]: reg(NotificationType.SystemAnnouncement, 'system'),
+  // Social Hub — أدوات النشر (مرحلة 6)
+  [NotificationType.SocialPublishFailed]: reg(NotificationType.SocialPublishFailed, 'admin'),
+  [NotificationType.SocialPublishSucceeded]: reg(NotificationType.SocialPublishSucceeded, 'admin'),
+  [NotificationType.PublishDegraded]: reg(NotificationType.PublishDegraded, 'admin'),
+  [NotificationType.PublishDigest]: reg(NotificationType.PublishDigest, 'admin'),
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +184,7 @@ export const LEGACY_ONLY_TYPES: readonly string[] = LEGACY_NOTIFICATION_TYPES.fi
   (type) => !CANONICAL_TYPE_SET.has(type),
 )
 
-/** Canonical types the legacy enum does not know — 6 of the 20. */
+/** Canonical types the legacy enum does not know — 10 of the 24. */
 export const CANONICAL_ONLY_TYPES: readonly string[] = Object.keys(TEMPLATE_TYPE_REGISTRY).filter(
   (type) => !LEGACY_TYPE_SET.has(type),
 )
@@ -188,7 +195,7 @@ export const CANONICAL_ONLY_TYPES: readonly string[] = Object.keys(TEMPLATE_TYPE
  */
 export const TYPE_UNIVERSE_COUNTS = {
   /** Universe 1 — schema/domain/seed template types (registry keys). */
-  canonical: 20,
+  canonical: 24,
   /** Universe 2 — legacy enum in src/lib/notifications/types.ts. */
   legacyNotificationTypes: 23,
   /** Universe 3 — security-router union in src/lib/notification-router.ts. */
@@ -198,7 +205,7 @@ export const TYPE_UNIVERSE_COUNTS = {
   /** legacy − canonical (workflow-only legacy types). */
   legacyOnly: 9,
   /** canonical − legacy. */
-  canonicalOnly: 6,
+  canonicalOnly: 10,
 } as const
 
 /** Which of the three universes a raw type string belongs to. */

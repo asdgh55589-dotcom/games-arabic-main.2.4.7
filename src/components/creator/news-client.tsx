@@ -92,18 +92,31 @@ export function NewsClient() {
     setCreating(true)
   }
 
-  const openEdit = (row: NewsItem) => {
+  // `content` no longer ships in the 100-row LIST (payload diet) — the edit
+  // form fetches the single row body on demand, then opens like before.
+  const openEdit = async (row: NewsItem) => {
     setCreating(false)
-    setEditing(row)
-    setForm({
-      title: row.title,
-      summary: row.summary,
-      content: row.content,
-      imageUrl: row.imageUrl,
-      linkUrl: row.linkUrl || '',
-      category: row.category,
-      type: row.type,
-    })
+    try {
+      const res = await fetch(`/api/creator/news/${row.id}`)
+      const json = await res.json()
+      const full = json?.data?.news
+      if (res.ok && full) {
+        setEditing(full)
+        setForm({
+          title: full.title,
+          summary: full.summary,
+          content: full.content,
+          imageUrl: full.imageUrl,
+          linkUrl: full.linkUrl || '',
+          category: full.category,
+          type: full.type,
+        })
+        return
+      }
+      toast({ title: json?.error?.message || t.postTitle, variant: 'destructive' })
+    } catch {
+      toast({ title: t.postTitle, variant: 'destructive' })
+    }
   }
 
   const closeForm = () => {

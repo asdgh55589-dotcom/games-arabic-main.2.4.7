@@ -1,11 +1,11 @@
-import { type NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
-import { promisify } from 'util'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'fs'
-import { join } from 'path'
 import crypto from 'crypto'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { type NextRequest, NextResponse } from 'next/server'
+import { join } from 'path'
+import { promisify } from 'util'
 import { requireCronAuth } from '@/lib/cron-auth'
-import { claimRun, completeRun } from '@/lib/cron-ledger'
+import { claimRun, completeRun, failRun } from '@/lib/cron-ledger'
 import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 
@@ -103,6 +103,15 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     logger.error('[weekly-backup] فشل النسخ الاحتياطي:', error)
     reportError(error, { route: 'GET /api/cron/weekly-backup', action: 'pg_dump' })
+    // تحرير النافذة: بلا failRun يبقى الصف running ويحجب كل ticks الأسبوع.
+    // (المطالبة التالية تزيح الصف الفاشل وتعيد المحاولة.)
+    if (jobId) {
+      try {
+        await failRun(jobId, error)
+      } catch {
+        // لا نُسقط رد الخطأ الأصلي بسبب فشل السجل
+      }
+    }
     return NextResponse.json({ error: 'فشل النسخ الاحتياطي' }, { status: 500 })
   }
 }

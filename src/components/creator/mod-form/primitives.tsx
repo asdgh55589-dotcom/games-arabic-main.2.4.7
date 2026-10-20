@@ -8,6 +8,12 @@ export interface FileLink {
   url: string
   label?: string
 }
+export interface SiteLink {
+  url: string
+  siteName?: string | null
+  pageTitle?: string | null
+  domain?: string | null
+}
 export interface DownloadFile {
   id?: string
   title: string
@@ -18,6 +24,9 @@ export interface DownloadFile {
   fileSize: string
   fileFormat: string
   links: FileLink[]
+  parentId?: string | null
+  extrasLabel?: string | null
+  siteLinks?: Array<{ url: string; siteName?: string | null; pageTitle?: string | null; domain?: string | null }>
 }
 export interface TeamMember {
   id?: string

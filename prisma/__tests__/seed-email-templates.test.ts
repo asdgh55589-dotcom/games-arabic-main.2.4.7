@@ -142,27 +142,63 @@ const emailTemplates = [
     bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">📢 إعلان من الإدارة</h2><p style="color:#333;font-size:16px;line-height:1.6;">{{announcementMessage}}</p></div>`,
     variables: ['announcementMessage'],
   },
+  // ===== أدوات النشر (مرحلة 6) — نسخة مطابقة من prisma/seed-notification-templates.ts =====
+  {
+    type: 'social_publish_failed',
+    channel: 'email',
+    titleTemplate: 'فشل نشر المنشور "{{postTitle}}"',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">⚠️ فشل نشر اجتماعي</h2><p style="color:#333;font-size:16px;line-height:1.6;">تعذّر نشر المنشور "<strong>{{postTitle}}</strong>".</p><p style="color:#333;font-size:16px;line-height:1.6;">السبب: {{errorText}}</p><div style="background-color:#e2f3ff;border:1px solid #90caf9;padding:16px;margin:16px 0;border-radius:4px;"><p style="color:#0d47a1;margin:0;">كيف أصلحه: {{fixText}} (المرجع: {{errorRef}})</p></div></div>`,
+    variables: ['recipientName', 'postTitle', 'errorText', 'fixText', 'errorRef'],
+  },
+  {
+    type: 'social_publish_succeeded',
+    channel: 'email',
+    titleTemplate: 'نجاح نشر المنشور "{{postTitle}}"',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">✅ نجاح نشر اجتماعي</h2><p style="color:#333;font-size:16px;line-height:1.6;">نُشر المنشور "<strong>{{postTitle}}</strong>" بنجاح إلى <strong>{{targetCount}}</strong> وجهة.</p></div>`,
+    variables: ['recipientName', 'postTitle', 'targetCount'],
+  },
+  {
+    type: 'publish_degraded',
+    channel: 'email',
+    titleTemplate: '⚠️ تدهور متكرر في {{entityLabel}}',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">⚠️ تدهور متكرر في النشر</h2><p style="color:#333;font-size:16px;line-height:1.6;">تراكمت <strong>{{failureCount}}</strong> إخفاقات متتالية على <strong>{{entityLabel}}</strong>.</p><p style="color:#333;font-size:16px;line-height:1.6;">{{lastErrorText}}</p></div>`,
+    variables: ['recipientName', 'entityLabel', 'failureCount', 'lastErrorText'],
+  },
+  {
+    type: 'publish_digest',
+    channel: 'email',
+    titleTemplate: '📊 تقرير النشر — {{periodLabel}}',
+    bodyTemplate: `<div dir="rtl"><h2 style="color:#1a1a2e;margin-bottom:16px;">📊 تقرير النشر — {{periodLabel}}</h2><p style="color:#333;font-size:16px;line-height:1.6;">نجاح: <strong>{{publishedCount}}</strong> — فشل: <strong>{{failedCount}}</strong> — أرشفة: <strong>{{archivedCount}}</strong> — أخطاء مفتوحة: <strong>{{openErrors}}</strong></p></div>`,
+    variables: [
+      'recipientName',
+      'publishedCount',
+      'failedCount',
+      'archivedCount',
+      'openErrors',
+      'periodLabel',
+    ],
+  },
 ]
 
 describe('Seed Email Templates Validation', () => {
-  it('should have exactly 20 email templates', () => {
-    expect(emailTemplates).toHaveLength(20)
+  it('should have exactly 24 email templates', () => {
+    expect(emailTemplates).toHaveLength(24)
   })
 
   it('should have all unique type:channel combinations', () => {
-    const keys = emailTemplates.map(t => `${t.type}:${t.channel}`)
+    const keys = emailTemplates.map((t) => `${t.type}:${t.channel}`)
     const unique = new Set(keys)
-    expect(unique.size).toBe(20)
+    expect(unique.size).toBe(24)
   })
 
   it('should all have channel=email', () => {
-    emailTemplates.forEach(t => {
+    emailTemplates.forEach((t) => {
       expect(t.channel).toBe('email')
     })
   })
 
   describe('Handlebars syntax validation', () => {
-    emailTemplates.forEach(template => {
+    emailTemplates.forEach((template) => {
       it(`should compile titleTemplate for ${template.type}`, () => {
         expect(() => Handlebars.compile(template.titleTemplate)).not.toThrow()
       })
@@ -175,8 +211,18 @@ describe('Seed Email Templates Validation', () => {
 
   describe('Template rendering', () => {
     const sampleData: Record<string, Record<string, unknown>> = {
-      comment_reply: { recipientName: 'أحمد', actorName: 'محمد', modTitle: 'لعبة', replyPreview: 'شكراً' },
-      top_level_comment: { recipientName: 'أحمد', actorName: 'محمد', modTitle: 'لعبة', commentPreview: 'عمل ممتاز' },
+      comment_reply: {
+        recipientName: 'أحمد',
+        actorName: 'محمد',
+        modTitle: 'لعبة',
+        replyPreview: 'شكراً',
+      },
+      top_level_comment: {
+        recipientName: 'أحمد',
+        actorName: 'محمد',
+        modTitle: 'لعبة',
+        commentPreview: 'عمل ممتاز',
+      },
       like: { recipientName: 'أحمد', modTitle: 'لعبة' },
       follow: { recipientName: 'أحمد', followerName: 'سارة' },
       mod_endorse: { recipientName: 'أحمد', modTitle: 'لعبة' },
@@ -195,9 +241,31 @@ describe('Seed Email Templates Validation', () => {
       admin_report: { reason: 'محتوى مخالف' },
       admin_milestone: { milestoneMessage: '100 تعريب' },
       system_announcement: { announcementMessage: 'صيانة مجدولة' },
+      social_publish_failed: {
+        recipientName: 'مدير',
+        postTitle: 'إعلان',
+        errorText: 'البوت غير مفعل',
+        fixText: 'فعّل البوت',
+        errorRef: 'post_1',
+      },
+      social_publish_succeeded: { recipientName: 'مدير', postTitle: 'إعلان', targetCount: 3 },
+      publish_degraded: {
+        recipientName: 'مدير',
+        entityLabel: 'bot:1',
+        failureCount: 4,
+        lastErrorText: 'رمز: rate_limited',
+      },
+      publish_digest: {
+        recipientName: 'مدير',
+        publishedCount: 12,
+        failedCount: 2,
+        archivedCount: 1,
+        openErrors: 3,
+        periodLabel: 'اليوم',
+      },
     }
 
-    emailTemplates.forEach(template => {
+    emailTemplates.forEach((template) => {
       it(`should render ${template.type} without errors`, () => {
         const compiledTitle = Handlebars.compile(template.titleTemplate)
         const compiledBody = Handlebars.compile(template.bodyTemplate)

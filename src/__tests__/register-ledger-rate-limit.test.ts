@@ -4,7 +4,7 @@
  * Manual email signup is off — Google OAuth only. Every request answers
  * 410 LOGIN_METHOD_DISABLED without touching the database or rate limiter.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 import { POST as registerPOST } from '@/app/api/auth/register-ledger/route'
 

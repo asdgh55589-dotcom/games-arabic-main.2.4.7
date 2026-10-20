@@ -7,6 +7,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
+import { emailFrom } from '@/lib/email/from'
 import {
   buildApprovalEmail,
   buildInviteEmail,
@@ -15,7 +16,6 @@ import {
   buildVerificationEmail,
   renderEmailTemplate,
 } from '@/lib/email/templates'
-import { emailFrom } from '@/lib/email/from'
 
 const ROOT = process.cwd()
 const SENDER_FILES = [
@@ -72,7 +72,9 @@ describe('sender-file from unification (SA-1 scope, conditional)', () => {
     }
     if (residual.length > 0) {
       // eslint-disable-next-line no-console
-      console.log(`[SA-2 info] residual sender hardcoded froms (SA-1 scope, NOT SA-2):\n - ${residual.join('\n - ')}`)
+      console.log(
+        `[SA-2 info] residual sender hardcoded froms (SA-1 scope, NOT SA-2):\n - ${residual.join('\n - ')}`,
+      )
     } else {
       // eslint-disable-next-line no-console
       console.log('[SA-2 info] sender files clean — SA-1 has unified them onto emailFrom()')
@@ -91,14 +93,14 @@ describe('seed email-channel rows (static idempotency proof)', () => {
     expect(seed).not.toMatch(/\.create\(\{\s*data:\s*\[\s*$/m)
   })
 
-  it('contains exactly 20 email-channel rows', () => {
+  it('contains exactly 24 email-channel rows', () => {
     const emailRows = (seed.match(/channel:\s*['"]email['"]/g) || []).length
-    expect(emailRows).toBe(20)
+    expect(emailRows).toBe(24)
   })
 
-  it('keeps the 20 in_app rows intact', () => {
+  it('keeps the 24 in_app rows intact', () => {
     const inAppRows = (seed.match(/channel:\s*['"]in_app['"]/g) || []).length
-    expect(inAppRows).toBe(20)
+    expect(inAppRows).toBe(24)
   })
 
   it('email rows carry Arabic subjects + RTL bodies + recipientName var', () => {
@@ -199,7 +201,8 @@ describe('reusable sender builders (verbatim copy, RTL, Brevo-safe HTML)', () =>
     const samples = [
       buildVerificationEmail('https://example.com/v?t=1').html,
       buildResetEmail('https://example.com/r?t=1').html,
-      buildInviteEmail({ inviterUsername: 'a', teamName: 'b', acceptUrl: 'https://example.com' }).html,
+      buildInviteEmail({ inviterUsername: 'a', teamName: 'b', acceptUrl: 'https://example.com' })
+        .html,
       buildTransferEmail({
         nomineeUsername: 'a',
         nominatorUsername: 'b',

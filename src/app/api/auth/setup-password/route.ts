@@ -1,17 +1,11 @@
 import { createHash, randomBytes } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  fail,
-  internalError,
-  ok,
-  rateLimited,
-  unauthorized,
-  validationFail,
-} from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { hashPassword, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { isSyntheticTelegramEmail } from '@/lib/onboarding'
 import { ProvisionError, provisionSupabasePassword } from '@/lib/password-setup'
 import { rateLimit } from '@/lib/rate-limit'
@@ -211,6 +205,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     logger.error({ err }, '[setup-password POST] failed')
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

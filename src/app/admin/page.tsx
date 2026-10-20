@@ -332,6 +332,9 @@ export default function AdminDashboard() {
                           src={u.avatarUrl}
                           alt=""
                           className="h-8 w-8 rounded-full object-cover"
+                          loading="lazy"
+                          width={32}
+                          height={32}
                         />
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-white">

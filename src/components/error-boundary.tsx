@@ -76,10 +76,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </svg>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">حدث خطأ غير متوقع</h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 text-muted-foreground" aria-live="polite">
             {this.props.label
-              ? `Failed to load ${this.props.label}. The error has been logged.`
-              : 'An unexpected error occurred while rendering this page.'}
+              ? `تعذّر تحميل ${this.props.label} — سُجّل الخطأ وسنراجعه. حاول مجدداً.`
+              : 'حدث خطأ غير متوقع أثناء عرض الصفحة — تحقق من الاتصال وحاول مجدداً.'}
           </p>
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <pre className="mt-4 overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 text-left text-xs text-muted-foreground">

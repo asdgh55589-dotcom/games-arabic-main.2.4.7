@@ -26,6 +26,9 @@ interface FileInput {
   fileFormat?: string
   order?: number
   links?: FileLinkInput[]
+  parentId?: string | number | null
+  extrasLabel?: string | null
+  siteLinks?: Array<{ url: string; siteName?: string | null; pageTitle?: string | null; domain?: string | null; order?: number }>
 }
 interface VideoInput {
   title?: string
@@ -72,6 +75,7 @@ export interface ModRelationsInput {
   teamMembers?: MemberInput[]
   contactLinks?: ContactInput[]
   customTabs?: TabInput[]
+  siteLinks?: Array<{ url: string; siteName?: string | null; pageTitle?: string | null; domain?: string | null; order?: number; fileId?: string | null }>
   version?: string
   fileSize?: string
   fileFormat?: string
@@ -81,6 +85,7 @@ interface RelationTx {
   modFile: {
     deleteMany(args: unknown): Promise<unknown>
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>
+    update(args: { where: unknown; data: unknown }): Promise<unknown>
   }
   modFileLink: { createMany(args: unknown): Promise<unknown> }
   modVideoGroup: {
@@ -91,6 +96,7 @@ interface RelationTx {
   modTeamMember: { deleteMany(args: unknown): Promise<unknown>; createMany(args: unknown): Promise<unknown> }
   modContactLink: { deleteMany(args: unknown): Promise<unknown>; createMany(args: unknown): Promise<unknown> }
   modCustomTab: { deleteMany(args: unknown): Promise<unknown>; createMany(args: unknown): Promise<unknown> }
+  modSiteLink: { deleteMany(args: unknown): Promise<unknown>; createMany(args: unknown): Promise<unknown> }
 }
 
 export const MOD_RELATION_KEYS = [
@@ -114,10 +120,13 @@ export async function syncModRelations(
   body: ModRelationsInput,
   opts: { uploadedBy?: string } = {},
 ): Promise<void> {
-  // ===== files + links (with IA provenance) =====
+  // ===== files + links (with IA provenance) + parentId/extrasLabel/siteLinks =====
   if (Array.isArray(body.files)) {
     await tx.modFile.deleteMany({ where: { modId } })
-    for (const [i, f] of body.files.filter((x) => x?.title).entries()) {
+    const validFiles = body.files.filter((x) => x?.title)
+    // First pass: create all files (parentId null), collect ids in order.
+    const createdIds: string[] = []
+    for (const [i, f] of validFiles.entries()) {
       const created = await tx.modFile.create({
         data: {
           modId,
@@ -129,8 +138,10 @@ export async function syncModRelations(
           fileSize: f.fileSize || body.fileSize || 'MB 0',
           fileFormat: f.fileFormat || body.fileFormat || 'zip',
           order: f.order ?? i,
+          extrasLabel: f.extrasLabel || null,
         },
       })
+      createdIds.push(created.id)
       const links = (Array.isArray(f.links) ? f.links : [])
         .filter((l) => l?.url)
         .map((l, j) => {
@@ -146,7 +157,52 @@ export async function syncModRelations(
           }
         })
       if (links.length > 0) await tx.modFileLink.createMany({ data: links })
+      // Nested site links for this file
+      if (Array.isArray(f.siteLinks)) {
+        const nested = (f.siteLinks as Array<Record<string, unknown>>)
+          .filter((s) => s?.url)
+          .map((s, j) => ({
+            modId,
+            fileId: created.id,
+            url: s.url as string,
+            siteName: (s.siteName as string) || null,
+            pageTitle: (s.pageTitle as string) || null,
+            domain: (s.domain as string) || null,
+            order: (s.order as number) ?? j,
+          }))
+        if (nested.length > 0) await tx.modSiteLink.createMany({ data: nested })
+      }
     }
+    // Second pass: set parentId based on index reference
+    for (const [i, f] of validFiles.entries()) {
+      const parentIdx = f.parentId
+      if (parentIdx !== null && parentIdx !== undefined && parentIdx !== '') {
+        const pi = typeof parentIdx === 'number' ? parentIdx : parseInt(String(parentIdx), 10)
+        if (!Number.isNaN(pi) && pi >= 0 && pi < createdIds.length && pi !== i) {
+          await tx.modFile.update({
+            where: { id: createdIds[i] },
+            data: { parentId: createdIds[pi] },
+          })
+        }
+      }
+    }
+  }
+
+  // ===== site links (mod-level, external: fileId null) =====
+  if (Array.isArray(body.siteLinks)) {
+    await tx.modSiteLink.deleteMany({ where: { modId, fileId: null } })
+    const rows = (body.siteLinks as Array<Record<string, unknown>>)
+      .filter((s) => s?.url)
+      .map((s, i) => ({
+        modId,
+        fileId: null,
+        url: s.url as string,
+        siteName: (s.siteName as string) || null,
+        pageTitle: (s.pageTitle as string) || null,
+        domain: (s.domain as string) || null,
+        order: (s.order as number) ?? i,
+      }))
+    if (rows.length > 0) await tx.modSiteLink.createMany({ data: rows })
   }
 
   // ===== video groups =====

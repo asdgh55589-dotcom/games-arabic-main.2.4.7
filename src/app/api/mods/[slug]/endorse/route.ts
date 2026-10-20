@@ -7,28 +7,59 @@ import { clearHomeCache } from '@/lib/home-cache'
 import { logger } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 
-// GET /api/mods/[slug]/endorse — check if current user has endorsed
+const ALLOWED = new Set(['fire', 'sparkle', 'thumbsup', 'thumbsdown'])
+
+function reactionsOf(m: {
+  reactionFire: number
+  reactionSparkle: number
+  reactionThumbsUp: number
+  reactionThumbsDown: number
+}) {
+  return {
+    fire: m.reactionFire,
+    sparkle: m.reactionSparkle,
+    thumbsup: m.reactionThumbsUp,
+    thumbsdown: m.reactionThumbsDown,
+  }
+}
+
+const COUNT_SELECT = {
+  endorsements: true,
+  reactionFire: true,
+  reactionSparkle: true,
+  reactionThumbsUp: true,
+  reactionThumbsDown: true,
+} as const
+
+// GET /api/mods/[slug]/endorse — check current user's reaction
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const user = await getOptionalSession()
-  if (!user) {
-    return ok({ endorsed: false })
-  }
-  const mod = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+
+  const mod = await db.mod.findUnique({
+    where: { slug },
+    select: { id: true, ...COUNT_SELECT },
+  })
   if (!mod) {
     return notFound('Mod not found')
   }
+
+  if (!user) {
+    return ok({ endorsed: false, reaction: null, reactions: reactionsOf(mod) })
+  }
+
   const existing = await db.endorsement.findUnique({
     where: { userId_modId: { userId: user.id, modId: mod.id } },
   })
-  return ok({ endorsed: !!existing })
+
+  return ok({
+    endorsed: !!existing,
+    reaction: existing?.value ?? null,
+    reactions: reactionsOf(mod),
+  })
 }
 
-// POST /api/mods/[slug]/endorse - toggle endorsement
-//
-// Uses a transaction to avoid the race condition where two parallel requests
-// both pass the "existing endorsement" check and both try to create one,
-// which would hit the unique constraint and return a 500.
+// POST /api/mods/[slug]/endorse - set/switch/remove reaction
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
@@ -36,6 +67,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   if (!rl.success) {
     return rateLimited()
   }
+
+  let bodyReaction: string | undefined
+  try {
+    const body = await req.json().catch(() => ({}))
+    bodyReaction = typeof body?.reaction === 'string' ? body.reaction : undefined
+  } catch {
+    bodyReaction = undefined
+  }
+  const reaction = bodyReaction && ALLOWED.has(bodyReaction) ? bodyReaction : 'thumbsup'
 
   try {
     const neonUser = await getOptionalSession()
@@ -60,15 +100,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         where: { userId_modId: { userId, modId: mod.id } },
       })
 
-      if (existing) {
-        // Toggle off
+      if (existing && existing.value === reaction) {
+        // Remove
         await tx.endorsement.delete({ where: { id: existing.id } })
+        const removeData: Record<string, unknown> = { endorsements: { decrement: 1 } }
+        if (reaction === 'fire') removeData.reactionFire = { decrement: 1 }
+        else if (reaction === 'sparkle') removeData.reactionSparkle = { decrement: 1 }
+        else if (reaction === 'thumbsup') removeData.reactionThumbsUp = { decrement: 1 }
+        else removeData.reactionThumbsDown = { decrement: 1 }
         const updated = await tx.mod.update({
           where: { id: mod.id },
-          data: { endorsements: { decrement: 1 } },
-          select: { endorsements: true },
+          data: removeData as any,
+          select: COUNT_SELECT,
         })
-        // Cascade to Game/Series
         if (mod.gameId) {
           await tx.game
             .update({ where: { id: mod.gameId }, data: { totalEndorsements: { decrement: 1 } } })
@@ -82,35 +126,71 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         return {
           notFound: false as const,
           endorsed: false,
+          reaction: null as string | null,
+          added: false,
           endorsements: updated.endorsements,
+          reactions: reactionsOf(updated),
         }
-      } else {
-        // Toggle on — create may fail with P2002 if a concurrent request
-        // already created it. Let the transaction roll back in that case.
-        await tx.endorsement.create({
-          data: { userId, modId: mod.id, value: 'up' },
-        })
+      }
+
+      if (existing) {
+        // Switch
+        await tx.endorsement.update({ where: { id: existing.id }, data: { value: reaction } })
+        const switchData: Record<string, unknown> = {}
+        if (existing.value === 'fire') switchData.reactionFire = { decrement: 1 }
+        else if (existing.value === 'sparkle') switchData.reactionSparkle = { decrement: 1 }
+        else if (existing.value === 'thumbsup') switchData.reactionThumbsUp = { decrement: 1 }
+        else switchData.reactionThumbsDown = { decrement: 1 }
+        if (reaction === 'fire') switchData.reactionFire = { increment: 1 }
+        else if (reaction === 'sparkle') switchData.reactionSparkle = { increment: 1 }
+        else if (reaction === 'thumbsup') switchData.reactionThumbsUp = { increment: 1 }
+        else switchData.reactionThumbsDown = { increment: 1 }
         const updated = await tx.mod.update({
           where: { id: mod.id },
-          data: { endorsements: { increment: 1 } },
-          select: { endorsements: true },
+          data: switchData as any,
+          select: COUNT_SELECT,
         })
-        // Cascade to Game/Series
-        if (mod.gameId) {
-          await tx.game
-            .update({ where: { id: mod.gameId }, data: { totalEndorsements: { increment: 1 } } })
-            .catch(() => {})
-        }
-        if (mod.seriesId) {
-          await tx.series
-            .update({ where: { id: mod.seriesId }, data: { totalEndorsements: { increment: 1 } } })
-            .catch(() => {})
-        }
         return {
           notFound: false as const,
           endorsed: true,
+          reaction,
+          added: false,
           endorsements: updated.endorsements,
+          reactions: reactionsOf(updated),
         }
+      }
+
+      // Add new
+      await tx.endorsement.create({
+        data: { userId, modId: mod.id, value: reaction },
+      })
+      const addData: Record<string, unknown> = { endorsements: { increment: 1 } }
+      if (reaction === 'fire') addData.reactionFire = { increment: 1 }
+      else if (reaction === 'sparkle') addData.reactionSparkle = { increment: 1 }
+      else if (reaction === 'thumbsup') addData.reactionThumbsUp = { increment: 1 }
+      else addData.reactionThumbsDown = { increment: 1 }
+      const updated = await tx.mod.update({
+        where: { id: mod.id },
+        data: addData as any,
+        select: COUNT_SELECT,
+      })
+      if (mod.gameId) {
+        await tx.game
+          .update({ where: { id: mod.gameId }, data: { totalEndorsements: { increment: 1 } } })
+          .catch(() => {})
+      }
+      if (mod.seriesId) {
+        await tx.series
+          .update({ where: { id: mod.seriesId }, data: { totalEndorsements: { increment: 1 } } })
+          .catch(() => {})
+      }
+      return {
+        notFound: false as const,
+        endorsed: true,
+        reaction,
+        added: true,
+        endorsements: updated.endorsements,
+        reactions: reactionsOf(updated),
       }
     })
 
@@ -118,8 +198,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       return notFound('Mod not found')
     }
 
-    // فحص الوصول لـ milestone للإعجابات
-    if (result.endorsed && result.endorsements) {
+    if (result.added && result.endorsements) {
       const ENDORSE_MILESTONES = [10, 50, 100, 500, 1000]
       if (ENDORSE_MILESTONES.includes(result.endorsements)) {
         const mod = await db.mod.findUnique({
@@ -143,7 +222,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       }
     }
 
-    // Invalidate home cache for real-time stats
     try {
       await clearHomeCache()
     } catch {
@@ -152,13 +230,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
     return ok({
       endorsed: result.endorsed,
+      reaction: result.reaction,
       endorsements: result.endorsements,
+      reactions: result.reactions,
     })
   } catch (err: unknown) {
-    // P2002 = unique constraint violation (concurrent endorse). The endorsement
-    // already exists, so we treat it as already-endorsed and refetch the real
-    // count from the DB (the transaction was rolled back so we can't trust any
-    // count from inside it).
     if (
       typeof err === 'object' &&
       err !== null &&
@@ -167,11 +243,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     ) {
       const freshMod = await db.mod.findUnique({
         where: { slug },
-        select: { endorsements: true },
+        select: COUNT_SELECT,
       })
+      const user = await getOptionalSession()
+      let reaction: string | null = null
+      if (user) {
+        const m = await db.mod.findUnique({ where: { slug }, select: { id: true } })
+        if (m) {
+          const e = await db.endorsement.findUnique({
+            where: { userId_modId: { userId: user.id, modId: m.id } },
+          })
+          reaction = e?.value ?? null
+        }
+      }
       return ok({
         endorsed: true,
+        reaction,
         endorsements: freshMod?.endorsements ?? 0,
+        reactions: freshMod ? reactionsOf(freshMod) : { fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 },
       })
     }
     logger.error({ err }, '[endorse] failed')

@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { publishErrorDef } from '@/lib/publish-errors'
 import { TelegramPreview } from './telegram-preview'
 
 const PARSE_HTML = 'HTML'
@@ -216,9 +217,23 @@ export function PostEditor({ post, role, onChanged }: PostEditorProps) {
       onChanged?.(published)
       toast({ title: 'تم النشر', description: 'وصل المنشور إلى تليجرام بنجاح.' })
     } catch (err) {
+      // مرحلة 6: إن حمل الخطأ رمز كتالوج (HTTP fail details) نضيف السبب وصيغة
+      // الإصلاح عربيةً من publishErrorDef.
+      const details = (err instanceof SocialApiError ? err.details : null) as {
+        code?: string
+        causeAr?: string
+        fixAr?: string
+      } | null
+      let description = statusMessage(err, 'تعذّر نشر المنشور')
+      if (typeof details?.code === 'string') {
+        const def = publishErrorDef(details.code)
+        description =
+          `${description} ${def.causeAr && !description.includes(def.causeAr) ? def.causeAr : ''}`.trim()
+        if (def.fixAr) description = `${description}\nكيف أصلحه: ${def.fixAr}`
+      }
       toast({
         title: statusTitle(err),
-        description: statusMessage(err, 'تعذّر نشر المنشور'),
+        description,
         variant: 'destructive',
       })
     } finally {

@@ -6,17 +6,23 @@
  *
  * يفعل أمرين معاً (تحديث المالك #3):
  *  1) المنشورات المستحقة في `social_posts` (status='scheduled' AND scheduled_for <= now)
- *     عبر `publishSocialPost(id, { source: 'cron' })`.
+ *     — ذات الأهداف عبر `publishSocialPostMulti`، وبلا أهداف عبر
+ *     `publishSocialPost` القديم (توافق).
  *  2) المهام القديمة المعلّقة في `scheduled_jobs` (type='telegram_post')
  *     عبر `executeJob` — لا مستهلك لها منذ إزالة polling في Phase 7.
  *
+ * المرحلة 4: بعد التفريغ تُطابَق المشاريع المرتبطة (`postId`) وتُكمل
+ * جانبها الاجتماعي — نفس `SocialScheduleProject` الذي يقرؤه كرون
+ * الموقع، مصدر حقيقة واحد.
+ *
  * Idempotency: `claimRun` + `completeRun`/`failRun` من `lib/cron-ledger.ts`.
  *
- * ⚠️ defect معروف في claimRun: تتجاهل `windowKey` وتعيد alreadyRan بعد أول
- * نجاح لنوع وظيفة. لذلك نستدعيها باسم **مُنscope بنافذة الدقيقة**:
- * `social-publish:<YYYY-MM-DDTHH:mm>` — فيصبح فحص "أنجزت من قبل" نطاقاً
- * للدقيقة نفسها لا للأبد. وننظّف صفوف `social-publish:*` الأقدم من 7 أيام
- * في كل تشغيل كي لا تتضخم الجدول. يُوثَّق في docs/CRON-JOBS.md.
+ * نستدعيها باسم **مُنscope بنافذة الدقيقة**:
+ * `social-publish:<YYYY-MM-DDTHH:mm>` — فحص «أنجزت من قبل» نطاقه الدقيقة
+ * نفسها: مكتمل أو جارٍ حيّ في الدقيقة ⇒ `skipped: 'duplicate'`، وصفوف
+ * ميتة (فاشلة أو جارية تجاوزت عقد المطالبة) تُزاح قبل المطالبة.
+ * وننظّف صفوف `social-publish:*` الأقدم من 7 أيام في كل تشغيل كي لا
+ * يتضخم الجدول. يُوثَّق في docs/CRON-JOBS.md.
  */
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -25,8 +31,12 @@ import { requireCronAuth } from '@/lib/cron-auth'
 import { claimRun, completeRun, failRun } from '@/lib/cron-ledger'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { classifyTransportError, type PublishErrorScope } from '@/lib/publish-errors'
+import { completeProjectSide } from '@/lib/schedule-projects'
 import { executeJob } from '@/lib/scheduler'
 import { publishSocialPost } from '@/lib/social/publish'
+import { recordPublishError } from '@/lib/social/publish-error-events'
+import { publishSocialPostMulti } from '@/lib/social/publish-multi'
 
 const BATCH_SIZE = 50
 const LEGACY_BATCH_SIZE = 25
@@ -68,29 +78,88 @@ export async function GET(req: NextRequest) {
     })
 
     // ===== 1) منشورات Social Hub المستحقة =====
+    // المؤرشف (archivedAt != null) مستثنى — الأرشفة توقف الجدولة أيضاً.
     const duePosts = await db.socialPost.findMany({
       where: {
         platform: 'telegram',
         status: 'scheduled',
+        archivedAt: null,
         scheduledFor: { lte: now },
       },
       orderBy: { scheduledFor: 'asc' },
       take: BATCH_SIZE,
-      select: { id: true },
+      select: { id: true, targets: { select: { id: true }, take: 1 } },
     })
 
     let published = 0
     let failed = 0
     let skipped = 0
-    const failures: Array<{ id: string; error?: string }> = []
+    const failures: Array<{ id: string; error?: string; code?: string }> = []
+    const publishedIds: string[] = []
+    const failedIds: string[] = []
 
     for (const post of duePosts) {
-      const result = await publishSocialPost(post.id, { source: 'cron' })
-      if (result.status === 'published') published += 1
-      else if (result.status === 'skipped') skipped += 1
-      else {
-        failed += 1
-        failures.push({ id: post.id, error: result.error })
+      // ذات الأهداف ← المحرك المتعدد؛ بلا أهداف ← المسار الأحادي (توافق).
+      if ((post.targets ?? []).length > 0) {
+        const multi = await publishSocialPostMulti(post.id, { source: 'cron' })
+        published += multi.published
+        failed += multi.failed
+        skipped += multi.skipped
+        if (multi.published > 0) publishedIds.push(post.id)
+        if (multi.failed > 0) {
+          failedIds.push(post.id)
+          const failing = multi.targets.find((t) => t.error)
+          failures.push({
+            id: post.id,
+            error: multi.error ?? failing?.error,
+            code: failing?.code ?? multi.targets.find((t) => t.code)?.code,
+          })
+        }
+      } else {
+        const result = await publishSocialPost(post.id, { source: 'cron' })
+        if (result.status === 'published') {
+          published += 1
+          publishedIds.push(post.id)
+        } else if (result.status === 'skipped') skipped += 1
+        else {
+          failed += 1
+          failedIds.push(post.id)
+          failures.push({
+            id: post.id,
+            error: result.error,
+            // مرحلة 6: رمز الكتالوج المرافق لعمود failures في الرد.
+            code: classifyTransportError(result.error ?? undefined),
+          })
+        }
+      }
+    }
+
+    // ===== 1ب) مطابقة مشاريع الجدولة المرتبطة (الجانب الاجتماعي) =====
+    let projectsReconciled = 0
+    const firedIds = [...publishedIds, ...failedIds]
+    if (firedIds.length > 0) {
+      const linked = await db.socialScheduleProject.findMany({
+        where: { postId: { in: firedIds }, status: { in: ['scheduled', 'running'] } },
+        select: { id: true, postId: true },
+      })
+      const failedSet = new Set(failedIds)
+      const failureById = new Map(failures.map((f) => [f.id, f.error ?? 'فشل النشر'] as const))
+      for (const project of linked) {
+        if (!project.postId) continue
+        if (failedSet.has(project.postId)) {
+          // فشل طرفي فقط إن استنفد المنشور (وإلا ما يزال مجدولاً للمحاولة).
+          const postRow = await db.socialPost.findUnique({
+            where: { id: project.postId },
+            select: { status: true },
+          })
+          if (postRow?.status === 'failed') {
+            await completeProjectSide(project.id, 'social', failureById.get(project.postId))
+            projectsReconciled += 1
+          }
+        } else {
+          await completeProjectSide(project.id, 'social')
+          projectsReconciled += 1
+        }
       }
     }
 
@@ -116,10 +185,27 @@ export async function GET(req: NextRequest) {
           select: { status: true },
         })
         if (after?.status === 'completed') legacyExecuted += 1
-        else legacyFailed += 1
+        else if (after?.status === 'failed') {
+          // أُعيدت الجدولة أو فشلت نهائياً — ندوّن حدثاً
+          // فشل المهمة القديمة سقها منشور أو رُدّت للانتظار.
+          legacyFailed += 1
+          await recordPublishError({
+            code: 'legacy_job_failed',
+            scope: 'schedule' as PublishErrorScope,
+            refId: job.id,
+            message: `الحالة بعد التنفيذ: ${after.status}`,
+          })
+        } else legacyFailed += 1
       } catch (err) {
         legacyFailed += 1
         logger.warn(`[social-publish] legacy job ${job.id} failed:`, err)
+        // مرحلة 6: كاتالوج أخطاء النشر يغطي المهام القديمة أيضاً (بلا إشعار).
+        await recordPublishError({
+          code: 'legacy_job_failed',
+          scope: 'schedule' as PublishErrorScope,
+          refId: job.id,
+          message: err instanceof Error ? err.message : String(err),
+        })
       }
     }
 
@@ -140,6 +226,7 @@ export async function GET(req: NextRequest) {
       due: duePosts.length,
       legacy: { executed: legacyExecuted, failed: legacyFailed, found: legacyJobs.length },
       pruned: pruned.count,
+      projects: projectsReconciled,
       failures,
       duration_ms: Date.now() - started,
     })

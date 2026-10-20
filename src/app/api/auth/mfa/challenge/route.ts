@@ -1,11 +1,12 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import { generateMFAToken } from '@/lib/mfa-token'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
-import { logger } from '@/lib/logger'
 
 // POST /api/auth/mfa/challenge — Phase 4C: mint an MFA challenge token for a
 // Supabase-authed user (client-side email login path).
@@ -48,7 +49,13 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { id: neonId },
-      select: { id: true, username: true, totpEnabled: true, totpSecret: true, recoveryCodesUsed: true },
+      select: {
+        id: true,
+        username: true,
+        totpEnabled: true,
+        totpSecret: true,
+        recoveryCodesUsed: true,
+      },
     })
     if (!user || !user.totpEnabled || !user.totpSecret) {
       return validationFail({ message: 'المصادقة الثنائية غير مفعلة' })
@@ -75,6 +82,7 @@ export async function POST(req: NextRequest) {
     return ok({ mfaRequired: true, mfaToken, recoveryCodesCount: Math.max(0, 10 - used) })
   } catch (err) {
     logger.error('[mfa challenge] failed:', err)
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

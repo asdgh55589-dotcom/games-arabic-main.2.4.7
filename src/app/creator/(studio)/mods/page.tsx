@@ -32,7 +32,8 @@ export default async function MyModsPage({
   }
 
   const params = await searchParams
-  const status = params?.status || 'all'
+  const rawStatus = params?.status || 'all'
+  const status = rawStatus.toLowerCase() === 'pending' ? 'IN_REVIEW' : rawStatus.toUpperCase()
   const q = params?.q || ''
   const { dict } = await getStudioDict()
 

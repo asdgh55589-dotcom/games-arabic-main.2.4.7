@@ -96,8 +96,12 @@ describe('Navbar exposes /creator to management', () => {
 describe('creator-requests heals OAuth sessions', () => {
   it('route falls back to Supabase and reissues the role cookie', () => {
     const code = src('src/app/api/creator-requests/route.ts');
-    expect(code).toMatch(/supabase/i);
-    expect(code).toMatch(/setRoleCookie/);
+    // The heal logic now lives in the shared helper (extracted so the Edge
+    // bounce and this route share one implementation) — assert it there.
+    const heal = src('src/lib/resolve-with-heal.ts');
+    expect(code).toMatch(/resolveUserWithHeal/);
+    expect(heal).toMatch(/supabase/i);
+    expect(heal).toMatch(/setRoleCookie/);
   });
 
   it('proxy /api/creator guard does not swallow /api/creator-requests', () => {

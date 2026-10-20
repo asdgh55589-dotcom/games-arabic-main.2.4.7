@@ -1,10 +1,11 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { invalidateUserSessions, setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { routeNotification } from '@/lib/notification-router'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 import { ChangePasswordSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true, message: 'تم تغيير كلمة المرور بنجاح' })
   } catch (err) {
     logger.error({ err }, '[change-password POST] failed')
-    return internalError('حدث خطأ، حاول مجدداً')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

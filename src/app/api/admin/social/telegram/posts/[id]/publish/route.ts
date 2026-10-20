@@ -9,6 +9,7 @@ import { fail, forbidden, internalError, notFound, ok, unauthorized } from '@/li
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { publishErrorDef, reasonToCode } from '@/lib/publish-errors'
 import { publishSocialPost } from '@/lib/social/publish'
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return ok({ status: 'skipped', reason: result.reason, externalId: result.externalId ?? null })
     }
     if (!result.ok) {
+      // مرحلة 6: الرد يحمل رمز الكتالوج ليستخرج المحرّر السبب وصيغة الإصلاح.
+      const code = result.code ?? reasonToCode(result.reason)
+      const def = publishErrorDef(code)
       return fail(
         'PUBLISH_FAILED',
         result.error ?? 'فشل النشر',
@@ -36,6 +40,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           status: 'failed',
           reason: result.reason,
           externalId: result.externalId ?? null,
+          code: def.code,
+          causeAr: def.causeAr,
+          fixAr: def.fixAr,
         },
         undefined,
         req.nextUrl.pathname,

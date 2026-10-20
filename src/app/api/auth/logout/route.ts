@@ -9,7 +9,15 @@ import { logger } from '@/lib/logger'
 
 /** Clear the ledger cookie with the same attributes it was set with. */
 function clearLedgerCookie(res: NextResponse): void {
-  res.cookies.set('ga_session_ledger', '', { path: '/', maxAge: 0 })
+  const clearOpts: Parameters<NextResponse['cookies']['set']>[2] & { domain?: string } = {
+    path: '/',
+    maxAge: 0,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  }
+  if (process.env.COOKIE_DOMAIN) clearOpts.domain = process.env.COOKIE_DOMAIN
+  res.cookies.set('ga_session_ledger', '', clearOpts as never)
 }
 
 export async function POST(req: NextRequest) {

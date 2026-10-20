@@ -1,4 +1,4 @@
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 process.env.OWNER_USERNAME = 'owner-user'
 process.env.OWNER_EMAIL = 'owner@test.com'
 process.env.OWNER_PASSWORD = 'owner-pass-12345'

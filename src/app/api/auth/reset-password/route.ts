@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { invalidateUserSessions } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -10,6 +10,7 @@ import { routeNotification } from '@/lib/notification-router'
 import { createAdminClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 const ResetSchema = z.object({
   token: z.string().min(16, 'رابط الاستعادة غير صالح'),
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true })
   } catch (err) {
     logger.error('[reset-password] failed:', err instanceof Error ? err.message : 'unknown')
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

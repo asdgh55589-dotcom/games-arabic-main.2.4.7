@@ -165,7 +165,9 @@ export default function RequestPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    fetch('/api/sections', { cache: 'no-store' })
+    // Section 4 item 27: /api/sections is public 300/600 — let the HTTP cache
+    // serve it instead of bypassing with no-store.
+    fetch('/api/sections')
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         const sections = json?.data as

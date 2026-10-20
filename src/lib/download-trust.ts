@@ -77,3 +77,31 @@ export function flattenTrustedDomains(services: TrustedHostService[]): string[] 
   }
   return out
 }
+
+// ===== مواقع التحميل المتوافقة (إضافات روابط المود) =====
+
+/** معلومات موقع متوافق — تُستخدم للتحقق عند "جلب الرابط" */
+export interface CompatibleSiteInfo {
+  id: string
+  name: string
+  domains: string[]
+  logoUrl?: string | null
+  notes?: string | null
+}
+
+/** هل الرابط ينتمي لأحد المواقع المتوافقة؟ (مطابقة النطاق أو أي subdomain منه) */
+export function isCompatibleSiteUrl(url: string, sites: { domains: string[] }[]): boolean {
+  const host = extractHostname(url)
+  if (!host) return false
+  for (const site of sites) {
+    for (const raw of site.domains || []) {
+      const domain = String(raw ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/^\*\./, '')
+      if (!domain) continue
+      if (host === domain || host.endsWith(`.${domain}`)) return true
+    }
+  }
+  return false
+}

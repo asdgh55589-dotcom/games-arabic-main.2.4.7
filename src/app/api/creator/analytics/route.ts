@@ -8,9 +8,11 @@ import { logger } from '@/lib/logger'
 
 const RANGES = new Set([7, 30, 90])
 
-// Per-user payload: fail-closed caching posture.
-const PRIVATE_NO_STORE = {
-  headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+// Per-user KPI payload: client is allowed a short-lived private copy
+// (dashboard fetches drop no-store) — stays cookie-varying so per-user
+// responses are never cross-served.
+const PRIVATE_CACHE = {
+  headers: { 'Cache-Control': 'private, max-age=30', Vary: 'Cookie' },
 } as const
 
 function changeRate(current: number, previous: number): number | null {
@@ -145,7 +147,7 @@ export async function GET(req: NextRequest) {
           downloadToClickPct: pct(totalCommentClicks, totalDownloads),
         },
       },
-      PRIVATE_NO_STORE,
+      PRIVATE_CACHE,
     )
   } catch (err) {
     logger.error('[creator/analytics GET] failed:', err)

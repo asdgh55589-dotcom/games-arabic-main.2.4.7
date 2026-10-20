@@ -11,6 +11,7 @@ import {
   TELEGRAM_CHAT_TYPES,
   TELEGRAM_DESTINATION_STATUSES,
   TELEGRAM_VERIFICATION_STATUSES,
+  validateDestinationThread,
   verifyDestinationVerificationToken,
 } from '../telegram-destinations'
 
@@ -185,5 +186,75 @@ describe('destinationReadiness', () => {
       ready: false,
       reason: 'unverified',
     })
+  })
+})
+
+describe('validateDestinationThread — صلاحية الموضوع حسب النوع', () => {
+  it('يقبل الغياب (بلا موضوع) لأي نوع', () => {
+    expect(validateDestinationThread('channel', null).ok).toBe(true)
+    expect(validateDestinationThread('channel', undefined).ok).toBe(true)
+  })
+
+  it('يقبل thread موجباً للـ supergroup والـ group', () => {
+    expect(validateDestinationThread('supergroup', 1)).toEqual({ ok: true })
+    expect(validateDestinationThread('group', 4)).toEqual({ ok: true })
+  })
+
+  it('يرفض thread صفراً أو سالباً أو غير صحيح', () => {
+    for (const bad of [0, -3, 1.5, Number.NaN]) {
+      const r = validateDestinationThread('supergroup', bad)
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toBe('invalid_thread')
+    }
+  })
+
+  it('يرفض thread على القنوات والخاص برسالة عربية', () => {
+    for (const type of ['channel', 'private', 'bot']) {
+      const r = validateDestinationThread(type, 2)
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.reason).toBe('not_a_forum')
+        expect(r.message).toMatch(/المنتدى|مجموعات/)
+      }
+    }
+  })
+
+  it('يرفض thread عند النوع المجهول ويطلب فحص الصحة أولاً', () => {
+    const r = validateDestinationThread('unknown', 2)
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('unknown_type')
+      expect(r.message).toMatch(/فحص الصحة/)
+    }
+  })
+})
+
+describe('validateDestinationThread — غموض -100 (قناة أم مجموعة؟)', () => {
+  it('يرفض thread مع معرّف -100 غير مؤكد ويطلب الفحص أولاً', () => {
+    const r = validateDestinationThread('supergroup', 2, {
+      canonicalId: '-100123456',
+      healthConfirmed: false,
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('unconfirmed_supergroup')
+      expect(r.message).toMatch(/فحص الصحة/)
+    }
+  })
+
+  it('يقبل thread مع معرّف -100 بعد تأكيد الفحص', () => {
+    expect(
+      validateDestinationThread('supergroup', 2, {
+        canonicalId: '-100123456',
+        healthConfirmed: true,
+      }),
+    ).toEqual({ ok: true })
+  })
+
+  it('لا يطلب تأكيداً لمعرّف غير -100', () => {
+    expect(validateDestinationThread('group', 2, { canonicalId: '-12345' })).toEqual({
+      ok: true,
+    })
+    expect(validateDestinationThread('supergroup', 2)).toEqual({ ok: true })
   })
 })

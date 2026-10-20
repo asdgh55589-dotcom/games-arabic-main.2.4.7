@@ -4,33 +4,48 @@ import {
   AlertTriangle,
   Calendar,
   ChevronDown,
-  ChevronUp,
-  Clock,
   Download,
   ExternalLink,
-  FileArchive,
   HardDrive,
   PackageX,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getPlatformInfo } from '@/components/platform-upload-icons'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import {
   DEFAULT_WARNING_MESSAGE,
+  brandLogoUrl,
   isTrustedDownloadUrl,
   type TrustedHostService,
 } from '@/lib/download-trust'
-import { formatArabicDate, timeAgo } from '@/lib/format'
+import { formatArabicDate, formatNumber } from '@/lib/format'
 import { reportError } from '@/lib/error-reporting'
-import type { ModFile } from '@/lib/types'
+import type { ModFile, ModSiteLink } from '@/lib/types'
 
 interface DownloadSectionProps {
   files: ModFile[]
   modSlug: string
+  /** روابط مواقع خارجية (fileId null) — تُعرض في القسم الخارجي أسفل الكروت. */
+  siteLinks?: ModSiteLink[]
+  /** عنوان القسم الخارجي (null = الافتراضي "ملفات إضافية"). */
+  extrasLabel?: string | null
 }
 
-export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
+/**
+ * ModDownloadSection — تبويبة التحميل بالمفهوم ٢ المعتمد (الكارت المرآتي).
+ *
+ * - كارت لكل ملف أب: هيدر flex واحد (عنوان + شارة v teal + بيانات date/size/⬇ في نفس السطر)
+ * - داخل الكارت: صفوف المرآة (أيقونة المنصة + شيبات إحصائيات + شارة ثقة + زر أبيض/أسود)
+ *   ثم وصف الملف فوق التنبيه، ثم قسم متداخل بعنوان file.extrasLabel.
+ * - القسم الخارجي: siteLinks الخارجية بعنوان extrasLabel.
+ * - منطق الثقة كما هو: روابط المرآة غير الموثوقة → نافذة التحذير الحالية.
+ */
+export function ModDownloadSection({
+  files,
+  modSlug,
+  siteLinks,
+  extrasLabel,
+}: DownloadSectionProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
     new Set(files.length > 0 ? [files[0].id] : []),
   )
@@ -112,14 +127,63 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
     setWarningSize(null)
   }
 
+  // روابط المواقع الخارجية (fileId null) للقسم الخارجي
+  const externalLinks = (siteLinks || []).filter((s) => s.fileId == null)
+  const outerTitle = extrasLabel || 'ملفات إضافية'
+
+  // عنصر رابط موقع واحد (يُستخدم متداخلاً وخارجياً بنفس الشكل)
+  const renderSiteEntry = (s: ModSiteLink) => {
+    const domain = (s.domain || '').trim() || 'example.com'
+    return (
+      <a
+        key={s.id}
+        href={s.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 rounded-md border border-[#1b2330] bg-[#0d1219] px-2.5 py-2 transition-colors hover:border-[#232b38] hover:bg-[#111823]"
+      >
+        <img
+          src={brandLogoUrl(domain)}
+          alt=""
+          width={22}
+          height={22}
+          loading="lazy"
+          className="h-[22px] w-[22px] shrink-0 rounded border border-[#232b38] bg-white object-contain p-0.5"
+          onError={(e) => {
+            ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+          }}
+        />
+        <span className="flex min-w-0 flex-1 flex-col leading-tight">
+          <span className="truncate text-xs font-black text-[#e8edf4]">
+            {s.siteName || domain}
+          </span>
+          {s.pageTitle && (
+            <span className="truncate text-[11px] font-medium text-[#8b96a7]">
+              {s.pageTitle}
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-px text-[10px] font-black text-emerald-400">
+          متوافق
+        </span>
+        <span
+          className="shrink-0 rounded-full border border-[#232b38] bg-white/5 px-1.5 py-px font-mono text-[10px] font-bold text-[#8b96a7]"
+          dir="ltr"
+        >
+          {domain}
+        </span>
+      </a>
+    )
+  }
+
   if (!files || files.length === 0) {
     return (
-      <div className="grid place-items-center rounded-2xl border border-dashed border-border/50 bg-card/20 py-12 text-center">
-        <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-muted/50">
-          <PackageX className="h-6 w-6 text-muted-foreground/40" />
+      <div className="grid place-items-center rounded-2xl border border-dashed border-[#232b38] bg-[#151b25]/40 py-12 text-center">
+        <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-[#1b2330]">
+          <PackageX className="h-6 w-6 text-[#5c6678]" />
         </div>
-        <h3 className="text-sm font-bold text-foreground/80">لا توجد ملفات تحميل</h3>
-        <p className="mt-1 text-[11px] text-muted-foreground/50">
+        <h3 className="text-sm font-bold text-[#e8edf4]/80">لا توجد ملفات تحميل</h3>
+        <p className="mt-1 text-[11px] text-[#5c6678]">
           لم يتم رفع أي ملفات لهذا التعريب بعد.
         </p>
       </div>
@@ -128,81 +192,120 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
 
   return (
     <>
-      <div className="space-y-3">
+      {/* ===== كروت الملفات (مفهوم ٢ — عمود واحد) ===== */}
+      <div className="flex flex-col gap-2.5">
         {files.map((file, fileIndex) => {
           const isExpanded = expandedIds.has(file.id)
+          const perFileDownloads = file.downloadsCount ?? 0
+          // روابط المواقع المتداخلة داخل هذا الملف
+          const nestedSiteLinks = (siteLinks || []).filter((s) => s.fileId === file.id)
+          const children = file.children || []
+          const hasNested = children.length > 0 || nestedSiteLinks.length > 0
+          // عنوان القسم المتداخل الخاص بهذا الملف
+          const nestedTitle = file.extrasLabel || 'ملفات إضافية'
           return (
-            <Card
+            <div
               key={file.id}
-              className={`overflow-hidden border-border/40 transition-all duration-200 ${
-                isExpanded
-                  ? 'border-primary/30 bg-gradient-to-br from-card/90 to-card/60 shadow-lg shadow-primary/5'
-                  : 'bg-card/40 hover:border-border/60'
-              }`}
+              className="overflow-hidden rounded-[12px] border border-[#232b38] bg-[#151b25]"
             >
-              {/* رأس الملف */}
+              {/* رأس الكارت — flex واحد: عنوان + شارة v + بيانات (date/size/⬇) */}
               <button
                 onClick={() => toggleExpand(file.id)}
-                className="flex w-full items-center gap-3 p-3.5 text-right transition-colors hover:bg-accent/20 cursor-pointer"
+                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-right transition-colors hover:bg-[#1a212d] cursor-pointer"
               >
-                <div
-                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
-                    isExpanded ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary/70'
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-black text-[#e8edf4]">
+                  {file.title}
+                </span>
+                <span className="shrink-0 rounded-[5px] bg-[#0b3d3a] px-1.5 py-0.5 text-[10.5px] font-black tabular-nums text-[#2dd4bf]">
+                  v{file.version}
+                </span>
+                <span className="ms-auto flex shrink-0 items-center gap-3 text-[11.5px] font-bold text-[#8b96a7] tabular-nums">
+                  <span>{formatArabicDate(file.releaseDate)}</span>
+                  <span>
+                    {file.fileSize} .{file.fileFormat}
+                  </span>
+                  <span>⬇ {formatNumber(perFileDownloads)}</span>
+                </span>
+                <ChevronDown
+                  className={`h-[13px] w-[13px] shrink-0 transition-transform duration-200 ${
+                    isExpanded ? 'rotate-180 text-[#2dd4bf]' : 'text-[#5c6678]'
                   }`}
-                >
-                  <FileArchive className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-bold text-foreground">{file.title}</h3>
-                    {fileIndex === 0 && (
-                      <span className="shrink-0 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
-                        أحدث إصدار
-                      </span>
-                    )}
-                  </div>
-
-                  {/* بيانات مدمجة */}
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-foreground/70">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />v{file.version}
-                    </span>
-                    <span className="text-border/40">|</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatArabicDate(file.releaseDate)}
-                    </span>
-                    <span className="text-border/40">|</span>
-                    <span className="flex items-center gap-1">
-                      <HardDrive className="h-3 w-3" />
-                      {file.fileSize} .{file.fileFormat}
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  className={`shrink-0 rounded-lg p-1.5 transition-all duration-200 ${
-                    isExpanded
-                      ? 'rotate-180 bg-primary/10 text-primary'
-                      : 'text-muted-foreground/40'
-                  }`}
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </div>
+                />
               </button>
 
-              {/* التفاصيل الموسّعة */}
               {isExpanded && (
-                <div className="border-t border-border/30 bg-gradient-to-b from-transparent to-card/30 px-3.5 pb-3.5 pt-3">
+                <div className="border-t border-[#1b2330] px-3.5 py-2.5">
+                  {/* (1) صفوف المرآة */}
+                  {file.links.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {file.links.map((link) => {
+                        const info = getPlatformInfo(link.url)
+                        // شارة الثقة مشتقة بصدق من بيانات الثقة — بدون أي حالة مخترعة
+                        const trusted = trust
+                          ? isTrustedDownloadUrl(link.url, trust.services)
+                          : false
+                        return (
+                          <div
+                            key={link.id}
+                            className="flex items-center gap-2.5 rounded-[7px] border border-[#1b2330] bg-[#0d1219] px-2.5 py-1.5"
+                          >
+                            <span
+                              className="grid h-6 w-6 shrink-0 place-items-center rounded p-1 text-white"
+                              style={{ backgroundColor: info.color }}
+                            >
+                              {info.icon}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-xs font-black text-[#e8edf4]">
+                              {link.label || info.name}
+                            </span>
+                            {/* شيبات إحصائيات لكل رابط */}
+                            <span className="hidden shrink-0 items-center gap-2 sm:flex text-[11px] font-bold text-[#8b96a7] tabular-nums">
+                              <span>⬇ {formatNumber(link.downloadsCount ?? 0)}</span>
+                              <span>{file.fileSize}</span>
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full border px-1.5 py-px text-[10px] font-black ${
+                                trusted
+                                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                  : 'border-[#232b38] bg-white/5 text-[#8b96a7]'
+                              }`}
+                            >
+                              {trusted ? 'موثوقة' : 'خارجي'}
+                            </span>
+                            {/* زر تحميل أبيض/أسود كما في الديمو */}
+                            <button
+                              onClick={() =>
+                                handleDownloadClick(
+                                  link.url,
+                                  link.id,
+                                  `${file.fileSize} .${file.fileFormat}`,
+                                )
+                              }
+                              className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-white bg-white px-3 py-1.5 text-xs font-black text-black transition-colors hover:bg-white/90"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              تحميل
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#5c6678]">
+                      لا توجد روابط تحميل لهذا الملف.
+                    </p>
+                  )}
+
+                  {/* (2) وصف الملف فوق التنبيه */}
                   {file.description && (
-                    <p className="mb-3 text-[11px] font-medium leading-relaxed text-foreground/80">
+                    <p className="mt-2.5 border-r-2 border-[#232b38] py-0.5 pe-1 ps-2.5 text-[11px] font-medium leading-relaxed text-[#e8edf4]/80">
                       {file.description}
                     </p>
                   )}
 
+                  {/* (3) التنبيه */}
                   {file.alert && (
-                    <div className="mb-3 flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+                    <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
                       <p className="text-[11px] font-bold leading-relaxed text-amber-100">
                         {file.alert}
@@ -210,66 +313,90 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
                     </div>
                   )}
 
-                  {file.links.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {file.links.map((link) => {
-                        const info = getPlatformInfo(link.url)
-                        return (
-                          <button
-                            key={link.id}
-                            onClick={() =>
-                              handleDownloadClick(
-                                link.url,
-                                link.id,
-                                `${file.fileSize} .${file.fileFormat}`,
-                              )
-                            }
-                            className="group flex items-center gap-3 rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 text-right transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/5"
+                  {/* (4) قسم متداخل بعنوان */}
+                  {hasNested && (
+                    <div className="mt-3 border-t border-[#1b2330] pt-2.5">
+                      <p className="mb-2 text-[11px] font-black text-[#8b96a7]">
+                        {nestedTitle}
+                      </p>
+                      <div className="space-y-1.5">
+                        {/* ملفات أبناء مصغّرة */}
+                        {children.map((child) => (
+                          <div
+                            key={child.id}
+                            className="flex items-center gap-2 rounded-md border border-[#1b2330] bg-[#0d1219] px-2.5 py-1.5"
                           >
-                            <div
-                              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
-                              style={{ backgroundColor: info.color }}
-                            >
-                              {info.icon}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[13px] font-bold text-foreground">
-                                {link.label || info.name}
-                              </div>
-                              <div className="text-[10px] font-bold text-foreground/70">
-                                اضغط للتحميل
-                              </div>
-                            </div>
-                            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-primary" />
-                          </button>
-                        )
-                      })}
+                            <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-[#e8edf4]">
+                              {child.title}
+                            </span>
+                            <span className="shrink-0 rounded bg-white/5 px-1.5 py-px text-[10px] font-black tabular-nums text-[#8b96a7]">
+                              v{child.version}
+                            </span>
+                            <span className="shrink-0 text-[10px] font-bold tabular-nums text-[#8b96a7]">
+                              {child.fileSize}
+                            </span>
+                            {child.alert && (
+                              <span title={child.alert} className="shrink-0 text-amber-400">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                            {child.links && child.links.length > 0 ? (
+                              <button
+                                onClick={() =>
+                                  handleDownloadClick(
+                                    child.links[0].url,
+                                    child.links[0].id,
+                                    `${child.fileSize} .${child.fileFormat}`,
+                                  )
+                                }
+                                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-white bg-white px-2 py-1 text-[11px] font-black text-black transition-colors hover:bg-white/90"
+                              >
+                                <Download className="h-3 w-3" />
+                                تحميل
+                              </button>
+                            ) : (
+                              <span className="shrink-0 text-[10px] text-[#5c6678]">
+                                بدون روابط
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                        {/* روابط مواقع متداخلة — تُفتح مباشرة لأن الناشر أضافها صراحة */}
+                        {nestedSiteLinks.map(renderSiteEntry)}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground/50">
-                      لا توجد روابط تحميل لهذا الملف.
-                    </p>
                   )}
                 </div>
               )}
-            </Card>
+            </div>
           )
         })}
       </div>
 
-      {/* ===== نافذة تحذير الموقع الخارجي ===== */}
+      {/* ===== القسم الخارجي: روابط siteLinks الخارجية ===== */}
+      {externalLinks.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-center gap-2">
+            <p className="text-[11px] font-black text-[#8b96a7]">{outerTitle}</p>
+            <span className="h-px flex-1 bg-[#232b38]" />
+          </div>
+          <div className="space-y-1.5">{externalLinks.map(renderSiteEntry)}</div>
+        </div>
+      )}
+
+      {/* ===== نافذة تحذير الموقع الخارجي (نفس النص والسلوك — بدون تغيير) ===== */}
       {warningUrl && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-md">
-          <div className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
+          <div className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl border border-[#232b38] bg-[#151b25] shadow-2xl">
             {/* رأس النافذة */}
-            <div className="border-b border-border/30 bg-gradient-to-l from-amber-500/10 to-transparent px-5 py-4">
+            <div className="border-b border-[#1b2330] bg-gradient-to-l from-amber-500/10 to-transparent px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15">
                   <AlertTriangle className="h-5 w-5 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">تنبيه — رابط إعلانات</h3>
-                  <p className="text-[11px] text-muted-foreground/60">
+                  <h3 className="text-sm font-bold text-[#e8edf4]">تنبيه — رابط إعلانات</h3>
+                  <p className="text-[11px] text-[#5c6678]">
                     هذا الرابط ليس من خدمات التخزين المعتمدة
                   </p>
                 </div>
@@ -283,16 +410,16 @@ export function ModDownloadSection({ files, modSlug }: DownloadSectionProps) {
               </p>
 
               {warningSize && (
-                <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/30 bg-background/50 px-3 py-2">
-                  <HardDrive className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <p className="text-[11px] font-bold text-foreground">
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-[#232b38] bg-[#0a0e14]/50 px-3 py-2">
+                  <HardDrive className="h-3.5 w-3.5 shrink-0 text-[#2dd4bf]" />
+                  <p className="text-[11px] font-bold text-[#e8edf4]">
                     الحجم المتوقع للملف: <span className="tabular-nums">{warningSize}</span>
                   </p>
                 </div>
               )}
 
-              <div className="mb-5 rounded-lg border border-border/30 bg-background/50 p-3">
-                <p className="break-all text-[10px] font-mono leading-relaxed text-primary/80">
+              <div className="mb-5 rounded-lg border border-[#232b38] bg-[#0a0e14]/50 p-3">
+                <p className="break-all text-[10px] font-mono leading-relaxed text-[#2dd4bf]/80">
                   {warningUrl}
                 </p>
               </div>

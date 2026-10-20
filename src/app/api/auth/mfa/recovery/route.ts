@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { setRoleCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -7,6 +7,7 @@ import { verifyMFAToken } from '@/lib/mfa-token'
 import { rateLimit } from '@/lib/rate-limit'
 import { markRecoveryCodeUsed, verifyRecoveryCode } from '@/lib/recovery-codes'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 // POST /api/auth/mfa/recovery — Phase 4B: token-bound recovery-code login.
 //
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true, remainingCodes: 10 - newUsedIndices.length })
   } catch (err) {
     logger.error('[mfa recovery] failed:', err)
-    return internalError('حدث خطأ أثناء التحقق')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

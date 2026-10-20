@@ -33,6 +33,12 @@ export enum NotificationType {
 
   // System
   SystemAnnouncement = 'system_announcement',
+
+  // Social Hub — أدوات النشر (مرحلة 6: أخطاء النشر + الصحة)
+  SocialPublishFailed = 'social_publish_failed',
+  SocialPublishSucceeded = 'social_publish_succeeded',
+  PublishDegraded = 'publish_degraded',
+  PublishDigest = 'publish_digest',
 }
 
 /** Arabic labels for display */
@@ -57,6 +63,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.AdminReport]: 'بلاغ',
   [NotificationType.AdminMilestone]: 'إنجاز إداري',
   [NotificationType.SystemAnnouncement]: 'إعلان النظام',
+  [NotificationType.SocialPublishFailed]: 'فشل نشر اجتماعي',
+  [NotificationType.SocialPublishSucceeded]: 'نجاح نشر اجتماعي',
+  [NotificationType.PublishDegraded]: 'تدهور نشر متكرر',
+  [NotificationType.PublishDigest]: 'تقرير دوري للنشر',
 }
 
 /** Types that support email channel */
@@ -71,4 +81,7 @@ export const EMAILABLE_TYPES: ReadonlySet<NotificationType> = new Set([
   NotificationType.SpecialRoleRemoved,
   NotificationType.AdminAction,
   NotificationType.SystemAnnouncement,
+  NotificationType.SocialPublishFailed,
+  NotificationType.PublishDegraded,
+  NotificationType.PublishDigest,
 ])

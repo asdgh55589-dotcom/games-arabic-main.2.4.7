@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
-import { internalError, ok, rateLimited, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -11,6 +11,7 @@ import { routeNotification } from '@/lib/notification-router'
 import { reportError } from '@/lib/error-reporting'
 import { EmailSchema } from '@/lib/schemas'
 import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 export const RECOVERY_TTL_MS = 60 * 60 * 1000 // 1h, single-use
 
@@ -165,6 +166,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     logger.error('[recover] failed:', err instanceof Error ? err.message : 'unknown')
     reportError(err, { route: 'POST /api/auth/recover' })
-    return internalError('حدث خطأ')
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/auth/recover'
+    })
+    return fail(code, message, status)
   }
 }

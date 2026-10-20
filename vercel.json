@@ -1,0 +1,4 @@
+{
+  "buildCommand": "npx tsx scripts/vercel-build.ts",
+  "installCommand": "npm install --frozen-lockfile"
+}

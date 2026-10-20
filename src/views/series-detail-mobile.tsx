@@ -104,6 +104,8 @@ export function SeriesDetailMobile({
               src={seriesInfo.logoUrl}
               alt=""
               loading="lazy"
+              width={64}
+              height={64}
               className="h-full w-full object-cover"
             />
           </div>

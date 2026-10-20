@@ -25,6 +25,7 @@ jest.mock('@/lib/db', () => ({
     },
     notification: {
       create: jest.fn(),
+      createMany: jest.fn(),
     },
   },
 }))
@@ -487,7 +488,7 @@ describe('POST /api/creator/mods', () => {
       { id: 'manager1' },
       { id: 'owner1' },
     ])
-    ;(db.notification.create as jest.Mock).mockResolvedValue({})
+    ;(db.notification.createMany as jest.Mock).mockResolvedValue({})
 
     await POST(
       makeReq('http://localhost/api/creator/mods', 'POST', {
@@ -500,7 +501,18 @@ describe('POST /api/creator/mods', () => {
       where: { role: { in: ['admin', 'manager', 'owner'] } },
       select: { id: true },
     })
-    expect(db.notification.create).toHaveBeenCalledTimes(3)
+    // Batched write: one createMany() carrying all recipients, not a loop.
+    expect(db.notification.createMany).toHaveBeenCalledTimes(1)
+    expect(db.notification.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          expect.objectContaining({ userId: 'admin1', type: 'admin_report' }),
+          expect.objectContaining({ userId: 'manager1', type: 'admin_report' }),
+          expect.objectContaining({ userId: 'owner1', type: 'admin_report' }),
+        ]),
+      }),
+    )
+    expect(db.notification.create).not.toHaveBeenCalled()
   })
 
   it('لا يُ crashes عند فشل إشعار الإدارة', async () => {

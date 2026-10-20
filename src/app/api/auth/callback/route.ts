@@ -298,6 +298,7 @@ export async function GET(req: NextRequest) {
         sameSite: 'lax',
         path: '/',
         expires: ledgerExpires,
+        domain: process.env.COOKIE_DOMAIN || undefined,
       })
     }
     return res

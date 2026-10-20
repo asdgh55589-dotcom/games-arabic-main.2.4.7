@@ -1,15 +1,15 @@
 import { revalidatePath } from 'next/cache'
 import type { NextRequest } from 'next/server'
-import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, canEditMod, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { parseIaUrl } from '@/lib/ia'
+import { logger } from '@/lib/logger'
 import { calculateModQualityScore } from '@/lib/mod-quality'
 import { syncSeriesCounts } from '@/lib/series-helpers'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { slugify } from '@/lib/utils'
-import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -48,6 +48,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
           include: { videos: { orderBy: { order: 'asc' } } },
         },
         customTabs: { orderBy: { order: 'asc' } },
+        siteLinks: { orderBy: { order: 'asc' } },
         workflowHistory: {
           orderBy: { changedAt: 'desc' },
           take: 20,
@@ -145,13 +146,28 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'originalAuthor',
       'releaseDate',
       'scheduledAt',
+      'publishMode',
     ]
+    const VALID_PUBLISH_MODES = ['site_only', 'social_only', 'both']
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'releaseDate') {
           updateData[field] = body[field] ? new Date(body[field]) : new Date()
         } else if (field === 'scheduledAt') {
           updateData[field] = body[field] ? new Date(body[field]) : null
+        } else if (field === 'publishMode') {
+          if (!VALID_PUBLISH_MODES.includes(body[field] as string)) {
+            const msg = 'وضعية نشر غير معروفة — site_only أو social_only أو both'
+            return fail(
+              'VALIDATION_ERROR',
+              msg,
+              422,
+              { publishMode: msg },
+              undefined,
+              req.nextUrl.pathname,
+            )
+          }
+          updateData[field] = body[field]
         } else if (field === 'isOriginalWork') {
           updateData[field] = Boolean(body[field])
         } else if (field === 'tags' && Array.isArray(body.tags)) {

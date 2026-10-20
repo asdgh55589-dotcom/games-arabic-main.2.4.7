@@ -253,14 +253,16 @@ describe('6. Network: no cache strategy on comment APIs (static)', () => {
 })
 
 describe('2. Bundle: sanitize-html ships to browser for a 12-line pure function (static)', () => {
-  it('client MarkdownRenderer imports lib/sanitize whose top level requires sanitize-html', () => {
+  it('client MarkdownRenderer imports pure lib/sanitize (no sanitize-html at top level)', () => {
     const renderer = fs.readFileSync(
       path.join(root, 'src/components/markdown-renderer.tsx'),
       'utf8',
     )
     const lib = fs.readFileSync(path.join(root, 'src/lib/sanitize.ts'), 'utf8')
     expect(renderer).toMatch(/from '@\/lib\/sanitize'/)
-    expect(lib).toMatch(/from 'sanitize-html'/)
+    // Section 4 fix: the heavy sanitize-html import moved to lib/sanitize-html
+    // (deferred paths only) — the pure module must not require it.
+    expect(lib).not.toMatch(/from 'sanitize-html'/)
     expect(renderer).not.toMatch(/sanitizeHTML/) // only sanitizeUrl (pure) is used client-side
   })
   it('react-markdown + isomorphic-dompurify were removed (purged, not shipped)', () => {

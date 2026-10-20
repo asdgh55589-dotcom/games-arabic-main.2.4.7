@@ -5,7 +5,11 @@ import { logAction } from '@/lib/audit'
 import { requireManager } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { destinationReadiness, parseTelegramDestination } from '@/lib/telegram-destinations'
+import {
+  destinationReadiness,
+  parseTelegramDestination,
+  validateDestinationThread,
+} from '@/lib/telegram-destinations'
 import { authErrorResponse } from '@/lib/template-lifecycle'
 
 const PARSE_FAILURE_AR: Record<string, string> = {
@@ -19,6 +23,8 @@ const CreateDestinationSchema = z.object({
   chatId: z.string().min(1),
   title: z.string().trim().max(200).optional(),
   notes: z.string().trim().max(1000).optional(),
+  botId: z.string().min(1).nullable().optional(),
+  messageThreadId: z.number().int().nullable().optional(),
 })
 
 /** إخفاء الرموز الحساسة عن كل استجابات القائمة/التفاصيل. */
@@ -41,11 +47,14 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status')
     const verificationStatus = searchParams.get('verificationStatus')
     const chatType = searchParams.get('chatType')
+    const includeArchived = searchParams.get('includeArchived') === 'true'
 
     const where: Record<string, unknown> = {}
     if (status) where.status = status
     if (verificationStatus) where.verificationStatus = verificationStatus
     if (chatType) where.chatType = chatType
+    // المؤرشفة مخفية افتراضياً (أرشفة ناعمة — الصفوف تبقى للتاريخ).
+    if (!includeArchived) where.archivedAt = null
 
     const destinations = await db.telegramDestination.findMany({
       where,
@@ -91,6 +100,36 @@ export async function POST(req: NextRequest) {
       return conflict('الوجهة مسجّلة بالفعل — عدّلها بدل إنشاء نسخة جديدة')
     }
 
+    // البوت المُسنَد (اختياري): يجب أن يكون سجل بوت موجوداً.
+    if (parsed.data.botId) {
+      const bot = await db.socialTelegramBot.findUnique({
+        where: { id: parsed.data.botId },
+        select: { id: true },
+      })
+      if (!bot) {
+        const msg = 'البوت المحدد غير موجود — اختر بوتاً من القائمة أو اتركه فارغاً للافتراضي'
+        return fail('VALIDATION_ERROR', msg, 422, { botId: msg }, undefined, req.nextUrl.pathname)
+      }
+    }
+
+    // الموضوع (اختياري): صالح فقط لمجموعات المنتدى المؤكدة. صف جديد لم
+    // يُفحص أبداً ⇒ معرّف -100 غامض (قد يكون قناة) يُرفض حتى الفحص.
+    const threadCheck = validateDestinationThread(
+      parseResult.ref.chatType,
+      parsed.data.messageThreadId,
+      { canonicalId: parseResult.ref.canonical, healthConfirmed: false },
+    )
+    if (!threadCheck.ok) {
+      return fail(
+        'VALIDATION_ERROR',
+        threadCheck.message,
+        422,
+        { messageThreadId: threadCheck.message },
+        undefined,
+        req.nextUrl.pathname,
+      )
+    }
+
     const destination = await db.telegramDestination.create({
       data: {
         chatId: parseResult.ref.canonical,
@@ -98,6 +137,8 @@ export async function POST(req: NextRequest) {
         username: parseResult.ref.username ?? null,
         title: parsed.data.title ?? null,
         notes: parsed.data.notes ?? null,
+        botId: parsed.data.botId ?? null,
+        messageThreadId: parsed.data.messageThreadId ?? null,
         status: 'pending',
         verificationStatus: 'unverified',
         addedBy: manager.id,
@@ -114,6 +155,8 @@ export async function POST(req: NextRequest) {
         chatId: destination.chatId,
         chatType: destination.chatType,
         kind: parseResult.ref.kind,
+        botId: destination.botId,
+        messageThreadId: destination.messageThreadId,
       }),
       request: req,
     })

@@ -325,6 +325,9 @@ export default function AdminSessionsPage() {
                             src={s.user.avatarUrl}
                             alt=""
                             className="h-8 w-8 rounded-full object-cover"
+                            loading="lazy"
+                            width={32}
+                            height={32}
                           />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
@@ -410,6 +413,9 @@ export default function AdminSessionsPage() {
                       src={s.user.avatarUrl}
                       alt=""
                       className="h-10 w-10 rounded-full object-cover"
+                      loading="lazy"
+                      width={40}
+                      height={40}
                     />
                   ) : (
                     <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">

@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
         sameSite: 'lax',
         path: '/',
         expires: loginResult.ledgerExpires,
+        domain: process.env.COOKIE_DOMAIN || undefined,
       })
     }
     return res

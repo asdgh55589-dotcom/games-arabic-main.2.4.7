@@ -7,7 +7,7 @@
  * cookies keep working); server-side DB flag remains source of truth.
  */
 
-process.env.JWT_SECRET = 'test-secret-key-for-jest'
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!'
 
 const mockCookieSet = jest.fn()
 jest.mock('next/headers', () => ({

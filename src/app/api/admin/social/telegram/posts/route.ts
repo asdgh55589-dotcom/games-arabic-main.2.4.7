@@ -78,6 +78,8 @@ export async function GET(req: NextRequest) {
       }
       where.status = status
     }
+    // الأرشيف صفحة مستقلة — القوائم العادية تخفي المؤرشف (الفئة 4 خطوة 5).
+    where.archivedAt = null
     if (from || to) {
       const createdAt: Record<string, Date> = {}
       if (from) createdAt.gte = new Date(from)
@@ -88,6 +90,10 @@ export async function GET(req: NextRequest) {
     const [posts, total] = await Promise.all([
       db.socialPost.findMany({
         where,
+        include: {
+          destination: { select: { id: true, chatId: true, title: true } },
+          template: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,

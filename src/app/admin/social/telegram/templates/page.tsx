@@ -96,15 +96,20 @@ export default function TelegramTemplatesPage() {
   }, [loadPostTemplates, loadNotifTemplates])
 
   const onDeletePostTemplate = async (t: SocialPostTemplate) => {
-    if (!window.confirm(`حذف القالب "${t.name}" نهائياً؟`)) return
+    if (
+      !window.confirm(
+        `أرشفة القالب "${t.name}"؟ (القوالب محفوظة للأبد — الاستعادة من أرشيف القوالب)`,
+      )
+    )
+      return
     try {
       await deletePostTemplate(t.id)
-      toast({ title: 'تم حذف القالب' })
+      toast({ title: 'تمت أرشفة القالب', description: 'يمكن استعادته من صفحة أرشيف القوالب' })
       await loadPostTemplates()
     } catch (err) {
       toast({
         title: 'خطأ',
-        description: errMessage(err, 'تعذّر حذف القالب'),
+        description: errMessage(err, 'تعذّرت أرشفة القالب'),
         variant: 'destructive',
       })
     }

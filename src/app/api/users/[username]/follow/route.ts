@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { getUseCases } from '@/application/use-cases/factory'
 import {
   conflict,
+  fail,
   internalError,
   notFound,
   ok,
@@ -12,6 +13,7 @@ import {
 import { logger } from '@/lib/logger'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 
 interface RouteParams {
@@ -112,7 +114,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return ok({ isFollowing: true, followersCount, followingCount })
   } catch (err) {
     logger.error('[follow POST] failed:', err)
-    return internalError('حدث خطأ في الخادم')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }
 
@@ -147,6 +150,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return ok({ isFollowing: false, followersCount, followingCount })
   } catch (err) {
     logger.error('[follow DELETE] failed:', err)
-    return internalError('حدث خطأ في الخادم')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

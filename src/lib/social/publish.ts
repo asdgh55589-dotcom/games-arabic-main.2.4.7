@@ -19,7 +19,16 @@
 import { logAction } from '@/lib/audit'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import type { PublishErrorScope } from '@/lib/publish-errors'
+import { classifyTransportError, publishErrorDef } from '@/lib/publish-errors'
+import { botTokenFingerprint, throttleBotSend } from './bot-resolve'
 import { decryptBotToken } from './bot-token'
+import {
+  notifyPublishFailure,
+  notifyPublishSuccess,
+  recordPublishError,
+  resolvePublishErrorsOpen,
+} from './publish-error-events'
 import { isRichPostSpec, toRichMessageInput } from './rich-post'
 import { sendTelegramPost, type TelegramSendTarget } from './telegram-send'
 import { validateSocialPost } from './validate-post'
@@ -47,6 +56,8 @@ export interface PublishResult {
     | 'misconfigured'
     | 'validation'
     | 'transport'
+  /** مرحلة 6: رمز الكتالوج المصاحب للفشل (display + fix). */
+  code?: string
 }
 
 const RETRY_DELAY_MS = 5 * 60_000
@@ -55,8 +66,9 @@ const RETRY_DELAY_MS = 5 * 60_000
  * مدة عقد المطالبة: صف `publishing` أقدم من هذا يُعدّ عملية انكسرت
  * (تعطّل بين المطالبة والإرسال) وقابلًا للاستعادة. أطول بكثير من زمن
  * إرسال واحد كي لا تُستعاد مطالبة ما تزال حيّة فيُرسل مكرراً.
+ * مُصدَّر لمحرك النشر المتعدد (نفس العقد لمطالبات الأهداف).
  */
-const PUBLISH_LEASE_MS = 15 * 60_000
+export const PUBLISH_LEASE_MS = 15 * 60_000
 
 /**
  * مطالبة ذرّية بصف المنشور قبل أي إرسال: تحديث مشروط واحد ينتقل إلى
@@ -84,7 +96,12 @@ async function claimPostForPublish(postId: string): Promise<'claimed' | 'busy'> 
 async function resolveTarget(post: {
   destinationId: string | null
   botId: string | null
-}): Promise<{ target: TelegramSendTarget | null; error?: string }> {
+}): Promise<{
+  target: TelegramSendTarget | null
+  error?: string
+  code?: string
+  refId?: string | null
+}> {
   if (post.destinationId) {
     const destination = await db.telegramDestination.findUnique({
       where: { id: post.destinationId },
@@ -94,19 +111,49 @@ async function resolveTarget(post: {
         verificationStatus: true,
         messageThreadId: true,
         botId: true,
+        archivedAt: true,
+        chatType: true,
       },
     })
     if (!destination) {
-      return { target: null, error: 'الوجهة المرتبطة بالمنشور غير موجودة' }
+      return {
+        target: null,
+        error: 'الوجهة المرتبطة بالمنشور غير موجودة',
+        code: 'destination_missing',
+        refId: post.destinationId,
+      }
+    }
+    if (destination.archivedAt) {
+      return {
+        target: null,
+        error: 'الوجهة مؤرشفة — أعد ربط المنشور بوجهة نشطة',
+        code: 'destination_archived',
+        refId: post.destinationId,
+      }
+    }
+    if (
+      destination.messageThreadId != null &&
+      destination.chatType !== 'group' &&
+      destination.chatType !== 'supergroup'
+    ) {
+      return {
+        target: null,
+        error: 'الموضوع مربوط بوجهة ليست مجموعة منتدى — أزل الموضوع أو نفّذ فحص الصحة',
+        code: 'destination_thread_invalid',
+        refId: post.destinationId,
+      }
     }
     if (destination.status !== 'active' || destination.verificationStatus !== 'verified') {
       return {
         target: null,
         error: `الوجهة غير مؤهلة للإرسال (status=${destination.status}, verification=${destination.verificationStatus})`,
+        code: 'destination_not_qualified',
+        refId: post.destinationId,
       }
     }
     const botToken = await resolveBotToken(post.botId ?? destination.botId)
-    if (botToken.error) return { target: null, error: botToken.error }
+    if (botToken.error)
+      return { target: null, error: botToken.error, code: botToken.code, refId: post.destinationId }
     return {
       target: {
         chatId: destination.chatId,
@@ -121,31 +168,42 @@ async function resolveTarget(post: {
     return {
       target: null,
       error: 'لا توجد وجهة مُتحقَّق منها ولا TELEGRAM_CHANNEL_ID في البيئة',
+      code: 'env_channel_missing',
+      refId: null,
     }
   }
   const botToken = await resolveBotToken(post.botId)
-  if (botToken.error) return { target: null, error: botToken.error }
+  if (botToken.error)
+    return { target: null, error: botToken.error, code: botToken.code, refId: null }
   return { target: { chatId: envChannel, botToken: botToken.token } }
 }
 
 /**
  * حل توكن البوت: `botId` ⇒ سجل مشفّر، وإلا `null` ⇒ env
- * TELEGRAM_BOT_TOKEN. فشل فك التشفير يعود كخطأ إعدادي (لا استهلاك محاولة).
+ * TELEGRAM_BOT_TOKEN. فشل فك التشفير يعود كخطأ إعدادي (لا استهلاك محاولة)
+ * مع رمز كتالوج (مرحلة 6).
  */
 async function resolveBotToken(
   botId: string | null | undefined,
-): Promise<{ token: string | null; error?: string }> {
+): Promise<{ token: string | null; error?: string; code?: string; refId?: string | null }> {
   if (!botId) return { token: null }
   const bot = await db.socialTelegramBot.findUnique({
     where: { id: botId },
     select: { tokenEnc: true, status: true },
   })
-  if (!bot) return { token: null, error: `البوت ${botId} غير موجود` }
-  if (bot.status !== 'active') return { token: null, error: `البوت ${botId} غير نشط` }
+  if (!bot)
+    return { token: null, error: `البوت ${botId} غير موجود`, code: 'bot_missing', refId: botId }
+  if (bot.status !== 'active')
+    return { token: null, error: `البوت ${botId} غير نشط`, code: 'bot_not_active', refId: botId }
   try {
     return { token: decryptBotToken(bot.tokenEnc) }
   } catch {
-    return { token: null, error: `تعذّر فك تشفير توكن البوت ${botId}` }
+    return {
+      token: null,
+      error: `تعذّر فك تشفير توكن البوت ${botId}`,
+      code: 'bot_token_decrypt',
+      refId: botId,
+    }
   }
 }
 
@@ -155,6 +213,12 @@ async function markPermanentFailure(
   error: string,
   actor: PublishActor | undefined,
   reason: PublishResult['reason'],
+  opts: {
+    code?: string
+    attempt?: number
+    scope?: PublishErrorScope
+    refId?: string | null
+  } = {},
 ): Promise<PublishResult> {
   await db.socialPost.update({
     where: { id: postId },
@@ -164,6 +228,18 @@ async function markPermanentFailure(
       attempts: { increment: 1 },
     },
   })
+
+  // مرحلة 6: كل فشل يكتب PublishErrorEvent بهذا الرمز.
+  const code = opts.code ?? (reason === 'validation' ? 'validation_failed' : 'unknown')
+  await recordPublishError({
+    code,
+    scope: opts.scope ?? 'post',
+    refId: opts.refId ?? postId,
+    message: error,
+    attempt: opts.attempt,
+  })
+  await notifyPublishFailure({ postId, errorText: error, code, fixAr: publishErrorDef(code).fixAr })
+
   if (actor?.id) {
     await logAction({
       userId: actor.id,
@@ -174,12 +250,30 @@ async function markPermanentFailure(
       details: error,
     })
   }
-  return { ok: false, status: 'failed', error, reason }
+  return { ok: false, status: 'failed', error, reason, code }
 }
 
-/** علامة الفشل الإعدادي بلا استهلاك محاولة (لا كتابة على الحالة). */
-function misconfigured(error: string): PublishResult {
-  return { ok: false, status: 'failed', error, reason: 'misconfigured' }
+/** فشل إعدادي بلا استهلاك محاولة (لا كتابة على الحالة) — مع تسجيل الحدث. */
+async function misconfigured(
+  postId: string,
+  error: string,
+  code?: string,
+  refId?: string | null,
+): Promise<PublishResult> {
+  const resolvedCode = code ?? 'unknown'
+  await recordPublishError({
+    code: resolvedCode,
+    scope: 'post',
+    refId: refId ?? postId,
+    message: error,
+  })
+  await notifyPublishFailure({
+    postId,
+    errorText: error,
+    code: resolvedCode,
+    fixAr: publishErrorDef(resolvedCode).fixAr,
+  })
+  return { ok: false, status: 'failed', error, reason: 'misconfigured', code: resolvedCode }
 }
 
 /**
@@ -209,11 +303,18 @@ export async function publishSocialPost(
       attempts: true,
       maxAttempts: true,
       scheduledFor: true,
+      createdById: true,
     },
   })
 
   if (!post) {
-    return { ok: false, status: 'failed', error: 'المنشور غير موجود', reason: 'misconfigured' }
+    return {
+      ok: false,
+      status: 'failed',
+      error: 'المنشور غير موجود',
+      reason: 'misconfigured',
+      code: 'unknown',
+    }
   }
 
   // idempotency
@@ -232,13 +333,19 @@ export async function publishSocialPost(
       status: 'failed',
       error: `المنصة «${post.platform}» غير مدعومة للنشر بعد`,
       reason: 'unsupported_platform',
+      code: 'unsupported_platform',
     }
   }
 
-  // الهدف (فشل إعدادي = بلا استهلاك محاولة)
+  // الهدف (فشل إعدادي = بلا استهلاك محاولة) — مرحلة 6: رمز + حدث + إشعار.
   const resolved = await resolveTarget(post)
   if (!resolved.target) {
-    return misconfigured(resolved.error ?? 'تعذّر تحديد هدف الإرسال')
+    return misconfigured(
+      postId,
+      resolved.error ?? 'تعذّر تحديد هدف الإرسال',
+      resolved.code,
+      resolved.refId ?? null,
+    )
   }
 
   // التحقق المسبق (وسوم/حدود/bidi) — بلا استهلاك شبكة.
@@ -249,6 +356,7 @@ export async function publishSocialPost(
       'مواصفة الرسالة الغنية غير صالحة — عدّل المنشور ثم أعد النشر',
       actor,
       'validation',
+      { code: 'rich_spec_invalid' },
     )
   }
 
@@ -262,7 +370,9 @@ export async function publishSocialPost(
 
   if (!validation.ok) {
     const detail = validation.issues.map((issue) => issue.message).join(' | ')
-    return markPermanentFailure(postId, `فشل التحقق: ${detail}`, actor, 'validation')
+    return markPermanentFailure(postId, `فشل التحقق: ${detail}`, actor, 'validation', {
+      code: 'validation_failed',
+    })
   }
 
   // caption > 1024 مع وسائط = فشل تحقق دائم قبل الإرسال.
@@ -272,6 +382,7 @@ export async function publishSocialPost(
       'التعليق مع الوسائط يتجاوز 1024 حرفاً — قصّر النص أو أزل الوسائط',
       actor,
       'validation',
+      { code: 'caption_too_long' },
     )
   }
 
@@ -299,6 +410,9 @@ export async function publishSocialPost(
     }
   }
 
+  const resolvedToken = resolved.target.botToken || process.env.TELEGRAM_BOT_TOKEN || ''
+  if (resolvedToken) await throttleBotSend(botTokenFingerprint(resolvedToken))
+
   const sendResult = await sendTelegramPost({
     target: resolved.target,
     text: validation.preview.text,
@@ -320,6 +434,19 @@ export async function publishSocialPost(
         lastError: null,
       },
     })
+
+    // مرحلة 6: النجاح يحلّ الأحداث المفتوحة تلقائياً + نجاح خفيف للمؤلف.
+    await resolvePublishErrorsOpen([
+      { scope: 'post', refId: postId },
+      { scope: 'destination', refId: post.destinationId },
+      { scope: 'bot', refId: post.botId },
+    ])
+    await notifyPublishSuccess({
+      postId,
+      postTitle: post.title,
+      authorId: post.createdById ?? null,
+    })
+
     if (actor?.id) {
       await logAction({
         userId: actor.id,
@@ -338,6 +465,7 @@ export async function publishSocialPost(
   const error = sendResult.error ?? 'فشل الإرسال إلى تليجرام'
   const nextAttempts = post.attempts + 1
   const exhausted = nextAttempts >= post.maxAttempts
+  const transportCode = classifyTransportError(error)
 
   await db.socialPost.update({
     where: { id: postId },
@@ -350,6 +478,47 @@ export async function publishSocialPost(
     },
   })
 
+  // مرحلة 6: حدث لنقل الرمز (نطاق المنشور + كيانات الهدف) — إشعار فقط
+  // عند النضوب (فشل نهائي) حتى لا تُرِق كل محاولة backoff.
+  await recordPublishError({
+    code: transportCode,
+    scope: 'post',
+    refId: postId,
+    message: error,
+    attempt: nextAttempts,
+  })
+  await recordPublishError({
+    code: transportCode,
+    scope: 'destination',
+    refId: post.destinationId,
+    message: error,
+    attempt: nextAttempts,
+  })
+  await recordPublishError({
+    code: transportCode,
+    scope: 'bot',
+    refId: post.botId,
+    message: error,
+    attempt: nextAttempts,
+  })
+  if (!exhausted && !publishErrorDef(transportCode).retryable) {
+    // رمز غير قابل للإعادة لا يجوز بقاءه `scheduled` — فشل نهائي فوري.
+    await db.socialPost.update({
+      where: { id: postId },
+      data: { status: 'failed' },
+    })
+  }
+  if (exhausted) {
+    await notifyPublishFailure({
+      postId,
+      postTitle: post.title,
+      errorText: error,
+      code: transportCode,
+      fixAr: publishErrorDef(transportCode).fixAr,
+      attempt: nextAttempts,
+    })
+  }
+
   if (actor?.id) {
     await logAction({
       userId: actor.id,
@@ -358,12 +527,12 @@ export async function publishSocialPost(
       entity: 'social_post',
       entityId: postId,
       details: error,
-      metadata: { attempts: nextAttempts, exhausted, source },
+      metadata: { attempts: nextAttempts, exhausted, source, code: transportCode },
     })
   }
 
   logger.warn(
     `[social-publish] post ${postId} failed (attempt ${nextAttempts}/${post.maxAttempts}): ${error}`,
   )
-  return { ok: false, status: 'failed', error }
+  return { ok: false, status: 'failed', error, code: transportCode }
 }

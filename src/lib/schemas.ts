@@ -251,12 +251,18 @@ export const CreateModSchema = z.object({
     .refine((v) => !Number.isNaN(Date.parse(v)), 'تاريخ النشر المجدول غير صالح')
     .optional()
     .nullable(),
+  // المرحلة 4: نطاق الجدولة — بلا default في zod (القيمة الافتراضية both
+  // على مستوى قاعدة البيانات؛ default هنا سيتسرب عبر .partial()).
+  publishMode: z.enum(['site_only', 'social_only', 'both']).optional(),
   slug: z.string().optional(),
   changelog: z.string().optional(),
   installGuide: z.string().optional(),
   arabicTitle: z.string().optional(),
   translationScope: z.string().optional(),
   compatibility: z.string().optional(),
+  extrasLabel: z.string().max(200).optional().nullable(),
+  trailerUrl: z.string().url('رابط التريلر غير صالح').optional().nullable().or(z.literal('')),
+  supportUrl: z.string().url('رابط الدعم غير صالح').optional().nullable().or(z.literal('')),
   // Platform-specific localization fields (all optional, per-platform)
   translationMethod: z.string().optional(),
   platformGameId: z.string().optional(),
@@ -279,6 +285,18 @@ export const CreateModSchema = z.object({
         title: z.string().min(1, 'عنوان الملف مطلوب'),
         description: z.string().optional(),
         alert: z.string().optional(),
+        parentId: z.string().optional().nullable(),
+        extrasLabel: z.string().max(200).optional().nullable(),
+        siteLinks: z
+          .array(
+            z.object({
+              url: z.string().url('رابط غير صالح'),
+              siteName: z.string().optional().nullable(),
+              pageTitle: z.string().optional().nullable(),
+              domain: z.string().optional().nullable(),
+            }),
+          )
+          .optional(),
         version: z.string().optional(),
         releaseDate: z.string().optional(),
         fileSize: z.string().optional(),
@@ -319,6 +337,17 @@ export const CreateModSchema = z.object({
         label: z.string().optional(),
         url: z.string().url('رابط غير صالح'),
         order: z.number().optional(),
+      }),
+    )
+    .optional(),
+  siteLinks: z
+    .array(
+      z.object({
+        url: z.string().url('رابط غير صالح'),
+        siteName: z.string().optional().nullable(),
+        pageTitle: z.string().optional().nullable(),
+        domain: z.string().optional().nullable(),
+        fileId: z.string().optional().nullable(),
       }),
     )
     .optional(),
@@ -482,6 +511,11 @@ export const NotificationTypeSchema = z.enum([
   'admin_report',
   'admin_milestone',
   'system_announcement',
+  // أدوات النشر (مرحلة 6) — توازن مع domain NotificationType.
+  'social_publish_failed',
+  'social_publish_succeeded',
+  'publish_degraded',
+  'publish_digest',
 ])
 
 export const NotificationChannelSchema = z.enum(['in_app', 'email', 'telegram'])

@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
   conflict,
+  fail,
   forbidden,
-  internalError,
   notFound,
   unauthorized,
   validationFail,
@@ -12,6 +12,7 @@ import { AuthError, requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { reportError } from '@/lib/error-reporting'
+import { handlePrismaError } from '@/lib/prisma-errors'
 
 const UnlinkAccountSchema = z.object({
   accountId: z.string().min(1),
@@ -60,6 +61,9 @@ export async function POST(req: NextRequest) {
     }
     reportError(err, { route: 'POST /api/settings/unlink-account' })
     logger.error({ err, route: 'POST /api/settings/unlink-account' }, 'Failed to unlink account')
-    return internalError('Failed to unlink account')
+    const { message, status, code } = handlePrismaError(err, {
+      alreadyReported: true, // this catch already called reportError for 'POST /api/settings/unlink-account'
+    })
+    return fail(code, message, status)
   }
 }

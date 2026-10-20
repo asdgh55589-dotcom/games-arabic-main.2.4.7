@@ -7,8 +7,8 @@ import { logger } from '@/lib/logger'
 
 const RANGES = new Set([7, 30, 90])
 
-const PRIVATE_NO_STORE = {
-  headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+const PRIVATE_CACHE = {
+  headers: { 'Cache-Control': 'private, max-age=30', Vary: 'Cookie' },
 } as const
 
 // GET /api/creator/analytics/top-mods?range=30&limit=10 — top mods by
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    return ok({ range: days, mods: rows }, PRIVATE_NO_STORE)
+    return ok({ range: days, mods: rows }, PRIVATE_CACHE)
   } catch (err) {
     logger.error('[creator/analytics/top-mods GET] failed:', err)
     return internalError('فشل جلب الأعلى تحميلاً')

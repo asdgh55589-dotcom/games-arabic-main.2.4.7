@@ -1,3 +1,4 @@
+import { setCacheControl } from '@/lib/api-cache'
 import { ok } from '@/lib/api-response'
 import { db } from '@/lib/db'
 
@@ -10,7 +11,11 @@ export async function GET() {
       orderBy: { _count: { query: 'desc' } },
       take: 6,
     })
-    return ok({ queries: rows.map((r) => r.query) })
+    // Section 4 item 27: suggestions are public — cache instead of refetching
+    // on every empty search.
+    const res = ok({ queries: rows.map((r) => r.query) })
+    setCacheControl(res.headers, { type: 'public', maxAge: 60, swr: 120 })
+    return res
   } catch {
     return ok({ queries: [] })
   }

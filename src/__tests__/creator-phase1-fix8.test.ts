@@ -1,7 +1,7 @@
 /**
  * PART 2 Phase 1 — Fix 8 tests: ban info + suspended page wiring.
  */
-process.env.JWT_SECRET = 'test-secret-key-for-jest';
+process.env.JWT_SECRET = 'test-secret-key-for-jest-32-chars!';
 
 jest.mock('@/lib/db', () => ({
   db: {
@@ -113,10 +113,16 @@ describe('Fix 8: suspended page placement + layout wiring (static)', () => {
 
   it('studio layout checks ban FIRST and redirects to /creator/suspended', () => {
     const layout = src('src/app/creator/(studio)/layout.tsx');
-    expect(layout).toMatch(/getBanInfo/);
+    // Perf: one auth round-trip — ban derived from the session row via
+    // getSession({ includeBanInfo: true }) + getBanStatus (no getBanInfo call).
+    expect(layout).not.toMatch(/getBanInfo/);
+    expect(layout).toMatch(/getSession\(\{ includeBanInfo: true \}\)/);
+    expect(layout).toMatch(/getBanStatus/);
     expect(layout).toMatch(/redirect\('\/creator\/suspended'\)/);
-    // ban check must precede the session null-check (getSession nulls banned users)
-    expect(layout.indexOf('getBanInfo()')).toBeLessThan(layout.indexOf('getSession()'));
+    // ban redirect must precede the login redirect (same ordering semantics)
+    expect(layout.indexOf("redirect('/creator/suspended')")).toBeLessThan(
+      layout.indexOf("redirect('/login?next=/creator')"),
+    );
   });
 
   it('suspended page shows reason + expiry and links home', () => {

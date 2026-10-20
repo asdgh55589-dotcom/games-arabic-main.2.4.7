@@ -23,8 +23,16 @@ export interface SocialPostDto {
   attempts: number
   maxAttempts: number
   lastError: string | null
+  /** Phase 5 — الأرشفة الناعمة (null = غير مؤرشف). */
+  archivedAt: Date | null
+  /** Phase 5 — مرآة وضعية النشر (site_only|social_only|both|null). */
+  siteMode: string | null
   createdAt: Date
   updatedAt: Date
+  /** M1 — وجهة الإرسال (إن وُجدت) لعرضها في الواجهة. */
+  destination?: { id: string; chatId: string; title: string | null } | null
+  /** M1 — القالب المرتبط (إن وُجد). */
+  template?: { id: string; name: string } | null
 }
 
 export function serializePost(post: Record<string, unknown>): SocialPostDto {
@@ -46,8 +54,13 @@ export function serializePost(post: Record<string, unknown>): SocialPostDto {
     attempts: (post.attempts as number) ?? 0,
     maxAttempts: (post.maxAttempts as number) ?? 3,
     lastError: (post.lastError as string | null) ?? null,
+    archivedAt: (post.archivedAt as Date | null) ?? null,
+    siteMode: (post.siteMode as string | null) ?? null,
     createdAt: post.createdAt as Date,
     updatedAt: post.updatedAt as Date,
+    destination:
+      (post.destination as { id: string; chatId: string; title: string | null } | null) ?? null,
+    template: (post.template as { id: string; name: string } | null) ?? null,
   }
 }
 
@@ -62,6 +75,9 @@ export interface SocialTemplateDto {
   mediaUrl: string | null
   variables: unknown
   isDefault: boolean
+  /** Phase 5 — الخلود: المؤرشف يختفي عن القوائم فقط، لا يُحذف أبداً. */
+  isArchived: boolean
+  archivedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -78,6 +94,8 @@ export function serializeTemplate(template: Record<string, unknown>): SocialTemp
     mediaUrl: (template.mediaUrl as string | null) ?? null,
     variables: template.variables ?? [],
     isDefault: Boolean(template.isDefault),
+    isArchived: Boolean(template.isArchived),
+    archivedAt: (template.archivedAt as Date | null) ?? null,
     createdAt: template.createdAt as Date,
     updatedAt: template.updatedAt as Date,
   }

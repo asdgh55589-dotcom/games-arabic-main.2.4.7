@@ -67,12 +67,53 @@ describe('scripts/deploy.sh contract', () => {
       'CLOUDINARY_API_KEY',
       'CLOUDINARY_API_SECRET',
     ]
-    fs.writeFileSync(envFile, required.map((k) => `${k}="v-${k}"`).join('\n') + '\n')
+    fs.writeFileSync(
+      envFile,
+      required
+        .map((k) =>
+          k === 'JWT_SECRET' ? `${k}="${'0123456789abcdef'.repeat(4)}"` : `${k}="v-${k}"`,
+        )
+        .join('\n') + '\n',
+    )
     const r = spawnSync('bash', [script, '--env-check'], {
       encoding: 'utf8',
       env: { ...process.env, DEPLOY_ENV_FILE: envFile },
     })
     expect(r.status).toBe(0)
     expect(r.stdout).toMatch(/all required keys present/i)
+  })
+
+  it('--env-check rejects short JWT_SECRET', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-env-'))
+    const envFile = path.join(dir, '.env')
+    const required = [
+      'DATABASE_URL',
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'SUPABASE_SERVICE_ROLE_KEY',
+      'JWT_SECRET',
+      'NEXT_PUBLIC_TELEGRAM_BOT_USERNAME',
+      'TELEGRAM_BOT_TOKEN',
+      'EMITLO_API_KEY',
+      'EMAIL_FROM',
+      'FREEIMAGE_API_KEY',
+      'IA_ACCESS_KEY',
+      'IA_SECRET_KEY',
+      'IA_IDENTIFIER',
+      'CLOUDINARY_CLOUD_NAME',
+      'CLOUDINARY_API_KEY',
+      'CLOUDINARY_API_SECRET',
+    ]
+    fs.writeFileSync(
+      envFile,
+      required.map((k) => (k === 'JWT_SECRET' ? `${k}="short"` : `${k}="v-${k}"`)).join('\n') +
+        '\n',
+    )
+    const r = spawnSync('bash', [script, '--env-check'], {
+      encoding: 'utf8',
+      env: { ...process.env, DEPLOY_ENV_FILE: envFile },
+    })
+    expect(r.status).toBe(1)
+    expect(r.stdout).toMatch(/at least 32|too short|INVALID JWT_SECRET/)
   })
 })

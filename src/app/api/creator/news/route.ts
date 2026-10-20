@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { forbidden, ok, validationFail } from '@/lib/api-response'
+import { fail, forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { canPublishNews } from '@/lib/permissions'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { sanitizeUrl } from '@/lib/sanitize'
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
     take: 100,
     select: {
-      id: true, slug: true, title: true, summary: true, content: true,
+      id: true, slug: true, title: true, summary: true,
       imageUrl: true, linkUrl: true, category: true, type: true,
       visible: true, views: true, clicksCount: true,
       publishAt: true, expiresAt: true, createdAt: true, updatedAt: true,
@@ -125,20 +126,25 @@ export async function POST(req: NextRequest) {
     linkUrl = safe
   }
 
-  const row = await db.news.create({
-    data: {
-      slug: await uniqueSlug(slugifyTitle(title)),
-      title,
-      summary,
-      content,
-      imageUrl,
-      linkUrl,
-      category,
-      type,
-      visible,
-      authorId: user.id,
-    },
-    select: { id: true, slug: true, title: true, visible: true, createdAt: true },
-  })
-  return ok({ news: row }, { status: 201 })
+  try {
+    const row = await db.news.create({
+      data: {
+        slug: await uniqueSlug(slugifyTitle(title)),
+        title,
+        summary,
+        content,
+        imageUrl,
+        linkUrl,
+        category,
+        type,
+        visible,
+        authorId: user.id,
+      },
+      select: { id: true, slug: true, title: true, visible: true, createdAt: true },
+    })
+    return ok({ news: row }, { status: 201 })
+  } catch (err) {
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
+  }
 }

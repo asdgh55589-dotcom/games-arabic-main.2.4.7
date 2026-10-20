@@ -3,7 +3,7 @@
 
 'use client'
 
-import { Clock, FileArchive, Loader2, Plus } from 'lucide-react'
+import { Clock, FileArchive, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
@@ -11,23 +11,7 @@ import { VersionHistory } from '@/components/admin/mods/version-history'
 import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
 import { WorkflowHistory } from '@/components/admin/mods/workflow-history'
 import { WorkflowStatusBadge } from '@/components/admin/mods/workflow-status-badge'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/contexts/auth-context'
-import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
-import { isSupportedVideoUrl } from '@/lib/oembed'
-import { extractVideoErrorMessage } from '@/lib/video-errors'
-import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
-import { ModFormActions } from './mod-form/actions'
-import { ModFormHeader } from './mod-form/header'
-import { ModFormBasicInfo } from './mod-form/basic-info'
-import { ModFormFiles, ModFormSchedule } from './mod-form/files'
-import { ModFormMedia } from './mod-form/media'
-import { ModFormSettings } from './mod-form/settings'
-import { ChangeTypeDialog, type ChangeType } from './mod-form/change-type-dialog'
 import { PlatformFieldsSection } from '@/components/shared/platform-fields-section'
-import { PlatformSelector } from './mod-form/platform-selector'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,25 +22,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useAuth } from '@/contexts/auth-context'
+import { useToast } from '@/hooks/use-toast'
+import { isSupportedVideoUrl } from '@/lib/oembed'
+import { brandLogoUrl } from '@/lib/download-trust'
+import { normalizeTranslationType, type TranslationType } from '@/lib/schemas'
+import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { isDataUrl, uploadCroppedDataUrl } from '@/lib/upload-cropped'
+import { extractVideoErrorMessage } from '@/lib/video-errors'
+import { ModFormActions } from './mod-form/actions'
+import { ModFormBasicInfo } from './mod-form/basic-info'
+import { type ChangeType, ChangeTypeDialog } from './mod-form/change-type-dialog'
 import {
+  ModFormFiles,
+  ModFormSchedule,
+  type ScheduleWizardValue,
+  saveModSchedule,
+} from './mod-form/files'
+import { ModFormHeader } from './mod-form/header'
+import { ModFormMedia } from './mod-form/media'
+import { PlatformSelector } from './mod-form/platform-selector'
+import {
+  buildUploadTitle,
+  type ContactLink,
+  type CustomTab,
+  type DownloadFile,
+  type SiteLink,
   EMPTY_CONTACT,
   EMPTY_FILE,
   EMPTY_GROUP,
   EMPTY_MEMBER,
   EMPTY_TAB,
-  Section,
-  buildUploadTitle,
   formatArabicTitle,
   hasTitleYear,
-  slugify,
-  type ContactLink,
-  type CustomTab,
-  type DownloadFile,
+  Section,
   type SeriesOpt,
+  slugify,
   type TeamMember,
   type TeamOpt,
   type VideoGroup,
 } from './mod-form/primitives'
+import { ModFormSettings } from './mod-form/settings'
 
 interface ModFormProps {
   modId?: string // لو موجود → تعديل، لو مش موجود → إنشاء
@@ -112,7 +120,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [fileSize, setFileSize] = useState('MB 0')
   const [fileFormat, setFileFormat] = useState('zip')
   const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().split('T')[0])
-  const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+  // المرحلة 4: حالة معالج الجدولة (null = بلا جدولة). scheduledAt
+  // يُشتق منها عند الحفظ للتوافق (اجتماعي-فقط ⇒ null حتى لا ينشر الموقع).
+  const [schedule, setSchedule] = useState<ScheduleWizardValue | null>(null)
 
   // Platform-specific fields
   const [platform, setPlatform] = useState('')
@@ -123,6 +133,9 @@ export default function ModForm({ modId }: ModFormProps) {
   const [titleId, setTitleId] = useState('')
   const [mediaId, setMediaId] = useState('')
   const [supportedFormat, setSupportedFormat] = useState('')
+  const [trailerUrl, setTrailerUrl] = useState('')
+  const [supportUrl, setSupportUrl] = useState('')
+  const [extrasLabel, setExtrasLabel] = useState('')
   const [systemFirmware, setSystemFirmware] = useState('')
   const [gameUpdateVersion, setGameUpdateVersion] = useState('')
   const [deviceModel, setDeviceModel] = useState('')
@@ -132,6 +145,7 @@ export default function ModForm({ modId }: ModFormProps) {
   const [minAndroidVersion, setMinAndroidVersion] = useState('')
 
   const [files, setFiles] = useState<DownloadFile[]>([])
+  const [siteLinks, setSiteLinks] = useState<SiteLink[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [contactLinks, setContactLinks] = useState<ContactLink[]>([])
   const [videoGroups, setVideoGroups] = useState<VideoGroup[]>([])
@@ -218,9 +232,18 @@ export default function ModForm({ modId }: ModFormProps) {
         setFileSize(m.fileSize || 'MB 0')
         setFileFormat(m.fileFormat || 'zip')
         setReleaseDate(m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '')
-        setScheduledAt(
-          (m as any).scheduledAt ? new Date((m as any).scheduledAt).toISOString() : null,
-        )
+        // إرث scheduledAt ⇒ وضعية موقع-فقط (يحافظ على السلوك القديم حرفياً).
+        if ((m as any).scheduledAt) {
+          const iso = new Date((m as any).scheduledAt).toISOString()
+          setSchedule({
+            mode: 'site_only',
+            datetime: iso,
+            manualTargets: [],
+            useManualTargets: false,
+          })
+        } else {
+          setSchedule(null)
+        }
         setPlatform(m.game?.platform || '')
         setTranslationMethod((m as any).translationMethod || '')
         setPlatformGameId((m as any).platformGameId || '')
@@ -229,6 +252,9 @@ export default function ModForm({ modId }: ModFormProps) {
         setTitleId((m as any).titleId || '')
         setMediaId((m as any).mediaId || '')
         setSupportedFormat((m as any).supportedFormat || '')
+        setTrailerUrl((m as any).trailerUrl || '')
+        setSupportUrl((m as any).supportUrl || '')
+        setExtrasLabel((m as any).extrasLabel || '')
         setSystemFirmware((m as any).systemFirmware || '')
         setGameUpdateVersion((m as any).gameUpdateVersion || '')
         setDeviceModel((m as any).deviceModel || '')
@@ -252,6 +278,20 @@ export default function ModForm({ modId }: ModFormProps) {
                 fileSize: f.fileSize,
                 fileFormat: f.fileFormat,
                 links: f.links?.map((l: any) => ({ url: l.url, label: l.label })) || [],
+                parentId: f.parentId
+                  ? String((m.files || []).findIndex((x: any) => x.id === f.parentId))
+                  : null,
+                extrasLabel: f.extrasLabel || null,
+              }))
+            : [],
+        )
+        setSiteLinks(
+          Array.isArray(m.siteLinks)
+            ? m.siteLinks.map((s: any) => ({
+                url: s.url,
+                siteName: s.siteName,
+                pageTitle: s.pageTitle,
+                domain: s.domain,
               }))
             : [],
         )
@@ -545,7 +585,15 @@ export default function ModForm({ modId }: ModFormProps) {
       fileSize,
       fileFormat,
       releaseDate: releaseDate || null,
-      scheduledAt: scheduledAt || null,
+      // المرحلة 4: scheduledAt مشتق من المعالج (اجتماعي-فقط ⇒ null)،
+      // ووضعية النشر تُحفظ صراحةً.
+      scheduledAt:
+        schedule == null
+          ? null
+          : schedule.mode === 'social_only'
+            ? null
+            : (schedule.datetime ?? null),
+      publishMode: schedule?.mode ?? undefined,
       translationMethod: translationMethod || null,
       platformGameId: platformGameId || null,
       cusaId: cusaId || null,
@@ -553,6 +601,9 @@ export default function ModForm({ modId }: ModFormProps) {
       titleId: titleId || null,
       mediaId: mediaId || null,
       supportedFormat: supportedFormat || null,
+      trailerUrl: trailerUrl || null,
+      supportUrl: supportUrl || null,
+      extrasLabel: extrasLabel || null,
       systemFirmware: systemFirmware || null,
       gameUpdateVersion: gameUpdateVersion || null,
       deviceModel: deviceModel || null,
@@ -561,6 +612,7 @@ export default function ModForm({ modId }: ModFormProps) {
       gameVersion: gameVersion || null,
       minAndroidVersion: minAndroidVersion || null,
       files: files.filter((f) => f.title),
+      siteLinks: siteLinks.filter((s) => s.url),
       teamMembers: teamMembers.filter((m) => m.name),
       contactLinks: contactLinks.filter((c) => c.url),
       videoGroups: videoGroups
@@ -592,6 +644,29 @@ export default function ModForm({ modId }: ModFormProps) {
         title: t.saved,
         description: isEdit ? t.updated : t.publishedOk,
       })
+
+      // المرحلة 4: حفظ الجدولة بعد نجاح حفظ المود (يحتاج modId).
+      // فشل الجدولة لا يُسقط حفظ المود — رسالة منفصلة.
+      if (schedule?.datetime) {
+        const savedId =
+          (isEdit && modId ? modId : null) ?? (data?.data?.id as string | undefined) ?? null
+        if (savedId) {
+          try {
+            await saveModSchedule({
+              saveUrl: '/api/creator/schedule-projects',
+              modId: savedId,
+              value: schedule,
+            })
+            toast({ title: t.scheduledPublish, description: t.scheduleDryRunPass })
+          } catch (scheduleErr) {
+            toast({
+              title: t.scheduledPublish,
+              description: scheduleErr instanceof Error ? scheduleErr.message : t.saveFailed,
+              variant: 'destructive',
+            })
+          }
+        }
+      }
 
       // Show changelog dialog when editing an existing mod
       if (isEdit && modId) {
@@ -776,6 +851,25 @@ export default function ModForm({ modId }: ModFormProps) {
             hidePlatformSelect={!isEdit}
           />
 
+          {/* روابط إضافية (تريلر + دعم فريق + عنوان قسم الإضافات) */}
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">روابط إضافية</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط التريلر (YouTube/Vimeo)</label>
+                <Input value={trailerUrl} onChange={(e) => setTrailerUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رابط دعم الفريق (PayPal/Ko-fi/...)</label>
+                <Input value={supportUrl} onChange={(e) => setSupportUrl(e.target.value)} placeholder="https://ko-fi.com/..." />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <Input value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
+            </div>
+          </div>
+
           {/* أزرار تغيير الحالة */}
           {isEdit && (
             <WorkflowActions
@@ -834,6 +928,31 @@ export default function ModForm({ modId }: ModFormProps) {
             addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
           />
 
+          {/* ===== روابط مواقع متوافقة (إضافات) ===== */}
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">روابط مواقع متوافقة (إضافات)</h3>
+            <p className="text-xs text-muted-foreground">روابط خارجية (FitGirl/DODI/...) تُعرض كإضافات في تبويبة التحميل. النطاق يجب أن يكون ضمن قائمة المواقع المدعومة.</p>
+            <div className="space-y-2">
+              {siteLinks.map((sl, i) => {
+                const domain = (sl.domain || sl.url || '').replace(/^https?:\/\//, '').split('/')[0]
+                return (
+                  <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
+                    <img src={brandLogoUrl(domain || 'example.com')} alt="" className="h-6 w-6 shrink-0 rounded border border-border/40 bg-white object-contain p-0.5" />
+                    <Input value={sl.url} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
+                    <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
+                    <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => setSiteLinks((p) => p.filter((_, idx) => idx !== i))}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSiteLinks((p) => [...p, { url: '', siteName: '', pageTitle: '', domain: null }])}>
+              <Plus className="me-1 h-3 w-3" /> إضافة رابط موقع
+            </Button>
+          </div>
+
           <ModFormSettings
             seriesId={seriesId}
             setSeriesId={setSeriesId}
@@ -859,7 +978,13 @@ export default function ModForm({ modId }: ModFormProps) {
             slugify={slugify}
           />
 
-          <ModFormSchedule scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
+          <ModFormSchedule
+            platform={platform}
+            value={schedule}
+            onChange={setSchedule}
+            inferUrl="/api/creator/schedule-projects/infer"
+            allowTargetOverride={false}
+          />
 
           {/* سجل الإصدارات */}
           {isEdit && (

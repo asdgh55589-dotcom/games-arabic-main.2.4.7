@@ -80,23 +80,23 @@ describe('rich-text parity', () => {
   const enumValues = Object.values(NotificationType)
 
   it('registry covers exactly the domain NotificationType set', () => {
-    expect(enumValues).toHaveLength(20)
+    expect(enumValues).toHaveLength(24)
     expect(Object.keys(TEMPLATE_TYPE_REGISTRY).sort()).toEqual([...enumValues].sort())
     expect(new Set(Object.keys(TEMPLATE_TYPE_REGISTRY)).size).toBe(enumValues.length)
   })
 
   it('binding: every registered type is rich-eligible', () => {
-    expect(RICH_ELIGIBLE_TYPES.size).toBe(20)
+    expect(RICH_ELIGIBLE_TYPES.size).toBe(24)
     for (const registration of Object.values(TEMPLATE_TYPE_REGISTRY)) {
       expect(registration.richEligible).toBe(true)
       expect(RICH_ELIGIBLE_TYPES.has(registration.type)).toBe(true)
     }
   })
 
-  it('seed in_app rows parse to the same 20 types', () => {
-    expect(seedInApp.size).toBe(20)
+  it('seed in_app rows parse to the same 24 types', () => {
+    expect(seedInApp.size).toBe(24)
     expect([...seedInApp.keys()].sort()).toEqual([...enumValues].sort())
-    expect(seedSource.match(/channel: 'in_app'/g) ?? []).toHaveLength(20)
+    expect(seedSource.match(/channel: 'in_app'/g) ?? []).toHaveLength(24)
   })
 
   it('variable contracts match seed in_app variable names and order per type', () => {

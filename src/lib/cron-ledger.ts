@@ -4,8 +4,10 @@
  * Prevents duplicate runs using a window key written on the claimed row.
  * Every call goes through the DB so concurrent invocations are safe via
  * the unique constraint on (type, windowKey) — the windowKey is always
- * persisted, and a completed OR in-progress row for the same window is
- * treated as a duplicate.
+ * persisted, and a completed OR live in-progress row for the same window
+ * is treated as a duplicate. Dead rows (failed, or in-progress past the
+ * claim lease) are reaped before claiming so one crash cannot poison
+ * the whole window.
  */
 
 import { db } from './db'
@@ -16,8 +18,16 @@ export interface ClaimResult {
 }
 
 /**
+ * مدة عقد المطالبة: صف pending/running أقدم من هذا يُعدّ عاملاً تعطّل
+ * (لم يصل إلى completeRun/failRun) ويُزال لإفساح النافذة — وإلا حجب
+ * العامل الميت كل ticks النافذة نفسها إلى الأبد. أطول بكثير من أي
+ * تشغيل طبيعي كي لا يُزال ادعاء حي فيُشغَّل مكرراً.
+ */
+export const CLAIM_LEASE_MS = 30 * 60_000
+
+/**
  * Attempt to claim a run for the given job type + window key.
- * Returns { alreadyRan: true } when a completed OR an in-progress
+ * Returns { alreadyRan: true } when a completed OR a live in-progress
  * (pending/running) row already exists for THIS window — concurrent ticks
  * in the same window are duplicates, not joiners — or
  * { alreadyRan: false, jobId } on first successful claim.
@@ -25,6 +35,12 @@ export interface ClaimResult {
  * constraint applies (Postgres treats NULLs as distinct, so a NULL
  * windowKey could never be rejected); unique-constraint violations from
  * a lost race are reported as duplicates.
+ *
+ * Reaping: same-window FAILED rows and STALE in-progress rows (older
+ * than CLAIM_LEASE_MS — a crashed worker that never completed/failed)
+ * are removed before claiming. Without this, a failed row would still
+ * collide on the unique constraint (P2002) and a dead row would block
+ * the whole window forever.
  */
 export async function claimRun(jobName: string, windowKey: string | null): Promise<ClaimResult> {
   try {
@@ -32,6 +48,21 @@ export async function claimRun(jobName: string, windowKey: string | null): Promi
     // الفريد شيئاً، فنطابق على النوع وحده (السلوك القديم للمتصلين
     // الذين لا يمررون نافذة — لا متصل إنتاجي يفعل ذلك اليوم).
     const scope = windowKey == null ? { type: jobName } : { type: jobName, windowKey }
+
+    // إزاحة الصفوف الميتة أولاً: فاشلة (طرفية — لن تستأنف وحدها)،
+    // وجارية-قديمة (تجاوزت العقد ⇒ عامل تعطّل). الحية تُترك لتُحجب.
+    await db.scheduledJob.deleteMany({
+      where: {
+        ...scope,
+        OR: [
+          { status: 'failed' },
+          {
+            status: { in: ['pending', 'running'] },
+            createdAt: { lt: new Date(Date.now() - CLAIM_LEASE_MS) },
+          },
+        ],
+      },
+    })
 
     // Check if a completed job already exists for THIS window
     const completed = await db.scheduledJob.findFirst({

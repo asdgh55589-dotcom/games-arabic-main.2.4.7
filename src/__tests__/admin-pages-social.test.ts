@@ -40,10 +40,23 @@ describe('سجل صفحات السوشيال ميديا', () => {
     expect(page('social-telegram-templates').minRole).toBe('manager')
   })
 
+  it('يسجّل صفحة الوجهات برتبة manager بعد هبوط المرحلة 1', () => {
+    expect(page('social-telegram-destinations').href).toBe('/admin/social/telegram/destinations')
+    expect(page('social-telegram-destinations').minRole).toBe('manager')
+  })
+
+  it('يسجّل صفحة التوجيه برتبة manager بعد هبوط المرحلة 3', () => {
+    expect(page('social-telegram-routing').href).toBe('/admin/social/telegram/routing')
+    expect(page('social-telegram-routing').minRole).toBe('manager')
+  })
+
   it('يضعها داخل مجموعة السوشيال ميديا', () => {
     const group = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('social'))
-    // 5 صفحات مسجّلة فعلاً: لمحة + قنوات + تيليجرام + منشورات + قوالب
-    expect(group.length).toBe(5)
+    // 9 صفحات مسجّلة: لمحة + قنوات + تيليجرام + منشورات + قوالب + وجهات + توجيه
+    // + أرشيف المنشورات + أرشيف القوالب (Phase 5).
+    expect(group.length).toBe(9)
+    expect(page('social-telegram-archive').minRole).toBe('manager')
+    expect(page('social-telegram-templates-archive').minRole).toBe('manager')
   })
 })
 
@@ -57,6 +70,10 @@ describe('findPageForPath على شجرة السوشيال', () => {
     expect(findPageForPath('/admin/social/telegram/templates')?.key).toBe(
       'social-telegram-templates',
     )
+    expect(findPageForPath('/admin/social/telegram/destinations')?.key).toBe(
+      'social-telegram-destinations',
+    )
+    expect(findPageForPath('/admin/social/telegram/routing')?.key).toBe('social-telegram-routing')
   })
 
   it('ينسب الصفحات الفرعية غير المسجّلة لأطول بادئة', () => {
@@ -116,5 +133,36 @@ describe('roleSeesPageByDefault', () => {
     ]) {
       expect(roleSeesPageByDefault('moderator', page(key))).toBe(false)
     }
+  })
+})
+
+describe('صفحة مهام الجدولة (المرحلة 4)', () => {
+  it('مسجلة برتبة manager في مجموعة النشر المجدول', () => {
+    expect(page('publish-schedule').href).toBe('/admin/publish/schedule')
+    expect(page('publish-schedule').minRole).toBe('manager')
+    expect(findPageForPath('/admin/publish/schedule')?.key).toBe('publish-schedule')
+  })
+})
+
+describe('صفحات مركز الأخطاء والمساعدة (المرحلة 6)', () => {
+  it('مركز الأخطاء مسجل برتبة admin (قراءة requireAdmin)', () => {
+    expect(page('publish-errors').href).toBe('/admin/publish/errors')
+    expect(page('publish-errors').minRole).toBe('admin')
+    expect(findPageForPath('/admin/publish/errors')?.key).toBe('publish-errors')
+  })
+
+  it('مساعدة النشر ثابتة برتبة manager للقراءة', () => {
+    expect(page('publish-help').href).toBe('/admin/publish/help')
+    expect(page('publish-help').minRole).toBe('manager')
+    expect(findPageForPath('/admin/publish/help')?.key).toBe('publish-help')
+  })
+
+  it('مجموعة النشر المجدول تحمل 3 صفحات الآن', () => {
+    const publishPages = ADMIN_PAGES_FLAT.filter((d) => d.key.startsWith('publish'))
+    expect(publishPages.map((d) => d.key).sort()).toEqual([
+      'publish-errors',
+      'publish-help',
+      'publish-schedule',
+    ])
   })
 })

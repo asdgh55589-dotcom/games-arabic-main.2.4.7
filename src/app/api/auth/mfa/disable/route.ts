@@ -1,14 +1,15 @@
 import bcrypt from 'bcryptjs'
 import type { NextRequest } from 'next/server'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimit } from '@/lib/rate-limit'
 import { DisableMfaSchema } from '@/lib/schemas'
 import { createClient } from '@/lib/supabase/server'
 import { decryptTOTPSecret, verifyTOTP } from '@/lib/totp'
-import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -128,7 +129,13 @@ export async function POST(req: NextRequest) {
 
     // تحديث الكوكيز لإزالة mfaVerified
     const { setRoleCookie } = await import('@/lib/auth')
-    await setRoleCookie(updatedUser.id, updatedUser.role as never, updatedUser.tokenVersion, false, updatedUser.onboardingCompleted)
+    await setRoleCookie(
+      updatedUser.id,
+      updatedUser.role as never,
+      updatedUser.tokenVersion,
+      false,
+      updatedUser.onboardingCompleted,
+    )
 
     // Telegram-first: linked users get the disable confirmation via bot.
     {
@@ -139,6 +146,7 @@ export async function POST(req: NextRequest) {
     return ok({ success: true, message: 'تم تعطيل المصادقة الثنائية' })
   } catch (err) {
     logger.error('[mfa disable] failed:', err)
-    return internalError('حدث خطأ أثناء التعطيل')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
   }
 }

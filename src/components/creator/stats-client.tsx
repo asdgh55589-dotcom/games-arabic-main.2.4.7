@@ -70,9 +70,10 @@ export function StatsClient() {
     setLoading(true)
     setError(null)
     try {
+      // KPI data is stale-tolerant (30s) — server sends Cache-Control.
       const [a, s] = await Promise.all([
-        fetch(`/api/creator/analytics?range=${range}`, { cache: 'no-store' }),
-        fetch('/api/creator/stats', { cache: 'no-store' }),
+        fetch(`/api/creator/analytics?range=${range}`),
+        fetch('/api/creator/stats'),
       ])
       if (a.ok) {
         const json = await a.json()

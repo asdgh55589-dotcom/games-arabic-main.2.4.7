@@ -42,6 +42,7 @@ const EXEMPT_PREFIXES = [
   '/verify-email-address',
   '/api/auth/verify-email',
   '/api/auth/callback',
+  '/api/auth/heal-role',
   '/api/auth/telegram',
   '/api/auth/telegram-bridge',
   '/api/auth/session-ledger',
