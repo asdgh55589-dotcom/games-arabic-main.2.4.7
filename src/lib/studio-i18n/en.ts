@@ -4,6 +4,11 @@ export const en: StudioDict = {
   common: {
     brand: 'Games Arabic',
     unpublishedFallback: '—',
+    refresh: 'Refresh',
+    refreshSuccess: 'Refreshed',
+  },
+  home: {
+    createNewMod: 'Create Mod',
   },
   switcher: {
     label: 'Language',
@@ -35,6 +40,11 @@ export const en: StudioDict = {
   },
   header: {
     dashboard: 'Dashboard',
+    userMenu: 'User menu',
+    settings: 'Settings',
+    help: 'Help',
+    logout: 'Log out',
+    notifications: 'Notifications',
   },
   cards: {
     totalViews: 'Total Views',
@@ -152,6 +162,15 @@ export const en: StudioDict = {
     done: 'Done',
     confirmArchive: 'Are you sure you want to archive',
     drawerHint: 'Mod details for the selected period — use the Mods page for full management',
+    export: 'Export CSV',
+    selected: 'selected',
+    bulkArchive: 'Archive selected',
+    bulkDelete: 'Delete selected',
+    clearSelection: 'Clear selection',
+    bulkDeleteConfirm: 'Are you sure you want to delete the selected mods?',
+    bulkSuccess: 'Action completed for all items',
+    bulkPartial: 'Completed for some items',
+    bulkFailed: 'Action failed',
   },
   meta: {
     suffix: 'Creator Dashboard',
@@ -197,6 +216,10 @@ export const en: StudioDict = {
     game: 'Game',
     unschedule: 'Cancel schedule',
     scheduledUntil: 'Scheduled for',
+    deleteConfirmTitle: 'Delete mod',
+    deleteConfirmDesc: 'Are you sure you want to delete this mod? This cannot be undone.',
+    deleteSuccess: 'Mod deleted',
+    deleteFailed: 'Failed to delete mod',
   },
   modsPage: {
     title: 'My Mods',

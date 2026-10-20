@@ -5,6 +5,11 @@ export const ar: StudioDict = {
   common: {
     brand: 'Games Arabic',
     unpublishedFallback: '—',
+    refresh: 'تحديث',
+    refreshSuccess: 'تم التحديث',
+  },
+  home: {
+    createNewMod: 'إنشاء تعريب',
   },
   switcher: {
     label: 'اللغة',
@@ -36,6 +41,11 @@ export const ar: StudioDict = {
   },
   header: {
     dashboard: 'لوحة التحكم',
+    userMenu: 'قائمة المستخدم',
+    settings: 'الإعدادات',
+    help: 'المساعدة',
+    logout: 'تسجيل الخروج',
+    notifications: 'الإشعارات',
   },
   cards: {
     totalViews: 'إجمالي المشاهدات',
@@ -153,6 +163,15 @@ export const ar: StudioDict = {
     done: 'تم',
     confirmArchive: 'هل أنت متأكد من أرشفة',
     drawerHint: 'تفاصيل التعريب في الفترة المحددة — للإدارة الكاملة استخدم صفحة التعريبات',
+    export: 'تصدير CSV',
+    selected: 'محدد',
+    bulkArchive: 'أرشفة المحدد',
+    bulkDelete: 'حذف المحدد',
+    clearSelection: 'إلغاء التحديد',
+    bulkDeleteConfirm: 'هل أنت متأكد من حذف التعريبات المحددة؟',
+    bulkSuccess: 'تم تنفيذ الإجراء على جميع العناصر',
+    bulkPartial: 'تم على بعض العناصر',
+    bulkFailed: 'فشل تنفيذ الإجراء',
   },
   meta: {
     suffix: 'لوحة تحكم المُعَرِّب',
@@ -198,6 +217,10 @@ export const ar: StudioDict = {
     game: 'لعبة',
     unschedule: 'إلغاء الجدولة',
     scheduledUntil: 'مجدول حتى',
+    deleteConfirmTitle: 'حذف التعريب',
+    deleteConfirmDesc: 'هل أنت متأكد من حذف هذا التعريب؟ لا يمكن التراجع.',
+    deleteSuccess: 'تم حذف التعريب',
+    deleteFailed: 'فشل حذف التعريب',
   },
   modsPage: {
     title: 'تعريباتي',

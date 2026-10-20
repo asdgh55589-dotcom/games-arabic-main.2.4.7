@@ -8,7 +8,10 @@ import { SectionCards } from '@/components/creator-dashboard/section-cards'
 import { SiteHeader } from '@/components/creator-dashboard/site-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/auth-context'
+import { canPublishNews } from '@/lib/permissions'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { PlusIcon } from 'lucide-react'
 import type { z } from 'zod'
 
 // Code-split recharts: the interactive area chart loads only with the studio
@@ -63,6 +66,7 @@ export default function CreatorDashboard() {
   const [rows, setRows] = React.useState<Row[]>([])
   const [topStatus, setTopStatus] = React.useState<TopModsStatus>('loading')
   const { dict } = useStudioLanguage()
+  const { user } = useAuth()
 
   const load = React.useCallback(async () => {
     setTopStatus('loading')
@@ -98,8 +102,14 @@ export default function CreatorDashboard() {
         {/* C5: quick per-page summaries — compact strip above the chart */}
         <nav aria-label={dict.dashboard.quickLinks} className="px-4 lg:px-6">
           <div className="flex flex-wrap items-center gap-1.5">
+            <Button asChild size="sm" className="h-7 rounded-full px-3 text-xs">
+              <Link href="/creator/mods/new">
+                <PlusIcon className="me-1 size-3.5" />
+                {dict.home.createNewMod}
+              </Link>
+            </Button>
             <span className="me-1 text-xs text-muted-foreground">{dict.dashboard.quickLinks}:</span>
-            {QUICK_LINKS.map((l) => (
+            {QUICK_LINKS.filter((l) => l.key !== 'news' || canPublishNews(user?.role)).map((l) => (
               <Button key={l.href} asChild variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs">
                 <Link href={l.href}>{dict.nav[l.key as keyof typeof dict.nav]}</Link>
               </Button>

@@ -5,6 +5,9 @@
 jest.mock('@/lib/db', () => ({
   db: {
     mod: { findMany: jest.fn(), count: jest.fn(), aggregate: jest.fn(), groupBy: jest.fn() },
+    modView: { count: jest.fn() },
+    downloadClick: { count: jest.fn() },
+    modComment: { count: jest.fn() },
   },
 }));
 
@@ -19,6 +22,9 @@ import { GET } from '../route';
 
 const mockDb = db as unknown as {
   mod: { findMany: jest.Mock; count: jest.Mock; aggregate: jest.Mock; groupBy: jest.Mock };
+  modView: { count: jest.Mock };
+  downloadClick: { count: jest.Mock };
+  modComment: { count: jest.Mock };
 };
 
 beforeEach(() => {
@@ -27,7 +33,12 @@ beforeEach(() => {
     user: { id: 'creator-1', role: 'creator' },
     error: null,
   });
-  mockDb.mod.count.mockResolvedValue(3);
+  mockDb.mod.count.mockImplementation(async ({ where }: any) => {
+    if (where?.workflowStatus === 'DRAFT') return 1
+    if (where?.workflowStatus === 'IN_REVIEW') return 0
+    if (where?.workflowStatus === 'REJECTED') return 0
+    return 3
+  })
   mockDb.mod.groupBy.mockResolvedValue([
     { workflowStatus: 'PUBLISHED', _count: { workflowStatus: 2 } },
     { workflowStatus: 'DRAFT', _count: { workflowStatus: 1 } },
@@ -36,6 +47,9 @@ beforeEach(() => {
     _sum: { views: 100, downloads: 50, endorsements: 5, comments: 7 },
     _avg: { rating: 4.5 },
   });
+  mockDb.modView.count.mockResolvedValue(1000)
+  mockDb.downloadClick.count.mockResolvedValue(100)
+  mockDb.modComment.count.mockResolvedValue(50)
   mockDb.mod.findMany.mockResolvedValue([]);
 });
 
@@ -52,9 +66,12 @@ describe('GET /api/creator/stats bounded aggregation', () => {
       totalViews: 100,
       totalDownloads: 50,
       totalEndorsements: 5,
-      totalComments: 7,
-      averageRating: 4.5,
-    });
+       totalComments: 7,
+       allTimeViews: 1000,
+       allTimeDownloads: 100,
+       allTimeComments: 50,
+       averageRating: 4.5,
+     });
     expect(json.data).toHaveProperty('topMods');
     expect(json.data).toHaveProperty('recentActivity');
   });
