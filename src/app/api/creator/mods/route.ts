@@ -4,7 +4,7 @@ import { forbidden, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canCreateMod, canTranslateMod } from '@/lib/permissions'
-import { CreateModSchema } from '@/lib/schemas'
+import { CreateCreatorModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { slugify } from '@/lib/utils'
 import { logger } from '@/lib/logger'
@@ -99,7 +99,17 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { action, ...modData } = body as { action?: string; [key: string]: unknown }
 
-  const parsed = CreateModSchema.safeParse(modData)
+  // Defense in depth: privileged fields must never reach the DB from a
+  // creator request, even if the schema is bypassed. Reject explicitly.
+  if (
+    'isFeatured' in modData ||
+    'isTrending' in modData ||
+    'isLatest' in modData
+  ) {
+    return forbidden('هذه الحقول مخصصة للمشرفين فقط')
+  }
+
+  const parsed = CreateCreatorModSchema.safeParse(modData)
   if (!parsed.success) {
     return validationFail(parsed.error.issues[0]?.message || 'بيانات غير صالحة')
   }
@@ -178,6 +188,30 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     })
     if (!exists) return validationFail('القسم المحدد غير موجود')
+  }
+  // Defense in depth: teamId requires membership/ownership; seriesId must exist.
+  const teamId = (data as unknown as { teamId?: string | null }).teamId
+  if (typeof teamId === 'string' && teamId) {
+    const team = await db.team.findUnique({
+      where: { id: teamId },
+      select: { id: true, ownerId: true },
+    })
+    if (!team) return validationFail('الفريق المحدد غير موجود')
+    const isMember = await db.teamMembership.findFirst({
+      where: { teamId, userId: user.id },
+      select: { id: true },
+    })
+    if (team.ownerId !== user.id && !isMember) {
+      return forbidden('لا تملك صلاحية الربط بهذا الفريق')
+    }
+  }
+  const seriesId = (data as unknown as { seriesId?: string | null }).seriesId
+  if (typeof seriesId === 'string' && seriesId) {
+    const series = await db.series.findUnique({
+      where: { id: seriesId },
+      select: { id: true },
+    })
+    if (!series) return validationFail('السلسلة المحددة غير موجودة')
   }
 
   const mod = await db.mod.create({

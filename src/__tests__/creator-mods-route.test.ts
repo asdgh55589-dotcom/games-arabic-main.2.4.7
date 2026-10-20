@@ -39,10 +39,16 @@ jest.mock('@/lib/permissions', () => ({
 }))
 
 jest.mock('@/lib/schemas', () => ({
-  CreateModSchema: {
+  CreateCreatorModSchema: {
     safeParse: jest.fn().mockImplementation((data: unknown) => ({
       success: true,
       data,
+    })),
+    partial: jest.fn().mockImplementation(() => ({
+      safeParse: jest.fn().mockImplementation((data: unknown) => ({
+        success: true,
+        data,
+      })),
     })),
   },
 }))
@@ -70,7 +76,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { canCreateMod, canTranslateMod } from '@/lib/permissions'
-import { CreateModSchema } from '@/lib/schemas'
+import { CreateCreatorModSchema } from '@/lib/schemas'
 import { slugify } from '@/lib/utils'
 
 const creatorUser = {
@@ -306,7 +312,7 @@ describe('POST /api/creator/mods', () => {
     ;(rateLimitMiddleware as jest.Mock).mockResolvedValue(null)
     ;(canCreateMod as jest.Mock).mockReturnValue(true)
     ;(canTranslateMod as jest.Mock).mockReturnValue(true)
-    ;(CreateModSchema.safeParse as jest.Mock).mockImplementation((data: unknown) => ({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockImplementation((data: unknown) => ({
       success: true,
       data,
     }))
@@ -344,7 +350,7 @@ describe('POST /api/creator/mods', () => {
   })
 
   it('يُ退回 422 عند بيانات غير صالحة', async () => {
-    ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockReturnValue({
       success: false,
       error: { issues: [{ message: 'اسم التعريب مطلوب' }] },
     })
@@ -388,7 +394,7 @@ describe('POST /api/creator/mods', () => {
   it('ينشئ الناشر بدون مصدر بنجاح مع قيم null', async () => {
     // الناشر لا يُطالَب بمصدر: الدور يحدد المصدر تلقائياً (false + null)
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: publisherUser, error: null })
-    ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
       data: { ...validModData, isOriginalWork: true, originalSource: '' },
     })
@@ -409,7 +415,7 @@ describe('POST /api/creator/mods', () => {
 
   it('يُ退回 422 عندما لا توجد لعبة في قاعدة البيانات', async () => {
     ;(db.game.findFirst as jest.Mock).mockResolvedValue(null)
-    ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
       data: { ...validModData, gameId: undefined },
     })
@@ -571,7 +577,7 @@ describe('POST /api/creator/mods', () => {
 
   it('يستخدم gameId المُستخرج من قاعدة البيانات عند عدم وجود gameId', async () => {
     ;(db.game.findFirst as jest.Mock).mockResolvedValue({ id: 'fallback-game' })
-    ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
       data: { ...validModData, gameId: undefined },
     })
@@ -650,7 +656,7 @@ describe('POST /api/creator/mods', () => {
   })
 
   it('يتعامل مع ناشر بمصدر أصلي صالح', async () => {
-    ;(CreateModSchema.safeParse as jest.Mock).mockReturnValue({
+    ;(CreateCreatorModSchema.safeParse as jest.Mock).mockReturnValue({
       success: true,
       data: {
         ...validModData,
