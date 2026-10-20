@@ -125,3 +125,33 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return fail(code, message, status)
   }
 }
+
+// GET /api/creator/news/[id] — full own row (incl. `content` body).
+// The LIST endpoint (/api/creator/news) drops `content` so 100 rows stop
+// shipping article bodies; the edit form fetches it per row instead.
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const { user, error } = await requireCreatorStudio(req)
+  if (error) return error
+  if (!user) return forbidden('يجب تسجيل الدخول')
+  if (!canPublishNews(user.role)) {
+    return forbidden('نشر الأخبار متاح لمسار الناشر فقط')
+  }
+
+  try {
+    const { id } = await params
+    const row = await db.news.findFirst({
+      where: { id, authorId: user.id },
+      select: {
+        id: true, slug: true, title: true, summary: true, content: true,
+        imageUrl: true, linkUrl: true, category: true, type: true,
+        visible: true, views: true, clicksCount: true,
+        publishAt: true, expiresAt: true, createdAt: true, updatedAt: true,
+      },
+    })
+    if (!row) return notFound('الخبر غير موجود')
+    return ok({ news: row }, { headers: { 'Cache-Control': 'private, max-age=30' } })
+  } catch (err) {
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
+  }
+}

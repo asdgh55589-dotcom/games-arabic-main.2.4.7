@@ -29,7 +29,12 @@ export default async function EditModPage({ params }: { params: Promise<{ id: st
     redirect('/become-creator/apply')
   }
 
-  const mod = await db.mod.findUnique({ where: { id } })
+  // Ownership check only — the client form fetches its own data, so don't
+  // ship the full mod row through a SELECT * here.
+  const mod = await db.mod.findUnique({
+    where: { id },
+    select: { id: true, authorId: true },
+  })
   if (!mod) notFound()
 
   const isAdmin = ['admin', 'manager', 'owner'].includes(session.role)

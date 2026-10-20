@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
     take: 100,
     select: {
-      id: true, slug: true, title: true, summary: true, content: true,
+      id: true, slug: true, title: true, summary: true,
       imageUrl: true, linkUrl: true, category: true, type: true,
       visible: true, views: true, clicksCount: true,
       publishAt: true, expiresAt: true, createdAt: true, updatedAt: true,

@@ -47,9 +47,10 @@ export function SectionCards() {
     async function load() {
       setStatus("loading")
       try {
+        // KPI data is stale-tolerant (30s) — let HTTP caching do its job.
         const [a, s] = await Promise.all([
-          fetch("/api/creator/analytics?range=30", { cache: "no-store" }),
-          fetch("/api/creator/stats", { cache: "no-store" }),
+          fetch("/api/creator/analytics?range=30"),
+          fetch("/api/creator/stats"),
         ])
         if (!a.ok || !s.ok) {
           if (!cancelled) setStatus("error")

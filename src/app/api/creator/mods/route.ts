@@ -39,38 +39,40 @@ export async function GET(req: NextRequest) {
     ;(where as Record<string, unknown>).name = { contains: q, mode: 'insensitive' }
   }
 
-  const total = await db.mod.count({ where })
-
   // Validate sort field to prevent injection
   const allowedSorts = ['createdAt', 'updatedAt', 'downloads', 'views', 'rating', 'name']
   const sortField = allowedSorts.includes(sort) ? sort : 'createdAt'
 
-  const mods = await db.mod.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      headline: true,
-      slug: true,
-      workflowStatus: true,
-      views: true,
-      downloads: true,
-      endorsements: true,
-      rating: true,
-      ratingCount: true,
-      comments: true,
-      createdAt: true,
-      updatedAt: true,
-      isOriginalWork: true,
-      originalSource: true,
-      scheduledAt: true,
-      thumbnailUrl: true,
-      game: { select: { id: true, name: true, slug: true } },
-    },
-    orderBy: { [sortField]: order },
-    skip: (page - 1) * limit,
-    take: limit,
-  })
+  // count + page rows run in parallel (same where, no shared dependency).
+  const [total, mods] = await Promise.all([
+    db.mod.count({ where }),
+    db.mod.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        headline: true,
+        slug: true,
+        workflowStatus: true,
+        views: true,
+        downloads: true,
+        endorsements: true,
+        rating: true,
+        ratingCount: true,
+        comments: true,
+        createdAt: true,
+        updatedAt: true,
+        isOriginalWork: true,
+        originalSource: true,
+        scheduledAt: true,
+        thumbnailUrl: true,
+        game: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: { [sortField]: order },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+  ])
 
   return ok({
     mods,
@@ -214,16 +216,17 @@ export async function POST(req: NextRequest) {
         where: { role: { in: ['admin', 'manager', 'owner'] } },
         select: { id: true },
       })
-      for (const admin of admins) {
-        await db.notification.create({
-          data: {
+      // One batched write instead of one create() per admin.
+      if (admins.length > 0) {
+        await db.notification.createMany({
+          data: admins.map((admin) => ({
             userId: admin.id,
             actorId: user.id,
             type: 'admin_report',
             title: '📦 تعريب جديد بانتظار المراجعة',
             message: `${user.username} أرسل تعريب "${data.name}" للمراجعة`,
             data: { modId: mod.id, modName: data.name },
-          },
+          })),
         })
       }
     } catch {

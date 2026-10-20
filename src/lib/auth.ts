@@ -76,6 +76,14 @@ export interface SessionUser {
   emailVerified?: boolean
   /** Phase 4B: outstanding two-step email-change address, if any (/api/auth/me only). */
   pendingEmail?: string | null
+  /**
+   * Ban columns — populated ONLY when getSession({ includeBanInfo: true }) is
+   * used (creator studio layout), so callers can run getBanStatus() on the
+   * returned row including for banned users (who otherwise return null).
+   */
+  banStatus?: string | null
+  bannedUntil?: Date | null
+  banReason?: string | null
 }
 
 // ===== Password helpers =====
@@ -90,7 +98,9 @@ export async function hashPassword(plain: string): Promise<string> {
 /**
  * قراءة الـ session الحالي — يتحقق من API Key أولاً، ثم Supabase Auth، ثم role cookie
  */
-export async function getSession(): Promise<SessionUser | null> {
+export async function getSession(
+  opts?: { includeBanInfo?: boolean },
+): Promise<SessionUser | null> {
   try {
     // 0. فحص API Key أولاً (Authorization: Bearer sk_live_...)
     try {
@@ -144,7 +154,25 @@ export async function getSession(): Promise<SessionUser | null> {
 
       // فحص الحظر
       const ban = getBanStatus(user)
-      if (ban.banned) return null
+      if (ban.banned) {
+        // includeBanInfo (يُستخدم بدل getBanInfo في layout الاستوديو): يُمرَّر
+        // أعمدة الحظر حتى يوجّه الاستدعيّ المحظور لواجهة الحظر بنفس السلوك،
+        // دون جولة supabase.auth.getUser() + db ثانية.
+        if (opts?.includeBanInfo) {
+          return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role as UserRole,
+            avatarUrl: user.avatarUrl,
+            onboardingCompleted: user.onboardingCompleted,
+            banStatus: user.banStatus,
+            bannedUntil: user.bannedUntil,
+            banReason: user.banReason,
+          }
+        }
+        return null
+      }
 
       // التحقق من tokenVersion ضد الـ role cookie
       try {
@@ -175,6 +203,19 @@ export async function getSession(): Promise<SessionUser | null> {
         return null
       }
 
+      if (opts?.includeBanInfo) {
+        return {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role as UserRole,
+          avatarUrl: user.avatarUrl,
+          onboardingCompleted: user.onboardingCompleted,
+          banStatus: user.banStatus,
+          bannedUntil: user.bannedUntil,
+          banReason: user.banReason,
+        }
+      }
       return {
         id: user.id,
         username: user.username,
@@ -218,15 +259,44 @@ export async function getSession(): Promise<SessionUser | null> {
 
     if (!user) return null
 
+    // فحص الحظر (قبل tokenVersion — محظور يبقى محظوراً بالسلوكين)
+    const ban = getBanStatus(user)
+    if (ban.banned) {
+      // includeBanInfo (layout الاستوديو) — نفس التعامل مع فرع Supabase أعلاه.
+      if (opts?.includeBanInfo) {
+        return {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role as UserRole,
+          avatarUrl: user.avatarUrl,
+          onboardingCompleted: user.onboardingCompleted,
+          banStatus: user.banStatus,
+          bannedUntil: user.bannedUntil,
+          banReason: user.banReason,
+        }
+      }
+      return null
+    }
+
     // فحص tokenVersion
     if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) {
       return null
     }
 
-    // فحص الحظر
-    const ban = getBanStatus(user)
-    if (ban.banned) return null
-
+    if (opts?.includeBanInfo) {
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role as UserRole,
+        avatarUrl: user.avatarUrl,
+        onboardingCompleted: user.onboardingCompleted,
+        banStatus: user.banStatus,
+        bannedUntil: user.bannedUntil,
+        banReason: user.banReason,
+      }
+    }
     return {
       id: user.id,
       username: user.username,

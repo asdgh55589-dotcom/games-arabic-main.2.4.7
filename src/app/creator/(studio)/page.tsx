@@ -68,9 +68,8 @@ export default function CreatorDashboard() {
     setTopStatus('loading')
     try {
       // Wave B Task 6 — top mods by PERIOD downloads (server aggregate).
-      const res = await fetch('/api/creator/analytics/top-mods?range=30&limit=10', {
-        cache: 'no-store',
-      })
+      // KPI data is stale-tolerant (30s) — server sends Cache-Control.
+      const res = await fetch('/api/creator/analytics/top-mods?range=30&limit=10')
       if (!res.ok) {
         setTopStatus('error')
         return
