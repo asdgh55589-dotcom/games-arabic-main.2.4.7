@@ -125,13 +125,24 @@ export function ModsListClient({
   const [page, setPage] = useState(1)
   const [pendingConfirm, setPendingConfirm] = useState<{ modId: string; action: string } | null>(null)
 
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery || '')
+
+  // 350ms debounce — the search box fires one request per typing pause
+  // instead of per keystroke; the in-flight fetch is aborted by the effect
+  // cleanup on the next fetchMods identity change.
+  useEffect(() => {
+    if (query === debouncedQuery) return
+    const t = setTimeout(() => setDebouncedQuery(query), 350)
+    return () => clearTimeout(t)
+  }, [query, debouncedQuery])
+
   const fetchMods = useCallback(
     async (pageNum = 1, signal?: AbortSignal) => {
       setLoading(true)
       try {
         const params = new URLSearchParams()
         if (status !== 'all') params.set('status', status)
-        if (query) params.set('q', query)
+        if (debouncedQuery) params.set('q', debouncedQuery)
         params.set('page', pageNum.toString())
         params.set('limit', '20')
         const res = await fetch(`/api/creator/mods?${params.toString()}`, {
@@ -153,7 +164,7 @@ export function ModsListClient({
         if (!signal?.aborted) setLoading(false)
       }
     },
-    [status, query],
+    [status, debouncedQuery],
   )
 
   useEffect(() => {

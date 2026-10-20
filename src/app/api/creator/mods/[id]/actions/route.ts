@@ -122,16 +122,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             select: { id: true },
             take: ADMIN_NOTIFY_CAP,
           })
-          for (const admin of admins) {
-            await db.notification.create({
-              data: {
+          // One batched write instead of one create() per admin.
+          if (admins.length > 0) {
+            await db.notification.createMany({
+              data: admins.map((admin) => ({
                 userId: admin.id,
                 actorId: user.id,
                 type: 'admin_report',
                 title: '🔄 إعادة إرسال تعريب',
                 message: `${user.username} أعاد إرسال تعريب "${mod.name}" للمراجعة`,
                 data: { modId: mod.id, modName: mod.name },
-              },
+              })),
             })
           }
         } catch {

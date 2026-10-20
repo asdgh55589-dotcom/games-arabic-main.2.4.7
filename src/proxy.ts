@@ -377,14 +377,16 @@ async function proxyInner(req: NextRequest) {
   let supabaseResponse = NextResponse.next({ request: req })
 
   try {
-    const result = await Promise.race([
-      updateSession(req),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Supabase timeout')), 8000),
-      ),
-    ])
-    user = result.user
-    supabaseResponse = result.response
+    if (!pathname.startsWith('/api/auth/ledger-check')) {
+      const result = await Promise.race([
+        updateSession(req),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase timeout')), 8000),
+        ),
+      ])
+      user = result.user
+      supabaseResponse = result.response
+    }
   } catch (err) {
     // Supabase unreachable/timeout — continue without session.
     // Public routes work normally; admin routes تعتمد على role cookie كـ fallback.
@@ -683,8 +685,15 @@ async function proxyInner(req: NextRequest) {
   // Edge has no DB access: the ob claim in ga_admin_role carries the flag.
   // Missing claim (legacy cookies) = fail-open; server-side DB flag is truth.
   // Pages → 307, API calls → 403 JSON (so fetch() callers can route client-side).
+  // Per-request role cookie dedupe: getRoleFromCookie verifies the JWT and
+  // validates tokenVersion via Redis (0.3–3s) — the non-strict gates below read the
+  // same payload, so memoize once per request. Admin gates' strictTv
+  // variant stays its own call (different fail-closed semantics).
+  let rolePayloadPromise: ReturnType<typeof getRoleFromCookie> | null = null
+  const getRoleOnce = () => (rolePayloadPromise ??= getRoleFromCookie(req))
+
   {
-    const rolePayload = await getRoleFromCookie(req)
+    const rolePayload = await getRoleOnce()
     const decision = getOnboardingGate(rolePayload?.role, rolePayload?.onboarded, pathname)
     if (decision === 'redirect') {
       const onboardingUrl = new URL(ONBOARDING_PATH, req.url)
@@ -848,7 +857,7 @@ async function proxyInner(req: NextRequest) {
 
   // حماية /creator/* — كل الأدوار ما عدا member (المعرّبون + الإدارة)
   if (pathname.startsWith('/creator')) {
-    const rolePayload = await getRoleFromCookie(req)
+    const rolePayload = await getRoleOnce()
     if (!rolePayload?.role) {
       // كوكي ga_admin_role ثابت 7 أيام ولا يُجدَّد، بينما جلسة Supabase
       // تُجدَّد تلقائياً. عند انتهاء الكوكي يبقى المستخدم مسجّلاً لكنه يُطرد
@@ -874,7 +883,7 @@ async function proxyInner(req: NextRequest) {
   // ملاحظة: المطابقة على حدّ المقطع (/api/creator/) حتى لا تبتلع
   // مسار /api/creator-requests المخصّص للأعضاء العاديين.
   if (pathname === '/api/creator' || pathname.startsWith('/api/creator/')) {
-    const rolePayload = await getRoleFromCookie(req)
+    const rolePayload = await getRoleOnce()
     if (!rolePayload?.role) {
       return proxyJson(
         req,
@@ -917,7 +926,7 @@ async function proxyInner(req: NextRequest) {
   // Track gate (Phase 4): /creator/news page is publisher-only — translators
   // fall back to the dashboard (the page itself also renders a notice).
   if (pathname === '/creator/news' || pathname.startsWith('/creator/news/')) {
-    const rolePayload = await getRoleFromCookie(req)
+    const rolePayload = await getRoleOnce()
     const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
     if (rolePayload?.role && !NEWS_PUBLISHERS.includes(rolePayload.role)) {
       const dashboardUrl = new URL('/creator', req.url)
