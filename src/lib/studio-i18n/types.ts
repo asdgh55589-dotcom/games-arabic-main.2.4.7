@@ -6,6 +6,11 @@ export interface StudioDict {
   common: {
     brand: string
     unpublishedFallback: string
+    refresh: string
+    refreshSuccess: string
+  }
+  home: {
+    createNewMod: string
   }
   switcher: {
     label: string
@@ -37,6 +42,11 @@ export interface StudioDict {
   }
   header: {
     dashboard: string
+    userMenu: string
+    settings: string
+    help: string
+    logout: string
+    notifications: string
   }
   cards: {
     totalViews: string
@@ -59,9 +69,16 @@ export interface StudioDict {
     clickRateDesc: string
     periodLikes: string
     periodLikesDesc: string
-    newsViews: string
-    newsViewsDesc: string
-  }
+     newsViews: string
+     newsViewsDesc: string
+     drafts: string
+     pending: string
+     rejected: string
+     allTimeViews: string
+     allTimeDownloads: string
+     allTimeComments: string
+     averageRating: string
+   }
   chart: {
     title: string
     totalLast3Months: string
@@ -147,6 +164,15 @@ export interface StudioDict {
     done: string
     confirmArchive: string
     drawerHint: string
+    export: string
+    selected: string
+    bulkArchive: string
+    bulkDelete: string
+    clearSelection: string
+    bulkDeleteConfirm: string
+    bulkSuccess: string
+    bulkPartial: string
+    bulkFailed: string
   }
   meta: {
     suffix: string
@@ -192,6 +218,10 @@ export interface StudioDict {
     game: string
     unschedule: string
     scheduledUntil: string
+    deleteConfirmTitle: string
+    deleteConfirmDesc: string
+    deleteSuccess: string
+    deleteFailed: string
   }
   commentsMgr: {
     all: string

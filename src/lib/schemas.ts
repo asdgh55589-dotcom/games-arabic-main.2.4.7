@@ -390,6 +390,17 @@ export const CreateModSchema = z.object({
 
 export const UpdateModSchema = CreateModSchema.partial()
 
+// Creator-facing mod schema: excludes privileged/admin-only fields so a
+// creator cannot self-promote (isFeatured/isTrending/isLatest) or attach
+// to teams/series they don't own. Team/series attachment is validated
+// separately at the route level (ownership/membership).
+export const CreateCreatorModSchema = CreateModSchema.omit({
+  isFeatured: true,
+  isTrending: true,
+  isLatest: true,
+})
+export const UpdateCreatorModSchema = CreateCreatorModSchema.partial()
+
 // ===== User/Profile Schemas =====
 
 export const UpdateProfileSchema = z.object({

@@ -49,6 +49,8 @@ import {
   LoaderIcon,
   MoreVerticalIcon,
   PencilIcon,
+  TrashIcon,
+  DownloadIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -177,7 +179,7 @@ function columnLabel(columnId: string, dict: StudioDict): string {
 }
 function useColumns(
   dict: StudioDict,
-  opts: { onArchive: (modId: string, name: string) => void },
+  opts: { onArchive: (modId: string, name: string) => void; onDelete: (modId: string, name: string) => void },
 ): ColumnDef<TableRow>[] {
   return [
     {
@@ -243,7 +245,7 @@ function useColumns(
             {isPublished ? (
               <CheckCircle2Icon className="text-green-500" />
             ) : (
-              <LoaderIcon />
+              <LoaderIcon className="animate-spin" />
             )}
             {isPublished ? dict.status.published : dict.status.inProgress}
           </Badge>
@@ -284,7 +286,7 @@ function useColumns(
             <DropdownMenuContent align="end" className="w-40">
               {item.slug && (
                 <DropdownMenuItem asChild>
-                  <Link href={`/mod/${item.slug}`} target="_blank">
+                  <Link href={`/mod/${item.slug}`} target="_blank" rel="noopener noreferrer">
                     <EyeIcon className="me-1 size-4" />
                     {dict.mods.view}
                   </Link>
@@ -302,6 +304,18 @@ function useColumns(
                   <DropdownMenuItem onClick={() => opts.onArchive(item.modId, item.header)}>
                     <ArchiveIcon className="me-1 size-4" />
                     {dict.mods.archive}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {!isPublished && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => opts.onDelete(item.modId, item.header)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <TrashIcon className="me-1 size-4" />
+                    {dict.mods.remove}
                   </DropdownMenuItem>
                 </>
               )}
@@ -347,6 +361,9 @@ export function DataTable({
 }) {
   const { dict, dir } = useStudioLanguage()
   const [pendingArchive, setPendingArchive] = React.useState<{ modId: string; name: string } | null>(null)
+  const [pendingDelete, setPendingDelete] = React.useState<{ modId: string; name: string } | null>(null)
+  const [pendingBulkDelete, setPendingBulkDelete] = React.useState(false)
+  const [bulkLoading, setBulkLoading] = React.useState(false)
 
   const doArchive = React.useCallback(
     async (modId: string) => {
@@ -376,7 +393,35 @@ export function DataTable({
     setPendingArchive({ modId, name })
   }, [])
 
-  const columns = React.useMemo(() => useColumns(dict, { onArchive: handleArchive }), [dict, handleArchive])
+  const doDelete = React.useCallback(
+    async (modId: string) => {
+      setPendingDelete(null)
+      try {
+        const res = await fetch(`/api/creator/mods/${modId}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete' }),
+        })
+        const json = await res.json().catch(() => null)
+        if (res.ok) {
+          toast.success(json?.data?.message || dict.mods.deleteSuccess)
+          onChanged?.()
+        } else {
+          toast.error(json?.error?.message || dict.mods.deleteFailed)
+        }
+      } catch {
+        toast.error(dict.mods.deleteFailed)
+      }
+    },
+    [dict, onChanged]
+  )
+
+  const handleDelete = React.useCallback((modId: string, name: string) => {
+    setPendingDelete({ modId, name })
+  }, [])
+
+  const columns = React.useMemo(() => useColumns(dict, { onArchive: handleArchive, onDelete: handleDelete }), [dict, handleArchive, handleDelete])
+
   const [data, setData] = React.useState(() => initialData)
 
   // Refresh rows when the parent reloads (e.g. after archive).
@@ -442,6 +487,81 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  const handleExportCSV = React.useCallback(() => {
+    const rows = table.getFilteredRowModel().rows
+    const esc = (val: unknown) => {
+      let str = String(val ?? '')
+      if (/^[=+\-@]/.test(str)) str = "'" + str
+      if (str.includes('"') || str.includes(',') || str.includes('\\n') || str.includes('\\r')) {
+        str = '"' + str.replace(/"/g, '""') + '"'
+      }
+      return str
+    }
+    const header = [
+      dict.table.name,
+      dict.table.sectionType,
+      dict.table.status,
+      dict.table.target,
+      dict.table.limit,
+      'Slug',
+    ]
+    const lines = [header.map(esc).join(',')]
+    for (const r of rows) {
+      lines.push(
+        [r.original.header, r.original.type, r.original.status, r.original.target, r.original.limit, r.original.slug]
+          .map(esc)
+          .join(',')
+      )
+    }
+    const csv = lines.join('\\n')
+    const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mods-export-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [table, dict])
+
+  const runBulk = React.useCallback(
+    async (action: 'archive' | 'delete') => {
+      const ids = table.getFilteredSelectedRowModel().rows.map((r) => r.original.modId)
+      if (ids.length === 0) return
+      setBulkLoading(true)
+      const results = await Promise.allSettled(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/creator/mods/${id}/actions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action }),
+          })
+          const json = await res.json().catch(() => null)
+          if (!res.ok) throw new Error(json?.error?.message || dict.mods.actionFailed)
+          return json
+        })
+      )
+      const okCount = results.filter((r) => r.status === 'fulfilled').length
+      const failCount = results.length - okCount
+      if (failCount === 0) {
+        toast.success(dict.table.bulkSuccess)
+      } else if (okCount > 0) {
+        toast.warning(dict.table.bulkPartial)
+      } else {
+        toast.error(dict.table.bulkFailed)
+      }
+      table.resetRowSelection()
+      setPendingBulkDelete(false)
+      setBulkLoading(false)
+      onChanged?.()
+    },
+    [table, dict, onChanged]
+  )
+
+  const handleBulkArchive = React.useCallback(() => runBulk('archive'), [runBulk])
+  const handleBulkDeleteConfirm = React.useCallback(() => runBulk('delete'), [runBulk])
+
   const doneCount = data.filter((row) => row.status === dict.status.publishedKey).length
   const inProgressCount = data.filter(
     (row) => row.status === dict.status.inProgressKey
@@ -483,6 +603,10 @@ export function DataTable({
           </TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <DownloadIcon />
+            <span className="hidden lg:inline">{dict.table.export}</span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -522,6 +646,27 @@ export function DataTable({
         value="outline"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap rounded-lg border border-border bg-muted/50 px-3 py-2">
+            <span className="text-sm font-medium">
+              {table.getFilteredSelectedRowModel().rows.length} {dict.table.selected}
+            </span>
+            <Button size="sm" variant="outline" disabled={bulkLoading} onClick={handleBulkArchive}>
+              {dict.table.bulkArchive}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={bulkLoading}
+              onClick={() => setPendingBulkDelete(true)}
+            >
+              {bulkLoading ? <LoaderIcon className="size-4 animate-spin" /> : dict.table.bulkDelete}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => table.resetRowSelection()}>
+              {dict.table.clearSelection}
+            </Button>
+          </div>
+        )}
         <div className="overflow-hidden rounded-lg border">
           <DndContext
             collisionDetection={closestCenter}
@@ -573,12 +718,12 @@ export function DataTable({
             </Table>
           </DndContext>
         </div>
-        <div className="flex items-center justify-between px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} {dict.table.selectedOf}{" "}
             {table.getFilteredRowModel().rows.length} {dict.table.selectedRows}
           </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
+          <div className="flex w-full flex-wrap items-center gap-4 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
                 {dict.table.rowsPerPage}
@@ -654,18 +799,57 @@ export function DataTable({
       <AlertDialog open={pendingArchive !== null} onOpenChange={(open) => !open && setPendingArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{dict.table.sections}</AlertDialogTitle>
+            <AlertDialogTitle>{dict.mods.archive}</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingArchive ? `${dict.table.confirmArchive} "${pendingArchive.name}"؟` : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{dict.table.done}</AlertDialogCancel>
+            <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingArchive && doArchive(pendingArchive.modId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {dict.table.confirmArchive}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dict.mods.deleteConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete ? dict.mods.deleteConfirmDesc : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingDelete && doDelete(pendingDelete.modId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {dict.mods.remove}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pendingBulkDelete} onOpenChange={(open) => !open && setPendingBulkDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dict.table.bulkDelete}</AlertDialogTitle>
+            <AlertDialogDescription>{dict.table.bulkDeleteConfirm}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={bulkLoading}
+            >
+              {dict.table.bulkDelete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -710,7 +894,7 @@ function TableCellViewer({ item }: { item: TableRow }) {
           <div className="flex gap-2">
             {item.slug && (
               <Button asChild variant="outline" className="flex-1">
-                <Link href={`/mod/${item.slug}`} target="_blank">
+                <Link href={`/mod/${item.slug}`} target="_blank" rel="noopener noreferrer">
                   <EyeIcon className="me-1 size-4" />
                   {dict.mods.view}
                 </Link>

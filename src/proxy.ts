@@ -22,6 +22,7 @@ import {
   isPathAllowedByPagesClaim,
 } from '@/lib/admin-pages'
 import { getIpBanCache } from '@/lib/ip-ban-cache'
+import { validateCsrf } from '@/lib/csrf'
 import { logError, logger } from '@/lib/logger'
 import { trackRoute } from '@/lib/observability/middleware'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
@@ -904,6 +905,22 @@ async function proxyInner(req: NextRequest) {
         'A creator role (or higher) is required for the creator API',
         403,
       )
+    }
+    // CSRF protection (Phase 1): state-changing creator endpoints must
+    // originate from an allowed origin (or carry a bearer token).
+    const SAFE = ['GET', 'HEAD', 'OPTIONS', 'TRACE']
+    if (!SAFE.includes(req.method.toUpperCase())) {
+      const csrf = validateCsrf(req)
+      if (!csrf.valid) {
+        return proxyJson(
+          req,
+          requestId,
+          'CSRF_VALIDATION_FAILED',
+          'CSRF validation failed',
+          csrf.reason || 'Missing or invalid Origin/Referer',
+          403,
+        )
+      }
     }
     // Track gate (Phase 4): news.create is publisher-only — translators
     // (creator role) get 403 even though they pass the studio gate above.

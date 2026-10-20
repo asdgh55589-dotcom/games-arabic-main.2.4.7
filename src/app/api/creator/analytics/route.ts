@@ -15,8 +15,8 @@ const PRIVATE_CACHE = {
   headers: { 'Cache-Control': 'private, max-age=30', Vary: 'Cookie' },
 } as const
 
-function changeRate(current: number, previous: number): number {
-  if (previous <= 0) return 0
+function changeRate(current: number, previous: number): number | null {
+  if (previous <= 0) return current > 0 ? null : 0
   return Number((((current - previous) / previous) * 100).toFixed(1))
 }
 
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
       db.commentSectionClick.count({ where: cscPrevWhere }),
       db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: start } } }),
       db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: prevStart, lt: start } } }),
-      db.news.findMany({ where: { authorId: user.id }, select: { id: true } }),
+       db.news.findMany({ where: { authorId: user.id, visible: true, publishAt: { lte: now } }, select: { id: true } }),
     ])
 
     const newsIdList = newsIds.map((n) => n.id)

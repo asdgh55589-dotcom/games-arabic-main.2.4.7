@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const publishedWhere = { authorId: user.id, workflowStatus: 'PUBLISHED' }
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-    const [totalMods, statusGroups, sums, rating, topMods, recentMods] = await Promise.all([
+    const [totalMods, statusGroups, sums, rating, topMods, recentMods, draftsCount, pendingCount, rejectedCount, allTimeViews, allTimeDownloads, allTimeComments] = await Promise.all([
       db.mod.count({ where: authorWhere }),
       db.mod.groupBy({
         by: ['workflowStatus'],
@@ -57,6 +57,12 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 20,
       }),
+      db.mod.count({ where: { authorId: user.id, workflowStatus: 'DRAFT' } }),
+      db.mod.count({ where: { authorId: user.id, workflowStatus: 'IN_REVIEW' } }),
+      db.mod.count({ where: { authorId: user.id, workflowStatus: 'REJECTED' } }),
+      db.modView.count({ where: { mod: { authorId: user.id } } }),
+      db.downloadClick.count({ where: { mod: { authorId: user.id } } }),
+      db.modComment.count({ where: { mod: { authorId: user.id } } }),
     ])
 
     const countFor = (status: string) =>
@@ -66,14 +72,17 @@ export async function GET(req: NextRequest) {
       totals: {
         totalMods,
         published: countFor('PUBLISHED'),
-        drafts: countFor('DRAFT'),
-        pending: countFor('IN_REVIEW'),
-        rejected: countFor('REJECTED'),
-        totalViews: sums._sum.views ?? 0,
-        totalDownloads: sums._sum.downloads ?? 0,
-        totalEndorsements: sums._sum.endorsements ?? 0,
-        totalComments: sums._sum.comments ?? 0,
-        averageRating: Number((rating._avg.rating ?? 0).toFixed(2)),
+         drafts: draftsCount,
+         pending: pendingCount,
+         rejected: rejectedCount,
+         totalViews: sums._sum.views ?? 0,
+         totalDownloads: sums._sum.downloads ?? 0,
+         totalEndorsements: sums._sum.endorsements ?? 0,
+         totalComments: sums._sum.comments ?? 0,
+         allTimeViews,
+         allTimeDownloads,
+         allTimeComments,
+         averageRating: Number((rating._avg.rating ?? 0).toFixed(2)),
       },
       topMods: topMods.map((m) => ({
         id: m.id,

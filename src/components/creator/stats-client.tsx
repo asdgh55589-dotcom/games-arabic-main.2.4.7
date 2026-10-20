@@ -12,9 +12,9 @@ import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 interface AnalyticsSummary {
   totalViews: number
-  viewsChange: number
+  viewsChange: number | null
   totalDownloads: number
-  downloadsChange: number
+  downloadsChange: number | null
   totalComments: number
   funnel?: { viewToDownloadPct: number; downloadToClickPct: number }
 }
@@ -131,7 +131,7 @@ export function StatsClient() {
               <CardContent>
                 <div className="text-2xl font-bold">{formatNumber(summary?.totalViews ?? 0)}</div>
                 <div className="text-xs" dir="ltr">
-                  {(summary?.viewsChange ?? 0) >= 0 ? '+' : ''}{summary?.viewsChange ?? 0}%
+                  {summary?.viewsChange === null ? 'جديد' : `${(summary?.viewsChange ?? 0) >= 0 ? '+' : ''}${summary?.viewsChange ?? 0}%`}
                 </div>
               </CardContent>
             </Card>
@@ -142,7 +142,7 @@ export function StatsClient() {
               <CardContent>
                 <div className="text-2xl font-bold">{formatNumber(summary?.totalDownloads ?? 0)}</div>
                 <div className="text-xs" dir="ltr">
-                  {(summary?.downloadsChange ?? 0) >= 0 ? '+' : ''}{summary?.downloadsChange ?? 0}%
+                  {summary?.downloadsChange === null ? 'جديد' : `${(summary?.downloadsChange ?? 0) >= 0 ? '+' : ''}${summary?.downloadsChange ?? 0}%`}
                 </div>
               </CardContent>
             </Card>

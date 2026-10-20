@@ -4,7 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { authorPublicSelect, gameDetailSelect } from '@/lib/prisma-selects'
-import { CreateModSchema } from '@/lib/schemas'
+import { CreateCreatorModSchema } from '@/lib/schemas'
 import { stripModRelations, syncModRelations } from '@/lib/mod-relations'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -38,7 +38,17 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const body = await req.json()
     const { action, ...modData } = body as { action?: string; [key: string]: unknown }
 
-    const parsed = CreateModSchema.partial().safeParse(modData)
+    // Defense in depth: privileged fields must never reach the DB from a
+    // creator request, even if the schema is bypassed. Reject explicitly.
+    if (
+      'isFeatured' in modData ||
+      'isTrending' in modData ||
+      'isLatest' in modData
+    ) {
+      return forbidden('هذه الحقول مخصصة للمشرفين فقط')
+    }
+
+    const parsed = CreateCreatorModSchema.partial().safeParse(modData)
     if (!parsed.success) {
       return validationFail('بيانات غير صالحة')
     }
@@ -71,6 +81,28 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         select: { id: true },
       })
       if (!exists) return validationFail('القسم المحدد غير موجود')
+    }
+    // Defense in depth: teamId requires membership/ownership; seriesId must exist.
+    if (typeof data.teamId === 'string' && data.teamId) {
+      const team = await db.team.findUnique({
+        where: { id: data.teamId },
+        select: { id: true, ownerId: true },
+      })
+      if (!team) return validationFail('الفريق المحدد غير موجود')
+      const isMember = await db.teamMembership.findFirst({
+        where: { teamId: data.teamId, userId: user.id },
+        select: { id: true },
+      })
+      if (team.ownerId !== user.id && !isMember) {
+        return forbidden('لا تملك صلاحية الربط بهذا الفريق')
+      }
+    }
+    if (typeof data.seriesId === 'string' && data.seriesId) {
+      const series = await db.series.findUnique({
+        where: { id: data.seriesId },
+        select: { id: true },
+      })
+      if (!series) return validationFail('السلسلة المحددة غير موجودة')
     }
     // Handle galleryUrls/tags arrays
     if (Array.isArray(data.galleryUrls)) {

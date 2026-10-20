@@ -119,7 +119,7 @@ describe('analytics feed (static: funnel fields present)', () => {
 
   it('history exposes per-day comment-click buckets + totals', () => {
     expect(history).toMatch(/commentClicksBuckets/)
-    expect(history).toMatch(/commentSectionClick\.findMany/)
+    expect(history).toMatch(/\$queryRaw/)
     expect(history).toMatch(/totalCommentClicks/)
   })
 })
