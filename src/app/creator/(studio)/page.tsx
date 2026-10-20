@@ -80,7 +80,7 @@ export default function CreatorDashboard() {
       setRows(mods.map((m, i) => toRow(m, i, dict.status, dict.common.unpublishedFallback)))
       setTopStatus(mods.length === 0 ? 'empty' : 'ready')
     } catch (err) {
-      console.error('[studio] top-mods load failed', err)
+      if (process.env.NODE_ENV === 'development') console.error('[studio] top-mods load failed', err)
       setTopStatus('error')
     }
   }, [dict])
@@ -128,13 +128,8 @@ export default function CreatorDashboard() {
             {dict.dashboard.topModsEmpty}
           </div>
         )}
-        {(topStatus === 'ready' || (topStatus !== 'loading' && topStatus !== 'error' && topStatus !== 'empty')) && (
+        {topStatus === 'ready' && (
           <DataTable data={rows} onChanged={load} />
-        )}
-        {topStatus === 'ready' && rows.length === 0 && (
-          <div role="status" className="mx-4 rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground lg:mx-6">
-            {dict.dashboard.topModsEmpty}
-          </div>
         )}
         </div>
       </div>

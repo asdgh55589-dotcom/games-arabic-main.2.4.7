@@ -119,7 +119,7 @@ export function ChartAreaInteractive() {
         }
       } catch (err) {
         if (!cancelled) {
-          console.error("[studio] chart history load failed", err)
+          if (process.env.NODE_ENV === "development") console.error("[studio] chart history load failed", err)
           setChartStatus("error")
         }
       }
@@ -167,6 +167,7 @@ export function ChartAreaInteractive() {
           <ToggleGroup
             type="single"
             value={seriesMode}
+            aria-label="Chart series"
             onValueChange={(v) => v && setSeriesMode(v as 'downloads' | 'clicks')}
             variant="outline"
             className="@[767px]/card:flex hidden"
@@ -181,7 +182,8 @@ export function ChartAreaInteractive() {
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
+            aria-label="Time range"
+            onValueChange={(value) => { if (value) setTimeRange(value) }}
             variant="outline"
             className="@[767px]/card:flex hidden"
           >
@@ -195,7 +197,7 @@ export function ChartAreaInteractive() {
               {dict.chart.last7Days}
             </ToggleGroupItem>
           </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={timeRange} onValueChange={(value) => { if (value) setTimeRange(value) }}>
             <SelectTrigger
               className="@[767px]/card:hidden flex w-40"
               aria-label={dict.chart.pickRange}
@@ -257,6 +259,8 @@ export function ChartAreaInteractive() {
         {chartStatus === "ready" && (
         <ChartContainer
           config={chartConfig}
+          role="img"
+          aria-label="Analytics chart"
           className="aspect-auto h-[250px] w-full"
         >
           <AreaChart data={displayData}>

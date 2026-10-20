@@ -243,7 +243,7 @@ function useColumns(
             {isPublished ? (
               <CheckCircle2Icon className="text-green-500" />
             ) : (
-              <LoaderIcon />
+              <LoaderIcon className="animate-spin" />
             )}
             {isPublished ? dict.status.published : dict.status.inProgress}
           </Badge>
@@ -284,7 +284,7 @@ function useColumns(
             <DropdownMenuContent align="end" className="w-40">
               {item.slug && (
                 <DropdownMenuItem asChild>
-                  <Link href={`/mod/${item.slug}`} target="_blank">
+                  <Link href={`/mod/${item.slug}`} target="_blank" rel="noopener noreferrer">
                     <EyeIcon className="me-1 size-4" />
                     {dict.mods.view}
                   </Link>
@@ -573,12 +573,12 @@ export function DataTable({
             </Table>
           </DndContext>
         </div>
-        <div className="flex items-center justify-between px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} {dict.table.selectedOf}{" "}
             {table.getFilteredRowModel().rows.length} {dict.table.selectedRows}
           </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
+          <div className="flex w-full flex-wrap items-center gap-4 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
                 {dict.table.rowsPerPage}
@@ -654,13 +654,13 @@ export function DataTable({
       <AlertDialog open={pendingArchive !== null} onOpenChange={(open) => !open && setPendingArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{dict.table.sections}</AlertDialogTitle>
+            <AlertDialogTitle>{dict.mods.archive}</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingArchive ? `${dict.table.confirmArchive} "${pendingArchive.name}"؟` : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{dict.table.done}</AlertDialogCancel>
+            <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingArchive && doArchive(pendingArchive.modId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -710,7 +710,7 @@ function TableCellViewer({ item }: { item: TableRow }) {
           <div className="flex gap-2">
             {item.slug && (
               <Button asChild variant="outline" className="flex-1">
-                <Link href={`/mod/${item.slug}`} target="_blank">
+                <Link href={`/mod/${item.slug}`} target="_blank" rel="noopener noreferrer">
                   <EyeIcon className="me-1 size-4" />
                   {dict.mods.view}
                 </Link>

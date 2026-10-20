@@ -17,20 +17,27 @@ import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 interface Summary {
   totalViews: number
-  viewsChange: number
+  viewsChange: number | null
   totalDownloads: number
-  downloadsChange: number
+  downloadsChange: number | null
   totalComments: number
   funnel?: { views: number; downloads: number; commentClicks: number; viewToDownloadPct: number; downloadToClickPct: number }
   periodLikes?: number
-  periodLikesChange?: number
+  periodLikesChange?: number | null
   newsViews?: number
-  newsViewsChange?: number
+  newsViewsChange?: number | null
 }
 
 interface Totals {
   totalMods: number
   published: number
+  drafts?: number
+  pending?: number
+  rejected?: number
+  allTimeViews?: number
+  allTimeDownloads?: number
+  allTimeComments?: number
+  averageRating?: number
 }
 
 type CardsStatus = "loading" | "ready" | "error" | "empty"
@@ -68,7 +75,7 @@ export function SectionCards() {
         setStatus("ready")
       } catch (err) {
         if (!cancelled) {
-          console.error("[studio] section-cards load failed", err)
+          if (process.env.NODE_ENV === "development") console.error("[studio] section-cards load failed", err)
           setStatus("error")
         }
       }
@@ -100,7 +107,7 @@ export function SectionCards() {
         aria-label={dict.dashboard.cardsLoading}
         className="@xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-2 gap-2 px-4 lg:px-6"
       >
-        {Array.from({ length: 8 }).map((_, i) => (
+         {Array.from({ length: 16 }).map((_, i) => (
           <Skeleton key={i} className="h-[92px] w-full rounded-lg" />
         ))}
       </div>
@@ -146,14 +153,14 @@ export function SectionCards() {
       key: "views",
       label: dict.cards.totalViews,
       value: summary ? formatNumber(summary.totalViews) : "0",
-      badge: summary ? deltaBadge(viewsUp, `${viewsUp ? "+" : ""}${summary.viewsChange}%`) : null,
+      badge: summary ? deltaBadge(viewsUp, summary.viewsChange === null ? "جديد" : `${viewsUp ? "+" : ""}${summary.viewsChange}%`) : null,
       hint: viewsUp ? dict.cards.upThisMonth : dict.cards.downThisMonth,
     },
     {
       key: "downloads",
       label: dict.cards.totalDownloads,
       value: summary ? formatNumber(summary.totalDownloads) : "0",
-      badge: summary ? deltaBadge(downloadsUp, `${downloadsUp ? "+" : ""}${summary.downloadsChange}%`) : null,
+      badge: summary ? deltaBadge(downloadsUp, summary.downloadsChange === null ? "جديد" : `${downloadsUp ? "+" : ""}${summary.downloadsChange}%`) : null,
       hint: downloadsUp ? dict.cards.upThisPeriod : dict.cards.downThisPeriod,
     },
     {
@@ -163,13 +170,62 @@ export function SectionCards() {
       badge: null,
       hint: dict.cards.strongEngagement,
     },
-    {
-      key: "published",
-      label: dict.cards.publishedMods,
-      value: totals ? formatNumber(totals.published) : "0",
-      badge: null,
-      hint: dict.cards.steadyPerformance,
-    },
+     {
+       key: "published",
+       label: dict.cards.publishedMods,
+       value: totals ? formatNumber(totals.published) : "0",
+       badge: null,
+       hint: dict.cards.steadyPerformance,
+     },
+     {
+       key: "drafts",
+       label: dict.cards.drafts || dict.statsPage.drafts,
+       value: totals ? formatNumber(totals.drafts ?? 0) : "0",
+       badge: null,
+       hint: dict.cards.steadyPerformance,
+     },
+     {
+       key: "pending",
+       label: dict.cards.pending || dict.statsPage.pendingReview,
+       value: totals ? formatNumber(totals.pending ?? 0) : "0",
+       badge: null,
+       hint: dict.cards.meetsGrowthExpectations,
+     },
+     {
+       key: "rejected",
+       label: dict.cards.rejected || dict.statsPage.rejected,
+       value: totals ? formatNumber(totals.rejected ?? 0) : "0",
+       badge: null,
+       hint: dict.cards.downloadsNeedFollowUp,
+     },
+     {
+       key: "allTimeViews",
+       label: dict.cards.allTimeViews || dict.statsPage.lifetime,
+       value: totals ? formatNumber(totals.allTimeViews ?? 0) : "0",
+       badge: null,
+       hint: dict.statsPage.lifetime,
+     },
+     {
+       key: "allTimeDownloads",
+       label: dict.cards.allTimeDownloads || dict.statsPage.lifetime,
+       value: totals ? formatNumber(totals.allTimeDownloads ?? 0) : "0",
+       badge: null,
+       hint: dict.statsPage.lifetime,
+     },
+     {
+       key: "allTimeComments",
+       label: dict.cards.allTimeComments || dict.statsPage.lifetime,
+       value: totals ? formatNumber(totals.allTimeComments ?? 0) : "0",
+       badge: null,
+       hint: dict.statsPage.lifetime,
+     },
+     {
+       key: "averageRating",
+       label: dict.cards.averageRating || dict.statsPage.avgRating,
+       value: totals ? formatNumber(totals.averageRating ?? 0) : "0",
+       badge: null,
+       hint: dict.statsPage.avgRating,
+     },
     {
       key: "conversion",
       label: dict.cards.conversion,
@@ -188,14 +244,14 @@ export function SectionCards() {
       key: "likes",
       label: dict.cards.periodLikes,
       value: summary ? formatNumber(periodLikes) : "0",
-      badge: summary ? deltaBadge(periodLikesUp, `${periodLikesUp ? "+" : ""}${summary.periodLikesChange ?? 0}%`) : null,
+      badge: summary ? deltaBadge(periodLikesUp, summary.periodLikesChange === null ? "جديد" : `${periodLikesUp ? "+" : ""}${summary.periodLikesChange ?? 0}%`) : null,
       hint: dict.cards.periodLikesDesc,
     },
     {
       key: "news",
       label: dict.cards.newsViews,
       value: summary ? formatNumber(newsViews) : "0",
-      badge: summary ? deltaBadge(newsViewsUp, `${newsViewsUp ? "+" : ""}${summary.newsViewsChange ?? 0}%`) : null,
+      badge: summary ? deltaBadge(newsViewsUp, summary.newsViewsChange === null ? "جديد" : `${newsViewsUp ? "+" : ""}${summary.newsViewsChange ?? 0}%`) : null,
       hint: dict.cards.newsViewsDesc,
     },
   ]

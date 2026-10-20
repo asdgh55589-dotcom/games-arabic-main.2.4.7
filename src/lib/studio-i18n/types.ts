@@ -59,9 +59,16 @@ export interface StudioDict {
     clickRateDesc: string
     periodLikes: string
     periodLikesDesc: string
-    newsViews: string
-    newsViewsDesc: string
-  }
+     newsViews: string
+     newsViewsDesc: string
+     drafts: string
+     pending: string
+     rejected: string
+     allTimeViews: string
+     allTimeDownloads: string
+     allTimeComments: string
+     averageRating: string
+   }
   chart: {
     title: string
     totalLast3Months: string

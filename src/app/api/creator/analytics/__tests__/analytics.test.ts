@@ -4,6 +4,7 @@
  */
 jest.mock('@/lib/db', () => ({
   db: {
+    $queryRaw: jest.fn(),
     mod: { findMany: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     modView: { findMany: jest.fn(), count: jest.fn() },
     downloadClick: { findMany: jest.fn(), count: jest.fn() },
@@ -26,6 +27,7 @@ import { GET as historyGET } from '../history/route';
 import { GET as analyticsGET } from '../route';
 
 const mockDb = db as unknown as {
+  $queryRaw: jest.Mock;
   mod: { findMany: jest.Mock; count: jest.Mock; aggregate: jest.Mock };
   modView: { findMany: jest.Mock; count: jest.Mock };
   downloadClick: { findMany: jest.Mock; count: jest.Mock };
@@ -49,6 +51,7 @@ beforeEach(() => {
 
 describe('GET /api/creator/analytics/history', () => {
   beforeEach(() => {
+    mockDb.$queryRaw.mockResolvedValue([]);
     mockDb.modView.findMany.mockResolvedValue([]);
     mockDb.downloadClick.findMany.mockResolvedValue([]);
     mockDb.commentSectionClick.findMany.mockResolvedValue([]);
@@ -75,21 +78,19 @@ describe('GET /api/creator/analytics/history', () => {
     expect(mockDb.mod.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ authorId: 'creator-1' }) }),
     );
-    expect(mockDb.modView.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ modId: { in: ['m-1', 'm-2'] } }),
-      }),
-    );
+    expect(mockDb.$queryRaw).toHaveBeenCalled();
   });
 
   it('buckets events into calendar days', async () => {
     const day2 = new Date();
     day2.setDate(day2.getDate() - 2);
-    mockDb.modView.findMany.mockResolvedValue([
-      { viewedAt: day2 },
-      { viewedAt: day2 },
-      { viewedAt: new Date() },
-    ]);
+    day2.setUTCHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    mockDb.$queryRaw
+      .mockResolvedValueOnce([{ day: day2, count: 2 }, { day: today, count: 1 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
     mockDb.modView.count.mockResolvedValue(3);
 
     const res = await historyGET(new NextRequest('http://localhost/x?range=7'));
@@ -152,12 +153,12 @@ describe('GET /api/creator/analytics', () => {
     expect(json.data).toHaveProperty('activeModsCount');
   });
 
-  it('zero previous period yields 0 change (no division by zero)', async () => {
+  it('zero previous period yields null change (new growth, no division by zero)', async () => {
     mockDb.modView.count.mockResolvedValueOnce(10).mockResolvedValueOnce(0);
 
     const res = await analyticsGET(new NextRequest('http://localhost/x?range=30'));
     const json = await res.json();
 
-    expect(json.data.viewsChange).toBe(0);
+    expect(json.data.viewsChange).toBeNull();
   });
 });

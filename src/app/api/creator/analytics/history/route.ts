@@ -4,6 +4,7 @@ import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
+import { Prisma } from '@prisma/client'
 
 const RANGES = new Set([7, 30, 90])
 
@@ -51,49 +52,47 @@ export async function GET(req: NextRequest) {
     const commentClicksBuckets = buckets.map((b) => ({ ...b }))
 
     if (modIds.length > 0) {
-      const TAKE_LIMIT = 5000
-      const [viewRows, downloadRows, clickRows, totalViews, totalDownloads, totalCommentClicks] = await Promise.all([
-        db.modView.findMany({
-          where: { modId: { in: modIds }, viewedAt: { gte: start } },
-          select: { viewedAt: true },
-          take: TAKE_LIMIT,
-        }),
-        db.downloadClick.findMany({
-          where: { modId: { in: modIds }, createdAt: { gte: start } },
-          select: { createdAt: true },
-          take: TAKE_LIMIT,
-        }),
-        db.commentSectionClick.findMany({
-          where: { modId: { in: modIds }, createdAt: { gte: start } },
-          select: { createdAt: true },
-          take: TAKE_LIMIT,
-        }),
+      const [viewDaily, downloadDaily, clickDaily, totalViews, totalDownloads, totalCommentClicks] = await Promise.all([
+        db.$queryRaw<{ day: Date; count: number }[]>`
+          SELECT DATE("viewedAt") AS day, COUNT(*)::int AS count
+          FROM "ModView"
+          WHERE "modId" IN (${Prisma.join(modIds)})
+            AND "viewedAt" >= ${start}
+          GROUP BY DATE("viewedAt")
+        `,
+        db.$queryRaw<{ day: Date; count: number }[]>`
+          SELECT DATE("createdAt") AS day, COUNT(*)::int AS count
+          FROM "DownloadClick"
+          WHERE "modId" IN (${Prisma.join(modIds)})
+            AND "createdAt" >= ${start}
+          GROUP BY DATE("createdAt")
+        `,
+        db.$queryRaw<{ day: Date; count: number }[]>`
+          SELECT DATE("createdAt") AS day, COUNT(*)::int AS count
+          FROM "CommentSectionClick"
+          WHERE "modId" IN (${Prisma.join(modIds)})
+            AND "createdAt" >= ${start}
+          GROUP BY DATE("createdAt")
+        `,
         db.modView.count({ where: { modId: { in: modIds }, viewedAt: { gte: start } } }),
         db.downloadClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
         db.commentSectionClick.count({ where: { modId: { in: modIds }, createdAt: { gte: start } } }),
       ])
 
-      if (viewRows.length === TAKE_LIMIT) {
-        logger.warn(`[creator/analytics/history] user ${user.id}: view rows truncated at ${TAKE_LIMIT}`)
+      for (const row of viewDaily) {
+        const key = (row.day instanceof Date ? row.day : new Date(row.day)).toISOString().slice(0, 10)
+        const idx = indexByDay.get(key)
+        if (idx !== undefined) viewsBuckets[idx].count = Number(row.count)
       }
-      if (downloadRows.length === TAKE_LIMIT) {
-        logger.warn(`[creator/analytics/history] user ${user.id}: download rows truncated at ${TAKE_LIMIT}`)
+      for (const row of downloadDaily) {
+        const key = (row.day instanceof Date ? row.day : new Date(row.day)).toISOString().slice(0, 10)
+        const idx = indexByDay.get(key)
+        if (idx !== undefined) downloadsBuckets[idx].count = Number(row.count)
       }
-      if (clickRows.length === TAKE_LIMIT) {
-        logger.warn(`[creator/analytics/history] user ${user.id}: click rows truncated at ${TAKE_LIMIT}`)
-      }
-
-      for (const row of viewRows) {
-        const idx = indexByDay.get(row.viewedAt.toISOString().slice(0, 10))
-        if (idx !== undefined) viewsBuckets[idx].count++
-      }
-      for (const row of downloadRows) {
-        const idx = indexByDay.get(row.createdAt.toISOString().slice(0, 10))
-        if (idx !== undefined) downloadsBuckets[idx].count++
-      }
-      for (const row of clickRows) {
-        const idx = indexByDay.get(row.createdAt.toISOString().slice(0, 10))
-        if (idx !== undefined) commentClicksBuckets[idx].count++
+      for (const row of clickDaily) {
+        const key = (row.day instanceof Date ? row.day : new Date(row.day)).toISOString().slice(0, 10)
+        const idx = indexByDay.get(key)
+        if (idx !== undefined) commentClicksBuckets[idx].count = Number(row.count)
       }
 
       return ok(
