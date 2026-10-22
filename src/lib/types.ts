@@ -71,6 +71,15 @@ export interface ModSummary {
   fileFormat: string
   downloads: number
   endorsements: number
+  /**
+   * الأعداد الحقيقية (غير المُبذَّرة) = العدّاد - الـ baseline.
+   * الـ baseline هو الجزء المُلفَّق الذي زرعه سكربت البيانات، لذا هذه الحقول
+   * هي وحدها التي تعكس تفاعل الزوار فعلياً. اختيارية حتى لا تنكسر
+   * Consumptions التي لا تُعيد baseline.
+   */
+  realViews?: number
+  realDownloads?: number
+  realEndorsements?: number
   reactions?: { fire: number; sparkle: number; thumbsup: number; thumbsdown: number }
   views: number
   comments: number

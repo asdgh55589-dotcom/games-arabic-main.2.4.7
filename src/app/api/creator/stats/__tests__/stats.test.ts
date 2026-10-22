@@ -5,8 +5,8 @@
 jest.mock('@/lib/db', () => ({
   db: {
     mod: { findMany: jest.fn(), count: jest.fn(), aggregate: jest.fn(), groupBy: jest.fn() },
-    modView: { count: jest.fn() },
-    downloadClick: { count: jest.fn() },
+    modView: { count: jest.fn(), groupBy: jest.fn() },
+    downloadClick: { count: jest.fn(), groupBy: jest.fn() },
     modComment: { count: jest.fn() },
   },
 }));
@@ -22,8 +22,8 @@ import { GET } from '../route';
 
 const mockDb = db as unknown as {
   mod: { findMany: jest.Mock; count: jest.Mock; aggregate: jest.Mock; groupBy: jest.Mock };
-  modView: { count: jest.Mock };
-  downloadClick: { count: jest.Mock };
+  modView: { count: jest.Mock; groupBy: jest.Mock };
+  downloadClick: { count: jest.Mock; groupBy: jest.Mock };
   modComment: { count: jest.Mock };
 };
 
@@ -51,6 +51,12 @@ beforeEach(() => {
   mockDb.downloadClick.count.mockResolvedValue(100)
   mockDb.modComment.count.mockResolvedValue(50)
   mockDb.mod.findMany.mockResolvedValue([]);
+  mockDb.downloadClick.groupBy.mockResolvedValue([
+    { modId: 'mod-1', _count: { _all: 2 } },
+  ]);
+  mockDb.modView.groupBy.mockResolvedValue([
+    { modId: 'mod-1', _count: { _all: 10 } },
+  ]);
 });
 
 describe('GET /api/creator/stats bounded aggregation', () => {
@@ -63,15 +69,11 @@ describe('GET /api/creator/stats bounded aggregation', () => {
       totalMods: 3,
       published: 2,
       drafts: 1,
-      totalViews: 100,
-      totalDownloads: 50,
-      totalEndorsements: 5,
-       totalComments: 7,
-       allTimeViews: 1000,
-       allTimeDownloads: 100,
-       allTimeComments: 50,
-       averageRating: 4.5,
-     });
+      allTimeViews: 1000,
+      allTimeDownloads: 100,
+      allTimeComments: 50,
+      averageRating: 4.5,
+    });
     expect(json.data).toHaveProperty('topMods');
     expect(json.data).toHaveProperty('recentActivity');
   });

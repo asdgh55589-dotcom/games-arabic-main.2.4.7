@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, canEditMod, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { syncGameCounts } from '@/lib/game-helpers'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { parseIaUrl } from '@/lib/ia'
 import { logger } from '@/lib/logger'
@@ -478,6 +479,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       if (newTeamId) await syncTeamCounts(newTeamId).catch(() => {})
     }
 
+    // عدّادات اللعبة (totalDownloads/totalEndorsements/modCount) — تُحسب من
+    // mods اللعبة المنشورة. تُزامَن عند تغيّر اللعبة نفسها أو حالة النشر.
+    const newGameId = body.gameId !== undefined ? body.gameId || existing.gameId : existing.gameId
+    if (newGameId && newGameId !== existing.gameId) {
+      if (existing.gameId) await syncGameCounts(existing.gameId).catch(() => {})
+      await syncGameCounts(newGameId).catch(() => {})
+    }
+
     // Listing cache: edits may change PUBLISHED card fields (best-effort).
     if (existing.gameId) invalidateGameModsCache(existing.gameId).catch(() => {})
 
@@ -539,9 +548,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     // cascading deletes هتمسح كل الـ relations تلقائياً
     await db.mod.delete({ where: { id } })
 
-    // مزامنة عدّادات السلسلة/الفريق بعد الحذف
+    // مزامنة عدّادات السلسلة/الفريق/اللعبة بعد الحذف
     if (seriesId) await syncSeriesCounts(seriesId).catch(() => {})
     if (teamId) await syncTeamCounts(teamId).catch(() => {})
+    if (gameId) await syncGameCounts(gameId).catch(() => {})
     // Listing cache: the deleted mod may have been PUBLISHED (best-effort).
     if (gameId) invalidateGameModsCache(gameId).catch(() => {})
 

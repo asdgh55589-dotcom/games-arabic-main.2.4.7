@@ -30,6 +30,9 @@ jest.mock('@/lib/auth', () => ({
 jest.mock('@/lib/counters', () => ({
   recordModView: jest.fn().mockResolvedValue(undefined),
   recordTeamView: jest.fn().mockResolvedValue(undefined),
+  // C1 — المسار يستدعي isInternalRequest لتخطّي تسجيل المشاهدة في طلبات ISR
+  // الداخلية؛ نُعيد false افتراضياً (طلب خارجي) حتى لا يتأثر الاختبار.
+  isInternalRequest: jest.fn().mockReturnValue(false),
 }))
 
 jest.mock('@/lib/creator-team', () => ({
@@ -55,6 +58,8 @@ jest.mock('@/lib/db', () => ({
 
 jest.mock('@/lib/rate-limit', () => ({
   rateLimitMiddleware: jest.fn().mockResolvedValue(null),
+  // R10 — GET /api/mods/[slug] يستدعي rateLimit مباشرة.
+  rateLimit: jest.fn(async () => ({ success: true, remaining: 119, resetAt: 0, limit: 120 })),
 }))
 
 jest.mock('@/lib/permissions', () => ({

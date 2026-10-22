@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
     const publishedWhere = { authorId: user.id, workflowStatus: 'PUBLISHED' }
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-    const [totalMods, statusGroups, sums, rating, topMods, recentMods, draftsCount, pendingCount, rejectedCount, allTimeViews, allTimeDownloads, allTimeComments] = await Promise.all([
+    // R14 — مصدر واحد للأرقام: صفوف السجلات (ModView / DownloadClick / ModComment)
+    // بدل مجاميع العدّادات (SUM(Mod.views) …). العدّادات تحتوي على بيانات مزروعة
+    // غير قابلة للتدقيق، أما الصفوف فكل رقم فيها قابل للتحقق منه.
+    const [totalMods, statusGroups, rating, recentMods, draftsCount, pendingCount, rejectedCount, allTimeViews, allTimeDownloads, allTimeComments, dlGroups, viewGroups] = await Promise.all([
       db.mod.count({ where: authorWhere }),
       db.mod.groupBy({
         by: ['workflowStatus'],
@@ -30,26 +33,8 @@ export async function GET(req: NextRequest) {
         _count: { workflowStatus: true },
       }),
       db.mod.aggregate({
-        where: publishedWhere,
-        _sum: { views: true, downloads: true, endorsements: true, comments: true },
-      }),
-      db.mod.aggregate({
         where: { ...publishedWhere, ratingCount: { gt: 0 } },
         _avg: { rating: true },
-      }),
-      db.mod.findMany({
-        where: publishedWhere,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          downloads: true,
-          views: true,
-          rating: true,
-          isOriginalWork: true,
-        },
-        orderBy: { downloads: 'desc' },
-        take: 5,
       }),
       db.mod.findMany({
         where: { authorId: user.id, createdAt: { gte: thirtyDaysAgo } },
@@ -63,36 +48,62 @@ export async function GET(req: NextRequest) {
       db.modView.count({ where: { mod: { authorId: user.id } } }),
       db.downloadClick.count({ where: { mod: { authorId: user.id } } }),
       db.modComment.count({ where: { mod: { authorId: user.id } } }),
+      // أعلى التعريبات تحميلاً — الترتيب من صفوف DownloadClick لا من العدّاد
+      db.downloadClick.groupBy({
+        by: ['modId'],
+        where: { mod: publishedWhere },
+        _count: { _all: true },
+        orderBy: { _count: { modId: 'desc' } },
+        take: 5,
+      }),
+      db.modView.groupBy({
+        by: ['modId'],
+        where: { mod: publishedWhere },
+        _count: { _all: true },
+      }),
     ])
 
     const countFor = (status: string) =>
       statusGroups.find((g) => g.workflowStatus === status)?._count.workflowStatus ?? 0
 
+    // صفوف أعلى التعريبات — أرقام الصفوف فقط (لا عدّادات)
+    const topIds = dlGroups.map((g) => g.modId)
+    const topModRows = topIds.length
+      ? await db.mod.findMany({
+          where: { id: { in: topIds }, authorId: user.id },
+          select: { id: true, name: true, slug: true, rating: true, isOriginalWork: true },
+          take: 5,
+        })
+      : []
+    const topModById = new Map(topModRows.map((m) => [m.id, m]))
+    const viewsByMod = new Map(viewGroups.map((g) => [g.modId, g._count._all]))
+    const topMods = dlGroups.map((g) => {
+      const m = topModById.get(g.modId)
+      return {
+        id: g.modId,
+        name: m?.name ?? '—',
+        slug: m?.slug ?? '',
+        downloads: g._count._all,
+        views: viewsByMod.get(g.modId) ?? 0,
+        rating: m?.rating ?? 0,
+        isOriginalWork: m?.isOriginalWork ?? null,
+      }
+    })
+
     return ok({
       totals: {
         totalMods,
         published: countFor('PUBLISHED'),
-         drafts: draftsCount,
-         pending: pendingCount,
-         rejected: rejectedCount,
-         totalViews: sums._sum.views ?? 0,
-         totalDownloads: sums._sum.downloads ?? 0,
-         totalEndorsements: sums._sum.endorsements ?? 0,
-         totalComments: sums._sum.comments ?? 0,
-         allTimeViews,
-         allTimeDownloads,
-         allTimeComments,
-         averageRating: Number((rating._avg.rating ?? 0).toFixed(2)),
+        drafts: draftsCount,
+        pending: pendingCount,
+        rejected: rejectedCount,
+        // إجماليات مدى الحياة — كلها من صفوف السجلات (قابلة للتدقيق)
+        allTimeViews,
+        allTimeDownloads,
+        allTimeComments,
+        averageRating: Number((rating._avg.rating ?? 0).toFixed(2)),
       },
-      topMods: topMods.map((m) => ({
-        id: m.id,
-        name: m.name,
-        slug: m.slug,
-        downloads: m.downloads,
-        views: m.views,
-        rating: m.rating,
-        isOriginalWork: m.isOriginalWork,
-      })),
+      topMods,
       recentActivity: recentMods.map((m) => ({
         id: m.id,
         name: m.name,

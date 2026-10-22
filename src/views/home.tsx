@@ -19,7 +19,7 @@ import { formatNumber } from '@/lib/format'
 import { reportError } from '@/lib/error-reporting'
 import { HOME_TEAMS_STALE_MS, normalizeHomeData } from '@/lib/home-data'
 import { getSectionIcon } from '@/lib/section-icons'
-import type { HomeData } from '@/lib/types'
+import type { HomeData, ModSummary } from '@/lib/types'
 import { HomeMobile } from './home-mobile'
 
 // Section 4 item 24: ads pull sanitize-html (~150KB) and are below-fold +
@@ -157,6 +157,26 @@ export function HomePage() {
   // downstream `.length` / `.slice` / `.map` calls can never crash.
   const homeData = normalizeHomeData(data?.data)
   const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // R11 — نفس الأرقام كانت تُعرض مرتين: مرة داخل بطاقات أقسام المنصات
+  // ومرة داخل الشريط الجانبي (latest / trending / topEndorsed). نحسب هنا
+  // مجموعة المودات التي تُعرض فعلاً في الشبكات — بنفس منطق العرض
+  // (`modsByPlatform[section.key].slice(0, 10)`) — ونستبعدها من الشريط.
+  const gridModIds = (() => {
+    const ids = new Set<string>()
+    for (const section of sections) {
+      const mods = homeData?.modsByPlatform?.[section.key] || []
+      for (const m of mods.slice(0, 10)) ids.add(m.id)
+    }
+    return ids
+  })()
+
+  // عمود فارغ أسوأ من تكرار — فلو استبعدنا كل عناصر عمود نرجّع القائمة كاملة.
+  const withoutGridDuplicates = (list: ModSummary[]) => {
+    if (list.length === 0 || gridModIds.size === 0) return list
+    const filtered = list.filter((m) => !gridModIds.has(m.id))
+    return filtered.length > 0 ? filtered : list
+  }
 
   // Fix 2 (LEDA-14): surface fetch failures instead of failing silently.
   useEffect(() => {
@@ -297,9 +317,9 @@ export function HomePage() {
               ) : (
                 <ErrorBoundary label="home sidebar" fallback={null}>
                   <HomeSidebar
-                    latest={homeData?.latestMods || []}
-                    trending={homeData?.trendingMods || []}
-                    topEndorsed={homeData?.topEndorsed || []}
+                    latest={withoutGridDuplicates(homeData?.latestMods || [])}
+                    trending={withoutGridDuplicates(homeData?.trendingMods || [])}
+                    topEndorsed={withoutGridDuplicates(homeData?.topEndorsed || [])}
                   />
                 </ErrorBoundary>
               )}

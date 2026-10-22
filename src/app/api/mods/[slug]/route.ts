@@ -1,11 +1,12 @@
 import type { NextRequest } from 'next/server'
-import { notFound, ok } from '@/lib/api-response'
+import { notFound, ok, rateLimited } from '@/lib/api-response'
 import { serialize } from '@/lib/api-utils'
 import { requireAuth } from '@/lib/auth'
-import { recordModView } from '@/lib/counters'
+import { isInternalRequest, recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { authorPublicSelect, categoryCardSelect, gameDetailSelect } from '@/lib/prisma-selects'
+import { rateLimit } from '@/lib/rate-limit'
 import { hasRoleAtLeast } from '@/lib/roles'
 
 // GET /api/mods/[slug] - single mod by slug
@@ -15,6 +16,23 @@ import { hasRoleAtLeast } from '@/lib/roles'
 // from inflating view counts before a human actually visits the page.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+
+  // R10 — حدّ معدل على هذا المسار.
+  // السبب: المسار يكتب عدّاد المشاهدات، ومسار /api/mods* مستثنى من فحص حظر
+  // الـ IP في proxy.ts (GET غير محظور) — فبلا حدّ معدل يمكن لآلية ضخّ
+  // (crawler / proxy / سكربت) أن يرفع العدّاد بلا سقف.
+  // الحدّ = 120 طلب/دقيقة لكل IP: طلب واحد لكل تحميل صفحة مود (تعديل
+  // + prefetch) — أي ~12x أكثر من معدل التصفح الطبيعي، فلا يكسر أي زائر.
+  // ملاحظة: سلة الـ rate limit مرتبطة بـ IP فقط، والطلب الداخلي من الخادم
+  // (ISR) يخرج من عنوان IP واحد مشترك لكل الطلبات → يجب استثناؤه وإلا
+  // استُنزفت السلة وأُعيد 429 لكل زائر.
+  const internal = isInternalRequest(req)
+  if (!internal) {
+    const rl = await rateLimit(req, { limit: 120, window: 60, keyPrefix: 'mods:detail' })
+    if (!rl.success) {
+      return rateLimited()
+    }
+  }
 
   // Detect prefetch requests. Browsers send `Purpose: prefetch` when
   // prefetching links. Next.js Link with prefetch={true} uses this.
@@ -45,12 +63,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       fileSize: true,
       fileFormat: true,
       downloads: true,
-       endorsements: true,
-       reactionFire: true,
-       reactionSparkle: true,
-       reactionThumbsUp: true,
-       reactionThumbsDown: true,
-       views: true,
+      endorsements: true,
+      reactionFire: true,
+      reactionSparkle: true,
+      reactionThumbsUp: true,
+      reactionThumbsDown: true,
+      views: true,
       comments: true,
       rating: true,
       ratingCount: true,
@@ -159,7 +177,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Fire-and-forget view count — deduplicated (user 24h / guest IP+UA 1h, bots skipped).
   // Only unique views increment the counter and write a ModView row.
-  if (!isPrefetch) {
+  // C1 — الطلب الداخلي من الخادم (ISR self-fetch) لا يُحتسب أبداً.
+  if (!isPrefetch && !internal) {
     recordModView(mod.id, req, db).catch((err) => {
       logger.error({ err }, '[mods/:slug] failed to record view')
     })
@@ -220,28 +239,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     loadLinkDownloads(),
     loadSiteLinks(),
   ])
-   const withLinkCounts = (links: Array<{ id: string }>) =>
+  const withLinkCounts = (links: Array<{ id: string }>) =>
     links.map((l) => ({ ...l, downloadsCount: linkDownloads[(l as { id: string }).id] ?? 0 }))
-   const modWithFileCounts = {
-     ...mod,
-     reactions: {
-       fire: mod.reactionFire,
-       sparkle: mod.reactionSparkle,
-       thumbsup: mod.reactionThumbsUp,
-       thumbsdown: mod.reactionThumbsDown,
-     },
-     files: (mod.files ?? []).map((f) => ({
+  const modWithFileCounts = {
+    ...mod,
+    reactions: {
+      fire: mod.reactionFire,
+      sparkle: mod.reactionSparkle,
+      thumbsup: mod.reactionThumbsUp,
+      thumbsdown: mod.reactionThumbsDown,
+    },
+    files: (mod.files ?? []).map((f) => ({
       ...f,
       downloadsCount: fileDownloads[f.id] ?? 0,
       links: withLinkCounts((f as { links: Array<{ id: string }> }).links ?? []),
       // الأبناء مع روابطها وعدّاداتها
-      children: ((f as { children?: Array<{ id: string; links?: Array<{ id: string }> }> }).children ?? []).map(
-        (c) => ({
-          ...c,
-          downloadsCount: fileDownloads[(c as { id: string }).id] ?? 0,
-          links: withLinkCounts((c as { links?: Array<{ id: string }> }).links ?? []),
-        }),
-      ),
+      children: (
+        (f as { children?: Array<{ id: string; links?: Array<{ id: string }> }> }).children ?? []
+      ).map((c) => ({
+        ...c,
+        downloadsCount: fileDownloads[(c as { id: string }).id] ?? 0,
+        links: withLinkCounts((c as { links?: Array<{ id: string }> }).links ?? []),
+      })),
     })),
     siteLinks,
   }

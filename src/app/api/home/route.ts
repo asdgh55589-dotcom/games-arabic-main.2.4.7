@@ -3,7 +3,12 @@ import { internalError } from '@/lib/api-response'
 import { setCacheControl, withETag } from '@/lib/api-cache'
 import { serialize } from '@/lib/api-utils'
 import { db } from '@/lib/db'
-import { getHomeCache, getHomeCacheTtl, setHomeCache } from '@/lib/home-cache'
+import {
+  getHomeCache,
+  getHomeCacheGeneration,
+  getHomeCacheTtl,
+  setHomeCache,
+} from '@/lib/home-cache'
 import { logger } from '@/lib/logger'
 import { withRequestLogger } from '@/lib/request-logger'
 import { modCardSelect } from '@/lib/prisma-selects'
@@ -190,6 +195,11 @@ export const GET = withRequestLogger(async (req: NextRequest, _ctx: unknown, log
       return withETag(req, { data: cached.data }, { headers })
     }
 
+    // Capture the cache generation BEFORE reading the DB. The payload is
+    // stamped with it, so a payload built before an invalidation is never
+    // served afterwards (see lib/home-cache.ts).
+    const cacheGeneration = await getHomeCacheGeneration()
+
     // 1. Active sections drive the platform queries
     const activeSections = await db.section.findMany({
       where: { isActive: true },
@@ -260,6 +270,7 @@ export const GET = withRequestLogger(async (req: NextRequest, _ctx: unknown, log
         SELECT m.* FROM "Mod" m
         JOIN "Game" g2 ON g2."id" = m."gameId"
         WHERE g2."platform" = s."key"
+          AND m."workflowStatus" = 'PUBLISHED'
         ORDER BY m."downloads" DESC
         LIMIT 10
       ) m
@@ -336,7 +347,7 @@ export const GET = withRequestLogger(async (req: NextRequest, _ctx: unknown, log
     }) as HomeData
 
     // Update shared cache (fail-open — a cache write failure must not fail the request)
-    await setHomeCache(responseData, now).catch(() => {})
+    await setHomeCache(responseData, now, cacheGeneration).catch(() => {})
 
     // Phase 3: ETag + Vary (TTL preserved: 30s fresh, 120s stale)
     const headers = new Headers()

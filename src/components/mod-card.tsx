@@ -3,15 +3,12 @@
 import {
   Bookmark,
   CalendarDays,
-  Download,
-  Eye,
   FileArchive,
   Flag,
   History,
   Loader2,
   MoreVertical,
   Package,
-  ThumbsUp,
   Users,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -23,6 +20,7 @@ import { ReportDialog } from '@/components/report-dialog'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { highlightMatch } from '@/components/search-highlight'
 import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
+import { ModStatRow } from '@/components/mod-stat-row'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +33,6 @@ import { useToast } from '@/hooks/use-toast'
 import { ApiError, apiFetch } from '@/lib/api-client'
 import { FALLBACK_GAME_IMAGE } from '@/lib/constants'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
-import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 interface ModCardProps {
@@ -288,30 +285,7 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
                 )}
               </div>
               <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
-                <div className="flex items-center justify-center gap-1" title="التحميلات">
-                  <Download className="h-3 w-3 text-primary" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">
-                    {formatNumber(mod.downloads)}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-center gap-1 border-s border-border/60"
-                  title="المشاهدات"
-                >
-                  <Eye className="h-3 w-3 text-primary" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">
-                    {formatNumber(mod.views)}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-center gap-1 border-s border-border/60"
-                  title="الإعجابات"
-                >
-                  <ThumbsUp className="h-3 w-3 text-primary" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90">
-                    {formatNumber(mod.endorsements)}
-                  </span>
-                </div>
+                <ModStatRow mod={mod} variant="cardCompact" />
               </div>
             </>
           ) : (
@@ -412,30 +386,7 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
 
               {/* ZONE 3: STATS BAR */}
               <div className="grid w-full grid-cols-3 border-t-2 border-border/60 pt-2">
-                <div className="flex items-center justify-center gap-1" title="التحميلات">
-                  <Download className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">
-                    {formatNumber(mod.downloads)}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-center gap-1 border-s border-border/60"
-                  title="المشاهدات"
-                >
-                  <Eye className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">
-                    {formatNumber(mod.views)}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-center gap-1 border-s border-border/60"
-                  title="الإعجابات"
-                >
-                  <ThumbsUp className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                  <span className="text-[10px] font-bold leading-[1.3] text-foreground/90 sm:text-[11px]">
-                    {formatNumber(mod.endorsements)}
-                  </span>
-                </div>
+                <ModStatRow mod={mod} variant="card" />
               </div>
             </>
           )}

@@ -224,7 +224,7 @@ export function ModDownloadSection({
                   <span>
                     {file.fileSize} .{file.fileFormat}
                   </span>
-                  <span>⬇ {formatNumber(perFileDownloads)}</span>
+                  <span title="تحميلات هذا الملف">⬇ {formatNumber(perFileDownloads)}</span>
                 </span>
                 <ChevronDown
                   className={`h-[13px] w-[13px] shrink-0 transition-transform duration-200 ${
@@ -260,7 +260,7 @@ export function ModDownloadSection({
                             </span>
                             {/* شيبات إحصائيات لكل رابط */}
                             <span className="hidden shrink-0 items-center gap-2 sm:flex text-[11px] font-bold text-[#8b96a7] tabular-nums">
-                              <span>⬇ {formatNumber(link.downloadsCount ?? 0)}</span>
+                              <span title="تحميلات هذا الرابط">⬇ {formatNumber(link.downloadsCount ?? 0)}</span>
                               <span>{file.fileSize}</span>
                             </span>
                             <span

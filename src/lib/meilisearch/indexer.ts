@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { normalizeArabic } from '@/lib/duplicate-detection'
+import { logger } from '@/lib/logger'
 import { meili } from './client'
 
 // Bulk index (for initial seeding) — PUBLISHED mods only
@@ -133,4 +134,61 @@ export async function deleteModFromIndex(modId: string) {
     .index('mods')
     .deleteDocument(modId)
     .catch(() => {})
+}
+
+/**
+ * Throttle window for `reindexModById` (milliseconds).
+ *
+ * Why a throttle: the search index carries `downloads` and `/api/search` SORTS
+ * by it, so the counter has to be pushed to Meilisearch after a counted
+ * download. Writing to Meilisearch on EVERY download is not acceptable —
+ * a popular mod can be downloaded hundreds of times per minute, and each
+ * write is an HTTP round-trip plus an index task. With a 30s window the
+ * index lags the live counter by at most 30s, which is invisible in the UI
+ * (the card shows the LIVE value; only the sort order uses the indexed one).
+ *
+ * Override with `MEILI_REINDEX_THROTTLE_MS` (0 disables the throttle).
+ */
+export const MEILI_REINDEX_THROTTLE_MS = Number(process.env.MEILI_REINDEX_THROTTLE_MS ?? 30_000)
+
+/** modId → last re-index timestamp (process-local; the throttle is best-effort). */
+const reindexThrottle = new Map<string, number>()
+
+/** True when the mod was re-indexed too recently (caller should skip). */
+function isReindexThrottled(modId: string, now: number): boolean {
+  if (MEILI_REINDEX_THROTTLE_MS <= 0) return false
+  const last = reindexThrottle.get(modId)
+  if (last !== undefined && now - last < MEILI_REINDEX_THROTTLE_MS) return true
+  reindexThrottle.set(modId, now)
+  // Opportunistic cleanup so the map cannot grow without bound.
+  if (reindexThrottle.size > 5000) {
+    for (const [id, at] of reindexThrottle) {
+      if (now - at > MEILI_REINDEX_THROTTLE_MS) reindexThrottle.delete(id)
+    }
+  }
+  return false
+}
+
+/**
+ * Re-sync a SINGLE mod document in the search index (best-effort).
+ *
+ * Used after a counted download so `/api/search` sorting by `downloads` stays
+ * close to the live counter. It reuses `indexMod()` — therefore the pushed
+ * document has exactly the same shape as the bulk indexer.
+ *
+ * Never throws and never blocks the caller: if Meilisearch is not configured
+ * it is a quiet no-op, and any error is logged and swallowed.
+ */
+export async function reindexModById(modId: string): Promise<void> {
+  if (!meili) return
+  try {
+    if (isReindexThrottled(modId, Date.now())) return
+    await indexMod(modId)
+  } catch (err) {
+    // intentional: expected+handled (search index sync is best-effort — never breaks the download path)
+    logger.warn(
+      { event: 'meili_reindex_mod_failed', action: 'reindex_mod_by_id', modId, err },
+      'meilisearch reindex failed',
+    )
+  }
 }

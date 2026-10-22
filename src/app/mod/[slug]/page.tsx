@@ -7,12 +7,16 @@ export const revalidate = 300 // ISR: 5m — بيانات التعريب ناد�
 
 // Single fetch shared by generateMetadata + page component (React cache
 // dedupes within the request — one self-fetch per render, not two).
+//
+// C1 — الطلب الداخلي من الخادم إلى واجهته الخاصة: نُعلّمه بترويسة
+// `x-ga-internal: 1` حتى لا يُحتسب كمشاهدة (انظر lib/counters.ts).
 const getModData = cache(async (slug: string) => {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/mods/${slug}`,
       {
         next: { revalidate: 300 },
+        headers: { 'x-ga-internal': '1' },
       },
     )
     if (!res.ok) return null
@@ -90,7 +94,7 @@ export default async function ModRoutePage({ params }: ModPageProps) {
     const { slug } = await params
     mod = await getModData(slug)
   } catch {
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort mod page operation
+    // best-effort mod page operation — بيانات ناقصة لا تُسقط الصفحة
   }
   return (
     <>
@@ -105,20 +109,18 @@ export default async function ModRoutePage({ params }: ModPageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(
-              breadcrumbJsonLd(
-                [
-                  { name: 'الرئيسية', url: 'https://games-arabic.com' },
-                  ...(mod.game?.slug
-                    ? [
-                        {
-                          name: mod.game.name,
-                          url: `https://games-arabic.com/games/${mod.game.slug}`,
-                        },
-                      ]
-                    : []),
-                  { name: mod.name, url: `https://games-arabic.com/mod/${mod.slug}` },
-                ],
-              ),
+              breadcrumbJsonLd([
+                { name: 'الرئيسية', url: 'https://games-arabic.com' },
+                ...(mod.game?.slug
+                  ? [
+                      {
+                        name: mod.game.name,
+                        url: `https://games-arabic.com/games/${mod.game.slug}`,
+                      },
+                    ]
+                  : []),
+                { name: mod.name, url: `https://games-arabic.com/mod/${mod.slug}` },
+              ]),
             ),
           }}
         />

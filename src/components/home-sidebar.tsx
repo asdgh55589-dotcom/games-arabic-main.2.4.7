@@ -1,12 +1,12 @@
 'use client'
 
-import { Download, Eye, Flame, Heart, ThumbsUp, Zap } from 'lucide-react'
+import { Flame, Heart, Zap } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 import { getModBadges, ModPerformanceBadge, ModTimeBadge } from '@/components/mod-badges'
+import { ModStatRow } from '@/components/mod-stat-row'
 import { PLATFORM_COLORS, PLATFORM_KEY_MAP } from '@/lib/constants/platforms'
-import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
 
 type SidebarVariant = 'latest' | 'trending' | 'topEndorsed'
@@ -72,52 +72,9 @@ function SidebarItem({
             <>
               <ModTimeBadge result={badges} />
               <ModPerformanceBadge result={badges} />
-              <span className="flex items-center gap-0.5" title="التحميلات">
-                <Download className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.downloads)}
-              </span>
-              <span className="flex items-center gap-0.5" title="المشاهدات">
-                <Eye className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.views)}
-              </span>
-              <span className="flex items-center gap-0.5" title="التأييدات">
-                <ThumbsUp className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.endorsements)}
-              </span>
             </>
           )}
-          {variant === 'trending' && (
-            <>
-              <span className="flex items-center gap-0.5" title="التحميلات">
-                <Download className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.downloads)}
-              </span>
-              <span className="flex items-center gap-0.5" title="المشاهدات">
-                <Eye className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.views)}
-              </span>
-              <span className="flex items-center gap-0.5" title="التأييدات">
-                <ThumbsUp className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.endorsements)}
-              </span>
-            </>
-          )}
-          {variant === 'topEndorsed' && (
-            <>
-              <span className="flex items-center gap-0.5" title="التحميلات">
-                <Download className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.downloads)}
-              </span>
-              <span className="flex items-center gap-0.5" title="المشاهدات">
-                <Eye className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.views)}
-              </span>
-              <span className="flex items-center gap-0.5" title="التأييدات">
-                <ThumbsUp className="h-3.5 w-3.5 text-blue-500" />
-                {formatNumber(mod.endorsements)}
-              </span>
-            </>
-          )}
+          <ModStatRow mod={mod} variant="sidebar" />
         </div>
       </div>
     </Link>

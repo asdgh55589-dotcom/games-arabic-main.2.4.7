@@ -55,7 +55,25 @@ export const GET = withRequestLogger(async (req: NextRequest, { params }: RouteP
             thumbnailUrl: true,
             downloads: true,
             endorsements: true,
+            views: true,
             createdAt: true,
+            updatedAt: true,
+            // شارات التمييز/الرائج/الشائع تعتمد على التواريخ + حقول Until
+            featuredLevel: true,
+            featuredUntil: true,
+            trendingUntil: true,
+            popularUntil: true,
+            hiddenBadges: true,
+            // حقول تقرأها بطاقة التعريب (ModCard) — بدونها كانت تعرض
+            // «—» للمشاهدات و«N/A» للمنصة و«Invalid Date» للتاريخ.
+            workflowStatus: true,
+            scheduledAt: true,
+            isOriginalWork: true,
+            originalAuthor: true,
+            translationTeam: true,
+            series: true,
+            game: { select: { platform: true, name: true } },
+            author: { select: { username: true, avatarUrl: true } },
           },
         },
         _count: {

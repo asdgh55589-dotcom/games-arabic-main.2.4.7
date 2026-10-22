@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { internalError, notFound, ok, rateLimited } from '@/lib/api-response'
-import { isBot, recordModView } from '@/lib/counters'
+import { isBot, isInternalRequest, recordModView } from '@/lib/counters'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -16,9 +16,14 @@ interface RouteParams {
 // وهذا المسار متاح للعملاء التي تريد تسجيل المشاهدات صراحة.
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'mods:view' })
-    if (!rl.success) {
-      return rateLimited()
+    // الطلب الداخلي من الخادم (ISR) يخرج من IP واحد مشترك لكل النسخ،
+    // وسلة الـ rate limit مرتبطة بـ IP فقط → نستثنيه منعاً لاستنزاف السلة.
+    const internal = isInternalRequest(req)
+    if (!internal) {
+      const rl = await rateLimit(req, { limit: 30, window: 60, keyPrefix: 'mods:view' })
+      if (!rl.success) {
+        return rateLimited()
+      }
     }
 
     const userAgent = req.headers.get('user-agent')
@@ -33,6 +38,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     })
     if (!mod) {
       return notFound('التعريب غير موجود')
+    }
+
+    // C1 — الطلب الداخلي لا يُسجَّل كمشاهدة، نُرجع العدّاد الحالي فقط.
+    if (internal) {
+      return ok({ counted: false, viewsCount: mod.views })
     }
 
     const result = await recordModView(mod.id, req, db)

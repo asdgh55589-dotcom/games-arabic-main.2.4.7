@@ -57,7 +57,7 @@ export function ProfileStats({
       <div className="grid grid-cols-3 gap-3">
         <HorizontalStatCard
           icon={<Eye className="h-4 w-4" />}
-          label="المشاهدات"
+          label="إجمالي المشاهدات"
           value={formatNumber(stats.totalViews)}
         />
         <HorizontalStatCard
@@ -72,7 +72,7 @@ export function ProfileStats({
         />
       </div>
 
-      {/* إحصائيات X — 6 صناديق (5 سابقة + عدد التعريبات) */}
+      {/* إحصائيات X — 5 صناديق (المشاهدات معروضة في صف الملخص أعلاه — مرة واحدة فقط) */}
       {hasTranslatorStats && xp && (
         <>
           <div className="pt-2">
@@ -97,12 +97,7 @@ export function ProfileStats({
               value={formatNumber(stats.totalEndorsements)}
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <HorizontalStatCard
-              icon={<Eye className="h-4 w-4" />}
-              label="إجمالي المشاهدات"
-              value={formatNumber(stats.totalViews)}
-            />
+          <div className="grid grid-cols-2 gap-3">
             <HorizontalStatCard
               icon={<Award className="h-4 w-4" />}
               label="الشارات المكتسبة"

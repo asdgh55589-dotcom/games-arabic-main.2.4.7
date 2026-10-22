@@ -6,7 +6,7 @@ jest.mock('@/lib/auth', () => ({
 }))
 
 import { getUserIdFromRequestCookies } from '@/lib/auth'
-import { isBot, recordDownload, recordModView, recordTeamView } from '@/lib/counters'
+import { hashIdentity, isBot, recordDownload, recordModView, recordTeamView } from '@/lib/counters'
 
 const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<
   typeof getUserIdFromRequestCookies
@@ -151,7 +151,9 @@ describe('recordDownload — dedup لكل رابط', () => {
     const clicks = db.downloadClick.create.mock.calls.map((c) => c[0].data)
     expect(clicks[0].fileId).toBe('f1')
     expect(clicks[0].userId).toBeNull()
-    expect(clicks[0].ipAddress).toBe('7.7.7.7')
+    // R30 — يُخزَّن معرّف مُجزّأ لا عنوان IP خاماً (GDPR).
+    expect(clicks[0].ipAddress).not.toBe('7.7.7.7')
+    expect(clicks[0].ipAddress).toBe(hashIdentity('7.7.7.7'))
   })
 
   it('المستخدم المسجل يظهر في سجل النقرات', async () => {

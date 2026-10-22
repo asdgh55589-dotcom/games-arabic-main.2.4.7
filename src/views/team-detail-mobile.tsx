@@ -1,6 +1,16 @@
 'use client'
 
-import { BadgeCheck, Download, Eye, Gamepad2, Layers, Link2, Users } from 'lucide-react'
+import {
+  BadgeCheck,
+  Download,
+  Eye,
+  Gamepad2,
+  Heart,
+  Layers,
+  Link2,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ModCard } from '@/components/mod-card'
@@ -137,11 +147,16 @@ export function TeamDetailMobile({
         ) : null}
       </div>
 
-      {/* 2. Stats row: grid grid-cols-3 gap-1 sm:gap-2 (أعضاء/تعريبات/تحميلات) — compact cells with border */}
+      {/* 2. Stats row: the single aggregate surface (mirror of the desktop header StatCells) —
+          members/mods/downloads/endorsements/views/followers. The stats tab below carries
+          NO numbers so every total is painted exactly once. */}
       <div className="mt-4 grid grid-cols-3 gap-1 sm:gap-2 px-3 sm:px-4">
         <StatCellMobile label="أعضاء" value={team.stats.memberCount} icon={Users} />
         <StatCellMobile label="تعريبات" value={team.stats.modCount} icon={Gamepad2} />
         <StatCellMobile label="تحميلات" value={team.stats.totalDownloads} icon={Download} />
+        <StatCellMobile label="إعجابات" value={team.stats.totalEndorsements} icon={Heart} />
+        <StatCellMobile label="مشاهدات" value={team.stats.totalViews} icon={Eye} />
+        <StatCellMobile label="متابعون" value={team.stats.followersCount} icon={UserPlus} />
       </div>
 
       {/* 3. Tabs (تعريبات/أعضاء): overflow-x-auto whitespace-nowrap border-b, using TEAM_TABS */}
@@ -416,47 +431,12 @@ function OverviewTabMobile({ team }: { team: TeamDetail }) {
 }
 
 function StatsTabMobile({ team }: { team: TeamDetail }) {
+  // نفس كتلة الديسكتوب الأولى في تبويب الإحصائيات: قائمة الأعضاء والمساهمات.
+  // الأرقام كلها في شريط الإحصائيات أعلى الصفحة (surface واحد) — لا تكرار هنا.
   return (
     <div className="space-y-2 rounded-lg border bg-card p-4">
-      <h3 className="break-words text-sm font-bold">إحصائيات الفريق</h3>
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">التعريبات</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.modCount)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">الأعضاء</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.memberCount)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">التحميلات</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.totalDownloads)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">الإعجابات</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.totalEndorsements)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">المشاهدات</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.totalViews)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 border-b py-2">
-          <span className="break-words text-muted-foreground">المتابعون</span>
-          <span className="break-words font-bold tabular-nums">
-            {formatNumber(team.stats.followersCount)}
-          </span>
-        </div>
-      </div>
+      <h3 className="break-words text-sm font-bold">قائمة الأعضاء والمساهمات</h3>
+      <MembersTabMobile team={team} />
     </div>
   )
 }

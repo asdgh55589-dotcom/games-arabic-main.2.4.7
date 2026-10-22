@@ -12,7 +12,8 @@ jest.mock('@/lib/auth', () => ({
 const mockMod = { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn(), count: jest.fn() }
 const mockSettings = { findUnique: jest.fn(), upsert: jest.fn() }
 const mockAudit = { create: jest.fn() }
-const mockClicks = { groupBy: jest.fn(), count: jest.fn() }
+const mockClicks = { groupBy: jest.fn(), count: jest.fn(), deleteMany: jest.fn() }
+const mockTransaction = jest.fn()
 jest.mock('@/lib/db', () => ({
   db: {
     mod: {
@@ -33,7 +34,10 @@ jest.mock('@/lib/db', () => ({
     downloadClick: {
       groupBy: (...a: unknown[]) => mockClicks.groupBy(...a),
       count: (...a: unknown[]) => mockClicks.count(...a),
+      deleteMany: (...a: unknown[]) => mockClicks.deleteMany(...a),
     },
+    // reset-counter runs the DownloadClick delete + the counter restore atomically
+    $transaction: (...a: unknown[]) => mockTransaction(...a),
   },
 }))
 
@@ -72,6 +76,8 @@ beforeEach(() => {
   mockMod.findUnique.mockResolvedValue({ ...BASE_MOD })
   mockSettings.findUnique.mockResolvedValue(null)
   mockAudit.create.mockResolvedValue({})
+  mockClicks.deleteMany.mockResolvedValue({ count: 3 })
+  mockTransaction.mockImplementation(async (ops: unknown[]) => Promise.all(ops))
 })
 
 describe('PUT /api/admin/badges/[modId]', () => {
@@ -180,6 +186,29 @@ describe('PUT /api/admin/badges/[modId]', () => {
     })
     expect(mockAudit.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ action: 'RESET_COUNTER', oldValue: '10' }),
+    })
+  })
+
+  it('resets the counter to the baseline and clears the DownloadClick rows', async () => {
+    mockMod.update.mockResolvedValue({})
+    // the baseline read selects ONLY `downloadsBaseline`
+    mockMod.findUnique.mockImplementation((args: { select?: Record<string, unknown> }) => {
+      if (args?.select && 'downloadsBaseline' in args.select) {
+        return Promise.resolve({ downloadsBaseline: 777 })
+      }
+      return Promise.resolve({ ...BASE_MOD })
+    })
+
+    const res = await badgePUT(
+      putReq('http://localhost/api/admin/badges/mod-1', { op: 'reset-counter' }),
+      paramsOf('mod-1'),
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockClicks.deleteMany).toHaveBeenCalledWith({ where: { modId: 'mod-1' } })
+    expect(mockMod.update).toHaveBeenCalledWith({
+      where: { id: 'mod-1' },
+      data: expect.objectContaining({ downloads: 777, dailyDownloads: 0 }),
     })
   })
 

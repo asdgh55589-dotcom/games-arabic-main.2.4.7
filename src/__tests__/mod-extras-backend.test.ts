@@ -46,7 +46,12 @@ jest.mock('@/lib/db', () => ({
 }))
 
 jest.mock('@/lib/error-reporting', () => ({ reportError: jest.fn() }))
-jest.mock('@/lib/counters', () => ({ recordModView: jest.fn().mockResolvedValue(undefined) }))
+// C1 — المسار يستدعي isInternalRequest لتخطّي تسجيل المشاهدة في طلبات ISR
+// الداخلية؛ نُعيد false افتراضياً (طلب خارجي) حتى لا يتأثر الاختبار.
+jest.mock('@/lib/counters', () => ({
+  recordModView: jest.fn().mockResolvedValue(undefined),
+  isInternalRequest: jest.fn().mockReturnValue(false),
+}))
 
 import { GET as modGET } from '@/app/api/mods/[slug]/route'
 import { POST as siteLinkPOST } from '@/app/api/admin/mod-site-links/route'
