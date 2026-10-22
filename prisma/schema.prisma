@@ -1,6 +1,28 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// ===== Statistics integrity (baseline vs. real) =====
+// The counters (Mod.views / Mod.downloads / Mod.endorsements, Game.totalDownloads /
+// Game.totalEndorsements, Series.totalDownloads / Series.totalEndorsements) are a SUM of
+// two parts:
+//   * the BASELINE — the seeded / fabricated portion that was planted when the dataset
+//     was created (scripts/seed.ts). It exists so the site never looks "dead".
+//     The baseline is ONLY the fabricated part: baseline := counter - COUNT(detail rows)
+//     (see migration 20261021000000_stats_baseline_and_dedup), so the displayed numbers
+//     do not move when the baseline is introduced.
+//   * the REAL portion — the number of actual detail rows:
+//       Mod.views        == Mod.viewsBaseline        + COUNT(ModView   WHERE modId)
+//       Mod.downloads    == Mod.downloadsBaseline    + COUNT(DownloadClick WHERE modId)
+//       Mod.endorsements == Mod.endorsementsBaseline + COUNT(Endorsement WHERE modId
+//                                                            AND value IN ('fire','sparkle','thumbsup'))
+//     `thumbsdown` is a NEGATIVE reaction and is therefore NOT an endorsement.
+//   => real value = counter - baseline.
+// The invariant is enforced/repaired by src/lib/stats-reconcile.ts (cron route
+// /api/cron/reconcile-stats) and by src/lib/game-helpers.ts (syncGameCounts).
+// The Game baselines are the SUM of the baselines of the game's PUBLISHED mods
+// (same scope as Game.totalDownloads); the Series baselines are the SUM of the
+// baselines of the series' mods (same scope as Series.totalDownloads).
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -267,7 +289,15 @@ model Game {
   releaseYear       Int
   modCount          Int        @default(0)
   totalDownloads    Int        @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي تحميلات mods هذه اللعبة.
+  /// الجزء الحقيقي = SUM(Mod.downloads - Mod.downloadsBaseline) عبر mods المنشورة فقط.
+  /// يُعاد حسابه بواسطة syncGameCounts / مهمة المصالحة (reconcile-stats).
+  totalDownloadsBaseline    Int        @default(0)
   totalEndorsements Int        @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي تزكيات ألعاب هذه اللعبة.
+  /// القيمة الحقيقية = SUM(Mod.endorsements - Mod.endorsementsBaseline)
+  /// عبر mods المنشورة فقط.
+  totalEndorsementsBaseline Int        @default(0)
   featured          Boolean    @default(false)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
@@ -318,12 +348,22 @@ model Mod {
   fileSize             String
   fileFormat           String // 7z | zip | rar
   downloads            Int                   @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي التحميلات (القيمة عند زرع البيانات).
+  /// الجزء الحقيقي = downloads - downloadsBaseline.
+  downloadsBaseline    Int                   @default(0)
   endorsements         Int                   @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي التزكيات (القيمة عند زرع البيانات).
+  /// endorsements تُحسب من التزكيات الإيجابية فقط (fire|sparkle|thumbsup) —
+  /// thumbsdown ليس إعجاباً. الجزء الحقيقي = endorsements - endorsementsBaseline.
+  endorsementsBaseline Int                   @default(0)
   reactionFire         Int                   @default(0)
   reactionSparkle      Int                   @default(0)
   reactionThumbsUp     Int                   @default(0)
   reactionThumbsDown   Int                   @default(0)
   views                Int                   @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي المشاهدات (القيمة عند زرع البيانات).
+  /// الجزء الحقيقي = views - viewsBaseline.
+  viewsBaseline        Int                   @default(0)
   comments             Int                   @default(0)
   rating               Float                 @default(0)
   ratingCount          Int                   @default(0)
@@ -695,7 +735,14 @@ model Series {
   order             Int      @default(0)
   modCount          Int      @default(0)
   totalDownloads    Int      @default(0)
+/// الجزء المُبذَّر/المُلفَّق من إجمالي تحميلات mods هذه السلسلة.
+  /// الجزء الحقيقي = SUM(Mod.downloads - Mod.downloadsBaseline) عبر mods السلسلة.
+  totalDownloadsBaseline    Int      @default(0)
   totalEndorsements Int      @default(0)
+  /// الجزء المُبذَّر/المُلفَّق من إجمالي تزكيات mods هذه السلسلة.
+  /// القيمة الحقيقية = SUM(Mod.endorsements - Mod.endorsementsBaseline)
+  /// عبر mods السلسلة.
+  totalEndorsementsBaseline Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   mods              Mod[]
@@ -1515,6 +1562,7 @@ model Section {
 }
 
 // ===== نقرات التحميل (تتبع روابط الخارجية) =====
+// ipAddress: خزّن الآن معرّفاً مُجزَّأً (hashed guest identifier) وليس عنوان IP خاماً.
 model DownloadClick {
   id        String   @id @default(cuid())
   modId     String
@@ -1523,14 +1571,22 @@ model DownloadClick {
   linkId    String?
   linkUrl   String // الرابط الخارجي الذي تم النقر عليه
   userId    String? // null للزوار المجهولين
+  /// معرّف الزائر المُجزَّأ (hashIdentity) — وليس عنوان IP خاماً.
   ipAddress String?
   userAgent String?
   referrer  String?
   createdAt DateTime @default(now())
+  /// منتصف ليل UTC (بتوقيت UTC) ل يوم الحدث — يسمح بعدّ الزائر مرة واحدة لكل mod لكل يوم.
+  dayBucket DateTime?
 
   @@index([modId])
   @@index([createdAt])
   @@index([createdAt, modId])
+  /// المستخدم المسجَّل: (modId, userId, dayBucket) — واحد لكل mod لكل يوم.
+  /// Postgres يعتبر NULLs متمايزة، لذا يحتاج الضيف مؤشراً منفصلاً بالـ ipAddress.
+  @@unique([modId, userId, dayBucket])
+  /// الزائر غير المسجَّل: (modId, ipAddress, dayBucket) — واحد لكل mod لكل يوم.
+  @@unique([modId, ipAddress, dayBucket])
 }
 
 // ===== إعدادات نظام الشارات (صف واحد، القيم الافتراضية عند غيابه) =====
@@ -1561,20 +1617,29 @@ model BadgeAuditLog {
 }
 
 // ===== مشاهدات التعريبات (صف لكل مشاهدة فريدة بعد dedup عبر Redis) =====
+// ipAddress: خزّن الآن معرّفاً مُجزَّأً (hashed guest identifier) وليس عنوان IP خاماً.
 model ModView {
   id        String   @id @default(cuid())
   modId     String
   mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
   userId    String? // null للزوار المجهولين
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// معرّف الزائر المُجزَّأ (hashIdentity) — وليس عنوان IP خاماً.
   ipAddress String?
   userAgent String?
   viewedAt  DateTime @default(now())
+  /// منتصف ليل UTC (بتوقيت UTC) ل يوم الحدث — يسمح بعدّ الزائر مرة واحدة لكل mod لكل يوم.
+  dayBucket DateTime?
 
   @@index([modId])
   @@index([userId])
   @@index([viewedAt])
   @@index([modId, viewedAt])
+  /// المستخدم المسجَّل: (modId, userId, dayBucket) — واحد لكل mod لكل يوم.
+  /// Postgres يعتبر NULLs متمايزة، لذا يحتاج الضيف مؤشراً منفصلاً بالـ ipAddress.
+  @@unique([modId, userId, dayBucket])
+  /// الزائر غير المسجَّل: (modId, ipAddress, dayBucket) — واحد لكل mod لكل يوم.
+  @@unique([modId, ipAddress, dayBucket])
 }
 
 // ===== Wave B Task 5 — فتحات قسم التعليقات (funnel: view → download → comment-click) =====

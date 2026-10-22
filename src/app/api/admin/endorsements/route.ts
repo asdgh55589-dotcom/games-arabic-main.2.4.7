@@ -31,10 +31,17 @@ export async function GET(req: NextRequest) {
     ])
 
     // إحصائيات (مفلترة حسب modId لو موجود)
-    const statsWhere = modId ? { modId } : {}
-    const [upCount, downCount, topMods] = await Promise.all([
-      db.endorsement.count({ where: { ...statsWhere, value: 'up' } }),
-      db.endorsement.count({ where: { ...statsWhere, value: 'down' } }),
+    //
+    // المفردات الحقيقية للتفاعل (4 أنواع): fire | sparkle | thumbsup | thumbsdown
+    // (القيم القديمة 'up'/'down' لم تعد تُكتب — التطبيع في مخطط البيانات).
+    // thumbsdown ليس إعجاباً: likes = fire + sparkle + thumbsup فقط.
+    const statsWhere: { modId?: string } = modId ? { modId } : {}
+    const [grouped, topMods] = await Promise.all([
+      db.endorsement.groupBy({
+        by: ['value'],
+        where: statsWhere,
+        _count: { value: true },
+      }),
       db.mod.findMany({
         orderBy: { endorsements: 'desc' },
         take: 10,
@@ -42,10 +49,32 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
+    const countByValue = new Map<string, number>(grouped.map((g) => [g.value, g._count.value]))
+    const fire = countByValue.get('fire') ?? 0
+    const sparkle = countByValue.get('sparkle') ?? 0
+    const thumbsup = countByValue.get('thumbsup') ?? 0
+    const thumbsdown = countByValue.get('thumbsdown') ?? 0
+    const likes = fire + sparkle + thumbsup
+    const reactionTotal = likes + thumbsdown
+
     return okPaginated(
       {
         endorsements,
-        stats: { up: upCount, down: downCount, total: upCount + downCount },
+        stats: {
+          //Reaction breakdown (the real 4-type vocabulary)
+          fire,
+          sparkle,
+          thumbsup,
+          thumbsdown,
+          // Positive reactions only — thumbsdown is NOT a like
+          likes,
+          // All four reaction types
+          total: reactionTotal,
+          // Legacy aliases kept for the existing admin panel:
+          // "up" = positive reactions, "down" = negative reactions
+          up: likes,
+          down: thumbsdown,
+        },
         topMods,
       },
       { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },

@@ -107,11 +107,8 @@ export function ModDetailPage() {
   const [tab, setTab] = useState('description')
   const [userReaction, setUserReaction] = useState<string | null>(null)
   const [reactions, setReactions] = useState<{ fire: number; sparkle: number; thumbsup: number; thumbsdown: number }>({ fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 })
-  const [downloadCount, setDownloadCount] = useState<number | null>(null)
-  const [downloading, setDownloading] = useState(false)
   const [activeImage, setActiveImage] = useState(0)
   const { toast } = useToast()
-  const downloadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const galleryScrollRef = useRef<HTMLDivElement>(null)
 
   const { data, loading, refetch } = useFetch<{ data: ModDetail }>(
@@ -126,18 +123,8 @@ export function ModDetailPage() {
     setActiveImage(0)
     setUserReaction(null)
     setReactions({ fire: 0, sparkle: 0, thumbsup: 0, thumbsdown: 0 })
-    setDownloadCount(null)
     setHasReported(false)
   }
-
-  useEffect(() => {
-    return () => {
-      if (downloadTimeoutRef.current) {
-        clearTimeout(downloadTimeoutRef.current)
-        downloadTimeoutRef.current = null
-      }
-    }
-  }, [])
 
   const mod = data?.data
   useDocumentTitle(mod?.name ?? null)
@@ -210,7 +197,7 @@ export function ModDetailPage() {
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
 
   const shownEndorsements = mod?.endorsements ?? 0
-  const shownDownloads = downloadCount ?? mod?.downloads ?? 0
+  const shownDownloads = mod?.downloads ?? 0
   const shownViews = mod?.views ?? 0
 
   const { isBookmarked, toggleBookmark, registerModIds } = useBookmarks()
@@ -358,35 +345,6 @@ export function ModDetailPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'تعذر تحديث الإعجاب'
       toast({ title: 'خطأ', description: message, variant: 'destructive' })
-    }
-  }
-
-  const onDownload = async () => {
-    if (!mod || downloading) return
-    setDownloading(true)
-    try {
-      const result = await apiFetch<{ data: { downloads: number } }>(
-        `/api/mods/${mod.slug}/download`,
-        { method: 'POST' },
-      )
-      setDownloadCount(result.data.downloads)
-      toast({
-        title: 'Download started',
-        description: `${mod.name} v${mod.version} (${mod.fileSize})`,
-      })
-      if (downloadTimeoutRef.current) clearTimeout(downloadTimeoutRef.current)
-      downloadTimeoutRef.current = setTimeout(() => {
-        setDownloading(false)
-        toast({
-          title: 'Download complete',
-          description: `${formatNumber(result.data.downloads)} total downloads`,
-        })
-        downloadTimeoutRef.current = null
-      }, 2000)
-    } catch (err) {
-      setDownloading(false)
-      const message = err instanceof Error ? err.message : 'Download failed'
-      toast({ title: 'Error', description: message, variant: 'destructive' })
     }
   }
 
@@ -833,13 +791,16 @@ export function ModDetailPage() {
                   </span>
                   <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
 
-                  {/* التحميلات */}
+                  {/* التحميلات — إجمالي كل الملفات (شيبات الملفات تحت تخصّ ملفاً واحداً) */}
                   <span className="flex items-center gap-1.5 whitespace-nowrap">
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-none border-2 border-border bg-card shadow-[2px_2px_0_0_var(--border)] text-sky-500">
                       <BarChart3 className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                      التحميلات
+                    <span
+                      className="text-[10px] font-black uppercase tracking-wider text-foreground/60"
+                      title="كل الملفات"
+                    >
+                      إجمالي التحميلات
                     </span>
                     <span className="text-border font-black">|</span>
                     <span className="text-xs font-black tabular-nums text-gold">

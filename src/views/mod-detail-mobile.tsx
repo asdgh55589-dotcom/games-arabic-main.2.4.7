@@ -627,7 +627,12 @@ export function ModDetailMobile({
             <Download className="h-3 w-3" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[9px] font-black tracking-widest text-foreground/60">تحميلات</div>
+            <div
+              className="truncate text-[9px] font-black tracking-widest text-foreground/60"
+              title="كل الملفات"
+            >
+              إجمالي التحميلات
+            </div>
             <div className="text-[11px] font-black tabular-nums leading-none text-foreground">
               {formatNumber(mod.downloads ?? 0)}
             </div>

@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
       totalDownloads,
       prevDownloads,
       totalComments,
-      likesAgg,
+      totalLikes,
       newModsThisPeriod,
       activeModsCount,
       totalCommentClicks,
@@ -96,17 +96,30 @@ export async function GET(req: NextRequest) {
       db.modComment.count({
         where: { mod: { authorId: user.id }, createdAt: { gte: start } },
       }),
-      db.mod.aggregate({
-        where: { authorId: user.id },
-        _sum: { endorsements: true },
+      // R14 — الإعجابات من صفوف Endorsement (وليس SUM(Mod.endorsements)).
+      // 'thumbsdown' ليس إعجاباً — يُستبعد ويُعرض منفصلاً في صفحة الإعجابات.
+      db.endorsement.count({
+        where: { mod: { authorId: user.id }, value: { not: 'thumbsdown' } },
       }),
       db.mod.count({ where: { authorId: user.id, createdAt: { gte: start } } }),
       db.mod.count({ where: { authorId: user.id, workflowStatus: 'PUBLISHED' } }),
       db.commentSectionClick.count({ where: cscWhere }),
       db.commentSectionClick.count({ where: cscPrevWhere }),
-      db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: start } } }),
-      db.endorsement.count({ where: { mod: { authorId: user.id }, createdAt: { gte: prevStart, lt: start } } }),
-       db.news.findMany({ where: { authorId: user.id, visible: true, publishAt: { lte: now } }, select: { id: true } }),
+      db.endorsement.count({
+        where: {
+          mod: { authorId: user.id },
+          createdAt: { gte: start },
+          value: { not: 'thumbsdown' },
+        },
+      }),
+      db.endorsement.count({
+        where: {
+          mod: { authorId: user.id },
+          createdAt: { gte: prevStart, lt: start },
+          value: { not: 'thumbsdown' },
+        },
+      }),
+      db.news.findMany({ where: { authorId: user.id, visible: true, publishAt: { lte: now } }, select: { id: true } }),
     ])
 
     const newsIdList = newsIds.map((n) => n.id)
@@ -128,7 +141,8 @@ export async function GET(req: NextRequest) {
         totalDownloads,
         downloadsChange: changeRate(totalDownloads, prevDownloads),
         totalComments,
-        totalLikes: likesAgg._sum.endorsements ?? 0,
+        // R14 — إجمالي الإعجابات مدى الحياة من صفوف Endorsement (بلا thumbsdown)
+        totalLikes,
         newModsThisPeriod,
         activeModsCount,
         // Wave B Task 5 — funnel step 3 (comment-section opens).

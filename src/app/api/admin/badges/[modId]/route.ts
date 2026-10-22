@@ -18,6 +18,35 @@ interface BadgeOpBody {
 
 const HOUR_MS = 60 * 60 * 1000
 
+/**
+ * Read the seeded `downloadsBaseline` of a mod (defensive).
+ *
+ * The invariant every read surface relies on is:
+ *   Mod.downloads == Mod.downloadsBaseline + count(DownloadClick where modId)
+ * `reset-counter` therefore restores the BASELINE (not 0) and removes the
+ * counted DownloadClick rows — otherwise the header total and the per-file
+ * chips would disagree forever.
+ *
+ * The column is read defensively: if the migration has not been applied yet
+ * the read fails and we fall back to 0 (pre-migration behaviour) instead of
+ * breaking every other badge operation.
+ */
+async function readDownloadsBaseline(modId: string): Promise<number> {
+  try {
+    const row = await db.mod.findUnique({
+      where: { id: modId },
+      select: { downloadsBaseline: true },
+    })
+    return row?.downloadsBaseline ?? 0
+  } catch (err) {
+    logger.warn(
+      { event: 'badge_reset_baseline_unavailable', action: 'reset_counter', modId, err },
+      'downloadsBaseline unavailable — resetting counter to 0 (schema migration pending?)',
+    )
+    return 0
+  }
+}
+
 // PUT /api/admin/badges/[modId] — تحكم كامل بالأدمن في شارات الأداء فقط.
 // شارات الوقت نظامية ولا يمكن التحكم بها من هنا.
 export async function PUT(
@@ -52,12 +81,18 @@ export async function PUT(
     // ---- Reset download counter ----
     if (op === 'reset-counter') {
       const old = String(mod.downloads)
-      await db.mod.update({
-        where: { id: modId },
-        data: { downloads: 0, dailyDownloads: 0, lastDownloadDate: now },
-      })
-      await audit('RESET_COUNTER', old, '0')
-      return ok({ ok: true })
+      const baseline = await readDownloadsBaseline(modId)
+      // حذف صفوف DownloadClick + إعادة العداد إلى الأساس — يحافظ على التكافؤ:
+      // downloads == downloadsBaseline + count(DownloadClick)
+      await db.$transaction([
+        db.downloadClick.deleteMany({ where: { modId } }),
+        db.mod.update({
+          where: { id: modId },
+          data: { downloads: baseline, dailyDownloads: 0, lastDownloadDate: now },
+        }),
+      ])
+      await audit('RESET_COUNTER', old, String(baseline))
+      return ok({ ok: true, downloads: baseline })
     }
 
     const badge = body.badge

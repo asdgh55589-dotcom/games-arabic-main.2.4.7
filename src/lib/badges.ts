@@ -337,18 +337,14 @@ export async function logBadgeChange(
   }
 }
 
-function isSameUtcDay(a: Date | null, b: Date): boolean {
-  if (!a) return false
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  )
-}
-
 /**
  * تحديث تدريجي عند كل تحميل محسوب — يُستدعى بعد recordDownload.
- * يزامن العداد اليومي ويمنح الشارات فور تجاوز العتبات.
+ *
+ * المصدر الوحيد لعدد تحميلات آخر 24 ساعة هو جدول `DownloadClick`
+ * (نفس المصدر الذي تستخدمه إعادة الحساب في /api/admin/badges/recalculate).
+ * `Mod.dailyDownloads` يُكتب هنا كقيمة مخزَّنة (mirror) للعرض فقط — ولا يُستخدم
+ * أبداً كأساس لأي قرار شارة.
+ *
  * Best-effort: لا يرمي أبداً ولا يكسر مسار العدّ.
  */
 export async function refreshBadgesOnDownload(
@@ -367,50 +363,50 @@ export async function refreshBadgesOnDownload(
         trendingUntil: true,
         popularUntil: true,
         hiddenBadges: true,
-        dailyDownloads: true,
-        lastDownloadDate: true,
       },
     })
     if (!mod) return
 
     const settings = await getBadgeSettings(db)
-    const lastDate = toDate(mod.lastDownloadDate)
-    const newDaily = isSameUtcDay(lastDate, now) ? (mod.dailyDownloads ?? 0) + 1 : 1
+    // المصدر الوحيد: صفوف DownloadClick خلال آخر 24 ساعة.
+    const downloadsLast24h = await countDownloadsLast24h(db, modId, now)
     const nowMs = now.getTime()
 
     const data: Record<string, unknown> = {
-      dailyDownloads: newDaily,
+      // قيمة مخزَّنة فقط (لا تُستخدم في قرارات الشارات) — تطابق ما تكتبه
+      // إعادة الحساب، فيتّفق المساران على نفس القيمة.
+      dailyDownloads: downloadsLast24h,
       lastDownloadDate: now,
     }
 
     if (settings.badgesEnabled !== false) {
       // Trending فوري
       const trendingActive = !!toDate(mod.trendingUntil) && (toDate(mod.trendingUntil) as Date).getTime() > nowMs
-      if (newDaily >= settings.trendingThreshold && !trendingActive) {
+      if (downloadsLast24h >= settings.trendingThreshold && !trendingActive) {
         const until = new Date(nowMs + TRENDING_BADGE_DURATION_HOURS * HOUR_MS)
         data.trendingUntil = until
         data.isTrending = true
         await logBadgeChange(db, {
           modId,
           action: 'AUTO_TRENDING',
-          oldValue: `daily=${newDaily}`,
+          oldValue: `downloads24h=${downloadsLast24h}`,
           newValue: `until=${until.toISOString()}`,
         })
       }
       // Popular فوري
       const popularActive = !!toDate(mod.popularUntil) && (toDate(mod.popularUntil) as Date).getTime() > nowMs
-      if (newDaily >= settings.popularThreshold && !popularActive) {
+      if (downloadsLast24h >= settings.popularThreshold && !popularActive) {
         const until = new Date(nowMs + POPULAR_BADGE_DURATION_HOURS * HOUR_MS)
         data.popularUntil = until
         await logBadgeChange(db, {
           modId,
           action: 'AUTO_POPULAR',
-          oldValue: `daily=${newDaily}`,
+          oldValue: `downloads24h=${downloadsLast24h}`,
           newValue: `until=${until.toISOString()}`,
         })
       }
       // Featured فوري (مستويات)
-      const qualified = tierForDownloads(newDaily, settings.featuredTiers)
+      const qualified = tierForDownloads(downloadsLast24h, settings.featuredTiers)
       const currentUntil = toDate(mod.featuredUntil)
       const currentActive =
         mod.featuredLevel != null && !!currentUntil && currentUntil.getTime() > nowMs
@@ -422,7 +418,7 @@ export async function refreshBadgesOnDownload(
         await logBadgeChange(db, {
           modId,
           action: 'AUTO_FEATURED',
-          oldValue: `daily=${newDaily}`,
+          oldValue: `downloads24h=${downloadsLast24h}`,
           newValue: `level=${qualified.level} until=${until.toISOString()}`,
         })
       }

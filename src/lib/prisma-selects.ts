@@ -55,8 +55,13 @@ export const modCardSelect = {
   fileSize: true,
   fileFormat: true,
   downloads: true,
+  // baseline = الجزء المُبذَّر/المُلفَّق من العدّاد (زرع البيانات).
+  // الجزء الحقيقي = counter - baseline (يُستخدم لعرض/تدقيق الإحصائيات).
+  downloadsBaseline: true,
   endorsements: true,
+  endorsementsBaseline: true,
   views: true,
+  viewsBaseline: true,
   comments: true,
   rating: true,
   ratingCount: true,

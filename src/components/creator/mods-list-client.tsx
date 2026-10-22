@@ -41,6 +41,7 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { formatNumber } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import type { StudioDict } from '@/lib/studio-i18n/types'
 import { cn } from '@/lib/utils'
@@ -412,10 +413,10 @@ function ModCard({
             {mod.workflowStatus === 'PUBLISHED' && (
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" /> {(mod.views || 0).toLocaleString(tag)}
+                  <Eye className="h-4 w-4" /> {formatNumber(mod.views || 0)}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Download className="h-4 w-4" /> {(mod.downloads || 0).toLocaleString(tag)}
+                  <Download className="h-4 w-4" /> {formatNumber(mod.downloads || 0)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500" /> {(mod.rating || 0).toFixed(1)}

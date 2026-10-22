@@ -719,15 +719,6 @@ function StatsTab({ team }: { team: TeamDetail }) {
                   <th className="px-4 py-2.5 text-center text-xs font-bold text-slate-400">
                     المنصة
                   </th>
-                  <th className="px-4 py-2.5 text-center text-xs font-bold text-slate-400">
-                    التحميلات
-                  </th>
-                  <th className="px-4 py-2.5 text-center text-xs font-bold text-slate-400">
-                    الإعجابات
-                  </th>
-                  <th className="px-4 py-2.5 text-center text-xs font-bold text-slate-400">
-                    المشاهدات
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -749,34 +740,9 @@ function StatsTab({ team }: { team: TeamDetail }) {
                     <td className="px-4 py-2.5 text-center text-xs text-slate-400">
                       {m.game?.platform || '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-300">
-                      {formatNumber(m.downloads)}
-                    </td>
-                    <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-300">
-                      {formatNumber(m.endorsements)}
-                    </td>
-                    <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-300">
-                      {formatNumber(m.views)}
-                    </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr className="border-t border-slate-600 bg-slate-800/50 font-bold">
-                  <td className="px-4 py-2.5" colSpan={4}>
-                    <span className="text-xs text-slate-300">الإجمالي</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-100">
-                    {formatNumber(team.stats.totalDownloads)}
-                  </td>
-                  <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-100">
-                    {formatNumber(team.stats.totalEndorsements)}
-                  </td>
-                  <td className="px-4 py-2.5 text-center font-mono text-xs tabular-nums text-slate-100">
-                    {formatNumber(team.stats.totalViews)}
-                  </td>
-                </tr>
-              </tfoot>
             </table>
           </div>
         </div>

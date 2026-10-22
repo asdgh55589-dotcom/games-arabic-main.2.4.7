@@ -288,8 +288,14 @@ async function main() {
           fileSize: ms.size,
           fileFormat: ms.fmt,
           downloads: ms.dl,
+          // baseline = الجزء المُبذَّر من العدّاد. القاعدة: baseline = counter
+          // - COUNT(rows). سكربت البذر لا ينشئ صفوف ModView/DownloadClick/Endorsement
+          // إطلاقاً، إذن baseline = counter هنا (الجزء الحقيقي = 0).
+          downloadsBaseline: ms.dl,
           endorsements: ms.end,
+          endorsementsBaseline: ms.end,
           views: ms.views,
+          viewsBaseline: ms.views,
           comments: COMMENTS_DATA.length + COMMENTS_DATA.reduce((s, c) => s + (c.replies?.length || 0), 0),
           rating: 4.0 + (i % 10) * 0.05,
           ratingCount: Math.floor(ms.end * 0.3),
@@ -371,7 +377,18 @@ async function main() {
   console.log('Updating game aggregates...')
   for (const game of Object.values(games)) {
     const agg = await db.mod.aggregate({ where: { gameId: game.id }, _sum: { downloads: true, endorsements: true }, _count: true })
-    await db.game.update({ where: { id: game.id }, data: { modCount: agg._count, totalDownloads: agg._sum.downloads || 0, totalEndorsements: agg._sum.endorsements || 0 } })
+    await db.game.update({
+      where: { id: game.id },
+      data: {
+        modCount: agg._count,
+        totalDownloads: agg._sum.downloads || 0,
+        totalEndorsements: agg._sum.endorsements || 0,
+        // baseline = الجزء المُبذَّر — الجزء الحقيقي = counter - baseline.
+        // السكربت لا ينشئ صفوف تفاصيل، فbaseline == counter.
+        totalDownloadsBaseline: agg._sum.downloads || 0,
+        totalEndorsementsBaseline: agg._sum.endorsements || 0,
+      },
+    })
   }
   for (const team of teams) {
     const count = await db.mod.count({ where: { teamId: team.id } })

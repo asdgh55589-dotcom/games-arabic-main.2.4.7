@@ -16,19 +16,27 @@ interface AnalyticsSummary {
   totalDownloads: number
   downloadsChange: number | null
   totalComments: number
+  /** إجمالي الإعجابات مدى الحياة — من صفوف Endorsement (بلا thumbsdown). */
+  totalLikes: number
+  /** إعجابات الفترة المختارة — من صفوف Endorsement (بلا thumbsdown). */
+  periodLikes: number
+  periodLikesChange: number | null
   funnel?: { viewToDownloadPct: number; downloadToClickPct: number }
 }
 
+/**
+ * إجماليات مدى الحياة — كلها من صفوف السجلات (ModView / DownloadClick /
+ * ModComment) لا من مجاميع العدّادات، لذلك كل رقم قابل للتدقيق.
+ */
 interface StatsTotals {
   totalMods: number
   published: number
   drafts: number
   pending: number
   rejected: number
-  totalViews: number
-  totalDownloads: number
-  totalEndorsements: number
-  totalComments: number
+  allTimeViews: number
+  allTimeDownloads: number
+  allTimeComments: number
   averageRating: number
 }
 
@@ -133,6 +141,9 @@ export function StatsClient() {
                 <div className="text-xs" dir="ltr">
                   {summary?.viewsChange === null ? 'جديد' : `${(summary?.viewsChange ?? 0) >= 0 ? '+' : ''}${summary?.viewsChange ?? 0}%`}
                 </div>
+                <div className="text-muted-foreground text-xs">
+                  {t.lifetime}: {formatNumber(totals.allTimeViews)}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -144,6 +155,9 @@ export function StatsClient() {
                 <div className="text-xs" dir="ltr">
                   {summary?.downloadsChange === null ? 'جديد' : `${(summary?.downloadsChange ?? 0) >= 0 ? '+' : ''}${summary?.downloadsChange ?? 0}%`}
                 </div>
+                <div className="text-muted-foreground text-xs">
+                  {t.lifetime}: {formatNumber(totals.allTimeDownloads)}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -151,9 +165,12 @@ export function StatsClient() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">{t.endorsements}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(totals.totalEndorsements)}</div>
-                <div className="text-xs text-muted-foreground">
-                  {t.avgRating}: {totals.averageRating}
+                <div className="text-2xl font-bold">{formatNumber(summary?.periodLikes ?? 0)}</div>
+                <div className="text-xs" dir="ltr">
+                  {summary?.periodLikesChange === null ? 'جديد' : `${(summary?.periodLikesChange ?? 0) >= 0 ? '+' : ''}${summary?.periodLikesChange ?? 0}%`}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {t.lifetime}: {formatNumber(summary?.totalLikes ?? 0)}
                 </div>
               </CardContent>
             </Card>
@@ -162,9 +179,9 @@ export function StatsClient() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">{t.comments}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(summary?.totalComments ?? totals.totalComments)}</div>
-                <div className="text-xs text-muted-foreground" dir="ltr">
-                  {t.lifetime}: {formatNumber(totals.totalComments)}
+                <div className="text-2xl font-bold">{formatNumber(summary?.totalComments ?? 0)}</div>
+                <div className="text-muted-foreground text-xs">
+                  {t.lifetime}: {formatNumber(totals.allTimeComments)}
                 </div>
               </CardContent>
             </Card>
@@ -175,6 +192,7 @@ export function StatsClient() {
             <Badge variant="secondary">{t.drafts}: {formatNumber(totals.drafts)}</Badge>
             <Badge variant="outline">{t.pendingReview}: {formatNumber(totals.pending)}</Badge>
             <Badge variant="destructive">{t.rejected}: {formatNumber(totals.rejected)}</Badge>
+            <Badge variant="outline">{t.avgRating}: {totals.averageRating}</Badge>
           </div>
 
           <Card>

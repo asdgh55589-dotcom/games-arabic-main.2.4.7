@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { syncGameCounts } from '@/lib/game-helpers'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
@@ -94,6 +95,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         })
         // Listing cache: the mod leaves the public PUBLISHED listing (best-effort).
         invalidateGameModsCache(mod.gameId).catch(() => {})
+        // عدّادات اللعبة تُحسب من mods المنشورة فقط — المود المؤرشف خرج من الحساب.
+        syncGameCounts(mod.gameId).catch(() => {})
         return ok({ success: true, message: 'تم أرشفة التعريب' })
       }
 
@@ -146,6 +149,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           return validationFail('يمكن حذف المسودات والمؤرشفة والمرفوضة فقط')
         }
         await db.mod.delete({ where: { id: mod.id } })
+        // المود اختفى من اللعبة — أعد حساب عدّادات اللعبة (أفضلEffort).
+        syncGameCounts(mod.gameId).catch(() => {})
         return ok({ success: true, message: 'تم حذف التعريب' })
       }
 

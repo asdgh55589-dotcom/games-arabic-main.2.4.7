@@ -1,5 +1,6 @@
 import { getUseCases } from '@/application/use-cases/factory'
 import { db } from '@/lib/db'
+import { syncGameCounts } from '@/lib/game-helpers'
 import { logger } from '@/lib/logger'
 import { setTokenVersionCache } from '@/lib/token-version-cache'
 import type { ReportAction } from './constants'
@@ -83,7 +84,16 @@ export async function executeAutoAction(
 
   if (action === 'content_deleted') {
     if (report.targetModId) {
+      // نحتاج gameId قبل الحذف لإعادة حساب عدّادات اللعبة بعده.
+      const target = await db.mod.findUnique({
+        where: { id: report.targetModId },
+        select: { gameId: true },
+      })
       await db.mod.delete({ where: { id: report.targetModId } })
+      if (target?.gameId) {
+        // الحذف التلقائي يزيح العدّادات — تُعاد مزامنتها (best-effort).
+        syncGameCounts(target.gameId).catch(() => {})
+      }
     } else if (report.targetCommentId) {
       await db.modComment.delete({ where: { id: report.targetCommentId } })
     }
