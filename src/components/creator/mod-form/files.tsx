@@ -940,7 +940,7 @@ export function ModFormFiles(p: Props) {
                             ) : (
                               <div
                                 className="grid h-9 w-9 shrink-0 place-items-center rounded-md p-1.5 text-white"
-                                style={{ backgroundColor: info?.color || '#4b5563' }}
+                                style={{ backgroundColor: info?.color || 'var(--muted)' }}
                               >
                                 {info?.icon || <Plus className="h-4 w-4" />}
                               </div>

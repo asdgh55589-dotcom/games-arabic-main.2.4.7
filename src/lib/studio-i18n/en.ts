@@ -45,6 +45,10 @@ export const en: StudioDict = {
     help: 'Help',
     logout: 'Log out',
     notifications: 'Notifications',
+    theme: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
   },
   cards: {
     totalViews: 'Total Views',

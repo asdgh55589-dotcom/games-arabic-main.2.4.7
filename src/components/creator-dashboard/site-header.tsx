@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { StudioLocaleSwitcher } from "@/components/creator-dashboard/studio-locale-switcher"
+import { StudioThemeSwitcher } from "@/components/creator-dashboard/studio-theme-switcher"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 export function SiteHeader() {
@@ -73,6 +74,7 @@ export function SiteHeader() {
             )}
           </Link>
           <StudioLocaleSwitcher />
+          <StudioThemeSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label={dict.header.userMenu}>

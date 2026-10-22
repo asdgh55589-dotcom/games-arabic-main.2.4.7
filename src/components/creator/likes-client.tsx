@@ -62,7 +62,7 @@ type SortKey = 'total' | 'endorsements' | 'commentLikes' | 'ratings'
 function Delta({ value }: { value: number }) {
   const up = value >= 0
   return (
-    <span dir="ltr" className={up ? 'text-green-600' : 'text-red-500'}>
+    <span dir="ltr" className={up ? 'text-green-600' : 'text-destructive'}>
       {up ? '+' : ''}
       {value}%
     </span>

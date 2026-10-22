@@ -74,7 +74,7 @@ const STATUS_META: Record<
   APPROVED: { icon: CheckCircle, color: 'bg-blue-500' },
   PUBLISHED: { icon: CheckCircle, color: 'bg-green-500' },
   ARCHIVED: { icon: Archive, color: 'bg-gray-400' },
-  REJECTED: { icon: XCircle, color: 'bg-red-500' },
+  REJECTED: { icon: XCircle, color: 'bg-destructive' },
 }
 
 function statusLabel(workflowStatus: string, mods: StudioDict['mods']): string {

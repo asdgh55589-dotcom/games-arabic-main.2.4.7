@@ -28,7 +28,7 @@ const CHANGE_TYPE_OPTIONS: { value: ChangeType; label: string; description: stri
     value: 'edit',
     label: 'تعديل',
     description: 'إصلاح خطأ أو تحسين بسيط',
-    color: 'bg-gray-100 border-gray-300 text-gray-700',
+    color: 'bg-muted border-border text-foreground',
   },
   {
     value: 'update',
