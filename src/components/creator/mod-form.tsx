@@ -696,8 +696,8 @@ export default function ModForm({ modId }: ModFormProps) {
 
   if (loadError) {
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg" dir="rtl">
-        <h2 className="text-red-700 font-bold mb-2">⚠️ {loadError}</h2>
+      <div className="p-6 bg-destructive/10 border border-destructive/30 rounded-lg" dir="rtl">
+        <h2 className="text-destructive font-bold mb-2">⚠️ {loadError}</h2>
         <Button onClick={() => window.location.reload()}>{t.retryBtn}</Button>
       </div>
     )
@@ -937,7 +937,7 @@ export default function ModForm({ modId }: ModFormProps) {
                 const domain = (sl.domain || sl.url || '').replace(/^https?:\/\//, '').split('/')[0]
                 return (
                   <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
-                    <img src={brandLogoUrl(domain || 'example.com')} alt="" className="h-6 w-6 shrink-0 rounded border border-border/40 bg-white object-contain p-0.5" />
+                    <img src={brandLogoUrl(domain || 'example.com')} alt="" className="h-6 w-6 shrink-0 rounded border border-border/40 bg-card object-contain p-0.5" />
                     <Input value={sl.url} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
                     <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
                     <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />

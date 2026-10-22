@@ -47,6 +47,10 @@ export interface StudioDict {
     help: string
     logout: string
     notifications: string
+    theme: string
+    themeLight: string
+    themeDark: string
+    themeSystem: string
   }
   cards: {
     totalViews: string

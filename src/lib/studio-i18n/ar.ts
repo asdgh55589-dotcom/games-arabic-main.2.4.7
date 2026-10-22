@@ -46,6 +46,10 @@ export const ar: StudioDict = {
     help: 'المساعدة',
     logout: 'تسجيل الخروج',
     notifications: 'الإشعارات',
+    theme: 'المظهر',
+    themeLight: 'فاتح',
+    themeDark: 'داكن',
+    themeSystem: 'النظام',
   },
   cards: {
     totalViews: 'إجمالي المشاهدات',

@@ -9,18 +9,18 @@ export default function CreatorStudioError({
 }) {
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#151b25] p-8 text-center text-foreground"
+      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-8 text-center text-foreground"
       dir="rtl"
       role="alert"
     >
       <h2 className="text-2xl font-bold">حدث خطأ — أعد المحاولة</h2>
-      <p className="text-base text-[#8b93a3]" aria-live="polite">
+      <p className="text-base text-muted-foreground" aria-live="polite">
         {error?.digest ? `رمز الخطأ: ${error.digest}` : 'حدث خطأ غير متوقع في استوديو المبدعين'}
       </p>
       <button
         type="button"
         onClick={reset}
-        className="rounded-lg border border-[#232b38] bg-[#232b38] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2e3949]"
+        className="rounded-lg border border-border bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
       >
         إعادة المحاولة
       </button>
