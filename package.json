@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=1536' bun --env-file=.env.local --env-file=.env next dev -p 3000 --turbopack 2>&1 | tee dev.log",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "check": "biome check src",
     "check:fix": "biome check src --fix",

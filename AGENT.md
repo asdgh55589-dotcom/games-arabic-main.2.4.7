@@ -128,6 +128,14 @@ gh pr create --title "..." --body "..."
 - **Statement Timeout:** 15s (`statement_timeout=15000`, prevents runaway queries)
 - **SSL:** Required (sslmode=require)
 
+### Prisma Client Regeneration
+After pulling schema changes, run:
+  npx prisma generate
+
+The generated client in `node_modules/@prisma/client` is gitignored and can become stale.
+Symptoms: TypeScript errors like "Property 'reactionFire' does not exist in type 'ModSelect'".
+Fix: regenerate the client — do NOT modify the select (it is usually already correct).
+Production builds always run `prisma generate` first (see `scripts/vercel-build.ts` and the `build` script).
 ### Error Handling
 - **Standard:** RFC 7807 (Problem Details) — additive layer
 - **Envelope:** `{error: {code, message, ...}, problem: {type, title, status, ...}}`
