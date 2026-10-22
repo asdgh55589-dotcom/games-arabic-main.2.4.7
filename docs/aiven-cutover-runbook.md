@@ -1,5 +1,9 @@
 # Aiven Cutover Runbook — Neon → Aiven (FULL data migration)
 
+> **HISTORICAL:** This is the old Neon → Aiven playbook. The current migration
+> is **Aiven → Neon**; use `docs/NEON-SETUP.md` and
+> `scripts/migrate-to-neon.sh`. Keep this only for rollback reference.
+
 > **DOCS ONLY.** Nothing here has been executed against production.
 > Run steps IN ORDER during a maintenance window. Estimated: 20-30 min.
 

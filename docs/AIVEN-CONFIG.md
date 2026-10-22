@@ -1,5 +1,10 @@
 # Aiven PostgreSQL Configuration — Phase 5 Cutover
 
+> **Historical / source-side reference.** The current direction is Aiven →
+> Neon. The live Aiven audit found **0 GIN indexes** and the pool timeout is
+> now **15s** in `src/lib/db.ts`; the legacy "6 GIN / 10s" statements below are
+> retained for history. Use `docs/NEON-SETUP.md` for the cutover.
+
 > **Owner-locked:** Aiven PostgreSQL 16 · `eu-west-1` · pool size **5** (matches Neon) · `sslmode=require` mandatory.
 > Production stays on Neon until cutover is verified. This doc is code-adjacent; do not edit `.env` values here.
 

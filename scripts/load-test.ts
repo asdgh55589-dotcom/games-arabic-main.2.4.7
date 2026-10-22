@@ -8,7 +8,7 @@
  *   proves the harness + captures a baseline without melting Turbopack.
  * Full pressure (100–200 conns × 30s) is a STAGING activity: point --url at
  * a staging deploy, never at production, and watch /api/admin/db/monitoring
- * for poolUsagePercent + P2024 Sentry alerts while it runs.
+ * for serverConnectionUsagePercent + P2024 Sentry alerts while it runs.
  */
 import autocannon from 'autocannon'
 

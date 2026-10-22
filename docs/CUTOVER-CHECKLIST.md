@@ -1,5 +1,9 @@
 # Aiven Cutover Checklist
 
+> **HISTORICAL:** This checklist describes the earlier Neon → Aiven direction.
+> The current migration is **Aiven → Neon**; use `docs/NEON-SETUP.md`. Keep this
+> file as a rollback reference only.
+
 > Phase 5 — Neon → Aiven PostgreSQL production cutover.
 > Each item has a checkbox `[ ]` for tracking. Check off as completed.
 

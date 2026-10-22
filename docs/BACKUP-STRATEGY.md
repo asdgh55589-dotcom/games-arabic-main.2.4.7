@@ -1,5 +1,10 @@
 # Backup Strategy
 
+> **Migration note:** Neon is the target primary. Aiven PITR remains the
+> rollback layer until the Neon cutover is verified. Create `pg_trgm` and
+> `pgcrypto` **before** restoring a dump (`20261023000000_add_neon_extensions`);
+> the audited source has no GIN indexes.
+
 > Last updated: 2026-09-13
 
 ## §1 Overview

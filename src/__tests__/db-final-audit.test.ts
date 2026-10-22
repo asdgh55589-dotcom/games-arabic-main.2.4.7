@@ -46,27 +46,25 @@ describe('AUDIT connection & pool (1-5)', () => {
     expect((globalThis as unknown as { prisma?: unknown }).prisma).toBe(db)
   })
 
-  it('2. connection_limit=5 in code defaults AND every committed/local env file', () => {
+  it('2. connection_limit=5 in code defaults AND runtime DATABASE_URL env files', () => {
     expect(new URL(ensureSslmode('postgresql://u:p@h:5432/d?sslmode=require')).searchParams.get('connection_limit')).toBe('5')
     for (const f of ['.env.example', '.env', '.env.local']) {
-      for (const k of ['DATABASE_URL', 'AIVEN_DATABASE_URL']) {
-        const params = urlParams(f, k)
-        if (!params) continue
-        expect(`${f} ${k}`).toBeDefined()
-        expect(params.get('connection_limit')).toBe('5')
-      }
+      const params = urlParams(f, 'DATABASE_URL')
+      if (!params) continue
+      expect(params.get('connection_limit')).toBe('5')
     }
   })
 
-  it('3. pool_timeout=10 fail-fast default (never the old 60s hang)', () => {
+  it('3. pool_timeout=15/connect_timeout=15 fail-fast defaults (never the old 60s hang)', () => {
     const p = new URL(ensureSslmode('postgresql://u:p@h:5432/d?sslmode=require')).searchParams
-    expect(p.get('pool_timeout')).toBe('10')
-    expect(p.get('connect_timeout')).toBe('10')
+    expect(p.get('pool_timeout')).toBe('15')
+    expect(p.get('connect_timeout')).toBe('15')
+    expect(p.get('socket_timeout')).toBe('30')
   })
 
-  it('4. statement_timeout=15000 injected when missing, preserved when set', () => {
+  it('4. statement_timeout is not injected (role-level enforcement), preserved when set', () => {
     const injected = new URL(ensureSslmode('postgresql://u:p@h:5432/d?sslmode=require')).searchParams
-    expect(injected.get('statement_timeout')).toBe('15000')
+    expect(injected.get('statement_timeout')).toBeNull()
     const kept = new URL(
       ensureSslmode('postgresql://u:p@h:5432/d?sslmode=require&statement_timeout=7000'),
     ).searchParams
@@ -103,16 +101,16 @@ describe('AUDIT monitoring (6-8)', () => {
       'idleConnections',
       'totalConnections',
       'maxConnections',
-      'poolUsagePercent',
+      'serverConnectionUsagePercent',
       'oldestQueryS',
       'slowQueries',
     ]) {
       expect(m).toHaveProperty(k)
     }
-    expect(typeof m.poolUsagePercent).toBe('number')
+    expect(typeof m.serverConnectionUsagePercent).toBe('number')
   })
 
-  it('7. checkHealth flags 90% pool usage as exhausted', async () => {
+  it('7. checkHealth flags 90% server connection usage as exhausted', async () => {
     jest.resetModules()
     jest.doMock('@/lib/db', () => ({ db: { $queryRaw: (...a: unknown[]) => mockQueryRaw(...a) } }))
     const { DbMonitor } = require('@/lib/observability/db-monitor')
@@ -123,7 +121,7 @@ describe('AUDIT monitoring (6-8)', () => {
       .mockResolvedValueOnce([])
     const h = await DbMonitor.checkHealth()
     expect(h.healthy).toBe(false)
-    expect(h.issues.join(' ')).toMatch(/100%/)
+    expect(h.issues.join(' ')).toMatch(/90%/)
   })
 
   it('8. resetThrottle re-enables collection after a throttled null', async () => {
@@ -216,7 +214,7 @@ describe('AUDIT performance surfaces (14-15)', () => {
     expect(await getHomeCache()).toBeNull()
   })
 
-  it('15. every sitemap findMany is bounded with take (no full-table scans)', () => {
+  it('15. every sitemap findMany is bounded with take and the route is ISR-cached', () => {
     const src = fs.readFileSync(path.join(ROOT, 'src/app/sitemap.ts'), 'utf-8')
     const blocks = [...src.matchAll(/findMany\(\{([\s\S]*?)\}\)/g)].map((m) => m[1])
     expect(blocks.length).toBeGreaterThanOrEqual(5)
@@ -224,6 +222,8 @@ describe('AUDIT performance surfaces (14-15)', () => {
       expect(b).toMatch(/take:\s*\d+/)
       expect(b).toMatch(/orderBy/)
     }
+    expect(src).toMatch(/export const revalidate\s*=\s*3600/)
+    expect(src).not.toMatch(/force-dynamic/)
   })
 })
 

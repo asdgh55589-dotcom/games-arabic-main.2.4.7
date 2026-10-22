@@ -1,13 +1,19 @@
 /**
- * lib/observability/db-monitor.ts — read-only Postgres pool/query telemetry.
+ * lib/observability/db-monitor.ts — read-only Postgres server/query telemetry.
  *
- * Samples `pg_stat_activity` (never `pg_catalog` hacks, never query text beyond
- * a 100-char prefix, never credentials). Every probe is time-boxed to 4s so
- * monitoring can never hold a pool connection hostage. Results are throttled
- * to one collection per 30s per process; callers behind it (admin monitoring
- * endpoint, health/detailed) stay cheap.
+ * Samples `pg_stat_activity` and `pg_settings` (never `pg_catalog` hacks, never
+ * query text beyond a 100-char prefix, never credentials). Every probe is
+ * time-boxed to 4s so monitoring can never hold a pool connection hostage.
+ * Results are throttled to one collection per 30s per process; callers behind
+ * it (admin monitoring endpoint, health/detailed) stay cheap.
  *
- * Alert thresholds: pool usage >80% (Sentry), oldest active query >5s (log).
+ * Neon PgBouncer semantics: the app connects through the pooler, so
+ * `pg_stat_activity` reports the pooler's server-side connections shared by
+ * every client of the database — NOT this process's Prisma pool. We therefore
+ * report server-wide usage against `max_connections` (`serverConnectionUsagePercent`)
+ * and never present it as app-pool usage.
+ *
+ * Alert thresholds: server connection usage >80% (Sentry), oldest active query >5s (log).
  */
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
@@ -19,25 +25,24 @@ export interface DbSlowQuery {
 }
 
 export interface DbMetrics {
+  /** Server-side backends in state='active' (pooler-inclusive, not app pool). */
   activeConnections: number
+  /** Server-side backends in state='idle' (pooler-inclusive, not app pool). */
   idleConnections: number
+  /** All rows in pg_stat_activity (includes pooler and background backends). */
   totalConnections: number
+  /** Server `max_connections` from pg_settings (fallback: 100). */
   maxConnections: number
-  poolUsagePercent: number
+  /** totalConnections / maxConnections — server-wide, NOT Prisma pool usage. */
+  serverConnectionUsagePercent: number
   oldestQueryS: number
   slowQueries: DbSlowQuery[]
 }
 
 const CHECK_INTERVAL_MS = 30_000
 const PROBE_TIMEOUT_MS = 4_000
-const POOL_ALERT_THRESHOLD_PCT = 80
+const SERVER_CONNECTION_ALERT_THRESHOLD_PCT = 80
 const SLOW_QUERY_THRESHOLD_S = 5
-
-/** Prisma pool size (must match connection_limit). pg_stat_activity is
- * server-wide so per-process attribution is impossible without
- * application_name — active-query count against OUR pool size is the
- * closest P2024-risk signal. Capped at 100 (background roles inflate it). */
-export const PRISMA_POOL_SIZE = 5
 
 async function withProbeTimeout<T>(fn: () => Promise<T>): Promise<T> {
   return (await Promise.race([
@@ -106,7 +111,9 @@ export class DbMonitor {
         idleConnections: idle,
         totalConnections: total,
         maxConnections: max,
-        poolUsagePercent: Math.min(100, Math.round((active / PRISMA_POOL_SIZE) * 100)),
+        // Server-wide denominator: every PgBouncer/backend connection counts
+        // against max_connections, including idle and background ones.
+        serverConnectionUsagePercent: Math.min(100, Math.round((total / max) * 100)),
         oldestQueryS: slows.reduce((m, q) => Math.max(m, q.durationS), 0),
         slowQueries: slows,
       }
@@ -135,11 +142,13 @@ export class DbMonitor {
     const issues: string[] = []
     if (!metrics) return { healthy: false, issues: ['Unable to collect metrics'] }
 
-    if (metrics.poolUsagePercent > POOL_ALERT_THRESHOLD_PCT) {
-      issues.push(`Pool usage at ${metrics.poolUsagePercent}% (>${POOL_ALERT_THRESHOLD_PCT}%)`)
-      reportError(new Error(`DB pool usage high: ${metrics.poolUsagePercent}%`), {
+    if (metrics.serverConnectionUsagePercent > SERVER_CONNECTION_ALERT_THRESHOLD_PCT) {
+      issues.push(
+        `Server connection usage at ${metrics.serverConnectionUsagePercent}% (>${SERVER_CONNECTION_ALERT_THRESHOLD_PCT}%)`,
+      )
+      reportError(new Error(`DB server connection usage high: ${metrics.serverConnectionUsagePercent}%`), {
         route: 'db-monitor',
-        action: 'pool-usage-high',
+        action: 'server-connection-usage-high',
       })
     }
     if (metrics.oldestQueryS > SLOW_QUERY_THRESHOLD_S) {

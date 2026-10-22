@@ -4,14 +4,29 @@
  * تدعم النسخ الاحتياطي للقاعدة البيانات والملفات مع سياسة الاحتفاظ.
  */
 
-import { exec } from 'child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'fs'
-import { join } from 'path'
+import { execFile } from 'child_process'
+import { createHash, randomUUID } from 'crypto'
+import {
+  chmodSync,
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs'
+import { basename, join, resolve, sep } from 'path'
+import { pipeline } from 'stream/promises'
 import { promisify } from 'util'
-import { gunzipSync, gzipSync } from 'zlib'
+import { createGzip, gunzipSync, gzipSync } from 'zlib'
 import { db } from './db'
 
-const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
+const PG_DUMP_BIN = process.env.PG_DUMP_BIN || 'pg_dump'
 
 const BACKUP_DIR = process.env.BACKUP_DIR || join(process.cwd(), 'backups')
 const MAX_DAILY = 7
@@ -26,6 +41,12 @@ export interface BackupInfo {
   status: 'pending' | 'completed' | 'partial' | 'failed'
   createdAt: Date
   error?: string
+  path?: string
+  sha256?: string
+  uploaded?: boolean
+  remoteUrl?: string
+  uploadSkipped?: string
+  uploadError?: string
 }
 
 /**
@@ -33,7 +54,9 @@ export interface BackupInfo {
  * tell auth vs connection vs permissions failures at a glance.
  * The full stderr is always propagated alongside the bucket.
  */
-export function classifyPgDumpError(stderr: string): 'auth' | 'connection' | 'permissions' | 'unknown' {
+export function classifyPgDumpError(
+  stderr: string,
+): 'auth' | 'connection' | 'permissions' | 'unknown' {
   const s = (stderr || '').toLowerCase()
   if (
     s.includes('password authentication failed') ||
@@ -63,17 +86,138 @@ export function classifyPgDumpError(stderr: string): 'auth' | 'connection' | 'pe
 }
 
 /**
+ * Neon/PgBouncer pooled hosts contain `-pooler`. pg_dump needs a direct
+ * session endpoint, so pooled URLs must never be used for backups.
+ */
+export function isPooledDatabaseUrl(url: string): boolean {
+  try {
+    const host = decodeURIComponent(new URL(url).hostname).replace(/\.$/, '').toLowerCase()
+    return host.includes('-pooler')
+  } catch {
+    return /-pooler/i.test(url)
+  }
+}
+
+/**
+ * Resolve the direct (non-pooled) URL used by pg_dump.
+ * Prefers DIRECT_URL; falls back to DATABASE_URL only when it is non-pooled.
+ */
+export function resolveBackupDatabaseUrl(
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const direct = env.DIRECT_URL?.trim()
+  const fallback = env.DATABASE_URL?.trim()
+  const candidate = direct || fallback
+
+  if (!candidate) {
+    throw new Error(
+      'No direct PostgreSQL URL configured for backups: set DIRECT_URL (preferred) or a non-pooled DATABASE_URL.',
+    )
+  }
+  if (isPooledDatabaseUrl(candidate)) {
+    throw new Error(
+      `${direct ? 'DIRECT_URL' : 'DATABASE_URL'} points at a pooled endpoint (-pooler). pg_dump requires a direct connection: set DIRECT_URL to the non-pooled connection string.`,
+    )
+  }
+  if (!/^postgres(ql)?:\/\//i.test(candidate)) {
+    throw new Error('DIRECT_URL/DATABASE_URL must be a postgresql:// URL for pg_dump.')
+  }
+  return candidate
+}
+
+async function sha256File(filepath: string): Promise<string> {
+  return new Promise((resolveHash, rejectHash) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(filepath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolveHash(hash.digest('hex')))
+    stream.on('error', rejectHash)
+  })
+}
+
+function ensureBackupDir(): void {
+  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) {
+    mkdirSync(/*turbopackIgnore: true*/ BACKUP_DIR, { recursive: true, mode: 0o700 })
+  }
+  try {
+    chmodSync(/*turbopackIgnore: true*/ BACKUP_DIR, 0o700)
+  } catch {
+    // Best effort on platforms that do not implement POSIX modes.
+  }
+}
+
+function isPgDumpMissing(stderr: string, code?: number | string): boolean {
+  return (
+    code === 127 || code === 'ENOENT' || /(pg_dump|command).*(not found|no such file)/i.test(stderr)
+  )
+}
+
+interface UploadResult {
+  uploaded: boolean
+  url?: string
+  skipped?: string
+  error?: string
+}
+
+async function uploadBackupToS3(filepath: string, filename: string): Promise<UploadResult> {
+  const endpoint = process.env.BACKUP_S3_ENDPOINT?.trim()
+  const bucket = process.env.BACKUP_S3_BUCKET?.trim() || (endpoint ? 'backups' : '')
+  const accessKeyId = process.env.BACKUP_S3_ACCESS_KEY?.trim()
+  const secretAccessKey = process.env.BACKUP_S3_SECRET_KEY?.trim()
+
+  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
+    const missing = [
+      !endpoint ? 'BACKUP_S3_ENDPOINT' : '',
+      !bucket ? 'BACKUP_S3_BUCKET' : '',
+      !accessKeyId ? 'BACKUP_S3_ACCESS_KEY' : '',
+      !secretAccessKey ? 'BACKUP_S3_SECRET_KEY' : '',
+    ].filter(Boolean)
+    const reason = `S3/R2 upload skipped — missing ${missing.join(', ')} (local dump kept at ${filepath})`
+    console.warn(`[backup] ${reason}`)
+    return { uploaded: false, skipped: reason }
+  }
+
+  const prefix = process.env.BACKUP_S3_KEY?.trim()
+  const key = prefix ? `${prefix.replace(/\/+$/, '')}/${filename}` : filename
+  const url = `${endpoint.replace(/\/+$/, '')}/${bucket}/${key}`
+
+  try {
+    const { PutObjectCommand, S3Client } = await import('@aws-sdk/client-s3')
+    const client = new S3Client({
+      region: process.env.BACKUP_S3_REGION?.trim() || 'auto',
+      endpoint,
+      forcePathStyle: true,
+      credentials: { accessKeyId, secretAccessKey },
+    })
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: createReadStream(filepath),
+        ContentLength: statSync(filepath).size,
+        ContentType: 'application/octet-stream',
+      }),
+    )
+    console.log(`[backup] Uploaded to S3/R2: ${url}`)
+    return { uploaded: true, url }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    console.error(`[backup] S3/R2 upload failed (local dump kept at ${filepath}): ${reason}`)
+    return { uploaded: false, error: reason }
+  }
+}
+
+/**
  * تنفيذ نسخ احتياطي للقاعدة البيانات
  */
 export async function createDatabaseBackup(): Promise<BackupInfo> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const filename = `db-backup-${timestamp}.sql.gz`
   const filepath = join(BACKUP_DIR, filename)
+  const tmpSql = join(BACKUP_DIR, `.pgdump-${process.pid}-${randomUUID()}.sql`)
+  const partial = `${filepath}.partial`
 
-  // Ensure backup directory exists
-  if (!existsSync(/*turbopackIgnore: true*/ BACKUP_DIR)) {
-    mkdirSync(BACKUP_DIR, { recursive: true })
-  }
+  ensureBackupDir()
 
   const backup: BackupInfo = {
     id: timestamp,
@@ -85,67 +229,97 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
   }
 
   try {
-    // Use pg_dump for PostgreSQL; NEVER swallow its stderr and NEVER mark
-    // a degraded result as 'completed' (SA-3 silent-downgrade trap).
-    const dbUrl = process.env.DATABASE_URL
-    if (dbUrl && dbUrl.includes('postgresql')) {
-      let pgDumpFailed = false
-      let pgDumpReason = ''
-      try {
-        // NOTE: no `2>/dev/null`, no `|| echo` — a pg_dump failure must reject
-        // so we can classify the exact stderr below.
-        const { stdout } = await execAsync(`pg_dump "${dbUrl}"`)
-
-        if (stdout && stdout.trim().length > 0) {
-          const compressed = gzipSync(Buffer.from(stdout, 'utf-8'))
-          const { writeFileSync } = await import('fs')
-          writeFileSync(filepath, compressed)
-          backup.size = compressed.length
-          backup.status = 'completed'
-          return backup
-        }
-        pgDumpFailed = true
-        pgDumpReason = 'pg_dump returned empty output'
-      } catch (pgErr) {
-        pgDumpFailed = true
-        const stderr =
-          (pgErr as { stderr?: unknown }).stderr != null
-            ? String((pgErr as { stderr?: unknown }).stderr)
-            : pgErr instanceof Error
-              ? pgErr.message
-              : String(pgErr)
-        const bucket = classifyPgDumpError(stderr)
-        pgDumpReason = `pg_dump failed (${bucket}): ${stderr}`
-      }
-
-      if (pgDumpFailed) {
-        // JSON fallback is degraded by definition: data-only, no schema /
-        // enums / indexes / pg_trgm / sequences / RLS — pg_dump-only caveat.
-        console.warn(`[backup] ${pgDumpReason} — falling back to JSON (partial backup)`)
-        await createJsonBackup(filepath)
-        const { statSync } = await import('fs')
-        backup.size = statSync(filepath).size
-        backup.status = 'partial'
-        backup.error = pgDumpReason
-        return backup
-      }
-    } else {
-      // No usable PostgreSQL URL — JSON fallback is the only option (partial).
-      const reason = !dbUrl
-        ? 'missing DATABASE_URL — JSON fallback (partial backup)'
-        : 'non-postgresql DATABASE_URL — JSON fallback (partial backup)'
-      console.warn(`[backup] ${reason}`)
-      await createJsonBackup(filepath)
-      const { statSync } = await import('fs')
-      backup.size = statSync(filepath).size
-      backup.status = 'partial'
-      backup.error = reason
+    let dbUrl: string
+    try {
+      dbUrl = resolveBackupDatabaseUrl()
+    } catch (urlErr) {
+      backup.status = 'failed'
+      backup.error = urlErr instanceof Error ? urlErr.message : String(urlErr)
+      console.error('[backup] Database backup failed:', backup.error)
       return backup
     }
+
+    let pgDumpReason = ''
+    try {
+      // execFile (not a shell) + --file keeps credentials out of the shell and
+      // avoids buffering the entire dump in a JS string.
+      await execFileAsync(
+        PG_DUMP_BIN,
+        [
+          dbUrl,
+          '--format=plain',
+          '--no-owner',
+          '--no-privileges',
+          '--no-tablespaces',
+          '--schema=public',
+          `--file=${tmpSql}`,
+        ],
+        { timeout: 300_000, maxBuffer: 1024 * 1024 },
+      )
+
+      if (!existsSync(tmpSql) || statSync(tmpSql).size === 0) {
+        pgDumpReason = 'pg_dump produced an empty file'
+      } else {
+        await pipeline(createReadStream(tmpSql), createGzip(), createWriteStream(partial))
+        chmodSync(partial, 0o600)
+        renameSync(partial, filepath)
+        backup.size = statSync(filepath).size
+        backup.path = filepath
+        backup.sha256 = await sha256File(filepath)
+        backup.status = 'completed'
+
+        const upload = await uploadBackupToS3(filepath, filename)
+        backup.uploaded = upload.uploaded
+        backup.remoteUrl = upload.url
+        backup.uploadSkipped = upload.skipped
+        backup.uploadError = upload.error
+        return backup
+      }
+    } catch (pgErr) {
+      const stderr =
+        (pgErr as { stderr?: unknown }).stderr != null
+          ? String((pgErr as { stderr?: unknown }).stderr)
+          : pgErr instanceof Error
+            ? pgErr.message
+            : String(pgErr)
+      const rawCode = (pgErr as { code?: unknown }).code
+      const code = typeof rawCode === 'number' || typeof rawCode === 'string' ? rawCode : undefined
+      if (isPgDumpMissing(stderr, code)) {
+        backup.status = 'failed'
+        backup.error = `pg_dump is not available (${stderr || 'not found'}). Install PostgreSQL 17 client tools or run inside the postgres:17 image, then retry.`
+        console.error(`[backup] ${backup.error}`)
+        return backup
+      }
+      const bucket = classifyPgDumpError(stderr)
+      pgDumpReason = `pg_dump failed (${bucket}): ${stderr}`
+    }
+
+    // JSON fallback is degraded by definition: data-only, no schema /
+    // enums / indexes / pg_trgm / sequences / RLS — pg_dump-only caveat.
+    console.warn(`[backup] ${pgDumpReason} — falling back to JSON (partial backup)`)
+    await createJsonBackup(filepath)
+    chmodSync(filepath, 0o600)
+    backup.size = statSync(filepath).size
+    backup.path = filepath
+    backup.sha256 = await sha256File(filepath)
+    backup.status = 'partial'
+    backup.error = pgDumpReason
+    console.warn(
+      `[backup] Partial JSON backup kept at ${filepath}; S3/R2 upload skipped because it is not a full pg_dump.`,
+    )
+    return backup
   } catch (err) {
     backup.status = 'failed'
     backup.error = err instanceof Error ? err.message : String(err)
     console.error('[backup] Database backup failed:', err)
+  } finally {
+    for (const leftover of [tmpSql, partial]) {
+      try {
+        if (existsSync(leftover)) unlinkSync(leftover)
+      } catch {
+        // Best-effort cleanup only.
+      }
+    }
   }
 
   return backup
@@ -245,7 +419,10 @@ export const JSON_BACKUP_DELEGATES = [
 ] as const
 
 async function createJsonBackup(filepath: string): Promise<void> {
-  const client = db as unknown as Record<string, { findMany: (args?: unknown) => Promise<unknown[]> }>
+  const client = db as unknown as Record<
+    string,
+    { findMany: (args?: unknown) => Promise<unknown[]> }
+  >
 
   // users: keep the pre-existing field allowlist (excludes deprecated
   // password hash) to avoid leaking credentials into the JSON artifact.
@@ -287,9 +464,19 @@ async function createJsonBackup(filepath: string): Promise<void> {
 
   const json = JSON.stringify(payload, null, 2)
   const compressed = gzipSync(Buffer.from(json, 'utf-8'))
+  const partial = `${filepath}.json.partial`
 
-  const { writeFileSync } = await import('fs')
-  writeFileSync(filepath, compressed)
+  try {
+    writeFileSync(partial, compressed, { mode: 0o600 })
+    chmodSync(partial, 0o600)
+    renameSync(partial, filepath)
+  } finally {
+    try {
+      if (existsSync(partial)) unlinkSync(partial)
+    } catch {
+      // Best-effort cleanup only.
+    }
+  }
 }
 
 /**
@@ -342,14 +529,14 @@ export async function cleanupOldBackups(): Promise<number> {
  * Derives listing status from the artifact itself so JSON-fallback
  * (partial) files are never relabeled 'completed' in the UI.
  */
-function detectBackupStatus(filepath: string): 'completed' | 'partial' {
+function detectBackupStatus(filepath: string): 'completed' | 'partial' | 'failed' {
   try {
     const raw = readFileSync(filepath)
     const head = gunzipSync(raw).subarray(0, 2048).toString('utf-8')
     if (head.includes('"partial":true') || head.includes('"partial": true')) return 'partial'
   } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort backup operation
-    }
+    return 'failed'
+  }
   return 'completed'
 }
 
@@ -366,8 +553,8 @@ export function listBackups(): BackupInfo[] {
         size: stat.size,
         type: 'scheduled' as const,
         // pg_dump and JSON-fallback share the .sql.gz name: peek inside.
-        // JSON fallback payloads carry "partial":true; anything else (or
-        // any read failure on legacy files) stays 'completed'.
+        // JSON fallback payloads carry "partial":true; a corrupt/unreadable
+        // artifact is 'failed', never silently 'completed'.
         status: detectBackupStatus(join(/*turbopackIgnore: true*/ BACKUP_DIR, f)),
         createdAt: stat.mtime,
       }
@@ -379,11 +566,23 @@ export function listBackups(): BackupInfo[] {
  * حذف نسخة احتياطية
  */
 export function deleteBackup(filename: string): boolean {
-  const filepath = join(/*turbopackIgnore: true*/ BACKUP_DIR, filename)
-  if (!existsSync(/*turbopackIgnore: true*/ filepath)) return false
+  // Accept only a bare backup filename; never a path, traversal, or arbitrary file.
+  if (
+    !filename ||
+    basename(filename) !== filename ||
+    !filename.startsWith('db-backup-') ||
+    filename.includes('..')
+  ) {
+    return false
+  }
+
+  const root = resolve(/*turbopackIgnore: true*/ BACKUP_DIR)
+  const filepath = resolve(root, filename)
+  if (!filepath.startsWith(root + sep) || !existsSync(/*turbopackIgnore: true*/ filepath)) {
+    return false
+  }
 
   try {
-    const { unlinkSync } = require('fs')
     unlinkSync(filepath)
     return true
   } catch {

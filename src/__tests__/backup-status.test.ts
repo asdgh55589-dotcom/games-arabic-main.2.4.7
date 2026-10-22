@@ -7,13 +7,13 @@
  *  - JSON fallback fires → partial + warning log with exact reason
  *  - .gitignore covers /backups/
  */
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { db } from '@/lib/db';
 
 jest.mock('child_process', () => ({
-  exec: jest.fn(),
+  execFile: jest.fn(),
 }));
 
 jest.mock('@/lib/db', () => {
@@ -39,7 +39,16 @@ jest.mock('@/lib/db', () => {
   return { db: delegates };
 });
 
-const mockExec = exec as unknown as jest.Mock;
+const mockExecFile = execFile as unknown as jest.Mock;
+function mockPgDumpSuccess() {
+  mockExecFile.mockImplementation(
+    (_file: string, args: string[], _opts: unknown, cb: (e: unknown, out: string, err: string) => void) => {
+      const fileArg = args.find((arg) => arg.startsWith('--file='));
+      if (fileArg) writeFileSync(fileArg.slice('--file='.length), '-- pg dump data --');
+      cb(null, '', '');
+    },
+  );
+}
 function mockFindMany() {
   // All delegates share one jest.fn in the factory; grab any handle.
   return (db as unknown as Record<string, { findMany: jest.Mock }>).user.findMany;
@@ -85,9 +94,7 @@ describe('backup status (SA-3)', () => {
 
   it('pg_dump success → completed', async () => {
     process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';
-    mockExec.mockImplementation((_cmd: string, cb: (e: unknown, out: unknown, err: string) => void) =>
-      cb(null, { stdout: '-- pg dump data --', stderr: '' }, ''),
-    );
+    mockPgDumpSuccess();
     const { createDatabaseBackup } = await import('@/lib/backup');
     const result = await createDatabaseBackup();
     expect(result.status).toBe('completed');
@@ -99,8 +106,9 @@ describe('backup status (SA-3)', () => {
       code: 1,
       stderr: "pg_dump: error: password authentication failed for user 'u'",
     });
-    mockExec.mockImplementation((_cmd: string, cb: (e: unknown, out: string, err: string) => void) =>
-      cb(pgErr, '', "pg_dump: error: password authentication failed for user 'u'"),
+    mockExecFile.mockImplementation(
+      (_file: string, _args: string[], _opts: unknown, cb: (e: unknown, out: string, err: string) => void) =>
+        cb(pgErr, '', "pg_dump: error: password authentication failed for user 'u'"),
     );
     // Force JSON fallback to also fail so the backup cannot succeed silently
     mockFindMany().mockRejectedValueOnce(new Error('db down'));
@@ -114,8 +122,9 @@ describe('backup status (SA-3)', () => {
     process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';
     const stderr = "pg_dump: error: password authentication failed for user 'u'";
     const pgErr = Object.assign(new Error(stderr), { code: 1, stderr });
-    mockExec.mockImplementation((_cmd: string, cb: (e: unknown, out: string, err: string) => void) =>
-      cb(pgErr, '', stderr),
+    mockExecFile.mockImplementation(
+      (_file: string, _args: string[], _opts: unknown, cb: (e: unknown, out: string, err: string) => void) =>
+        cb(pgErr, '', stderr),
     );
     mockFindMany().mockResolvedValue([]);
     const { createDatabaseBackup } = await import('@/lib/backup');
