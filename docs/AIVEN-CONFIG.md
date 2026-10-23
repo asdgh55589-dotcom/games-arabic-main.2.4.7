@@ -2,11 +2,13 @@
 
 > **Historical / source-side reference.** The current direction is Aiven →
 > Neon. The live Aiven audit found **0 GIN indexes** and the pool timeout is
-> now **15s** in `src/lib/db.ts`; the legacy "6 GIN / 10s" statements below are
-> retained for history. Use `docs/NEON-SETUP.md` for the cutover.
+> now **15s** in `src/lib/db.ts`; the legacy 10s values below are retained for
+> history. Use `docs/NEON-SETUP.md` for the cutover.
 
+> **Current runtime:** `src/lib/db.ts` reads only `DATABASE_URL`; `AIVEN_DATABASE_URL` is ignored. Do not use this document to configure the live app.
+>
 > **Owner-locked:** Aiven PostgreSQL 16 · `eu-west-1` · pool size **5** (matches Neon) · `sslmode=require` mandatory.
-> Production stays on Neon until cutover is verified. This doc is code-adjacent; do not edit `.env` values here.
+> Aiven is the historical/rollback target. The live app uses Neon; see `docs/NEON-SETUP.md`.
 
 ## Pool & Prisma tuning
 
@@ -14,36 +16,36 @@
 |-------|-------|--------|-------|
 | **Aiven pool size** | `5` | Aiven console → Service → Pools | Mirrors Neon pool size; do not increase without owner sign-off |
 | **Prisma `connection_limit`** | `5` | `DATABASE_URL` query param | Keep ≤ pool size to avoid queuing; 5 matches Aiven pool |
-| **`pool_timeout`** | `10` | `DATABASE_URL` query param | Seconds to wait for a connection from the pool; keep `10s` |
-| **`connect_timeout`** | `10` | `DATABASE_URL` query param | Seconds for initial TCP/TLS connect; **injected as `10` if missing** by `src/lib/db.ts:ensureSslmode` — does not override an explicit value |
+| **`pool_timeout`** | `15` | `DATABASE_URL` query param | Seconds to wait for a connection from the pool; current code uses `15s` |
+| **`connect_timeout`** | `15` | `DATABASE_URL` query param | Seconds for initial TCP/TLS connect; **injected as `15` if missing** by `src/lib/db.ts` — does not override an explicit value |
 | **`sslmode`** | `require` | `DATABASE_URL` query param | **Mandatory** for Aiven. `src/lib/db.ts:ensureSslmode` injects `sslmode=require` if absent and throws `DATABASE_URL must include sslmode=require for Aiven` for `disable`/`allow` or any non-`require` value |
 
-`src/lib/db.ts` preserves all existing query params and only adds the three defaults above when they are absent. Dual-URL preference: `AIVEN_DATABASE_URL` is preferred when set, otherwise `DATABASE_URL` (SA-4 coordination — keep both).
+`src/lib/db.ts` preserves all existing query params and injects the defaults when absent. It reads only `DATABASE_URL`; the legacy `AIVEN_DATABASE_URL` override was removed.
 
 ## Connection string
 
 Canonical pattern (order of params is not significant):
 
 ```
-postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10
+postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15
 ```
 
 Example (redacted host — use the real Aiven service URI):
 
 ```
-postgresql://avnadmin:PASSWORD@pg-xxxxx-ew1.aivencloud.com:26974/defaultdb?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10
+postgresql://avnadmin:PASSWORD@pg-xxxxx-ew1.aivencloud.com:26974/defaultdb?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15
 ```
 
 Notes:
 
-- Keep `connection_limit=5` and `pool_timeout=10` exactly as on Neon — `src/lib/db.ts` will fill them if a URL is pasted without them.
-- `connect_timeout=10` is added automatically if missing; if you already pass a different `connect_timeout`, the code keeps your value.
-- Env naming: set `AIVEN_DATABASE_URL` for the Aiven URI; the runtime falls back to `DATABASE_URL` so pre-cutover deploys keep working. After cutover, `DATABASE_URL` will point at Aiven (either var works).
+- Keep `connection_limit=5`, `pool_timeout=15`, and `connect_timeout=15` aligned with the current Neon runtime.
+- `connect_timeout=15` is added automatically if missing; if you already pass a different `connect_timeout`, the code keeps your value.
+- Env naming: use `DATABASE_URL` for the active database and `DIRECT_URL` for migrations/backups. `AIVEN_DATABASE_URL` is legacy and ignored.
 - Schema stays `provider = "postgresql"` / `env("DATABASE_URL")` in `prisma/schema.prisma`; the runtime override is via `PrismaClient.datasources.db.url` in `src/lib/db.ts` (singleton via `globalThis`).
 
 ## pg_trgm + GIN indexes (baseline)
 
-`pg_trgm` and its **6 GIN indexes** are already in the baseline (`prisma/migrations/20260920000000_baseline_squash/migration.sql` tail + `docs/migrations-alignment-runbook.md:Step 4` + `docs/prod-migration-sync.md`). No extra migration is needed for the Aiven cutover.
+The audited source has **0 GIN indexes**. The historical SQL below is retained for reference only; `20261023000000_add_neon_extensions` creates `pg_trgm` and `pgcrypto` without GIN indexes.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -60,7 +62,7 @@ Verification on the Aiven instance after `migrate deploy`:
 ```sql
 SELECT extname FROM pg_extension WHERE extname = 'pg_trgm';
 SELECT indexname FROM pg_indexes WHERE schemaname='public' AND indexname LIKE 'idx_%_trgm' ORDER BY 1;
--- expected: 1 extension row + 6 index rows
+-- expected: 1 extension row + 0 GIN index rows
 ```
 
 ## Cold-start resilience
@@ -157,7 +159,7 @@ Add a weekly off-site dump as a second safety copy:
 
 ```bash
 # Weekly cron — every Sunday 03:00 UTC
-0 3 * * 0 pg_dump "$AIVEN_DATABASE_URL" | gzip | \
+0 3 * * 0 pg_dump "$DIRECT_URL" | gzip | \
   aws s3 cp - s3://backups-games-arabic/pg-$(date +\%Y\%m\%d).sql.gz
 # Or store locally / in a separate cloud provider
 ```

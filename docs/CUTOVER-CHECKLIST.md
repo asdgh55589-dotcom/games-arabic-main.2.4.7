@@ -2,7 +2,8 @@
 
 > **HISTORICAL:** This checklist describes the earlier Neon → Aiven direction.
 > The current migration is **Aiven → Neon**; use `docs/NEON-SETUP.md`. Keep this
-> file as a rollback reference only.
+> file as a rollback reference only. The old "6 GIN / 76 tables" values are stale;
+> the audited source has **0 GIN indexes / 98 public base tables**.
 
 > Phase 5 — Neon → Aiven PostgreSQL production cutover.
 > Each item has a checkbox `[ ]` for tracking. Check off as completed.
@@ -11,7 +12,7 @@
 
 ### Infrastructure readiness
 - [ ] Aiven PostgreSQL 16 service provisioned (`eu-west-1`, pool size 5)
-- [ ] Aiven service reachable from production host (`psql "$AIVEN_DATABASE_URL" -c "SELECT 1"`)
+- [ ] Aiven service reachable from production host (`psql "$DATABASE_URL" -c "SELECT 1"`)
 - [ ] SSL verified (`sslmode=require` enforced by `src/lib/db.ts`)
 - [ ] PITR enabled (Aiven UI → Databases → Backup & Restore → Enable PITR)
 - [ ] PITR retention set to 7 days minimum
@@ -19,8 +20,8 @@
 
 ### Schema & data
 - [ ] Baseline + 9 additive migrations applied to Aiven (`prisma migrate status` → "up to date")
-- [ ] `pg_trgm` extension + 6 GIN indexes present on Aiven (see `AIVEN-CONFIG.md`)
-- [ ] Table count matches Neon: 76 tables (73 baseline + 3 new)
+- [ ] `pg_trgm` extension present; 0 GIN indexes expected (historical note: the old 6-GIN claim was wrong)
+- [ ] Table count matches the audited source: 98 public base tables (historical note: 76 was stale)
 - [ ] Row counts verified for key tables (User, Mod, ModFile)
 - [ ] Trigram search tested on Aiven clone
 
@@ -34,16 +35,15 @@
 ### Team & process
 - [ ] Team notified of maintenance window (date, time, duration)
 - [ ] Rollback procedure documented and reviewed (see §4)
-- [ ] Env vars prepared: `AIVEN_DATABASE_URL` set in production env
-- [ ] `DATABASE_URL` ready to swap (either Neon or Aiven — both work with `src/lib/db.ts`)
+- [ ] Env vars prepared: `DATABASE_URL` (pooled) + `DIRECT_URL` (direct); `AIVEN_DATABASE_URL` is legacy and ignored
 - [ ] Off-site `pg_dump` taken of Neon as final safety copy
 
 ## §2 During cutover (maintenance window)
 
 ### Data migration
 - [ ] **Step 1:** Final `pg_dump` from Neon: `pg_dump "$DATABASE_URL" | gzip > final-neon-dump.sql.gz`
-- [ ] **Step 2:** Restore to Aiven: `gunzip -c final-neon-dump.sql.gz | psql "$AIVEN_DATABASE_URL"`
-- [ ] **Step 3:** Apply any pending migrations: `AIVEN_DATABASE_URL=<url> npx prisma migrate deploy`
+- [ ] **Step 2:** Restore to Aiven: `gunzip -c final-neon-dump.sql.gz | psql "$DATABASE_URL"`
+- [ ] **Step 3:** Apply any pending migrations: `DIRECT_URL=<aiven-direct-url> npx prisma migrate deploy`
 - [ ] **Step 4:** Verify schema parity:
   ```sql
   SELECT count(*) FROM information_schema.tables
@@ -63,7 +63,7 @@
   ```
 
 ### Application switch
-- [ ] **Step 7:** Update `AIVEN_DATABASE_URL` env var (or swap `DATABASE_URL` to point at Aiven)
+- [ ] **Step 7:** Update `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) to point at Aiven
 - [ ] **Step 8:** Rebuild app: `bun run build`
 - [ ] **Step 9:** Start app and verify health: `curl https://yourdomain.com/api/health` → 200
 - [ ] **Step 10:** Smoke test:

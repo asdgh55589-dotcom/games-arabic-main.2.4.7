@@ -45,7 +45,7 @@ describe('section 5: build/migration separation (items 1-4, 9)', () => {
   it('vercel.json points buildCommand at vercel-build.ts', () => {
     const v = JSON.parse(read('vercel.json'))
     expect(v.buildCommand).toBe('npx tsx scripts/vercel-build.ts')
-    expect(v.installCommand).toBe('npm install --frozen-lockfile')
+    expect(v.installCommand).toBe('bun install --frozen-lockfile')
   })
 
   it('dev script runs no migration', () => {

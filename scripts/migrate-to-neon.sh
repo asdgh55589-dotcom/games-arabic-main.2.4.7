@@ -305,6 +305,9 @@ DROP = {
     "statement_cache_size",
     "pgbouncer",
     "socket_timeout",
+    # Prisma 6's engine cannot parse channel_binding (verified P1001 against
+    # Neon); libpq/psql accepts it, but --check-prisma reuses this cleaned URL.
+    "channel_binding",
 }
 
 
@@ -336,7 +339,13 @@ def clean(raw, label):
 
     # Normalize the host for pooler/equality checks. Percent-encoded hosts and
     # a trailing DNS root dot must not bypass the "-pooler" guard.
-    normalized_host = unquote(hostname).rstrip(".").lower()
+    normalized_host = hostname
+    for _ in range(3):
+        decoded = unquote(normalized_host)
+        if decoded == normalized_host:
+            break
+        normalized_host = decoded
+    normalized_host = normalized_host.rstrip(".").lower()
     if "-pooler" in normalized_host:
         raise SystemExit(f"{label}: must be a direct (non-pooler) endpoint")
 
@@ -595,7 +604,10 @@ capture_ledger_manifest() {
 }
 
 assert_manifest_match() {
-  local label="$1" source_file="$2" target_file="$3" diff_file="$WORKDIR/manifest-${label}.diff"
+  local label="$1"
+  local source_file="$2"
+  local target_file="$3"
+  local diff_file="$WORKDIR/manifest-${label}.diff"
   if ! diff -u "$source_file" "$target_file" > "$diff_file"; then
     fail "Post-restore $label manifest differs from the source:"
     sed -n '1,80p' "$diff_file" >&2

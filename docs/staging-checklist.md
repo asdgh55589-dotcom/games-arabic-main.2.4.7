@@ -71,14 +71,16 @@ Neon **restore-point branch first** (`pre-release-YYYYMMDD`), then
 `docs/prod-migration-sync.md` §R1–R3 for the exact history/row counts),
 then app deploy, then §R3 verification queries.
 
-## §7 Aiven staging items
+## §7 Aiven staging items (historical — current target is Neon)
+
+> **HISTORICAL:** The current database is Neon; use `docs/NEON-SETUP.md`. The counts below describe the earlier Aiven staging pass and are not current.
 
 > Validate before production cutover. All items must pass on staging clone.
 
 ### Connection & SSL
 - [ ] Aiven connection string configured with `sslmode=require`
-- [ ] `AIVEN_DATABASE_URL` env var set (or `DATABASE_URL` pointing at Aiven)
-- [ ] `connection_limit=5`, `pool_timeout=10`, `connect_timeout=10` present
+- [ ] `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) set for Neon
+- [ ] `connection_limit=5`, `pool_timeout=15`, `connect_timeout=15` present
 - [ ] `src/lib/db.ts:ensureSslmode` injects defaults correctly (tested)
 
 ### PITR
@@ -90,8 +92,8 @@ then app deploy, then §R3 verification queries.
 ### Migration
 - [ ] Baseline + 9 additive migrations applied to Aiven staging
 - [ ] `prisma migrate status` → "Database schema is up to date!"
-- [ ] Table count matches Neon: 76 tables (73 + 3 new)
-- [ ] `pg_trgm` extension + 6 GIN indexes present
+- [ ] Table count matches the audited source: 98 public base tables
+- [ ] `pg_trgm` + `pgcrypto` present; 0 GIN indexes expected
 - [ ] Row counts verified for User, Mod, ModFile tables
 
 ### Smoke test

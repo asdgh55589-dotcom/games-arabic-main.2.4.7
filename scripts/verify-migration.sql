@@ -4,11 +4,15 @@
 --   psql -X "$NEON_DIRECT_URL" -v ON_ERROR_STOP=1 -f scripts/verify-migration.sql
 --
 -- This file is SELECT-only and safe to run against a read-only replica.
--- It aborts with a clear error if any expected value does not match.
+-- It aborts with exit code 3 if any expected value does not match. It checks
+-- the 10 key tables and invariants; full 98-table/object parity is enforced by
+-- the manifests in scripts/migrate-to-neon.sh before this file runs.
 --
 -- Expected snapshot (2026-10-22):
---   98 public base tables
---   _prisma_migrations: 19 rows / 18 applied / 1 rolled back
+--   98 public base tables, 0 GIN indexes
+--   _prisma_migrations: 19 rows / 18 applied / 1 rolled back BEFORE
+--     `--check-prisma`; after `20261023000000_add_neon_extensions` is applied
+--     the expected state is 20 rows / 19 applied / 1 rolled back.
 --   20261008000000_team_owner_unique: 2 rows / 1 rolled back
 --   _prisma_migrations_backup_20260920: 18 rows
 --   User=12 Mod=225 Game=32 Series=5 Team=4 ModView=6223
@@ -42,52 +46,49 @@ ORDER BY r.extname;
 
 \echo ''
 \echo '=== 3. Prisma migration ledger ==='
+WITH ledger AS (
+  SELECT count(*)::int AS total,
+         count(*) FILTER (
+           WHERE "finished_at" IS NOT NULL
+             AND "rolled_back_at" IS NULL
+         )::int AS applied,
+         count(*) FILTER (
+           WHERE "rolled_back_at" IS NOT NULL
+         )::int AS rolled_back,
+         count(*) FILTER (
+           WHERE "finished_at" IS NULL
+             AND "rolled_back_at" IS NULL
+         )::int AS unfinished
+  FROM public."_prisma_migrations"
+)
 SELECT check_name, expected, actual, result
 FROM (
   SELECT 1 AS ord,
-         'total rows' AS check_name,
-         19 AS expected,
-         count(*)::int AS actual,
-         CASE WHEN count(*) = 19 THEN 'PASS' ELSE 'FAIL' END AS result
-  FROM public."_prisma_migrations"
+         'ledger shape (19/18/1 pre-Prisma or 20/19/1 post-Prisma)' AS check_name,
+         '19/18/1 or 20/19/1' AS expected,
+         format('%s/%s/%s', total, applied, rolled_back) AS actual,
+         CASE WHEN ((total = 19 AND applied = 18) OR (total = 20 AND applied = 19))
+                   AND rolled_back = 1
+                   AND unfinished = 0
+              THEN 'PASS' ELSE 'FAIL' END AS result
+  FROM ledger
 
   UNION ALL
 
   SELECT 2,
-         'applied (finished_at not null, rolled_back_at null)',
-         18,
-         count(*)::int,
-         CASE WHEN count(*) = 18 THEN 'PASS' ELSE 'FAIL' END
-  FROM public."_prisma_migrations"
-  WHERE "finished_at" IS NOT NULL
-    AND "rolled_back_at" IS NULL
-
-  UNION ALL
-
-  SELECT 3,
-         'rolled back (rolled_back_at not null)',
-         1,
-         count(*)::int,
-         CASE WHEN count(*) = 1 THEN 'PASS' ELSE 'FAIL' END
-  FROM public."_prisma_migrations"
-  WHERE "rolled_back_at" IS NOT NULL
-
-  UNION ALL
-
-  SELECT 4,
          '20261008000000_team_owner_unique rows',
-         2,
-         count(*)::int,
+         '2',
+         count(*)::text,
          CASE WHEN count(*) = 2 THEN 'PASS' ELSE 'FAIL' END
   FROM public."_prisma_migrations"
   WHERE "migration_name" = '20261008000000_team_owner_unique'
 
   UNION ALL
 
-  SELECT 5,
+  SELECT 3,
          '20261008000000_team_owner_unique rolled back',
-         1,
-         count(*)::int,
+         '1',
+         count(*)::text,
          CASE WHEN count(*) = 1 THEN 'PASS' ELSE 'FAIL' END
   FROM public."_prisma_migrations"
   WHERE "migration_name" = '20261008000000_team_owner_unique'
@@ -95,12 +96,39 @@ FROM (
 
   UNION ALL
 
-  SELECT 6,
+  SELECT 4,
          '_prisma_migrations_backup_20260920 rows',
-         18,
-         count(*)::int,
+         '18',
+         count(*)::text,
          CASE WHEN count(*) = 18 THEN 'PASS' ELSE 'FAIL' END
   FROM public."_prisma_migrations_backup_20260920"
+
+  UNION ALL
+
+  SELECT 5,
+         '20261023000000_add_neon_extensions state',
+         'absent for 19 / applied for 20',
+         CASE WHEN EXISTS (
+                SELECT 1
+                FROM public."_prisma_migrations"
+                WHERE "migration_name" = '20261023000000_add_neon_extensions'
+                  AND "finished_at" IS NOT NULL
+                  AND "rolled_back_at" IS NULL
+              ) THEN 'applied' ELSE 'absent' END,
+         CASE WHEN (total = 19 AND NOT EXISTS (
+                      SELECT 1
+                      FROM public."_prisma_migrations"
+                      WHERE "migration_name" = '20261023000000_add_neon_extensions'
+                    ))
+                OR (total = 20 AND EXISTS (
+                      SELECT 1
+                      FROM public."_prisma_migrations"
+                      WHERE "migration_name" = '20261023000000_add_neon_extensions'
+                        AND "finished_at" IS NOT NULL
+                        AND "rolled_back_at" IS NULL
+                    ))
+              THEN 'PASS' ELSE 'FAIL' END
+  FROM ledger
 ) checks
 ORDER BY ord;
 
@@ -380,6 +408,21 @@ ORDER BY object_type;
 \echo ''
 \echo '=== 11. Final gate ==='
 WITH
+ledger_state AS (
+  SELECT count(*)::int AS total,
+         count(*) FILTER (
+           WHERE "finished_at" IS NOT NULL
+             AND "rolled_back_at" IS NULL
+         )::int AS applied,
+         count(*) FILTER (
+           WHERE "rolled_back_at" IS NOT NULL
+         )::int AS rolled_back,
+         count(*) FILTER (
+           WHERE "finished_at" IS NULL
+             AND "rolled_back_at" IS NULL
+         )::int AS unfinished
+  FROM public."_prisma_migrations"
+),
 view_counts AS (
   SELECT "modId", count(*)::int AS cnt
   FROM public."ModView"
@@ -529,19 +572,13 @@ checks AS (
 
   UNION ALL
 
-  SELECT 'migrations: 19 total / 18 applied / 1 rolled back / duplicate 2+1 / backup 18',
-         (SELECT count(*) FROM public."_prisma_migrations") = 19
-         AND (
-           SELECT count(*)
-           FROM public."_prisma_migrations"
-           WHERE "finished_at" IS NOT NULL
-             AND "rolled_back_at" IS NULL
-         ) = 18
-         AND (
-           SELECT count(*)
-           FROM public."_prisma_migrations"
-           WHERE "rolled_back_at" IS NOT NULL
-         ) = 1
+  SELECT 'migrations: exact ledger pair (19/18/1 or 20/19/1), unfinished 0, duplicate 2, backup 18, new migration matches',
+         (
+           SELECT ((total = 19 AND applied = 18) OR (total = 20 AND applied = 19))
+                  AND rolled_back = 1
+                  AND unfinished = 0
+           FROM ledger_state
+         )
          AND (
            SELECT count(*)
            FROM public."_prisma_migrations"
@@ -554,6 +591,24 @@ checks AS (
              AND "rolled_back_at" IS NOT NULL
          ) = 1
          AND (SELECT count(*) FROM public."_prisma_migrations_backup_20260920") = 18
+         AND (
+           SELECT CASE
+                    WHEN total = 19 THEN NOT EXISTS (
+                      SELECT 1
+                      FROM public."_prisma_migrations"
+                      WHERE "migration_name" = '20261023000000_add_neon_extensions'
+                    )
+                    WHEN total = 20 THEN EXISTS (
+                      SELECT 1
+                      FROM public."_prisma_migrations"
+                      WHERE "migration_name" = '20261023000000_add_neon_extensions'
+                        AND "finished_at" IS NOT NULL
+                        AND "rolled_back_at" IS NULL
+                    )
+                    ELSE false
+                  END
+           FROM ledger_state
+         )
 
   UNION ALL
 
@@ -611,7 +666,7 @@ SELECT CASE
 
 \if :failed
 \echo 'FAIL: migration verification found one or more violations.'
-SELECT 'MIGRATION VERIFICATION FAILED - see FAIL rows above'::integer;
+\quit 3
 \else
 \echo 'PASS: all migration verification checks passed.'
 \endif

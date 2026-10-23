@@ -91,10 +91,15 @@ export function classifyPgDumpError(
  */
 export function isPooledDatabaseUrl(url: string): boolean {
   try {
-    const host = decodeURIComponent(new URL(url).hostname).replace(/\.$/, '').toLowerCase()
-    return host.includes('-pooler')
+    let host = new URL(url).hostname
+    for (let i = 0; i < 3; i += 1) {
+      const next = decodeURIComponent(host)
+      if (next === host) break
+      host = next
+    }
+    return host.replace(/\.$/, '').toLowerCase().includes('-pooler')
   } catch {
-    return /-pooler/i.test(url)
+    return /-pooler|%2dpooler/i.test(url)
   }
 }
 

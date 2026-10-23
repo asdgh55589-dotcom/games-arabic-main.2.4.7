@@ -47,7 +47,7 @@ if [[ -z "$DB_URL" ]]; then
   echo '{"error":"missing DIRECT_URL","ts":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' >&2
   exit 1
 fi
-if [[ "${DB_URL,,}" == *-pooler* ]]; then
+if [[ "${DB_URL,,}" == *-pooler* || "${DB_URL,,}" == *%2dpooler* || "${DB_URL,,}" == *%252dpooler* ]]; then
   fail "DIRECT_URL points at a pooled endpoint (-pooler) — use the direct Neon connection string"
   echo '{"error":"pooled DIRECT_URL rejected","ts":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' >&2
   exit 1

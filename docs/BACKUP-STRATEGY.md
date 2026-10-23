@@ -50,13 +50,13 @@ PITR provides continuous protection. pg_dump provides offline, portable snapshot
 ### Features
 
 - `--dry-run` flag prints commands without executing
-- Reads `AIVEN_DATABASE_URL` (preferred) or `DATABASE_URL` from env
+- Reads `DIRECT_URL` only and rejects pooled (`-pooler`) endpoints; never falls back to `DATABASE_URL` or `AIVEN_DATABASE_URL`
 - SHA256 checksum + manifest JSON for integrity verification
 - Colored terminal output (green=pass, red=fail)
 
 ### S3 Upload
 
-When `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, and `BACKUP_S3_KEY` are set, the script uploads the dump via `curl -T` (PUT). S3-compatible storage (MinIO, R2, etc.) is supported.
+When `BACKUP_S3_ENDPOINT` and `BACKUP_S3_BUCKET` are set, the script uploads the dump and manifest with `aws s3 cp` (SigV4). Credentials come from `BACKUP_S3_ACCESS_KEY`/`BACKUP_S3_SECRET_KEY` or the AWS credential chain. S3-compatible storage (MinIO, R2, etc.) is supported.
 
 ### Retention
 

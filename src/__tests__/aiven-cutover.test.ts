@@ -107,8 +107,8 @@ describe('AIVEN-CONFIG.md — PITR and backup docs', () => {
     expect(doc).toMatch(/weekly/i)
   })
 
-  it('has SA-4 placeholder', () => {
-    expect(doc).toMatch(/SA-4/i)
+  it('has current-runtime banner', () => {
+    expect(doc).toMatch(/Current runtime/i)
   })
 })
 
@@ -136,8 +136,8 @@ describe('DEPLOYMENT.md — Aiven section', () => {
     expect(doc).toMatch(/PITR/i)
   })
 
-  it('references CUTOVER-CHECKLIST.md', () => {
-    expect(doc).toMatch(/CUTOVER-CHECKLIST\.md/)
+  it('references NEON-SETUP.md', () => {
+    expect(doc).toMatch(/NEON-SETUP\.md/)
   })
 
   it('preserves existing Neon content', () => {
