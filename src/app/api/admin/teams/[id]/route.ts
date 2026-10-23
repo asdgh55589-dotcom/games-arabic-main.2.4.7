@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { forbidden, internalError, notFound, ok } from '@/lib/api-response'
+import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { slugify } from '@/lib/utils'
@@ -39,6 +39,33 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return ok(team)
   } catch (err) {
     logger.error('[admin/teams/[id] GET] failed:', err)
+    return internalError('Failed')
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireModerator()
+    const { id } = await params
+    const body = await req.json()
+
+    if (typeof body?.archived !== 'boolean') {
+      return fail('VALIDATION_ERROR', 'archived must be a boolean', 400)
+    }
+
+    const existing = await db.team.findUnique({ where: { id } })
+    if (!existing) {
+      return notFound('الفريق غير موجود')
+    }
+
+    const team = await db.team.update({
+      where: { id },
+      data: { archivedAt: body.archived ? new Date() : null },
+    })
+
+    return ok(team)
+  } catch (err) {
+    logger.error('[admin/teams/[id] PATCH] failed:', err)
     return internalError('Failed')
   }
 }

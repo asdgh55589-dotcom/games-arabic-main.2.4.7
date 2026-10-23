@@ -1019,7 +1019,10 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/api/admin/:path*',
+    // Upload relay bypasses the proxy: Next's proxy body clone is capped at
+    // 10MB, which would truncate large streaming uploads. The route enforces
+    // auth + CSRF-safe custom headers + quota itself.
     // Static assets bypass the proxy entirely (no Supabase/ledger/rate-limit cost).
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|eot|otf|mp4|webm|txt|xml|webmanifest|json|css|js)$).*)',
+    '/((?!api/storage/ia/relay|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|eot|otf|mp4|webm|txt|xml|webmanifest|json|css|js)$).*)',
   ],
 }

@@ -278,7 +278,9 @@ export interface StudioDict {
   requestsMgr: {
     open: string
     mine: string
+    inProgress: string
     completed: string
+    rejected: string
     all: string
     acceptedToast: string
     failedToast: string
@@ -294,7 +296,11 @@ export interface StudioDict {
     emptyDesc: string
     statusOpen: string
     statusAccepted: string
+    statusInProgress: string
     statusCompleted: string
+    statusCancelled: string
+    statusRejected: string
+    rejectionReason: string
     linkedTo: string
     accept: string
     modIdPlaceholder: string

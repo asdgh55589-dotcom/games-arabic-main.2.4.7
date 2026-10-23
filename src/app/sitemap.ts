@@ -30,7 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .findMany({ select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
     db.team
-      .findMany({ select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })
+      .findMany({
+        where: { archivedAt: null },
+        select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 5000,
+      })
       .catch(() => [] as { slug: string; updatedAt: Date }[]),
   ])
 

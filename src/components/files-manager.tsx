@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { FileDetailsDrawer, type ManagedFile } from '@/components/file-details-drawer'
+import { UploadButton } from '@/components/upload-button'
 
 interface Pagination {
   page: number
@@ -57,13 +58,17 @@ export function FilesManager({
   apiBase,
   deleteBase,
   showUploader,
+  showUpload = false,
   title,
   embedEndpoint,
   hideHeader,
 }: {
   apiBase: string
   deleteBase: string
+  /** Admin-only "uploader" table column (creator page keeps it off). */
   showUploader: boolean
+  /** Render the creator upload control (relay upload + list refresh). */
+  showUpload?: boolean
   title: string
   embedEndpoint?: string
   /** When true (studio SectionCard rollout), the page header is rendered by
@@ -109,16 +114,19 @@ export function FilesManager({
 
   return (
     <div className="space-y-6">
-      {hideHeader ? (
-        <div className="flex items-center justify-end">
-          <span className="text-sm text-muted-foreground">{pagination.total} ملف</span>
+      <div
+        className={
+          hideHeader
+            ? 'flex items-center justify-end gap-3'
+            : 'flex items-center justify-between gap-3'
+        }
+      >
+        {!hideHeader && <h1 className="font-bold text-2xl">📁 {title}</h1>}
+        <div className="flex items-center gap-3">
+          {showUpload && <UploadButton onUploaded={() => load(1)} />}
+          <span className="text-muted-foreground text-sm">{pagination.total} ملف</span>
         </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">📁 {title}</h1>
-          <span className="text-sm text-muted-foreground">{pagination.total} ملف</span>
-        </div>
-      )}
+      </div>
 
       <Card>
         <CardHeader>

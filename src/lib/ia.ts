@@ -57,9 +57,20 @@ export function sanitizeIaSegment(s: string): string {
   return clean || 'file'
 }
 
-/** Object key: <userId>/<modSlug>-<timestamp>-<filename> (creator-scoped). */
-export function buildIaKey(userId: string, modSlug: string, filename: string, now = Date.now()): string {
-  return `${sanitizeIaSegment(userId)}/${sanitizeIaSegment(modSlug)}-${now}-${sanitizeIaSegment(filename)}`
+/**
+ * Object key: <userId>/<modSlug>-<token>-<filename> (creator-scoped).
+ * `token` is an optional client idempotency key (e.g. the Uppy file id) so a
+ * retried upload overwrites the same object instead of orphaning the first.
+ */
+export function buildIaKey(
+  userId: string,
+  modSlug: string,
+  filename: string,
+  now = Date.now(),
+  token?: string,
+): string {
+  const uniqueness = token ? sanitizeIaSegment(token).slice(0, 64) : String(now)
+  return `${sanitizeIaSegment(userId)}/${sanitizeIaSegment(modSlug)}-${uniqueness}-${sanitizeIaSegment(filename)}`
 }
 
 export function iaDownloadUrl(identifier: string, key: string): string {

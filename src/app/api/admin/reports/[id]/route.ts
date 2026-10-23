@@ -33,6 +33,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         createdAt: true,
         fraudScore: true,
         repeatOffenseLevel: true,
+        snapshot: true,
         reporter: {
           select: {
             id: true,

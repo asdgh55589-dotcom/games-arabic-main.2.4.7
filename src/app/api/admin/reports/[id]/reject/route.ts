@@ -1,9 +1,10 @@
 import type { NextRequest } from 'next/server'
 import { getUseCases } from '@/application/use-cases/factory'
-import { internalError, notFound, ok } from '@/lib/api-response'
+import { fail, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { isValidTransition } from '@/lib/reports/constants'
 import { checkReporterStrikes } from '@/lib/reports/reporter-strike'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { logger } from '@/lib/logger'
@@ -27,16 +28,23 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return notFound('البلاغ غير موجود')
     }
 
+    if (!isValidTransition(report.status, 'rejected')) {
+      return validationFail({ status: 'لا يمكن رفض بلاغ في هذه الحالة' })
+    }
+
     const previousStatus = report.status
 
-    await db.report.update({
-      where: { id },
+    const rejected = await db.report.updateMany({
+      where: { id, status: previousStatus },
       data: {
         status: 'rejected',
         resolution: resolution || 'البلاغ غير مبرر',
         resolvedAt: new Date(),
       },
     })
+    if (rejected.count === 0) {
+      return fail('CONFLICT', 'تغيّرت حالة البلاغ — أعد المحاولة', 409)
+    }
 
     // Record status transition
     await db.reportStatusHistory.create({

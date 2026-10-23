@@ -11,6 +11,7 @@ interface TeamCardProps {
   team: {
     id: string
     name: string
+    description: string
     logoUrl: string
     isOfficial: boolean
     isFeatured: boolean

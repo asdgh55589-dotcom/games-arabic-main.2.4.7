@@ -768,6 +768,8 @@ model Team {
   modCount           Int                 @default(0)
   views              Int                 @default(0) // مشاهدات صفحة الفريق (dedup عبر Redis)
   hiddenTabs         String              @default("") // comma-separated tab keys to hide: "stats,mods"
+  /// Soft-archive marker: null = visible, timestamp = archived (hidden from public APIs).
+  archivedAt         DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   mods               Mod[]
@@ -784,6 +786,7 @@ model Team {
   @@index([order])
   @@index([modCount])
   @@index([views])
+  @@index([archivedAt])
   // A3 (GAM-8): one team per owner — enforced at the DB level so concurrent
   // POST /api/creator/team requests cannot create duplicates (P2002 → 409).
   // ownerId is nullable (legacy rows); Postgres permits multiple NULLs.
@@ -1049,7 +1052,8 @@ model ModRequest {
   storeLinks      String?   @db.Text // JSON array: ["https://...","https://..."]
   translationType String? // deprecated — لم يعد مستخدماً
   notes           String?   @db.Text
-  status          String    @default("open") // open | accepted | completed | cancelled
+  status          String    @default("open") // open | accepted | in_progress | completed | cancelled | rejected
+  rejectionReason String?   @db.Text
   acceptedBy      String?
   acceptedUser    User?     @relation("AcceptedRequests", fields: [acceptedBy], references: [id], onDelete: SetNull)
   acceptedAt      DateTime?
@@ -1436,9 +1440,9 @@ model Report {
 
   targetType      ReportType // migrated from String
   targetModId     String?
-  targetMod       Mod?        @relation(fields: [targetModId], references: [id], onDelete: Cascade)
+  targetMod       Mod?        @relation(fields: [targetModId], references: [id], onDelete: SetNull)
   targetCommentId String?
-  targetComment   ModComment? @relation(fields: [targetCommentId], references: [id], onDelete: Cascade)
+  targetComment   ModComment? @relation(fields: [targetCommentId], references: [id], onDelete: SetNull)
   targetUserId    String?
   targetUser      User?       @relation("ReportsTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
 
@@ -1460,6 +1464,9 @@ model Report {
   repeatOffenseLevel Int   @default(0) // 0-3
 
   ipAddress String?
+  /// Snapshot of the moderated target before deletion — preserves the audit trail
+  /// when content_deleted removes the mod/comment (targetModId becomes NULL).
+  snapshot Json?
 
   fraudSignals  ReportFraudSignal[]
   statusHistory ReportStatusHistory[]
@@ -1927,6 +1934,8 @@ model UploadAsset {
   @@index([modId])
   @@index([provider])
   @@index([createdAt])
+  // Idempotency guard: one asset per creator + IA object key.
+  @@unique([userId, storageKey])
 }
 
 // P3 — video metadata cache (yt-dlp/oEmbed results, 7-day TTL).

@@ -59,7 +59,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const report = await db.report.findFirst({
       where: {
         id,
-        OR: [{ targetMod: { authorId: user.id } }, { targetComment: { mod: { authorId: user.id } } }],
+        OR: [
+          { targetMod: { authorId: user.id } },
+          { targetComment: { mod: { authorId: user.id } } },
+          { snapshot: { path: ['data', 'authorId'], equals: user.id } },
+          { snapshot: { path: ['data', 'userId'], equals: user.id } },
+        ],
       },
       select: { id: true, status: true },
     })

@@ -13,8 +13,10 @@ export const RequestStatusFilterSchema = z.enum([
   'mine',
   'open',
   'accepted',
+  'in_progress',
   'completed',
   'cancelled',
+  'rejected',
 ])
 export type RequestStatusFilter = z.infer<typeof RequestStatusFilterSchema>
 

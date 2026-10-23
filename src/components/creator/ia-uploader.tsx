@@ -8,7 +8,7 @@ import '@uppy/core/css/style.css'
 import '@uppy/dashboard/css/style.css'
 import * as React from 'react'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import { parseUppyErrorEnvelope } from '@/lib/uppy-envelope'
+import { parseUppyErrorEnvelope, parseUppySuccessEnvelope } from '@/lib/uppy-envelope'
 
 export interface IaUploadedFile {
   /** Final archive.org download URL to store in the mod row. */
@@ -24,13 +24,31 @@ interface IaUploaderProps {
   title?: string
   maxFileSize?: number
   maxNumberOfFiles?: number
-  /** 'direct' = browser→IA presigned PUT (full bandwidth). 'relay' = via server stream (IA CORS fallback). */
+  /**
+   * 'relay' (default, live path) = server-streamed S3 PUT.
+   * 'direct' = explicit opt-in only; the legacy presigned PUT is dead.
+   */
   mode?: 'direct' | 'relay'
   onComplete: (files: IaUploadedFile[]) => void
   onError?: (message: string) => void
 }
 
-const ARCHIVE_TYPES = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso']
+const ARCHIVE_TYPES = [
+  '.zip',
+  '.rar',
+  '.7z',
+  '.tar',
+  '.gz',
+  '.bz2',
+  '.xz',
+  '.iso',
+  '.pdf',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+]
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000
 
 interface SignResponse {
@@ -51,7 +69,7 @@ export function IaUploader({
   title,
   maxFileSize,
   maxNumberOfFiles = 3,
-  mode = 'direct',
+  mode = 'relay',
   onComplete,
   onError,
 }: IaUploaderProps) {
@@ -111,7 +129,10 @@ export function IaUploader({
       allowedMetaFields: false,
       timeout: TWO_HOURS_MS,
       limit: 2,
-      getResponseData: () => ({}),
+      // The relay route streams to IA and returns our { data: {...} }
+      // envelope; without this Uppy would hand upload-success an empty body
+      // and /complete would receive blank key/downloadUrl.
+      getResponseData: (xhr: XMLHttpRequest) => parseUppySuccessEnvelope(xhr.responseText),
     })
 
     // Sanctioned pre-upload hook: sign each file (direct) or attach relay
@@ -133,8 +154,11 @@ export function IaUploader({
                   'x-ia-filename': encodeURIComponent(file.name || 'file'),
                   'x-ia-mime': file.type || 'application/octet-stream',
                   'x-ia-modslug': slug || 'mod',
+                  'x-ia-modid': mid || '',
                   'x-ia-title': (t || file.name || 'mod').slice(0, 200),
                   'x-ia-bytes': String(file.size || 0),
+                  // Uppy file id: retries reuse the same IA key (no orphans).
+                  'x-ia-key': file.id || '',
                 },
               } as never,
               meta: { ...file.meta, iaReady: true, iaMode: 'relay' },
@@ -182,24 +206,35 @@ export function IaUploader({
     })
 
     // Per-file verify+record AFTER bytes land (server HeadObject + quota).
-    uppy.on('upload-success', (file, _response) => {
+    // NOTE: Uppy's core listener sets file.response AFTER emitting, so the
+    // first arg snapshot has no response — the parsed body is arg #2 only.
+    uppy.on('upload-success', (file, response) => {
       if (!file) return
       const meta = (file.meta ?? {}) as Record<string, unknown>
-      const body = (file.response?.body ?? {}) as Record<string, unknown>
+      const body = (response?.body ?? {}) as Record<string, unknown>
+      const relayKey = typeof body.key === 'string' ? body.key : ''
+      const relayUrl = typeof body.downloadUrl === 'string' ? body.downloadUrl : ''
+      const relayBytes = typeof body.bytes === 'number' ? body.bytes : file.size
       const p = (async (): Promise<IaUploadedFile | null> => {
         try {
+          if (meta.iaMode === 'relay' && (!relayKey || !relayUrl.startsWith('https://'))) {
+            // Never send blank provenance to /complete (the old getResponseData
+            // bug); surface an Arabic error instead.
+            throw new Error(dict.uploader.confirmFailed)
+          }
           const completeRes = await fetch('/api/storage/ia/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
               meta.iaMode === 'relay'
                 ? {
-                    key: typeof body.key === 'string' ? body.key : '',
-                    downloadUrl: typeof body.downloadUrl === 'string' ? body.downloadUrl : '',
-                    bytes: typeof body.bytes === 'number' ? body.bytes : file.size,
+                    key: relayKey,
+                    downloadUrl: relayUrl,
+                    bytes: relayBytes,
                     mime: file.type,
                     modId: propsRef.current.modId,
                     mode: 'relay',
+                    usageRecorded: body.usageRecorded === true,
                   }
                 : {
                     key: meta.iaKey,

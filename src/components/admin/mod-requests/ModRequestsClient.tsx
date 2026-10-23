@@ -4,16 +4,17 @@ import {
   Archive,
   CheckCircle,
   Clock,
-  Download,
   Eye,
   Gamepad2,
   Heart,
   Inbox,
+  PackageCheck,
+  Play,
   XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AdminDataTable,
   type BulkAction,
@@ -25,13 +26,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { MOD_REQUEST_STATUS_LABELS } from '@/lib/requests/state-machine'
 
 interface ModRequestItem {
   id: string
   gameName: string
   platform: string
   notes: string | null
+  rejectionReason: string | null
   status: string
   interestCount: number
   createdAt: string
@@ -54,6 +68,29 @@ interface Props {
   initialDirection: string
 }
 
+type ActionKind = 'accept' | 'reject' | 'complete'
+
+const POLL_INTERVAL_MS = 30_000
+
+const STATUS_STYLES: Record<string, string> = {
+  open: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  accepted: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  in_progress: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+  completed: 'bg-green-500/10 text-green-600 border-green-500/20',
+  cancelled: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+  rejected: 'bg-red-500/10 text-red-600 border-red-500/20',
+}
+
+function statusLabel(status: string): string {
+  return MOD_REQUEST_STATUS_LABELS[status as keyof typeof MOD_REQUEST_STATUS_LABELS] || status
+}
+
+function errorMessage(json: unknown): string {
+  const err = (json as { error?: { message?: string; details?: unknown } })?.error
+  if (typeof err?.details === 'string') return err.details
+  return err?.message || 'فشل تنفيذ الإجراء'
+}
+
 export function ModRequestsClient({
   initialData,
   totalCount,
@@ -67,6 +104,8 @@ export function ModRequestsClient({
 }: Props) {
   const router = useRouter()
   const { toast } = useToast()
+  const [items, setItems] = useState<ModRequestItem[]>(initialData)
+  const [total, setTotal] = useState(totalCount)
   const [page, setPage] = useState(initialPage)
   const [pageSize, setPageSize] = useState(initialPageSize)
   const [search, setSearch] = useState(initialSearch)
@@ -81,6 +120,17 @@ export function ModRequestsClient({
     initialDirection as 'asc' | 'desc',
   )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const [dialog, setDialog] = useState<{ kind: ActionKind; req: ModRequestItem } | null>(null)
+  const [translatorInput, setTranslatorInput] = useState('')
+  const [reasonInput, setReasonInput] = useState('')
+  const [modInput, setModInput] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setItems(initialData)
+    setTotal(totalCount)
+  }, [initialData, totalCount])
 
   const updateUrl = (patch: Record<string, string>) => {
     const params = new URLSearchParams(window.location.search)
@@ -121,8 +171,124 @@ export function ModRequestsClient({
     setPage(1)
   }
 
+  const refresh = useCallback(async () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize) })
+    if (search) params.set('search', search)
+    if (statusFilter.length === 1) params.set('status', statusFilter[0])
+    if (platformFilter.length === 1) params.set('platform', platformFilter[0])
+    params.set('sort', sortField)
+    params.set('direction', sortDirection)
+    try {
+      const res = await fetch(`/api/admin/mod-requests?${params.toString()}`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      const rows = json?.data?.data
+      if (Array.isArray(rows)) setItems(rows)
+      const nextTotal = json?.data?.pagination?.total
+      if (typeof nextTotal === 'number') setTotal(nextTotal)
+    } catch {
+      // polling is best-effort
+    }
+  }, [page, pageSize, search, statusFilter, platformFilter, sortField, sortDirection])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void refresh()
+    }, POLL_INTERVAL_MS)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [refresh])
+
+  const patchRequest = async (id: string, body: Record<string, unknown>) => {
+    const res = await fetch(`/api/admin/mod-requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(errorMessage(json))
+    return json
+  }
+
+  const openDialog = (kind: ActionKind, req: ModRequestItem) => {
+    setTranslatorInput('')
+    setReasonInput('')
+    setModInput(req.mod?.id || '')
+    setDialog({ kind, req })
+  }
+
+  const submitDialog = async () => {
+    if (!dialog) return
+    const body: Record<string, unknown> = {}
+    if (dialog.kind === 'accept') {
+      body.status = 'accepted'
+      if (!translatorInput.trim()) {
+        toast({ title: 'يرجى اختيار المُعَرِّب', variant: 'destructive' })
+        return
+      }
+      body.acceptedBy = translatorInput.trim()
+    } else if (dialog.kind === 'reject') {
+      if (!reasonInput.trim()) {
+        toast({ title: 'يرجى إدخال سبب الرفض', variant: 'destructive' })
+        return
+      }
+      body.status = 'rejected'
+      body.reason = reasonInput.trim()
+    } else {
+      if (!modInput.trim()) {
+        toast({ title: 'يرجى إدخال معرف التعريب أو رابطه', variant: 'destructive' })
+        return
+      }
+      body.status = 'completed'
+      body.modId = modInput.trim()
+    }
+
+    setSaving(true)
+    try {
+      await patchRequest(dialog.req.id, body)
+      toast({
+        title:
+          dialog.kind === 'accept'
+            ? 'تم قبول الطلب'
+            : dialog.kind === 'reject'
+              ? 'تم رفض الطلب'
+              : 'تم إكمال الطلب',
+      })
+      setDialog(null)
+      await refresh()
+    } catch (err) {
+      toast({
+        title: 'خطأ',
+        description: (err as Error).message,
+        variant: 'destructive',
+      })
+    }
+    setSaving(false)
+  }
+
+  const startRequest = async (req: ModRequestItem) => {
+    try {
+      await patchRequest(req.id, { status: 'in_progress' })
+      toast({ title: 'تم بدء تنفيذ الطلب' })
+      await refresh()
+    } catch (err) {
+      toast({ title: 'خطأ', description: (err as Error).message, variant: 'destructive' })
+    }
+  }
+
   const filteredData = useMemo(() => {
-    let d = [...initialData]
+    let d = [...items]
     if (statusFilter.length > 0) d = d.filter((r) => statusFilter.includes(r.status))
     if (platformFilter.length > 0) d = d.filter((r) => platformFilter.includes(r.platform))
     if (search) {
@@ -135,24 +301,29 @@ export function ModRequestsClient({
       )
     }
     return d
-  }, [initialData, statusFilter, platformFilter, search])
+  }, [items, statusFilter, platformFilter, search])
 
   const stats: StatItem[] = [
-    { label: 'إجمالي الطلبات', value: initialData.length, icon: Inbox },
-    { label: 'مفتوحة', value: initialData.filter((r) => r.status === 'open').length, icon: Clock },
+    { label: 'إجمالي الطلبات', value: total, icon: Inbox },
+    { label: 'مفتوحة', value: items.filter((r) => r.status === 'open').length, icon: Clock },
     {
       label: 'مقبولة',
-      value: initialData.filter((r) => r.status === 'accepted').length,
+      value: items.filter((r) => r.status === 'accepted').length,
       icon: CheckCircle,
     },
     {
+      label: 'قيد التنفيذ',
+      value: items.filter((r) => r.status === 'in_progress').length,
+      icon: Play,
+    },
+    {
       label: 'مكتملة',
-      value: initialData.filter((r) => r.status === 'completed').length,
+      value: items.filter((r) => r.status === 'completed').length,
       icon: Gamepad2,
     },
     {
       label: 'إجمالي الاهتمام',
-      value: initialData.reduce((sum, r) => sum + r.interestCount, 0),
+      value: items.reduce((sum, r) => sum + r.interestCount, 0),
       icon: Heart,
     },
   ]
@@ -164,10 +335,10 @@ export function ModRequestsClient({
       sortable: true,
       render: (req) => (
         <div className="flex items-center gap-2">
-          <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
+          <Gamepad2 className="h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
-            <div className="font-medium truncate">{req.gameName}</div>
-            <div className="text-xs text-muted-foreground">{req.platform}</div>
+            <div className="truncate font-medium">{req.gameName}</div>
+            <div className="text-muted-foreground text-xs">{req.platform}</div>
           </div>
         </div>
       ),
@@ -183,7 +354,7 @@ export function ModRequestsClient({
               {req.user.username[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm truncate">{req.user.username}</span>
+          <span className="truncate text-sm">{req.user.username}</span>
         </div>
       ),
     },
@@ -191,38 +362,11 @@ export function ModRequestsClient({
       key: 'status',
       label: 'الحالة',
       sortable: true,
-      render: (req) => {
-        const map: Record<string, { label: string; className: string }> = {
-          open: {
-            label: 'مفتوح',
-            className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-          },
-          accepted: { label: 'مقبول', color: 'text-blue-500 bg-blue-500/10' } as unknown as {
-            label: string
-            className: string
-          },
-          completed: {
-            label: 'مكتمل',
-            className: 'bg-green-500/10 text-green-600 border-green-500/20',
-          },
-          cancelled: {
-            label: 'ملغي',
-            className: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-          },
-        }
-        const cfg = map[req.status] || map.open
-        // Fix accepted mapping
-        const acceptedFix =
-          req.status === 'accepted'
-            ? { label: 'مقبول', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' }
-            : cfg
-        const finalCfg = req.status === 'accepted' ? acceptedFix : cfg
-        return (
-          <Badge variant="outline" className={finalCfg.className}>
-            {finalCfg.label}
-          </Badge>
-        )
-      },
+      render: (req) => (
+        <Badge variant="outline" className={STATUS_STYLES[req.status] || STATUS_STYLES.open}>
+          {statusLabel(req.status)}
+        </Badge>
+      ),
     },
     {
       key: 'interest',
@@ -242,7 +386,7 @@ export function ModRequestsClient({
         req.acceptedUser ? (
           <span className="text-sm">{req.acceptedUser.username}</span>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-xs">—</span>
         ),
     },
     {
@@ -252,12 +396,12 @@ export function ModRequestsClient({
         req.mod ? (
           <Link
             href={`/mod/${req.mod.slug}`}
-            className="text-sm text-primary hover:underline truncate block max-w-[150px]"
+            className="block max-w-[150px] truncate text-primary text-sm hover:underline"
           >
             {req.mod.name}
           </Link>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-xs">—</span>
         ),
     },
     {
@@ -280,36 +424,89 @@ export function ModRequestsClient({
             onClick={() =>
               toast({
                 title: `تفاصيل الطلب: ${req.gameName}`,
-                description: req.notes || 'بدون ملاحظات',
+                description:
+                  [
+                    req.rejectionReason ? `سبب الرفض: ${req.rejectionReason}` : null,
+                    req.notes,
+                  ]
+                    .filter(Boolean)
+                    .join(' — ') || 'بدون ملاحظات',
               })
             }
             aria-label="عرض التفاصيل"
           >
             <Eye className="h-4 w-4" />
           </Button>
+          {req.status === 'open' && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-emerald-600"
+                onClick={() => openDialog('accept', req)}
+                aria-label="قبول وتعيين مُعَرِّب"
+                title="قبول وتعيين مُعَرِّب"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-amber-600"
+                onClick={() => openDialog('reject', req)}
+                aria-label="رفض الطلب"
+                title="رفض الطلب"
+              >
+                <Archive className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          {req.status === 'accepted' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-blue-600"
+              onClick={() => startRequest(req)}
+              aria-label="بدء التنفيذ"
+              title="بدء التنفيذ"
+            >
+              <Play className="h-4 w-4" />
+            </Button>
+          )}
+          {(req.status === 'accepted' || req.status === 'in_progress') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-emerald-600"
+              onClick={() => openDialog('complete', req)}
+              aria-label="إكمال الطلب"
+              title="إكمال الطلب"
+            >
+              <PackageCheck className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-red-500"
-            disabled={req.status === 'completed' || req.status === 'cancelled'}
+            disabled={['completed', 'cancelled', 'rejected'].includes(req.status)}
             title={
-              req.status === 'completed' || req.status === 'cancelled'
-                ? 'الطلب مكتمل أو مغلق بالفعل'
+              ['completed', 'cancelled', 'rejected'].includes(req.status)
+                ? 'الطلب مغلق بالفعل'
                 : 'إغلاق الطلب'
             }
             onClick={async () => {
               if (!confirm(`هل تريد إغلاق طلب تعريب "${req.gameName}"؟`)) return
               try {
-                const res = await fetch(`/api/admin/mod-requests/${req.id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ status: 'cancelled' }),
-                })
-                if (!res.ok) throw new Error('فشل')
+                await patchRequest(req.id, { status: 'cancelled' })
                 toast({ title: 'تم إغلاق الطلب' })
-                router.refresh()
-              } catch {
-                toast({ title: 'خطأ', description: 'فشل إغلاق الطلب', variant: 'destructive' })
+                await refresh()
+              } catch (err) {
+                toast({
+                  title: 'خطأ',
+                  description: (err as Error).message,
+                  variant: 'destructive',
+                })
               }
             }}
             aria-label="إغلاق الطلب"
@@ -318,7 +515,7 @@ export function ModRequestsClient({
           </Button>
         </div>
       ),
-      width: '100px',
+      width: '140px',
     },
   ]
 
@@ -330,8 +527,10 @@ export function ModRequestsClient({
       options: [
         { label: 'مفتوح', value: 'open' },
         { label: 'مقبول', value: 'accepted' },
+        { label: 'قيد التنفيذ', value: 'in_progress' },
         { label: 'مكتمل', value: 'completed' },
         { label: 'ملغي', value: 'cancelled' },
+        { label: 'مرفوض', value: 'rejected' },
       ],
     },
     {
@@ -359,14 +558,17 @@ export function ModRequestsClient({
       variant: 'destructive',
       confirmMessage: 'هل تريد إغلاق الطلبات المحددة؟',
       onAction: async (ids) => {
-        for (const id of ids) {
-          await fetch(`/api/admin/mod-requests/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'cancelled' }),
-          })
+        const cancellable = filteredData.filter(
+          (r) => ids.includes(r.id) && ['open', 'accepted', 'in_progress'].includes(r.status),
+        )
+        for (const req of cancellable) {
+          try {
+            await patchRequest(req.id, { status: 'cancelled' })
+          } catch {
+            // one failed item must not abort the bulk cancel
+          }
         }
-        router.refresh()
+        await refresh()
       },
     },
     {
@@ -398,8 +600,8 @@ export function ModRequestsClient({
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">طلبات التعريب</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="font-bold text-3xl tracking-tight">طلبات التعريب</h1>
+        <p className="mt-1 text-muted-foreground text-sm">
           جميع طلبات التعريب من المستخدمين — يمكن للمُعَرِّبين قبولها
         </p>
       </div>
@@ -407,7 +609,7 @@ export function ModRequestsClient({
       <AdminDataTable
         data={filteredData}
         columns={columns}
-        totalCount={totalCount}
+        totalCount={total}
         page={page}
         pageSize={pageSize}
         onPageChange={handlePageChange}
@@ -434,50 +636,44 @@ export function ModRequestsClient({
         exportable
         exportFilename="mod-requests.csv"
         mobileCardView={(req, isSelected, onToggle) => (
-          <Card className={isSelected ? 'ring-1 ring-primary/30 bg-primary/5' : ''}>
+          <Card className={isSelected ? 'bg-primary/5 ring-1 ring-primary/30' : ''}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Gamepad2 className="h-8 w-8 text-primary shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{req.gameName}</div>
-                  <div className="text-xs text-muted-foreground">
+              <div className="mb-3 flex items-center gap-3">
+                <Gamepad2 className="h-8 w-8 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{req.gameName}</div>
+                  <div className="text-muted-foreground text-xs">
                     {req.platform} · {req.user.username}
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                  {req.status === 'open'
-                    ? 'مفتوح'
-                    : req.status === 'accepted'
-                      ? 'مقبول'
-                      : req.status === 'completed'
-                        ? 'مكتمل'
-                        : 'ملغي'}
+                  {statusLabel(req.status)}
                 </Badge>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+              <div className="mb-3 grid grid-cols-3 gap-2 text-sm">
                 <div className="text-center">
-                  <div className="font-bold flex items-center justify-center gap-1">
+                  <div className="flex items-center justify-center gap-1 font-bold">
                     <Heart className="h-3 w-3 text-red-500" />
                     {req.interestCount}
                   </div>
-                  <div className="text-xs text-muted-foreground">اهتمام</div>
+                  <div className="text-muted-foreground text-xs">اهتمام</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-bold truncate">{req.acceptedUser?.username || '—'}</div>
-                  <div className="text-xs text-muted-foreground">المُعَرِّب</div>
+                  <div className="truncate font-bold">{req.acceptedUser?.username || '—'}</div>
+                  <div className="text-muted-foreground text-xs">المُعَرِّب</div>
                 </div>
                 <div className="text-center">
                   <div className="text-xs">
                     {new Date(req.createdAt).toLocaleDateString('ar-EG')}
                   </div>
-                  <div className="text-xs text-muted-foreground">التاريخ</div>
+                  <div className="text-muted-foreground text-xs">التاريخ</div>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 min-h-[44px] text-xs"
+                  className="min-h-[44px] flex-1 text-xs"
                   onClick={onToggle}
                 >
                   {isSelected ? 'إلغاء' : 'تحديد'}
@@ -485,7 +681,7 @@ export function ModRequestsClient({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 min-h-[44px] text-xs"
+                  className="min-h-[44px] flex-1 text-xs"
                   onClick={() => (window.location.href = `/mod/${req.mod?.slug || ''}`)}
                   disabled={!req.mod}
                 >
@@ -496,6 +692,70 @@ export function ModRequestsClient({
           </Card>
         )}
       />
+
+      <Dialog open={!!dialog} onOpenChange={(open) => !open && setDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dialog?.kind === 'accept'
+                ? 'قبول الطلب وتعيين مُعَرِّب'
+                : dialog?.kind === 'reject'
+                  ? 'رفض طلب التعريب'
+                  : 'إكمال طلب التعريب'}
+            </DialogTitle>
+            <DialogDescription>
+              {dialog?.req.gameName} — {dialog?.req.platform}
+            </DialogDescription>
+          </DialogHeader>
+
+          {dialog?.kind === 'accept' && (
+            <div className="space-y-2">
+              <Label htmlFor="translator">اسم المستخدم للمُعَرِّب (اختياري)</Label>
+              <Input
+                id="translator"
+                value={translatorInput}
+                onChange={(e) => setTranslatorInput(e.target.value)}
+                placeholder="اتركه فارغاً للقبول بدون تعيين"
+              />
+            </div>
+          )}
+
+          {dialog?.kind === 'reject' && (
+            <div className="space-y-2">
+              <Label htmlFor="reason">سبب الرفض *</Label>
+              <Textarea
+                id="reason"
+                value={reasonInput}
+                onChange={(e) => setReasonInput(e.target.value)}
+                placeholder="اذكر سبب رفض الطلب..."
+                rows={3}
+              />
+            </div>
+          )}
+
+          {dialog?.kind === 'complete' && (
+            <div className="space-y-2">
+              <Label htmlFor="modId">معرف التعريب أو الـslug *</Label>
+              <Input
+                id="modId"
+                value={modInput}
+                onChange={(e) => setModInput(e.target.value)}
+                placeholder="مثال: the-witcher-3-arabic"
+                dir="ltr"
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialog(null)} disabled={saving}>
+              إلغاء
+            </Button>
+            <Button onClick={submitDialog} disabled={saving}>
+              {saving ? 'جارٍ الحفظ...' : 'تأكيد'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

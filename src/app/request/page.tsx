@@ -18,6 +18,7 @@ import {
   TrendingUp,
   User,
   X,
+  XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -39,6 +40,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
 import { platformDisplayName } from '@/lib/platform-names'
+import { getRequestStatusLabel } from '@/lib/requests/state-machine'
 
 // ===== منصاتنا المدعومة — fallback مطابق للأقسام =====
 // القيم الإنجليزية ثابتة (DB) — العرض فقط ثنائي اللغة عبر platformDisplayName.
@@ -84,22 +86,47 @@ function platformIcon(key: string): React.ElementType {
 
 function statusBadge(status: string) {
   switch (status) {
+    case 'open':
+      return (
+        <Badge variant="outline" className="gap-1">
+          <Clock className="h-3 w-3" /> مفتوح
+        </Badge>
+      )
     case 'accepted':
       return (
-        <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
+        <Badge className="gap-1 bg-amber-500 text-white hover:bg-amber-600">
           <Clock className="h-3 w-3" /> جاري العمل
+        </Badge>
+      )
+    case 'in_progress':
+      return (
+        <Badge className="gap-1 bg-blue-500 text-white hover:bg-blue-600">
+          <Loader2 className="h-3 w-3 animate-spin" /> قيد التنفيذ
         </Badge>
       )
     case 'completed':
       return (
-        <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white gap-1">
+        <Badge className="gap-1 bg-emerald-500 text-white hover:bg-emerald-600">
           <CheckCircle className="h-3 w-3" /> مكتمل
         </Badge>
       )
+    case 'cancelled':
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <XCircle className="h-3 w-3" /> ملغي
+        </Badge>
+      )
+    case 'rejected':
+      return (
+        <Badge className="gap-1 bg-red-500 text-white hover:bg-red-600">
+          <XCircle className="h-3 w-3" /> مرفوض
+        </Badge>
+      )
     default:
+      // حالات غير معروفة تُعرض كنصها — إياها ألا تظهر كـ"مفتوح".
       return (
         <Badge variant="outline" className="gap-1">
-          <Clock className="h-3 w-3" /> مفتوح
+          {getRequestStatusLabel(status)}
         </Badge>
       )
   }
@@ -648,7 +675,7 @@ export default function RequestPage() {
                             size="sm"
                             onClick={() => handleBoost(r.id)}
                             className="gap-1"
-                            disabled={r.status === 'completed'}
+                            disabled={r.status !== 'open'}
                           >
                             <Heart className="h-4 w-4" /> {r.interestCount}
                           </Button>

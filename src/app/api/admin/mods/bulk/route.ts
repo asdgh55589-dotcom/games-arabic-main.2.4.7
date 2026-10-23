@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, validationFail } from '@/lib/api-response'
 import { requireAdmin, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { snapshotReportsForTarget } from '@/lib/reports/snapshot'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { WORKFLOW_STATUSES, type WorkflowStatus } from '@/lib/workflow'
 import { logger } from '@/lib/logger'
@@ -99,7 +100,12 @@ export async function DELETE(req: NextRequest) {
       where: { id: { in: ids } },
       select: { gameId: true },
     })
-    await db.mod.deleteMany({ where: { id: { in: ids } } })
+    await db.$transaction(async (tx) => {
+      for (const id of ids) {
+        await snapshotReportsForTarget({ modId: id }, tx)
+      }
+      await tx.mod.deleteMany({ where: { id: { in: ids } } })
+    })
     invalidateGameModsCache(games.map((g) => g.gameId)).catch(() => {})
 
     return ok({ success: true, deleted: toDelete })

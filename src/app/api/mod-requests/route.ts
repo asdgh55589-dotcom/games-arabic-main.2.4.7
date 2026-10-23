@@ -10,6 +10,8 @@ import { logger } from '@/lib/logger'
 export async function GET(req: NextRequest) {
   try {
     const requests = await db.modRequest.findMany({
+      // الطلبات الملغاة/المرفوضة لا تُعرض للعامة — تبقى للمشرفين فقط.
+      where: { status: { notIn: ['cancelled', 'rejected'] } },
       include: {
         user: { select: { id: true, username: true, avatarUrl: true } },
         acceptedUser: { select: { id: true, username: true, avatarUrl: true } },

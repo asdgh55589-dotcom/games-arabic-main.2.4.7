@@ -106,6 +106,12 @@ describe('report submission contract', () => {
 })
 
 describe('ReportDialog request body (real component)', () => {
+  const originalFetch = global.fetch
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
   async function submitReport(targetType: 'mod' | 'comment' | 'user', targetId: string) {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

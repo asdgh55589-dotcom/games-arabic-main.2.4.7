@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
         priority: true,
         status: true,
         actionTaken: true,
+        snapshot: true,
         createdAt: true,
         resolvedAt: true,
         reporter: { select: { username: true } },
@@ -70,6 +71,12 @@ export async function GET(req: NextRequest) {
       version_mismatch: 'غير متوافق مع نسخة اللعبة',
     }
     const targetLabels: Record<string, string> = { mod: 'تعريب', comment: 'تعليق', user: 'مستخدم' }
+    const snapshotTitle = (snapshot: unknown): string => {
+      const s = snapshot as { type?: string; data?: { name?: string; text?: string } } | null
+      if (s?.type === 'mod' && s.data?.name) return s.data.name
+      if (s?.type === 'comment' && s.data?.text) return s.data.text.slice(0, 50)
+      return ''
+    }
     const actionLabels: Record<string, string> = {
       warned: 'تحذير',
       content_hidden: 'إخفاء',
@@ -87,7 +94,11 @@ export async function GET(req: NextRequest) {
         r.priority,
         r.status,
         r.reporter?.username || 'مجهول',
-        r.targetMod?.name || r.targetComment?.text?.slice(0, 50) || r.targetUser?.username || '-',
+        r.targetMod?.name ||
+          r.targetComment?.text?.slice(0, 50) ||
+          r.targetUser?.username ||
+          snapshotTitle(r.snapshot) ||
+          '-',
         r.createdAt.toISOString(),
         r.resolvedAt?.toISOString() || '-',
         actionLabels[r.actionTaken || ''] || r.actionTaken || '-',

@@ -72,7 +72,7 @@ const limitedOnce = () => {
 }
 
 const txMock = {
-  report: { update: jest.fn() },
+  report: { findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
   reportStatusHistory: { create: jest.fn() },
   mod: { update: jest.fn() },
   workflowEntry: { create: jest.fn() },
@@ -86,6 +86,8 @@ beforeEach(() => {
   ;(db.$transaction as jest.Mock).mockImplementation(async (arg: any) =>
     typeof arg === 'function' ? arg(txMock) : Promise.all(arg),
   )
+  txMock.report.findMany.mockReset().mockResolvedValue([])
+  txMock.report.updateMany.mockReset().mockResolvedValue({ count: 0 })
   txMock.report.update.mockReset().mockResolvedValue({})
   txMock.reportStatusHistory.create.mockReset().mockResolvedValue({})
   txMock.mod.update.mockReset().mockResolvedValue({})
@@ -169,6 +171,29 @@ describe('B3 — requests status whitelist', () => {
       await requestsGET(req(`http://x/api/creator/requests?status=${s}`))
     }
     expect(db.modRequest.findMany).toHaveBeenCalledTimes(6)
+  })
+
+  it('hides cancelled/rejected from the marketplace view', async () => {
+    await requestsGET(req('http://x/api/creator/requests?status=all'))
+
+    expect(db.modRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: { notIn: ['cancelled', 'rejected'] } }),
+      }),
+    )
+  })
+
+  it('scopes closed requests to requester or assignee', async () => {
+    await requestsGET(req('http://x/api/creator/requests?status=cancelled'))
+
+    expect(db.modRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'cancelled',
+          OR: [{ userId: 'u1' }, { acceptedBy: 'u1' }],
+        }),
+      }),
+    )
   })
 })
 

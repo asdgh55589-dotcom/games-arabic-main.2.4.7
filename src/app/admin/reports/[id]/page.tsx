@@ -94,6 +94,7 @@ interface ReportDetail {
       reportAccuracy?: number
     } | null
   } | null
+  snapshot?: { type: string; data?: { name?: string; text?: string; username?: string } } | null
   targetMod: { id: string; name: string; slug: string; thumbnailUrl: string } | null
   targetComment: { id: string; text: string; createdAt: string } | null
   targetUser: {
@@ -510,6 +511,18 @@ export default function AdminReportDetailPage() {
             <Card className="p-5">
               <h3 className="mb-2 font-semibold">التعليق المُبلَّغ عنه</h3>
               <p className="text-sm text-muted-foreground">{report.targetComment.text}</p>
+            </Card>
+          )}
+          {!report.targetMod && report.snapshot?.type === 'mod' && report.snapshot.data?.name && (
+            <Card className="border-amber-500/40 bg-amber-500/5 p-5">
+              <h3 className="mb-2 font-semibold">التعريب المُبلَّغ عنه (محذوف)</h3>
+              <p className="text-sm text-muted-foreground">{report.snapshot.data.name}</p>
+            </Card>
+          )}
+          {!report.targetComment && report.snapshot?.type === 'comment' && report.snapshot.data?.text && (
+            <Card className="border-amber-500/40 bg-amber-500/5 p-5">
+              <h3 className="mb-2 font-semibold">التعليق المُبلَّغ عنه (محذوف)</h3>
+              <p className="text-sm text-muted-foreground">{report.snapshot.data.text}</p>
             </Card>
           )}
           {report.targetUser && (

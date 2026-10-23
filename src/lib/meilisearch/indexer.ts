@@ -54,7 +54,7 @@ export async function seedGamesIndex() {
 
 export async function seedTeamsIndex() {
   if (!meili) return
-  const teams = await db.team.findMany()
+  const teams = await db.team.findMany({ where: { archivedAt: null } })
   const docs = teams.map((t) => ({
     id: t.id,
     name: t.name,

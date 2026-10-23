@@ -5,7 +5,7 @@ import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { executeAutoAction } from '@/lib/reports/auto-actions'
-import { REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
+import { isValidTransition, REPORT_ACTIONS, type ReportAction } from '@/lib/reports/constants'
 import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { logger } from '@/lib/logger'
@@ -50,30 +50,39 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return notFound('البلاغ غير موجود')
     }
 
-    if (report.status === 'confirmed' || report.status === 'resolved') {
+    if (!isValidTransition(report.status, 'confirmed')) {
       return validationFail({ status: 'تم معالجة هذا البلاغ مسبقاً' })
     }
 
     const previousStatus = report.status
 
-    // نحدد هوية صاحب المحتوى مبكراً لاستخدامها في التنفيذ والإشعارات
+    // نحدد هوية صاحب المحتوى وعنوانه مبكراً — قبل أن يحذف content_deleted الهدف
+    // حتى تبقى الإشعارات وسجل التدقيق قادرين على ذكر العنوان بعد الحذف.
     let targetUserIdToNotifyEarly = report.targetUserId
+    let targetTitle = 'محتوى'
     if (report.targetType === 'mod' && report.targetModId) {
       const modEarly = await db.mod.findUnique({
         where: { id: report.targetModId },
-        select: { authorId: true },
+        select: { authorId: true, name: true },
       })
-      if (modEarly) targetUserIdToNotifyEarly = modEarly.authorId
+      if (modEarly) {
+        targetUserIdToNotifyEarly = modEarly.authorId
+        targetTitle = modEarly.name
+      }
     } else if (report.targetType === 'comment' && report.targetCommentId) {
       const commentEarly = await db.modComment.findUnique({
         where: { id: report.targetCommentId },
-        select: { userId: true },
+        select: { userId: true, text: true },
       })
-      if (commentEarly?.userId) targetUserIdToNotifyEarly = commentEarly.userId
+      if (commentEarly) {
+        if (commentEarly.userId) targetUserIdToNotifyEarly = commentEarly.userId
+        const t = (commentEarly.text || '').trim()
+        targetTitle = t.length > 50 ? t.substring(0, 50) + '...' : t || 'تعليق'
+      }
     }
 
     // Execute the action — مع تمرير الهدف الفعلي (كاتب التعريب/التعليق) للحظر/التحذير + صلاحيات المنفذ
-    await executeAutoAction({
+    const actionResult = await executeAutoAction({
       reportId: id,
       action: action as ReportAction,
       resolution: resolution || '',
@@ -82,18 +91,27 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       actorId: moderator.id,
       actorRole: moderator.role,
     })
+    if (!actionResult.applied) {
+      return validationFail({ status: 'تم معالجة هذا البلاغ مسبقاً' })
+    }
 
-    // Record status transition
-    await db.reportStatusHistory.create({
-      data: {
-        reportId: id,
-        fromStatus: previousStatus as any,
-        toStatus: 'confirmed' as any,
-        action: action as any,
-        resolution: resolution || null,
-        actorId: moderator.id,
-      },
-    })
+    // Record status transition — best-effort. The action is already committed;
+    // a history hiccup must not turn a successful moderation into a 500 and
+    // strand trust-score/notification updates on retry.
+    try {
+      await db.reportStatusHistory.create({
+        data: {
+          reportId: id,
+          fromStatus: previousStatus as any,
+          toStatus: 'confirmed' as any,
+          action: action as any,
+          resolution: resolution || null,
+          actorId: moderator.id,
+        },
+      })
+    } catch (err) {
+      logger.error('[admin/reports confirm] status history failed:', err)
+    }
 
     // Audit log
     await logAction({
@@ -107,26 +125,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     })
 
     // Phase 2: Update trust scores — المُبلِغ والهدف (حتى لو هدف تعريب/تعليق نحتاج كاتب المحتوى)
-    // نستخدم الهوية المحسوبة مبكراً مع تحديث العنوان فقط
+    // نستخدم الهوية والعنوان المحسوبين مبكراً قبل تنفيذ الحذف.
     const targetUserIdToNotify = targetUserIdToNotifyEarly
-    let targetTitle = 'محتوى'
 
-    if (report.targetType === 'mod' && report.targetModId) {
-      const mod = await db.mod.findUnique({
-        where: { id: report.targetModId },
-        select: { name: true },
-      })
-      if (mod) targetTitle = mod.name
-    } else if (report.targetType === 'comment' && report.targetCommentId) {
-      const comment = await db.modComment.findUnique({
-        where: { id: report.targetCommentId },
-        select: { text: true },
-      })
-      if (comment) {
-        const t = (comment.text || '').trim()
-        targetTitle = t.length > 50 ? t.substring(0, 50) + '...' : t || 'تعليق'
-      }
-    } else if (report.targetType === 'user' && report.targetUserId) {
+    if (report.targetType === 'user' && report.targetUserId) {
       const u = await db.user.findUnique({
         where: { id: report.targetUserId },
         select: { username: true },

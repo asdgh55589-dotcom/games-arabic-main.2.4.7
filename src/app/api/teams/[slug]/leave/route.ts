@@ -27,13 +27,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   // Supports both teamId (cuid) and slug — try id first then slug
-  let team = await db.team.findUnique({
-    where: { id: teamIdOrSlug },
+  let team = await db.team.findFirst({
+    where: { id: teamIdOrSlug, archivedAt: null },
     select: { id: true, name: true, ownerId: true },
   })
   if (!team) {
     team = await db.team.findFirst({
-      where: { slug: teamIdOrSlug },
+      where: { slug: teamIdOrSlug, archivedAt: null },
       select: { id: true, name: true, ownerId: true },
     })
   }

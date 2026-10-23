@@ -9,6 +9,7 @@ import { withReadObserveHeaders } from '@/lib/read-observe'
 export async function GET(req: NextRequest) {
   try {
     const teams = await db.team.findMany({
+      where: { archivedAt: null },
       orderBy: [{ order: 'asc' }, { modCount: 'desc' }],
       select: {
         id: true,

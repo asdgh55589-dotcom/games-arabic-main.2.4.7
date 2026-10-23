@@ -18,6 +18,7 @@ interface RequestItem {
   platform: string
   notes: string | null
   status: string
+  rejectionReason: string | null
   interestCount: number
   acceptedBy: string | null
   createdAt: string
@@ -29,7 +30,9 @@ export function RequestsManager() {
   const { toast } = useToast()
   const { dict, locale } = useStudioLanguage()
   const t = dict.requestsMgr
-  const [filter, setFilter] = useState<'all' | 'open' | 'mine' | 'completed'>('open')
+  const [filter, setFilter] = useState<
+    'all' | 'open' | 'mine' | 'in_progress' | 'completed' | 'rejected'
+  >('open')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -132,7 +135,9 @@ export function RequestsManager() {
         {[
           { value: 'open', label: t.open },
           { value: 'mine', label: t.mine },
+          { value: 'in_progress', label: t.inProgress },
           { value: 'completed', label: t.completed },
+          { value: 'rejected', label: t.rejected },
           { value: 'all', label: t.all },
         ].map((f) => (
           <Button
@@ -177,18 +182,28 @@ export function RequestsManager() {
                             ? 'bg-green-500 text-white'
                             : r.status === 'accepted'
                               ? 'bg-blue-500 text-white'
-                              : r.status === 'completed'
-                                ? 'bg-purple-500 text-white'
-                                : 'bg-gray-500 text-white'
+                              : r.status === 'in_progress'
+                                ? 'bg-amber-500 text-white'
+                                : r.status === 'completed'
+                                  ? 'bg-purple-500 text-white'
+                                  : r.status === 'rejected'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-gray-500 text-white'
                         }
                       >
                         {r.status === 'open'
                           ? t.statusOpen
                           : r.status === 'accepted'
                             ? t.statusAccepted
-                            : r.status === 'completed'
-                              ? t.statusCompleted
-                              : r.status}
+                            : r.status === 'in_progress'
+                              ? t.statusInProgress
+                              : r.status === 'completed'
+                                ? t.statusCompleted
+                                : r.status === 'cancelled'
+                                  ? t.statusCancelled
+                                  : r.status === 'rejected'
+                                    ? t.statusRejected
+                                    : r.status}
                       </Badge>
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Heart className="h-3 w-3" /> {r.interestCount}
@@ -206,6 +221,11 @@ export function RequestsManager() {
                     {r.notes && (
                       <p className="text-sm mt-2 whitespace-pre-wrap bg-muted/50 rounded p-2">
                         {r.notes}
+                      </p>
+                    )}
+                    {r.status === 'rejected' && r.rejectionReason && (
+                      <p className="text-xs mt-2 rounded bg-red-500/10 p-2 text-red-600">
+                        {t.rejectionReason} {r.rejectionReason}
                       </p>
                     )}
                     {r.mod && (
@@ -243,7 +263,7 @@ export function RequestsManager() {
                         </Button>
                       </>
                     )}
-                    {r.status === 'accepted' && (
+                    {(r.status === 'accepted' || r.status === 'in_progress') && (
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1">
                           <select

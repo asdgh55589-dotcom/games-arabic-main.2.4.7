@@ -4,6 +4,7 @@ import { syncGameCounts } from '@/lib/game-helpers'
 import { logger } from '@/lib/logger'
 import { setTokenVersionCache } from '@/lib/token-version-cache'
 import type { ReportAction } from './constants'
+import { snapshotReportTarget, type ReportTargetSnapshot } from './snapshot'
 
 interface AutoActionInput {
   reportId: string
@@ -44,9 +45,29 @@ export async function executeAutoAction(
       targetCommentId: true,
     },
   })
-  if (!report) return
+  if (!report) return { applied: false }
 
   const userId = targetUserId || report.targetUserId
+
+  // Claim the report BEFORE side effects for non-delete actions. This makes
+  // concurrent confirms/retries lose cleanly instead of double-warning,
+  // double-banning or incrementing tokenVersion twice.
+  if (action !== 'content_deleted') {
+    const claimed = await db.report.updateMany({
+      where: {
+        id: reportId,
+        status: { notIn: ['confirmed', 'rejected', 'resolved'] },
+      },
+      data: {
+        status: 'confirmed' as any,
+        actionTaken: action as any,
+        actionAt: new Date(),
+        resolution,
+        resolvedAt: new Date(),
+      },
+    })
+    if (claimed.count === 0) return { applied: false }
+  }
 
   if (action === 'warned' && userId) {
     await db.userAction.create({
@@ -83,20 +104,75 @@ export async function executeAutoAction(
   }
 
   if (action === 'content_deleted') {
-    if (report.targetModId) {
-      // نحتاج gameId قبل الحذف لإعادة حساب عدّادات اللعبة بعده.
-      const target = await db.mod.findUnique({
-        where: { id: report.targetModId },
-        select: { gameId: true },
+    // Snapshot + conditional resolution + target delete are one transaction:
+    // concurrent confirms cannot double-delete or overwrite a good snapshot.
+    let applied = false
+    let gameId: string | undefined
+
+    await db.$transaction(async (tx) => {
+      const current = await tx.report.findUnique({
+        where: { id: reportId },
+        select: {
+          status: true,
+          targetModId: true,
+          targetCommentId: true,
+          snapshot: true,
+        },
       })
-      await db.mod.delete({ where: { id: report.targetModId } })
-      if (target?.gameId) {
-        // الحذف التلقائي يزيح العدّادات — تُعاد مزامنتها (best-effort).
-        syncGameCounts(target.gameId).catch(() => {})
+      if (!current) return
+      if (current.status === 'confirmed' || current.status === 'resolved') return
+
+      // Preserve an existing snapshot (e.g. captured by a concurrent attempt).
+      const snapshot =
+        (current.snapshot as ReportTargetSnapshot | null) ??
+        (await snapshotReportTarget(current, tx))
+      if (snapshot.type === 'mod') gameId = snapshot.data.gameId
+
+      const updated = await tx.report.updateMany({
+        where: {
+          id: reportId,
+          status: { notIn: ['confirmed', 'rejected', 'resolved'] },
+        },
+        data: {
+          status: 'confirmed' as any,
+          actionTaken: action as any,
+          actionAt: new Date(),
+          resolution,
+          resolvedAt: new Date(),
+          snapshot: snapshot as any,
+        },
+      })
+      if (updated.count === 0) return
+
+      // deleteMany is idempotent (no P2025 if a concurrent request won).
+      if (snapshot.type === 'mod' && current.targetModId) {
+        await tx.mod.deleteMany({ where: { id: current.targetModId } })
+      } else if (snapshot.type === 'comment' && current.targetCommentId) {
+        await tx.modComment.deleteMany({ where: { id: current.targetCommentId } })
       }
-    } else if (report.targetCommentId) {
-      await db.modComment.delete({ where: { id: report.targetCommentId } })
+      applied = true
+    })
+
+    if (!applied) return { applied: false }
+
+    if (gameId) {
+      // الحذف التلقائي يزيح العدّادات — تُعاد مزامنتها بعد commit (best-effort).
+      syncGameCounts(gameId).catch(() => undefined)
     }
+
+    try {
+      await db.auditLog.create({
+        data: {
+          action: 'moderate',
+          entity: 'report',
+          entityId: reportId,
+          details: JSON.stringify({ action, resolution }),
+        },
+      })
+    } catch (err) {
+      logger.warn({ event: 'report_auto_action_audit_failed', action, err }, 'audit failed')
+    }
+    return { applied: true }
   }
 
   if ((action === 'temp_ban' || action === 'perm_ban') && userId) {
@@ -154,23 +230,18 @@ export async function executeAutoAction(
     }
   }
 
-  await db.report.update({
-    where: { id: reportId },
-    data: {
-      status: 'confirmed' as any,
-      actionTaken: action as any,
-      actionAt: new Date(),
-      resolution,
-      resolvedAt: new Date(),
-    },
-  })
+  try {
+    await db.auditLog.create({
+      data: {
+        action: 'moderate',
+        entity: 'report',
+        entityId: reportId,
+        details: JSON.stringify({ action, resolution }),
+      },
+    })
+  } catch (err) {
+    logger.warn({ event: 'report_auto_action_audit_failed', action, err }, 'audit failed')
+  }
 
-  await db.auditLog.create({
-    data: {
-      action: 'moderate',
-      entity: 'report',
-      entityId: reportId,
-      details: JSON.stringify({ action, resolution }),
-    },
-  })
+  return { applied: true }
 }

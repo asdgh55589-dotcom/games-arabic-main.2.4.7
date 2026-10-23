@@ -44,6 +44,7 @@ jest.mock('@/lib/file-delete', () => ({
 const mockAsset = {
   count: jest.fn(),
   findMany: jest.fn(),
+  findFirst: jest.fn(),
   findUnique: jest.fn(),
 }
 const mockUserDb = { findMany: jest.fn(), findUnique: jest.fn() }
@@ -53,6 +54,7 @@ jest.mock('@/lib/db', () => ({
     uploadAsset: {
       count: (...a: unknown[]) => mockAsset.count(...a),
       findMany: (...a: unknown[]) => mockAsset.findMany(...a),
+      findFirst: (...a: unknown[]) => mockAsset.findFirst(...a),
       findUnique: (...a: unknown[]) => mockAsset.findUnique(...a),
     },
     user: {
