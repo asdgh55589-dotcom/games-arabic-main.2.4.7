@@ -18,9 +18,8 @@ import { logger } from '@/lib/logger'
  * والجزء الحقيقي = counter - baseline. `thumbsdown` تفاعل سلبي وليس إعجاباً
  * فلا تُحتسب ضمن التزكيات.
  *
- * كل الاستعلامات هنا set-based (UPDATE ... FROM / CTE) لأن بركة Aiven تحتمل
- * 5 اتصالات فقط مع statement_timeout=15000 — أي حلقة per-mod على 225 مود
- * ستكون بطيئة وهشّة.
+ * كل الاستعلامات هنا set-based (UPDATE ... FROM / CTE) لأن بركة Neon محدودة
+ * الاتصالات — أي حلقة per-mod على 225 مود ستكون بطيئة وهشّة.
  */
 
 /** التزكيات الإيجابية فقط — thumbsdown ليست إعجاباً. */

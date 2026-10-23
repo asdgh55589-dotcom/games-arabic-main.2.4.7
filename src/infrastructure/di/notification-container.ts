@@ -17,7 +17,7 @@ import { PrismaPreferenceRepository } from '@/infrastructure/repositories/prisma
 import { PrismaTemplateRepository } from '@/infrastructure/repositories/prisma-template-repository'
 
 // Shared singleton — ONE PrismaClient per process (see src/lib/db.ts).
-// A second client here would open a second pool against Aiven's pool of 5.
+// A second client here would open a second pool against the database connection limit.
 
 let notificationService: NotificationService | null = null
 let queryService: NotificationQueryService | null = null

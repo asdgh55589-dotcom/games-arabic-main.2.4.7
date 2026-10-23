@@ -29,7 +29,7 @@ const getModData = cache(async (slug: string) => {
 
 // Build-time pre-rendering of mod pages is disabled: the mod detail route now
 // runs heavier queries (children, siteLinks, per-link download counts) and
-// pre-rendering 100 pages during `next build` exhausted the Aiven connection
+// pre-rendering 100 pages during `next build` exhausted the database connection
 // pool. Pages are generated on first request and cached via ISR (revalidate).
 export async function generateStaticParams() {
   return []

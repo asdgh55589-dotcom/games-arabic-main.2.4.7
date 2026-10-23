@@ -1,9 +1,9 @@
 /**
- * lib/auth.ts — نظام المصادقة (Supabase Auth + Aiven DB).
+ * lib/auth.ts — نظام المصادقة (Supabase Auth + Neon DB).
  *
  * يستخدم:
  *   - Supabase Auth للمصادقة عبر OAuth (Google, Telegram)
- *   - Aiven DB (Prisma) لبيانات المستخدمين والأدوار
+ *   - Neon DB (Prisma) لبيانات المستخدمين والأدوار
  *   - role cookie موقّع (JWT) للتحقق من الصلاحيات في الـ middleware (Edge runtime)
  *
  * الصلاحيات (التسلسل: member < creator < publisher < moderator < admin < manager < owner):

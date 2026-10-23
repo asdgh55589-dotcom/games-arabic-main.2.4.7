@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
  * **لماذا دفعات محدودة (`BOUNDED`) وليست `deleteMany` بلا حدّ:**
  * `DELETE FROM notification_logs WHERE created_at < ...` على جدول كبير يفرض
  * قفلاً طويلاً على الصفوف المحذورة ويبقي `dead tuples` تحتاج `VACUUM`، وقد
- * يقطع المعاملات الطويلة على Aiven أو يستنزف connection pool. لذلك نقرأ
+ * يقطع المعاملات الطويلة على Neon أو يستنزف connection pool. لذلك نقرأ
  * `BATCH_SIZE` معرّفات، نحذفها بـ `id: { in: ids }`، ونكرّر حتى تنفد —
  * بحلقة مُقيّدة بـ `MAX_BATCHES` حتى لو كانت البيانات فاسدة لا ينتهي التنظيف
  * أبداً في طلب واحد.
