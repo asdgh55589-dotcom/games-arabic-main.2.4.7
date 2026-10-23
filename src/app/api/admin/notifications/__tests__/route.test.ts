@@ -232,13 +232,13 @@ describe('GET /api/admin/notifications — unexpected failure', () => {
   })
 
   it('returns 500 without leaking the database error', async () => {
-    mockFindMany.mockRejectedValue(new Error('connection to Aiven refused'))
+    mockFindMany.mockRejectedValue(new Error('connection to database refused'))
 
     const res = await get()
     const body = await res.json()
 
     expect(res.status).toBe(500)
     expect(body.error.code).toBe('INTERNAL_ERROR')
-    expect(JSON.stringify(body)).not.toContain('Aiven')
+    expect(JSON.stringify(body)).not.toContain('connection to database refused')
   })
 })

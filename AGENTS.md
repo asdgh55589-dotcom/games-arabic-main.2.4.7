@@ -4,7 +4,7 @@
 - Next.js 16 (App Router, standalone output)
 - React 19, TypeScript 5
 - Tailwind CSS 4 with shadcn/ui components (40+ primitives)
-- Prisma 6 + PostgreSQL (Aiven, 81 models)
+- Prisma 6 + PostgreSQL (Neon, 81 models)
 - Supabase Auth (OAuth: Google, Telegram Deep Link)
 - Zustand + `useFetch` + React Query for data fetching
 - Upstash Redis (IP ban cache + tokenVersion cache + rate limiting)

@@ -136,10 +136,7 @@ describe('redis-down path logs warn (no swallow)', () => {
 })
 
 describe('intentional sites keep behavior', () => {
-  it('clearHomeCache throw → recordModView still counts + warns (no swallow, no rethrow)', async () => {
-    mockClearHomeCache.mockImplementation(() => {
-      throw new Error('cache down')
-    })
+  it('recordModView counts without clearing the home cache (300s TTL owns staleness)', async () => {
     const { recordModView } = require('@/lib/counters') as typeof import('@/lib/counters')
     const fakeDb = {
       mod: { update: jest.fn().mockResolvedValue({}) },
@@ -151,8 +148,9 @@ describe('intentional sites keep behavior', () => {
     await expect(recordModView('sa3-mod-intentional', req, fakeDb)).resolves.toEqual({
       counted: true,
     })
-    expect(mockWarn).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'home_cache_clear_failed', action: 'record_mod_view' }),
+    expect(mockClearHomeCache).not.toHaveBeenCalled()
+    expect(mockWarn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'home_cache_clear_failed' }),
       expect.any(String),
     )
   })

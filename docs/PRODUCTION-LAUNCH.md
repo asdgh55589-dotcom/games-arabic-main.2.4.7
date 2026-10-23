@@ -1,6 +1,7 @@
 # Production Launch Checklist
 
-> Master checklist for production launch. Merges staging-checklist, CUTOVER-CHECKLIST, and CRON-JOBS docs into a single source of truth.
+> Master checklist for production launch. Merges staging-checklist and
+> CRON-JOBS docs into a single source of truth.
 
 ## §1 Pre-launch (staging week)
 
@@ -8,7 +9,8 @@
 
 | Key | Purpose | Status |
 |---|---|---|
-| `DATABASE_URL` | Postgres (Aiven primary / Neon fallback) | |
+| `DATABASE_URL` | Postgres (Neon pooled runtime) | |
+| `DIRECT_URL` | Postgres (Neon direct — migrations/backups) | |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Auth public | |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin API (allowlist checks) | |
 | `JWT_SECRET` | Session/MFA/TOTP key root (≥32 chars) | |
@@ -32,13 +34,14 @@
 - [ ] FreeImage key active
 - [ ] IA keys ready (only if `IA_ENABLED=true`)
 
-### Aiven staging items
+### Neon staging verification
 
-- [ ] Aiven connection string with `sslmode=require`, `connection_limit=5`, `pool_timeout=10`, `connect_timeout=10`
-- [ ] PITR enabled, first backup completed
-- [ ] Baseline + 9 additive migrations applied
-- [ ] Table count matches: 76 tables (73 + 3 new)
-- [ ] `pg_trgm` extension + 6 GIN indexes present
+- [ ] `DATABASE_URL` (pooled) + `DIRECT_URL` (direct) set for the staging branch
+- [ ] `sslmode=require`, `connection_limit=5`, `pool_timeout=15`, `connect_timeout=15`, `socket_timeout=30`
+- [ ] Neon restore window confirmed (7 days minimum)
+- [ ] All migrations applied (`prisma migrate status` → up to date)
+- [ ] Table count matches production: **98 public base tables**
+- [ ] `pg_trgm` + `pgcrypto` present; **0 GIN indexes**
 - [ ] Smoke test: `/`→200, `/login`→200, `/creator`→redirect, `/api/auth/me`→401, `/api/health`→200
 - [ ] Cold-start resilience tested (`withRetry` / `withDatabaseRetry`)
 - [ ] Rollback procedure documented and tested
@@ -57,59 +60,58 @@
 - [ ] `scripts/deploy.sh` exists and passes `--env-check`
 - [ ] `scripts/weekly-backup.sh` exists and passes `--dry-run`
 
-## §2 Cutover day
+## §2 Deploy day (Neon)
 
-### Pre-cutover
+### Pre-deploy
 
-- [ ] Aiven PostgreSQL 16 service provisioned (`eu-west-1`, pool size 5)
-- [ ] Aiven service reachable from production host
-- [ ] SSL verified (`sslmode=require` enforced by `src/lib/db.ts`)
-- [ ] Team notified of maintenance window
+- [ ] Neon restore branch created (`pre-release-YYYYMMDD`)
+- [ ] `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) verified in the host secrets
+- [ ] Team notified of the maintenance window
+- [ ] Off-site `pg_dump` taken as a second safety copy
 
-### Data migration
+### Migrations
 
-- [ ] **Step 1:** Final `pg_dump` from Neon: `pg_dump "$DATABASE_URL" | gzip > final-neon-dump.sql.gz`
-- [ ] **Step 2:** Restore to Aiven: `gunzip -c final-neon-dump.sql.gz | psql "$AIVEN_DATABASE_URL"`
-- [ ] **Step 3:** Apply pending migrations: `AIVEN_DATABASE_URL=<url> npx prisma migrate deploy`
-- [ ] **Step 4:** Verify schema parity (76 tables)
-- [ ] **Step 5:** Verify trigram indexes (6 rows)
-- [ ] **Step 6:** Verify migration history (baseline + 9 additive = 10 rows)
+- [ ] **Step 1:** Apply migrations: `bun run db:migrate:prod`
+- [ ] **Step 2:** `npx prisma migrate status` → "Database schema is up to date!"
+- [ ] **Step 3:** Verify schema parity: **98** public base tables
+- [ ] **Step 4:** Verify **0 GIN indexes** and `pg_trgm` + `pgcrypto` extensions
+- [ ] **Step 5:** Verify `_prisma_migrations` has no failed rows
 
-### Application switch
+### Application deploy
 
-- [ ] **Step 7:** Update `AIVEN_DATABASE_URL` env var (or swap `DATABASE_URL`)
-- [ ] **Step 8:** Rebuild app: `bun run build`
-- [ ] **Step 9:** Start app and verify health: `curl https://yourdomain.com/api/health` → 200
-- [ ] **Step 10:** Smoke test: `/`→200, `/login`→200, `/creator`→redirect, `/api/auth/me`→401, `/api/health`→200
-- [ ] **Step 11:** Test key user flows: login, mod listing/search, upload, admin panel
+- [ ] **Step 6:** Build app: `bun run build`
+- [ ] **Step 7:** Deploy and verify health: `curl https://yourdomain.com/api/health` → 200
+- [ ] **Step 8:** Smoke test: `/`→200, `/login`→200, `/creator`→redirect, `/api/auth/me`→401, `/api/health`→200
+- [ ] **Step 9:** Test key user flows: login, mod listing/search, upload, admin panel
 
 ### Monitoring
 
-- [ ] **Step 12:** Monitor error logs for 30 minutes post-switch
-- [ ] **Step 13:** Check connection pool metrics (no queuing, no timeouts)
-- [ ] **Step 14:** Verify no increase in 5xx errors
+- [ ] **Step 10:** Monitor error logs for 30 minutes post-deploy
+- [ ] **Step 11:** Check connection pool metrics (no queuing, no `P2024`)
+- [ ] **Step 12:** Verify no increase in 5xx errors
 
-## §3 Post-cutover (7-day safety)
+## §3 Post-deploy (7-day safety)
 
 ### First 24 hours
 
 - [ ] Monitor application logs for errors (24h minimum)
-- [ ] Verify PITR is capturing WAL (Aiven UI → Backup & Restore → last backup time)
-- [ ] Check Aiven service metrics (CPU, memory, connections, disk usage)
+- [ ] Verify Neon restore history is capturing changes (Console → Branches → Restore)
+- [ ] Check Neon compute metrics (CPU, memory, connections)
 - [ ] Verify SSL connections working (`sslmode=require` enforced)
 - [ ] Run `npx prisma migrate status` → "Database schema is up to date!"
-- [ ] Verify search functionality (trigram indexes performing)
-- [ ] Confirm backup schedule (daily auto-backup + weekly manual pg_dump)
+- [ ] Verify search functionality (trigram without GIN indexes on 98 tables)
+- [ ] Confirm backup schedule (weekly manual `pg_dump` + restore history)
 
 ### 7-day safety period
 
-- [ ] Keep Neon database alive for 7 days (rollback safety net)
-- [ ] Schedule Neon decommission after 7-day safety period
-- [ ] After 7 days: final `pg_dump` from Neon, delete Neon project, update env vars
+- [ ] Keep the `pre-release-YYYYMMDD` restore branch for 7 days
+- [ ] Run one full backup and verify its manifest checksum
+- [ ] After 7 days, delete the temporary restore branch and update this checklist
 
 ### Rollback triggers
 
-If any of these occur within 7 days, execute rollback:
+If any of these occur within 7 days, execute the incident rollback in
+`docs/NEON-SETUP.md` §8:
 
 - Health check fails after 5 minutes
 - > 10x increase in error rate
@@ -127,5 +129,5 @@ If any of these occur within 7 days, execute rollback:
 | 5 | Clarity ID | Clarity UI | |
 | 6 | OpenObserve endpoint | OpenObserve UI | |
 | 7 | Emitlo DNS + key | emitlo.com | |
-| 8 | Aiven database | Aiven console | |
+| 8 | Neon database | Neon console | |
 | 9 | Cloudinary flip | Cloudinary dashboard | |

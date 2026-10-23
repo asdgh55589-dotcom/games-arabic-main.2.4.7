@@ -1,7 +1,10 @@
 import type { MetadataRoute } from 'next'
 import { db } from '@/lib/db'
 
-export const dynamic = 'force-dynamic'
+// ISR: regenerate at most once per hour instead of hitting the DB (up to 50k
+// mods + games/series/teams/sections) on every crawler request. Route segment
+// config is supported in App Router metadata routes.
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =

@@ -2,70 +2,74 @@ import { PrismaClient } from '@prisma/client'
 import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 
+const SSL_REQUIRED_MESSAGE =
+  'DATABASE_URL must include sslmode=require for Neon: Prisma 6 rejects ' +
+  'sslmode=verify-full/verify-ca, and disable/allow/prefer are not accepted'
+
 /**
  * Resolve the active DATABASE_URL.
- * Prefers AIVEN_DATABASE_URL when set (SA-4 coordination), falls back to DATABASE_URL.
- * Throws if neither is set — callers that need a safe fallback (Prisma singleton)
+ * Runtime always uses DATABASE_URL (the pooled Neon endpoint).
+ * Prisma Migrate uses DIRECT_URL separately via the schema `directUrl`.
+ * Throws if it is not set — callers that need a safe fallback (Prisma singleton)
  * should use resolveDatabaseUrl() instead.
  */
 export function getDatabaseUrl(): string {
-  const aiven = process.env.AIVEN_DATABASE_URL
-  const fallback = process.env.DATABASE_URL
-  const raw = aiven && aiven.trim() !== '' ? aiven : fallback
+  const raw = process.env.DATABASE_URL
   if (!raw || raw.trim() === '') {
-    throw new Error('DATABASE_URL must be set (or AIVEN_DATABASE_URL for Aiven)')
+    throw new Error('DATABASE_URL must be set')
   }
   return raw
 }
 
 /**
- * Ensure Aiven-required URL params:
- * - sslmode=require (inject if missing, throw if explicitly disable/allow or non-require)
- * - connection_limit=5 if missing (MUST match Aiven server pool size — never oversubscribe)
- * - pool_timeout=10 if missing (fail fast instead of hanging)
- * - connect_timeout=10 if missing
- * - statement_timeout=15000 (15s) if missing (kill runaway queries, free the connection)
+ * Ensure Neon-required URL params:
+ * - sslmode=require (inject if missing; throw for any other value)
+ * - connection_limit=5 if missing (do not oversubscribe the Neon pool)
+ * - pool_timeout=15 if missing (fail fast instead of hanging)
+ * - connect_timeout=15 if missing
+ * - socket_timeout=30 if missing (drop dead sockets)
+ * statement_timeout is intentionally NOT set here — enforce it at the DB role
+ * level instead, so it cannot be bypassed or duplicated per connection URL.
  * Preserves all other params/values.
  */
 export function ensureSslmode(url: string): string {
   if (!url || typeof url !== 'string' || url.trim() === '') {
-    throw new Error('DATABASE_URL must include sslmode=require for Aiven')
+    throw new Error(SSL_REQUIRED_MESSAGE)
   }
   let parsed: URL
   try {
     parsed = new URL(url)
   } catch {
-    throw new Error('DATABASE_URL must include sslmode=require for Aiven')
+    throw new Error(SSL_REQUIRED_MESSAGE)
   }
   const params = parsed.searchParams
-  const existing = params.get('sslmode')
-  if (existing !== null) {
-    const lower = existing.toLowerCase()
-    if (lower === 'disable' || lower === 'allow') {
-      throw new Error('DATABASE_URL must include sslmode=require for Aiven')
+  const sslModes = params.getAll('sslmode')
+  if (sslModes.length > 1) {
+    // Duplicate params are ambiguous; libpq/Prisma may honor a different one.
+    throw new Error(SSL_REQUIRED_MESSAGE)
+  }
+  const existing = sslModes[0]
+  if (existing !== undefined) {
+    // Only exact `require` is accepted — never silently downgrade or rewrite.
+    if (existing.toLowerCase() !== 'require') {
+      throw new Error(SSL_REQUIRED_MESSAGE)
     }
-    if (lower !== 'require') {
-      throw new Error('DATABASE_URL must include sslmode=require for Aiven')
-    }
-    // already require — keep as-is
   } else {
     params.set('sslmode', 'require')
   }
 
   // Pool tuning — inject defaults only if missing, do not override existing values.
-  // Values match Aiven's server pool size (5): the app must never open more
-  // connections than the server pool holds, or requests queue into P2024.
   if (!params.has('connect_timeout')) {
-    params.set('connect_timeout', '10')
+    params.set('connect_timeout', '15')
   }
   if (!params.has('connection_limit')) {
     params.set('connection_limit', '5')
   }
   if (!params.has('pool_timeout')) {
-    params.set('pool_timeout', '10')
+    params.set('pool_timeout', '15')
   }
-  if (!params.has('statement_timeout')) {
-    params.set('statement_timeout', '15000')
+  if (!params.has('socket_timeout')) {
+    params.set('socket_timeout', '30')
   }
 
   return parsed.toString()
@@ -96,7 +100,7 @@ export function isDeterministicError(err: unknown): boolean {
 
 /**
  * Generic retry with exponential backoff (1s, 2s, 4s, max 3 attempts).
- * Used for Aiven cold-start resilience. Wraps any async fn, including Prisma $connect.
+ * Used for managed-Postgres cold-start resilience. Wraps any async fn, including Prisma $connect.
  * Pool exhaustion (P2024) is reported to Sentry — it means the pool sizing or
  * query fan-out regressed and needs attention, not just a retry.
  * Deterministic errors (P2002/P2003/P2025/P2008) are rethrown immediately.
@@ -144,7 +148,7 @@ export const withDatabaseRetry = withRetry
 export const connectWithRetry = withRetry
 
 function resolveDatabaseUrl(): string | undefined {
-  const raw = process.env.AIVEN_DATABASE_URL || process.env.DATABASE_URL
+  const raw = process.env.DATABASE_URL
   if (!raw) return undefined
   try {
     return ensureSslmode(raw)
@@ -177,7 +181,7 @@ export const db =
 // exhausts the connection pool under concurrent requests.
 globalForPrisma.prisma = db
 
-// Warm up the connection pool at boot (Aiven cold-start resilience).
+// Warm up the connection pool at boot (managed-Postgres cold-start resilience).
 // Fail-open: a cold DB must never crash the app — requests will retry via
 // withRetry at call time. Skipped in tests (Prisma is mocked there).
 if (process.env.NODE_ENV !== 'test' && databaseUrl) {

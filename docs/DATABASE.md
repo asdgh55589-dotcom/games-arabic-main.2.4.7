@@ -1,49 +1,34 @@
 # Database Documentation
 
-> **Last Updated:** 2026-08-20
+> **Last Updated:** 2026-10-23
+
+> **Current state:** Neon PostgreSQL 17 is the live production database.
+> See `docs/NEON-SETUP.md` for operations, env vars, migrations, backups, and
+> incident handling.
 
 ## Overview
 
-- **Database:** PostgreSQL hosted on Aiven (primary) / Neon (legacy fallback)
+- **Database:** PostgreSQL 17 on Neon (live primary)
 - **ORM:** Prisma 6
 - **Schema:** `prisma/schema.prisma` (53 models, 40+ indexes)
-- **Connection:** 5 connections, 30s timeout (serverless-optimized, singleton via `globalThis` in dev)
-- **SSL:** `sslmode=require` enforced (Aiven requirement)
+- **Connection:** 5 connections, 15s pool/connect timeout, 30s socket timeout (serverless-optimized, singleton in all envs)
+- **SSL:** `sslmode=require` enforced (required by Neon)
 
-## Connection Setup
+## Connection Setup — Neon (Primary)
 
-```typescript
-// src/lib/db.ts
-import { PrismaClient } from '@prisma/client'
+`src/lib/db.ts` resolves the runtime URL from `DATABASE_URL` only:
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-export const db = globalForPrisma.prisma ?? new PrismaClient({
-  log: ['error', 'warn'],
-})
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
-```
-
-The singleton pattern prevents multiple Prisma clients in development (hot reload).
-
-## Connection Setup — Aiven (Primary)
-
-`src/lib/db.ts` resolves the active connection URL with dual-URL support:
-
-1. **`AIVEN_DATABASE_URL`** — preferred when set (cutover day variable)
-2. **`DATABASE_URL`** — fallback (Neon or Aiven, same shape)
+Runtime uses **`DATABASE_URL`** (pooled Neon). Prisma Migrate and backups use
+**`DIRECT_URL`** (direct Neon). `src/lib/db.ts` reads only `DATABASE_URL`; set
+only these two database URLs.
 
 ```typescript
 // src/lib/db.ts — getDatabaseUrl() helper
 export function getDatabaseUrl(): string {
-  const aiven = process.env.AIVEN_DATABASE_URL
-  const fallback = process.env.DATABASE_URL
-  const raw = aiven && aiven.trim() !== '' ? aiven : fallback
+  // Runtime only; DIRECT_URL is used by Prisma Migrate/backups.
+  const raw = process.env.DATABASE_URL
   if (!raw || raw.trim() === '') {
-    throw new Error('DATABASE_URL must be set (or AIVEN_DATABASE_URL for Aiven)')
+    throw new Error('DATABASE_URL must be set (pooled Neon)')
   }
   return raw
 }
@@ -53,21 +38,22 @@ export function getDatabaseUrl(): string {
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
-| `sslmode` | `require` | TLS to Aiven (throws if `disable`/`allow`/non-require) |
-| `connect_timeout` | `10` | Seconds to wait for connection |
+| `sslmode` | `require` | TLS to Neon (throws if missing/duplicate/`disable`/`allow`/non-require) |
+| `connect_timeout` | `15` | Seconds to wait for connection |
 | `connection_limit` | `5` | Prisma connection pool size |
-| `pool_timeout` | `10` | Seconds before pool exhaustion error |
+| `pool_timeout` | `15` | Seconds before pool exhaustion error |
+| `socket_timeout` | `30` | Drop dead sockets |
 
-`withRetry(fn)` provides exponential backoff (1s, 2s, 4s, max 3 attempts) for Aiven cold-start resilience.
+`withRetry(fn)` provides exponential backoff (1s, 2s, 4s, max 3 attempts) for managed-Postgres cold-start resilience.
 
-### Cutover Pattern
+### Environment Pattern
 
-Set `AIVEN_DATABASE_URL` on deploy day; unset to revert to `DATABASE_URL`. No code change needed — runtime switch only.
+Set `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) in every environment.
 
 ```env
-# .env (cutover day)
-AIVEN_DATABASE_URL="postgresql://avnadmin:xxx@host:5432/games_arabic?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
-DATABASE_URL="postgresql://..."  # kept as fallback
+# .env
+DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/games_arabic?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15&socket_timeout=30"
+DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/games_arabic?sslmode=require&connect_timeout=15"
 ```
 
 ## Key Models
@@ -372,17 +358,17 @@ npx tsx scripts/seed.ts
 ## Environment Variables
 
 ```env
-DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require&connection_limit=5&pool_timeout=10"
-# Optional: Aiven cutover override (preferred when set)
-AIVEN_DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
+DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/games_arabic?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15&socket_timeout=30"
+# Direct endpoint for Prisma Migrate and backups (no -pooler)
+DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/games_arabic?sslmode=require&connect_timeout=15"
 ```
 
-The `sslmode=require` is required for both Aiven and Neon connections.
+The `sslmode=require` is required for Neon.
 
 ## Performance Considerations
 
-- **Connection pooling:** 5 connections, 30s timeout (configured for serverless; pool-tuned for Aiven)
-- **Aiven cold-start resilience:** `withRetry()` exponential backoff (1s, 2s, 4s, 3 attempts)
+- **Connection pooling:** 5 connections, 15s pool/connect timeout, 30s socket timeout (serverless-tuned for Neon)
+- **Managed-Postgres cold-start resilience:** `withRetry()` exponential backoff (1s, 2s, 4s, 3 attempts)
 - **SSL enforcement:** `sslmode=require` injected automatically if missing from connection URL
 - **Indexes:** Added on frequently queried fields (slug, authorId, gameId, etc.)
 - **Select only needed fields:** Use `select` instead of `include` when possible

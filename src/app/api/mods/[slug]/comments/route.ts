@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { getUseCases } from '@/application/use-cases/factory'
 import {
+  fail,
   internalError,
   notFound,
   ok,
@@ -17,6 +18,7 @@ import {
   listVisibleComments,
 } from '@/lib/comments/repository'
 import { COMMENTS_CONFIG } from '@/lib/comments-config'
+import { isRequestIpBanned } from '@/lib/ip-ban'
 import { reportError } from '@/lib/error-reporting'
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
@@ -67,6 +69,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return unauthorized('يجب تسجيل الدخول للتعليق')
+    }
+
+    if (await isRequestIpBanned(req)) {
+      return fail('IP_BANNED', 'تم حظر عنوان IP الخاص بك', 403)
     }
 
     // حد النشر (مكافحة الإغراق) — نفس نمط التفاعل

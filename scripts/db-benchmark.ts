@@ -1,9 +1,9 @@
 /**
- * scripts/db-benchmark.ts — read-only latency benchmark (Aiven, live).
+ * scripts/db-benchmark.ts — read-only latency benchmark (Neon, live).
  *
  * Usage: bun --env-file=.env scripts/db-benchmark.ts
  * Read-only: SELECT 1, COUNTs, bounded findMany, cache round-trip.
- * NOTE: measures THIS machine's path to Aiven, not production latency.
+ * NOTE: measures THIS machine's path to Neon, not production latency.
  */
 import { db } from '../src/lib/db'
 import { getHomeCache, setHomeCache, clearHomeCache } from '../src/lib/home-cache'

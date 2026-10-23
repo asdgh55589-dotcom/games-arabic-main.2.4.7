@@ -1,5 +1,5 @@
 /**
- * Phase 3 — DbMonitor: pool metrics parsing, thresholds, fail-open behavior.
+ * Phase 3 — DbMonitor: server-connection metrics parsing, thresholds, fail-open behavior.
  */
 const mockQueryRaw = jest.fn()
 jest.mock('@/lib/db', () => ({ db: { $queryRaw: (...a: unknown[]) => mockQueryRaw(...a) } }))
@@ -25,7 +25,7 @@ beforeEach(() => {
 })
 
 describe('DbMonitor.getMetrics', () => {
-  it('parses pg_stat_activity into pool metrics', async () => {
+  it('parses pg_stat_activity into server-connection metrics', async () => {
     healthyRows()
     const m = await DbMonitor.getMetrics()
     expect(m).not.toBeNull()
@@ -33,7 +33,8 @@ describe('DbMonitor.getMetrics', () => {
     expect(m!.idleConnections).toBe(3)
     expect(m!.totalConnections).toBe(5)
     expect(m!.maxConnections).toBe(20)
-    expect(m!.poolUsagePercent).toBe(40)
+    // Server-wide denominator (max_connections), NOT the Prisma pool size (5).
+    expect(m!.serverConnectionUsagePercent).toBe(25)
     expect(m!.oldestQueryS).toBeCloseTo(0.01)
   })
 
@@ -53,11 +54,11 @@ describe('DbMonitor.getMetrics', () => {
     healthyRows()
     const fresh = await DbMonitor.getCachedOrCollect()
     expect(fresh.stale).toBe(false)
-    expect(fresh.metrics!.poolUsagePercent).toBe(40)
+    expect(fresh.metrics!.serverConnectionUsagePercent).toBe(25)
     // throttled now — falls back to last good
     const stale = await DbMonitor.getCachedOrCollect()
     expect(stale.stale).toBe(true)
-    expect(stale.metrics!.poolUsagePercent).toBe(40)
+    expect(stale.metrics!.serverConnectionUsagePercent).toBe(25)
   })
 
   it('getCachedOrCollect reports unknown when nothing was ever collected', async () => {
@@ -70,14 +71,14 @@ describe('DbMonitor.getMetrics', () => {
 })
 
 describe('DbMonitor.checkHealth', () => {
-  it('healthy when pool low and queries fast (no Sentry)', async () => {
+  it('healthy when server connection usage is low and queries are fast (no Sentry)', async () => {
     healthyRows()
     const h = await DbMonitor.checkHealth()
     expect(h).toEqual({ healthy: true, issues: [] })
     expect(mockReportError).not.toHaveBeenCalled()
   })
 
-  it('alerts Sentry when pool usage exceeds 80%', async () => {
+  it('alerts Sentry when server connection usage exceeds 80%', async () => {
     mockQueryRaw
       .mockResolvedValueOnce([
         { state: 'active', count: 17 },
@@ -87,7 +88,7 @@ describe('DbMonitor.checkHealth', () => {
       .mockResolvedValueOnce([])
     const h = await DbMonitor.checkHealth()
     expect(h.healthy).toBe(false)
-    expect(h.issues.join(' ')).toMatch(/100%/)
+    expect(h.issues.join(' ')).toMatch(/95%/)
     expect(mockReportError).toHaveBeenCalledTimes(1)
   })
 

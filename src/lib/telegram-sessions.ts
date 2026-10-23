@@ -4,7 +4,7 @@
  * يحل مشكلة filesystem في بيئات serverless (Vercel).
  */
 
-import { redisDel, redisGet, redisSet } from './redis'
+import { hashRedisIdentifier, redisDel, redisGet, redisSet } from './redis'
 
 const SESSION_PREFIX = 'telegram_session:'
 const SESSION_TTL = 5 * 60 // 5 دقائق
@@ -29,8 +29,8 @@ export interface TelegramSession {
   }
 }
 
-function getSessionKey(token: string): string {
-  return `${SESSION_PREFIX}${token}`
+async function getSessionKey(token: string): Promise<string> {
+  return `${SESSION_PREFIX}${await hashRedisIdentifier(token)}`
 }
 
 /** إنشاء session جديد */
@@ -40,12 +40,12 @@ export async function createTelegramSession(token: string): Promise<void> {
     expiresAt: Date.now() + SESSION_TTL * 1000,
     createdAt: Date.now(),
   }
-  await redisSet(getSessionKey(token), session, SESSION_TTL)
+  await redisSet(await getSessionKey(token), session, SESSION_TTL)
 }
 
 /** قراءة session */
 export async function getTelegramSession(token: string): Promise<TelegramSession | null> {
-  return redisGet<TelegramSession>(getSessionKey(token))
+  return redisGet<TelegramSession>(await getSessionKey(token))
 }
 
 /** تحديث session (عند اكتشاف المستخدم) */
@@ -54,10 +54,10 @@ export async function updateTelegramSession(
   session: TelegramSession,
 ): Promise<void> {
   const remaining = Math.max(60, Math.floor((session.expiresAt - Date.now()) / 1000))
-  await redisSet(getSessionKey(token), session, remaining)
+  await redisSet(await getSessionKey(token), session, remaining)
 }
 
 /** حذف session */
 export async function deleteTelegramSession(token: string): Promise<void> {
-  await redisDel(getSessionKey(token))
+  await redisDel(await getSessionKey(token))
 }

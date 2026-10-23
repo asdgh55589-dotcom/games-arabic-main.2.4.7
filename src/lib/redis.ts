@@ -1,18 +1,69 @@
 /**
  * lib/redis.ts — اتصال Redis عبر Upstash (serverless, HTTP-based).
+ *
+ * Single source of truth for:
+ * - Redis configuration / HTTPS enforcement
+ * - namespaced keys (`ga:`)
+ * - TTL normalization (always >= 1 second)
+ * - atomic INCR + EXPIRE via Lua
+ * - bounded in-memory fallback
+ * - fail-open helpers plus a strict result helper for security paths
  */
 
 import { Redis } from '@upstash/redis'
 import { logger } from '@/lib/logger'
+import { recordRedisFailure, recordRedisSuccess } from '@/lib/redis-circuit-breaker'
 
-const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+const KEY_PREFIX = 'ga:'
+
+/** All application keys share one namespace. */
+export function redisKey(key: string): string {
+  return key.startsWith(KEY_PREFIX) ? key : `${KEY_PREFIX}${key}`
+}
+
+function resolveRedisConfig(): { url: string; token: string } | null {
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL || '').trim()
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.REDIS_TOKEN || '').trim()
+  if (!url || !token) return null
+  if (!url.startsWith('https://')) {
+    logger.warn(
+      { event: 'redis_insecure_url' },
+      'redis REST URL must use https — Redis disabled, using in-memory fallback',
+    )
+    return null
+  }
+  return { url, token }
+}
+
+const redisConfig = resolveRedisConfig()
+const hasRedis = redisConfig !== null
+
+export function isRedisConfigured(): boolean {
+  return hasRedis
+}
 
 let redisClient: Redis | null = null
-if (hasRedis) {
-  redisClient = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
+if (redisConfig) {
+  redisClient = new Redis(redisConfig)
+}
+
+/**
+ * Every write must carry a positive integer TTL.
+ * `0.5` used to become 0 (invalid EX / immediate expiry); now it becomes 1.
+ */
+export function normalizeTtl(ttlSeconds: number): number {
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) return 60
+  return Math.max(1, Math.ceil(ttlSeconds))
+}
+
+/** SHA-256 identifier for Redis keys that would otherwise contain IPs/tokens. */
+export async function hashRedisIdentifier(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32)
 }
 
 // استخدام globalThis لضمان مشاركة الذاكرة بين جميع الـ routes وتجاوز HMR/Turbopack isolation
@@ -23,16 +74,26 @@ const memoryStore: Map<string, { value: string; expires: number }> =
   _global.__memoryStore ??
   (_global.__memoryStore = new Map<string, { value: string; expires: number }>())
 
-export async function redisGet<T>(key: string): Promise<T | null> {
-  if (redisClient) {
-    try {
-      const result = await redisClient.get<T>(key)
-      return result
-    } catch (err) {
-      // intentional: expected+handled (Redis down → in-memory fallback below); key omitted — dedup keys may embed user identity
-      logger.warn({ event: 'redis_get_failed', err }, 'redis get failed, using memory fallback')
-    }
+const MEMORY_SOFT_LIMIT = 5000
+const MEMORY_HARD_LIMIT = 8000
+
+/** Bound the fallback map: drop expired entries, then oldest entries. */
+function evictMemoryStore(now = Date.now()): void {
+  if (memoryStore.size <= MEMORY_SOFT_LIMIT) return
+  for (const [key, entry] of memoryStore) {
+    if (entry.expires < now) memoryStore.delete(key)
+    if (memoryStore.size <= MEMORY_SOFT_LIMIT) return
   }
+  const overflow = memoryStore.size - MEMORY_SOFT_LIMIT
+  let removed = 0
+  for (const key of memoryStore.keys()) {
+    memoryStore.delete(key)
+    if (++removed >= overflow) break
+  }
+  if (memoryStore.size > MEMORY_HARD_LIMIT) memoryStore.clear()
+}
+
+function readMemory<T>(key: string): T | null {
   const entry = memoryStore.get(key)
   if (!entry) return null
   if (entry.expires < Date.now()) {
@@ -42,47 +103,98 @@ export async function redisGet<T>(key: string): Promise<T | null> {
   try {
     return JSON.parse(entry.value) as T
   } catch (err) {
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: corrupt memory entry is self-healing — treated as cache miss
-    // intentional: expected+handled (stale/corrupt entry → miss, no value to preserve)
     logger.warn({ event: 'redis_memory_parse_failed', err }, 'redis memory entry unparseable')
     return null
   }
 }
 
+function writeMemory(key: string, stringValue: string, ttlSeconds: number): void {
+  memoryStore.set(key, { value: stringValue, expires: Date.now() + ttlSeconds * 1000 })
+  evictMemoryStore()
+}
+
+export async function redisGet<T>(key: string): Promise<T | null> {
+  const namespaced = redisKey(key)
+  if (redisClient) {
+    try {
+      const result = await redisClient.get<T>(namespaced)
+      recordRedisSuccess()
+      return result
+    } catch (err) {
+      recordRedisFailure()
+      logger.warn({ event: 'redis_get_failed', err }, 'redis get failed, using memory fallback')
+    }
+  }
+  return readMemory<T>(namespaced)
+}
+
+/**
+ * Strict read for security decisions: distinguishes a real miss from an
+ * unavailable cache. `ok=false` means the caller must fail closed.
+ */
+export async function redisGetSafe<T>(key: string): Promise<{ ok: boolean; value: T | null }> {
+  const namespaced = redisKey(key)
+  if (redisClient) {
+    try {
+      const value = await redisClient.get<T>(namespaced)
+      recordRedisSuccess()
+      return { ok: true, value }
+    } catch (err) {
+      recordRedisFailure()
+      logger.warn({ event: 'redis_get_safe_failed', err }, 'redis get failed (strict)')
+      return { ok: false, value: null }
+    }
+  }
+  // Memory is per-isolate. In production it cannot prove a shared cache miss.
+  const value = readMemory<T>(namespaced)
+  return { ok: process.env.NODE_ENV !== 'production', value }
+}
+
+/**
+ * Best-effort write. Returns true only when the value is actually shared
+ * (Redis write succeeded) or when running without Redis outside production.
+ */
 export async function redisSet(
   key: string,
   value: unknown,
   ttlSeconds: number = 60,
-): Promise<void> {
+): Promise<boolean> {
+  const ttl = normalizeTtl(ttlSeconds)
   const stringValue = JSON.stringify(value)
+  const namespaced = redisKey(key)
   if (redisClient) {
     try {
-      await redisClient.set(key, stringValue, { ex: ttlSeconds })
-      return
+      await redisClient.set(namespaced, stringValue, { ex: ttl })
+      recordRedisSuccess()
+      return true
     } catch (err) {
-      // intentional: expected+handled (Redis down → in-memory fallback below)
+      recordRedisFailure()
       logger.warn({ event: 'redis_set_failed', err }, 'redis set failed, using memory fallback')
+      writeMemory(namespaced, stringValue, ttl)
+      return false
     }
   }
-  memoryStore.set(key, { value: stringValue, expires: Date.now() + ttlSeconds * 1000 })
-  if (memoryStore.size > 500) {
-    const keys = Array.from(memoryStore.keys())
-    for (let i = 0; i < 250; i++) memoryStore.delete(keys[i])
-  }
+  writeMemory(namespaced, stringValue, ttl)
+  return process.env.NODE_ENV !== 'production'
 }
 
-export async function redisDel(key: string): Promise<void> {
+export async function redisDel(key: string): Promise<boolean> {
+  const namespaced = redisKey(key)
+  let shared = true
   if (redisClient) {
     try {
-      await redisClient.del(key)
-      return
+      await redisClient.del(namespaced)
+      recordRedisSuccess()
     } catch (err) {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: delete is idempotent — memory fallback below converges to the same state
-      // intentional: expected+handled (fall through to memory delete)
+      recordRedisFailure()
       logger.warn({ event: 'redis_del_failed', err }, 'redis del failed, using memory fallback')
+      shared = false
     }
+  } else {
+    shared = process.env.NODE_ENV !== 'production'
   }
-  memoryStore.delete(key)
+  memoryStore.delete(namespaced)
+  return shared
 }
 
 /**
@@ -111,17 +223,24 @@ export async function redisSetNX(
   opts?: { failClosed?: boolean },
 ): Promise<boolean> {
   const failClosed = opts?.failClosed === true
+  const ttl = normalizeTtl(ttlSeconds)
+  const namespaced = redisKey(key)
   let lastErr: unknown = null
 
   if (hasRedis && redisClient) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const result = await redisClient.set(key, '1', { ex: ttlSeconds, nx: true })
+        const result = await redisClient.set(namespaced, '1', { ex: ttl, nx: true })
+        recordRedisSuccess()
         return result === 'OK'
       } catch (err) {
         lastErr = err
+        recordRedisFailure()
         // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
-        logger.warn({ event: 'redis_setnx_failed', attempt: attempt + 1, err }, 'redis setnx failed')
+        logger.warn(
+          { event: 'redis_setnx_failed', attempt: attempt + 1, err },
+          'redis setnx failed',
+        )
         if (attempt === 2) {
           logger.warn(
             { event: 'redis_setnx_exhausted', action: 'setnx', attempt: attempt + 1, err },
@@ -154,29 +273,35 @@ export async function redisSetNX(
     return false
   }
 
-  // Fallback للذاكرة — مسموح فقط في dev/test
   const now = Date.now()
-  if (memoryStore.size > 5000) {
-    for (const [k, v] of memoryStore) {
-      if (v.expires < now) memoryStore.delete(k)
-      if (memoryStore.size <= 4000) break
-    }
-    if (memoryStore.size > 8000) memoryStore.clear()
-  }
-  const entry = memoryStore.get(key)
+  const entry = memoryStore.get(namespaced)
   if (entry && entry.expires >= now) return false
-  memoryStore.set(key, { value: '1', expires: now + ttlSeconds * 1000 })
+  writeMemory(namespaced, '1', ttl)
   return true
 }
 
+const INCR_WITH_TTL_SCRIPT = `
+local current = redis.call('INCR', KEYS[1])
+local ttl = redis.call('TTL', KEYS[1])
+if ttl < 0 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return current
+`
+
 export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<number> {
+  const ttl = normalizeTtl(ttlSeconds)
+  const namespaced = redisKey(key)
   if (hasRedis && redisClient) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const result = await redisClient.incr(key)
-        if (result === 1) await redisClient.expire(key, ttlSeconds)
-        return result
+        const result = await redisClient.eval(INCR_WITH_TTL_SCRIPT, [namespaced], [ttl])
+        const count = Number(result)
+        if (!Number.isFinite(count)) throw new Error('redis incr returned a non-numeric value')
+        recordRedisSuccess()
+        return count
       } catch (err) {
+        recordRedisFailure()
         // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
         logger.warn({ event: 'redis_incr_failed', attempt: attempt + 1, err }, 'redis incr failed')
         if (attempt === 2) {
@@ -189,24 +314,37 @@ export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<n
         await new Promise((r) => setTimeout(r, 100 * (attempt + 1)))
       }
     }
-  } else {
-    if (process.env.NODE_ENV === 'production') {
-      logger.warn(
-        { event: 'redis_incr_unconfigured', action: 'incr' },
-        'upstash redis غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ rate-limit (قد لا تكون مشتركة بين النسخ)',
-      )
-    }
+  } else if (process.env.NODE_ENV === 'production') {
+    logger.warn(
+      { event: 'redis_incr_unconfigured', action: 'incr' },
+      'upstash redis غير مُكوَّنة — استخدام الذاكرة المؤقتة لـ rate-limit (قد لا تكون مشتركة بين النسخ)',
+    )
   }
-  const entry = memoryStore.get(key)
+
+  const entry = memoryStore.get(namespaced)
   const now = Date.now()
   if (!entry || entry.expires < now) {
-    memoryStore.set(key, { value: '1', expires: now + ttlSeconds * 1000 })
+    writeMemory(namespaced, '1', ttl)
     return 1
   }
   const count = parseInt(entry.value, 10) + 1
   entry.value = count.toString()
-  memoryStore.set(key, entry)
+  writeMemory(namespaced, entry.value, Math.max(1, Math.ceil((entry.expires - now) / 1000)))
   return count
+}
+
+/** Real connectivity probe for `/api/health/detailed`. */
+export async function redisPing(): Promise<boolean> {
+  if (!redisClient) return false
+  try {
+    const result = await redisClient.ping()
+    recordRedisSuccess()
+    return result === 'PONG'
+  } catch (err) {
+    recordRedisFailure()
+    logger.warn({ event: 'redis_ping_failed', err }, 'redis ping failed')
+    return false
+  }
 }
 
 export function getRedisInfo() {
@@ -216,5 +354,3 @@ export function getRedisInfo() {
     storeSize: memoryStore.size,
   }
 }
-
-export { redisClient }

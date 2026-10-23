@@ -29,6 +29,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:resolve:rolled-back": "prisma migrate resolve --rolled-back",
     "db:resolve:applied": "prisma migrate resolve --applied",
+    "verify:pg": "bash scripts/verify-pg-version.sh",
     "build:standalone": "next build && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/"
   },
   "dependencies": {

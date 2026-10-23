@@ -101,7 +101,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           },
         })
         // تحديث الـ cache في Upstash للـ middleware
-        await setIpBanCache(ip, { banned: true, expiresAt: ipExpires })
+        const cacheWritten = await setIpBanCache(ip, { banned: true, expiresAt: ipExpires })
+        if (!cacheWritten) {
+          logger.error(
+            { event: 'ip_ban_cache_write_failed', ipHash: 'redacted' },
+            'IP ban saved to DB but Redis cache write failed — Edge fast path may be stale',
+          )
+        }
         ipBanned = true
         ipBanExpiresAt = ipExpires
       }

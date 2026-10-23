@@ -1,11 +1,13 @@
 # Deployment Guide
 
-> **Last Updated:** 2026-09-13 — Standalone output, 147 handlers, Aiven + Supabase + Upstash
+> **Last Updated:** 2026-10-23 — Neon is the live database.
+>
+> **Operations runbook:** `docs/NEON-SETUP.md`.
 
 ## Overview
 
 - **Runtime:** Next.js 16 standalone output
-- **Database:** Aiven PostgreSQL (primary) / Neon (legacy fallback)
+- **Database:** Neon PostgreSQL (primary)
 - **Auth:** Supabase (hosted)
 - **Cache:** Upstash Redis (serverless)
 - **Email:** Emitlo
@@ -15,11 +17,11 @@
 All required environment variables for production (see `.env.example` — never commit `.env`):
 
 ```env
-# Database — Aiven (primary) / Neon (fallback) — add ?sslmode=require&connection_limit=5&pool_timeout=10
-DATABASE_URL="postgresql://user:password@host:5432/games_arabic?connection_limit=5&pool_timeout=10&sslmode=require"
-# Aiven cutover: set this to override DATABASE_URL on deploy day (takes priority when non-empty)
-# AIVEN_DATABASE_URL="postgresql://user:password@host:5432/games_arabic?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
-DIRECT_URL="postgresql://user:password@host:5432/games_arabic?sslmode=require" # for prisma migrate
+# Database — Neon pooled runtime URL
+DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/neondb?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15"
+# Neon direct URL — migrations and backups only
+DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
+# Set only these two database URLs; src/lib/db.ts reads DATABASE_URL.
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
@@ -153,42 +155,6 @@ Update redirect URLs in:
 - SSL/TLS enabled (required for secure cookies)
 - `COOKIE_DOMAIN` set to your domain
 
-## Aiven PostgreSQL (Production)
-
-> See `docs/AIVEN-CONFIG.md` for full configuration, PITR, and backup details.
-
-### Connection string
-
-```env
-# Aiven — production primary (set AIVEN_DATABASE_URL; DATABASE_URL fallback also works)
-AIVEN_DATABASE_URL="postgresql://avnadmin:PASSWORD@pg-xxxxx-ew1.aivencloud.com:26974/defaultdb?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10"
-```
-
-**Key requirements:**
-- `sslmode=require` — mandatory; `src/lib/db.ts` throws if missing
-- `connection_limit=5` — keep ≤ Aiven pool size (5)
-- `pool_timeout=10` — seconds to wait for a pool connection
-- `connect_timeout=10` — injected automatically if missing by `ensureSslmode`
-
-### Pool tuning
-
-Aiven console → Service → Pools → set pool size to **5** (matches `connection_limit`).
-See `docs/AIVEN-CONFIG.md` §Pool & Prisma tuning for full parameter table.
-
-### PITR
-
-Aiven provides continuous WAL archiving for point-in-time recovery.
-Enable in: Aiven UI → Databases → Backup & Restore → Enable PITR.
-Retention: 7 days minimum. See `docs/AIVEN-CONFIG.md` §PITR for restore procedure and RPO/RTO targets.
-
-### Migration to Aiven
-
-1. Dump Neon: `pg_dump "$DATABASE_URL" | gzip > neon-dump.sql.gz`
-2. Restore to Aiven: `gunzip -c neon-dump.sql.gz | psql "$AIVEN_DATABASE_URL"`
-3. Apply migrations: `AIVEN_DATABASE_URL=<url> npx prisma migrate deploy`
-4. Verify: `npx prisma migrate status` → "Database schema is up to date!"
-5. Update env vars, rebuild, smoke test. See `docs/CUTOVER-CHECKLIST.md`.
-
 ## Database Migration in Production
 
 ```bash
@@ -276,7 +242,7 @@ API routes include Cache-Control headers:
 
 ### Database
 
-- Connection pooling: 5 connections, 30s timeout
+- Connection pooling: 5 connections, 15s pool/connect timeout, 30s socket timeout
 - Indexes on frequently queried fields
 - Use `select` instead of `include` when possible
 
@@ -315,9 +281,9 @@ API routes include Cache-Control headers:
 ### Database Connection Issues
 
 1. Verify `DATABASE_URL` is correct
-2. Ensure `sslmode=require` is in the URL (Aiven rejects non-SSL connections)
-3. Check Aiven/Neon dashboard for connection limits
-4. See [AIVEN-CONFIG.md](./AIVEN-CONFIG.md) for Aiven-specific pool tuning, SSL, and cutover details
+2. Ensure `sslmode=require` is in the URL (required by Neon)
+3. Check the Neon dashboard for connection limits
+4. See [NEON-SETUP.md](./NEON-SETUP.md) for current pool tuning and operations details
 
 ### OAuth Callback Errors
 

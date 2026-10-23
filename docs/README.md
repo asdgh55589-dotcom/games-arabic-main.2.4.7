@@ -15,7 +15,7 @@ Welcome to the Games Arabic project documentation. This index links to all docum
 | [AUTH-SYSTEM.md](./AUTH-SYSTEM.md) | Supabase OAuth + JWT `ga_admin_role` + `tokenVersion` + IP ban |
 | [ROUTING-ARCHITECTURE.md](./ROUTING-ARCHITECTURE.md) | File-based routing, `generateMetadata`, 301 redirects |
 | [FRONTEND-ARCHITECTURE.md](./FRONTEND-ARCHITECTURE.md) | AppShell, 26 views, `useFetch`, providers |
-| [DATABASE.md](./DATABASE.md) | Prisma schema — 53 models, singleton, Aiven/Neon migrations |
+| [DATABASE.md](./DATABASE.md) | Prisma schema — 53 models, singleton, Neon migrations |
 | [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) | Local setup, adding features, testing |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Standalone build, Caddy, env, monitoring |
 | [CHANGELOG.md](./CHANGELOG.md) | Architectural decisions (ADRs) + changelog |

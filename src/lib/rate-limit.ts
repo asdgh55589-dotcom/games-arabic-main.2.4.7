@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { fail } from './api-response'
-import { redisIncr } from './redis'
+import { hashRedisIdentifier, redisIncr } from './redis'
 
 interface RateLimitEntry {
   count: number
@@ -30,11 +30,11 @@ export interface RateLimitResult {
 
 export async function rateLimit(req: Request, options: RateLimitOptions): Promise<RateLimitResult> {
   const ip = getClientIP(req)
-  const key = `${options.keyPrefix || 'default'}:${ip}`
+  const key = `${options.keyPrefix || 'default'}:${await hashRedisIdentifier(ip)}`
   const now = Date.now()
   const windowMs = options.window * 1000
 
-  const redisKey = `ratelimit:${key}`
+  const redisKey = `ga:ratelimit:${key}`
   const count = await redisIncr(redisKey, options.window)
 
   if (count > 0) {

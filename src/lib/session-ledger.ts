@@ -67,9 +67,11 @@ export async function isSessionActive(token: string): Promise<boolean> {
     const active = new Date((s as any).expiresAt) > new Date()
     // Active sessions revalidate often (revocation must propagate fast);
     // inactive ones are cached longer since they never become active again.
-    await redisSet(cacheKey, active, active ? LEDGER_CACHE_TTL_S : LEDGER_NEGATIVE_CACHE_TTL_S).catch(
-      () => {},
-    )
+    await redisSet(
+      cacheKey,
+      active,
+      active ? LEDGER_CACHE_TTL_S : LEDGER_NEGATIVE_CACHE_TTL_S,
+    ).catch(() => {})
     return active
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: fail-open liveness check — DB down means "not verifiable", caller treats false as signed-out
@@ -95,12 +97,20 @@ export async function revokeSession(token: string): Promise<void> {
 
 export async function revokeOtherSessions(userId: string, currentToken: string) {
   try {
+    const others = (await db.session.findMany({
+      where: {
+        userId,
+        token: { not: currentToken },
+      } as any,
+      select: { token: true },
+    })) as Array<{ token: string }>
     await db.session.deleteMany({
       where: {
         userId,
         token: { not: currentToken },
       } as any,
     })
+    await Promise.all(others.map((row) => redisDel(ledgerCacheKey(row.token))))
     logger.warn({ userId }, 'other sessions revoked')
   } catch (err) {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort revoke — user stays signed in, next login re-sweeps

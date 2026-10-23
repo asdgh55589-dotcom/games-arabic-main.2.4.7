@@ -6,7 +6,7 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/.next/']
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/.worktrees/', '<rootDir>/node_modules/']
 }
 
 export default config

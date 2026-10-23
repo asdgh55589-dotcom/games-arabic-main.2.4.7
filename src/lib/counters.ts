@@ -18,12 +18,21 @@
 
 import { getUserIdFromRequestCookies } from './auth'
 import { refreshBadgesOnDownload } from './badges'
-import { clearHomeCache } from './home-cache'
 import { logger } from './logger'
-import { redisSetNX } from './redis'
+import { hashRedisIdentifier, isRedisConfigured, redisSetNX } from './redis'
 
 const HOUR = 3600
 const DAY = 86400
+
+/**
+ * View/download counters intentionally do NOT clear the home cache.
+ *
+ * Counters change on every counted event while the home payload (~255 kB) is
+ * rebuilt from 8 sequential queries; invalidating it per view/download caused
+ * cache stampedes (egress + compute) on Neon Free. The home-cache TTL bounds
+ * counter staleness; endorsement/admin section changes invalidate explicitly,
+ * while mod create/update rely on revalidatePath plus the TTL.
+ */
 
 /**
  * أنماط bots — لا نرفض privacy browsers بدون UA.
@@ -101,9 +110,7 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /** هل Redis (Upstash) مُهيّأ في هذه البيئة؟ */
-const REDIS_CONFIGURED = Boolean(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
-)
+const REDIS_CONFIGURED = isRedisConfigured()
 
 /**
  * بديل محلي لـ SET NX — يُستخدم فقط عندما لا يكون Redis مُهيّأً إطلاقاً
@@ -141,13 +148,13 @@ async function resolveIdentity(req: Request): Promise<CounterIdentity> {
   if (!ua) {
     if (userId) return { identity: `u:${userId}`, ttl: 1800, authenticated: true }
     const ip = getClientIP(req)
-    return { identity: `i:${ip}:${hashUA('unknown')}`, ttl: 1800, authenticated: false }
+    return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA('unknown')}`, ttl: 1800, authenticated: false }
   }
   if (userId) {
     return { identity: `u:${userId}`, ttl: DAY, authenticated: true }
   }
   const ip = getClientIP(req)
-  return { identity: `i:${ip}:${hashUA(ua)}`, ttl: HOUR, authenticated: false }
+  return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA(ua)}`, ttl: HOUR, authenticated: false }
 }
 
 /**
@@ -244,16 +251,6 @@ export async function recordModView(modId: string, req: Request, db: any): Promi
       return { counted: false }
     }
     throw err
-  }
-  try {
-    await clearHomeCache()
-  } catch (err) {
-    // cache invalidation is best-effort — the view is already counted, stale homepage self-heals on TTL
-    // intentional: expected+handled (count already committed, no rollback)
-    logger.warn(
-      { event: 'home_cache_clear_failed', action: 'record_mod_view', err },
-      'home cache clear failed',
-    )
   }
   return { counted: true }
 }
@@ -440,19 +437,6 @@ export async function recordDownload(
     await idx.reindexModById?.(opts.modId)
   } catch {
     // best-effort — indexing failure must never break a download
-  }
-  // R22 — ترتيب مهم: نُبطل الذاكرة المؤقتة AFTER الـ commit.
-  // لو عكسنا الترتيب (clear قبل commit) لقرأ قارئ بين العمليتين القيمة
-  // القديمة وأعاد تخزينها لمدة TTL كاملة (300s) = بيانات قديمة.
-  try {
-    await clearHomeCache()
-  } catch (err) {
-    // cache invalidation is best-effort — the download is already counted, stale homepage self-heals on TTL
-    // intentional: expected+handled (count already committed, no rollback)
-    logger.warn(
-      { event: 'home_cache_clear_failed', action: 'record_download', err },
-      'home cache clear failed',
-    )
   }
   return { counted: true }
 }

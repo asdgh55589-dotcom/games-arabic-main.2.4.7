@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { logAction } from '@/lib/audit'
 import { getBanStatus, setRoleCookie, type UserRole } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { isRequestIpBanned } from '@/lib/ip-ban'
 import { logger } from '@/lib/logger'
 import { createClient } from '@/lib/supabase/server'
 import { generateUniqueUsername, generateUsernameFromEmail } from '@/lib/username-generator'
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
     const rl = await rateLimit(req, { limit: 20, window: 60, keyPrefix: 'auth:callback' })
     if (!rl.success) {
       return new NextResponse('طلبات كثيرة جداً، انتظر قليلاً وحاول مجدداً', { status: 429 })
+    }
+    if (await isRequestIpBanned(req)) {
+      return new NextResponse('تم حظر عنوان IP الخاص بك', { status: 403 })
     }
     const { searchParams } = new URL(req.url)
     const code = searchParams.get('code')
