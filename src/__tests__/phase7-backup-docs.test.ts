@@ -56,8 +56,8 @@ describe('SA-3 phase7 — BACKUP-STRATEGY.md', () => {
     expect(content).toMatch(/pg_restore/i)
   })
 
-  it('references AIVEN-CONFIG.md', () => {
-    expect(content).toMatch(/AIVEN-CONFIG\.md/)
+  it('references NEON-SETUP.md', () => {
+    expect(content).toMatch(/NEON-SETUP\.md/)
   })
 })
 

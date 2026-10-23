@@ -67,32 +67,38 @@ Smoke curls: `/`→200, `/login`→200, `/creator`→redirect,
 ## §5 Production
 
 Neon **restore-point branch first** (`pre-release-YYYYMMDD`), then
-`prisma migrate deploy` (baseline + **9** additive — see
-`docs/prod-migration-sync.md` §R1–R3 for the exact history/row counts),
-then app deploy, then §R3 verification queries.
+`prisma migrate deploy`, then app deploy, then the verification queries in
+`docs/NEON-SETUP.md` §5/§7.
 
-## §7 Aiven staging items (historical — current target is Neon)
+## §6 Rollback procedure
 
-> **HISTORICAL:** The current database is Neon; use `docs/NEON-SETUP.md`. The counts below describe the earlier Aiven staging pass and are not current.
+1. Promote the §5 Neon restore branch to primary; re-point app env.
+2. Previous app build stays compatible (migrations are additive).
+3. Re-run the history and table-count queries in `docs/NEON-SETUP.md` §5.
+4. API-key note: post-`07120000` rows authenticate by hash — restored
+   pre-migration DBs use the legacy raw column automatically.
 
-> Validate before production cutover. All items must pass on staging clone.
+## §7 Neon staging verification
+
+> Current database facts: **98 public base tables**, **0 GIN indexes**,
+> extensions `pg_trgm` + `pgcrypto`, 15s pool/connect timeouts.
 
 ### Connection & SSL
-- [ ] Aiven connection string configured with `sslmode=require`
-- [ ] `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) set for Neon
-- [ ] `connection_limit=5`, `pool_timeout=15`, `connect_timeout=15` present
+- [ ] `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) set for the staging branch
+- [ ] `sslmode=require` present; `-pooler` only in `DATABASE_URL`
+- [ ] `connection_limit=5`, `pool_timeout=15`, `connect_timeout=15`, `socket_timeout=30` present
 - [ ] `src/lib/db.ts:ensureSslmode` injects defaults correctly (tested)
 
-### PITR
-- [ ] PITR enabled on Aiven staging instance
-- [ ] First backup completed (check Aiven UI → Backups)
-- [ ] Restore drill performed: restore to point-in-time, verify data integrity
-- [ ] WAL archiving confirmed healthy (`pg_last_xact_replay_timestamp` < 5 min)
+### Restore history
+- [ ] Neon restore window confirmed at 7 days or longer
+- [ ] Weekly backup completed (check `backups/weekly/` + manifest)
+- [ ] Restore drill performed: restore branch at a point in time, verify data integrity
+- [ ] Restore branch promote/rollback tested on staging
 
 ### Migration
-- [ ] Baseline + 9 additive migrations applied to Aiven staging
-- [ ] `prisma migrate status` → "Database schema is up to date!"
-- [ ] Table count matches the audited source: 98 public base tables
+- [ ] All migrations applied (`prisma migrate status` → "Database schema is up to date!")
+- [ ] `_prisma_migrations` has no failed rows
+- [ ] Table count matches production: 98 public base tables
 - [ ] `pg_trgm` + `pgcrypto` present; 0 GIN indexes expected
 - [ ] Row counts verified for User, Mod, ModFile tables
 
@@ -106,17 +112,9 @@ then app deploy, then §R3 verification queries.
 
 ### Cold-start resilience
 - [ ] `withRetry` / `withDatabaseRetry` tested (exponential backoff 1s→2s→4s)
-- [ ] App recovers from Aiven cold start without user-visible errors
+- [ ] App recovers from Neon compute wake-up without user-visible errors
 
 ### Rollback
 - [ ] Rollback procedure documented and tested
-- [ ] Neon branch `pre-cutover-staging` created as restore point
-- [ ] Rollback tested: env revert → rebuild → health check passes
-
-## §6 Rollback procedure
-
-1. Promote the §5 Neon branch to primary; re-point app env.
-2. Previous app build stays compatible (all 9 migrations additive).
-3. Re-run §R3 history query to confirm the restored state.
-4. API-key note: post-`07120000` rows authenticate by hash — restored
-   pre-migration DBs use the legacy raw column automatically.
+- [ ] Neon branch `pre-release-staging` created as restore point
+- [ ] Rollback tested: promote branch → re-point env → health check passes

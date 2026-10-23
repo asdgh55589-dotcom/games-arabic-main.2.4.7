@@ -1,11 +1,10 @@
 # Backup Strategy
 
-> **Migration note:** Neon is the target primary. Aiven PITR remains the
-> rollback layer until the Neon cutover is verified. Create `pg_trgm` and
-> `pgcrypto` **before** restoring a dump (`20261023000000_add_neon_extensions`);
-> the audited source has no GIN indexes.
+> Neon is the live primary database. Create `pg_trgm` and `pgcrypto` **before**
+> restoring a dump (`20261023000000_add_neon_extensions`); production has no
+> GIN indexes and 98 public base tables.
 
-> Last updated: 2026-09-13
+> Last updated: 2026-10-23
 
 ## §1 Overview
 
@@ -13,30 +12,36 @@ Defense-in-depth backup architecture with two independent recovery layers:
 
 | Layer | Method | RPO | RTO | Scope |
 |-------|--------|-----|-----|-------|
-| **Primary** | Aiven PITR (WAL archiving) | 5 min | < 30 min | Full database, point-in-time |
+| **Primary** | Neon restore history / point-in-time branch | 5 min | < 30 min | Full database, point-in-time |
 | **Secondary** | Weekly pg_dump | ~7 days | ~1 hour | Full schema + data snapshot |
 
-PITR provides continuous protection. pg_dump provides offline, portable snapshots for disaster recovery when Aiven itself is unreachable.
+Neon point-in-time recovery (PITR) provides continuous protection inside the project. pg_dump provides
+offline, portable snapshots for disaster recovery when Neon itself is
+unreachable.
 
-## §2 Aiven PITR
+## §2 Neon restore history (PITR)
 
-**Enable in:** Aiven UI → Databases → Backup & Restore → Enable PITR
+**Configure in:** Neon Console → Project → Settings → **History retention**
 
-- **Retention:** 7 days (minimum; increase for compliance)
-- **RPO:** 5 minutes (WAL segments archived continuously)
-- **RTO:** < 30 minutes (restore + WAL replay)
+- **Retention:** plan-dependent; keep at least 7 days (increase for compliance)
+- **RPO:** 5 minutes (continuous history)
+- **RTO:** < 30 minutes (restore branch + validation)
 
 ### Restore Procedure
 
-1. Open Aiven Console → your service → Backups & Restore
-2. Click **Restore to new service** or **Point-in-time restore**
-3. Select target timestamp (must be within PITR retention window)
-4. Wait for restore to complete (typically 5–15 min)
-5. Update `DATABASE_URL` to point to restored service
-6. Run `npx prisma migrate status` to verify schema consistency
-7. Smoke test critical flows
+1. Open Neon Console → project → **Branches** → **Restore**
+2. Choose **Restore to a point in time** and select a timestamp inside the
+   retention window
+3. Name the restore branch `incident-YYYYMMDD-HHmm`
+4. Wait for the branch to become ready
+5. Validate row counts and spot-check `User`, `Mod`, and `ModFile`
+6. Promote the restored branch to primary
+7. Update `DATABASE_URL` / `DIRECT_URL` if the endpoint name changed
+8. Run `npx prisma migrate status` to verify schema consistency
+9. Smoke test critical flows
 
-**Reference:** See [AIVEN-CONFIG.md](./AIVEN-CONFIG.md) for full PITR configuration, WAL settings, and connection pool tuning.
+**Reference:** See [NEON-SETUP.md](./NEON-SETUP.md) §8 for the full incident
+checklist and rollback procedure.
 
 ## §3 Weekly pg_dump
 
@@ -50,7 +55,7 @@ PITR provides continuous protection. pg_dump provides offline, portable snapshot
 ### Features
 
 - `--dry-run` flag prints commands without executing
-- Reads `DIRECT_URL` only and rejects pooled (`-pooler`) endpoints; never falls back to `DATABASE_URL` or `AIVEN_DATABASE_URL`
+- Reads `DIRECT_URL` only and rejects pooled (`-pooler`) endpoints; never falls back to `DATABASE_URL`
 - SHA256 checksum + manifest JSON for integrity verification
 - Colored terminal output (green=pass, red=fail)
 
@@ -67,7 +72,7 @@ When `BACKUP_S3_ENDPOINT` and `BACKUP_S3_BUCKET` are set, the script uploads the
 
 | Backup Type | Retention | Storage | Access |
 |-------------|-----------|---------|--------|
-| Aiven PITR | 7 days | Aiven managed | Aiven UI / API |
+| Neon restore history | 7 days minimum (plan-dependent) | Neon managed | Neon Console / API |
 | Weekly pg_dump | 4 dumps (~28 days) | Local `backups/weekly/` + optional S3 | Script / SSH / S3 console |
 | Monthly archive | Manual | Long-term S3 / offline | Manual download + verify |
 
@@ -95,6 +100,8 @@ Perform monthly to verify backup integrity and restore capability.
 4. **Apply migrations:** `npx prisma migrate deploy`
 5. **Verify:**
    - `npx prisma migrate status` → "Database schema is up to date!"
+   - `public` has 98 base tables and 0 GIN indexes
+   - `pg_trgm` + `pgcrypto` extensions are present
    - Spot-check critical tables (users, mods, games)
    - Run application smoke tests against staging
 6. **Document:** Record results in incident log with timestamp, backup file, duration, and any issues
@@ -115,17 +122,18 @@ The weekly backup script exits non-zero on any failure. External monitoring shou
 2. **Alert on missing manifest** (backup ran but didn't produce a manifest)
 3. **Alert on size anomaly** (dump < 1MB likely means empty/failed dump)
 
-### PITR Health Check
+### Restore History Health
 
-Verify PITR status weekly via Aiven API or console:
+Verify the restore window weekly in the Neon Console:
 
-```bash
-# Aiven CLI
-avn service backup-list <service-name>
-```
+- **Project → Settings → History retention** shows the expected window.
+- Create and delete a throwaway restore branch from yesterday; if the branch
+  cannot be created, history retention is shorter than expected.
 
-Ensure backups appear daily. A gap > 24h indicates WAL archiving failure.
+A missing restore point or a retention window under 7 days is an incident:
+extend retention or take an immediate off-site `pg_dump`.
 
 ### Backup Age Alert
 
-Alert if no successful backup exists within 8 days (PITR) or 10 days (pg_dump). This catches silent failures in both layers.
+Alert if no successful backup exists within 8 days (restore history) or 10 days
+(pg_dump). This catches silent failures in both layers.

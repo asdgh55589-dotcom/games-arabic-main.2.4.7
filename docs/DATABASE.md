@@ -2,26 +2,25 @@
 
 > **Last Updated:** 2026-10-23
 
-> **Migration note:** Neon PostgreSQL 17 is the target production database.
-> Aiven PostgreSQL 17.11 is the read-only source until the cutover completes.
-> See `docs/NEON-SETUP.md` for the current runbook; older Aiven-primary text
-> below is retained as historical context.
+> **Current state:** Neon PostgreSQL 17 is the live production database.
+> See `docs/NEON-SETUP.md` for operations, env vars, migrations, backups, and
+> incident handling.
 
 ## Overview
 
-- **Database:** PostgreSQL 17 on Neon (target) / Aiven 17.11 (source before cutover)
+- **Database:** PostgreSQL 17 on Neon (live primary)
 - **ORM:** Prisma 6
 - **Schema:** `prisma/schema.prisma` (53 models, 40+ indexes)
 - **Connection:** 5 connections, 15s pool/connect timeout, 30s socket timeout (serverless-optimized, singleton in all envs)
-- **SSL:** `sslmode=require` enforced (Neon/Aiven requirement)
+- **SSL:** `sslmode=require` enforced (required by Neon)
 
-## Connection Setup — Neon (Target)
+## Connection Setup — Neon (Primary)
 
 `src/lib/db.ts` resolves the runtime URL from `DATABASE_URL` only:
 
 Runtime uses **`DATABASE_URL`** (pooled Neon). Prisma Migrate and backups use
-**`DIRECT_URL`** (direct Neon). `AIVEN_DATABASE_URL` is no longer read by
-`src/lib/db.ts`; remove it after cutover.
+**`DIRECT_URL`** (direct Neon). `src/lib/db.ts` reads only `DATABASE_URL`; set
+only these two database URLs.
 
 ```typescript
 // src/lib/db.ts — getDatabaseUrl() helper
@@ -47,12 +46,12 @@ export function getDatabaseUrl(): string {
 
 `withRetry(fn)` provides exponential backoff (1s, 2s, 4s, max 3 attempts) for managed-Postgres cold-start resilience.
 
-### Cutover Pattern
+### Environment Pattern
 
-Set `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) on deploy day. `AIVEN_DATABASE_URL` is not read; remove it to avoid stale config.
+Set `DATABASE_URL` (pooled) and `DIRECT_URL` (direct) in every environment.
 
 ```env
-# .env (cutover day)
+# .env
 DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/games_arabic?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15&socket_timeout=30"
 DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/games_arabic?sslmode=require&connect_timeout=15"
 ```
@@ -364,7 +363,7 @@ DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/gam
 DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/games_arabic?sslmode=require&connect_timeout=15"
 ```
 
-The `sslmode=require` is required for Neon (and was required for Aiven).
+The `sslmode=require` is required for Neon.
 
 ## Performance Considerations
 

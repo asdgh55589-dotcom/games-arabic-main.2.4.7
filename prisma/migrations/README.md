@@ -2,12 +2,11 @@
 
 ## Current state (audited 2026-10-23)
 
-The live Aiven source has **0 GIN indexes** in `public` and the extensions
-`pg_trgm` + `pgcrypto`. Older docs (`docs/AIVEN-CONFIG.md`,
-`docs/prod-migration-sync.md`, `docs/migrations-alignment-runbook.md`) describe
+The live Neon database has **98 public base tables**, **0 GIN indexes**, and
+the extensions `pg_trgm` + `pgcrypto`. Historical runbooks
+(`docs/prod-migration-sync.md`, `docs/migrations-alignment-runbook.md`) describe
 six `*_trgm` GIN indexes from a prior plan; those indexes are **not** present in
-the audited production database. Do not add them during the Neon migration
-unless you first confirm they exist on the source:
+production. Do not add them unless you first confirm they exist:
 
 ```sql
 SELECT indexname FROM pg_indexes

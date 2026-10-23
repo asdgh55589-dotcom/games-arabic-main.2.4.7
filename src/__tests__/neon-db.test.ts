@@ -1,8 +1,8 @@
 /**
- * Phase 5 Task A — Aiven config + sslmode + pool tuning (SA-1)
+ * Neon config + sslmode + pool tuning
  *
  * Covers:
- * - getDatabaseUrl always uses runtime DATABASE_URL (AIVEN_DATABASE_URL is ignored), throws if unset
+ * - getDatabaseUrl always uses runtime DATABASE_URL, throws if unset
  * - ensureSslmode injects sslmode=require if missing (preserves other params), throws for disable/allow/non-require
  * - ensureSslmode pool tuning: injects connect_timeout/connection_limit/pool_timeout if missing, preserves existing
  * - withRetry / withDatabaseRetry / connectWithRetry exponential backoff (1s,2s,4s max 3 attempts)
@@ -33,47 +33,47 @@ import {
 
 describe('getDatabaseUrl — runtime DATABASE_URL only (Neon pooled endpoint)', () => {
   afterEach(() => {
-    process.env.AIVEN_DATABASE_URL = ORIG_ENV.AIVEN_DATABASE_URL
+    process.env.LEGACY_DATABASE_URL = ORIG_ENV.LEGACY_DATABASE_URL
     process.env.DATABASE_URL = ORIG_ENV.DATABASE_URL
-    if (ORIG_ENV.AIVEN_DATABASE_URL === undefined) delete process.env.AIVEN_DATABASE_URL
+    if (ORIG_ENV.LEGACY_DATABASE_URL === undefined) delete process.env.LEGACY_DATABASE_URL
     if (ORIG_ENV.DATABASE_URL === undefined) delete process.env.DATABASE_URL
   })
 
-  it('uses runtime DATABASE_URL and ignores AIVEN_DATABASE_URL', () => {
-    process.env.AIVEN_DATABASE_URL = 'postgresql://aiven:pass@host:5432/db?sslmode=require'
+  it('uses runtime DATABASE_URL and ignores a legacy database URL', () => {
+    process.env.LEGACY_DATABASE_URL = 'postgresql://legacy:pass@host:5432/db?sslmode=require'
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 
-  it('uses DATABASE_URL when AIVEN_DATABASE_URL is unset', () => {
-    delete process.env.AIVEN_DATABASE_URL
+  it('uses DATABASE_URL when the legacy variable is unset', () => {
+    delete process.env.LEGACY_DATABASE_URL
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 
-  it('throws when DATABASE_URL is unset (AIVEN_DATABASE_URL alone is not enough)', () => {
-    process.env.AIVEN_DATABASE_URL = 'postgresql://aiven:pass@host:5432/db?sslmode=require'
+  it('throws when DATABASE_URL is unset (legacy variable alone is not enough)', () => {
+    process.env.LEGACY_DATABASE_URL = 'postgresql://legacy:pass@host:5432/db?sslmode=require'
     delete process.env.DATABASE_URL
     expect(() => getDatabaseUrl()).toThrow(/DATABASE_URL must be set/)
   })
 
-  it('ignores an empty AIVEN_DATABASE_URL and uses DATABASE_URL', () => {
-    process.env.AIVEN_DATABASE_URL = '   '
+  it('ignores an empty legacy variable and uses DATABASE_URL', () => {
+    process.env.LEGACY_DATABASE_URL = '   '
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 })
 
 describe('ensureSslmode — sslmode=require enforcement', () => {
-  const base = 'postgresql://user:pass@aiven.example.com:5432/games_arabic'
+  const base = 'postgresql://user:pass@ep-xxxx.eu-west-1.aws.neon.tech:5432/games_arabic'
 
   it('injects sslmode=require when missing and preserves other params', () => {
-    const url = `${base}?connection_limit=5&pool_timeout=10`
+    const url = `${base}?connection_limit=5&pool_timeout=15`
     const out = ensureSslmode(url)
     const parsed = new URL(out)
     expect(parsed.searchParams.get('sslmode')).toBe('require')
     expect(parsed.searchParams.get('connection_limit')).toBe('5')
-    expect(parsed.searchParams.get('pool_timeout')).toBe('10')
+    expect(parsed.searchParams.get('pool_timeout')).toBe('15')
     // still has original params
     expect(parsed.searchParams.get('connection_limit')).toBe('5')
   })
@@ -106,7 +106,7 @@ describe('ensureSslmode — sslmode=require enforcement', () => {
   })
 
   it('passes through when sslmode=require already present', () => {
-    const url = `${base}?sslmode=require&connection_limit=5&pool_timeout=10&connect_timeout=10`
+    const url = `${base}?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15`
     const out = ensureSslmode(url)
     expect(new URL(out).searchParams.get('sslmode')).toBe('require')
   })
@@ -265,8 +265,8 @@ describe('raw SQL portability — src/app/api/admin/reports/stats/route.ts', () 
     }
   })
 
-  it('docs/AIVEN-CONFIG.md documents portability and pool tuning', () => {
-    const docPath = path.join(process.cwd(), 'docs/AIVEN-CONFIG.md')
+  it('docs/NEON-SETUP.md documents pool tuning and current facts', () => {
+    const docPath = path.join(process.cwd(), 'docs/NEON-SETUP.md')
     expect(fs.existsSync(docPath)).toBe(true)
     const doc = fs.readFileSync(docPath, 'utf-8')
     expect(doc).toMatch(/connection_limit.*5/i)
@@ -275,8 +275,7 @@ describe('raw SQL portability — src/app/api/admin/reports/stats/route.ts', () 
     expect(doc).toMatch(/0 GIN/i)
     expect(doc).toMatch(/sslmode=require/)
     expect(doc).toMatch(/pg_trgm/)
-    // SA-3 may have already populated the PITR section (full content) or left the placeholder
-    const hasPitr = doc.includes('<!-- PITR section will be added by SA-3 -->') || doc.includes('## PITR')
-    expect(hasPitr).toBe(true)
+    expect(doc).toMatch(/98/)
+    expect(doc).toMatch(/Incident checklist/i)
   })
 })

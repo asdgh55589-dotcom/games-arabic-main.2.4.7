@@ -78,12 +78,12 @@ describe('SA-3 phase8 — docs/PRODUCTION-LAUNCH.md', () => {
     expect(content).toMatch(/§1.*Pre-launch/i)
   })
 
-  it('contains §2 Cutover day section', () => {
-    expect(content).toMatch(/§2.*Cutover day/i)
+  it('contains §2 Deploy day section', () => {
+    expect(content).toMatch(/§2.*Deploy day/i)
   })
 
-  it('contains §3 Post-cutover section', () => {
-    expect(content).toMatch(/§3.*Post-cutover/i)
+  it('contains §3 Post-deploy section', () => {
+    expect(content).toMatch(/§3.*Post-deploy/i)
   })
 
   it('contains §4 Owner manual actions section', () => {
@@ -98,7 +98,7 @@ describe('SA-3 phase8 — docs/PRODUCTION-LAUNCH.md', () => {
     expect(content).toContain('Clarity')
     expect(content).toContain('OpenObserve')
     expect(content).toContain('emitlo.com')
-    expect(content).toContain('Aiven')
+    expect(content).toContain('Neon')
     expect(content).toContain('Cloudinary')
   })
 

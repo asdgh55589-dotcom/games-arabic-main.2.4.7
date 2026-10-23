@@ -1,12 +1,12 @@
 /**
- * Phase 5 Task SA-4 — env + docs updates + connection string pattern
+ * Neon env + docs validation
  *
  * Covers:
  * - db.ts always uses runtime DATABASE_URL (mock process.env)
- * - AIVEN_DATABASE_URL is ignored, even when set
- * - sslmode enforcement (reuses SA-1 test patterns)
+ * - a secondary/legacy database URL variable is ignored, even when set
+ * - sslmode enforcement
  * - .env.example documents pooled DATABASE_URL + direct DIRECT_URL
- * - Each updated doc has "Aiven" mentioned
+ * - Neon operations docs carry the current facts (98 tables, 0 GIN, 15s)
  */
 
 import * as fs from 'fs'
@@ -25,49 +25,49 @@ jest.mock('@prisma/client', () => {
 
 import { getDatabaseUrl, ensureSslmode } from '@/lib/db'
 
-describe('getDatabaseUrl — runtime DATABASE_URL only (SA-4)', () => {
+describe('getDatabaseUrl — runtime DATABASE_URL only', () => {
   afterEach(() => {
-    process.env.AIVEN_DATABASE_URL = ORIG_ENV.AIVEN_DATABASE_URL
+    process.env.LEGACY_DATABASE_URL = ORIG_ENV.LEGACY_DATABASE_URL
     process.env.DATABASE_URL = ORIG_ENV.DATABASE_URL
-    if (ORIG_ENV.AIVEN_DATABASE_URL === undefined) delete process.env.AIVEN_DATABASE_URL
+    if (ORIG_ENV.LEGACY_DATABASE_URL === undefined) delete process.env.LEGACY_DATABASE_URL
     if (ORIG_ENV.DATABASE_URL === undefined) delete process.env.DATABASE_URL
   })
 
-  it('uses runtime DATABASE_URL and ignores AIVEN_DATABASE_URL', () => {
-    process.env.AIVEN_DATABASE_URL = 'postgresql://aiven:pass@host:5432/db?sslmode=require'
+  it('uses runtime DATABASE_URL and ignores a legacy database URL', () => {
+    process.env.LEGACY_DATABASE_URL = 'postgresql://legacy:pass@host:5432/db?sslmode=require'
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 
-  it('uses DATABASE_URL when AIVEN_DATABASE_URL is unset', () => {
-    delete process.env.AIVEN_DATABASE_URL
+  it('uses DATABASE_URL when the legacy variable is unset', () => {
+    delete process.env.LEGACY_DATABASE_URL
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 
-  it('throws when DATABASE_URL is unset (AIVEN_DATABASE_URL alone is not enough)', () => {
-    process.env.AIVEN_DATABASE_URL = 'postgresql://aiven:pass@host:5432/db?sslmode=require'
+  it('throws when DATABASE_URL is unset (legacy variable alone is not enough)', () => {
+    process.env.LEGACY_DATABASE_URL = 'postgresql://legacy:pass@host:5432/db?sslmode=require'
     delete process.env.DATABASE_URL
     expect(() => getDatabaseUrl()).toThrow(/DATABASE_URL must be set/)
   })
 
-  it('ignores an empty AIVEN_DATABASE_URL and uses DATABASE_URL', () => {
-    process.env.AIVEN_DATABASE_URL = '   '
+  it('ignores an empty legacy variable and uses DATABASE_URL', () => {
+    process.env.LEGACY_DATABASE_URL = '   '
     process.env.DATABASE_URL = 'postgresql://neon:pass@host:5432/db?sslmode=require'
     expect(getDatabaseUrl()).toBe(process.env.DATABASE_URL)
   })
 })
 
-describe('ensureSslmode — sslmode=require enforcement (SA-4 reuse)', () => {
-  const base = 'postgresql://user:pass@aiven.example.com:5432/games_arabic'
+describe('ensureSslmode — sslmode=require enforcement', () => {
+  const base = 'postgresql://user:pass@ep-xxxx.eu-west-1.aws.neon.tech:5432/games_arabic'
 
   it('injects sslmode=require when missing', () => {
-    const url = `${base}?connection_limit=5&pool_timeout=10`
+    const url = `${base}?connection_limit=5&pool_timeout=15`
     const out = ensureSslmode(url)
     const parsed = new URL(out)
     expect(parsed.searchParams.get('sslmode')).toBe('require')
     expect(parsed.searchParams.get('connection_limit')).toBe('5')
-    expect(parsed.searchParams.get('pool_timeout')).toBe('10')
+    expect(parsed.searchParams.get('pool_timeout')).toBe('15')
   })
 
   it('throws for sslmode=disable', () => {
@@ -110,13 +110,12 @@ describe('ensureSslmode — sslmode=require enforcement (SA-4 reuse)', () => {
   })
 })
 
-describe('.env.example — Neon database lines (SA-4)', () => {
-  it('contains pooled DATABASE_URL and direct DIRECT_URL lines, not AIVEN_DATABASE_URL', () => {
+describe('.env.example — Neon database lines', () => {
+  it('contains pooled DATABASE_URL and direct DIRECT_URL lines', () => {
     const envPath = path.join(process.cwd(), '.env.example')
     const content = fs.readFileSync(envPath, 'utf-8')
     expect(content).toMatch(/^DATABASE_URL=/m)
     expect(content).toMatch(/^DIRECT_URL=/m)
-    expect(content).not.toMatch(/^#?\s*AIVEN_DATABASE_URL=/m)
   })
 
   it('DATABASE_URL comment mentions sslmode=require', () => {
@@ -126,26 +125,25 @@ describe('.env.example — Neon database lines (SA-4)', () => {
   })
 })
 
-describe('documentation files mention Aiven (SA-4)', () => {
+describe('Neon operations documentation', () => {
   const docsDir = path.join(process.cwd(), 'docs')
 
-  it('docs/DATABASE.md mentions Aiven', () => {
-    const content = fs.readFileSync(path.join(docsDir, 'DATABASE.md'), 'utf-8')
-    expect(content).toMatch(/Aiven/)
+  it('docs/NEON-SETUP.md documents current Neon facts', () => {
+    const content = fs.readFileSync(path.join(docsDir, 'NEON-SETUP.md'), 'utf-8')
+    expect(content).toMatch(/Neon/)
+    expect(content).toMatch(/98/)
+    expect(content).toMatch(/0 GIN/i)
+    expect(content).toMatch(/pool_timeout=15/)
   })
 
-  it('docs/DEPLOYMENT.md mentions Aiven', () => {
+  it('docs/DEPLOYMENT.md targets Neon', () => {
     const content = fs.readFileSync(path.join(docsDir, 'DEPLOYMENT.md'), 'utf-8')
-    expect(content).toMatch(/Aiven/)
+    expect(content).toMatch(/Neon/)
+    expect(content).toMatch(/NEON-SETUP\.md/)
   })
 
-  it('docs/README.md mentions Aiven', () => {
+  it('docs/README.md describes Neon migrations', () => {
     const content = fs.readFileSync(path.join(docsDir, 'README.md'), 'utf-8')
-    expect(content).toMatch(/Aiven/)
-  })
-
-  it('docs/prod-migration-sync.md mentions Aiven', () => {
-    const content = fs.readFileSync(path.join(docsDir, 'prod-migration-sync.md'), 'utf-8')
-    expect(content).toMatch(/Aiven/)
+    expect(content).toMatch(/Neon/)
   })
 })

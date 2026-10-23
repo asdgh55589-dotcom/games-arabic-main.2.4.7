@@ -1,13 +1,13 @@
 # Deployment Guide
 
-> **Last Updated:** 2026-10-23 — Neon is the live database. The Aiven sections below are historical/rollback-only.
+> **Last Updated:** 2026-10-23 — Neon is the live database.
 >
-> **Current cutover runbook:** `docs/NEON-SETUP.md`.
+> **Operations runbook:** `docs/NEON-SETUP.md`.
 
 ## Overview
 
 - **Runtime:** Next.js 16 standalone output
-- **Database:** Neon PostgreSQL (primary) / Aiven PostgreSQL (rollback only)
+- **Database:** Neon PostgreSQL (primary)
 - **Auth:** Supabase (hosted)
 - **Cache:** Upstash Redis (serverless)
 - **Email:** Emitlo
@@ -21,7 +21,7 @@ All required environment variables for production (see `.env.example` — never 
 DATABASE_URL="postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/neondb?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15"
 # Neon direct URL — migrations and backups only
 DIRECT_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
-# Do not set AIVEN_DATABASE_URL; it is legacy and ignored by src/lib/db.ts.
+# Set only these two database URLs; src/lib/db.ts reads DATABASE_URL.
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
@@ -155,46 +155,6 @@ Update redirect URLs in:
 - SSL/TLS enabled (required for secure cookies)
 - `COOKIE_DOMAIN` set to your domain
 
-## Aiven PostgreSQL (historical rollback target)
-
-> **Do not use for new deploys.** The live database is Neon. This section is kept for rollback/PITR reference only.
-> See `docs/AIVEN-CONFIG.md` for historical configuration and PITR details.
-
-### Connection string
-
-```env
-# Aiven rollback target — set DATABASE_URL and DIRECT_URL, not AIVEN_DATABASE_URL
-DATABASE_URL="postgresql://avnadmin:PASSWORD@pg-xxxxx-ew1.aivencloud.com:26974/defaultdb?sslmode=require&connection_limit=5&pool_timeout=15&connect_timeout=15"
-DIRECT_URL="postgresql://avnadmin:PASSWORD@pg-xxxxx-ew1.aivencloud.com:26974/defaultdb?sslmode=require&connect_timeout=15"
-```
-
-**Key requirements:**
-- `sslmode=require` — mandatory; `src/lib/db.ts` throws if missing
-- `connection_limit=5` — keep ≤ Aiven pool size (5)
-- `pool_timeout=15` — seconds to wait for a pool connection
-- `connect_timeout=15` — injected automatically if missing by `src/lib/db.ts`
-
-### Pool tuning
-
-Aiven console → Service → Pools → set pool size to **5** (matches `connection_limit`).
-See `docs/AIVEN-CONFIG.md` §Pool & Prisma tuning for full parameter table.
-
-### PITR
-
-Aiven provides continuous WAL archiving for point-in-time recovery.
-Enable in: Aiven UI → Databases → Backup & Restore → Enable PITR.
-Retention: 7 days minimum. See `docs/AIVEN-CONFIG.md` §PITR for restore procedure and RPO/RTO targets.
-
-### Migration to Aiven (historical Neon → Aiven)
-
-> **Superseded.** The current direction is Aiven → Neon; use `docs/NEON-SETUP.md`.
-
-1. Dump Neon: `pg_dump "$DATABASE_URL" | gzip > neon-dump.sql.gz`
-2. Restore to Aiven: `gunzip -c neon-dump.sql.gz | psql "$DATABASE_URL"`
-3. Apply migrations: `DIRECT_URL=<aiven-direct-url> npx prisma migrate deploy`
-4. Verify: `npx prisma migrate status` → "Database schema is up to date!"
-5. Update env vars, rebuild, smoke test.
-
 ## Database Migration in Production
 
 ```bash
@@ -282,7 +242,7 @@ API routes include Cache-Control headers:
 
 ### Database
 
-- Connection pooling: 5 connections, 30s timeout
+- Connection pooling: 5 connections, 15s pool/connect timeout, 30s socket timeout
 - Indexes on frequently queried fields
 - Use `select` instead of `include` when possible
 
@@ -321,9 +281,9 @@ API routes include Cache-Control headers:
 ### Database Connection Issues
 
 1. Verify `DATABASE_URL` is correct
-2. Ensure `sslmode=require` is in the URL (Aiven rejects non-SSL connections)
+2. Ensure `sslmode=require` is in the URL (required by Neon)
 3. Check the Neon dashboard for connection limits
-4. See [NEON-SETUP.md](./NEON-SETUP.md) for current pool tuning and cutover details
+4. See [NEON-SETUP.md](./NEON-SETUP.md) for current pool tuning and operations details
 
 ### OAuth Callback Errors
 
