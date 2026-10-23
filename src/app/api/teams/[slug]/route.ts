@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   try {
     const { slug } = await params
     const team = await db.team.findFirst({
-      where: { slug },
+      where: { slug, archivedAt: null },
       include: {
         memberships: {
           orderBy: { joinedAt: 'desc' },

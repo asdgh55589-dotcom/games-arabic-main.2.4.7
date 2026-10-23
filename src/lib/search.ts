@@ -158,6 +158,7 @@ export async function search(query: string, filters: SearchFilters = {}): Promis
   if (searchType === 'all' || searchType === 'team') {
     const teams = await db.team.findMany({
       where: {
+        archivedAt: null,
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },

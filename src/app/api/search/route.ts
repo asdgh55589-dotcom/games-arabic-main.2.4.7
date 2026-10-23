@@ -139,10 +139,19 @@ async function searchViaMeili({ q, platforms, minTier, limit, page, want }: Sear
   }
 
   if (teamsRes) {
-    teams = teamsRes.hits.map((h) => {
+    const hits = teamsRes.hits.map((h) => {
       const { id, name, modCount, isOfficial } = h as Record<string, unknown>
-      return { id, name, modCount, isOfficial }
+      return { id: id as string, name, modCount, isOfficial }
     })
+    const ids = hits.map((h) => h.id)
+    const visible = ids.length
+      ? await db.team.findMany({
+          where: { id: { in: ids }, archivedAt: null },
+          select: { id: true },
+        })
+      : []
+    const visibleIds = new Set(visible.map((t) => t.id))
+    teams = hits.filter((h) => visibleIds.has(h.id))
   }
 
   if (usersRes) {
@@ -232,14 +241,17 @@ async function searchViaPrisma({
       : Promise.resolve([]),
     want('team')
       ? db.team.findMany({
-          where: q
-            ? {
-                OR: [
-                  { name: { contains: q, mode: 'insensitive' } },
-                  { description: { contains: q, mode: 'insensitive' } },
-                ],
-              }
-            : {},
+          where: {
+            archivedAt: null,
+            ...(q
+              ? {
+                  OR: [
+                    { name: { contains: q, mode: 'insensitive' } },
+                    { description: { contains: q, mode: 'insensitive' } },
+                  ],
+                }
+              : {}),
+          },
           take: limit,
           orderBy: { modCount: 'desc' },
           select: { id: true, name: true, slug: true, modCount: true, isOfficial: true },

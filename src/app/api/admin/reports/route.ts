@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
           priority: true,
           status: true,
           description: true,
+          snapshot: true,
           createdAt: true,
           reporter: { select: { id: true, username: true, avatarUrl: true } },
           targetMod: { select: { id: true, name: true, slug: true } },

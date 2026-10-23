@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  ArchiveRestore,
   BadgeCheck,
   BarChart3,
   Gift,
@@ -15,7 +16,7 @@ import {
   Users,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,12 +38,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { buildTeamQuickEditPayload } from '@/lib/teams/quick-edit'
 
 interface TeamItem {
   id: string
   name: string
+  description?: string | null
+  logoUrl?: string | null
   isFeatured: boolean
   isOfficial: boolean
+  archivedAt?: string | null
 }
 
 interface TeamActionsProps {
@@ -55,9 +60,24 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
   const [openDialog, setOpenDialog] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [editName, setEditName] = useState(team.name)
-  const [editDescription, setEditDescription] = useState('')
-  const [editLogo, setEditLogo] = useState('')
+  const [editDescription, setEditDescription] = useState(team.description || '')
+  const [editLogo, setEditLogo] = useState(team.logoUrl || '')
   const [deleteConfirm, setDeleteConfirm] = useState('')
+
+  // Keep the draft in sync with server refreshes so a stale description/logo
+  // is never sent by a later name-only save.
+  useEffect(() => {
+    setEditName(team.name)
+    setEditDescription(team.description || '')
+    setEditLogo(team.logoUrl || '')
+  }, [team.id, team.name, team.description, team.logoUrl])
+
+  const openEditGeneral = () => {
+    setEditName(team.name)
+    setEditDescription(team.description || '')
+    setEditLogo(team.logoUrl || '')
+    setOpenDialog('editGeneral')
+  }
 
   const handleFeature = async () => {
     setLoading(true)
@@ -105,24 +125,20 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
     }
   }
 
-  const handleArchive = async () => {
+  const handleArchive = async (archived: boolean) => {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/teams/${team.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ archived: true }),
+        body: JSON.stringify({ archived }),
       })
-      if (!res.ok) {
-        // fallback to PUT with hiddenTabs
-        const alt = await fetch(`/api/admin/teams/${team.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isFeatured: false }),
-        })
-        if (!alt.ok) throw new Error('فشل الأرشفة')
-      }
-      toast({ title: 'تمت أرشفة الفريق', description: 'لن يظهر للعامة' })
+      if (!res.ok) throw new Error(archived ? 'فشل الأرشفة' : 'فشل إلغاء الأرشفة')
+      toast(
+        archived
+          ? { title: 'تمت أرشفة الفريق', description: 'لن يظهر للعامة' }
+          : { title: 'تم إلغاء أرشفة الفريق', description: 'أصبح ظاهراً للعامة' },
+      )
       setOpenDialog(null)
       onActionComplete()
     } catch (e) {
@@ -164,12 +180,20 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
       toast({ title: 'الاسم مطلوب', variant: 'destructive' })
       return
     }
+    const payload = buildTeamQuickEditPayload(
+      { name: team.name, description: team.description, logoUrl: team.logoUrl },
+      { name: editName, description: editDescription, logoUrl: editLogo },
+    )
+    if (!payload) {
+      toast({ title: 'لا توجد تغييرات', description: 'لم يتم تعديل أي حقل' })
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/teams/${team.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editName, description: editDescription, logoUrl: editLogo }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('فشل الحفظ')
       toast({ title: 'تم حفظ التعديلات' })
@@ -209,7 +233,7 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
               <BarChart3 className="h-4 w-4" /> عرض لوحة المعلومات
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpenDialog('editGeneral')}>
+          <DropdownMenuItem onClick={openEditGeneral}>
             <Pencil className="h-4 w-4" /> تعديل عام (الاسم/الوصف/الشعار)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpenDialog('editContact')}>
@@ -249,9 +273,21 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setOpenDialog('archive')} className="text-amber-600">
-            <Archive className="h-4 w-4" /> أرشفة الفريق
-          </DropdownMenuItem>
+          {team.archivedAt ? (
+            <DropdownMenuItem
+              onClick={() => handleArchive(false)}
+              className="text-emerald-600"
+            >
+              <ArchiveRestore className="h-4 w-4" /> إلغاء أرشفة الفريق
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              onClick={() => setOpenDialog('archive')}
+              className="text-amber-600"
+            >
+              <Archive className="h-4 w-4" /> أرشفة الفريق
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             variant="destructive"
             onClick={() => setOpenDialog('delete')}
@@ -391,7 +427,7 @@ export function TeamActions({ team, onActionComplete }: TeamActionsProps) {
             <Button variant="outline" onClick={() => setOpenDialog(null)}>
               إلغاء
             </Button>
-            <Button variant="destructive" onClick={handleArchive} disabled={loading}>
+            <Button variant="destructive" onClick={() => handleArchive(true)} disabled={loading}>
               {loading ? 'جاري...' : 'تأكيد الأرشفة'}
             </Button>
           </DialogFooter>

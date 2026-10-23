@@ -3,6 +3,7 @@ import { forbidden, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { creatorBulkSetHidden } from '@/lib/comments/repository'
 import { db } from '@/lib/db'
+import { snapshotReportsForTarget } from '@/lib/reports/snapshot'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const MAX_BULK = 50
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
   if (action === 'delete') {
     const modIds = [...new Set(rows.map((r) => r.modId))]
     await db.$transaction(async (tx) => {
+      for (const id of ids) {
+        await snapshotReportsForTarget({ commentId: id }, tx)
+      }
       await tx.modComment.deleteMany({ where: { id: { in: ids } } })
       for (const modId of modIds) {
         const count = await tx.modComment.count({ where: { modId } })

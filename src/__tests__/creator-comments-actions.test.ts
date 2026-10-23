@@ -46,6 +46,7 @@ const idParams = { params: Promise.resolve({ id: 'c1' }) } as any
 const req = (url: string, body?: unknown) => ({ url, json: async () => body ?? {} }) as any
 
 const txMock = {
+  report: { findMany: jest.fn(), updateMany: jest.fn() },
   modComment: { deleteMany: jest.fn(), count: jest.fn() },
   mod: { update: jest.fn() },
 }
@@ -68,6 +69,8 @@ beforeEach(() => {
   ;(db.$transaction as jest.Mock).mockImplementation(async (arg: any) =>
     typeof arg === 'function' ? arg(txMock) : Promise.all(arg),
   )
+  txMock.report.findMany.mockReset().mockResolvedValue([])
+  txMock.report.updateMany.mockReset().mockResolvedValue({ count: 0 })
   txMock.modComment.deleteMany.mockReset().mockResolvedValue({ count: 2 })
   txMock.modComment.count.mockReset().mockResolvedValue(5)
   txMock.mod.update.mockReset().mockResolvedValue({})

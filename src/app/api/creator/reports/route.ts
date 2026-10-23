@@ -36,7 +36,13 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(50, Math.max(1, Math.floor(Number(params.get('limit')) || 20)))
 
   const scope = {
-    OR: [{ targetMod: { authorId: user.id } }, { targetComment: { mod: { authorId: user.id } } }],
+    OR: [
+      { targetMod: { authorId: user.id } },
+      { targetComment: { mod: { authorId: user.id } } },
+      // After content_deleted, the FK is NULL; keep the report visible via snapshot.
+      { snapshot: { path: ['data', 'authorId'], equals: user.id } },
+      { snapshot: { path: ['data', 'userId'], equals: user.id } },
+    ],
   }
   const where: Record<string, unknown> = { ...scope }
   if (status !== 'all') where.status = status
@@ -53,6 +59,7 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         targetType: true,
         reason: true,
+        snapshot: true,
         status: true,
         actionTaken: true,
         actionAt: true,
@@ -70,7 +77,9 @@ export async function GET(req: NextRequest) {
   ])
 
   // Explicit allowlist mapping — never spread DB rows.
-  const reports = rows.map((r) => ({
+  const reports = rows.map((r) => {
+    const snapshot = r.snapshot as { type?: string; data?: { name?: string; slug?: string; id?: string; text?: string } } | null
+    return ({
     id: r.id,
     createdAt: r.createdAt,
     targetType: r.targetType,
@@ -82,11 +91,15 @@ export async function GET(req: NextRequest) {
     resolvedAt: r.resolvedAt,
     mod: r.targetMod
       ? { id: r.targetMod.id, name: r.targetMod.name, slug: r.targetMod.slug }
-      : null,
+      : snapshot?.type === 'mod' && snapshot.data?.name
+        ? { id: snapshot.data.id, name: snapshot.data.name, slug: snapshot.data.slug }
+        : null,
     commentExcerpt:
       r.targetComment && typeof r.targetComment.text === 'string'
         ? r.targetComment.text.slice(0, 50)
-        : null,
+        : snapshot?.type === 'comment' && typeof snapshot.data?.text === 'string'
+          ? snapshot.data.text.slice(0, 50)
+          : null,
     latest: r.statusHistory[0]
       ? {
           toStatus: r.statusHistory[0].toStatus,
@@ -95,7 +108,8 @@ export async function GET(req: NextRequest) {
           createdAt: r.statusHistory[0].createdAt,
         }
       : null,
-  }))
+    })
+  })
 
   return ok({
     reports,

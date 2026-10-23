@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { snapshotReportsForTarget } from '@/lib/reports/snapshot'
 import { syncGameCounts } from '@/lib/game-helpers'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { logger } from '@/lib/logger'
@@ -148,7 +149,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         if (!['DRAFT', 'ARCHIVED', 'REJECTED'].includes(mod.workflowStatus)) {
           return validationFail('يمكن حذف المسودات والمؤرشفة والمرفوضة فقط')
         }
-        await db.mod.delete({ where: { id: mod.id } })
+        await db.$transaction(async (tx) => {
+          await snapshotReportsForTarget({ modId: mod.id }, tx)
+          await tx.mod.delete({ where: { id: mod.id } })
+        })
         // المود اختفى من اللعبة — أعد حساب عدّادات اللعبة (أفضلEffort).
         syncGameCounts(mod.gameId).catch(() => {})
         return ok({ success: true, message: 'تم حذف التعريب' })

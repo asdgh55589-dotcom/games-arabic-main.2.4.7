@@ -110,6 +110,7 @@ export const DAILY_REPORT_LIMIT = 5
 export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   new: ['under_review', 'confirmed', 'rejected', 'resolved'],
   under_review: ['confirmed', 'rejected', 'reopened', 'resolved'],
+  pending: ['under_review', 'confirmed', 'rejected', 'resolved'],
   reopened: ['under_review', 'confirmed', 'rejected', 'resolved'],
   confirmed: ['resolved'],
   rejected: ['reopened'],

@@ -31,6 +31,14 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: (...a: unknown[]) => mockPresign(...a),
 }))
 
+jest.mock('@/lib/db', () => ({
+  db: {
+    uploadAsset: { findFirst: jest.fn().mockResolvedValue(null) },
+    mod: { findFirst: jest.fn().mockResolvedValue(null) },
+  },
+}))
+
+import { db } from '@/lib/db'
 import { POST as signPOST } from '@/app/api/storage/ia/sign/route'
 import { POST as completePOST } from '@/app/api/storage/ia/complete/route'
 import { POST as relayPOST } from '@/app/api/storage/ia/relay/route'
@@ -61,7 +69,16 @@ beforeEach(() => {
   })
   mockRecord.mockResolvedValue([{}, {}, {}])
   mockPresign.mockResolvedValue('https://s3.us.archive.org/signed-put-url')
-  mockSend.mockResolvedValue({ ContentLength: 1234 })
+  ;(db.uploadAsset.findFirst as jest.Mock).mockResolvedValue(null)
+  mockSend.mockImplementation(async (command: any) => {
+    const body = command?.input?.Body
+    if (body && typeof body[Symbol.asyncIterator] === 'function') {
+      for await (const _chunk of body) {
+        void _chunk
+      }
+    }
+    return { ContentLength: 1234 }
+  })
 })
 
 afterEach(() => {
@@ -126,6 +143,13 @@ describe('POST /api/storage/ia/complete', () => {
     }))
   })
 
+  it('422 when HEAD ContentLength differs from the client-declared bytes', async () => {
+    mockSend.mockResolvedValue({ ContentLength: 99 })
+    const res = await completePOST(jsonReq('http://x/', done))
+    expect(res.status).toBe(422)
+    expect(mockRecord).not.toHaveBeenCalled()
+  })
+
   it('422 when HEAD never finds the object (no phantom records)', async () => {
     mockSend.mockRejectedValue(new Error('NotFound'))
     const res = await completePOST(jsonReq('http://x/', done))
@@ -133,10 +157,10 @@ describe('POST /api/storage/ia/complete', () => {
     expect(mockRecord).not.toHaveBeenCalled()
   })
 
-  it('relay mode skips HEAD (server already proved the PUT)', async () => {
+  it('relay mode still verifies via HEAD before recording', async () => {
     const res = await completePOST(jsonReq('http://x/', { ...done, mode: 'relay' }))
     expect(res.status).toBe(201)
-    expect(mockSend).not.toHaveBeenCalled()
+    expect(mockSend).toHaveBeenCalled()
     expect(mockRecord).toHaveBeenCalled()
   })
 
@@ -144,12 +168,36 @@ describe('POST /api/storage/ia/complete', () => {
     const res = await completePOST(jsonReq('http://x/', { ...done, downloadUrl: 'data:x' }))
     expect(res.status).toBe(422)
   })
+
+  it('rejects cross-tenant keys before HEAD', async () => {
+    const res = await completePOST(
+      jsonReq('http://x/', { ...done, key: 'u-other/skyrim-1-patch.zip' }),
+    )
+    expect(res.status).toBe(422)
+    expect(mockSend).not.toHaveBeenCalled()
+    expect(mockRecord).not.toHaveBeenCalled()
+  })
+
+  it('does not double-record a repeated complete (idempotent by storageKey)', async () => {
+    ;(db.uploadAsset.findFirst as jest.Mock).mockResolvedValueOnce({
+      id: 'asset-1',
+      originalUrl: done.downloadUrl,
+      bytes: BigInt(1234),
+    })
+    const res = await completePOST(jsonReq('http://x/', done))
+    const body = await res.json()
+    expect(res.status).toBe(201)
+    expect(body.data.alreadyRecorded).toBe(true)
+    expect(body.data.assetId).toBe('asset-1')
+    expect(mockSend).not.toHaveBeenCalled()
+    expect(mockRecord).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/storage/ia/relay', () => {
   function relayReq(bytes: number) {
     const stream = new ReadableStream({
-      start(c) { c.enqueue(new Uint8Array([1, 2, 3])); c.close() },
+      start(c) { c.enqueue(new Uint8Array([0x50, 0x4b, 0x03, 0x04])); c.close() },
     })
     return new NextRequest('http://x/api/storage/ia/relay', {
       method: 'POST',
@@ -167,12 +215,79 @@ describe('POST /api/storage/ia/relay', () => {
   }
 
   it('streams to IA and returns the download URL', async () => {
-    const res = await relayPOST(relayReq(3))
+    const res = await relayPOST(relayReq(4))
     const body = await res.json()
     expect(res.status).toBe(201)
     expect(body.data.downloadUrl).toMatch(/^https:\/\/archive\.org\/download\//)
     expect(mockSend).toHaveBeenCalled()
-    expect(mockCheck).toHaveBeenCalledWith('u-9', 'creator', 3)
+    expect(mockCheck).toHaveBeenCalledWith('u-9', 'creator', 4)
+    expect(mockRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u-9', kind: 'file', bytes: 4 }),
+    )
+    expect(body.data.usageRecorded).toBe(true)
+  })
+
+  it('binds an idempotency token to the byte count (same key + bigger body = new object)', async () => {
+    function reqWithKey(bytes: number) {
+      const body = new Uint8Array(bytes)
+      body.set([0x50, 0x4b, 0x03, 0x04])
+      const stream = new ReadableStream({
+        start(c) { c.enqueue(body); c.close() },
+      })
+      return new NextRequest('http://x/api/storage/ia/relay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'x-ia-filename': 'patch.zip',
+          'x-ia-mime': 'application/zip',
+          'x-ia-modslug': 'skyrim',
+          'x-ia-title': 'Skyrim patch',
+          'x-ia-bytes': String(bytes),
+          'x-ia-key': 'same-token',
+        },
+        body: stream as never,
+        duplex: 'half',
+      } as never)
+    }
+
+    const first = await relayPOST(reqWithKey(4))
+    const firstBody = await first.json()
+    const second = await relayPOST(reqWithKey(8))
+    const secondBody = await second.json()
+
+    expect(first.status).toBe(201)
+    expect(second.status).toBe(201)
+    expect(firstBody.data.key).not.toBe(secondBody.data.key)
+    expect(mockRecord).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects invalid magic bytes before IA and records nothing', async () => {
+    const html = new TextEncoder().encode('<html>not an archive</html>')
+    const stream = new ReadableStream({
+      start(c) { c.enqueue(html); c.close() },
+    })
+    const req = new NextRequest('http://x/api/storage/ia/relay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'x-ia-filename': 'patch.zip',
+        'x-ia-mime': 'application/zip',
+        'x-ia-bytes': String(html.byteLength),
+      },
+      body: stream as never,
+      duplex: 'half',
+    } as never)
+
+    const res = await relayPOST(req)
+    expect(res.status).toBe(422)
+    expect(mockSend).not.toHaveBeenCalled()
+    expect(mockRecord).not.toHaveBeenCalled()
+  })
+
+  it('rejects a declared size larger than the streamed body', async () => {
+    const res = await relayPOST(relayReq(10))
+    expect(res.status).toBe(422)
+    expect(mockRecord).not.toHaveBeenCalled()
   })
 
   it('quota deny short-circuits before IA (Arabic reason)', async () => {
@@ -180,7 +295,7 @@ describe('POST /api/storage/ia/relay', () => {
       allowed: false, reason: 'تجاوزت حد الرفع اليومي', quota: {},
       usedToday: 10, usedBytesToday: 0, usedTotalBytes: 0,
     })
-    const res = await relayPOST(relayReq(3))
+    const res = await relayPOST(relayReq(4))
     expect(res.status).toBe(422)
     expect(JSON.stringify(await res.json())).toMatch(/حد الرفع اليومي/)
     expect(mockSend).not.toHaveBeenCalled()

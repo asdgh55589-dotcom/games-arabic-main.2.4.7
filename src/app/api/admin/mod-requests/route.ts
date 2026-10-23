@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status')
     const platform = searchParams.get('platform')
     const search = searchParams.get('search')?.trim() || ''
+    const sort = searchParams.get('sort') || 'createdAt'
+    const direction = searchParams.get('direction') === 'asc' ? 'asc' : 'desc'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '25', 10) || 25))
 
@@ -21,6 +23,7 @@ export async function GET(req: NextRequest) {
       ;(where as Record<string, unknown>).OR = [
         { gameName: { contains: search, mode: 'insensitive' } },
         { platform: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest) {
       db.modRequest.count({ where }),
       db.modRequest.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: sort === 'interestCount' ? { interestCount: direction } : { createdAt: direction },
         skip: (page - 1) * limit,
         take: limit,
         include: {

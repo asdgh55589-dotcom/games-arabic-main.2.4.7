@@ -30,6 +30,7 @@ export default async function CreatorFilesPage() {
           apiBase="/api/creator/files"
           deleteBase="/api/creator/files"
           showUploader={false}
+          showUpload={process.env.NEXT_PUBLIC_IA_ENABLED === 'true'}
           title="ملفاتي"
           embedEndpoint="/api/creator/files/embed-code"
           hideHeader

@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const { slug } = await params
 
     const team = await db.team.findUnique({
-      where: { slug },
+      where: { slug, archivedAt: null },
       select: { id: true },
     })
     if (!team) {
@@ -58,7 +58,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
 
     const { slug } = await params
     const team = await db.team.findUnique({
-      where: { slug },
+      where: { slug, archivedAt: null },
       select: { id: true, ownerId: true },
     })
     if (!team) {
@@ -99,7 +99,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     const { slug } = await params
     const team = await db.team.findUnique({
-      where: { slug },
+      where: { slug, archivedAt: null },
       select: { id: true },
     })
     if (!team) {

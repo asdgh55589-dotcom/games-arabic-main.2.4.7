@@ -32,9 +32,14 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {}
     if (status === 'all') {
-      // no filter — show all
+      // Marketplace view — never expose closed/rejected requests.
+      ;(where as Record<string, unknown>).status = { notIn: ['cancelled', 'rejected'] }
     } else if (status === 'mine') {
       ;(where as Record<string, unknown>).acceptedBy = user.id
+    } else if (status === 'cancelled' || status === 'rejected') {
+      // Closed requests are visible only to their requester or assignee.
+      ;(where as Record<string, unknown>).status = status
+      ;(where as Record<string, unknown>).OR = [{ userId: user.id }, { acceptedBy: user.id }]
     } else {
       ;(where as Record<string, unknown>).status = status
     }

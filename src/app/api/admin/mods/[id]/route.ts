@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
 import { canDelete, canEditMod, requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { snapshotReportsForTarget } from '@/lib/reports/snapshot'
 import { syncGameCounts } from '@/lib/game-helpers'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
 import { parseIaUrl } from '@/lib/ia'
@@ -545,8 +546,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
     const { seriesId, teamId, gameId } = existing
 
-    // cascading deletes هتمسح كل الـ relations تلقائياً
-    await db.mod.delete({ where: { id } })
+    // Snapshot any reports targeting this mod before SetNull clears the FK.
+    await db.$transaction(async (tx) => {
+      await snapshotReportsForTarget({ modId: id }, tx)
+      await tx.mod.delete({ where: { id } })
+    })
 
     // مزامنة عدّادات السلسلة/الفريق/اللعبة بعد الحذف
     if (seriesId) await syncSeriesCounts(seriesId).catch(() => {})

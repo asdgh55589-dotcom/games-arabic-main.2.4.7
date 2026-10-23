@@ -1,6 +1,6 @@
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { db } from '@/lib/db'
-import { getIaClient, getIaConfig, parseIaUrl } from '@/lib/ia'
+import { getIaClient, getIaConfig, parseIaUrl, sanitizeIaSegment } from '@/lib/ia'
 import { logger } from '@/lib/logger'
 
 export interface FileDeleteResult {
@@ -49,7 +49,11 @@ export async function deleteUploadAsset(
           key = parsed.key
         }
       }
-      if (key) {
+      // Defense-in-depth: only delete from our configured item and only keys
+      // under the asset owner's prefix. Legacy/forged rows can never delete
+      // another creator's IA object.
+      const ownedPrefix = `${sanitizeIaSegment(asset.userId)}/`
+      if (key && identifier === cfg.identifier && key.startsWith(ownedPrefix)) {
         await getIaClient().send(
           new DeleteObjectCommand({ Bucket: identifier, Key: key }),
         )
@@ -72,7 +76,13 @@ export async function deleteUploadAsset(
   // 2. Unlink mod file links pointing at the same URL.
   let unlinkedLinks = 0
   try {
-    const del = await db.modFileLink.deleteMany({ where: { url: asset.originalUrl } })
+    const del = await db.modFileLink.deleteMany({
+      where: {
+        url: asset.originalUrl,
+        // Only unlink links on mods owned by the asset owner.
+        file: { mod: { authorId: asset.userId } },
+      },
+    })
     unlinkedLinks = del.count
   } catch (err) {
     logger.warn({ err, assetId: asset.id }, 'modFileLink unlink failed (best-effort)')

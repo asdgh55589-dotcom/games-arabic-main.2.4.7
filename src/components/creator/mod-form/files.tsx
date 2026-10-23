@@ -596,7 +596,8 @@ export function ModFormFiles(p: Props) {
   // Build-time flag: 'true' restores the full IA toggle, otherwise a
   // disabled "soon" button (direct links keep working regardless).
   const iaEnabled = process.env.NEXT_PUBLIC_IA_ENABLED === 'true'
-  const iaMode = process.env.NEXT_PUBLIC_IA_UPLOAD_MODE === 'relay' ? 'relay' : 'direct'
+  // Live path is the server relay; the old presigned/direct path is dead (501).
+  const iaMode = 'relay' as const
   const iaError = (message: string) => toast({ title: message, variant: 'destructive' })
   return (
     <>

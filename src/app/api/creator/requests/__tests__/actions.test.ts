@@ -119,12 +119,12 @@ describe('cancel', () => {
       userId: 'requester',
       acceptedBy: 'creator-A',
     });
-    mockDb.modRequest.update.mockResolvedValue({});
+    mockDb.modRequest.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await PATCH(req({ action: 'cancel' }), params('r-1'));
 
     expect(res.status).toBe(200);
-    expect(mockDb.modRequest.update).toHaveBeenCalledWith(
+    expect(mockDb.modRequest.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 'open' }),
       }),

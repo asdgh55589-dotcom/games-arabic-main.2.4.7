@@ -63,6 +63,7 @@ interface EnrichedTeam {
   leader: { id: string; username: string; avatarUrl: string | null } | null
   memberCount: number
   publishedModCount: number
+  archivedAt?: string | null
   archived?: boolean
 }
 
@@ -150,6 +151,8 @@ export function TeamsClient() {
             : null,
           memberCount: memberships.length || team._count?.memberships || 0,
           publishedModCount: mods.length || team._count?.mods || 0,
+          archivedAt: (team.archivedAt as string | null) || null,
+          archived: Boolean(team.archivedAt),
         }
       })
       setTeams(enriched)

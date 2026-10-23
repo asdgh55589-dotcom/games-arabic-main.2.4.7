@@ -40,7 +40,7 @@ export default async function MyTeamsPage({ params }: PageProps) {
 
   // Get all teams where this user is linked (userId = user.id)
   const memberships = await db.teamMembership.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, team: { archivedAt: null } },
     include: {
       team: {
         select: {
