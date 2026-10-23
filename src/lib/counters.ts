@@ -19,7 +19,7 @@
 import { getUserIdFromRequestCookies } from './auth'
 import { refreshBadgesOnDownload } from './badges'
 import { logger } from './logger'
-import { redisSetNX } from './redis'
+import { isRedisConfigured, redisSetNX } from './redis'
 
 const HOUR = 3600
 const DAY = 86400
@@ -110,9 +110,7 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /** هل Redis (Upstash) مُهيّأ في هذه البيئة؟ */
-const REDIS_CONFIGURED = Boolean(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
-)
+const REDIS_CONFIGURED = isRedisConfigured()
 
 /**
  * بديل محلي لـ SET NX — يُستخدم فقط عندما لا يكون Redis مُهيّأً إطلاقاً

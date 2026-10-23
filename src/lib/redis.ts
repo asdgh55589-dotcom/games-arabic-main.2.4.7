@@ -5,14 +5,35 @@
 import { Redis } from '@upstash/redis'
 import { logger } from '@/lib/logger'
 
-const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+function resolveRedisConfig(): { url: string; token: string } | null {
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL || '').trim()
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.REDIS_TOKEN || '').trim()
+  if (!url || !token) return null
+  if (!url.startsWith('https://')) {
+    logger.warn(
+      { event: 'redis_insecure_url' },
+      'redis REST URL must use https — Redis disabled, using in-memory fallback',
+    )
+    return null
+  }
+  return { url, token }
+}
+
+const redisConfig = resolveRedisConfig()
+const hasRedis = redisConfig !== null
+
+export function isRedisConfigured(): boolean {
+  return hasRedis
+}
 
 let redisClient: Redis | null = null
-if (hasRedis) {
-  redisClient = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
+if (redisConfig) {
+  redisClient = new Redis(redisConfig)
+}
+
+/** Every write must carry a positive TTL — reject NaN/0/negative values. */
+function normalizeTtl(ttlSeconds: number): number {
+  return Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Math.floor(ttlSeconds) : 60
 }
 
 // استخدام globalThis لضمان مشاركة الذاكرة بين جميع الـ routes وتجاوز HMR/Turbopack isolation
@@ -54,17 +75,18 @@ export async function redisSet(
   value: unknown,
   ttlSeconds: number = 60,
 ): Promise<void> {
+  const ttl = normalizeTtl(ttlSeconds)
   const stringValue = JSON.stringify(value)
   if (redisClient) {
     try {
-      await redisClient.set(key, stringValue, { ex: ttlSeconds })
+      await redisClient.set(key, stringValue, { ex: ttl })
       return
     } catch (err) {
       // intentional: expected+handled (Redis down → in-memory fallback below)
       logger.warn({ event: 'redis_set_failed', err }, 'redis set failed, using memory fallback')
     }
   }
-  memoryStore.set(key, { value: stringValue, expires: Date.now() + ttlSeconds * 1000 })
+  memoryStore.set(key, { value: stringValue, expires: Date.now() + ttl * 1000 })
   if (memoryStore.size > 500) {
     const keys = Array.from(memoryStore.keys())
     for (let i = 0; i < 250; i++) memoryStore.delete(keys[i])
@@ -111,17 +133,21 @@ export async function redisSetNX(
   opts?: { failClosed?: boolean },
 ): Promise<boolean> {
   const failClosed = opts?.failClosed === true
+  const ttl = normalizeTtl(ttlSeconds)
   let lastErr: unknown = null
 
   if (hasRedis && redisClient) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const result = await redisClient.set(key, '1', { ex: ttlSeconds, nx: true })
+        const result = await redisClient.set(key, '1', { ex: ttl, nx: true })
         return result === 'OK'
       } catch (err) {
         lastErr = err
         // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
-        logger.warn({ event: 'redis_setnx_failed', attempt: attempt + 1, err }, 'redis setnx failed')
+        logger.warn(
+          { event: 'redis_setnx_failed', attempt: attempt + 1, err },
+          'redis setnx failed',
+        )
         if (attempt === 2) {
           logger.warn(
             { event: 'redis_setnx_exhausted', action: 'setnx', attempt: attempt + 1, err },
@@ -165,16 +191,24 @@ export async function redisSetNX(
   }
   const entry = memoryStore.get(key)
   if (entry && entry.expires >= now) return false
-  memoryStore.set(key, { value: '1', expires: now + ttlSeconds * 1000 })
+  memoryStore.set(key, { value: '1', expires: now + ttl * 1000 })
   return true
 }
 
 export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<number> {
+  const ttl = normalizeTtl(ttlSeconds)
   if (hasRedis && redisClient) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const result = await redisClient.incr(key)
-        if (result === 1) await redisClient.expire(key, ttlSeconds)
+        if (result === 1) {
+          try {
+            await redisClient.expire(key, ttl)
+          } catch (expireErr) {
+            await redisClient.del(key).catch(() => {})
+            throw expireErr
+          }
+        }
         return result
       } catch (err) {
         // intentional: expected+handled (transient Redis error → retry, then memory fallback); attempt is bounded 1..3
@@ -200,7 +234,7 @@ export async function redisIncr(key: string, ttlSeconds: number = 60): Promise<n
   const entry = memoryStore.get(key)
   const now = Date.now()
   if (!entry || entry.expires < now) {
-    memoryStore.set(key, { value: '1', expires: now + ttlSeconds * 1000 })
+    memoryStore.set(key, { value: '1', expires: now + ttl * 1000 })
     return 1
   }
   const count = parseInt(entry.value, 10) + 1

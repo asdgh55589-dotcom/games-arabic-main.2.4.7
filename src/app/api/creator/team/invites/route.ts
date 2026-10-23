@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 import {
   conflict,
@@ -142,10 +143,11 @@ export async function POST(req: NextRequest) {
 
     // Anti-harassment: 3 invites/hour per invitee identifier.
     const identifier = (username || email || '').toLowerCase()
+    const identifierHash = createHash('sha256').update(identifier).digest('hex').slice(0, 32)
     const identifierLimited = await rateLimitMiddleware(req, {
       limit: 3,
       window: 3600,
-      keyPrefix: `creator:team-invite-to:${identifier}`,
+      keyPrefix: `creator:team-invite-to:${identifierHash}`,
     })
     if (identifierLimited) return identifierLimited
 

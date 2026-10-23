@@ -34,7 +34,7 @@ export async function rateLimit(req: Request, options: RateLimitOptions): Promis
   const now = Date.now()
   const windowMs = options.window * 1000
 
-  const redisKey = `ratelimit:${key}`
+  const redisKey = `ga:ratelimit:${key}`
   const count = await redisIncr(redisKey, options.window)
 
   if (count > 0) {

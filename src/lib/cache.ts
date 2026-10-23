@@ -78,13 +78,11 @@ export async function deleteCache(key: string): Promise<void> {
 
 export async function revalidateTag(tag: string): Promise<void> {
   const keys = tagIndex.get(tag)
-  if (keys) {
-    for (const key of keys) {
-      memoryStore.delete(key)
-      await redisDel(key)
-    }
-    tagIndex.delete(tag)
-  }
+  if (!keys) return
+  const list = Array.from(keys)
+  tagIndex.delete(tag)
+  for (const key of list) memoryStore.delete(key)
+  await Promise.all(list.map((key) => redisDel(key)))
 }
 
 export async function clearCache(): Promise<void> {

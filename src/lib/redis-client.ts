@@ -5,7 +5,7 @@
  * إلى InMemory في حالة عدم التوفر أو الفشل — بدون كسر الوظائف.
  */
 
-import { Redis } from '@upstash/redis'
+import { redisClient as sharedRedisClient } from './redis'
 
 export interface RedisClient {
   get: (key: string) => Promise<string | null>
@@ -47,7 +47,8 @@ class InMemoryRedis implements RedisClient {
         return null
       }
     }
-    const expires = options?.ex ? Date.now() + options.ex * 1000 : 0
+    const ttl = options?.ex && options.ex > 0 ? options.ex : 60
+    const expires = Date.now() + ttl * 1000
     this.store.set(key, { value, expires })
     return 'OK'
   }
@@ -87,18 +88,9 @@ let usingUpstash = false
 export function getRedisClient(): RedisClient {
   if (redisClient) return redisClient
 
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-
-  if (url && token) {
-    try {
-      redisClient = new Redis({ url, token }) as unknown as RedisClient
-      usingUpstash = true
-      console.log('[Redis] متصل بـ Upstash Redis')
-    } catch (error) {
-      console.warn('[Redis] فشل الاتصال بـ Upstash، استخدام الذاكرة المؤقتة:', error)
-      redisClient = new InMemoryRedis()
-    }
+  if (sharedRedisClient) {
+    redisClient = sharedRedisClient as unknown as RedisClient
+    usingUpstash = true
   } else {
     console.warn('[Redis] بيانات الاعتماد غير مُكوَّنة — استخدام الذاكرة المؤقتة')
     redisClient = new InMemoryRedis()
