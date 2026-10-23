@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { getUseCases } from '@/application/use-cases/factory'
-import { internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
+import { fail, internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
@@ -9,6 +9,7 @@ import {
   checkIdempotency,
   idempotentReplay,
 } from '@/lib/idempotency'
+import { isRequestIpBanned } from '@/lib/ip-ban'
 import { logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { CreateReportSchema } from '@/lib/schemas'
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
     const neonUser = await getOptionalSession()
     if (!neonUser) {
       return unauthorized('يجب تسجيل الدخول')
+    }
+
+    if (await isRequestIpBanned(req)) {
+      return fail('IP_BANNED', 'تم حظر عنوان IP الخاص بك', 403)
     }
 
     const rl = await rateLimit(req, { limit: 10, window: 60, keyPrefix: 'reports:create' })

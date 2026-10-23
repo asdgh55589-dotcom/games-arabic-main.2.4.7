@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { dbCircuitBreaker } from '@/lib/observability/db-circuit-breaker'
 import { DbMonitor } from '@/lib/observability/db-monitor'
 import { getCircuitStatus, isCircuitOpen } from '@/lib/redis-circuit-breaker'
-import { redisGet } from '@/lib/redis'
+import { isRedisConfigured, redisPing } from '@/lib/redis'
 import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -61,10 +61,16 @@ async function checkDatabase(): Promise<ServiceCheck> {
 }
 
 async function checkRedis(): Promise<ServiceCheck> {
+  if (!isRedisConfigured()) {
+    return { status: 'not_configured', detail: 'Upstash REST URL/token not set — memory fallback' }
+  }
   const circuit = getCircuitStatus()
   const open = isCircuitOpen()
-  const r = await runCheck(() => redisGet<string>('health:probe'))
-  // Probe success proves the read path (Upstash or memory fallback).
+  const r = await runCheck(async () => {
+    const ok = await redisPing()
+    if (!ok) throw new Error('redis PING failed')
+    return true
+  })
   if (!r.ok) return { status: 'error', latencyMs: r.latencyMs, detail: r.error }
   return {
     status: open ? 'degraded' : 'ok',

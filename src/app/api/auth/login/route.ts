@@ -19,6 +19,7 @@ import {
 } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { reportError } from '@/lib/error-reporting'
+import { isIpBannedInDb } from '@/lib/ip-ban'
 import { logger } from '@/lib/logger'
 import {
   ACCOUNT_LOCKED_MESSAGE,
@@ -175,6 +176,12 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown'
+
+    // Authoritative check (cache may be cold): a permanent ban must survive
+    // the Edge cache TTL and Redis outages.
+    if (await isIpBannedInDb(loginIp)) {
+      return fail('IP_BANNED', 'تم حظر عنوان IP الخاص بك', 403)
+    }
 
     // Audit D.2: anti-enumeration — every credential failure below returns
     // the SAME 401 message after a progressive per-IP+username delay.

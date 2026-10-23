@@ -49,7 +49,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         try {
           const deleted = await db.ipBan.delete({ where: { ipAddress: lastAction.ipAddress } })
           if (deleted) {
-            await deleteIpBanCache(lastAction.ipAddress)
+            const cacheCleared = await deleteIpBanCache(lastAction.ipAddress)
+            if (!cacheCleared) {
+              logger.error(
+                { event: 'ip_ban_cache_delete_failed', ipHash: 'redacted' },
+                'IP ban removed from DB but Redis cache delete failed — Edge fast path may be stale',
+              )
+            }
             ipCleared = true
           }
         } catch {

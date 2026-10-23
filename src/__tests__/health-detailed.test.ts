@@ -30,7 +30,10 @@ jest.mock('@/lib/db', () => ({
 }))
 
 const mockRedisGet = jest.fn()
+const mockRedisPing = jest.fn()
 jest.mock('@/lib/redis', () => ({
+  isRedisConfigured: () => true,
+  redisPing: (...a: unknown[]) => mockRedisPing(...a),
   redisGet: (...a: unknown[]) => mockRedisGet(...a),
   redisSet: jest.fn(),
   redisDel: jest.fn(),
@@ -70,6 +73,7 @@ beforeEach(() => {
   mockRequireAdmin.mockResolvedValue({ id: 'a1', role: 'admin' })
   mockQueryRaw.mockResolvedValue([{ '?column?': 1 }])
   mockRedisGet.mockResolvedValue(null)
+  mockRedisPing.mockResolvedValue(true)
   mockVerifyBot.mockResolvedValue({
     configured: true,
     botInfo: { username: 'TestBot', first_name: 'Test' },

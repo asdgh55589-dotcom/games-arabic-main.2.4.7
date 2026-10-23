@@ -19,7 +19,7 @@
 import { getUserIdFromRequestCookies } from './auth'
 import { refreshBadgesOnDownload } from './badges'
 import { logger } from './logger'
-import { isRedisConfigured, redisSetNX } from './redis'
+import { hashRedisIdentifier, isRedisConfigured, redisSetNX } from './redis'
 
 const HOUR = 3600
 const DAY = 86400
@@ -148,13 +148,13 @@ async function resolveIdentity(req: Request): Promise<CounterIdentity> {
   if (!ua) {
     if (userId) return { identity: `u:${userId}`, ttl: 1800, authenticated: true }
     const ip = getClientIP(req)
-    return { identity: `i:${ip}:${hashUA('unknown')}`, ttl: 1800, authenticated: false }
+    return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA('unknown')}`, ttl: 1800, authenticated: false }
   }
   if (userId) {
     return { identity: `u:${userId}`, ttl: DAY, authenticated: true }
   }
   const ip = getClientIP(req)
-  return { identity: `i:${ip}:${hashUA(ua)}`, ttl: HOUR, authenticated: false }
+  return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA(ua)}`, ttl: HOUR, authenticated: false }
 }
 
 /**

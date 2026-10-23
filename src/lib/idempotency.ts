@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { redisGet, redisSet, redisSetNX } from '@/lib/redis'
+import { redisGet, redisSet } from '@/lib/redis'
 
 /**
  * Phase 4 — Idempotency keys (opt-in, Redis-backed with memory fallback).
@@ -41,10 +41,6 @@ function respKey(operationKey: string, key: string): string {
   return `idempotency:${operationKey}:${key}:resp`
 }
 
-function lockKey(operationKey: string, key: string): string {
-  return `idempotency:${operationKey}:${key}:lock`
-}
-
 /** Check for a replay BEFORE executing the mutation. Never throws. */
 export async function checkIdempotency(
   req: { headers: { get(name: string): string | null } },
@@ -57,8 +53,11 @@ export async function checkIdempotency(
     if (cached && typeof cached.status === 'number' && cached.body !== undefined) {
       return { key, isDuplicate: true, cached }
     }
-    // Claim the in-flight slot (best-effort; fail-open on contention).
-    await redisSetNX(lockKey(operationKey, key), IDEMPOTENCY_TTL_SECONDS).catch(() => false)
+    // Response cache is the idempotency contract. We intentionally do not
+    // create a second "in-flight" lock key: the previous implementation
+    // ignored the SET NX result, so it added a 24h key without protecting
+    // anything. Concurrent same-key requests can still race; the first
+    // completed response is what replays after that.
     return { key, isDuplicate: false }
   } catch (err) {
     logger.warn({ err, operationKey }, 'idempotency check failed (fail-open)')

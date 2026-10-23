@@ -8,6 +8,8 @@
  * closes it. Failures spread beyond the window never trip it.
  */
 
+import { logger } from '@/lib/logger'
+
 let redisFailures = 0
 let lastFailure = 0
 let windowStart = 0
@@ -24,6 +26,19 @@ function inWindow(now: number): boolean {
   return true
 }
 
+/** Feed raw helper failures into the breaker (helpers catch internally). */
+export function recordRedisFailure(): void {
+  const now = Date.now()
+  inWindow(now)
+  redisFailures++
+  lastFailure = now
+}
+
+export function recordRedisSuccess(): void {
+  redisFailures = 0
+  windowStart = Date.now()
+}
+
 export async function withRedisCircuit<T>(
   operation: () => Promise<T>,
   fallback: () => Promise<T>,
@@ -37,15 +52,16 @@ export async function withRedisCircuit<T>(
 
   try {
     const result = await operation()
-    // Reset on success — Redis is back
-    redisFailures = 0
-    windowStart = now
+    // The Redis helpers record their own success/failure. Do not reset here:
+    // helpers catch errors and return a fallback, so a resolved promise is not
+    // proof that Redis is healthy.
     return result
   } catch (error) {
-    inWindow(now)
-    redisFailures++
-    lastFailure = now
-    console.error(`[CircuitBreaker] Redis failure #${redisFailures}:`, error)
+    recordRedisFailure()
+    logger.warn(
+      { event: 'redis_circuit_failure', failures: redisFailures, err: error },
+      '[CircuitBreaker] Redis operation failed',
+    )
     return fallback()
   }
 }

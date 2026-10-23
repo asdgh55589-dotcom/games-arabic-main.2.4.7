@@ -21,7 +21,7 @@ import {
   findPageForPath,
   isPathAllowedByPagesClaim,
 } from '@/lib/admin-pages'
-import { getIpBanCache } from '@/lib/ip-ban-cache'
+import { getIpBanCache, getIpBanCacheResult } from '@/lib/ip-ban-cache'
 import { validateCsrf } from '@/lib/csrf'
 import { logError, logger } from '@/lib/logger'
 import { trackRoute } from '@/lib/observability/middleware'
@@ -506,8 +506,8 @@ async function proxyInner(req: NextRequest) {
       const ip =
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')
       if (ip) {
-        const ipBan = await getIpBanCache(ip)
-        if (ipBan?.banned) {
+        const cached = await getIpBanCacheResult(ip)
+        if (cached.status === 'hit' && cached.value?.banned) {
           return proxyJson(
             req,
             requestId,
@@ -517,9 +517,19 @@ async function proxyInner(req: NextRequest) {
             403,
           )
         }
+        // Security writes must fail closed when the ban cache cannot be read.
+        if (cached.status === 'unavailable' && process.env.NODE_ENV === 'production') {
+          return proxyJson(
+            req,
+            requestId,
+            'IP_CHECK_UNAVAILABLE',
+            'تعذّر التحقق من حالة الحظر، حاول لاحقاً',
+            'Unable to verify IP ban status — try again later',
+            503,
+          )
+        }
       }
     } catch (err) {
-      // If Redis/cache fails, allow the request (don't block all users)
       logger.error(
         { event: 'proxy_ip_ban_check_failed', requestId, err },
         '[Middleware] IP ban check failed',
@@ -532,6 +542,16 @@ async function proxyInner(req: NextRequest) {
           requestId,
         }),
       }).catch(() => {})
+      if (process.env.NODE_ENV === 'production') {
+        return proxyJson(
+          req,
+          requestId,
+          'IP_CHECK_UNAVAILABLE',
+          'تعذّر التحقق من حالة الحظر، حاول لاحقاً',
+          'Unable to verify IP ban status — try again later',
+          503,
+        )
+      }
     }
   }
 
