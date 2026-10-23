@@ -1,12 +1,12 @@
--- verify-migration.sql — read-only post-restore verification for Aiven -> Neon
+-- verify-migration.sql — read-only post-restore verification for Neon
 --
 -- Usage:
 --   psql -X "$NEON_DIRECT_URL" -v ON_ERROR_STOP=1 -f scripts/verify-migration.sql
 --
 -- This file is SELECT-only and safe to run against a read-only replica.
 -- It aborts with exit code 3 if any expected value does not match. It checks
--- the 10 key tables and invariants; full 98-table/object parity is enforced by
--- the manifests in scripts/migrate-to-neon.sh before this file runs.
+-- the 10 key tables and invariants; full 98-table/object parity must be
+-- confirmed from the restore manifest before this file runs.
 --
 -- Expected snapshot (2026-10-22):
 --   98 public base tables, 0 GIN indexes
