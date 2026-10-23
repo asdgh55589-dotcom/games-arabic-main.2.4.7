@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
 import { REPORT_MOD_REASONS, REPORT_REASONS, type ReportTargetType } from '@/lib/reports/constants'
+import { buildReportPayload } from '@/lib/reports/payload'
 import { ReportFormSchema } from '@/lib/schemas'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -89,12 +90,14 @@ export function ReportDialog({ targetType, targetId, children, onSuccess }: Repo
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetType,
-          targetId,
-          reason: data.reason,
-          description: data.description,
-        }),
+        body: JSON.stringify(
+          buildReportPayload({
+            targetType,
+            targetId,
+            reason: data.reason,
+            description: data.description,
+          }),
+        ),
         signal: controller.signal,
       })
 
