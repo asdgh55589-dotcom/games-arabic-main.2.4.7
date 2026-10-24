@@ -104,7 +104,7 @@ export const UploadModSchema = z.object({
   summary: z.string().min(1, 'الملخص مطلوب').max(200, 'الحد الأقصى 200 حرف'),
   description: z.string().max(5000, 'الحد الأقصى 5000 حرف').optional().default(''),
   gameSlug: z.string().min(1, 'اختر اللعبة'),
-  category: z.string().optional().default(''),
+  category: z.string().optional().nullable().default(''),
   version: z.string().min(1, 'النسخة مطلوبة').max(20, 'الحد الأقصى 20 حرف'),
   tags: z.string().max(300, 'الحد الأقصى 300 حرف').optional().default(''),
 })
@@ -223,7 +223,7 @@ export const CreateModSchema = z.object({
     .string()
     .min(10, 'الوصف قصير جداً (10 أحرف على الأقل)')
     .max(5000, 'الوصف طويل جداً (الحد الأقصى 5000 حرف)'),
-  gameId: z.string().optional(),
+  gameId: z.string().optional().nullable(),
   categoryId: z.string().optional().nullable(),
   seriesId: z.string().optional().nullable(),
   teamId: z.string().optional().nullable(),
@@ -233,19 +233,19 @@ export const CreateModSchema = z.object({
   fileSize: z.string().default('MB 0'),
   fileFormat: z.string().default('zip'),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
-  series: z.string().optional(),
-  translationTeam: z.string().optional(),
+  series: z.string().optional().nullable(),
+  translationTeam: z.string().optional().nullable(),
   translationType: z
     .preprocess(normalizeTranslationType, z.enum(['official', 'unofficial']))
     .default('unofficial'),
   isOriginalWork: z.boolean().default(true),
   originalSource: z.string().optional().nullable(),
   originalAuthor: z.string().optional().nullable(),
-  sectionId: z.string().optional(),
+  sectionId: z.string().optional().nullable(),
   isFeatured: z.boolean().optional(),
   isTrending: z.boolean().optional(),
   isLatest: z.boolean().optional(),
-  releaseDate: z.string().optional(),
+  releaseDate: z.string().optional().nullable(),
   scheduledAt: z
     .string()
     .refine((v) => !Number.isNaN(Date.parse(v)), 'تاريخ النشر المجدول غير صالح')
@@ -254,37 +254,37 @@ export const CreateModSchema = z.object({
   // المرحلة 4: نطاق الجدولة — بلا default في zod (القيمة الافتراضية both
   // على مستوى قاعدة البيانات؛ default هنا سيتسرب عبر .partial()).
   publishMode: z.enum(['site_only', 'social_only', 'both']).optional(),
-  slug: z.string().optional(),
-  changelog: z.string().optional(),
-  installGuide: z.string().optional(),
-  arabicTitle: z.string().optional(),
-  translationScope: z.string().optional(),
-  compatibility: z.string().optional(),
+  slug: z.string().optional().nullable(),
+  changelog: z.string().optional().nullable(),
+  installGuide: z.string().optional().nullable(),
+  arabicTitle: z.string().optional().nullable(),
+  translationScope: z.string().optional().nullable(),
+  compatibility: z.string().optional().nullable(),
   extrasLabel: z.string().max(200).optional().nullable(),
   trailerUrl: z.string().url('رابط التريلر غير صالح').optional().nullable().or(z.literal('')),
   supportUrl: z.string().url('رابط الدعم غير صالح').optional().nullable().or(z.literal('')),
   // Platform-specific localization fields (all optional, per-platform)
-  translationMethod: z.string().optional(),
-  platformGameId: z.string().optional(),
-  cusaId: z.string().optional(),
-  ppsaId: z.string().optional(),
-  titleId: z.string().optional(),
-  mediaId: z.string().optional(),
-  supportedFormat: z.string().optional(),
-  systemFirmware: z.string().optional(),
-  gameUpdateVersion: z.string().optional(),
-  deviceModel: z.string().optional(),
-  installType: z.string().optional(),
-  cpuArch: z.string().optional(),
-  gameVersion: z.string().optional(),
-  minAndroidVersion: z.string().optional(),
+  translationMethod: z.string().optional().nullable(),
+  platformGameId: z.string().optional().nullable(),
+  cusaId: z.string().optional().nullable(),
+  ppsaId: z.string().optional().nullable(),
+  titleId: z.string().optional().nullable(),
+  mediaId: z.string().optional().nullable(),
+  supportedFormat: z.string().optional().nullable(),
+  systemFirmware: z.string().optional().nullable(),
+  gameUpdateVersion: z.string().optional().nullable(),
+  deviceModel: z.string().optional().nullable(),
+  installType: z.string().optional().nullable(),
+  cpuArch: z.string().optional().nullable(),
+  gameVersion: z.string().optional().nullable(),
+  minAndroidVersion: z.string().optional().nullable(),
   galleryUrls: z.union([z.string(), z.array(z.string())]).optional(),
   files: z
     .array(
       z.object({
         title: z.string().min(1, 'عنوان الملف مطلوب'),
-        description: z.string().optional(),
-        alert: z.string().optional(),
+        description: z.string().optional().nullable(),
+        alert: z.string().optional().nullable(),
         parentId: z.string().optional().nullable(),
         extrasLabel: z.string().max(200).optional().nullable(),
         siteLinks: z
@@ -297,10 +297,10 @@ export const CreateModSchema = z.object({
             }),
           )
           .optional(),
-        version: z.string().optional(),
-        releaseDate: z.string().optional(),
-        fileSize: z.string().optional(),
-        fileFormat: z.string().optional(),
+        version: z.string().optional().nullable(),
+        releaseDate: z.string().optional().nullable(),
+        fileSize: z.string().optional().nullable(),
+        fileFormat: z.string().optional().nullable(),
         order: z.number().optional(),
         links: z
           .array(
@@ -312,7 +312,7 @@ export const CreateModSchema = z.object({
                   message:
                     'رابط التحميل يجب أن يكون من موقع مسموح (Google Drive, Mega, Mediafire, etc.)',
                 }),
-              label: z.string().optional(),
+              label: z.string().optional().nullable(),
             }),
           )
           .optional(),
@@ -323,9 +323,9 @@ export const CreateModSchema = z.object({
     .array(
       z.object({
         name: z.string().min(1, 'اسم العضو مطلوب'),
-        avatarUrl: z.string().optional(),
-        role: z.string().optional(),
-        contribution: z.string().optional(),
+        avatarUrl: z.string().optional().nullable(),
+        role: z.string().optional().nullable(),
+        contribution: z.string().optional().nullable(),
         order: z.number().optional(),
       }),
     )
@@ -333,8 +333,8 @@ export const CreateModSchema = z.object({
   contactLinks: z
     .array(
       z.object({
-        type: z.string().optional(),
-        label: z.string().optional(),
+        type: z.string().optional().nullable(),
+        label: z.string().optional().nullable(),
         url: z.string().url('رابط غير صالح'),
         order: z.number().optional(),
       }),
@@ -361,13 +361,13 @@ export const CreateModSchema = z.object({
             z.object({
               title: z.string().min(1, 'عنوان الفيديو مطلوب'),
               url: z.string().url('رابط الفيديو غير صالح'),
-              thumbnail: z.string().optional(),
-              duration: z.string().optional(),
-              description: z.string().optional(),
+              thumbnail: z.string().optional().nullable(),
+              duration: z.string().optional().nullable(),
+              description: z.string().optional().nullable(),
               views: z.number().optional(),
               likes: z.number().optional(),
               commentsCount: z.number().optional(),
-              channel: z.string().optional(),
+              channel: z.string().optional().nullable(),
               order: z.number().optional(),
             }),
           )
@@ -379,8 +379,8 @@ export const CreateModSchema = z.object({
     .array(
       z.object({
         name: z.string().min(1),
-        slug: z.string().optional(),
-        content: z.string().optional(),
+        slug: z.string().optional().nullable(),
+        content: z.string().optional().nullable(),
         order: z.number().optional(),
         visible: z.boolean().optional(),
       }),
@@ -446,7 +446,7 @@ export const CreateCommentSchema = z.object({
     .min(1, 'النص لا يمكن أن يكون فارغاً')
     .max(2000, 'النص طويل جداً (الحد الأقصى 2000 حرف)'),
   guestName: z.string().min(1).max(50).optional(),
-  parentId: z.string().optional(),
+  parentId: z.string().optional().nullable(),
 })
 
 export const UpdateCommentSchema = z.object({
@@ -467,9 +467,9 @@ export const BookmarkSchema = z.object({
 
 export const CreateReportSchema = z.object({
   targetType: z.enum(['mod', 'comment', 'user']),
-  targetModId: z.string().optional(),
-  targetCommentId: z.string().optional(),
-  targetUserId: z.string().optional(),
+  targetModId: z.string().optional().nullable(),
+  targetCommentId: z.string().optional().nullable(),
+  targetUserId: z.string().optional().nullable(),
   reason: z.enum([
     'spam',
     'inappropriate',
@@ -594,9 +594,9 @@ export const UpdatePreferencesSchema = z
 
 export const CreateGameSchema = z.object({
   name: z.string().min(1).max(200),
-  slug: z.string().optional(),
+  slug: z.string().optional().nullable(),
   tagline: z.string().max(500).optional(),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: z.string().min(1),
   platform: z.string().min(1),
   releaseYear: z.number().int().min(1970).max(2100),
@@ -612,8 +612,8 @@ export const UpdateGameSchema = CreateGameSchema.partial()
 
 export const CreateTeamSchema = z.object({
   name: z.string().min(1).max(100),
-  slug: z.string().optional(),
-  description: z.string().optional(),
+  slug: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
   logoUrl: z.string().url().optional(),
   bannerUrl: z.string().url().optional(),
   websiteUrl: z.string().url().optional(),
@@ -628,11 +628,11 @@ export const UpdateTeamSchema = CreateTeamSchema.partial()
 
 export const CreateSeriesSchema = z.object({
   name: z.string().min(1).max(100),
-  slug: z.string().optional(),
-  description: z.string().optional(),
+  slug: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
   bannerUrl: z.string().url().optional(),
   logoUrl: z.string().url().optional(),
-  color: z.string().optional(),
+  color: z.string().optional().nullable(),
   isFeatured: z.boolean().optional(),
   isOfficial: z.boolean().optional(),
   order: z.number().int().optional(),
@@ -644,17 +644,17 @@ export const UpdateSeriesSchema = CreateSeriesSchema.partial()
 
 export const CreateNewsSchema = z.object({
   title: z.string().min(1).max(200),
-  slug: z.string().optional(),
+  slug: z.string().optional().nullable(),
   summary: z.string().min(1).max(500),
-  content: z.string().optional(),
+  content: z.string().optional().nullable(),
   imageUrl: z.string().url().optional(),
   linkUrl: z.string().url().optional(),
   category: z.enum(['general', 'update', 'announcement', 'event']).default('general'),
   type: z.enum(['ticker', 'featured']).default('ticker'),
   isSticky: z.boolean().optional(),
   visible: z.boolean().optional(),
-  publishAt: z.string().optional(),
-  expiresAt: z.string().optional(),
+  publishAt: z.string().optional().nullable(),
+  expiresAt: z.string().optional().nullable(),
 })
 
 export const UpdateNewsSchema = CreateNewsSchema.partial()
@@ -699,7 +699,7 @@ export const TierRuleSchema = z.object({
   requiredDownloads: z.number().int().min(0),
   requiredRating: z.number().min(0).max(5),
   requiredQualityScore: z.number().int().min(0).max(100),
-  badge: z.string().optional(),
-  badgeColor: z.string().optional(),
+  badge: z.string().optional().nullable(),
+  badgeColor: z.string().optional().nullable(),
   features: z.array(z.string()).optional(),
 })
