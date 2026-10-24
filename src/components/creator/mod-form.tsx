@@ -584,7 +584,7 @@ export default function ModForm({ modId }: ModFormProps) {
       version,
       fileSize,
       fileFormat,
-      releaseDate: releaseDate || null,
+      releaseDate: releaseDate || undefined,
       // المرحلة 4: scheduledAt مشتق من المعالج (اجتماعي-فقط ⇒ null)،
       // ووضعية النشر تُحفظ صراحةً.
       scheduledAt:
