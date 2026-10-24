@@ -909,6 +909,8 @@ export default function ModForm({ modId }: ModFormProps) {
             setVideoGroups={setVideoGroups}
             fetchingVideoKey={fetchingVideoKey}
             onFetchVideoMetadata={onFetchVideoMetadata}
+            trailerUrl={trailerUrl}
+            setTrailerUrl={setTrailerUrl}
             uploadTitleBase={buildUploadTitle(name)}
           />
 
@@ -969,6 +971,8 @@ export default function ModForm({ modId }: ModFormProps) {
             teamMembers={teamMembers}
             setTeamMembers={setTeamMembers}
             addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
+            supportUrl={supportUrl}
+            setSupportUrl={setSupportUrl}
             contactLinks={contactLinks}
             setContactLinks={setContactLinks}
             addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
