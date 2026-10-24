@@ -69,8 +69,14 @@ describe('validationFail() standardization', () => {
     expect(body.problem?.status).toBe(422)
   })
 
-  it('preserves the legacy "Invalid input" message (sentry-filters contract)', async () => {
-    const body = await bodyOf(validationFail('bad'))
+  it('uses the passed message as error.message (Arabic supported)', async () => {
+    const body = await bodyOf(validationFail('بيانات غير صالحة'))
+    expect(body.error?.message).toBe('بيانات غير صالحة')
+  })
+
+  it('defaults to legacy "Invalid input" when no string message is passed', async () => {
+    const res = validationFail({ fieldErrors: { title: ['required'] } })
+    const body = await bodyOf(res)
     expect(body.error?.message).toBe('Invalid input')
   })
 })

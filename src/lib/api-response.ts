@@ -160,9 +160,15 @@ export const unauthorized = (msg = 'Unauthorized', instance?: string) =>
 export const forbidden = (msg = 'Forbidden', instance?: string) =>
   fail('FORBIDDEN', msg, 403, undefined, undefined, instance)
 
-/** 422 — Validation failed (ALWAYS 422, never 400 for validation errors) */
-export const validationFail = (details?: unknown, instance?: string) =>
-  fail('VALIDATION_ERROR', 'Invalid input', 422, details, undefined, instance)
+/** 422 — Validation failed (ALWAYS 422, never 400 for validation errors).
+ * `message` is the user-facing Arabic/English message shown in `error.message`.
+ * If omitted, defaults to 'Invalid input' for backward compatibility.
+ */
+export const validationFail = (message?: string | unknown, details?: unknown, instance?: string) => {
+  const msg = typeof message === 'string' ? message : 'Invalid input'
+  const d = typeof message === 'string' ? details : message
+  return fail('VALIDATION_ERROR', msg, 422, d, undefined, instance)
+}
 
 /** 429 — Rate limited. ALWAYS includes Retry-After (default 60s). */
 export const rateLimited = (
