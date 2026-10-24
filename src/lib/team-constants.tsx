@@ -18,15 +18,20 @@ import { SiFacebook, SiInstagram, SiTelegram, SiX, SiYoutube } from 'react-icons
 export type TabKey = 'overview' | 'members' | 'mods' | 'stats'
 
 export const ROLE_LABELS: Record<string, { label: string; icon: typeof User; color: string }> = {
-  leader: { label: 'قائد', icon: Crown, color: 'text-amber-500' },
+  // Canonical team membership roles (single source of truth).
+  owner: { label: 'مالك', icon: Crown, color: 'text-amber-600' },
+  admin: { label: 'مدير', icon: Shield, color: 'text-red-500' },
+  moderator: { label: 'مشرف', icon: Eye, color: 'text-orange-500' },
+  translator: { label: 'مترجم', icon: Globe, color: 'text-blue-500' },
+  member: { label: 'عضو', icon: User, color: 'text-slate-500' },
+  tester: { label: 'مختبر', icon: FlaskConical, color: 'text-emerald-500' },
+  // Legacy keys retained for backwards compatibility with existing UI.
+  leader: { label: 'مالك', icon: Crown, color: 'text-amber-600' },
   coleader: { label: 'نائب القائد', icon: Star, color: 'text-purple-400' },
-  translator: { label: 'مترجم', icon: Globe, color: 'text-blue-400' },
   reviewer: { label: 'مراجع', icon: Eye, color: 'text-green-400' },
   editor: { label: 'محرر', icon: UserCheck, color: 'text-cyan-400' },
-  member: { label: 'عضو', icon: User, color: 'text-slate-300' },
-  admin: { label: 'مدير', icon: Shield, color: 'text-red-400' },
   guest: { label: 'ضيف', icon: User, color: 'text-gray-500' },
-  tester: { label: 'مختبر', icon: FlaskConical, color: 'text-emerald-500' },
+  viewer: { label: 'مشاهد', icon: User, color: 'text-slate-400' },
 }
 
 export const CONTACT_ICONS: Record<string, ReactNode> = {

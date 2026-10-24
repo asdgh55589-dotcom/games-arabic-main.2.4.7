@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { TeamManager } from '@/components/creator/team-manager'
 import { getSession } from '@/lib/auth'
+import { getUserTeam } from '@/lib/creator-team'
+import { isTeamRole, type TeamRole } from '@/lib/team-permissions'
 import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
@@ -27,13 +29,15 @@ export default async function CreatorTeamPage() {
     redirect('/become-creator/apply')
   }
 
+  const userTeam = await getUserTeam(session.id)
+
   const { dict } = await getStudioDict()
 
   return (
     <div className="space-y-6">
       <StudioPageHeader title={`👥 ${dict.nav.myTeam}`} subtitle="إدارة فريق التعريب الخاص بك" />
       <SectionCard title="إدارة الفريق">
-        <TeamManager />
+        <TeamManager userRole={isTeamRole(userTeam?.role) ? userTeam.role : undefined} />
       </SectionCard>
     </div>
   )

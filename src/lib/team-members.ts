@@ -1,4 +1,5 @@
 import type { TeamMembership } from '@prisma/client'
+import { ROLE_LABELS } from '@/lib/team-constants'
 
 interface MembershipUser {
   id: string
@@ -60,17 +61,9 @@ export function getMemberBio(member: MembershipWithUser): string | null {
 }
 
 /**
- * تسمية الدور بالعربية
+ * تسمية الدور بالعربية — مصدر واحد للحقيقة (team-constants.tsx).
+ * تُعاد القيمة raw إن لم يوجد ترجمة معروفة.
  */
 export function getMemberRoleLabel(role: string): string {
-  const roleLabels: Record<string, string> = {
-    leader: 'قائد',
-    admin: 'مسؤول',
-    member: 'عضو',
-    translator: 'مترجم',
-    tester: 'مختبر',
-    guest: 'ضيف',
-    viewer: 'مشاهد',
-  }
-  return roleLabels[role] || role
+  return ROLE_LABELS[role]?.label || role
 }

@@ -26,6 +26,7 @@ jest.mock('@/lib/db', () => ({
       count: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ role: 'owner', status: 'active' }),
     },
     teamFollow: {
       count: jest.fn(),

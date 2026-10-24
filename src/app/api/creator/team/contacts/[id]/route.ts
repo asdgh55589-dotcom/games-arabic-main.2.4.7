@@ -1,16 +1,61 @@
 import type { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
+import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { sanitizeUrl } from '@/lib/sanitize'
-import { ContactLinkUpdateSchema } from '@/lib/validation/team'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
+
+// Contact types supported by the UI (extends the legacy CREATE schema which is
+// scoped to mail|website|telegram|twitter|youtube). The UPDATE path accepts the
+// full superset so creators can manage facebook|instagram|discord|whatsapp|email too.
+const CONTACT_LINK_TYPES = [
+  'mail',
+  'website',
+  'telegram',
+  'twitter',
+  'youtube',
+  'facebook',
+  'instagram',
+  'discord',
+  'whatsapp',
+  'email',
+] as const
+
+const URL_TYPES = new Set(['website', 'facebook', 'instagram', 'twitter', 'youtube', 'telegram', 'discord'])
+
+const ContactLinkUpdateSchema = z
+  .object({
+    type: z.enum(CONTACT_LINK_TYPES).optional(),
+    label: z.string().trim().max(100, 'الحد الأقصى 100 حرف').optional(),
+    url: z.string().trim().max(500, 'الرابط طويل جداً').optional(),
+  })
+  .strict()
+  .refine((data) => {
+    const type = data.type
+    const url = data.url ?? ''
+    if (!type || !url) return true // field not being updated; skip per-type check
+    if (URL_TYPES.has(type)) {
+      return /^https?:\/\/.+/i.test(url)
+    }
+    if (type === 'whatsapp') {
+      return /^\+?[\d\s\-()]{7,}$/.test(url)
+    }
+    if (type === 'email') {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)
+    }
+    if (type === 'mail') {
+      return /^mailto:/.test(url) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)
+    }
+    return true
+  }, { message: 'رابط غير صالح لنوع هذا التواصل', path: ['url'] })
 
 // PATCH /api/creator/team/contacts/[id] — update an owned-team contact link.
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
@@ -31,6 +76,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
 
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'manage_contacts')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
     const { id } = await params
     const existing = await db.teamContactLink.findFirst({
       where: { id, teamId: owned.id },
@@ -50,8 +100,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (parsed.data.type !== undefined) data.type = parsed.data.type
     if (parsed.data.label !== undefined) data.label = parsed.data.label
     if (parsed.data.url !== undefined) {
-      const safeUrl = sanitizeUrl(parsed.data.url)
-      if (!safeUrl) return validationFail('رابط غير صالح')
+      const rawUrl = parsed.data.url
+      let safeUrl: string | null = null
+      if (URL_TYPES.has(existing.type) || URL_TYPES.has(parsed.data.type ?? '')) {
+        safeUrl = sanitizeUrl(rawUrl)
+        if (!safeUrl) return validationFail('رابط غير صالح')
+      } else {
+        safeUrl = rawUrl
+      }
       data.url = safeUrl
     }
 
@@ -95,6 +151,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'manage_contacts')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
 
     const { id } = await params
     const existing = await db.teamContactLink.findFirst({

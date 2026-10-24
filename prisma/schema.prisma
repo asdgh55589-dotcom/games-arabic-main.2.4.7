@@ -807,19 +807,26 @@ model TeamFollow {
 }
 
 model TeamMembership {
-  id        String   @id @default(cuid())
-  teamId    String
-  userId    String?
-  name      String // اسم العضو (لو بدون حساب)
-  avatarUrl String?
-  role      String   @default("member") // leader | member | guest | tester
-  bio       String?
-  joinedAt  DateTime @default(now())
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id            String   @id @default(cuid())
+  teamId        String
+  userId        String?
+  name          String   // اسم العرض (الحقيقي أو الوهمي)
+  ghostName     String?  // الاسم الأصلي للعضو الوهمي قبل الربط بحساب
+  ghostEmail    String?
+  ghostAvatarUrl String?
+  ghostBio      String?
+  avatarUrl     String?
+  role          String   @default("member") // owner | admin | moderator | translator | member | tester
+  status        String   @default("active") // active | removed | left
+  leftAt        DateTime?
+  bio           String?
+  joinedAt      DateTime @default(now())
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([teamId, userId])
   @@index([userId])
+  @@index([teamId, status])
 }
 
 model TeamContactLink {
@@ -1086,6 +1093,8 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action, createdAt])
+  @@index([entityId, createdAt])
+  @@index([entity, entityId])
 }
 
 // ===== صلاحيات صفحات لوحة الأدمن (قائمة بيضاء لكل إداري) =====

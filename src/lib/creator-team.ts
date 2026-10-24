@@ -41,3 +41,25 @@ export async function getOwnedTeam(userId: string): Promise<OwnedTeam | null> {
 export async function requireTeamOwner(userId: string): Promise<OwnedTeam | null> {
   return getOwnedTeam(userId)
 }
+
+/**
+ * Return the team the user belongs to (any membership role) plus their role.
+ * Unlike getOwnedTeam (ownerId-only), this lets admins/moderators/translators
+ * access their team even when they are not the owner.
+ */
+export interface UserTeam {
+  team: Pick<OwnedTeam, 'id' | 'name' | 'slug' | 'ownerId'>
+  role: string
+}
+
+export async function getUserTeam(userId: string): Promise<UserTeam | null> {
+  const membership = await db.teamMembership.findFirst({
+    where: { userId },
+    select: {
+      role: true,
+      team: { select: { id: true, name: true, slug: true, ownerId: true } },
+    },
+  })
+  if (!membership) return null
+  return { team: membership.team, role: membership.role }
+}

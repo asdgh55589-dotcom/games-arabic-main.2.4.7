@@ -20,6 +20,7 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ role: 'owner', status: 'active' }),
     },
     notification: {
       create: jest.fn(),
@@ -113,15 +114,21 @@ describe('T7 — member removal success', () => {
       userId: 'u-member',
       name: 'sara',
       role: 'member',
+      status: 'active',
     })
-    mockDb.teamMembership.update.mockResolvedValue({ id: 'm2', userId: null })
+    mockDb.teamMembership.update.mockResolvedValue({
+      id: 'm2',
+      userId: null,
+      status: 'removed',
+      leftAt: new Date(),
+    })
     mockDb.notification.create.mockResolvedValue({ id: 'n1' })
 
     const res = await DELETE(req('DELETE', undefined, 'http://localhost/x?memberId=m2'))
     expect(res.status).toBe(200)
     expect(mockDb.teamMembership.update).toHaveBeenCalledWith({
       where: { id: 'm2' },
-      data: { userId: null },
+      data: { status: 'removed', leftAt: expect.any(Date), userId: null },
     })
   })
 })

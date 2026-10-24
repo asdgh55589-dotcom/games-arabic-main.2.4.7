@@ -1,16 +1,20 @@
 import type { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
+import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { CustomTabUpdateSchema } from '@/lib/validation/team'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// PATCH /api/creator/team/custom-tabs/[id] — toggle visibility of an owned-team custom tab.
+// PATCH /api/creator/team/custom-tabs/[id] — full edit of an owned-team custom tab.
+// Accepts title, content (Markdown), and visible.
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
@@ -27,6 +31,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد')
 
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'manage_tabs')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
     const { id } = await params
     const existing = await db.teamCustomTab.findFirst({
       where: { id, teamId: owned.id },
@@ -34,16 +43,20 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (!existing) return notFound('التبويب غير موجود في فريقك')
 
     const body: unknown = await req.json().catch(() => null)
-    if (
-      typeof body !== 'object' ||
-      body === null ||
-      typeof (body as Record<string, unknown>).visible !== 'boolean'
-    ) {
-      return validationFail('يجب إرسال حقل visible بقيمة صحيحة')
+    const parsed = CustomTabUpdateSchema.safeParse(body)
+    if (!parsed.success) {
+      return validationFail(parsed.error.flatten())
+    }
+    if (Object.keys(parsed.data).length === 0) {
+      return validationFail('لا توجد حقول صالحة للتحديث')
     }
 
-    const { visible } = body as { visible: boolean }
-    const tab = await db.teamCustomTab.update({ where: { id: existing.id }, data: { visible } })
+    const data: Record<string, unknown> = {}
+    if (parsed.data.title !== undefined) data.title = parsed.data.title.trim()
+    if (parsed.data.content !== undefined) data.content = parsed.data.content
+    if (parsed.data.visible !== undefined) data.visible = parsed.data.visible
+
+    const tab = await db.teamCustomTab.update({ where: { id: existing.id }, data })
 
     try {
       const { logAction } = await import('@/lib/audit')
@@ -53,7 +66,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         action: 'CUSTOM_TAB_UPDATED',
         entity: 'TeamCustomTab',
         entityId: tab.id,
-        details: JSON.stringify({ teamId: owned.id, visible }),
+        details: JSON.stringify({ teamId: owned.id, title: parsed.data.title, visible: parsed.data.visible }),
         request: req,
       })
     } catch (err) {
@@ -83,6 +96,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'manage_tabs')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
 
     const { id } = await params
     const existing = await db.teamCustomTab.findFirst({

@@ -2,21 +2,12 @@ import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, okPaginated } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
+import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
-
-const TEAM_ACTIONS = [
-  'TEAM_CREATED',
-  'TEAM_UPDATED',
-  'MEMBER_REMOVED',
-  'ROLE_CHANGED',
-  'INVITE_CREATED',
-  'INVITE_REVOKED',
-  'INVITE_ACCEPTED',
-  'INVITE_DECLINED',
-]
+import { TEAM_ACTIONS, ActivityRow } from '@/lib/team-activity'
 
 // GET /api/creator/team/activity — team-scoped activity feed for the owner.
 // Reads the same auditLog rows the team APIs write; rows are scoped by
@@ -37,6 +28,11 @@ export async function GET(req: NextRequest) {
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'view_dashboard')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
 
     const { searchParams } = new URL(req.url)
     const parsed = PaginationSchema.safeParse({
@@ -64,7 +60,7 @@ export async function GET(req: NextRequest) {
     ])
     const entityIds = [owned.id, ...memberships.map((m) => m.id), ...invitations.map((i) => i.id)]
 
-    const where = { entityId: { in: entityIds }, action: { in: TEAM_ACTIONS } }
+    const where = { entityId: { in: entityIds }, action: { in: TEAM_ACTIONS as unknown as string[] } }
     const [total, rows] = await Promise.all([
       db.auditLog.count({ where }),
       db.auditLog.findMany({

@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         if (previousOwnerId && previousOwnerId !== user.id) {
           await tx.teamMembership.updateMany({
             where: { teamId: nomination.teamId, userId: previousOwnerId },
-            data: { role: 'admin' },
+            data: { role: 'member' },
           })
         }
         await tx.teamMembership.update({
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       await logAction({
         userId: user.id,
         username: user.username,
-        action: 'OWNERSHIP_TRANSFER_COMPLETED',
+        action: 'OWNERSHIP_TRANSFERRED',
         entity: 'TeamInvitation',
         entityId: nomination.id,
         details: JSON.stringify({ teamId: nomination.teamId, previousOwnerId }),

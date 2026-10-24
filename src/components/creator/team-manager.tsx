@@ -15,6 +15,7 @@ import { TeamMods } from '@/components/creator/team-mods'
 import { TeamStats } from '@/components/creator/team-stats'
 import { TeamMembersTable, type TeamMemberRow } from '@/components/creator/team-members-table'
 import { TeamSettingsForm } from '@/components/creator/team-settings-form'
+import { canManageTeam, isTeamRole, type TeamRole } from '@/lib/team-permissions'
 
 interface CreatorTeam {
   id: string
@@ -28,7 +29,16 @@ interface CreatorTeam {
   modCount: number
 }
 
-export function TeamManager() {
+interface TeamManagerProps {
+  /** Team membership role of the viewer, used to gate UI actions server-side
+   *  enforced APIs already return 403 for unauthorized actions. */
+  userRole?: TeamRole
+}
+
+export function TeamManager({ userRole }: TeamManagerProps) {
+  const canInvite = !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'invite')
+  const canManageSettings =
+    !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'manage_settings')
   const [team, setTeam] = useState<CreatorTeam | null>(null)
   const [members, setMembers] = useState<TeamMemberRow[]>([])
   const [membershipCount, setMembershipCount] = useState(0)
@@ -125,9 +135,11 @@ export function TeamManager() {
         <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
         <TabsTrigger value="mods">المودات</TabsTrigger>
         <TabsTrigger value="members">الأعضاء ({membershipCount})</TabsTrigger>
-        <TabsTrigger value="invites">الدعوات</TabsTrigger>
+        {canInvite && <TabsTrigger value="invites">الدعوات</TabsTrigger>}
         <TabsTrigger value="activity">النشاط</TabsTrigger>
-        <TabsTrigger value="settings">الإعدادات</TabsTrigger>
+        {canManageSettings && (
+          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="overview">
@@ -184,24 +196,30 @@ export function TeamManager() {
       <TabsContent value="activity">
         <TeamActivity />
       </TabsContent>
-
-      <TabsContent value="settings">
-        <div className="space-y-4">
-          <TeamSettingsForm
-            initial={{
-              name: team.name,
-              description: team.description,
-              logoUrl: team.logoUrl,
-              bannerUrl: team.bannerUrl,
-              websiteUrl: team.websiteUrl,
-              telegramUrl: team.telegramUrl,
-            }}
-            onSaved={fetchTeam}
-          />
-          <TeamContacts />
-          <TeamCustomTabs />
-        </div>
-      </TabsContent>
+      {canManageSettings && (
+        <TabsContent value="settings">
+          <div className="space-y-4">
+            <TeamSettingsForm
+              initial={{
+                name: team.name,
+                description: team.description,
+                logoUrl: team.logoUrl,
+                bannerUrl: team.bannerUrl,
+                websiteUrl: team.websiteUrl,
+                telegramUrl: team.telegramUrl,
+              }}
+              onSaved={fetchTeam}
+            />
+            <TeamContacts />
+            <TeamCustomTabs />
+          </div>
+        </TabsContent>
+      )}
+      {canInvite && (
+        <TabsContent value="invites">
+          <TeamInvites />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }

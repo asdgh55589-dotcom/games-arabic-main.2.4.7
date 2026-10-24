@@ -25,21 +25,42 @@ jest.mock('@/lib/creator-team', () => ({
   getOwnedTeam: jest.fn(),
 }))
 
-jest.mock('@/lib/db', () => ({
-  db: {
-    user: { findUnique: jest.fn() },
-    teamMembership: { count: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
-    teamInvitation: {
-      count: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      updateMany: jest.fn(),
+jest.mock('@/lib/db', () => {
+  const userFindUnique = jest.fn()
+  const membershipCount = jest.fn()
+  const membershipFindFirst = jest.fn()
+  const membershipCreate = jest.fn()
+  const invitationCount = jest.fn()
+  const invitationFindMany = jest.fn()
+  const invitationFindFirst = jest.fn()
+  const invitationFindUnique = jest.fn()
+  const invitationCreate = jest.fn()
+  const invitationUpdateMany = jest.fn()
+  const notificationCreate = jest.fn()
+
+  return {
+    db: {
+      user: { findUnique: userFindUnique },
+      teamMembership: { count: membershipCount, findFirst: membershipFindFirst, create: membershipCreate, findUnique: jest.fn().mockResolvedValue({ role: 'owner', status: 'active' }) },
+      teamInvitation: {
+        count: invitationCount,
+        findMany: invitationFindMany,
+        findFirst: invitationFindFirst,
+        findUnique: invitationFindUnique,
+        create: invitationCreate,
+        updateMany: invitationUpdateMany,
+      },
+      notification: { create: notificationCreate },
+      $transaction: jest.fn().mockImplementation(async (fn: any) => {
+        const tx = {
+          teamMembership: { count: membershipCount, create: membershipCreate },
+          teamInvitation: { updateMany: invitationUpdateMany },
+        }
+        return fn(tx)
+      }),
     },
-    notification: { create: jest.fn() },
-  },
-}))
+  }
+})
 
 jest.mock('@/lib/rate-limit', () => ({
   rateLimitMiddleware: jest.fn().mockResolvedValue(null),

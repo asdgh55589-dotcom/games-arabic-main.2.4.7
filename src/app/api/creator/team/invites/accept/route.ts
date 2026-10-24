@@ -98,13 +98,22 @@ export async function POST(req: NextRequest) {
       return conflict('تم استخدام هذه الدعوة بالفعل')
     }
 
-    await db.teamMembership.create({
-      data: {
-        teamId: invite.teamId,
-        userId: user.id,
-        name: user.username,
-        role: invite.role,
-      },
+    // Atomic cap check: refuse acceptance when the team is already at 50 active members.
+    await db.$transaction(async (tx) => {
+      const activeCount = await tx.teamMembership.count({
+        where: { teamId: invite.teamId, status: 'active' },
+      })
+      if (activeCount >= 50) {
+        throw new Error('TEAM_MEMBER_CAP_REACHED')
+      }
+      await tx.teamMembership.create({
+        data: {
+          teamId: invite.teamId,
+          userId: user.id,
+          name: user.username,
+          role: invite.role,
+        },
+      })
     })
 
     try {
@@ -147,6 +156,9 @@ export async function POST(req: NextRequest) {
       message: 'تم الانضمام إلى الفريق بنجاح',
     })
   } catch (err) {
+    if (err instanceof Error && err.message === 'TEAM_MEMBER_CAP_REACHED') {
+      return conflict('وصل الفريق للحد الأقصى من الأعضاء')
+    }
     logger.error({ err }, '[team/invites/accept POST] failed')
     return internalError('فشل قبول الدعوة')
   }

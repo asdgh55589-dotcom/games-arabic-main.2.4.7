@@ -47,7 +47,7 @@ jest.mock('@/lib/db', () => ({
     team: { update: jest.fn() },
     user: { findUnique: jest.fn() },
     mod: { count: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
-    teamMembership: { count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+    teamMembership: { count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ role: 'owner', status: 'active' }) },
     teamFollow: { count: jest.fn() },
     teamContactLink: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
     teamCustomTab: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },

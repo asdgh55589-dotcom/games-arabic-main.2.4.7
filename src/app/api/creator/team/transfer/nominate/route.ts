@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
+import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { buildInviteAcceptUrl, generateInviteToken, hashInviteToken, inviteExpiryDate } from '@/lib/team-invites'
@@ -28,6 +29,11 @@ export async function POST(req: NextRequest) {
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'transfer_ownership')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
 
     const body: unknown = await req.json().catch(() => null)
     const parsed = TransferNominateSchema.safeParse(body)

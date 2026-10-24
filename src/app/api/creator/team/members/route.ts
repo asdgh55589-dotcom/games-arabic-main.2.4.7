@@ -2,12 +2,14 @@ import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
+import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { handlePrismaError } from '@/lib/prisma-errors'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { PaginationSchema } from '@/lib/schemas'
-import { UpdateMemberRoleSchema } from '@/lib/validation/team'
+import { AssignableTeamRoleSchema, UpdateMemberRoleSchema } from '@/lib/validation/team'
+import { z } from 'zod'
 
 // GET /api/creator/team/members — read-only member list for the owned team.
 export async function GET(req: NextRequest) {
@@ -26,6 +28,11 @@ export async function GET(req: NextRequest) {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
 
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'view_dashboard')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
     const { searchParams } = new URL(req.url)
     const parsed = PaginationSchema.safeParse({
       page: searchParams.get('page') ?? undefined,
@@ -34,10 +41,25 @@ export async function GET(req: NextRequest) {
     const page = parsed.success ? parsed.data.page : 1
     const limit = Math.min(parsed.success ? parsed.data.limit : 24, 100)
 
+    const search = (searchParams.get('search') || '').trim()
+    const roleFilter = (searchParams.get('role') || '').trim()
+    const statusFilter = (searchParams.get('status') || '').trim()
+
+    const where: Record<string, unknown> = { teamId: owned.id }
+    if (statusFilter && statusFilter !== 'all') where.status = statusFilter
+    if (roleFilter) where.role = roleFilter
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { user: { username: { contains: search, mode: 'insensitive' } } },
+        { user: { displayName: { contains: search, mode: 'insensitive' } } },
+      ]
+    }
+
     const [total, rows] = await Promise.all([
-      db.teamMembership.count({ where: { teamId: owned.id } }),
+      db.teamMembership.count({ where }),
       db.teamMembership.findMany({
-        where: { teamId: owned.id },
+        where,
         orderBy: { joinedAt: 'asc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -52,10 +74,14 @@ export async function GET(req: NextRequest) {
     const members = rows.map((m) => ({
       id: m.id,
       userId: m.userId,
+      ghostName: m.ghostName,
+      ghostEmail: m.ghostEmail,
       name: m.user?.displayName || m.user?.username || m.name,
       username: m.user?.username ?? null,
       avatarUrl: m.user?.avatarUrl ?? m.avatarUrl,
       role: m.role,
+      status: m.status,
+      leftAt: m.leftAt,
       isLinked: Boolean(m.userId),
       joinedAt: m.joinedAt,
     }))
@@ -89,6 +115,11 @@ export async function PATCH(req: NextRequest) {
   try {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'change_role')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
 
     const body: unknown = await req.json().catch(() => null)
     const parsed = UpdateMemberRoleSchema.safeParse(body)
@@ -171,6 +202,11 @@ export async function DELETE(req: NextRequest) {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
 
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'remove_member')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
     const { searchParams } = new URL(req.url)
     const memberId = searchParams.get('memberId')?.trim() || ''
     if (!memberId) {
@@ -186,9 +222,16 @@ export async function DELETE(req: NextRequest) {
       return validationFail('لا يمكنك إزالة مالك الفريق — انقل الملكية أولاً')
     }
 
+    // Removal semantics: soft-remove keeps the row (and its audit history) but
+    // marks it inactive and unlinks the account. Ghost rows can be hard-deleted
+    // later via the admin delete endpoint.
     await db.teamMembership.update({
       where: { id: member.id },
-      data: { userId: null },
+      data: {
+        status: 'removed',
+        leftAt: new Date(),
+        userId: null,
+      },
     })
 
     try {
