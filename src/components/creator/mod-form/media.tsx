@@ -100,6 +100,8 @@ interface Props {
   setVideoGroups: (v: VideoGroup[] | ((p: VideoGroup[]) => VideoGroup[])) => void
   fetchingVideoKey: string | null
   onFetchVideoMetadata: (groupIdx: number, videoIdx: number, videoUrl: string) => void
+  trailerUrl: string
+  setTrailerUrl: (v: string) => void
   /** قاعدة التسمية التلقائية (t.me/PS_PC_AR-...) — المعرض يضيف -1، -2... */
   uploadTitleBase?: string
 }
@@ -237,6 +239,15 @@ export function ModFormMedia(p: Props) {
           </Button>
         }
       >
+        <div className="space-y-2 mb-4">
+          <label className="text-xs font-medium text-muted-foreground block">رابط التريلر (YouTube/Vimeo)</label>
+          <Input
+            className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
+            value={p.trailerUrl}
+            onChange={(e) => p.setTrailerUrl(e.target.value)}
+            placeholder="https://youtube.com/watch?v=... أو https://vimeo.com/..."
+          />
+        </div>
         <p className="text-xs text-muted-foreground mb-3">
           {t.youtubeHint}
         </p>

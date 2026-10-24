@@ -34,6 +34,8 @@ interface Props {
   teamMembers: TeamMember[]
   setTeamMembers: (v: TeamMember[] | ((p: TeamMember[]) => TeamMember[])) => void
   addEmptyMember: () => void
+  supportUrl: string
+  setSupportUrl: (v: string) => void
   contactLinks: ContactLink[]
   setContactLinks: (v: ContactLink[] | ((p: ContactLink[]) => ContactLink[])) => void
   addEmptyContact: () => void
@@ -199,6 +201,17 @@ export function ModFormSettings(p: Props) {
             ))}
           </div>
         )}
+
+        {/* دعم الفريق */}
+        <div className="mt-6 space-y-1">
+          <label className="text-xs font-medium text-muted-foreground block">رابط دعم الفريق (PayPal/Ko-fi/...)</label>
+          <Input
+            className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
+            value={p.supportUrl}
+            onChange={(e) => p.setSupportUrl(e.target.value)}
+            placeholder="https://ko-fi.com/..."
+          />
+        </div>
 
         {/* contact links */}
         <div className="mt-6">

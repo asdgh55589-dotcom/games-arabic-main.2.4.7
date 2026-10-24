@@ -858,42 +858,7 @@ function ModFormInner({ modId }: ModFormProps) {
             userRole={userRole}
           />
 
-          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
-            <h3 className="text-sm font-bold">روابط إضافية</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">رابط التريلر (YouTube/Vimeo)</label>
-                <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={trailerUrl} onChange={(e) => setTrailerUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">رابط دعم الفريق (PayPal/Ko-fi/...)</label>
-                <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={supportUrl} onChange={(e) => setSupportUrl(e.target.value)} placeholder="https://ko-fi.com/..." />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
-              <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
-            </div>
-          </div>
 
-          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
-            <h3 className="text-sm font-bold">روابط مواقع متوافقة (إضافات)</h3>
-            <div className="space-y-2">
-              {siteLinks.map((sl: any, i: number) => (
-                <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
-                  <Input value={sl.url} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
-                  <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
-                  <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => setSiteLinks((p: any[]) => p.filter((_, idx) => idx !== i))}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setSiteLinks((p: any[]) => [...p, { url: '', siteName: '', pageTitle: '', domain: null }])}>
-              <Plus className="me-1 h-3 w-3" /> إضافة رابط موقع
-            </Button>
-          </div>
 
           <PlatformFieldsSection
             platform={platform}
@@ -949,6 +914,8 @@ function ModFormInner({ modId }: ModFormProps) {
             setVideoGroups={setVideoGroups}
             fetchingVideoKey={fetchingVideoKey}
             onFetchVideoMetadata={onFetchVideoMetadata}
+            trailerUrl={trailerUrl}
+            setTrailerUrl={setTrailerUrl}
             uploadTitleBase={buildUploadTitle(name)}
           />
 
@@ -968,6 +935,30 @@ function ModFormInner({ modId }: ModFormProps) {
             addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
           />
 
+          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
+            <h3 className="text-sm font-bold">ملفات إضافية</h3>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground block">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
+            </div>
+            <h3 className="text-sm font-bold mt-4">روابط مواقع متوافقة</h3>
+            <div className="space-y-2">
+              {siteLinks.map((sl: any, i: number) => (
+                <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
+                  <Input value={sl.url} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
+                  <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
+                  <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p: any[]) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => setSiteLinks((p: any[]) => p.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSiteLinks((p: any[]) => [...p, { url: '', siteName: '', pageTitle: '', domain: null }])}>
+              <Plus className="me-1 h-3 w-3" /> إضافة رابط موقع
+            </Button>
+          </div>
+
           <ModFormSettings
             seriesId={seriesId}
             setSeriesId={setSeriesId}
@@ -984,6 +975,8 @@ function ModFormInner({ modId }: ModFormProps) {
             teamMembers={teamMembers}
             setTeamMembers={setTeamMembers}
             addEmptyMember={() => setTeamMembers((p) => [...p, { ...EMPTY_MEMBER }])}
+            supportUrl={supportUrl}
+            setSupportUrl={setSupportUrl}
             contactLinks={contactLinks}
             setContactLinks={setContactLinks}
             addEmptyContact={() => setContactLinks((p) => [...p, { ...EMPTY_CONTACT }])}
