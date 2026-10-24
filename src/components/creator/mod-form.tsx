@@ -168,13 +168,26 @@ export default function ModForm({ modId }: ModFormProps) {
   const [savingChangelog, setSavingChangelog] = useState(false)
 
   // تحميل السلاسل والفرق — للعلاقات (dropdown) + للإكمال التلقائي
+  // كل طلب fetch معزول عن الآخر: فشل أحدها لا يمنع 나머지، والاستجابة الفارغة (مثل 304 من ETag) لا تُCause crash في JSON.parse
   useEffect(() => {
     setLoadingMeta(true)
+
+    const safeJson = async (res: Response) => {
+      if (!res.ok) return null
+      const text = await res.text()
+      if (!text || !text.trim()) return null
+      try {
+        return JSON.parse(text)
+      } catch {
+        return null
+      }
+    }
+
     Promise.all([
-      fetch('/api/series').then((r) => r.json()),
-      fetch('/api/teams').then((r) => r.json()),
-      fetch('/api/categories').then((r) => r.json()),
-      fetch('/api/sections').then((r) => r.json()),
+      fetch('/api/series').then(safeJson),
+      fetch('/api/teams').then(safeJson),
+      fetch('/api/categories').then(safeJson),
+      fetch('/api/sections').then(safeJson),
     ])
       .then(([seriesData, teamsData, categoriesData, sectionsData]) => {
         if (seriesData?.data) {
