@@ -601,7 +601,7 @@ function ModFormInner({ modId }: ModFormProps) {
       version,
       fileSize,
       fileFormat,
-      releaseDate: releaseDate || null,
+      releaseDate: releaseDate || undefined,
       scheduledAt:
         schedule == null
           ? null
