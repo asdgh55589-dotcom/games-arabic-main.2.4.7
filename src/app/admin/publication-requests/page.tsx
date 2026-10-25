@@ -62,7 +62,7 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
   const sortDirection = params.direction === 'asc' ? 'asc' : 'desc'
 
   const where: Record<string, unknown> = {
-    workflowStatus: 'IN_REVIEW',
+    workflowStatus: { in: ['DRAFT', 'IN_REVIEW'] },
   }
 
   if (search) {
@@ -172,7 +172,7 @@ export default async function PublicationRequestsPage({ searchParams }: PageProp
 
   // Stats for hero (all IN_REVIEW, not just paginated)
   const allForStats = await db.mod.findMany({
-    where: { workflowStatus: 'IN_REVIEW' },
+    where: { workflowStatus: { in: ['DRAFT', 'IN_REVIEW'] } },
     select: { teamId: true, author: { select: { role: true } }, updatedAt: true },
   })
   const stats = {

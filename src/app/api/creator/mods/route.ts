@@ -34,7 +34,11 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = { authorId: user.id }
 
   if (status && status !== 'all') {
-    ;(where as Record<string, unknown>).workflowStatus = status
+    if (status === 'IN_REVIEW') {
+      ;(where as Record<string, unknown>).workflowStatus = { in: ['DRAFT', 'IN_REVIEW'] }
+    } else {
+      ;(where as Record<string, unknown>).workflowStatus = status
+    }
   }
 
   if (q) {
