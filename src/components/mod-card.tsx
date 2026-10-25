@@ -162,7 +162,7 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
           className={`relative w-full overflow-hidden border-b-[3px] border-border bg-muted ${variant === 'compact' ? 'aspect-[16/9]' : 'aspect-video'}`}
         >
           <Image
-            src={mod.thumbnailUrl || FALLBACK_GAME_IMAGE}
+            src={mod.thumbnailUrl || mod.imageUrl || FALLBACK_GAME_IMAGE}
             alt={mod.name}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

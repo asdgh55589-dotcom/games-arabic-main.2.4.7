@@ -494,9 +494,9 @@ export function ModDetailPage() {
                   <div className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-full mx-auto lg:mx-0 lg:sticky lg:top-24 lg:self-start -translate-y-[128px] md:-translate-y-[160px] translate-x-14 lg:translate-x-20">
                     {/* Poster image */}
                     <div className="relative aspect-[2/3] overflow-hidden border-[3px] border-border bg-secondary shadow-[4px_4px_0_0_var(--border)]">
-                      {mod.imageUrl ? (
+                      {(mod.thumbnailUrl || mod.imageUrl) ? (
                         <Image
-                          src={mod.imageUrl}
+                          src={mod.thumbnailUrl || mod.imageUrl}
                           alt={mod.name}
                           fill
                           sizes="(max-width: 1024px) 240px, 280px"

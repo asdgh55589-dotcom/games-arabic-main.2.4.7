@@ -415,9 +415,9 @@ export function ModDetailMobile({
         {/* البوستر — تحت المسار مباشرة، أقصى اليمين (start في RTL) */}
         <div className="absolute start-3 top-[58px] z-10 w-[92px] sm:w-[108px]">
           <div className="relative aspect-[2/3] overflow-hidden border-[2px] border-border bg-secondary shadow-[2px_2px_0_0_var(--border)]">
-            {mod.imageUrl ? (
+            {(mod.thumbnailUrl || mod.imageUrl) ? (
               <img
-                src={mod.imageUrl}
+                src={mod.thumbnailUrl || mod.imageUrl}
                 alt={mod.name}
                 className="h-full w-full object-cover"
                 loading="lazy"
