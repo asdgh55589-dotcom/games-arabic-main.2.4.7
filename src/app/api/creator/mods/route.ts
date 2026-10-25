@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import type { NextRequest } from 'next/server'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { forbidden, ok, validationFail } from '@/lib/api-response'
@@ -243,29 +245,30 @@ export async function POST(req: NextRequest) {
     logger.error('[creator/mods POST] relations failed:', relErr)
   }
 
-  // Notify admins if submitted for review
+  // Notify admins if submitted for review (fire-and-forget)
   if (action === 'submit') {
-    try {
-      const admins = await db.user.findMany({
-        where: { role: { in: ['admin', 'manager', 'owner'] } },
-        select: { id: true },
-      })
-      // One batched write instead of one create() per admin.
-      if (admins.length > 0) {
-        await db.notification.createMany({
-          data: admins.map((admin) => ({
-            userId: admin.id,
-            actorId: user.id,
-            type: 'admin_report',
-            title: '📦 تعريب جديد بانتظار المراجعة',
-            message: `${user.username} أرسل تعريب "${data.name}" للمراجعة`,
-            data: { modId: mod.id, modName: data.name },
-          })),
+    void (async () => {
+      try {
+        const admins = await db.user.findMany({
+          where: { role: { in: ['admin', 'manager', 'owner'] } },
+          select: { id: true },
         })
+        if (admins.length > 0) {
+          await db.notification.createMany({
+            data: admins.map((admin) => ({
+              userId: admin.id,
+              actorId: user.id,
+              type: 'admin_report',
+              title: '📦 تعريب جديد بانتظار المراجعة',
+              message: `${user.username} أرسل تعريب "${data.name}" للمراجعة`,
+              data: { modId: mod.id, modName: data.name },
+            })),
+          })
+        }
+      } catch (err) {
+        console.error('Failed to notify admins of new mod submission:', err)
       }
-    } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification to admins
-    }
+    })()
   }
 
   return ok(

@@ -19,7 +19,7 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
       }
       if (body?.error?.message) message = body.error.message
     } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort API client
+      // best-effort: ignore parse errors
     }
     throw new ApiError(message, res.status)
   }
@@ -33,5 +33,31 @@ export class ApiError extends Error {
     super(message)
     this.name = 'ApiError'
     this.status = status
+  }
+}
+
+export async function safeJson(res: Response): Promise<any> {
+  if (res.status === 204 || res.status === 304) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    let errorData: any
+    try {
+      errorData = JSON.parse(text)
+    } catch {
+      const isHtml = /<[^>]+>/.test(text)
+      errorData = { error: !text || isHtml ? `HTTP ${res.status}` : text }
+    }
+    throw new ApiError(
+      (errorData && (errorData.error?.message || errorData.error || errorData.message)) ||
+        `HTTP ${res.status}`,
+      res.status,
+    )
+  }
+  const text = await res.text()
+  if (!text?.trim()) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new ApiError('Invalid JSON response', res.status)
   }
 }

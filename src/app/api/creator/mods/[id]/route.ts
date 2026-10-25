@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import type { NextRequest } from 'next/server'
 import { forbidden, internalError, notFound, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'

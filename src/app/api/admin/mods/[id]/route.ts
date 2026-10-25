@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { revalidatePath } from 'next/cache'
 import type { NextRequest } from 'next/server'
 import { fail, forbidden, internalError, notFound, ok } from '@/lib/api-response'
