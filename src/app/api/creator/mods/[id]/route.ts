@@ -162,6 +162,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           include: { links: { orderBy: { order: 'asc' } } },
         },
         siteLinks: { orderBy: { order: 'asc' } },
+        teamMembers: { orderBy: { order: 'asc' } },
+        contactLinks: { orderBy: { order: 'asc' } },
+        videoGroups: {
+          orderBy: { order: 'asc' },
+          include: { videos: { orderBy: { order: 'asc' } } },
+        },
+        customTabs: { orderBy: { order: 'asc' } },
       },
     })
     if (!mod) return notFound('التعريب غير موجود')
