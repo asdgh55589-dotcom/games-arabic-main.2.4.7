@@ -126,7 +126,7 @@ export function ModDetailMobile({
   const displaySummary = getDisplaySummary(mod)
   const seriesDisplay = getSeriesDisplay(mod as any)
   const teamDisplay = getTeamDisplay(mod as any)
-  const bannerImage = gallery[0] || mod.imageUrl || FALLBACK_GAME_IMAGE
+  const bannerImage = mod.imageUrl || gallery[0] || FALLBACK_GAME_IMAGE
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
   const platformColor = platformKey ? PLATFORM_COLORS[platformKey] : undefined
   const [userReaction, setUserReaction] = useState<string | null>(null)

@@ -285,6 +285,37 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           if (allLinks.length > 0) {
             await tx.modFileLink.createMany({ data: allLinks })
           }
+          // روابط المواقع (siteLinks) — nested per file
+          const allSiteLinks: Array<{
+            modId: string
+            fileId: string
+            url: string
+            siteName: string | null
+            pageTitle: string | null
+            domain: string | null
+            order: number
+          }> = []
+          validFiles.forEach((f, idx) => {
+            const fileId = createdFiles[idx]?.id
+            if (!fileId || !Array.isArray((f as any).siteLinks)) return
+            ;(f as any).siteLinks.forEach((sl: any, j: number) => {
+              if (!sl?.url) return
+              allSiteLinks.push({
+                modId: id,
+                fileId,
+                url: sl.url,
+                siteName: sl.siteName || null,
+                pageTitle: sl.pageTitle || null,
+                domain: sl.domain || null,
+                order: sl.order ?? j,
+              })
+            })
+          })
+          // Replace all file-level siteLinks for this mod (preserve external fileId:null ones).
+          await tx.modSiteLink.deleteMany({ where: { modId: id, fileId: { not: null } } })
+          if (allSiteLinks.length > 0) {
+            await tx.modSiteLink.createMany({ data: allSiteLinks })
+          }
         }
       }
 

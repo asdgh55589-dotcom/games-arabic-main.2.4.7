@@ -147,7 +147,6 @@ export default function ModForm({ modId }: ModFormProps) {
   const [minAndroidVersion, setMinAndroidVersion] = useState('')
 
   const [files, setFiles] = useState<DownloadFile[]>([])
-  const [siteLinks, setSiteLinks] = useState<SiteLink[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [contactLinks, setContactLinks] = useState<ContactLink[]>([])
   const [videoGroups, setVideoGroups] = useState<VideoGroup[]>([])
@@ -297,16 +296,6 @@ export default function ModForm({ modId }: ModFormProps) {
                   ? String((m.files || []).findIndex((x: any) => x.id === f.parentId))
                   : null,
                 extrasLabel: f.extrasLabel || null,
-              }))
-            : [],
-        )
-        setSiteLinks(
-          Array.isArray(m.siteLinks)
-            ? m.siteLinks.map((s: any) => ({
-                url: s.url,
-                siteName: s.siteName,
-                pageTitle: s.pageTitle,
-                domain: s.domain,
               }))
             : [],
         )
@@ -627,7 +616,6 @@ export default function ModForm({ modId }: ModFormProps) {
       gameVersion: gameVersion || null,
       minAndroidVersion: minAndroidVersion || null,
       files: files.filter((f) => f.title),
-      siteLinks: siteLinks.filter((s) => s.url),
       teamMembers: teamMembers.filter((m) => m.name),
       contactLinks: contactLinks.filter((c) => c.url),
       videoGroups: videoGroups
@@ -944,31 +932,6 @@ export default function ModForm({ modId }: ModFormProps) {
             setFiles={setFiles}
             addEmptyFile={() => setFiles((p) => [...p, { ...EMPTY_FILE }])}
           />
-
-          {/* ===== روابط مواقع متوافقة (إضافات) ===== */}
-          <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
-            <h3 className="text-sm font-bold">روابط مواقع متوافقة (إضافات)</h3>
-            <p className="text-xs text-muted-foreground">روابط خارجية (FitGirl/DODI/...) تُعرض كإضافات في تبويبة التحميل. النطاق يجب أن يكون ضمن قائمة المواقع المدعومة.</p>
-            <div className="space-y-2">
-              {siteLinks.map((sl, i) => {
-                const domain = (sl.domain || sl.url || '').replace(/^https?:\/\//, '').split('/')[0]
-                return (
-                  <div key={i} className="flex flex-wrap items-center gap-2 rounded border border-border/60 p-2">
-                    <img src={brandLogoUrl(domain || 'example.com')} alt="" className="h-6 w-6 shrink-0 rounded border border-border/40 bg-card object-contain p-0.5" />
-                    <Input value={sl.url} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} placeholder="https://..." className="flex-1 min-w-[180px]" />
-                    <Input value={sl.siteName || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, siteName: e.target.value } : x))} placeholder="اسم الموقع" className="w-32" />
-                    <Input value={sl.pageTitle || ''} onChange={(e) => setSiteLinks((p) => p.map((x, idx) => idx === i ? { ...x, pageTitle: e.target.value } : x))} placeholder="عنوان الصفحة" className="w-40" />
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400" onClick={() => setSiteLinks((p) => p.filter((_, idx) => idx !== i))}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setSiteLinks((p) => [...p, { url: '', siteName: '', pageTitle: '', domain: null }])}>
-              <Plus className="me-1 h-3 w-3" /> إضافة رابط موقع
-            </Button>
-          </div>
 
           <ModFormSettings
             seriesId={seriesId}

@@ -854,6 +854,39 @@ export function ModFormFiles(p: Props) {
                             ),
                           )
                         }
+                        onBlur={async () => {
+                          const current = (p.files[i]?.siteLinks || [])[j]
+                          if (!current?.url || (!current.siteName && !current.pageTitle)) {
+                            try {
+                              const res = await fetch(`/api/fetch-url-meta?url=${encodeURIComponent(current?.url || '')}`)
+                              if (!res.ok) return
+                              const data = await res.json()
+                              const meta = data?.data
+                              if (!meta) return
+                              p.setFiles((prev) =>
+                                prev.map((f, idx) =>
+                                  idx === i
+                                    ? {
+                                        ...f,
+                                        siteLinks: (f.siteLinks || []).map((x, lidx) =>
+                                          lidx === j
+                                            ? {
+                                                ...x,
+                                                siteName: x.siteName || meta.siteName || x.siteName,
+                                                pageTitle: x.pageTitle || meta.title || x.pageTitle,
+                                                domain: x.domain || meta.domain || x.domain,
+                                              }
+                                            : x,
+                                        ),
+                                      }
+                                    : f,
+                                ),
+                              )
+                            } catch {
+                              // best-effort auto-fill
+                            }
+                          }
+                        }}
                         placeholder="https://..."
                         className="flex-1"
                       />

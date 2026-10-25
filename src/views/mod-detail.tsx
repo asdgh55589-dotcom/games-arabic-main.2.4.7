@@ -198,7 +198,7 @@ export function ModDetailPage() {
   const teamDisplay = mod ? getTeamDisplay(mod as any) : null
   const safeActiveImage = Math.min(activeImage, Math.max(0, gallery.length - 1))
   // Banner = first gallery image (the header image in nexusmods)
-  const bannerImage = gallery[0] || mod?.imageUrl || ''
+  const bannerImage = mod?.imageUrl || gallery[0] || ''
 
   // Platform color resolution
   const platformKey = mod?.game?.platform ? PLATFORM_KEY_MAP[mod.game.platform.toUpperCase()] : null
