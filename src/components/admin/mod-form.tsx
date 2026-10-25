@@ -9,6 +9,8 @@ import { Clock, FileArchive, Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { safeJson } from '@/lib/api-client'
+import { buildModPayload } from '@/lib/mods/payload'
 import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
 import { VersionHistory } from '@/components/admin/mods/version-history'
 import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
@@ -182,10 +184,10 @@ function ModFormInner({ modId }: ModFormProps) {
   useEffect(() => {
     setLoadingMeta(true)
     Promise.all([
-      fetch('/api/series').then((r) => r.json()),
-      fetch('/api/teams').then((r) => r.json()),
-      fetch('/api/categories').then((r) => r.json()),
-      fetch('/api/sections').then((r) => r.json()),
+      fetch('/api/series').then(safeJson),
+      fetch('/api/teams').then(safeJson),
+      fetch('/api/categories').then(safeJson),
+      fetch('/api/sections').then(safeJson),
     ])
       .then(([seriesData, teamsData, categoriesData, sectionsData]) => {
         if (seriesData?.data) {
@@ -573,7 +575,7 @@ function ModFormInner({ modId }: ModFormProps) {
     }
 
     setSaving(true)
-    const payload = {
+    const payload = buildModPayload({
       name: _name,
       headline: _headline,
       summary: _summary,
@@ -644,7 +646,7 @@ function ModFormInner({ modId }: ModFormProps) {
           ...t,
           slug: t.slug || slugify(t.name),
         })),
-    }
+    })
 
     try {
       const url = isEdit ? `/api/admin/mods/${modId}` : '/api/admin/mods'
@@ -654,7 +656,7 @@ function ModFormInner({ modId }: ModFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok)
         throw new Error(
           extractVideoErrorMessage(data) ||

@@ -6,6 +6,8 @@
 import { Clock, FileArchive, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { safeJson } from '@/lib/api-client'
+import { buildModPayload } from '@/lib/mods/payload'
 import { NewVersionDialog } from '@/components/admin/mods/new-version-dialog'
 import { VersionHistory } from '@/components/admin/mods/version-history'
 import { WorkflowActions } from '@/components/admin/mods/workflow-actions'
@@ -569,7 +571,7 @@ export default function ModForm({ modId }: ModFormProps) {
     }
 
     setSaving(true)
-    const payload = {
+    const payload = buildModPayload({
       name: _name,
       headline: _headline,
       summary: _summary,
@@ -635,7 +637,7 @@ export default function ModForm({ modId }: ModFormProps) {
           videos: g.videos.filter((v) => v.title && v.url),
         })),
       customTabs: customTabs.filter((t) => t.name),
-    }
+    })
 
     try {
       const url = isEdit ? `/api/creator/mods/${modId}` : '/api/creator/mods'
@@ -645,7 +647,7 @@ export default function ModForm({ modId }: ModFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await safeJson(res)
       if (!res.ok)
         throw new Error(
           data?.error?.message ||

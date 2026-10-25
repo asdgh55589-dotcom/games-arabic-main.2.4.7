@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { revalidatePath } from 'next/cache'
 import type { NextRequest } from 'next/server'
 import { forbidden, internalError, ok, okPaginated, validationFail } from '@/lib/api-response'
@@ -467,19 +469,21 @@ export async function POST(req: NextRequest) {
       logger.error({ err, authorId: mod.authorId }, '[mods POST] tier upgrade check failed'),
     )
 
-    // إشعار نشر التعريب
-    try {
-      const { getUseCases } = await import('@/application/use-cases/factory')
-      const useCases = getUseCases()
-      await useCases.sendModPublished.execute({
-        modAuthorId: mod.authorId,
-        modId: mod.id,
-        modTitle: mod.name,
-        modSlug: mod.slug,
-      })
-    } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort notification
-    }
+    // إشعار نشر التعريب (fire-and-forget: لا يمنع إرجاع الاستجابة)
+    void (async () => {
+      try {
+        const { getUseCases } = await import('@/application/use-cases/factory')
+        const useCases = getUseCases()
+        await useCases.sendModPublished.execute({
+          modAuthorId: mod.authorId,
+          modId: mod.id,
+          modTitle: mod.name,
+          modSlug: mod.slug,
+        })
+      } catch (err) {
+        console.error('Failed to send mod published notification:', err)
+      }
+    })()
 
     // تحديث عدّادات اللعبة والسلسلة — increment ذري (Issue 3.4/3.5)
     if (mod.gameId) {
