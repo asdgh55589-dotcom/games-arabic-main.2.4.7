@@ -470,20 +470,19 @@ export async function POST(req: NextRequest) {
     )
 
     // إشعار نشر التعريب (fire-and-forget: لا يمنع إرجاع الاستجابة)
-    void (async () => {
-      try {
-        const { getUseCases } = await import('@/application/use-cases/factory')
+    void import('@/application/use-cases/factory')
+      .then(({ getUseCases }) => {
         const useCases = getUseCases()
-        await useCases.sendModPublished.execute({
+        return useCases.sendModPublished.execute({
           modAuthorId: mod.authorId,
           modId: mod.id,
           modTitle: mod.name,
           modSlug: mod.slug,
         })
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error('Failed to send mod published notification:', err)
-      }
-    })()
+      })
 
     // تحديث عدّادات اللعبة والسلسلة — increment ذري (Issue 3.4/3.5)
     if (mod.gameId) {

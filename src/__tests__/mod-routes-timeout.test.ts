@@ -20,12 +20,12 @@ describe('mod routes maxDuration', () => {
 })
 
 describe('admin mod route fire-and-forget notification', () => {
-  it('does not await sendModPublished.execute', () => {
+  it('uses fire-and-forget for sendModPublished', () => {
     const content = fs.readFileSync(
       path.join(root, 'app/api/admin/mods/route.ts'),
       'utf8',
     )
-    expect(content).toMatch(/void\s*\(/)
     expect(content).toMatch(/sendModPublished\.execute/)
+    expect(content).toMatch(/\.catch\(/)
   })
 })
