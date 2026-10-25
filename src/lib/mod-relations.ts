@@ -105,6 +105,7 @@ export const MOD_RELATION_KEYS = [
   'teamMembers',
   'contactLinks',
   'customTabs',
+  'siteLinks',
 ] as const
 
 /** Remove relation arrays from scalar mod data (prevents Prisma rejections). */
