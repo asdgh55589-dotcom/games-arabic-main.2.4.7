@@ -224,7 +224,7 @@ describe('GET /api/creator/mods', () => {
 
     expect(db.mod.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ workflowStatus: 'IN_REVIEW' }),
+        where: expect.objectContaining({ workflowStatus: { in: ['DRAFT', 'IN_REVIEW'] } }),
       }),
     )
   })
