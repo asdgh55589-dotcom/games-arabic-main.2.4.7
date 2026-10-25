@@ -2,7 +2,7 @@ export const maxDuration = 60
 
 import type { NextRequest } from 'next/server'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
-import { forbidden, ok, validationFail } from '@/lib/api-response'
+import { forbidden, internalError, ok, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { canCreateMod, canTranslateMod } from '@/lib/permissions'
@@ -88,6 +88,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  try {
   const { user, error } = await requireCreatorStudio(req)
   if (error) return error
   if (!user) return error!
@@ -275,4 +276,8 @@ export async function POST(req: NextRequest) {
     { mod, message: action === 'submit' ? 'تم إرسال التعريب للمراجعة' : 'تم حفظ التعريب كمسودة' },
     { status: 201 },
   )
+  } catch (err) {
+    logger.error('[creator/mods POST] failed:', err)
+    return internalError(err instanceof Error ? err.message : 'Internal server error')
+  }
 }
