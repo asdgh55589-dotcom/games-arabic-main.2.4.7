@@ -226,7 +226,7 @@ export function ModDetailMobile({
 
   /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
   const DESIGN_PREVIEW = {
-    enabled: true,
+    enabled: false,
     recommendPct: 94,
   } as const
   const recommendPct =

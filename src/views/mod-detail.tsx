@@ -321,7 +321,7 @@ export function ModDetailPage() {
 
   /** ===== معاينة تصميم فقط (Mock) — بدون API حقيقي، تُحذف أو تُربط بعد الاتفاق ===== */
   const DESIGN_PREVIEW = {
-    enabled: true,
+    enabled: false,
     recommendPct: 94,
   } as const
   const recommendPct =
@@ -601,6 +601,14 @@ export function ModDetailPage() {
                           >
                             v{mod.version}
                           </Badge>
+                          {(mod as { isOriginalWork?: boolean }).isOriginalWork === false && (
+                            <Badge
+                              variant="outline"
+                              className="border-amber-500/30 bg-amber-500/10 text-xs font-black shrink-0 whitespace-nowrap text-amber-700 dark:text-amber-400"
+                            >
+                              منشور من مصدر خارجي
+                            </Badge>
+                          )}
                           {mod.category?.name && (
                             <Badge
                               variant="secondary"
@@ -685,10 +693,6 @@ export function ModDetailPage() {
                           }
                         ).isOriginalWork === false && (
                           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                            <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                              منشور من مصدر خارجي
-                            </span>
                             {(mod as unknown as { originalAuthor?: string | null })
                               .originalAuthor && (
                               <span className="text-xs text-muted-foreground">
