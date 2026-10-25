@@ -100,6 +100,14 @@ interface PaginatedModsResponse {
   }
 }
 
+function titleSizeClass(title: string): string {
+  const len = (title || '').length
+  if (len <= 24) return 'md:text-5xl'
+  if (len <= 40) return 'md:text-4xl'
+  if (len <= 60) return 'md:text-3xl'
+  return 'md:text-2xl'
+}
+
 export function ModDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -562,7 +570,11 @@ export function ModDetailPage() {
                           {mod.game.platform} • {mod.name} • v{mod.version}
                         </p>
                         {/* Title */}
-                        <h1 className="text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl md:text-5xl leading-tight">
+                        <h1
+                          className={`text-2xl sm:text-3xl font-black text-foreground drop-shadow-2xl ${titleSizeClass(
+                            (mod as { headline?: string }).headline || mod.name,
+                          )} leading-tight`}
+                        >
                           {(mod as { headline?: string }).headline || mod.name}
                         </h1>
                         {/* شريط التقييم والمراجعات — نجوم تفاعلية */}
