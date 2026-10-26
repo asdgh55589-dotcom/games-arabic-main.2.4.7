@@ -250,12 +250,6 @@ function ModCardInner({ mod, priority = false, variant = 'full', query }: ModCar
               ? highlightMatch((mod as { headline?: string }).headline || mod.name, query)
               : (mod as { headline?: string }).headline || mod.name}
           </h3>
-          {mod.isOriginalWork === false && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-              منشور من مصدر خارجي{mod.originalAuthor ? ` • ${mod.originalAuthor}` : ''}
-            </span>
-          )}
 
           {variant === 'compact' ? (
             /* COMPACT: تاريخ النشر والتحديث + شريط الإحصائيات */
