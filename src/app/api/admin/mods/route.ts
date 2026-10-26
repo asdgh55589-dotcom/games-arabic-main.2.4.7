@@ -13,6 +13,7 @@ import { calculateModQualityScore } from '@/lib/mod-quality'
 import { canCreateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
 import { syncSeriesCounts } from '@/lib/series-helpers'
+import { clearHomeCache } from '@/lib/home-cache'
 import { indexMod } from '@/lib/meilisearch/indexer'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
@@ -519,6 +520,11 @@ export async function POST(req: NextRequest) {
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
     }
+
+    // Invalidate shared homepage cache so the new mod appears in the moving banner immediately
+    void clearHomeCache().catch((err) => {
+      logger.error('[admin/mods POST] home cache clear failed:', err)
+    })
 
     // Meilisearch: index the newly published mod (fire-and-forget)
     void indexMod(mod.id).catch((err) => {
