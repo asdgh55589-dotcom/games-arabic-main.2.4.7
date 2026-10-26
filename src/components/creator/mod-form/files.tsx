@@ -798,30 +798,6 @@ export function ModFormFiles(p: Props) {
                     placeholder="ملفات إضافية"
                   />
                 </Field>
-                <Field label="الملف الأب (تداخل)">
-                  <select
-                    value={file.parentId == null ? '' : String(file.parentId)}
-                    onChange={(e) =>
-                      p.setFiles((prev) =>
-                        prev.map((f, idx) =>
-                          idx === i ? { ...f, parentId: e.target.value === '' ? null : e.target.value } : f,
-                        ),
-                      )
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  >
-                    <option value="">— بدون (ملف رئيسي) —</option>
-                    {p.files.map((pf, pi) => {
-                      if (pi === i) return null
-                      return (
-                        <option key={pi} value={String(pi)}>
-                          {pf.title || `ملف ${pi + 1}`}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </Field>
-
                 {/* site links (extras) for this file */}
                 <div className="mt-3 rounded border border-border/40 p-3 space-y-2">
                   <div className="flex items-center justify-between">
