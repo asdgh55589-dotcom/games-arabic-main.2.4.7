@@ -13,6 +13,7 @@ import { calculateModQualityScore } from '@/lib/mod-quality'
 import { canCreateMod } from '@/lib/permissions'
 import { CreateModSchema } from '@/lib/schemas'
 import { syncSeriesCounts } from '@/lib/series-helpers'
+import { indexMod } from '@/lib/meilisearch/indexer'
 import { syncTeamCounts } from '@/lib/team-helpers'
 import { checkAndUpgradeTier } from '@/lib/tier-engine'
 import { slugify } from '@/lib/utils'
@@ -234,6 +235,8 @@ export async function POST(req: NextRequest) {
           isOriginalWork: isOriginalWork,
           originalSource: originalSource?.trim() || null,
           originalAuthor: originalAuthor?.trim() || null,
+          workflowStatus: 'PUBLISHED',
+          publishedAt: new Date(),
           // الشارات نظامية (تُحسب من الأداء/الوقت) — أي قيم مرسلة تُتجاهل
           isFeatured: false,
           isTrending: false,
@@ -516,6 +519,11 @@ export async function POST(req: NextRequest) {
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
     }
+
+    // Meilisearch: index the newly published mod (fire-and-forget)
+    void indexMod(mod.id).catch((err) => {
+      logger.error('[admin/mods POST] meili index failed:', err)
+    })
 
     return ok(mod)
   } catch (err) {
