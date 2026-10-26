@@ -5,6 +5,7 @@ import { logAction } from '@/lib/audit'
 import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { invalidateGameModsCache } from '@/lib/game-mods-cache'
+import { clearHomeCache } from '@/lib/home-cache'
 import { logger } from '@/lib/logger'
 import { notifyWorkflowChange } from '@/lib/mod-notifications'
 import { canApproveMods } from '@/lib/permissions'
@@ -174,6 +175,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }
     } catch {
       // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort ISR revalidation
+    }
+
+    // Invalidate shared homepage cache on PUBLISHED so the new mod appears in the moving banner
+    if (targetStatus === 'PUBLISHED') {
+      void clearHomeCache().catch((err) => {
+        logger.error('[workflow] home cache clear failed:', err)
+      })
     }
 
     // Meilisearch sync (no-op without env, fire-and-forget)
