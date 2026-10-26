@@ -16,6 +16,7 @@ import { TeamStats } from '@/components/creator/team-stats'
 import { TeamMembersTable, type TeamMemberRow } from '@/components/creator/team-members-table'
 import { TeamSettingsForm } from '@/components/creator/team-settings-form'
 import { canManageTeam, isTeamRole, type TeamRole } from '@/lib/team-permissions'
+import { useTabPersistence } from '@/hooks/use-tab-persistence'
 
 interface CreatorTeam {
   id: string
@@ -36,6 +37,7 @@ interface TeamManagerProps {
 }
 
 export function TeamManager({ userRole }: TeamManagerProps) {
+  const { activeTab, changeTab } = useTabPersistence('overview', ['overview','stats','mods','members','invites','activity','settings','contacts','tabs'])
   const canInvite = !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'invite')
   const canManageSettings =
     !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'manage_settings')
@@ -129,7 +131,7 @@ export function TeamManager({ userRole }: TeamManagerProps) {
   }
 
   return (
-    <Tabs defaultValue="overview" className="space-y-6">
+    <Tabs value={activeTab} onValueChange={changeTab} className="space-y-6">
       <TabsList className="flex-wrap">
         <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
         <TabsTrigger value="stats">الإحصائيات</TabsTrigger>

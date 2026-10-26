@@ -76,7 +76,7 @@ export function TeamSettingsForm({ initial, onSaved }: TeamSettingsFormProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="team-settings-desc">الوصف</Label>
-          <Input id="team-settings-desc" value={form.description} onChange={set('description')} maxLength={1000} />
+          <MarkdownEditor value={form.description} onChange={(v) => { setForm((f) => ({ ...f, description: v })); setSuccess(false) }} placeholder="وصف الفريق (Markdown)" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

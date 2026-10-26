@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { reportError } from '@/lib/error-reporting'
+import { TeamCharts } from '@/components/creator/team-charts'
 
 interface SlimMod {
   id: string
@@ -158,6 +159,11 @@ export function TeamStats() {
           </CardContent>
         </Card>
       </div>
+
+      <TeamCharts
+        topMods={data.topMods.map((m) => ({ name: m.name, downloads: m.downloads }))}
+        roles={Object.entries(data.byStatus).map(([name, value]) => ({ name, value }))}
+      />
 
       {data.lowestMods.length > 0 && (
         <Card className="border-border/60 shadow-sm">
