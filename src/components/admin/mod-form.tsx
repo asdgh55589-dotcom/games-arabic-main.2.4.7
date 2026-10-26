@@ -5,7 +5,7 @@
 // admin APIs, plus admin-only extras (source section, workflow, versions).
 'use client'
 
-import { Clock, FileArchive, Loader2, Plus, Save, Trash2 } from 'lucide-react'
+import { Clock, FileArchive, FileText, Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -58,6 +58,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { ChangelogDisplay } from '@/components/changelog-display'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -97,6 +98,7 @@ function ModFormInner({ modId }: ModFormProps) {
   const [workflowStatus, setWorkflowStatus] = useState('DRAFT')
   const [workflowHistory, setWorkflowHistory] = useState<any[]>([])
   const [versionHistory, setVersionHistory] = useState<any[]>([])
+  const [changelogs, setChangelogs] = useState<any[]>([])
   const [newVersionDialogOpen, setNewVersionDialogOpen] = useState(false)
   const [changeTypeDialogOpen, setChangeTypeDialogOpen] = useState(false)
   const [savingChangelog, setSavingChangelog] = useState(false)
@@ -280,6 +282,7 @@ function ModFormInner({ modId }: ModFormProps) {
         setWorkflowStatus(m.workflowStatus || 'DRAFT')
         setWorkflowHistory(m.workflowHistory || [])
         setVersionHistory(m.versionHistory || [])
+        setChangelogs(m.changelogs || [])
 
         setFiles(
           m.files?.length
@@ -1055,6 +1058,13 @@ function ModFormInner({ modId }: ModFormProps) {
           {isEdit && workflowHistory.length > 0 && (
             <Section title="سجل تغييرات الحالة" icon={<Clock className="h-4 w-4" />}>
               <WorkflowHistory history={workflowHistory} />
+            </Section>
+          )}
+
+          {/* سجل التغييرات (Changelog) */}
+          {isEdit && changelogs.length > 0 && (
+            <Section title="سجل التغييرات" icon={<FileText className="h-4 w-4" />}>
+              <ChangelogDisplay changelogs={changelogs} />
             </Section>
           )}
 

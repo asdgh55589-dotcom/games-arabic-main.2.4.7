@@ -53,6 +53,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         },
         customTabs: { orderBy: { order: 'asc' } },
         siteLinks: { orderBy: { order: 'asc' } },
+        changelogs: { orderBy: { createdAt: 'desc' } },
         workflowHistory: {
           orderBy: { changedAt: 'desc' },
           take: 20,
