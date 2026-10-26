@@ -787,7 +787,7 @@ export function ModFormFiles(p: Props) {
                   />
                 </Field>
 
-                <Field label="عنوان قسم الإضافات (اختياري)">
+                <Field label="أقسام إضافية">
                   <Input
                     value={file.extrasLabel || ''}
                     onChange={(e) =>

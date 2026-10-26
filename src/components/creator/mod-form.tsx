@@ -868,7 +868,7 @@ export default function ModForm({ modId }: ModFormProps) {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <label className="text-xs font-medium text-muted-foreground mt-2">أقسام إضافية</label>
               <Input value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
             </div>
           </div>

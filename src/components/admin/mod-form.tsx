@@ -939,7 +939,7 @@ function ModFormInner({ modId }: ModFormProps) {
           <div className="rounded-xl border border-border bg-card/30 p-4 space-y-3">
             <h3 className="text-sm font-bold">ملفات إضافية</h3>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground block">عنوان قسم «ملفات إضافية» (اختياري)</label>
+              <label className="text-xs font-medium text-muted-foreground block mt-2">أقسام إضافية</label>
               <Input className="w-full rounded border border-border bg-background px-3 py-2 text-sm" value={extrasLabel} onChange={(e) => setExtrasLabel(e.target.value)} placeholder="ملفات إضافية" />
             </div>
           </div>

@@ -148,6 +148,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'isOriginalWork',
       'originalSource',
       'originalAuthor',
+      'extrasLabel',
       'releaseDate',
       'scheduledAt',
       'publishMode',
