@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-
 import { Input } from '@/components/official-ui/input'
 import { Label } from '@/components/official-ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 
 interface TeamSettings {
   name: string
@@ -19,10 +21,13 @@ interface TeamSettings {
 interface TeamSettingsFormProps {
   initial: TeamSettings
   onSaved: () => void
+  userRole?: string | null
+  teamRole?: string | null
 }
 
-export function TeamSettingsForm({ initial, onSaved }: TeamSettingsFormProps) {
+export function TeamSettingsForm({ initial, onSaved, userRole, teamRole }: TeamSettingsFormProps) {
   const { toast } = useToast()
+  const perms = useTeamPermissions(userRole ?? teamRole)
   const [form, setForm] = useState<TeamSettings>(initial)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,33 +77,33 @@ export function TeamSettingsForm({ initial, onSaved }: TeamSettingsFormProps) {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="team-settings-name">اسم الفريق *</Label>
-          <Input id="team-settings-name" value={form.name} onChange={set('name')} maxLength={80} />
+          <Input id="team-settings-name" value={form.name} onChange={set('name')} maxLength={80} disabled={!perms.canEditSettings} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="team-settings-desc">الوصف</Label>
-          <MarkdownEditor value={form.description} onChange={(v) => { setForm((f) => ({ ...f, description: v })); setSuccess(false) }} placeholder="وصف الفريق (Markdown)" />
+          <MarkdownEditor value={form.description} onChange={(v) => { if (!perms.canEditSettings) return; setForm((f) => ({ ...f, description: v })); setSuccess(false) }} placeholder="وصف الفريق (Markdown)" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="team-settings-logo">رابط الشعار</Label>
-            <Input id="team-settings-logo" value={form.logoUrl} onChange={set('logoUrl')} dir="ltr" placeholder="https://..." />
+            <Input id="team-settings-logo" value={form.logoUrl} onChange={set('logoUrl')} dir="ltr" placeholder="https://..." disabled={!perms.canEditSettings} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="team-settings-banner">رابط البانر</Label>
-            <Input id="team-settings-banner" value={form.bannerUrl} onChange={set('bannerUrl')} dir="ltr" placeholder="https://..." />
+            <Input id="team-settings-banner" value={form.bannerUrl} onChange={set('bannerUrl')} dir="ltr" placeholder="https://..." disabled={!perms.canEditSettings} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="team-settings-website">الموقع</Label>
-            <Input id="team-settings-website" value={form.websiteUrl} onChange={set('websiteUrl')} dir="ltr" placeholder="https://..." />
+            <Input id="team-settings-website" value={form.websiteUrl} onChange={set('websiteUrl')} dir="ltr" placeholder="https://..." disabled={!perms.canEditSettings} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="team-settings-telegram">تيليجرام</Label>
-            <Input id="team-settings-telegram" value={form.telegramUrl} onChange={set('telegramUrl')} dir="ltr" placeholder="https://t.me/..." />
+            <Input id="team-settings-telegram" value={form.telegramUrl} onChange={set('telegramUrl')} dir="ltr" placeholder="https://t.me/..." disabled={!perms.canEditSettings} />
           </div>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         {success && <p className="text-sm text-green-600">تم الحفظ بنجاح</p>}
-        <Button onClick={submit} disabled={saving || form.name.trim().length < 2}>
+        <Button onClick={submit} disabled={!perms.canEditSettings || saving || form.name.trim().length < 2} aria-disabled={!perms.canEditSettings} title={!perms.canEditSettings ? 'ليس لديك صلاحية' : undefined}>
           {saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       </CardContent>

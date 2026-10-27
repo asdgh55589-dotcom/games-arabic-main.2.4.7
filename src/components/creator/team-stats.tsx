@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { reportError } from '@/lib/error-reporting'
+import { Download } from 'lucide-react'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 import { TeamCharts } from '@/components/creator/team-charts'
 
 interface SlimMod {
@@ -56,7 +58,13 @@ function ModRow({ mod }: { mod: SlimMod }) {
   )
 }
 
-export function TeamStats() {
+interface TeamStatsProps {
+  userRole?: string | null
+  teamRole?: string | null
+}
+
+export function TeamStats({ userRole, teamRole }: TeamStatsProps = {}) {
+  const perms = useTeamPermissions(userRole ?? teamRole)
   const [data, setData] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -98,7 +106,7 @@ export function TeamStats() {
       <Card>
         <CardContent className="space-y-3 p-6">
           <p className="text-sm text-destructive">{error ?? 'فشل تحميل الإحصائيات'}</p>
-          <Button variant="outline" size="sm" onClick={fetchStats}>
+          <Button variant="outline" size="sm" onClick={fetchStats} aria-label="إعادة المحاولة" disabled={!perms.canViewStats} aria-disabled={!perms.canViewStats} title={!perms.canViewStats ? 'ليس لديك صلاحية' : undefined}>
             إعادة المحاولة
           </Button>
         </CardContent>
@@ -115,8 +123,31 @@ export function TeamStats() {
     { label: 'المتابعون', value: String(data.followsCount) },
   ]
 
+  const exportCsv = async () => {
+    try {
+      const res = await fetch('/api/creator/team/stats/export?range=30d', { cache: 'no-store' })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'team-stats-30d.csv'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      // best-effort
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={exportCsv}>
+          <Download className="me-1 h-4 w-4" /> تصدير CSV
+        </Button>
+      </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {cards.map((c) => (
           <Card key={c.label} className="border-border/60 shadow-sm">

@@ -15,7 +15,8 @@ export function useTeamPermissions(teamRole?: string | null) {
     canEditSettings: can('manage_settings'),
     canLinkMods: can('edit_mod'),
     canTransfer: can('transfer_ownership'),
-    canArchive: can('manage_team'),
+    canArchive: can('manage_settings'),
+    canViewStats: can('view_stats'),
     isOwner: role === 'owner',
   }
 }
