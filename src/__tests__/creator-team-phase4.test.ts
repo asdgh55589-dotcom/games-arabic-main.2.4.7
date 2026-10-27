@@ -17,7 +17,7 @@ jest.mock('@/lib/creator-team', () => ({
 jest.mock('@/lib/db', () => ({
   db: {
     user: { findUnique: jest.fn() },
-    teamMembership: { count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
+    teamMembership: { count: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
     teamInvitation: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn() },
     auditLog: { count: jest.fn(), findMany: jest.fn() },
     notification: { create: jest.fn() },
@@ -49,7 +49,7 @@ const mockStudio = requireCreatorStudio as jest.Mock
 const mockOwned = getOwnedTeam as jest.Mock
 const mockDb = db as unknown as {
   user: { findUnique: jest.Mock }
-  teamMembership: { count: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock }
+  teamMembership: { count: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock }
   teamInvitation: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock }
   auditLog: { count: jest.Mock; findMany: jest.Mock }
   notification: { create: jest.Mock }
@@ -83,6 +83,7 @@ describe('member cap (50/team)', () => {
   it('rejects invites when the team is full', async () => {
     mockDb.user.findUnique.mockResolvedValue({ id: 'u-2', username: 'sara', email: 's@t.com' })
     mockDb.teamMembership.findFirst.mockResolvedValue(null)
+  mockDb.teamMembership.findUnique.mockResolvedValue({ id: 'm-owner', userId: 'u-owner', teamId: 't1', role: 'owner', status: 'active' })
     mockDb.teamMembership.count.mockResolvedValue(50)
     mockDb.teamInvitation.findFirst.mockResolvedValue(null)
 

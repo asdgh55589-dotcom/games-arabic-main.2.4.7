@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { fail, forbidden, internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
+import { conflict, fail, forbidden, internalError, notFound, ok, okPaginated, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
 import { getOwnedTeam } from '@/lib/creator-team'
 import { canManageTeam, getTeamRole } from '@/lib/team-permissions'
@@ -38,8 +38,15 @@ export async function GET(req: NextRequest) {
       page: searchParams.get('page') ?? undefined,
       limit: searchParams.get('limit') ?? undefined,
     })
-    const page = parsed.success ? parsed.data.page : 1
     const limit = Math.min(parsed.success ? parsed.data.limit : 24, 100)
+    const offsetParam = searchParams.get('offset')
+    let page = parsed.success ? parsed.data.page : 1
+    let skip = (page - 1) * limit
+    if (offsetParam !== null) {
+      const o = Math.max(0, Number(offsetParam) || 0)
+      skip = o
+      page = Math.floor(o / limit) + 1
+    }
 
     const search = (searchParams.get('search') || '').trim()
     const roleFilter = (searchParams.get('role') || '').trim()
@@ -61,7 +68,7 @@ export async function GET(req: NextRequest) {
       db.teamMembership.findMany({
         where,
         orderBy: { joinedAt: 'asc' },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         include: {
           user: {
@@ -76,9 +83,12 @@ export async function GET(req: NextRequest) {
       userId: m.userId,
       ghostName: m.ghostName,
       ghostEmail: m.ghostEmail,
-      name: m.user?.displayName || m.user?.username || m.name,
+      ghostAvatarUrl: m.ghostAvatarUrl,
+      ghostBio: m.ghostBio,
+      bio: m.bio,
+      name: m.user?.displayName || m.user?.username || m.ghostName || m.name,
       username: m.user?.username ?? null,
-      avatarUrl: m.user?.avatarUrl ?? m.avatarUrl,
+      avatarUrl: m.user?.avatarUrl ?? m.ghostAvatarUrl ?? m.avatarUrl,
       role: m.role,
       status: m.status,
       leftAt: m.leftAt,
@@ -179,6 +189,90 @@ export async function PATCH(req: NextRequest) {
     return ok({ member: updated, message: 'تم تحديث دور العضو' })
   } catch (err) {
     logger.error({ err }, '[creator/team/members PATCH] failed')
+    const { message, status, code } = handlePrismaError(err)
+    return fail(code, message, status)
+  }
+}
+
+// POST /api/creator/team/members — create a ghost (guest) member. Owner/admin/mod.
+export async function POST(req: NextRequest) {
+  const { user, error } = await requireCreatorStudio(req)
+  if (error) return error
+  if (!user) return forbidden('يجب تسجيل الدخول')
+
+  const limited = await rateLimitMiddleware(req, {
+    limit: 30,
+    window: 3600,
+    keyPrefix: `creator:team-members-create:${user.id}`,
+  })
+  if (limited) return limited
+
+  try {
+    const owned = await getOwnedTeam(user.id)
+    if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
+
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'invite')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
+    const body: unknown = await req.json().catch(() => null)
+    const ASSIGNABLE_ROLES = ['admin', 'moderator', 'translator', 'member', 'tester'] as const
+    const schema = z.object({
+      name: z.string().trim().min(1).max(100),
+      email: z.string().trim().email().optional().or(z.literal('')),
+      role: z.enum(ASSIGNABLE_ROLES).optional(),
+      avatarUrl: z.string().trim().url().optional().or(z.literal('')),
+      bio: z.string().max(500).optional(),
+      isGhost: z.boolean().optional(),
+    })
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return validationFail(parsed.error.flatten())
+
+    const { name, email, role, avatarUrl, bio } = parsed.data
+
+    const desiredRole = role && role.trim() ? role.trim() : 'member'
+    if (desiredRole !== 'member' && !canManageTeam(callerRole, 'change_role')) {
+      return forbidden('لا تملك صلاحية تعيين هذا الدور')
+    }
+
+    const memberCount = await db.teamMembership.count({ where: { teamId: owned.id } })
+    if (memberCount >= 50) return conflict('وصل الفريق للحد الأقصى من الأعضاء')
+
+    const created = await db.teamMembership.create({
+      data: {
+        teamId: owned.id,
+        userId: null,
+        name: name.trim(),
+        ghostName: name.trim(),
+        ghostEmail: email && email.trim() ? email.trim() : null,
+        ghostAvatarUrl: avatarUrl && avatarUrl.trim() ? avatarUrl.trim() : null,
+        ghostBio: bio && bio.trim() ? bio.trim() : null,
+        avatarUrl: avatarUrl && avatarUrl.trim() ? avatarUrl.trim() : null,
+        bio: bio && bio.trim() ? bio.trim() : null,
+        role: desiredRole,
+        status: 'active',
+      },
+    })
+
+    try {
+      const { logAction } = await import('@/lib/audit')
+      await logAction({
+        userId: user.id,
+        username: user.username,
+        action: 'GHOST_MEMBER_CREATED',
+        entity: 'TeamMembership',
+        entityId: created.id,
+        details: JSON.stringify({ teamId: owned.id, name: name.trim(), role }),
+        request: req,
+      })
+    } catch (err) {
+      logger.warn({ err }, '[creator/team/members POST] audit log failed')
+    }
+
+    return ok({ member: created, message: 'تم إضافة العضو الضيف' })
+  } catch (err) {
+    logger.error({ err }, '[creator/team/members POST] failed')
     const { message, status, code } = handlePrismaError(err)
     return fail(code, message, status)
   }

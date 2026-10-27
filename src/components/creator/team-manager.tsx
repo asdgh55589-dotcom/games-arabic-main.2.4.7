@@ -13,9 +13,11 @@ import { TeamCustomTabs } from '@/components/creator/team-custom-tabs'
 import { TeamInvites } from '@/components/creator/team-invites'
 import { TeamMods } from '@/components/creator/team-mods'
 import { TeamStats } from '@/components/creator/team-stats'
-import { TeamMembersTable, type TeamMemberRow } from '@/components/creator/team-members-table'
+import { TeamMembersTable } from '@/components/creator/team-members-table'
 import { TeamSettingsForm } from '@/components/creator/team-settings-form'
 import { canManageTeam, isTeamRole, type TeamRole } from '@/lib/team-permissions'
+import { useTabPersistence } from '@/hooks/use-tab-persistence'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 
 interface CreatorTeam {
   id: string
@@ -36,15 +38,15 @@ interface TeamManagerProps {
 }
 
 export function TeamManager({ userRole }: TeamManagerProps) {
+  const { activeTab, changeTab } = useTabPersistence('overview', ['overview','stats','mods','members','invites','activity','settings','contacts','tabs'])
   const canInvite = !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'invite')
   const canManageSettings =
     !userRole || !isTeamRole(userRole) || canManageTeam(userRole, 'manage_settings')
+  const perms = useTeamPermissions(userRole)
   const [team, setTeam] = useState<CreatorTeam | null>(null)
-  const [members, setMembers] = useState<TeamMemberRow[]>([])
   const [membershipCount, setMembershipCount] = useState(0)
   const [followsCount, setFollowsCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [membersLoading, setMembersLoading] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -71,27 +73,9 @@ export function TeamManager({ userRole }: TeamManagerProps) {
     setLoading(false)
   }, [])
 
-  const fetchMembers = useCallback(async () => {
-    setMembersLoading(true)
-    try {
-      const res = await fetch('/api/creator/team/members?limit=100', { cache: 'no-store' })
-      const json = await res.json().catch(() => null)
-      if (res.ok) {
-        setMembers(json.data ?? [])
-      }
-    } catch {
-      // members list is advisory — team header already loaded
-    }
-    setMembersLoading(false)
-  }, [])
-
   useEffect(() => {
     fetchTeam()
   }, [fetchTeam])
-
-  useEffect(() => {
-    if (team) fetchMembers()
-  }, [team, fetchMembers])
 
   if (loading) {
     return (
@@ -107,7 +91,7 @@ export function TeamManager({ userRole }: TeamManagerProps) {
       <Card className="max-w-2xl">
         <CardContent className="space-y-3 p-6">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" onClick={fetchTeam}>
+          <Button variant="outline" onClick={fetchTeam} disabled={loading} aria-disabled={loading} title={loading ? 'جارٍ التحميل' : undefined}>
             إعادة المحاولة
           </Button>
         </CardContent>
@@ -129,7 +113,7 @@ export function TeamManager({ userRole }: TeamManagerProps) {
   }
 
   return (
-    <Tabs defaultValue="overview" className="space-y-6">
+    <Tabs value={activeTab} onValueChange={changeTab} className="space-y-6">
       <TabsList className="flex-wrap">
         <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
         <TabsTrigger value="stats">الإحصائيات</TabsTrigger>
@@ -171,35 +155,34 @@ export function TeamManager({ userRole }: TeamManagerProps) {
       </TabsContent>
 
       <TabsContent value="stats">
-        <TeamStats />
+        <TeamStats userRole={userRole} />
       </TabsContent>
 
       <TabsContent value="mods">
-        <TeamMods />
+        <TeamMods userRole={userRole} />
       </TabsContent>
 
       <TabsContent value="members">
         <TeamMembersTable
-          members={members}
-          loading={membersLoading}
+          userRole={userRole}
           onChanged={() => {
-            fetchMembers()
             fetchTeam()
           }}
         />
       </TabsContent>
 
       <TabsContent value="invites">
-        <TeamInvites />
+        <TeamInvites userRole={userRole} />
       </TabsContent>
 
       <TabsContent value="activity">
-        <TeamActivity />
+        <TeamActivity userRole={userRole} />
       </TabsContent>
       {canManageSettings && (
         <TabsContent value="settings">
           <div className="space-y-4">
             <TeamSettingsForm
+              userRole={userRole}
               initial={{
                 name: team.name,
                 description: team.description,
@@ -210,14 +193,14 @@ export function TeamManager({ userRole }: TeamManagerProps) {
               }}
               onSaved={fetchTeam}
             />
-            <TeamContacts />
-            <TeamCustomTabs />
+            <TeamContacts userRole={userRole} />
+            <TeamCustomTabs userRole={userRole} />
           </div>
         </TabsContent>
       )}
       {canInvite && (
         <TabsContent value="invites">
-          <TeamInvites />
+          <TeamInvites userRole={userRole} />
         </TabsContent>
       )}
     </Tabs>
