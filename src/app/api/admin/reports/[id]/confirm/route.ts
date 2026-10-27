@@ -186,6 +186,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             outcome: 'تم تأكيد البلاغ',
             reason: report.reason,
             resolution,
+            actionMessage: resolution || 'تم تأكيد البلاغ',
           },
         })
       } catch {

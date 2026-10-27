@@ -32,6 +32,12 @@ interface CommentItem {
   isHidden: boolean
   isPinned: boolean
   createdAt: string
+  parentId?: string | null
+  depth?: number
+  canReply?: boolean
+  parent?: { id: string; text: string } | null
+  parentExcerpt?: string | null
+  replies?: CommentItem[]
   user: { id: string; username: string; avatarUrl: string | null; role: string } | null
   mod: { id: string; name: string; slug: string }
 }
@@ -81,6 +87,14 @@ export function CommentsManager() {
     }
     setLoading(false)
   }, [filter, page])
+
+  useEffect(() => {
+    setSelected([])
+  }, [page, filter])
+
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) setPage(totalPages)
+  }, [totalPages, page])
 
   useEffect(() => {
     fetchComments()
@@ -176,6 +190,7 @@ export function CommentsManager() {
         toast({ title: t.replySent })
         setReplyTo(null)
         setReplyText('')
+        fetchComments()
       } else {
         toast({ title: json.error?.message || t.sendFailed, variant: 'destructive' })
       }
@@ -250,7 +265,7 @@ export function CommentsManager() {
       ) : (
         <div className="space-y-3">
           {comments.map((c) => (
-            <Card key={c.id} className={c.isHidden ? 'opacity-60 border-dashed' : ''}>
+            <Card key={c.id} className={c.isHidden ? 'opacity-60 border-dashed' : ''} style={{ marginInlineStart: `${Math.min(c.depth ?? 0, 5) * 16}px` }}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <Checkbox
@@ -311,7 +326,14 @@ export function CommentsManager() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
+                      <>
+                        {c.parentId && (c.parentExcerpt || c.parent?.text) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            رد على: {String(c.parentExcerpt || c.parent?.text || '').slice(0, 80)}
+                          </p>
+                        )}
+                        <p className="text-sm mt-2 whitespace-pre-wrap">{c.text}</p>
+                      </>
                     )}
                     <div className="flex items-center gap-2 mt-3">
                       <Link
@@ -321,14 +343,18 @@ export function CommentsManager() {
                       >
                         {t.viewMod}
                       </Link>
-                      <span className="text-muted-foreground">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
-                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                      >
-                        <Reply className="h-3 w-3" /> {t.reply}
-                      </button>
+                      {((c.depth ?? 0) < 5) && !((c.depth ?? 0) >= 5) && !c.isHidden && c.canReply !== false && (
+                        <>
+                          <span className="text-muted-foreground">•</span>
+                          <button
+                            type="button"
+                            onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
+                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          >
+                            <Reply className="h-3 w-3" /> {t.reply}
+                          </button>
+                        </>
+                      )}
                       {me && c.user?.id === me.id && (
                         <>
                           <span className="text-muted-foreground">•</span>
@@ -436,7 +462,7 @@ export function CommentsManager() {
         </div>
       )}
 
-      {totalPages > 1 && (
+      {totalPages >= 1 && (
         <div className="flex justify-center gap-2">
           <Button
             variant="outline"

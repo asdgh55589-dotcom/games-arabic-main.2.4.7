@@ -27,7 +27,12 @@ export async function GET(req: NextRequest) {
   }
   const filter = filterParsed.value
 
-  const { comments, total } = await creatorListComments(user.id, { filter, page, limit })
+  const sort = searchParams.get('sort') || 'newest'
+  if (!['newest', 'oldest', 'popular'].includes(sort)) {
+    return validationFail('الترتيب غير صالح')
+  }
+
+  const { comments, total } = await creatorListComments(user.id, { filter, page, limit, sort })
 
   return ok({
     comments,

@@ -119,11 +119,11 @@ export function StatsClient() {
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">…</div>
       ) : error ? (
-        <Card>
+        <Card role="alert" aria-live="polite">
           <CardContent className="space-y-3 py-8 text-center">
             <p className="text-sm text-destructive">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchAll}>
-              {t.retry}
+              {t.retry} إعادة المحاولة
             </Button>
           </CardContent>
         </Card>

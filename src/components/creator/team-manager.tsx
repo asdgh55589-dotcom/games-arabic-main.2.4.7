@@ -88,7 +88,7 @@ export function TeamManager({ userRole }: TeamManagerProps) {
 
   if (error) {
     return (
-      <Card className="max-w-2xl">
+      <Card className="max-w-2xl" role="alert" aria-live="polite">
         <CardContent className="space-y-3 p-6">
           <p className="text-sm text-destructive">{error}</p>
           <Button variant="outline" onClick={fetchTeam} disabled={loading} aria-disabled={loading} title={loading ? 'جارٍ التحميل' : undefined}>

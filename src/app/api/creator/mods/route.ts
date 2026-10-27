@@ -282,6 +282,6 @@ export async function POST(req: NextRequest) {
   )
   } catch (err) {
     logger.error('[creator/mods POST] failed:', err)
-    return internalError(err instanceof Error ? err.message : 'Internal server error')
+    return internalError('فشل إنشاء التعريب')
   }
 }

@@ -79,6 +79,7 @@ export function FilesManager({
   const [files, setFiles] = useState<ManagedFile[]>([])
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 1 })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [provider, setProvider] = useState('all')
@@ -89,17 +90,19 @@ export function FilesManager({
   const load = useCallback(
     async (page: number) => {
       setLoading(true)
+      setError(null)
       try {
         const params = new URLSearchParams({ page: String(page), limit: '50' })
         if (query.trim()) params.set('search', query.trim())
         if (provider !== 'all') params.set('provider', provider)
         if (fileType !== 'all') params.set('type', fileType)
         const res = await fetch(`${apiBase}?${params.toString()}`, { credentials: 'include' })
-        const data = await res.json()
+        const data = await res.json().catch(() => null)
         if (!res.ok) throw new Error(data?.error?.message || 'فشل تحميل الملفات')
         setFiles(Array.isArray(data?.data) ? data.data : [])
         if (data?.pagination) setPagination(data.pagination)
-      } catch {
+      } catch (err) {
+        setError('فشل تحميل الملفات')
         toast({ title: 'فشل تحميل الملفات', variant: 'destructive' })
       } finally {
         setLoading(false)
@@ -109,7 +112,7 @@ export function FilesManager({
   )
 
   useEffect(() => {
-    load(1).catch(() => {})
+    void load(1)
   }, [load])
 
   return (
@@ -180,6 +183,13 @@ export function FilesManager({
           {loading ? (
             <div className="grid place-items-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : error ? (
+            <div role="alert" aria-live="polite" className="grid place-items-center gap-3 py-16">
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => load(1)}>
+                إعادة المحاولة
+              </Button>
             </div>
           ) : files.length === 0 ? (
             <div className="grid place-items-center gap-2 py-16 text-muted-foreground">

@@ -71,19 +71,19 @@ export async function GET(req: NextRequest) {
     db.endorsement.count({ where: { ...scope, ...negative, createdAt: inRange } }),
     db.endorsement.count({ where: { ...scope, ...negative, createdAt: inPrev } }),
     db.endorsement.count({ where: { ...scope, ...negative } }),
-    db.commentLike.count({ where: { comment: scope, createdAt: inRange } }),
-    db.commentLike.count({ where: { comment: scope, createdAt: inPrev } }),
-    db.commentLike.count({ where: { comment: scope } }),
+    db.commentLike.count({ where: { comment: scope, value: 'like', createdAt: inRange } }),
+    db.commentLike.count({ where: { comment: scope, value: 'like', createdAt: inPrev } }),
+    db.commentLike.count({ where: { comment: scope, value: 'like' } }),
     db.modRating.count({ where: { ...scope, createdAt: inRange } }),
     db.modRating.count({ where: { ...scope, createdAt: inPrev } }),
     db.modRating.count({ where: scope }),
     db.modRating.aggregate({ where: { ...scope, createdAt: inRange }, _avg: { rating: true } }),
     // التجميع حسب modId + value — نفصل الإعجابات عن الردود السلبية لكل تعريب
     db.endorsement.groupBy({ by: ['modId', 'value'], where: { ...scope, createdAt: inRange }, _count: { _all: true }, orderBy: { _count: { modId: 'desc' } }, take: 200 }),
-    db.commentLike.groupBy({ by: ['commentId'], where: { comment: scope, createdAt: inRange }, _count: { _all: true }, orderBy: { _count: { commentId: 'desc' } }, take: 200 }),
+    db.commentLike.groupBy({ by: ['commentId'], where: { comment: scope, value: 'like', createdAt: inRange }, _count: { _all: true }, orderBy: { _count: { commentId: 'desc' } }, take: 200 }),
     db.modRating.groupBy({ by: ['modId'], where: { ...scope, createdAt: inRange }, _count: { _all: true }, _avg: { rating: true } }),
-    db.endorsement.findMany({ where: { ...scope, createdAt: inRange }, include: { user: { select: { username: true } }, mod: { select: { name: true, slug: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
-    db.commentLike.findMany({ where: { ...scope, createdAt: inRange }, include: { user: { select: { username: true } }, comment: { select: { mod: { select: { name: true, slug: true } } } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
+    db.endorsement.findMany({ where: { ...scope, ...positive, createdAt: inRange }, include: { user: { select: { username: true } }, mod: { select: { name: true, slug: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
+    db.commentLike.findMany({ where: { comment: scope, value: 'like', createdAt: inRange }, include: { user: { select: { username: true } }, comment: { select: { mod: { select: { name: true, slug: true } } } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
     db.modRating.findMany({ where: { ...scope, createdAt: inRange }, include: { user: { select: { username: true } }, mod: { select: { name: true, slug: true } } }, orderBy: { createdAt: 'desc' }, take: 20 }),
     db.mod.findMany({ where: { authorId: user.id }, select: { id: true, name: true, slug: true } }),
   ])
@@ -126,9 +126,9 @@ export async function GET(req: NextRequest) {
 
   const recent = [
     // reaction = التسمية العربية للرد (ممتاز / جيد جداً / يصلح / لا يُنصح)
-    ...recentEndo.map((e) => ({ type: 'endorsement' as const, username: e.user.username, value: null as string | null, reaction: REACTION_LABELS[e.value] ?? 'تأييد', modName: e.mod.name, modSlug: e.mod.slug, createdAt: e.createdAt })),
-    ...recentCl.map((c) => ({ type: 'commentLike' as const, username: c.user.username, value: null as string | null, reaction: null as string | null, modName: c.comment.mod.name, modSlug: c.comment.mod.slug, createdAt: c.createdAt })),
-    ...recentRate.map((r) => ({ type: 'rating' as const, username: r.user.username, value: String(r.rating ?? ''), reaction: null as string | null, modName: r.mod.name, modSlug: r.mod.slug, createdAt: r.createdAt })),
+    ...recentEndo.map((e) => ({ type: 'endorsement' as const, username: e.user.username, value: e.value as string | null, reaction: REACTION_LABELS[e.value] ?? 'تأييد', kind: (e.value === NEGATIVE_REACTION ? 'negative' : 'positive') as 'positive' | 'negative', modName: e.mod.name, modSlug: e.mod.slug, createdAt: e.createdAt })),
+    ...recentCl.map((c) => ({ type: 'commentLike' as const, username: c.user.username, value: 'like' as string | null, reaction: 'إعجاب تعليق' as string | null, kind: 'positive' as 'positive' | 'negative', modName: c.comment.mod.name, modSlug: c.comment.mod.slug, createdAt: c.createdAt })),
+    ...recentRate.map((r) => ({ type: 'rating' as const, username: r.user.username, value: String(r.rating ?? ''), reaction: null as string | null, kind: 'positive' as 'positive' | 'negative', modName: r.mod.name, modSlug: r.mod.slug, createdAt: r.createdAt })),
   ]
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 30)

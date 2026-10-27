@@ -111,6 +111,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       parentDepth = parent.depth
       parentOwnerId = parent.userId
+      if (parent.isHidden) {
+        return notFound('التعليق الأصلي غير موجود')
+      }
       if (parentDepth + 1 > COMMENTS_CONFIG.maxDepth) {
         return validationFail({ formErrors: ['تم الوصول للحد الأقصى من الردود (5 مستويات)'] })
       }

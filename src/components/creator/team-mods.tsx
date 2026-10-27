@@ -58,6 +58,7 @@ export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
   const [mods, setMods] = useState<TeamMod[]>([])
   const [available, setAvailable] = useState<AvailableMod[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -66,6 +67,7 @@ export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
 
   const fetchMods = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' })
       if (q.trim()) params.set('q', q.trim())
@@ -78,10 +80,12 @@ export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
       if (a.ok) {
         setMods(ja.data ?? [])
         setTotalPages(ja.pagination?.totalPages || 1)
+      } else {
+        setError(ja?.error?.message || 'فشل تحميل التعريبات')
       }
       if (b.ok) setAvailable(jb.data?.mods ?? [])
     } catch {
-      // list errors surface via empty state; actions toast individually
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [page, q])
@@ -137,6 +141,12 @@ export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div role="alert" aria-live="polite" className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchMods}>إعادة المحاولة</Button>
+        </div>
+      )}
       <div className="flex gap-2">
         <Input
           value={q}

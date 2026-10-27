@@ -240,6 +240,9 @@ export interface ModCommentType {
   // تُكشف انتقائياً: موجودة في لوحات الإشراف، محذوفة من الـGET العام
   isHidden?: boolean
   depth?: number
+  canReply?: boolean
+  parent?: { id: string; text: string } | null
+  parentExcerpt?: string | null
   createdAt: string | Date
   updatedAt: string | Date
   user?: {

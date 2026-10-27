@@ -735,6 +735,7 @@ export interface StudioDict {
     sortBy: string
     loadError: string
     retry: string
+    negativeReactions: string
   }
   news: {
     title: string

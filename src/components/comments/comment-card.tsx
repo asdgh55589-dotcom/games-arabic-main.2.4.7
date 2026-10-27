@@ -68,7 +68,8 @@ export function CommentCard({
   const liked = likedIds.has(comment.id)
   const isNested = depth > 0
   const avatarSize = isNested ? 'h-8 w-8 min-h-[44px] min-w-[44px]' : 'h-10 w-10'
-  const canReply = depth < COMMENTS_CONFIG.maxDepth
+  const canReply =
+    (comment.canReply ?? true) && depth < COMMENTS_CONFIG.maxDepth && !(depth >= COMMENTS_CONFIG.maxDepth) && !comment.isHidden
   const displayName = comment.user?.username || comment.guestName || 'مستخدم'
   const displayAvatar = comment.user?.avatarUrl || comment.guestAvatar
   const isOwner = currentUser?.id === comment.user?.id

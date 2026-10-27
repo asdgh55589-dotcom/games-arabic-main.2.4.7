@@ -90,6 +90,7 @@ export function TeamContacts({ userRole, teamRole }: TeamContactsProps = {}) {
   const perms = useTeamPermissions(userRole ?? teamRole)
   const [links, setLinks] = useState<ContactRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [type, setType] = useState<string>('website')
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState('')
@@ -98,12 +99,17 @@ export function TeamContacts({ userRole, teamRole }: TeamContactsProps = {}) {
 
   const fetchLinks = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/creator/team/contacts', { cache: 'no-store' })
       const json = await res.json().catch(() => null)
-      if (res.ok) setLinks(json.data?.links ?? [])
+      if (res.ok) {
+        setLinks(json.data?.links ?? [])
+      } else {
+        setError(json?.error?.message || 'فشل تحميل الروابط')
+      }
     } catch {
-      // advisory list — form stays usable
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [])
@@ -183,6 +189,11 @@ export function TeamContacts({ userRole, teamRole }: TeamContactsProps = {}) {
       <CardContent className="space-y-4">
         {loading ? (
           <div className="h-12 animate-pulse rounded-lg bg-muted" aria-busy="true" aria-label="جارٍ التحميل" />
+        ) : error ? (
+          <div role="alert" aria-live="polite" className="space-y-2">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchLinks}>إعادة المحاولة</Button>
+          </div>
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SortableContext items={links.map((l) => l.id)}>

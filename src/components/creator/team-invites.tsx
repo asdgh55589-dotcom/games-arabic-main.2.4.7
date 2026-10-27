@@ -37,17 +37,23 @@ export function TeamInvites({ userRole, teamRole }: TeamInvitesProps = {}) {
   const perms = useTeamPermissions(userRole ?? teamRole)
   const [invites, setInvites] = useState<InviteRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('pending')
   const [revoking, setRevoking] = useState<string | null>(null)
 
   const fetchInvites = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/creator/team/invites?status=${filter}&limit=50`, { cache: 'no-store' })
       const json = await res.json().catch(() => null)
-      if (res.ok) setInvites(json.data ?? [])
+      if (res.ok) {
+        setInvites(json.data ?? [])
+      } else {
+        setError(json?.error?.message || 'فشل تحميل الدعوات')
+      }
     } catch {
-      // list is advisory — form stays usable
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [filter])
@@ -92,6 +98,13 @@ export function TeamInvites({ userRole, teamRole }: TeamInvitesProps = {}) {
           {[0, 1].map((i) => (
             <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
           ))}
+        </div>
+      ) : error ? (
+        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchInvites}>
+            إعادة المحاولة
+          </Button>
         </div>
       ) : invites.length === 0 ? (
         <EmptyState icon="inbox" title="لا توجد دعوات" description="أنشئ دعوة من النموذج أعلاه" />

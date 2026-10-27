@@ -35,6 +35,7 @@ export function RequestsManager() {
   >('open')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -43,6 +44,7 @@ export function RequestsManager() {
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams()
       if (filter !== 'all') params.set('status', filter)
@@ -50,13 +52,15 @@ export function RequestsManager() {
       params.set('page', String(page))
       params.set('limit', '20')
       const res = await fetch(`/api/creator/requests?${params.toString()}`, { cache: 'no-store' })
-      const json = await res.json()
+      const json = await res.json().catch(() => null)
       if (res.ok) {
-        setRequests(json.data?.requests || [])
-        setTotalPages(json.data?.pagination?.totalPages || 1)
+        setRequests(json?.data?.requests || [])
+        setTotalPages(json?.data?.pagination?.totalPages || 1)
+      } else {
+        setError(json?.error?.message || 'فشل تحميل الطلبات')
       }
     } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort requests operation
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [filter, page])
@@ -157,6 +161,11 @@ export function RequestsManager() {
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchRequests}>إعادة المحاولة</Button>
         </div>
       ) : requests.length === 0 ? (
         <Card>

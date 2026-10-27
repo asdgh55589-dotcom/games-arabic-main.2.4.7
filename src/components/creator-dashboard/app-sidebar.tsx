@@ -31,6 +31,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { usePathname } from "next/navigation"
+import { useSidebar } from "@/components/ui/sidebar"
 import { useStudioLanguage } from "@/lib/studio-i18n/context"
 
 export function AppSidebar({
@@ -40,6 +42,11 @@ export function AppSidebar({
   user?: { name: string; email: string; avatar: string; role?: string }
 }) {
   const { dict } = useStudioLanguage()
+  const pathname = usePathname()
+  const { setOpenMobile } = useSidebar()
+  React.useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
 
   const navMain = [
     { title: dict.nav.dashboard, url: "/creator", icon: LayoutDashboardIcon },

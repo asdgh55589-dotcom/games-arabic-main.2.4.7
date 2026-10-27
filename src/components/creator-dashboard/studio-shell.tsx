@@ -2,6 +2,7 @@
 
 import { AppSidebar } from '@/components/creator-dashboard/app-sidebar'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SiteHeader } from '@/components/creator-dashboard/site-header'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
 /**
@@ -28,6 +29,7 @@ export function StudioShell({
         user={user}
       />
       <SidebarInset>
+        <SiteHeader />
         <main className="flex-1 p-4 md:p-6 bg-background">{children}</main>
       </SidebarInset>
     </SidebarProvider>

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { timeAgo } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import type { StudioDict } from '@/lib/studio-i18n/types'
@@ -43,28 +45,44 @@ function actionLabel(action: string | null, t: StudioDict['reports']): string {
   return typeof t[key] === 'string' ? (t[key] as string) : action
 }
 
+function appealStatusLabel(status: string): string {
+  if (status === 'reopened') return 'appealed'
+  if (status === 'resolved') return 'upheld'
+  return 'pending'
+}
+
 export function ReportsClient() {
   const { dict, locale } = useStudioLanguage()
   const t = dict.reports
   const [status, setStatus] = useState<string>('all')
   const [rows, setRows] = useState<ReportItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
+  const [appealingId, setAppealingId] = useState<string | null>(null)
+  const [appealReason, setAppealReason] = useState('')
+  const [appealEvidence, setAppealEvidence] = useState('')
+  const [submittingAppeal, setSubmittingAppeal] = useState(false)
+  const [appealMessage, setAppealMessage] = useState<string | null>(null)
+
   const fetchReports = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' })
       if (status !== 'all') params.set('status', status)
       const res = await fetch(`/api/creator/reports?${params.toString()}`, { cache: 'no-store' })
-      const json = await res.json()
+      const json = await res.json().catch(() => null)
       if (res.ok) {
-        setRows(json.data?.reports || [])
-        setTotalPages(json.data?.pagination?.totalPages || 1)
+        setRows(json?.data?.reports || [])
+        setTotalPages(json?.data?.pagination?.totalPages || 1)
+      } else {
+        setError(json?.error?.message || 'فشل تحميل البلاغات')
       }
     } catch {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: best-effort reports operation
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [status, page])
@@ -72,6 +90,31 @@ export function ReportsClient() {
   useEffect(() => {
     fetchReports()
   }, [fetchReports])
+
+  const submitAppeal = useCallback(async (id: string) => {
+    setSubmittingAppeal(true)
+    setAppealMessage(null)
+    try {
+      const res = await fetch(`/api/creator/reports/${id}/appeal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: appealReason, evidenceUrl: appealEvidence || undefined, proofUrl: appealEvidence || undefined }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setAppealMessage('تم إرسال الطعن — أُعيد فتح البلاغ للمراجعة')
+        setAppealingId(null)
+        setAppealReason('')
+        setAppealEvidence('')
+        fetchReports()
+      } else {
+        setAppealMessage(json?.error?.message || 'فشل إرسال الطعن')
+      }
+    } catch {
+      setAppealMessage('فشل إرسال الطعن')
+    }
+    setSubmittingAppeal(false)
+  }, [appealReason, appealEvidence, fetchReports])
 
   return (
     <div className="space-y-4">
@@ -93,12 +136,19 @@ export function ReportsClient() {
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">…</div>
+      ) : error ? (
+        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchReports}>إعادة المحاولة</Button>
+        </div>
       ) : rows.length === 0 ? (
         <EmptyState icon="file" title={t.empty} description={t.emptyDesc} />
       ) : (
         <div className="space-y-3">
           {rows.map((r) => {
             const outcome = r.latest?.resolution || r.resolution
+            const isRejected = r.status === 'rejected'
+            const appealStatus = appealStatusLabel(r.status)
             return (
               <Card key={r.id}>
                 <CardContent className="p-4">
@@ -111,6 +161,9 @@ export function ReportsClient() {
                     </Badge>
                     <Badge variant={r.status === 'resolved' ? 'default' : 'outline'} className="text-xs">
                       {statusLabel(r.status, t)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {appealStatus === 'pending' ? 'pending' : appealStatus === 'appealed' ? 'appealed' : 'upheld'}
                     </Badge>
                     <span className="text-xs text-muted-foreground ms-auto">
                       {timeAgo(r.createdAt, locale)}
@@ -141,11 +194,60 @@ export function ReportsClient() {
                       {actionLabel(r.latest?.action ?? r.actionTaken, t)}
                     </div>
                   </div>
+
+                  {r.latest && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <span>appeal history: {r.latest.toStatus} — {r.latest.resolution}</span>
+                    </div>
+                  )}
+
+                  {isRejected && (
+                    <div className="mt-3">
+                      {appealingId === r.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="سبب الطعن"
+                            value={appealReason}
+                            onChange={(e) => setAppealReason(e.target.value)}
+                          />
+                          <Input
+                            placeholder="رابط دليل (اختياري)"
+                            value={appealEvidence}
+                            onChange={(e) => setAppealEvidence(e.target.value)}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              disabled={submittingAppeal}
+                              onClick={() => submitAppeal(r.id)}
+                            >
+                              استئناف
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setAppealingId(null)}
+                            >
+                              إلغاء
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => setAppealingId(r.id)}>
+                          استئناف
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )
           })}
         </div>
+      )}
+
+      {appealMessage && (
+        <div className="text-sm text-muted-foreground">{appealMessage}</div>
       )}
 
       {totalPages > 1 && (

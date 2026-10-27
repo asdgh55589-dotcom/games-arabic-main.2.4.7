@@ -94,6 +94,10 @@ export function useComments(modSlug: string) {
 
   const totalPages = Math.max(1, Math.ceil(totalRoots / COMMENTS_CONFIG.pageSize))
 
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) setPage(totalPages)
+  }, [totalPages, page])
+
   const goNext = () => {
     if (!nextCursor) return
     setCursors((c) => [...c, nextCursor])
