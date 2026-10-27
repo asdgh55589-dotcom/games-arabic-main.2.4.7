@@ -5,6 +5,7 @@ import { Button } from '@/components/official-ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { reportError } from '@/lib/error-reporting'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 import { timeAgo } from '@/lib/format'
 
 interface ActivityRow {
@@ -25,7 +26,13 @@ const ACTION_LABELS: Record<string, string> = {
   INVITE_DECLINED: 'رفض دعوة',
 }
 
-export function TeamActivity() {
+interface TeamActivityProps {
+  userRole?: string | null
+  teamRole?: string | null
+}
+
+export function TeamActivity({ userRole, teamRole }: TeamActivityProps = {}) {
+  const perms = useTeamPermissions(userRole ?? teamRole)
   const [rows, setRows] = useState<ActivityRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +77,7 @@ export function TeamActivity() {
       <Card>
         <CardContent className="space-y-3 p-6">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchActivity}>
+          <Button variant="outline" size="sm" onClick={fetchActivity} aria-label="إعادة المحاولة" aria-disabled={false}>
             إعادة المحاولة
           </Button>
         </CardContent>

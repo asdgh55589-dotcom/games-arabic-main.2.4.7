@@ -68,6 +68,11 @@ export async function POST(req: NextRequest) {
     const owned = await getOwnedTeam(user.id)
     if (!owned) return notFound('لا يوجد فريق بعد — أنشئ فريقك الأول')
 
+    const callerRole = await getTeamRole(owned.id, user.id)
+    if (!callerRole || !canManageTeam(callerRole, 'manage_contacts')) {
+      return forbidden('لا تملك صلاحية تنفيذ هذا الإجراء')
+    }
+
     const body: unknown = await req.json().catch(() => null)
     const parsed = ContactLinkCreateSchema.safeParse(body)
     if (!parsed.success) {

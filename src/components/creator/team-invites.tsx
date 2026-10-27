@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
 import { InviteForm } from '@/components/creator/invite-form'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 
 interface InviteRow {
   id: string
@@ -26,8 +27,14 @@ const STATUS_LABELS: Record<string, string> = {
   expired: 'منتهية',
 }
 
-export function TeamInvites() {
+interface TeamInvitesProps {
+  userRole?: string | null
+  teamRole?: string | null
+}
+
+export function TeamInvites({ userRole, teamRole }: TeamInvitesProps = {}) {
   const { toast } = useToast()
+  const perms = useTeamPermissions(userRole ?? teamRole)
   const [invites, setInvites] = useState<InviteRow[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
@@ -70,7 +77,7 @@ export function TeamInvites() {
 
   return (
     <div className="space-y-4">
-      <InviteForm onCreated={fetchInvites} />
+      {perms.canInvite && <InviteForm onCreated={fetchInvites} />}
 
       <div className="flex gap-2">
         {['pending', 'accepted', 'declined', 'revoked', 'expired', 'all'].map((s) => (
@@ -108,7 +115,9 @@ export function TeamInvites() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={revoking === inv.id}
+                    disabled={!perms.canInvite || revoking === inv.id}
+                    aria-disabled={!perms.canInvite}
+                    title={!perms.canInvite ? 'ليس لديك صلاحية' : undefined}
                     onClick={() => revoke(inv.id)}
                   >
                     {revoking === inv.id ? '...' : 'إلغاء'}

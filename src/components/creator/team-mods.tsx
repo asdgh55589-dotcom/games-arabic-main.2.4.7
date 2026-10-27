@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
+import { useTeamPermissions } from '@/hooks/use-team-permissions'
 
 interface TeamMod {
   id: string
@@ -46,8 +47,14 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: 'مرفوض',
 }
 
-export function TeamMods() {
+interface TeamModsProps {
+  userRole?: string | null
+  teamRole?: string | null
+}
+
+export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
   const { toast } = useToast()
+  const perms = useTeamPermissions(userRole ?? teamRole)
   const [mods, setMods] = useState<TeamMod[]>([])
   const [available, setAvailable] = useState<AvailableMod[]>([])
   const [loading, setLoading] = useState(true)
@@ -170,7 +177,7 @@ export function TeamMods() {
                 </p>
               </div>
               <Badge variant="secondary">{STATUS_LABELS[m.workflowStatus] ?? m.workflowStatus}</Badge>
-              <Button variant="outline" size="sm" disabled={actionId === m.id} onClick={() => setPendingUnlink(m)}>
+              <Button variant="outline" size="sm" disabled={!perms.canLinkMods || actionId === m.id} aria-disabled={!perms.canLinkMods} title={!perms.canLinkMods ? 'ليس لديك صلاحية' : undefined} onClick={() => setPendingUnlink(m)}>
                 إلغاء الربط
               </Button>
             </div>
@@ -201,7 +208,7 @@ export function TeamMods() {
           {available.map((m) => (
             <div key={m.id} className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40">
               <span className="min-w-0 flex-1 truncate text-sm">{m.name}</span>
-              <Button size="sm" disabled={actionId === m.id} onClick={() => link(m.id)}>
+              <Button size="sm" disabled={!perms.canLinkMods || actionId === m.id} aria-disabled={!perms.canLinkMods} title={!perms.canLinkMods ? 'ليس لديك صلاحية' : undefined} onClick={() => link(m.id)}>
                 {actionId === m.id ? '...' : 'ربط'}
               </Button>
             </div>
