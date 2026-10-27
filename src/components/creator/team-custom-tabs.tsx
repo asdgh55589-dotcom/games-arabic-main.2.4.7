@@ -78,6 +78,7 @@ export function TeamCustomTabs({ userRole, teamRole }: TeamCustomTabsProps = {})
   const perms = useTeamPermissions(userRole ?? teamRole)
   const [tabs, setTabs] = useState<TabRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
@@ -85,13 +86,18 @@ export function TeamCustomTabs({ userRole, teamRole }: TeamCustomTabsProps = {})
 
   const fetchTabs = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/creator/team/custom-tabs', { cache: 'no-store' })
       const json = await res.json().catch(() => null)
-      if (res.ok) setTabs(json.data?.tabs ?? [])
+      if (res.ok) {
+        setTabs(json.data?.tabs ?? [])
+      } else {
+        setError(json?.error?.message || 'فشل تحميل التبويبات')
+      }
     } catch (err) {
-      // advisory list — form stays usable, but log the failure
       reportError(err, { route: 'creator-team-tabs', action: 'load' })
+      setError('تعذر الاتصال — حاول مجدداً')
     }
     setLoading(false)
   }, [])
@@ -196,6 +202,11 @@ export function TeamCustomTabs({ userRole, teamRole }: TeamCustomTabsProps = {})
       <CardContent className="space-y-4">
         {loading ? (
           <div className="h-12 animate-pulse rounded-lg bg-muted" aria-busy="true" aria-label="جارٍ التحميل" />
+        ) : error ? (
+          <div role="alert" aria-live="polite" className="space-y-2">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchTabs}>إعادة المحاولة</Button>
+          </div>
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SortableContext items={tabs.map((t) => t.id)}>

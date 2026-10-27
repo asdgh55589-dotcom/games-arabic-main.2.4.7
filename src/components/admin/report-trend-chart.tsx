@@ -18,7 +18,7 @@ export function ReportTrendChart() {
         if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then((data) => setTrend(data.monthlyTrend || []))
+      .then((data) => setTrend(data.data?.monthlyTrend || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

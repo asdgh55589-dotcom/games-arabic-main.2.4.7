@@ -42,6 +42,10 @@ export class SendReportConfirmedNotification {
         reason: context.reason,
         action: context.action,
         resolution: context.resolution,
+        actionMessage:
+          context.resolution ||
+          (context.action ? `${context.action}` : context.reason) ||
+          'تم تأكيد البلاغ',
       },
     })
 
@@ -59,6 +63,9 @@ export class SendReportConfirmedNotification {
       templateVariables: {
         targetTitle: context.targetTitle,
         outcome: 'تم تأكيد البلاغ',
+        actionMessage:
+          context.resolution ||
+          'تم تأكيد البلاغ',
       },
     })
   }

@@ -708,6 +708,7 @@ export const en: StudioDict = {
     sortBy: 'Sort by',
     loadError: 'Failed to load data — check your connection',
     retry: 'Retry',
+    negativeReactions: 'Dislikes',
   },
   news: {
     title: 'News',

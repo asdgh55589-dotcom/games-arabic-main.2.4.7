@@ -34,6 +34,7 @@ export class SendReportRejectedNotification {
         targetTitle: context.targetTitle,
         outcome: 'تم رفض البلاغ',
         resolution: context.resolution,
+        actionMessage: context.resolution || 'تم رفض البلاغ',
       },
     })
   }

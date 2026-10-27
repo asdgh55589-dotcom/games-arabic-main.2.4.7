@@ -5,7 +5,6 @@ import Link from 'next/link'
 import * as React from 'react'
 import { DataTable, schema } from '@/components/creator-dashboard/data-table'
 import { SectionCards } from '@/components/creator-dashboard/section-cards'
-import { SiteHeader } from '@/components/creator-dashboard/site-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/auth-context'
@@ -94,7 +93,6 @@ export default function CreatorDashboard() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <SiteHeader />
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-3 py-4 md:gap-4 md:py-6">
         <SectionCards />

@@ -5,7 +5,6 @@
 
 import { useState } from 'react'
 import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
-import { SiteHeader } from '@/components/creator-dashboard/site-header'
 import { DocumentationPanel, DocsNav } from '@/components/docs/documentation-panel'
 import { ALL_DOCS } from '@/lib/docs/mod-form-docs'
 
@@ -15,7 +14,6 @@ export default function CreatorDocsPage() {
 
   return (
     <>
-      <SiteHeader />
       <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
         {/* Page Header */}
         <StudioPageHeader

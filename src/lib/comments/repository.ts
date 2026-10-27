@@ -17,6 +17,7 @@ export const commentSelect = {
   likes: true,
   isPinned: true,
   isEdited: true,
+  depth: true,
   createdAt: true,
   updatedAt: true,
 } as const
@@ -110,7 +111,7 @@ export async function listVisibleComments(
   const commentMap = new Map<string, (typeof all)[number] & { replies: typeof all }>()
   const trees: ((typeof all)[number] & { replies: typeof all })[] = []
   const order = new Map(pageIds.map((id, i) => [id, i]))
-  for (const c of all) commentMap.set(c.id, { ...c, replies: [] })
+  for (const c of all) commentMap.set(c.id, { ...c, depth: c.depth ?? 0, canReply: (c.depth ?? 0) < COMMENTS_CONFIG.maxDepth, replies: [] } as any)
   for (const c of all) {
     const node = commentMap.get(c.id)!
     if (c.parentId) {
@@ -140,7 +141,7 @@ export async function listVisibleComments(
 export async function getParentForReply(parentId: string) {
   return db.modComment.findUnique({
     where: { id: parentId },
-    select: { id: true, modId: true, depth: true, userId: true },
+    select: { id: true, modId: true, depth: true, userId: true, isHidden: true },
   })
 }
 
@@ -361,27 +362,43 @@ export async function getCommentOwner(id: string) {
 
 export async function creatorListComments(
   authorId: string,
-  opts: { filter: string; page: number; limit: number },
+  opts: { filter: string; page: number; limit: number; sort?: string },
 ) {
   const { filter, page, limit } = opts
+  const sort = opts.sort || 'newest'
   const skip = (page - 1) * limit
   const where: Record<string, unknown> = { mod: { authorId } }
   if (filter === 'visible') where.isHidden = false
   else if (filter === 'hidden') where.isHidden = true
+  const orderBy: any =
+    sort === 'oldest'
+      ? { createdAt: 'asc' }
+      : sort === 'popular'
+        ? { likes: 'desc' }
+        : { createdAt: 'desc' }
   const [comments, total] = await Promise.all([
     db.modComment.findMany({
       where,
       include: {
         user: { select: { id: true, username: true, avatarUrl: true, role: true } },
         mod: { select: { id: true, name: true, slug: true } },
+        parent: { select: { id: true, text: true } },
+        replies: { select: { id: true, text: true, parentId: true, depth: true, createdAt: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip,
       take: limit,
     }),
     db.modComment.count({ where }),
   ])
-  return { comments, total }
+  const mapped = (comments as any[]).map((c: any) => ({
+    ...c,
+    depth: c.depth ?? 0,
+    canReply: (c.depth ?? 0) < 5 && !c.isHidden,
+    replies: c.replies ?? [],
+    parentExcerpt: c.parent?.text ? String(c.parent.text).slice(0, 80) : null,
+  }))
+  return { comments: mapped, total }
 }
 
 export async function creatorSetHidden(id: string, isHidden: boolean) {

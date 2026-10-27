@@ -706,6 +706,7 @@ export const ar: StudioDict = {
     sortBy: 'ترتيب حسب',
     loadError: 'تعذّر تحميل البيانات — تحقق من الاتصال',
     retry: 'إعادة المحاولة',
+    negativeReactions: 'عدم إعجاب',
   },
   news: {
     title: 'الأخبار',

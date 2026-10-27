@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart, MessageSquareHeart, Star, TrendingUp } from 'lucide-react'
+import { Flame, Heart, MessageSquareHeart, Sparkles, Star, ThumbsDown, ThumbsUp, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,7 @@ interface PerMod {
   name: string
   slug: string
   endorsements: number
+  negativeReactions: number
   commentLikes: number
   ratings: number
   avgRating: number | null
@@ -33,6 +34,8 @@ interface RecentItem {
   type: 'endorsement' | 'commentLike' | 'rating'
   username: string
   value: string | null
+  reaction: string | null
+  kind?: 'positive' | 'negative'
   modName: string
   modSlug: string
   createdAt: string
@@ -44,6 +47,9 @@ interface LikesData {
     endorsements: number
     endorsementsDelta: number
     endorsementsTotal: number
+    negativeReactions: number
+    negativeReactionsDelta: number
+    negativeReactionsTotal: number
     commentLikes: number
     commentLikesDelta: number
     commentLikesTotal: number
@@ -77,6 +83,7 @@ export function LikesClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('total')
+  const [reactionFilter, setReactionFilter] = useState<'all' | 'positive' | 'negative'>('all')
 
   const fetchLikes = useCallback(async () => {
     setLoading(true)
@@ -106,6 +113,9 @@ export function LikesClient() {
           ? m.ratings
           : m.endorsements + m.commentLikes + m.ratings
   const mods = [...(data?.mods ?? [])].sort((a, b) => score(b) - score(a))
+  const filteredRecent = (data?.recent ?? []).filter((r) =>
+    reactionFilter === 'all' ? true : (r.kind ?? 'positive') === reactionFilter,
+  )
   const s = data?.summary
 
   return (
@@ -145,15 +155,15 @@ export function LikesClient() {
           ))}
         </div>
       ) : error ? (
-        <Card>
+        <Card role="alert" aria-live="polite">
           <CardContent className="space-y-3 py-8 text-center">
             <p className="text-sm text-destructive">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchLikes}>
-              {t.retry}
+              {t.retry} إعادة المحاولة
             </Button>
           </CardContent>
         </Card>
-      ) : !s || (s.endorsements === 0 && s.commentLikes === 0 && s.ratings === 0) ? (
+      ) : !s || (s.endorsements === 0 && s.commentLikes === 0 && s.ratings === 0 && s.negativeReactions === 0) ? (
         <EmptyState icon="heart" title={t.empty} description={t.subtitle} />
       ) : (
         <>
@@ -195,6 +205,17 @@ export function LikesClient() {
                 <div className="text-xs">
                   <Delta value={s.ratingsDelta} /> • {t.avgRating}: {s.avgRating ?? '—'}
                 </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <ThumbsDown className="h-4 w-4" /> عدم إعجاب
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatNumber(s.negativeReactions)}</div>
+                <div className="text-xs">عدم إعجاب: {formatNumber(s.negativeReactions)}</div>
               </CardContent>
             </Card>
             <Card>
@@ -261,14 +282,37 @@ export function LikesClient() {
               <CardTitle className="text-base">{t.recent}</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {(['all', 'positive', 'negative'] as const).map((f) => (
+                  <Button
+                    key={f}
+                    variant={reactionFilter === f ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setReactionFilter(f)}
+                  >
+                    {f === 'all' ? 'الكل' : f === 'positive' ? 'موجبة' : 'سلبية'}
+                  </Button>
+                ))}
+              </div>
               <div className="space-y-2">
-                {(data?.recent ?? []).map((r, i) => (
+                {filteredRecent.map((r, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
+                    {r.type === 'endorsement' ? (
+                      r.value === 'thumbsdown' ? <ThumbsDown className="h-4 w-4 text-destructive" /> :
+                      r.value === 'fire' ? <Flame className="h-4 w-4 text-orange-500" /> :
+                      r.value === 'sparkle' ? <Sparkles className="h-4 w-4 text-amber-500" /> :
+                      <ThumbsUp className="h-4 w-4 text-green-600" />
+                    ) : r.type === 'commentLike' ? (
+                      <Heart className="h-4 w-4 text-pink-500" />
+                    ) : (
+                      <Star className="h-4 w-4 text-yellow-500" />
+                    )}
                     <Badge variant="outline" className="text-xs">
                       {r.type === 'endorsement' ? t.endorsements : r.type === 'commentLike' ? t.commentLikes : t.ratings}
                     </Badge>
                     <bdi className="font-medium">{r.username}</bdi>
-                    {r.value && <span className="text-amber-500">{t.avgRating}: {r.value}</span>}
+                    {r.reaction && <span className="text-xs text-muted-foreground">{r.reaction}</span>}
+                    {r.value && r.type === 'rating' && <span className="text-amber-500">{t.avgRating}: {r.value}</span>}
                     <span className="text-muted-foreground">{r.modName}</span>
                     <span className="text-xs text-muted-foreground ms-auto">
                       {timeAgo(r.createdAt, locale)}

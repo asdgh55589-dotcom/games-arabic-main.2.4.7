@@ -30,6 +30,7 @@ export class SendAutoWarningNotification {
         action: 'تحذير رسمي',
         reason: context.reason,
         resolution: context.resolution,
+        actionMessage: context.resolution || `تحذير: ${context.reason}`,
       },
     })
   }

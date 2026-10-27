@@ -827,6 +827,7 @@ model TeamMembership {
   @@unique([teamId, userId])
   @@index([userId])
   @@index([teamId, status])
+  @@index([teamId, joinedAt])
 }
 
 model TeamContactLink {
@@ -879,6 +880,7 @@ model TeamInvitation {
 
   @@index([teamId])
   @@index([teamId, status])
+  @@index([teamId, createdAt])
   @@index([invitedUserId])
   @@index([status, expiresAt])
 }
@@ -1071,6 +1073,8 @@ model ModRequest {
   updatedAt       DateTime  @updatedAt
 
   @@index([status])
+  @@index([status, createdAt])
+  @@index([status, interestCount, createdAt])
   @@index([userId])
   @@index([acceptedBy])
   @@index([gameName])
@@ -1711,6 +1715,7 @@ model ModRating {
 
   @@unique([modId, userId])
   @@index([modId])
+  @@index([modId, createdAt])
   @@index([userId])
   @@index([createdAt])
 }
@@ -1940,6 +1945,7 @@ model UploadAsset {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([userId, createdAt])
   @@index([modId])
   @@index([provider])
   @@index([createdAt])

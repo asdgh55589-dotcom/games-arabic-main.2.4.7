@@ -166,7 +166,7 @@ function columnLabel(columnId: string, dict: StudioDict): string {
     case "header":
       return dict.table.name
     case "type":
-      return dict.table.sectionType
+      return dict.mods.game
     case "status":
       return dict.table.status
     case "target":
@@ -223,7 +223,7 @@ function useColumns(
     },
     {
       accessorKey: "type",
-      header: dict.table.sectionType,
+      header: dict.mods.game,
       cell: ({ row }) => (
         <div className="w-32">
           <Badge variant="outline" className="px-1.5 text-muted-foreground">
@@ -237,6 +237,7 @@ function useColumns(
       header: dict.table.status,
       cell: ({ row }) => {
         const isPublished = row.original.status === dict.status.publishedKey
+        const isInProgress = row.original.status === dict.status.inProgressKey
         return (
           <Badge
             variant="outline"
@@ -244,10 +245,14 @@ function useColumns(
           >
             {isPublished ? (
               <CheckCircle2Icon className="text-green-500" />
-            ) : (
+            ) : isInProgress ? (
               <LoaderIcon className="animate-spin" />
-            )}
-            {isPublished ? dict.status.published : dict.status.inProgress}
+            ) : null}
+            {isPublished
+              ? dict.status.published
+              : isInProgress
+                ? dict.status.inProgress
+                : row.original.status}
           </Badge>
         )
       },
@@ -499,7 +504,7 @@ export function DataTable({
     }
     const header = [
       dict.table.name,
-      dict.table.sectionType,
+      dict.mods.game,
       dict.table.status,
       dict.table.target,
       dict.table.limit,
@@ -874,7 +879,7 @@ function TableCellViewer({ item }: { item: TableRow }) {
         <SheetHeader className="gap-1">
           <SheetTitle>{item.header}</SheetTitle>
           <SheetDescription>
-            {item.type} • {isPublished ? dict.status.published : dict.status.inProgress}
+            {item.type} • {isPublished ? dict.status.published : item.status === dict.status.inProgressKey ? dict.status.inProgress : item.status}
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">

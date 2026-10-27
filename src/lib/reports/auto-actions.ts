@@ -1,4 +1,3 @@
-import { getUseCases } from '@/application/use-cases/factory'
 import { db } from '@/lib/db'
 import { syncGameCounts } from '@/lib/game-helpers'
 import { logger } from '@/lib/logger'
@@ -79,21 +78,9 @@ export async function executeAutoAction(
       },
     })
 
-    try {
-      const useCases = getUseCases()
-      await useCases.sendAutoWarning.execute({
-        targetUserId: userId,
-        reportId,
-        reason: resolution,
-      })
-    } catch (err) {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: warning delivery is best-effort — the warn userAction row above is already committed
-      // intentional: expected+handled (moderation state committed; notify is advisory)
-      logger.warn(
-        { event: 'auto_action_warning_failed', action: 'warned', err },
-        'auto-action warning notify failed',
-      )
-    }
+    // Consolidated: the detailed confirmed notification is sent by the
+    // confirm route (sendReportConfirmed), so no separate auto-warning
+    // notification is emitted here to avoid duplicate/lost target notices.
   }
 
   if (action === 'content_hidden' && report.targetModId) {
@@ -212,22 +199,9 @@ export async function executeAutoAction(
       },
     })
 
-    try {
-      const useCases = getUseCases()
-      await useCases.sendAutoBan.execute({
-        targetUserId: userId,
-        reportId,
-        banType: action === 'temp_ban' ? 'temp_ban' : 'perm_ban',
-        durationDays: action === 'temp_ban' ? banDuration || 7 : undefined,
-      })
-    } catch (err) {
-      // biome-ignore lint/suspicious/noEmptyBlockStatements: ban notify is best-effort — the ban + userAction rows above are already committed
-      // intentional: expected+handled (enforcement committed; notify is advisory)
-      logger.warn(
-        { event: 'auto_action_ban_notify_failed', action, err },
-        'auto-action ban notify failed',
-      )
-    }
+    // Consolidated: the detailed confirmed notification is sent by the
+    // confirm route (sendReportConfirmed), so no separate auto-ban
+    // notification is emitted here to avoid duplicate/lost target notices.
   }
 
   try {

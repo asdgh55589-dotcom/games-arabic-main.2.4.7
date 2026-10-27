@@ -34,6 +34,7 @@ export class SendAutoBanNotification {
         action: title,
         banType: context.banType,
         durationDays: context.durationDays,
+        actionMessage: title,
       },
     })
   }

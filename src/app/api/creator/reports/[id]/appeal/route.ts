@@ -20,6 +20,8 @@ const AppealSchema = z
       .trim()
       .min(10, 'سبب الطعن مطلوب (10 أحرف على الأقل)')
       .max(1000, 'سبب الطعن طويل جداً (الحد الأقصى 1000 حرف)'),
+    evidenceUrl: z.string().trim().url().optional(),
+    proofUrl: z.string().trim().url().optional(),
   })
   .strict()
 
@@ -104,6 +106,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       })
     } catch (err) {
       logger.warn({ err }, '[creator/reports appeal] audit log failed')
+    }
+
+    // Notify admins/managers/owners about the appeal (best-effort).
+    try {
+      const admins = await db.user.findMany({
+        where: { role: { in: ['admin', 'manager', 'owner'] } },
+        select: { id: true },
+      })
+      const { getUseCases } = await import('@/application/use-cases/factory')
+      await getUseCases().sendAdminAlert.execute({
+        adminUserIds: admins.map((a) => a.id),
+        title: 'طعن على بلاغ',
+        message: `تم تقديم طعن على البلاغ ${report.id}. السبب: ${parsed.data.reason}. رابط: /admin/reports/${report.id}`,
+      })
+    } catch (err) {
+      logger.warn({ err }, '[creator/reports appeal] admin notification failed')
     }
 
     return ok({ appeal: { reportId: report.id, status: 'reopened' }, message: 'تم إرسال الطعن — أُعيد فتح البلاغ للمراجعة' }, { status: 201 })

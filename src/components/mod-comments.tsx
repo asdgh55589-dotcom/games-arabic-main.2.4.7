@@ -179,7 +179,7 @@ export function ModComments({ modSlug, modOwnerName }: ModCommentsProps) {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPages >= 1 && (
             <div className="mt-6 flex items-center justify-center gap-3">
               <Button
                 variant="outline"
