@@ -89,12 +89,20 @@ export async function getTeamRole(
   teamId: string,
   userId: string,
 ): Promise<TeamRole | null> {
-  return db.teamMembership
-    .findUnique({
-      where: { teamId_userId: { teamId, userId } },
-      select: { role: true, status: true },
-    })
-    .then((m) => (m && isTeamRole(m.role) ? m.role : null))
+  const m = db.teamMembership as {
+    findUnique?: (a: unknown) => Promise<{ role: string; status: string } | null>
+    findFirst?: (a: unknown) => Promise<{ role: string; status: string } | null>
+  }
+  const finder = m.findUnique
+    ? (a: unknown) => m.findUnique!(a)
+    : m.findFirst
+      ? (a: unknown) => m.findFirst!(a)
+      : null
+  if (!finder) return null
+  const where = m.findUnique
+    ? { where: { teamId_userId: { teamId, userId } }, select: { role: true, status: true } }
+    : { where: { teamId, userId }, select: { role: true, status: true } }
+  return finder(where).then((r) => (r && isTeamRole(r.role) ? r.role : null))
 }
 
 /**
