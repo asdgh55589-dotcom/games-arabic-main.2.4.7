@@ -3,6 +3,7 @@ import { getUseCases } from '@/application/use-cases/factory'
 import { fail, internalError, ok, rateLimited, unauthorized, validationFail } from '@/lib/api-response'
 import { getOptionalSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma, ReportPriority as PrismaReportPriority, ReportReason as PrismaReportReason, ReportType as PrismaReportType } from '@prisma/client'
 import { reportError } from '@/lib/error-reporting'
 import {
   cacheIdempotentResponse,
@@ -79,14 +80,14 @@ export async function POST(req: NextRequest) {
     const report = await db.report.create({
       data: {
         reporterId: neonUser.id,
-        targetType: targetType as any,
+        targetType: targetType as PrismaReportType,
         targetModId: targetType === 'mod' ? targetId : null,
         targetCommentId: targetType === 'comment' ? targetId : null,
         targetUserId: targetType === 'user' ? targetId : null,
-        reason: reason as any,
-        priority: priority as any,
+        reason: reason as PrismaReportReason,
+        priority: priority as PrismaReportPriority,
         description: description || null,
-        evidenceUrls: (evValidation.urls.length > 0 ? evValidation.urls : null) as any,
+        evidenceUrls: (evValidation.urls.length > 0 ? evValidation.urls : null) as Prisma.InputJsonValue,
         ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
       },
     })

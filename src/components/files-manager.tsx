@@ -4,6 +4,7 @@ import { FileDown, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -185,12 +186,7 @@ export function FilesManager({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : error ? (
-            <div role="alert" aria-live="polite" className="grid place-items-center gap-3 py-16">
-              <p className="text-sm text-destructive">{error}</p>
-              <Button variant="outline" size="sm" onClick={() => load(1)}>
-                إعادة المحاولة
-              </Button>
-            </div>
+            <ErrorBanner message={error} onRetry={() => load(1)} retryLabel="إعادة المحاولة" />
           ) : files.length === 0 ? (
             <div className="grid place-items-center gap-2 py-16 text-muted-foreground">
               <FileDown className="h-10 w-10" />

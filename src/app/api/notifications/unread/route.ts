@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest) {
     const notifications = rawNotifications.map((n) => ({
       ...n,
       actor: n.actor || null,
-      link: (n.data as any)?.link || null,
+      link: (n.data as { link?: string } | null)?.link || null,
     }))
 
     return ok(notifications)

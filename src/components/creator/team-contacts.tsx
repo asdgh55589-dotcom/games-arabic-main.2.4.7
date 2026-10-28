@@ -18,6 +18,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useDragReorder } from '@/hooks/use-drag-reorder'
 import { useTeamPermissions } from '@/hooks/use-team-permissions'
+import { ErrorBanner } from '@/components/ui/error-banner'
 
 interface ContactRow {
   id: string
@@ -190,10 +191,7 @@ export function TeamContacts({ userRole, teamRole }: TeamContactsProps = {}) {
         {loading ? (
           <div className="h-12 animate-pulse rounded-lg bg-muted" aria-busy="true" aria-label="جارٍ التحميل" />
         ) : error ? (
-          <div role="alert" aria-live="polite" className="space-y-2">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchLinks}>إعادة المحاولة</Button>
-          </div>
+          <ErrorBanner message={error} onRetry={fetchLinks} retryLabel="إعادة المحاولة" />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SortableContext items={links.map((l) => l.id)}>

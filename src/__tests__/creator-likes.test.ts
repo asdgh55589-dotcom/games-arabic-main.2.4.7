@@ -18,9 +18,13 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/auth', () => ({
   requireCreatorStudio: jest.fn(),
 }))
+jest.mock('@/lib/rate-limit', () => ({
+  rateLimitMiddleware: jest.fn().mockResolvedValue(null),
+}))
 
 import { requireCreatorStudio } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 
 const CREATOR = { id: 'u1', username: 'c1', email: 'c@x', role: 'creator', avatarUrl: null }
 const req = (url: string) => ({ url }) as any
@@ -28,6 +32,7 @@ const req = (url: string) => ({ url }) as any
 beforeEach(() => {
   jest.resetAllMocks()
   ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: CREATOR, error: null })
+  ;(rateLimitMiddleware as any).mockResolvedValue(null)
   ;(db.mod.findMany as jest.Mock).mockResolvedValue([{ id: 'm1', name: 'Mod One', slug: 'mod-one' }])
   ;(db.endorsement.count as jest.Mock).mockResolvedValue(0)
   ;(db.commentLike.count as jest.Mock).mockResolvedValue(0)
@@ -46,12 +51,12 @@ describe('guards + validation', () => {
   it('rejects unauthenticated', async () => {
     ;(requireCreatorStudio as jest.Mock).mockResolvedValue({ user: null, error: null })
     const res = await likesGET(req('http://x/api/creator/likes'))
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(401)
   })
 
   it('rejects bad range', async () => {
     const res = await likesGET(req('http://x/api/creator/likes?range=5'))
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(400)
   })
 
   it('empty state shape when no engagement', async () => {

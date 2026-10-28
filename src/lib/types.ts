@@ -253,7 +253,7 @@ export interface ModCommentType {
     tier?: number | null
     specialRoles?: string | null
   } | null
-  replies?: ModCommentType[]
+  replyCount?: number
 }
 
 export interface ModChangelogEntry {

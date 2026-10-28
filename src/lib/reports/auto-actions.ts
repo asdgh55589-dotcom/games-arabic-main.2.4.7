@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { Prisma, ReportAction as PrismaReportAction } from '@prisma/client'
 import { syncGameCounts } from '@/lib/game-helpers'
 import { logger } from '@/lib/logger'
 import { setTokenVersionCache } from '@/lib/token-version-cache'
@@ -58,8 +59,8 @@ export async function executeAutoAction(
         status: { notIn: ['confirmed', 'rejected', 'resolved'] },
       },
       data: {
-        status: 'confirmed' as any,
-        actionTaken: action as any,
+        status: 'confirmed',
+        actionTaken: action as PrismaReportAction,
         actionAt: new Date(),
         resolution,
         resolvedAt: new Date(),
@@ -121,12 +122,12 @@ export async function executeAutoAction(
           status: { notIn: ['confirmed', 'rejected', 'resolved'] },
         },
         data: {
-          status: 'confirmed' as any,
-          actionTaken: action as any,
+          status: 'confirmed',
+          actionTaken: action as PrismaReportAction,
           actionAt: new Date(),
           resolution,
           resolvedAt: new Date(),
-          snapshot: snapshot as any,
+          snapshot: snapshot as Prisma.InputJsonValue,
         },
       })
       if (updated.count === 0) return

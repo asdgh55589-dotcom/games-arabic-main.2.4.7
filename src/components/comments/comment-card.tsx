@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Edit2, Flag, MoreVertical, Reply, ThumbsUp } from 'lucide-react'
+import { Edit2, Flag, MoreVertical, Reply, ThumbsUp } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { CommentEditBox } from '@/components/comments/comment-edit-box'
 import { CommentHeader } from '@/components/comments/comment-header'
@@ -69,12 +69,11 @@ export function CommentCard({
   const isNested = depth > 0
   const avatarSize = isNested ? 'h-8 w-8 min-h-[44px] min-w-[44px]' : 'h-10 w-10'
   const canReply =
-    (comment.canReply ?? true) && depth < COMMENTS_CONFIG.maxDepth && !(depth >= COMMENTS_CONFIG.maxDepth) && !comment.isHidden
+    (comment.canReply ?? true) && depth < COMMENTS_CONFIG.maxDepth && !comment.isHidden
   const displayName = comment.user?.username || comment.guestName || 'مستخدم'
   const displayAvatar = comment.user?.avatarUrl || comment.guestAvatar
   const isOwner = currentUser?.id === comment.user?.id
   const isAdmin = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role)
-  const [showAllReplies, setShowAllReplies] = useState(false)
   const editRef = useRef<HTMLTextAreaElement>(null)
   const {
     isEditing,
@@ -217,63 +216,7 @@ export function CommentCard({
         </div>
       </div>
 
-      {/* الردود المتداخلة — مسطحة (لا صناديق داخل بعضها) + تتعامل مع 5 ردود */}
-      {comment.replies &&
-        comment.replies.length > 0 &&
-        depth < COMMENTS_CONFIG.maxDepth &&
-        (() => {
-          const visibleCount = COMMENTS_CONFIG.visibleReplies
-          const hasMultiple = comment.replies.length > visibleCount
-          const visibleReplies =
-            showAllReplies || !hasMultiple
-              ? comment.replies
-              : comment.replies.slice(0, visibleCount)
-          const hiddenCount = comment.replies.length - visibleReplies.length
-          return (
-            <div className="mt-3 space-y-2">
-              {visibleReplies.map((reply) => (
-                <CommentCard
-                  key={reply.id}
-                  comment={reply}
-                  depth={depth + 1}
-                  modOwnerName={modOwnerName}
-                  replyToName={displayName}
-                  likedIds={likedIds}
-                  replyingTo={replyingTo}
-                  replyText={replyText}
-                  setReplyText={setReplyText}
-                  currentUser={currentUser}
-                  onLike={onLike}
-                  onReply={onReply}
-                  onSubmitReply={onSubmitReply}
-                  onCancelReply={onCancelReply}
-                  onRefresh={onRefresh}
-                  replyRef={replyRef}
-                />
-              ))}
-              {hasMultiple && !showAllReplies && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllReplies(true)}
-                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-500 hover:bg-blue-500/15 transition-colors"
-                >
-                  <ChevronLeft className="h-3 w-3 rotate-90" />
-                  عرض {hiddenCount} ردود إضافية
-                </button>
-              )}
-              {hasMultiple && showAllReplies && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllReplies(false)}
-                  className="mt-1 inline-flex items-center gap-1 rounded-md border border-border/40 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ChevronRight className="h-3 w-3 rotate-90" />
-                  إخفاء الردود
-                </button>
-              )}
-            </div>
-          )
-        })()}
+
 
       {/* تأكيد الحذف — حوار RTL بدل confirm() الأصلي */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

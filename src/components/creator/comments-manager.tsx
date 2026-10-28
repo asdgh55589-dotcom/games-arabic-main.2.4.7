@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/auth-context'
@@ -37,7 +38,7 @@ interface CommentItem {
   canReply?: boolean
   parent?: { id: string; text: string } | null
   parentExcerpt?: string | null
-  replies?: CommentItem[]
+  replyCount?: number
   user: { id: string; username: string; avatarUrl: string | null; role: string } | null
   mod: { id: string; name: string; slug: string }
 }
@@ -213,7 +214,7 @@ export function CommentsManager() {
             variant={filter === f.value ? 'default' : 'outline'}
             size="sm"
             onClick={() => {
-              setFilter(f.value as never)
+              setFilter(f.value as 'all' | 'visible' | 'hidden')
               setPage(1)
             }}
           >
@@ -250,12 +251,7 @@ export function CommentsManager() {
       {loading ? (
         <CommentSkeleton rows={4} />
       ) : loadError ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
-          <p className="text-sm text-muted-foreground">{loadError}</p>
-          <Button variant="outline" size="sm" className="min-h-[44px]" onClick={fetchComments}>
-            {t.retry}
-          </Button>
-        </div>
+        <ErrorBanner message={loadError} onRetry={fetchComments} retryLabel={t.retry} />
       ) : comments.length === 0 ? (
         <EmptyState
           icon="file"
@@ -343,7 +339,7 @@ export function CommentsManager() {
                       >
                         {t.viewMod}
                       </Link>
-                      {((c.depth ?? 0) < 5) && !((c.depth ?? 0) >= 5) && !c.isHidden && c.canReply !== false && (
+                      {((c.depth ?? 0) < 5) && !c.isHidden && c.canReply !== false && (
                         <>
                           <span className="text-muted-foreground">•</span>
                           <button

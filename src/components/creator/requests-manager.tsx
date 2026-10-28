@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { timeAgo } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 
@@ -163,10 +164,7 @@ export function RequestsManager() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : error ? (
-        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchRequests}>إعادة المحاولة</Button>
-        </div>
+        <ErrorBanner message={error} onRetry={fetchRequests} retryLabel="إعادة المحاولة" />
       ) : requests.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">

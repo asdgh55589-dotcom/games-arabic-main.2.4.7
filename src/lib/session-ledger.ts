@@ -40,7 +40,7 @@ export async function createSessionLedger(userId: string, opts: CreateLedgerOpts
       updatedAt: now,
       ipAddress: opts.ip,
       userAgent: opts.userAgent,
-    } as any,
+    },
   })
   logger.info({ userId, sessionId: id }, 'session created')
   return row
@@ -58,13 +58,13 @@ export async function isSessionActive(token: string): Promise<boolean> {
     // biome-ignore lint/suspicious/noEmptyBlockStatements: cache miss → DB below
   }
   try {
-    const s = await db.session.findUnique({ where: { token } as any, select: { expiresAt: true } })
+    const s = await db.session.findUnique({ where: { token }, select: { expiresAt: true } })
     if (!s) {
       // Negative cache: a dead token stays dead (revoke paths invalidate eagerly).
       await redisSet(cacheKey, false, LEDGER_NEGATIVE_CACHE_TTL_S).catch(() => {})
       return false
     }
-    const active = new Date((s as any).expiresAt) > new Date()
+    const active = new Date(s.expiresAt) > new Date()
     // Active sessions revalidate often (revocation must propagate fast);
     // inactive ones are cached longer since they never become active again.
     await redisSet(
@@ -84,7 +84,7 @@ export async function isSessionActive(token: string): Promise<boolean> {
 export async function revokeSession(token: string): Promise<void> {
   if (!token) return
   try {
-    await db.session.deleteMany({ where: { token } as any })
+    await db.session.deleteMany({ where: { token } })
     // Invalidate the liveness cache so logout takes effect immediately.
     await redisDel(ledgerCacheKey(token)).catch(() => {})
     logger.warn({ token: maskId(token) }, 'session revoked')
@@ -101,14 +101,14 @@ export async function revokeOtherSessions(userId: string, currentToken: string) 
       where: {
         userId,
         token: { not: currentToken },
-      } as any,
+      },
       select: { token: true },
     })) as Array<{ token: string }>
     await db.session.deleteMany({
       where: {
         userId,
         token: { not: currentToken },
-      } as any,
+      },
     })
     await Promise.all(others.map((row) => redisDel(ledgerCacheKey(row.token))))
     logger.warn({ userId }, 'other sessions revoked')
@@ -132,7 +132,7 @@ export interface PublicSession {
 export async function listUserSessions(userId: string): Promise<PublicSession[]> {
   try {
     const rows = await db.session.findMany({
-      where: { userId, expiresAt: { gt: new Date() } } as any,
+      where: { userId, expiresAt: { gt: new Date() } },
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,

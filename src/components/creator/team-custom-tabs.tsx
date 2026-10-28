@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useDragReorder } from '@/hooks/use-drag-reorder'
 import { useTeamPermissions } from '@/hooks/use-team-permissions'
 import { reportError } from '@/lib/error-reporting'
+import { ErrorBanner } from '@/components/ui/error-banner'
 
 interface TabRow {
   id: string
@@ -203,10 +204,7 @@ export function TeamCustomTabs({ userRole, teamRole }: TeamCustomTabsProps = {})
         {loading ? (
           <div className="h-12 animate-pulse rounded-lg bg-muted" aria-busy="true" aria-label="جارٍ التحميل" />
         ) : error ? (
-          <div role="alert" aria-live="polite" className="space-y-2">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchTabs}>إعادة المحاولة</Button>
-          </div>
+          <ErrorBanner message={error} onRetry={fetchTabs} retryLabel="إعادة المحاولة" />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SortableContext items={tabs.map((t) => t.id)}>
