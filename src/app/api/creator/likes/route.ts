@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
-import { ok, validationFail } from '@/lib/api-response'
+import { fail, forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireCreatorStudio } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 import { db } from '@/lib/db'
 import { rateLimitMiddleware } from '@/lib/rate-limit'
 
@@ -27,21 +28,22 @@ function pctChange(cur: number, prev: number): number {
 // ratings on the creator's mods. Display names ONLY (no emails, no ids of
 // likers beyond username). Read-only: filter/sort/open-mod in UI.
 export async function GET(req: NextRequest) {
-  const { user, error } = await requireCreatorStudio(req)
-  if (error) return error
-  if (!user) return validationFail('يجب تسجيل الدخول')
+  try {
+    const { user, error } = await requireCreatorStudio(req)
+    if (error) return error
+    if (!user) return unauthorized('يجب تسجيل الدخول')
 
-  const limited = await rateLimitMiddleware(req, {
-    limit: 60,
-    window: 60,
-    keyPrefix: `creator:likes:${user.id}`,
-  })
-  if (limited) return limited
+    const limited = await rateLimitMiddleware(req, {
+      limit: 60,
+      window: 60,
+      keyPrefix: `creator:likes:${user.id}`,
+    })
+    if (limited) return limited
 
-  const range = Number(new URL(req.url).searchParams.get('range')) || 30
-  if (!RANGES.includes(range as (typeof RANGES)[number])) {
-    return validationFail('النطاق يجب أن يكون 7 أو 30 أو 90')
-  }
+    const range = Number(new URL(req.url).searchParams.get('range')) || 30
+    if (!RANGES.includes(range as (typeof RANGES)[number])) {
+      return validationFail('VALIDATION_ERROR', 'النطاق يجب أن يكون 7 أو 30 أو 90')
+    }
 
   const now = new Date()
   const start = new Date(now)
@@ -158,4 +160,8 @@ export async function GET(req: NextRequest) {
     ),
     recent,
   }, { headers: { 'Cache-Control': 'private, max-age=30' } })
+  } catch (err) {
+    logger.error('[creator/likes GET] failed', { context: 'creator/likes', error: err })
+    return internalError('فشل جلب الإعجابات')
+  }
 }

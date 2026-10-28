@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 type SnapshotClient = Pick<typeof db, 'mod' | 'modComment'>
 type SnapshotWriteClient = Pick<typeof db, 'report' | 'mod' | 'modComment'>
@@ -63,7 +64,7 @@ export async function snapshotReportsForTarget(
   )
   await client.report.updateMany({
     where: { id: { in: missing.map((report) => report.id) } },
-    data: { snapshot: snapshot as never },
+    data: { snapshot: snapshot as Prisma.InputJsonValue },
   })
   return missing.length
 }

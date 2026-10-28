@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import {
   Table,
   TableBody,
@@ -155,14 +156,7 @@ export function LikesClient() {
           ))}
         </div>
       ) : error ? (
-        <Card role="alert" aria-live="polite">
-          <CardContent className="space-y-3 py-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchLikes}>
-              {t.retry} إعادة المحاولة
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorBanner message={error} onRetry={fetchLikes} retryLabel={t.retry} />
       ) : !s || (s.endorsements === 0 && s.commentLikes === 0 && s.ratings === 0 && s.negativeReactions === 0) ? (
         <EmptyState icon="heart" title={t.empty} description={t.subtitle} />
       ) : (

@@ -5,6 +5,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type { PaginationOptions } from '@/domain'
 import { Notification, type NotificationRepository, type NotificationType } from '@/domain'
+import type { ReconstructNotificationProps } from '@/domain/entities/notification'
 
 export class PrismaNotificationRepository implements NotificationRepository {
   constructor(private readonly db: PrismaClient) {}
@@ -22,12 +23,12 @@ export class PrismaNotificationRepository implements NotificationRepository {
         readAt: notification.readAt,
       },
     })
-    return Notification.reconstruct(record as any)
+    return Notification.reconstruct(record as unknown as ReconstructNotificationProps)
   }
 
   async findById(id: string): Promise<Notification | null> {
     const record = await this.db.notification.findUnique({ where: { id } })
-    return record ? Notification.reconstruct(record as any) : null
+    return record ? Notification.reconstruct(record as unknown as ReconstructNotificationProps) : null
   }
 
   async findByUserId(userId: string, options?: PaginationOptions): Promise<Notification[]> {
@@ -38,7 +39,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
       skip: (page - 1) * limit,
       take: limit,
     })
-    return records.map((r) => Notification.reconstruct(r as any))
+    return records.map((r) => Notification.reconstruct(r as unknown as ReconstructNotificationProps))
   }
 
   async findUnreadCount(userId: string): Promise<number> {
@@ -75,7 +76,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return record ? Notification.reconstruct(record as any) : null
+    return record ? Notification.reconstruct(record as unknown as ReconstructNotificationProps) : null
   }
 
   async update(
@@ -84,9 +85,9 @@ export class PrismaNotificationRepository implements NotificationRepository {
   ): Promise<Notification> {
     const record = await this.db.notification.update({
       where: { id },
-      data: data as any,
+      data: data as Prisma.NotificationUpdateInput,
     })
-    return Notification.reconstruct(record as any)
+    return Notification.reconstruct(record as unknown as ReconstructNotificationProps)
   }
 
   async delete(id: string): Promise<void> {

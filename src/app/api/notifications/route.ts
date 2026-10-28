@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     const notifications = rawNotifications.map((n) => ({
       ...n,
       actor: n.actor || null,
-      link: (n as any).targetUrl || (n.data as any)?.link || null,
+      link: n.targetUrl || (n.data as { link?: string } | null)?.link || null,
     }))
 
     return okPaginatedWithMeta(

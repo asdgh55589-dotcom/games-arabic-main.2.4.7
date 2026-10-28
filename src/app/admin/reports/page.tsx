@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { timeAgo } from '@/lib/format'
-import type { ReportPriority, ReportTargetType } from '@/lib/reports/constants'
+import type { ReportPriority, ReportStatus, ReportTargetType } from '@/lib/reports/constants'
 import {
   REPORT_MOD_REASONS,
   REPORT_PRIORITIES,
@@ -37,7 +37,7 @@ interface ReportEntry {
   targetType: string
   reason: string
   priority: string
-  status: string
+  status: ReportStatus
   description: string | null
   createdAt: string
   reporter: { id: string; username: string; avatarUrl: string | null } | null
@@ -311,7 +311,7 @@ export default function AdminReportsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <ReportStatusBadge status={report.status as any} />
+                      <ReportStatusBadge status={report.status} />
                     </td>
                     <td className="hidden px-4 py-3 text-xs text-muted-foreground md:table-cell">
                       {report.reporter?.username || 'مجهول'}
@@ -355,7 +355,7 @@ export default function AdminReportsPage() {
                         • {getReportReasonLabel(report.reason)}
                       </span>
                     </div>
-                    <ReportStatusBadge status={report.status as any} />
+                    <ReportStatusBadge status={report.status} />
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span

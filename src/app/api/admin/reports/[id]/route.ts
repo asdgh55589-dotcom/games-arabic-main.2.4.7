@@ -5,6 +5,7 @@ import { requireModerator } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { isValidTransition } from '@/lib/reports/constants'
 import { logger } from '@/lib/logger'
+import { Prisma, ReportStatus as PrismaReportStatus } from '@prisma/client'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -146,19 +147,19 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const updateData: Record<string, unknown> = {}
-    if (body.status) updateData.status = body.status as any
+    if (body.status) updateData.status = body.status as PrismaReportStatus
     if (body.assignedToId !== undefined) updateData.assignedToId = body.assignedToId || null
     if (body.resolution !== undefined) updateData.resolution = body.resolution
 
-    await db.report.update({ where: { id }, data: updateData as any })
+    await db.report.update({ where: { id }, data: updateData as Prisma.ReportUpdateInput })
 
     // Record status transition if status changed
     if (body.status && body.status !== report.status) {
       await db.reportStatusHistory.create({
         data: {
           reportId: id,
-          fromStatus: report.status as any,
-          toStatus: body.status as any,
+          fromStatus: report.status,
+          toStatus: body.status as PrismaReportStatus,
           action: null,
           resolution: body.resolution || null,
           actorId: moderator.id,

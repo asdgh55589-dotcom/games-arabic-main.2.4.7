@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { useToast } from '@/hooks/use-toast'
 import { useTeamPermissions } from '@/hooks/use-team-permissions'
 
@@ -141,12 +142,7 @@ export function TeamMods({ userRole, teamRole }: TeamModsProps = {}) {
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div role="alert" aria-live="polite" className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchMods}>إعادة المحاولة</Button>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchMods} retryLabel="إعادة المحاولة" />}
       <div className="flex gap-2">
         <Input
           value={q}

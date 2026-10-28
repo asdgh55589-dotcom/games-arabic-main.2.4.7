@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Button } from '@/components/official-ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/official-ui/tabs'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { CreateTeamForm } from '@/components/creator/create-team-form'
 import { TeamActivity } from '@/components/creator/team-activity'
 import { TeamContacts } from '@/components/creator/team-contacts'
@@ -87,16 +87,7 @@ export function TeamManager({ userRole }: TeamManagerProps) {
   }
 
   if (error) {
-    return (
-      <Card className="max-w-2xl" role="alert" aria-live="polite">
-        <CardContent className="space-y-3 p-6">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" onClick={fetchTeam} disabled={loading} aria-disabled={loading} title={loading ? 'جارٍ التحميل' : undefined}>
-            إعادة المحاولة
-          </Button>
-        </CardContent>
-      </Card>
-    )
+    return <ErrorBanner message={error} onRetry={fetchTeam} retryLabel="إعادة المحاولة" />
   }
 
   if (notFound || !team) {

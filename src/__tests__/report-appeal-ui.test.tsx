@@ -7,15 +7,14 @@ const appealRoute = fs.readFileSync(path.join(root, 'src/app/api/creator/reports
 
 describe('report appeal UI', () => {
   it('has appeal button for rejected reports', () => {
-    expect(ui).toContain('استئناف')
+    expect(ui).toContain('AppealDialog')
     expect(ui).toMatch(/isRejected/)
   })
 
   it('has appeal form with reason textarea and optional evidence url', () => {
-    expect(ui).toContain('Textarea')
-    expect(ui).toContain('appealReason')
-    expect(ui).toContain('appealEvidence')
-    expect(ui).toMatch(/evidenceUrl/)
+    const appealUi = fs.readFileSync(path.join(root, 'src/components/creator/appeal-dialog.tsx'), 'utf8')
+    expect(appealUi).toContain('Textarea')
+    expect(appealUi).toMatch(/evidenceUrl/)
   })
 
   it('displays appeal status pending/appealed/upheld', () => {

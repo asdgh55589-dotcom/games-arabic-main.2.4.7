@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { timeAgo } from '@/lib/format'
+import { AppealDialog } from '@/components/creator/appeal-dialog'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
 import type { StudioDict } from '@/lib/studio-i18n/types'
 
@@ -61,10 +61,6 @@ export function ReportsClient() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  const [appealingId, setAppealingId] = useState<string | null>(null)
-  const [appealReason, setAppealReason] = useState('')
-  const [appealEvidence, setAppealEvidence] = useState('')
-  const [submittingAppeal, setSubmittingAppeal] = useState(false)
   const [appealMessage, setAppealMessage] = useState<string | null>(null)
 
   const fetchReports = useCallback(async () => {
@@ -91,31 +87,6 @@ export function ReportsClient() {
     fetchReports()
   }, [fetchReports])
 
-  const submitAppeal = useCallback(async (id: string) => {
-    setSubmittingAppeal(true)
-    setAppealMessage(null)
-    try {
-      const res = await fetch(`/api/creator/reports/${id}/appeal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: appealReason, evidenceUrl: appealEvidence || undefined, proofUrl: appealEvidence || undefined }),
-      })
-      const json = await res.json()
-      if (res.ok) {
-        setAppealMessage('تم إرسال الطعن — أُعيد فتح البلاغ للمراجعة')
-        setAppealingId(null)
-        setAppealReason('')
-        setAppealEvidence('')
-        fetchReports()
-      } else {
-        setAppealMessage(json?.error?.message || 'فشل إرسال الطعن')
-      }
-    } catch {
-      setAppealMessage('فشل إرسال الطعن')
-    }
-    setSubmittingAppeal(false)
-  }, [appealReason, appealEvidence, fetchReports])
-
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
@@ -137,10 +108,7 @@ export function ReportsClient() {
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">…</div>
       ) : error ? (
-        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchReports}>إعادة المحاولة</Button>
-        </div>
+        <ErrorBanner message={error} onRetry={fetchReports} retryLabel="إعادة المحاولة" />
       ) : rows.length === 0 ? (
         <EmptyState icon="file" title={t.empty} description={t.emptyDesc} />
       ) : (
@@ -203,40 +171,13 @@ export function ReportsClient() {
 
                   {isRejected && (
                     <div className="mt-3">
-                      {appealingId === r.id ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            placeholder="سبب الطعن"
-                            value={appealReason}
-                            onChange={(e) => setAppealReason(e.target.value)}
-                          />
-                          <Input
-                            placeholder="رابط دليل (اختياري)"
-                            value={appealEvidence}
-                            onChange={(e) => setAppealEvidence(e.target.value)}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              disabled={submittingAppeal}
-                              onClick={() => submitAppeal(r.id)}
-                            >
-                              استئناف
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setAppealingId(null)}
-                            >
-                              إلغاء
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => setAppealingId(r.id)}>
-                          استئناف
-                        </Button>
-                      )}
+                      <AppealDialog
+                        reportId={r.id}
+                        onSuccess={() => {
+                          setAppealMessage('تم إرسال الطعن — أُعيد فتح البلاغ للمراجعة')
+                          fetchReports()
+                        }}
+                      />
                     </div>
                   )}
                 </CardContent>

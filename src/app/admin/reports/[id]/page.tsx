@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { timeAgo } from '@/lib/format'
-import type { ReportAction, ReportPriority } from '@/lib/reports/constants'
+import type { ReportAction, ReportPriority, ReportStatus } from '@/lib/reports/constants'
 import {
   REPORT_ACTIONS,
   REPORT_PRIORITIES,
@@ -62,7 +62,7 @@ interface ReportDetail {
   targetType: string
   reason: string
   priority: string
-  status: string
+  status: ReportStatus
   description: string | null
   evidenceUrls: string[] | string | null // Json array بعد التغيير، مع توافق قديم String
   actionTaken: string | null
@@ -421,7 +421,7 @@ export default function AdminReportDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الحالة</span>
-                <ReportStatusBadge status={report.status as any} />
+                <ReportStatusBadge status={report.status} />
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">التاريخ</span>

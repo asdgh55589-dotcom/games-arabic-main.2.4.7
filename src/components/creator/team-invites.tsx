@@ -5,6 +5,7 @@ import { Button } from '@/components/official-ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { useToast } from '@/hooks/use-toast'
 import { InviteForm } from '@/components/creator/invite-form'
 import { useTeamPermissions } from '@/hooks/use-team-permissions'
@@ -100,12 +101,7 @@ export function TeamInvites({ userRole, teamRole }: TeamInvitesProps = {}) {
           ))}
         </div>
       ) : error ? (
-        <div role="alert" aria-live="polite" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchInvites}>
-            إعادة المحاولة
-          </Button>
-        </div>
+        <ErrorBanner message={error} onRetry={fetchInvites} retryLabel="إعادة المحاولة" />
       ) : invites.length === 0 ? (
         <EmptyState icon="inbox" title="لا توجد دعوات" description="أنشئ دعوة من النموذج أعلاه" />
       ) : (

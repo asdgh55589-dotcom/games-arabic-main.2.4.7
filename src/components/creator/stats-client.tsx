@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorBanner } from '@/components/ui/error-banner'
 import { timeAgo } from '@/lib/format'
 import { reportError } from '@/lib/error-reporting'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
@@ -119,14 +120,7 @@ export function StatsClient() {
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">…</div>
       ) : error ? (
-        <Card role="alert" aria-live="polite">
-          <CardContent className="space-y-3 py-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchAll}>
-              {t.retry} إعادة المحاولة
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorBanner message={error} onRetry={fetchAll} retryLabel={t.retry} />
       ) : !totals || totals.totalMods === 0 ? (
         <EmptyState icon="file" title={t.empty} description={t.subtitle} />
       ) : (

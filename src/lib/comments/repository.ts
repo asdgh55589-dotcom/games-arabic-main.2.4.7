@@ -6,6 +6,7 @@
  */
 import { COMMENTS_CONFIG } from '@/lib/comments-config'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export const commentSelect = {
   id: true,
@@ -95,47 +96,33 @@ export async function listVisibleComments(
           select: { ...commentSelect, user: { select: commentUserSelect } },
         })
 
-  let frontier = pageIds
-  const descendants: typeof rows = []
-  for (let level = 0; level < COMMENTS_CONFIG.maxDepth && frontier.length > 0; level++) {
-    const children: typeof rows = await db.modComment.findMany({
-      where: { ...visibleWhere, parentId: { in: frontier } },
-      select: { ...commentSelect, user: { select: commentUserSelect } },
+  // direct reply counts for each root (no nested population)
+  const replyCountMap = new Map<string, number>()
+  if (pageIds.length > 0) {
+    const directReplies = await db.modComment.findMany({
+      where: { ...visibleWhere, parentId: { in: pageIds } },
+      select: { parentId: true },
     })
-    if (children.length === 0) break
-    descendants.push(...children)
-    frontier = children.map((c) => c.id)
+    for (const r of directReplies) {
+      replyCountMap.set(r.parentId as string, (replyCountMap.get(r.parentId as string) ?? 0) + 1)
+    }
   }
 
-  const all = [...rows, ...descendants]
-  const commentMap = new Map<string, (typeof all)[number] & { replies: typeof all }>()
-  const trees: ((typeof all)[number] & { replies: typeof all })[] = []
   const order = new Map(pageIds.map((id, i) => [id, i]))
-  for (const c of all) commentMap.set(c.id, { ...c, depth: c.depth ?? 0, canReply: (c.depth ?? 0) < COMMENTS_CONFIG.maxDepth, replies: [] } as any)
-  for (const c of all) {
-    const node = commentMap.get(c.id)!
-    if (c.parentId) {
-      commentMap.get(c.parentId)?.replies.push(node)
-    } else if (order.has(c.id)) {
-      trees.push(node)
-    }
-  }
-  trees.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-
-  type CommentNode = (typeof trees)[number]
-  const sortReplies = (nodes: CommentNode[]) => {
-    for (const n of nodes) {
-      n.replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      sortReplies(n.replies as unknown as CommentNode[])
-    }
-  }
-  sortReplies(trees)
+  const comments = rows
+    .map((c) => ({
+      ...c,
+      depth: c.depth ?? 0,
+      canReply: (c.depth ?? 0) < COMMENTS_CONFIG.maxDepth,
+      replyCount: replyCountMap.get(c.id) ?? 0,
+    }))
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
 
   const [total, totalRoots] = await Promise.all([
     db.modComment.count({ where: visibleWhere }),
     Promise.resolve(orderedRoots.length),
   ])
-  return { comments: trees, total, totalRoots, nextCursor }
+  return { comments, total, totalRoots, nextCursor }
 }
 
 export async function getParentForReply(parentId: string) {
@@ -370,7 +357,7 @@ export async function creatorListComments(
   const where: Record<string, unknown> = { mod: { authorId } }
   if (filter === 'visible') where.isHidden = false
   else if (filter === 'hidden') where.isHidden = true
-  const orderBy: any =
+  const orderBy: Prisma.ModCommentOrderByWithRelationInput =
     sort === 'oldest'
       ? { createdAt: 'asc' }
       : sort === 'popular'
@@ -383,7 +370,7 @@ export async function creatorListComments(
         user: { select: { id: true, username: true, avatarUrl: true, role: true } },
         mod: { select: { id: true, name: true, slug: true } },
         parent: { select: { id: true, text: true } },
-        replies: { select: { id: true, text: true, parentId: true, depth: true, createdAt: true } },
+        _count: { select: { replies: true } },
       },
       orderBy,
       skip,
@@ -391,11 +378,11 @@ export async function creatorListComments(
     }),
     db.modComment.count({ where }),
   ])
-  const mapped = (comments as any[]).map((c: any) => ({
+  const mapped = comments.map((c) => ({
     ...c,
     depth: c.depth ?? 0,
     canReply: (c.depth ?? 0) < 5 && !c.isHidden,
-    replies: c.replies ?? [],
+    replyCount: c._count?.replies ?? 0,
     parentExcerpt: c.parent?.text ? String(c.parent.text).slice(0, 80) : null,
   }))
   return { comments: mapped, total }

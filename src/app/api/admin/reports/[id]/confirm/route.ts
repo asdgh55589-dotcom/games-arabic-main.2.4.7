@@ -9,6 +9,7 @@ import { isValidTransition, REPORT_ACTIONS, type ReportAction } from '@/lib/repo
 import { updateRepeatOffenseLevel } from '@/lib/reports/repeat-offender'
 import { recalculateTrustScore } from '@/lib/reports/trust-score'
 import { logger } from '@/lib/logger'
+import { ReportAction as PrismaReportAction, ReportStatus as PrismaReportStatus } from '@prisma/client'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -102,9 +103,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       await db.reportStatusHistory.create({
         data: {
           reportId: id,
-          fromStatus: previousStatus as any,
-          toStatus: 'confirmed' as any,
-          action: action as any,
+          fromStatus: previousStatus,
+          toStatus: 'confirmed' as PrismaReportStatus,
+          action: action as PrismaReportAction,
           resolution: resolution || null,
           actorId: moderator.id,
         },

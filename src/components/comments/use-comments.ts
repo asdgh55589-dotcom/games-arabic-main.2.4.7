@@ -121,9 +121,6 @@ export function useComments(modSlug: string) {
         if (node.id === targetId) {
           return { ...node, likes: Math.max(0, (node.likes || 0) + delta) }
         }
-        if (node.replies && node.replies.length > 0) {
-          return { ...node, replies: updateLikesInTree(node.replies, targetId, delta) }
-        }
         return node
       })
     },
