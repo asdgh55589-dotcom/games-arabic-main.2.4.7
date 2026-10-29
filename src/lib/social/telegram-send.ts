@@ -5,7 +5,7 @@
  *  - botToken مُمرَّر صراحة (من `social_telegram_bots`) أو `null`
  *    ⇒ env TELEGRAM_BOT_TOKEN (السلوك القديم كما هو).
  *  - messageThreadId اختياري (موضوع داخل مجموعة forum).
- *  - rich != null ⇒ sendRichMessage (Bot API 10.3)، وإلا sendPhoto/sendMessage.
+ *  - rich != null ⇒ rich message (Bot API 10.3)، وإلا sendPhoto/sendMessage.
  *
  * لا يقرأ من قاعدة البيانات ولا يفكّ تشفيراً — المستدعي يحقن الهدف جاهزاً
  * (فصل الاختبار، ولن يصل التوكن إلى أي استجابة API).
@@ -29,7 +29,7 @@ export interface TelegramSendInput {
   /** `null`/`undefined` ⇒ بلا parse_mode (نص عادي). */
   parseMode?: 'HTML' | null
   photoUrl?: string | null
-  /** موجود ⇒ sendRichMessage (يتجاوز النص/الصورة الكلاسيكية). */
+  /** موجود ⇒ rich message (يتجاوز النص/الصورة الكلاسيكية). */
   rich?: InputRichMessage | null
   disableNotification?: boolean
   protectContent?: boolean
@@ -75,7 +75,7 @@ export function buildTelegramPayload(input: TelegramSendInput): Record<string, u
   if (protectContent != null) base.protect_content = protectContent
 
   if (rich) {
-    // sendRichMessage is not a real Bot API method; use sendMessage with
+    // rich message is not a real Bot API method; use sendMessage with
     // parse_mode=HTML so the rendered text still reaches Telegram.
     return {
       ...base,
