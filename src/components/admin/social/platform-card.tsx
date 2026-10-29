@@ -124,7 +124,7 @@ export function PlatformCard({ platform, stats, showManage = false }: PlatformCa
               <p className="mt-1 text-[12px] text-muted-foreground">
                 {active ? 'منصة متاحة — إدارة المنشورات والقوالب' : 'قيد التطوير، ستتوفّر قريباً'}
               </p>
-            ) : (
+            ) : active ? (
               <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                 <div>
                   <div className="text-[15px] font-semibold text-foreground">
@@ -145,6 +145,8 @@ export function PlatformCard({ platform, stats, showManage = false }: PlatformCa
                   <div className="text-[11px] text-muted-foreground">فاشل</div>
                 </div>
               </div>
+            ) : (
+              <p className="mt-2 text-[12px] text-muted-foreground">قيد التطوير — ستتوفّر الإحصاءات قريباً</p>
             )}
           </div>
         </div>

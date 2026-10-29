@@ -71,8 +71,8 @@ export async function GET(req: Request) {
         select: { publishedAt: true },
       }),
       db.socialPost.findMany({
-        where: { platform, status: 'failed', updatedAt: { gte: since } },
-        select: { updatedAt: true },
+        where: { platform, status: 'failed', createdAt: { gte: since } },
+        select: { createdAt: true },
       }),
       db.socialPost.count({
         where: { platform, status: 'scheduled', scheduledFor: { gte: upcomingSince } },
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
       if (bucket) bucket.published += 1
     }
     for (const post of failedPosts) {
-      const key = dayKey(post.updatedAt)
+      const key = dayKey(post.createdAt)
       const bucket = byDay.get(key)
       if (bucket) bucket.failed += 1
     }
@@ -112,7 +112,8 @@ export async function GET(req: Request) {
     const published = timeSeries.reduce((sum, day) => sum + day.published, 0)
     const failed = timeSeries.reduce((sum, day) => sum + day.failed, 0)
     // لا NaN عند صفر منشورات (درس P4)
-    const avgPerDay = timeSeries.length > 0 ? Number((published / timeSeries.length).toFixed(2)) : 0
+    const daysInRange = Math.max(1, Math.floor((now.getTime() - since.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+    const avgPerDay = timeSeries.length > 0 ? Number((published / daysInRange).toFixed(2)) : 0
 
     // ===== جوانب الوجهات والإشعارات =====
     const [destinationsActive, destinationsVerified] = await Promise.all([

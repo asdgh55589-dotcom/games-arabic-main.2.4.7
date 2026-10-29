@@ -35,8 +35,16 @@ export interface TelegramSendInput {
   protectContent?: boolean
 }
 
-export type TelegramSendMethod = 'sendRichMessage' | 'sendPhoto' | 'sendMessage'
+export type TelegramSendMethod = 'sendPhoto' | 'sendMessage'
 
+export class TelegramRateLimitError extends Error {
+  retryAfter: number
+  constructor(retryAfter: number) {
+    super(`Telegram rate limited: retry after ${retryAfter}s`)
+    this.name = 'TelegramRateLimitError'
+    this.retryAfter = retryAfter
+  }
+}
 export interface TelegramSendResult {
   ok: boolean
   method: TelegramSendMethod
@@ -67,7 +75,14 @@ export function buildTelegramPayload(input: TelegramSendInput): Record<string, u
   if (protectContent != null) base.protect_content = protectContent
 
   if (rich) {
-    return { ...base, rich_message: rich }
+    // sendRichMessage is not a real Bot API method; use sendMessage with
+    // parse_mode=HTML so the rendered text still reaches Telegram.
+    return {
+      ...base,
+      text,
+      ...(parseMode ? { parse_mode: parseMode } : { parse_mode: 'HTML' }),
+      disable_web_page_preview: true,
+    }
   }
   if (photoUrl) {
     // حد التعليق الرسمي مع الوسائط = 1024.
@@ -88,7 +103,7 @@ export function buildTelegramPayload(input: TelegramSendInput): Record<string, u
 
 /** اسم الطريقة المطابقة لجسم الطلب. */
 export function resolveTelegramMethod(input: TelegramSendInput): TelegramSendMethod {
-  if (input.rich) return 'sendRichMessage'
+  if (input.rich) return 'sendMessage'
   if (input.photoUrl) return 'sendPhoto'
   return 'sendMessage'
 }
@@ -114,6 +129,11 @@ async function apiCall(
       res = await telegramPolicy.execute(run)
     } catch {
       res = await run()
+    }
+    if (res.status === 429) {
+      const data = (await res.json().catch(() => null)) as { parameters?: { retry_after?: number } } | null
+      const retryAfter = data?.parameters?.retry_after ?? 30
+      throw new TelegramRateLimitError(Math.min(retryAfter, 3600))
     }
     return (await res.json()) as TelegramApiResponse
   } catch (err) {
