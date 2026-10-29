@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import {
   AlertTriangle,
   Calendar,
@@ -142,12 +143,13 @@ export function ModDownloadSection({
         rel="noopener noreferrer"
         className="flex items-center gap-2 rounded-md border border-[#1b2330] bg-[#0d1219] px-2.5 py-2 transition-colors hover:border-[#232b38] hover:bg-[#111823]"
       >
-        <img
+        <Image
           src={brandLogoUrl(domain)}
           alt=""
           width={22}
           height={22}
           loading="lazy"
+          unoptimized
           className="h-[22px] w-[22px] shrink-0 rounded border border-[#232b38] bg-white object-contain p-0.5"
           onError={(e) => {
             ;(e.currentTarget as HTMLImageElement).style.display = 'none'

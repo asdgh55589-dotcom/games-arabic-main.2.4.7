@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Copy, Loader2, QrCode, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -115,8 +116,14 @@ export function MfaSetup({ onEnabled }: { onEnabled: () => void }) {
             </p>
           </div>
           {qrCode && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrCode} alt="رمز QR للمصادقة الثنائية" className="mx-auto h-48 w-48 border-2 border-border" />
+            <Image
+              src={qrCode}
+              alt="رمز QR للمصادقة الثنائية"
+              width={192}
+              height={192}
+              className="mx-auto h-48 w-48 border-2 border-border"
+              unoptimized
+            />
           )}
           {secret && (
             <p dir="ltr" className="break-all rounded-none border-2 border-dashed border-border bg-muted p-2 text-center font-mono text-xs">
