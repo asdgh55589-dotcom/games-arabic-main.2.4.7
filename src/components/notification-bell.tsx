@@ -5,19 +5,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { NotificationDropdown } from '@/components/notification-dropdown'
 import { Button } from '@/components/ui/button'
 import { useNotificationPolling } from '@/hooks/use-notification-polling'
+import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 
 interface NotificationBellProps {
   currentUser: { id: string; username: string } | null
 }
 
-// Single notification channel: polling hook only (30s, visibility-aware,
-// server-cached unread count). The SSE stream is retired (501).
+// Notification channel: polling (fallback, 30s) + SSE (primary, low-latency).
+// When SSE is connected, polling slows to a 5-min reconciliation cadence
+// (see useNotificationPolling `pollIntervalMs`). SSE carries invalidation
+// hints only; REST/polling remains the authoritative source of truth.
+// Phase 2 polling-only decision is superseded by this coexistence design (RT-13).
 export function NotificationBell({ currentUser }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } =
     useNotificationPolling({ userId: currentUser?.id ?? null })
+
+  useRealtimeSync({ userId: currentUser?.id ?? null })
 
   const handleMarkAsRead = useCallback(
     async (id: string) => {

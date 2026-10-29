@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   // Section 4 item 30: explicit (Next defaults true) — self-documents the
   // compression guarantee so a future default change can't silently disable it.
   compress: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
   // Server-only heavy deps stay external (never bundled into route chunks).
   // Constraint: none of these may ALSO be in optimizePackageImports.
   serverExternalPackages: [

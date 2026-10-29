@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
+import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 import { formatNumber, timeAgo } from '@/lib/format'
 import { WORKFLOW_LABELS, WORKFLOW_STATUSES } from '@/lib/workflow'
 
@@ -59,6 +61,8 @@ const SORTS = [
   { value: 'name', label: 'الاسم' },
 ] as const
 
+  const { user } = useAuth()
+  useRealtimeSync({ userId: user?.id ?? null })
 export default function AdminModsPage() {
   const router = useRouter()
   const { toast } = useToast()

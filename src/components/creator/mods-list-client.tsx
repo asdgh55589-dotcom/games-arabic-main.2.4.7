@@ -41,8 +41,10 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 import { formatNumber } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { useAuth } from '@/contexts/auth-context'
 import type { StudioDict } from '@/lib/studio-i18n/types'
 import { cn } from '@/lib/utils'
 
@@ -116,6 +118,8 @@ export function ModsListClient({
   const router = useRouter()
   const { toast } = useToast()
   const { dict, locale } = useStudioLanguage()
+  const { user } = useAuth()
+  useRealtimeSync({ userId: user?.id ?? null })
   const tag = locale === 'ar' ? 'ar-EG' : 'en-US'
 
   const [status, setStatus] = useState(initialStatus || 'all')

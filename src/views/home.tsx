@@ -2,6 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { CreatorLeaderboardCard } from '@/components/creator-leaderboard-card'
@@ -417,11 +418,13 @@ export function HomePage() {
                           className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                         >
                           {s.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={s.thumbnailUrl}
                               alt=""
+                              fill
                               loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover opacity-55 transition-opacity group-hover:opacity-75"
+                              className="object-cover opacity-55 transition-opacity group-hover:opacity-75"
+                              unoptimized
                             />
                           ) : null}
                           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />
@@ -463,11 +466,13 @@ export function HomePage() {
                         className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                       >
                         {t.bannerUrl || t.logoUrl ? (
-                          <img
+                          <Image
                             src={t.bannerUrl || t.logoUrl}
                             alt=""
+                            fill
                             loading="lazy"
-                            className="absolute inset-0 h-full w-full object-cover opacity-55 transition-opacity group-hover:opacity-75"
+                            className="object-cover opacity-55 transition-opacity group-hover:opacity-75"
+                            unoptimized
                           />
                         ) : null}
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/55 to-transparent" />

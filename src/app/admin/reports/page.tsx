@@ -17,6 +17,8 @@ import { useEffect, useState } from 'react'
 import { ReportStatsCards } from '@/components/admin/report-stats-cards'
 import { ReportTrendChart } from '@/components/admin/report-trend-chart'
 import { ReportStatusBadge } from '@/components/report-status-badge'
+import { useAuth } from '@/contexts/auth-context'
+import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -54,6 +56,8 @@ const TARGET_ICONS: Record<string, React.ReactNode> = {
 }
 
 export default function AdminReportsPage() {
+  const { user } = useAuth()
+  useRealtimeSync({ userId: user?.id ?? null })
   const [reports, setReports] = useState<ReportEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

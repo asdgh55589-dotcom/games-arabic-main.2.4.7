@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/ui/error-banner'
 import { timeAgo } from '@/lib/format'
 import { AppealDialog } from '@/components/creator/appeal-dialog'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
+import { useAuth } from '@/contexts/auth-context'
+import { useRealtimeSync } from '@/hooks/use-realtime-sync'
 import type { StudioDict } from '@/lib/studio-i18n/types'
 
 interface ReportItem {
@@ -51,6 +53,8 @@ function appealStatusLabel(status: string): string {
   return 'pending'
 }
 
+  const { user } = useAuth()
+  useRealtimeSync({ userId: user?.id ?? null })
 export function ReportsClient() {
   const { dict, locale } = useStudioLanguage()
   const t = dict.reports
