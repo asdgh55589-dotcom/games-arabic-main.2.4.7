@@ -1,13 +1,18 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/official-ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/official-ui/card'
 import { Input } from '@/components/official-ui/input'
 import { Label } from '@/components/official-ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { useTeamPermissions } from '@/hooks/use-team-permissions'
+
+const MarkdownEditor = dynamic(
+  () => import('@/components/ui/markdown-editor').then((m) => ({ default: m.MarkdownEditor })),
+  { ssr: false, loading: () => <div className="h-32 animate-pulse rounded bg-muted" /> },
+)
 
 interface TeamSettings {
   name: string
