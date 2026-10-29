@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'crypto'
+import { createHash, createHmac, timingSafeEqual } from 'crypto'
 
 /**
  * التحقق من بيانات Telegram Login Widget
@@ -27,7 +27,13 @@ export function verifyTelegramAuth(data: Record<string, string>): boolean {
   // حساب الهاش
   const calculatedHash = createHmac('sha256', secretKey).update(checkString).digest('hex')
 
-  return calculatedHash === receivedHash
+  // مقارنة آمنة (constant-time) لمنع timing attacks
+  const calculatedBuf = Buffer.from(calculatedHash, 'hex')
+  const receivedBuf = Buffer.from(receivedHash, 'hex')
+  if (calculatedBuf.length !== receivedBuf.length) {
+    return false
+  }
+  return timingSafeEqual(calculatedBuf, receivedBuf)
 }
 
 /**
@@ -37,5 +43,7 @@ export function isAuthDateValid(authDate: string | number, maxAgeSeconds: number
   const timestamp = typeof authDate === 'string' ? parseInt(authDate, 10) : authDate
   if (isNaN(timestamp)) return false
   const now = Math.floor(Date.now() / 1000)
-  return now - timestamp <= maxAgeSeconds
+  const age = now - timestamp
+  // Reject future dates AND too-old dates (replay prevention)
+  return age >= 0 && age <= maxAgeSeconds
 }

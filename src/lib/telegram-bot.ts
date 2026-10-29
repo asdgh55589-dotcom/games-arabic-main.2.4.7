@@ -37,14 +37,34 @@ function getChannelId(): string | null {
   return process.env.TELEGRAM_CHANNEL_ID || null
 }
 
+/**
+ * Build the full Telegram Bot API URL for a given method.
+ * Kept internal; callers should never log the returned URL directly
+ * because it embeds the bot token. Use `redactTelegramUrl` for logging.
+ */
+export function buildTelegramUrl(token: string, method: string): string {
+  return `${TELEGRAM_API}${token}/${method}`
+}
+
+/**
+ * Redact the bot token from a Telegram API URL so it is safe to log.
+ * Replaces `/bot<TOKEN>/` with `/bot[REDACTED]/`.
+ */
+export function redactTelegramUrl(url: string): string {
+  return url.replace(/\/bot[^/]+\//, '/bot[REDACTED]/')
+}
+
+
 async function apiCall(method: string, body: object): Promise<TelegramResponse> {
   const token = getBotToken()
   if (!token) {
     return { ok: false, description: 'Bot token not configured' }
   }
 
+  const url = buildTelegramUrl(token, method)
+
   const run = () =>
-    fetch(`${TELEGRAM_API}${token}/${method}`, {
+    fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -69,7 +89,9 @@ async function apiCall(method: string, body: object): Promise<TelegramResponse> 
       reportError: () => 'skipped' as const,
     }))
     reportError(err, { route: `telegram-bot:${method}` })
-    return { ok: false, description: String(err) }
+    // Redact any token that might leak via error string / URL.
+    const safeDescription = redactTelegramUrl(String(err))
+    return { ok: false, description: safeDescription }
   }
 }
 
