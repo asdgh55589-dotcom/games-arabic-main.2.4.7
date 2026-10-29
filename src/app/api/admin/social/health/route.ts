@@ -166,7 +166,8 @@ export async function GET(req: NextRequest) {
       summary: {
         degraded:
           botsHealth.filter((b) => b.degraded).length +
-          destinationsHealth.filter((d) => d.degraded).length,
+          destinationsHealth.filter((d) => d.degraded).length +
+          routesHealth.filter((r) => !r.green).length,
         greenAll:
           botsHealth.every((b) => b.green) &&
           destinationsHealth.every((d) => d.green) &&

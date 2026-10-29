@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { internalError, ok, rateLimited } from '@/lib/api-response'
 import { reportError } from '@/lib/error-reporting'
 import { rateLimit } from '@/lib/rate-limit'
-import { redisGet, redisSet } from '@/lib/redis'
+import { redisGet, redisSet, redisSetNX } from '@/lib/redis'
 import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
@@ -32,6 +32,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
+
+    // Idempotency: dedup by update_id to prevent duplicate processing.
+    const updateId = body?.update_id
+    if (updateId != null) {
+      const isNew = await redisSetNX(`tg:webhook:${updateId}`, 3600)
+      if (!isNew) {
+        return ok({ ok: true, deduped: true })
+      }
+    }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (!botToken || botToken === 'REPLACE_WITH_BOT_TOKEN') {

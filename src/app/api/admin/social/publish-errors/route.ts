@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       }),
       db.publishErrorEvent.count({ where: { resolvedAt: null } }),
       db.publishErrorEvent.count({
-        where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        where: { resolvedAt: null, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
       }),
     ])
 
