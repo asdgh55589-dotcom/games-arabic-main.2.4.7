@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 import { PostEditor } from '@/components/admin/social/post-editor'

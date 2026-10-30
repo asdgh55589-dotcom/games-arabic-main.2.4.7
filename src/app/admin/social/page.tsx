@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 import { CalendarClock, CheckCircle2, Link2, Send, Share2, XCircle } from 'lucide-react'

@@ -71,33 +71,27 @@ export const ADMIN_PAGE_GROUPS: AdminPageGroup[] = [
     ],
   },
   {
-    label: 'السوشيال ميديا',
+    label: 'إدارة الميديا',
     pages: [
-      // صفحات اللمحة والمركز: قراءة requireAdmin ⇒ minRole admin.
-      // صفحتا المنشورات/القوالب (W3): requireManager ⇒ minRole manager —
-      // تسجيلهما يجعل claim الـ API (‎/api/admin/social/telegram/posts|templates)
-      // يُنسب للصفحة الصحيحة بدل صفحة المركز social-telegram.
+      p('/admin/media', 'نظرة عامة', 'admin'),
+      p('/admin/media/assets', 'الأصول', 'manager'),
+      p('/admin/media/channels', 'القنوات', 'admin'),
+      p('/admin/media/publish', 'النشر', 'manager'),
+      p('/admin/media/reports', 'التقارير', 'admin'),
+    ],
+  },
+  {
+    label: 'صفحات قديمة',
+    pages: [
       p('/admin/social', 'نظرة عامة', 'admin'),
       p('/admin/social/channels', 'القنوات', 'admin'),
       p('/admin/social/telegram', 'تيليجرام', 'admin'),
       p('/admin/social/telegram/posts', 'منشورات', 'manager'),
       p('/admin/social/telegram/templates', 'القوالب', 'manager'),
-      // المرحلة 1: صفحة إدارة الوجهات (manager-only مثل المنشورات).
       p('/admin/social/telegram/destinations', 'الوجهات', 'manager'),
-      // المرحلة 3: مصفوفة التوجيه (manager-only).
       p('/admin/social/telegram/routing', 'التوجيه', 'manager'),
-      // المرحلة 5: الأرشيف (منشورات + قوالب) — manager-only،
-      // الخلود: الاستعادة والتصدير/الاستيراد من هنا فقط.
       p('/admin/social/telegram/archive', 'أرشيف المنشورات', 'manager'),
       p('/admin/social/telegram/templates/archive', 'أرشيف القوالب', 'manager'),
-    ],
-  },
-  {
-    // المرحلة 4: صفحة الجدولة الموحدة للأدمن العامل (manager-only).
-    label: 'النشر المجدول',
-    // مرحلة 6: مركز أخطاء النشر (قراءة admin عبر requireAdmin) ومساعدة
-    // النشر (ثابتة مرئية للإدارة — القراءة فقط).
-    pages: [
       p('/admin/publish/schedule', 'مهام الجدولة', 'manager'),
       p('/admin/publish/errors', 'مركز أخطاء النشر', 'admin'),
       p('/admin/publish/help', 'مساعدة النشر', 'manager'),
@@ -162,6 +156,35 @@ export function apiPathToAdminPath(apiPath: string): string | null {
   return rest
 }
 
+// خريطة ترحيل claims القديمة → صفحات الميديا الموحدة (Phase 2).
+// مستخدمون لديهم claims قديمة (social, social-channels, ...) يحصلون تلقائياً
+// على صلاحية الصفحات المقابلة في /admin/media لتفادي حلقات 301.
+const LEGACY_TO_NEW_PAGE_KEY: Record<string, string> = {
+  social: 'media',
+  'social-channels': 'media-channels',
+  'social-telegram': 'media-reports',
+  'social-telegram-posts': 'media-publish',
+  'social-telegram-templates': 'media-assets',
+  'social-telegram-destinations': 'media-channels',
+  'social-telegram-routing': 'media-channels',
+  'social-telegram-archive': 'media-publish',
+  'social-telegram-templates-archive': 'media-assets',
+  'publish-schedule': 'media-publish',
+  'publish-errors': 'media-publish',
+  'publish-help': 'media-publish',
+}
+
+/** وسّع claims القديمة لتشمل صفحات الميديا الموحدة المقابلة. */
+export function expandLegacyClaims(pagesClaim: string[] | undefined): string[] {
+  if (!Array.isArray(pagesClaim)) return []
+  const expanded = new Set(pagesClaim)
+  for (const key of pagesClaim) {
+    const mapped = LEGACY_TO_NEW_PAGE_KEY[key]
+    if (mapped) expanded.add(mapped)
+  }
+  return [...expanded]
+}
+
 /** هل مسموح حسب claim الصفحات؟ (claim غائب/فارغ = النظام الافتراضي حسب الرتبة) */
 export function isPathAllowedByPagesClaim(
   pathname: string,
@@ -172,5 +195,6 @@ export function isPathAllowedByPagesClaim(
   if (!Array.isArray(pagesClaim) || pagesClaim.length === 0) return true // لا تخصيص
   const def = findPageForPath(pathname)
   if (!def) return false
-  return pagesClaim.includes(def.key)
+  const expanded = expandLegacyClaims(pagesClaim)
+  return expanded.includes(def.key)
 }

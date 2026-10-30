@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 /**

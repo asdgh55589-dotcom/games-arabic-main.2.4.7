@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'

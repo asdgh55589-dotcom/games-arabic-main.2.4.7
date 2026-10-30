@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 import { AlertCircle, Loader2 } from 'lucide-react'
