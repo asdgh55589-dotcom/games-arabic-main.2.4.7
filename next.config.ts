@@ -112,6 +112,22 @@ const nextConfig: NextConfig = {
       // old /become-creator links go straight to the application form.
       { source: '/become-creator', destination: '/become-creator/apply', permanent: true },
 
+      // Media consolidation (301)
+      { source: '/admin/social', destination: '/admin/media', permanent: true },
+      { source: '/admin/social/channels', destination: '/admin/media/channels', permanent: true },
+      { source: '/admin/social/telegram', destination: '/admin/media', permanent: true },
+      { source: '/admin/social/telegram/posts', destination: '/admin/media/publish', permanent: true },
+      { source: '/admin/social/telegram/posts/new', destination: '/admin/media/publish?new=1', permanent: true },
+      { source: '/admin/social/telegram/posts/:id', destination: '/admin/media/publish/:id', permanent: true },
+      { source: '/admin/social/telegram/templates', destination: '/admin/media/assets', permanent: true },
+      { source: '/admin/social/telegram/templates/archive', destination: '/admin/media/assets?tab=archived', permanent: true },
+      { source: '/admin/social/telegram/destinations', destination: '/admin/media/channels?tab=destinations', permanent: true },
+      { source: '/admin/social/telegram/routing', destination: '/admin/media/channels?tab=routing', permanent: true },
+      { source: '/admin/social/telegram/archive', destination: '/admin/media/publish?tab=archive', permanent: true },
+      { source: '/admin/publish/schedule', destination: '/admin/media/publish?tab=schedule', permanent: true },
+      { source: '/admin/publish/errors', destination: '/admin/media/publish?tab=errors', permanent: true },
+      { source: '/admin/publish/help', destination: '/admin/media/publish?help=1', permanent: true },
+
       // Auth / Settings / Notifications
       { source: '/:path*', destination: '/login',         permanent: true, has: [{ type: 'query', key: 'view', value: 'login' }] },
       { source: '/:path*', destination: '/settings',      permanent: true, has: [{ type: 'query', key: 'view', value: 'settings' }] },

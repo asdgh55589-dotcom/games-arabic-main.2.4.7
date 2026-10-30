@@ -18,11 +18,12 @@ import { NextResponse } from 'next/server'
 import {
   ADMIN_PAGES_FLAT,
   apiPathToAdminPath,
+  expandLegacyClaims,
   findPageForPath,
   isPathAllowedByPagesClaim,
 } from '@/lib/admin-pages'
-import { getIpBanCache, getIpBanCacheResult } from '@/lib/ip-ban-cache'
 import { validateCsrf } from '@/lib/csrf'
+import { getIpBanCache, getIpBanCacheResult } from '@/lib/ip-ban-cache'
 import { logError, logger } from '@/lib/logger'
 import { trackRoute } from '@/lib/observability/middleware'
 import { getOnboardingGate, ONBOARDING_PATH } from '@/lib/onboarding'
@@ -777,9 +778,10 @@ async function proxyInner(req: NextRequest) {
       rolePayload.pages.length > 0 &&
       !isPathAllowedByPagesClaim(pathname, rolePayload.pages, rolePayload.role as string)
     ) {
-      const allowedHrefs = ADMIN_PAGES_FLAT.filter((d) =>
-        (rolePayload.pages as string[]).includes(d.key),
-      ).map((d) => d.href)
+      const expandedPages = expandLegacyClaims(rolePayload.pages as string[])
+      const allowedHrefs = ADMIN_PAGES_FLAT.filter((d) => expandedPages.includes(d.key)).map(
+        (d) => d.href,
+      )
       const target = allowedHrefs[0] ?? '/admin/login'
       const redirectRes = NextResponse.redirect(new URL(target, req.url), 307)
       copyCookies(supabaseResponse, redirectRes)

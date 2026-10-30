@@ -119,60 +119,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    // W2: مركز السوشيال ميديا (لمحة/قنوات/تيليجرام) — adminOnly.
-    // W3: منشورات/قوالب تيليجرام — managerOnly (تطابق requireManager).
-    label: 'السوشيال ميديا',
+    label: 'إدارة الميديا',
     items: [
-      { href: '/admin/social', label: 'نظرة عامة', icon: Share2, adminOnly: true, exact: true },
-      { href: '/admin/social/channels', label: 'القنوات', icon: Radio, adminOnly: true },
-      { href: '/admin/social/telegram', label: 'تيليجرام', icon: Send, adminOnly: true },
-      {
-        href: '/admin/social/telegram/posts',
-        label: 'منشورات',
-        icon: Newspaper,
-        managerOnly: true,
-      },
-      {
-        href: '/admin/social/telegram/templates',
-        label: 'القوالب',
-        icon: FileText,
-        managerOnly: true,
-      },
-      {
-        href: '/admin/social/telegram/destinations',
-        label: 'الوجهات',
-        icon: Link2,
-        managerOnly: true,
-      },
-      {
-        href: '/admin/social/telegram/routing',
-        label: 'التوجيه',
-        icon: Route,
-        managerOnly: true,
-      },
-      {
-        href: '/admin/social/telegram/archive',
-        label: 'أرشيف المنشورات',
-        icon: Archive,
-        managerOnly: true,
-      },
-      {
-        href: '/admin/social/telegram/templates/archive',
-        label: 'أرشيف القوالب',
-        icon: Archive,
-        managerOnly: true,
-      },
-    ],
-  },
-  {
-    label: 'النشر المجدول',
-    items: [
-      {
-        href: '/admin/publish/schedule',
-        label: 'مهام الجدولة',
-        icon: Clock,
-        managerOnly: true,
-      },
+      { href: '/admin/media', label: 'نظرة عامة', icon: Share2, adminOnly: true, exact: true },
+      { href: '/admin/media/assets', label: 'الأصول', icon: FileText, managerOnly: true },
+      { href: '/admin/media/channels', label: 'القنوات', icon: Radio, adminOnly: true },
+      { href: '/admin/media/publish', label: 'النشر', icon: Send, managerOnly: true },
+      { href: '/admin/media/reports', label: 'التقارير', icon: BarChart3, adminOnly: true },
     ],
   },
   {

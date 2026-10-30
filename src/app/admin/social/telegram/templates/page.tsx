@@ -1,3 +1,4 @@
+// DEPRECATED: consolidated into /admin/media
 'use client'
 
 import { FileText, Loader2, Pencil, Plus, Send, Trash2 } from 'lucide-react'
