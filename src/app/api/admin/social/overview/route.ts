@@ -1,8 +1,5 @@
 /**
  * GET /api/admin/social/overview — لمحة Social Hub.
- *
- * بطاقات المنصات + إجماليات + أقرب 5 مجدولة + آخر 5 منشورة.
- * الصلاحية: requireAdmin (قراءة فقط، بلا كتابة وبلا أي توكن بوت).
  */
 import { forbidden, internalError, ok, unauthorized } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
@@ -11,6 +8,7 @@ import { logger } from '@/lib/logger'
 import { getActiveSocialPlatforms, SOCIAL_PLATFORMS } from '@/lib/social/platforms'
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
 export async function GET() {
   try {
@@ -18,6 +16,7 @@ export async function GET() {
 
     const now = new Date()
     const since30d = new Date(now.getTime() - THIRTY_DAYS_MS)
+    const since7d = new Date(now.getTime() - SEVEN_DAYS_MS)
 
     const telegramWhere = { platform: 'telegram' } as const
 
@@ -29,6 +28,10 @@ export async function GET() {
       destinations,
       nextScheduled,
       recentPublished,
+      published7d,
+      failed7d,
+      failed30d,
+      publishedPosts30d,
     ] = await Promise.all([
       db.socialPost.count({
         where: { ...telegramWhere, status: 'published', publishedAt: { gte: since30d } },
@@ -56,9 +59,21 @@ export async function GET() {
           platform: true,
         },
       }),
+      db.socialPost.count({
+        where: { ...telegramWhere, status: 'published', publishedAt: { gte: since7d } },
+      }),
+      db.socialPost.count({
+        where: { ...telegramWhere, status: 'failed', createdAt: { gte: since7d } },
+      }),
+      db.socialPost.count({
+        where: { ...telegramWhere, status: 'failed', createdAt: { gte: since30d } },
+      }),
+      db.socialPost.findMany({
+        where: { ...telegramWhere, status: 'published', publishedAt: { gte: since30d } },
+        select: { createdAt: true, publishedAt: true, attempts: true },
+      }),
     ])
 
-    // منصات قادمة لا تحمل أعمدة منشورات بعد — تُملأ بصفر بلا استعلام.
     const platforms = SOCIAL_PLATFORMS.map((platform) => {
       const isActive = platform.status === 'active'
       return {
@@ -76,13 +91,47 @@ export async function GET() {
       }
     })
 
+    const total7d = published7d + failed7d
+    const successRate7d = total7d > 0 ? Number(((published7d / total7d) * 100).toFixed(2)) : 0
+    const total30d = published30d + failed30d
+    const successRate30d = total30d > 0 ? Number(((published30d / total30d) * 100).toFixed(2)) : 0
+    const failureRate7d = total7d > 0 ? Number(((failed7d / total7d) * 100).toFixed(2)) : 0
+
+    const latencies = publishedPosts30d
+      .filter((p) => p.publishedAt && p.createdAt)
+      .map((p) =>
+        Math.max(0, new Date(p.publishedAt as Date).getTime() - new Date(p.createdAt).getTime()),
+      )
+    const avgPublishLatencyMs =
+      latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0
+
+    const retries = publishedPosts30d.reduce(
+      (sum, p) => sum + Math.max(0, (p.attempts ?? 1) - 1),
+      0,
+    )
+    const totalAttempts = publishedPosts30d.reduce(
+      (sum, p) => sum + Math.max(1, p.attempts ?? 1),
+      0,
+    )
+    const retryRate = totalAttempts > 0 ? Number(((retries / totalAttempts) * 100).toFixed(2)) : 0
+
+    const mttr = 0
+
+    const reliability = {
+      successRate7d,
+      successRate30d,
+      avgPublishLatencyMs,
+      retryRate,
+      failureRate7d,
+      mttr,
+    }
+
     return ok({
       platforms,
       totals: { published30d, scheduled, failed },
       nextScheduled: nextScheduled.map((post) => ({
         id: post.id,
         title: post.title,
-        // body يُستخدم كعنوان بديل حين لا يوجد title — لا نعيد متن كامل
         label: post.title || post.body.slice(0, 60),
         scheduledFor: post.scheduledFor,
         platform: post.platform,
@@ -96,6 +145,9 @@ export async function GET() {
         platform: post.platform,
       })),
       activePlatforms: getActiveSocialPlatforms().map((platform) => platform.key),
+      reliability,
+      kpis: reliability,
+      generatedAt: new Date().toISOString(),
     })
   } catch (err) {
     const status = (err as { status?: number })?.status

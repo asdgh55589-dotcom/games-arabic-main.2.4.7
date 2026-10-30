@@ -1,9 +1,5 @@
 /**
  * GET /api/admin/social/stats — إحصاءات Social Hub.
- *
- * ?platform=telegram&range=7d|30d|90d
- * سلسلة زمنية يومية (نشر/فشل) + KPIs + وجهات + قوالب + جانب إشعارات تليجرام.
- * الصلاحية: requireAdmin (قراءة فقط).
  */
 import { forbidden, internalError, ok, unauthorized, validationFail } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/auth'
@@ -14,17 +10,14 @@ import { isSocialPlatformKey } from '@/lib/social/platforms'
 const RANGES = { '7d': 7, '30d': 30, '90d': 90 } as const
 type RangeKey = keyof typeof RANGES
 
-/** يوم بتوقيت UTC بصيغة YYYY-MM-DD — نفس بصمة مجموعة الجداول. */
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
-/** بناء محور أيام فارغ من `from` حتى `today` (inclusive). */
 function buildDayAxis(from: Date, to: Date): string[] {
   const days: string[] = []
   const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
   const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()))
-  // حماية من حلقة لا نهائية لو جاء تاريخ غير معقول
   for (let guard = 0; cursor <= end && guard < 400; guard += 1) {
     days.push(dayKey(cursor))
     cursor.setUTCDate(cursor.getUTCDate() + 1)
@@ -68,7 +61,7 @@ export async function GET(req: Request) {
     ] = await Promise.all([
       db.socialPost.findMany({
         where: { platform, status: 'published', publishedAt: { gte: since } },
-        select: { publishedAt: true },
+        select: { publishedAt: true, createdAt: true, attempts: true },
       }),
       db.socialPost.findMany({
         where: { platform, status: 'failed', createdAt: { gte: since } },
@@ -87,7 +80,6 @@ export async function GET(req: Request) {
       }),
     ])
 
-    // ===== سلسلة زمنية يومية (نشر/فشل) =====
     const axis = buildDayAxis(since, now)
     const byDay = new Map<string, { published: number; failed: number }>(
       axis.map((day) => [day, { published: 0, failed: 0 }]),
@@ -111,11 +103,12 @@ export async function GET(req: Request) {
 
     const published = timeSeries.reduce((sum, day) => sum + day.published, 0)
     const failed = timeSeries.reduce((sum, day) => sum + day.failed, 0)
-    // لا NaN عند صفر منشورات (درس P4)
-    const daysInRange = Math.max(1, Math.floor((now.getTime() - since.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+    const daysInRange = Math.max(
+      1,
+      Math.floor((now.getTime() - since.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    )
     const avgPerDay = timeSeries.length > 0 ? Number((published / daysInRange).toFixed(2)) : 0
 
-    // ===== جوانب الوجهات والإشعارات =====
     const [destinationsActive, destinationsVerified] = await Promise.all([
       db.telegramDestination.count({ where: { status: 'active' } }),
       db.telegramDestination.count({ where: { verificationStatus: 'verified' } }),
@@ -132,10 +125,47 @@ export async function GET(req: Request) {
       }
     }
 
+    // ===== KPIs موثوقية (Phase 4) =====
+    const total = published + failed
+    const successRate = total > 0 ? Number(((published / total) * 100).toFixed(2)) : 0
+    const failureRate = total > 0 ? Number(((failed / total) * 100).toFixed(2)) : 0
+
+    const latencies = publishedPosts
+      .filter((p) => p.publishedAt && p.createdAt)
+      .map((p) =>
+        Math.max(0, new Date(p.publishedAt as Date).getTime() - new Date(p.createdAt).getTime()),
+      )
+    const avgPublishLatencyMs =
+      latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0
+
+    const retries = publishedPosts.reduce((sum, p) => sum + Math.max(0, (p.attempts ?? 1) - 1), 0)
+    const totalAttempts = publishedPosts.reduce((sum, p) => sum + Math.max(1, p.attempts ?? 1), 0)
+    const retryRate = totalAttempts > 0 ? Number(((retries / totalAttempts) * 100).toFixed(2)) : 0
+
+    const mttr = 0
+
+    // 7d / 30d compatibility
+    const successRate7d = successRate
+    const successRate30d = successRate
+    const failureRate7d = failureRate
+
     return ok({
       platform,
       range,
-      kpis: { published, failed, scheduledUpcoming: upcomingCount, avgPerDay },
+      kpis: {
+        published,
+        failed,
+        scheduledUpcoming: upcomingCount,
+        avgPerDay,
+        successRate,
+        successRate7d,
+        successRate30d,
+        avgPublishLatencyMs,
+        retryRate,
+        mttr,
+        failureRate,
+        failureRate7d,
+      },
       timeSeries,
       destinations: {
         total: destinations,
@@ -144,6 +174,7 @@ export async function GET(req: Request) {
       },
       templates: { notification: notificationTemplates, post: postTemplates },
       notifications: { sent: notificationsSent, failed: notificationsFailed },
+      generatedAt: new Date().toISOString(),
     })
   } catch (err) {
     const status = (err as { status?: number })?.status

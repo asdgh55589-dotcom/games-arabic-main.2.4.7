@@ -113,6 +113,26 @@ export default function SocialOverviewPage() {
         <Send className="h-3.5 w-3.5" />
         <span>تليجرام هي المنصة النشطة حالياً؛ فيسبوك ويوتيوب ضمن خارطة الطريق.</span>
       </div>
+
+      {(data as any)?.generatedAt ? (
+        <div className="text-[12px] text-muted-foreground">
+          آخر تحديث: {new Date((data as any).generatedAt).toLocaleString('ar-SA')}
+        </div>
+      ) : null}
+
+      {(data as any)?.reliability ? (
+        <div className="rounded-xl border bg-card p-4">
+          <h2 className="mb-3 font-semibold text-foreground text-[15px]">Reliability</h2>
+          <div className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-3">
+            <div>successRate7d: {(data as any).reliability.successRate7d}%</div>
+            <div>successRate30d: {(data as any).reliability.successRate30d}%</div>
+            <div>avgPublishLatencyMs: {(data as any).reliability.avgPublishLatencyMs}</div>
+            <div>retryRate: {(data as any).reliability.retryRate}%</div>
+            <div>failureRate7d: {(data as any).reliability.failureRate7d}%</div>
+            <div>mttr: {(data as any).reliability.mttr}</div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
