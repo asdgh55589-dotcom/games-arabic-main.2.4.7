@@ -31,13 +31,6 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { getTokenVersionCache } from '@/lib/token-version-cache'
 
 const ROLE_COOKIE_NAME = 'ga_admin_role'
-const JWT_SECRET = (() => {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET environment variable is required')
-  }
-  return new TextEncoder().encode(secret)
-})()
 
 const PUBLIC_ADMIN_PATHS = ['/admin/login']
 
@@ -63,8 +56,14 @@ export async function getRoleFromCookie(
 ): Promise<RoleCookiePayload | null> {
   const token = req.cookies.get(ROLE_COOKIE_NAME)?.value
   if (!token) return null
+
+  // Read the secret at request time so a missing preview variable does not crash
+  // the proxy during module evaluation. Without a secret, reject the cookie.
+  const secret = process.env.JWT_SECRET
+  if (!secret) return null
+
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
     const userId = payload.userId as string
     const role = payload.role as string
     const tv = typeof payload.tv === 'number' ? payload.tv : undefined
@@ -837,7 +836,7 @@ async function proxyInner(req: NextRequest) {
     }
     // Track gate (Phase 4): news.create is publisher-only — translators
     // (creator role) get 403 even though they pass the studio gate above.
-    // Role IS the track post-approval (translator→creator, publisher→publisher).
+    // Role IS the track post-approval (translator��creator, publisher→publisher).
     if (pathname === '/api/creator/news' || pathname.startsWith('/api/creator/news/')) {
       const NEWS_PUBLISHERS = ['publisher', 'moderator', 'admin', 'manager', 'owner']
       if (!NEWS_PUBLISHERS.includes(rolePayload.role)) {
