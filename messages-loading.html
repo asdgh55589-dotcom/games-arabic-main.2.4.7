@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>رسائل الانتظار — ثلاثة مفاهيم</title>
+<style>
+  :root{
+    --bg:#0a0e14;--panel:#10151d;--panel-2:#151b25;
+    --line:#232b38;--line-soft:#1b2330;
+    --txt:#e8edf4;--txt-dim:#8b96a7;--txt-faint:#5c6678;
+    --teal-deep:#0b3d3a;--teal-deep-hi:#0f524d;--teal:#2dd4bf;
+    --amber:#f0b429;--radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,sans-serif;font-size:14px;line-height:1.6;padding-bottom:80px}
+  .nav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;padding:12px;background:rgba(10,14,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .nav a{color:var(--txt-dim);text-decoration:none;font-weight:700;font-size:13px;padding:7px 16px;border:1px solid var(--line);border-radius:999px;transition:.15s}
+  .nav a:hover{color:var(--txt);border-color:var(--txt-faint)}
+  .concept{max-width:860px;margin:0 auto;padding:36px 16px 8px}
+  .concept-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .concept-num{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--teal-deep);color:var(--teal);font-weight:900;font-size:15px;flex:none}
+  .concept-head h2{font-size:20px;font-weight:900}
+  .concept-tag{font-size:11px;font-weight:700;color:var(--txt-dim);background:var(--panel-2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+  .concept-desc{color:var(--txt-dim);font-size:13px;margin-bottom:18px;max-width:70ch}
+  .concept-desc b{color:var(--txt)}
+  .demo-frame{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+  .frame-label{font-size:10px;letter-spacing:.12em;color:var(--txt-faint);font-weight:800;margin-bottom:12px}
+  hr.sep{border:none;border-top:1px solid var(--line);margin:44px 0 0}
+
+  .btn-demo{
+    font:inherit;font-size:12px;font-weight:800;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    padding:7px 14px;border-radius:7px;transition:.15s;margin-bottom:14px;
+  }
+  .btn-demo:hover{background:#146b63}
+
+  /* ============================================================
+     الترس — دوران «تكه تكه» (steps) — يدور بزوايا ثابتة
+     ============================================================ */
+  .gear{width:48px;height:48px;color:var(--teal);display:block}
+  .gear path{fill:currentColor}
+  /* ترس كبير */
+  .gear.ticking{animation:tick 1.4s steps(8) infinite}
+  /* ترس صغير */
+  .gear.sm{width:18px;height:18px}
+  .gear.sm.ticking{animation:tick 1.2s steps(8) infinite}
+  .gear.md{width:30px;height:30px}
+  .gear.lg{width:64px;height:64px}
+  .gear.amber{color:var(--amber)}
+  /* ترس ثانٍ متعاكس بلون أخف — إحساس ميكانيكي */
+  .gear-stack{position:relative;width:64px;height:64px;flex:none}
+  .gear-stack .gear{position:absolute}
+  .gear-stack .g1{top:0;left:0}
+  .gear-stack .g2{width:26px;height:26px;bottom:-2px;right:-4px;color:var(--txt-faint)}
+  .gear-stack .g2.ticking{animation:tick-r 1.6s steps(8) infinite}
+  @keyframes tick{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes tick-r{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+
+  /* ========== مفهوم ١: طبقة كاملة ========== */
+  .overlay-root{position:relative;min-height:360px;border-radius:10px;background:#0d1219;border:1px solid var(--line-soft);display:grid;place-items:center;padding:20px}
+  .hint-idle{color:var(--txt-faint);font-size:12px;font-weight:700;text-align:center}
+  .full-loader{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;
+    background:rgba(10,14,20,.82);backdrop-filter:blur(6px);
+    border-radius:10px;padding:24px;
+    animation:fadeIn .2s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .full-loader .title{font-size:16px;font-weight:900}
+  .full-loader .sub{font-size:12px;color:var(--txt-dim);font-weight:700;margin-top:-8px}
+  .pct{font-size:22px;font-weight:900;color:var(--teal);font-variant-numeric:tabular-nums}
+  .pbar{width:min(280px,70%);height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+  .pbar .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--teal-deep-hi),var(--teal));border-radius:99px;transition:width .25s linear}
+  .cancel-load{
+    font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;
+    background:transparent;color:var(--txt-dim);border:1px solid var(--line);
+    padding:5px 14px;border-radius:6px;transition:.15s;
+  }
+  .cancel-load:hover{color:var(--txt);border-color:var(--txt-faint)}
+
+  /* ========== مفهوم ٢: مصغّر مدمج ========== */
+  .inline-demo{display:flex;flex-direction:column;gap:12px}
+  .icard{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:14px;display:flex;align-items:center;gap:12px;
+  }
+  .icard-info{flex:1;min-width:0}
+  .icard-title{font-size:13.5px;font-weight:900}
+  .icard-sub{font-size:11.5px;color:var(--txt-dim);font-weight:700;display:flex;align-items:center;gap:6px;margin-top:2px}
+  .icard-sub .gear{vertical-align:middle}
+  .inline-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font:inherit;font-size:12px;font-weight:900;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    padding:8px 16px;border-radius:7px;transition:.15s;min-height:40px;
+  }
+  .inline-btn:disabled{opacity:.75;cursor:wait}
+  .chip-load{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:11.5px;font-weight:800;color:var(--teal);
+    background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.3);
+    padding:5px 12px;border-radius:999px;
+  }
+
+  /* ========== مفهوم ٣: مراحل التجهيز ========== */
+  .stepper{
+    max-width:420px;margin:0 auto;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:18px;
+  }
+  .stepper-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .stepper-head .title{font-size:14.5px;font-weight:900}
+  .stepper-head .sub{font-size:11.5px;color:var(--txt-dim);font-weight:700}
+  .steps{display:flex;flex-direction:column;gap:0;margin-bottom:14px}
+  .step{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 2px;font-size:12.5px;font-weight:700;color:var(--txt-faint);
+    transition:color .2s;
+  }
+  .step-dot{
+    width:20px;height:20px;border-radius:50%;flex:none;
+    border:2px solid var(--line);display:grid;place-items:center;
+    font-size:10px;font-weight:900;transition:.2s;background:var(--panel);
+  }
+  .step.active{color:var(--txt)}
+  .step.active .step-dot{border-color:var(--teal);color:var(--teal)}
+  .step.done{color:var(--txt-dim)}
+  .step.done .step-dot{background:var(--teal-deep);border-color:var(--teal-deep);color:var(--teal)}
+  .step-line{width:2px;height:10px;background:var(--line);margin-right:9px}
+  .step.done + .step-line{background:var(--teal-deep-hi)}
+  .stepper-foot{display:flex;align-items:center;gap:10px}
+  .stepper-foot .pbar{flex:1;width:auto}
+  .stepper-foot .pct{font-size:14px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#c1">١ — طبقة كاملة</a>
+  <a href="#c2">٢ — مصغّر مدمج</a>
+  <a href="#c3">٣ — مراحل التجهيز</a>
+</nav>
+
+<!-- ترس SVG -->
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="ic-gear" viewBox="0 0 24 24">
+    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+  </symbol>
+</defs></svg>
+
+<!-- ========================= المفهوم ١ ========================= -->
+<section class="concept" id="c1">
+  <div class="concept-head">
+    <span class="concept-num">١</span>
+    <h2>طبقة كاملة</h2>
+    <span class="concept-tag">تغطي الشاشة • ترس كبير يدور تكه</span>
+  </div>
+  <p class="concept-desc">
+    طبقة انتظار <b>تغطي كامل المنطقة</b> بضباب داكن — ترس كبير يدور بخطوات ثابتة (تكه تكه) + عنوان + نص
+    + نسبة مئوية + شريط تقدم + زر إلغاء. تُستخدم قبل فتح رابط التحميل أو أثناء التحقق.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">اضغط الزر لتشغيل الانتظار (١٠ ثوانٍ وهمية)</div>
+    <button class="btn-demo" onclick="runFull()">▶ شغّل طبقة الانتظار</button>
+    <div class="overlay-root" id="fullRoot">
+      <div class="hint-idle">الطبقة غير نشطة…</div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٢ ========================= -->
+<section class="concept" id="c2">
+  <div class="concept-head">
+    <span class="concept-num">٢</span>
+    <h2>مصغّر مدمج</h2>
+    <span class="concept-tag">داخل كروت وأزرار • ترس صغير</span>
+  </div>
+  <p class="concept-desc">
+    <b>ترس صغير تكه</b> يُدمج داخل أي عنصر — زر أثناء الإرسال، شارة في كارت، أو سطر حالة.
+    لا تغطي الشاشة، وتُظهر الحالة بجانب النص مباشرة.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">ثلاثة أشكال مدمجة</div>
+    <div class="inline-demo">
+      <div class="icard">
+        <svg class="gear md ticking"><use href="#ic-gear"/></svg>
+        <div class="icard-info">
+          <div class="icard-title">Red Dead Redemption 2</div>
+          <div class="icard-sub">جارٍ التحقق من روابط الموقع…</div>
+        </div>
+        <span class="chip-load"><svg class="gear sm ticking"><use href="#ic-gear"/></svg> 62%</span>
+      </div>
+      <div>
+        <button class="inline-btn" id="inlineBtn" onclick="runInline(this)">
+          <svg class="gear sm ticking" id="btnGear"><use href="#ic-gear"/></svg>
+          <span id="btnLabel">جهّز رابط التحميل</span>
+        </button>
+      </div>
+      <div class="icard" style="justify-content:center;color:var(--txt-faint);font-size:12px;font-weight:700">
+        (أمثلة على أماكن دمج الترس: كارت لعبة • زر إجراء • شارة حالة)
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٣ ========================= -->
+<section class="concept" id="c3">
+  <div class="concept-head">
+    <span class="concept-num">٣</span>
+    <h2>مراحل التجهيز</h2>
+    <span class="concept-tag">قائمة خطوات + ترس + شريط تقدم</span>
+  </div>
+  <p class="concept-desc">
+    انتظار <b>متعدد المراحل</b>: كل مرحلة تُعلَّم ✓ بالتتابع مع ترس صغير يدور بجانب العنوان —
+    المستخدم يشوف بالظبط احنا في أنهي خطوة (تحقق → تجهيز → تأكيد).
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">اضغط الزر — الخطوات تكتمل بالتتابع</div>
+    <button class="btn-demo" onclick="runStepper()">▶ شغّل مراحل التجهيز</button>
+    <div class="stepper">
+      <div class="stepper-head">
+        <svg class="gear ticking"><use href="#ic-gear"/></svg>
+        <div>
+          <div class="title">تجهيز رابط التحميل</div>
+          <div class="sub" id="stepSub">اضغط الزر لبدء العملية…</div>
+        </div>
+      </div>
+      <div class="steps" id="steps">
+        <div class="step" data-step><span class="step-dot">١</span> التحقق من الموقع المدعوم</div>
+        <div class="step-line"></div>
+        <div class="step" data-step><span class="step-dot">٢</span> فحص حالة الروابط</div>
+        <div class="step-line"></div>
+        <div class="step" data-step><span class="step-dot">٣</span> تجهيز بيانات اللعبة</div>
+        <div class="step-line"></div>
+        <div class="step" data-step><span class="step-dot">٤</span> إعداد صفحة التحويل</div>
+      </div>
+      <div class="stepper-foot">
+        <div class="pbar"><div class="fill" id="stepFill"></div></div>
+        <span class="pct" id="stepPct">0%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function tick2(ms, onPct, done){
+  var start = Date.now();
+  var timer = setInterval(function(){
+    var p = Math.min(100, Math.round((Date.now() - start) / ms * 100));
+    onPct(p);
+    if(p >= 100){ clearInterval(timer); if(done) done(); }
+  }, 200);
+}
+
+/* مفهوم ١ — طبقة كاملة */
+function runFull(){
+  var root = document.getElementById('fullRoot');
+  root.innerHTML =
+    '<div class="full-loader">' +
+      '<div class="gear-stack">' +
+        '<svg class="gear lg ticking g1"><use href="#ic-gear"/></svg>' +
+        '<svg class="gear ticking g2"><use href="#ic-gear"/></svg>' +
+      '</div>' +
+      '<div class="title">جارٍ تجهيز رابط التحميل</div>' +
+      '<div class="sub">FitGirl Repacks — Red Dead Redemption 2</div>' +
+      '<div class="pct" id="fullPct">0%</div>' +
+      '<div class="pbar"><div class="fill" id="fullFill"></div></div>' +
+      '<button class="cancel-load">إلغاء</button>' +
+    '</div>';
+  root.querySelector('.cancel-load').onclick = function(){
+    root.innerHTML = '<div class="hint-idle">تم إلغاء الانتظار.</div>';
+  };
+  tick2(10000, function(p){
+    var pct = document.getElementById('fullPct');
+    var fill = document.getElementById('fullFill');
+    if(pct){ pct.textContent = p + '%'; fill.style.width = p + '%'; }
+  }, function(){
+    root.innerHTML = '<div class="hint-idle">✓ اكتمل التجهيز — (في التطبيق: الانتقال لصفحة الرابط)</div>';
+  });
+}
+
+/* مفهوم ٢ — زر مدمج */
+function runInline(btn){
+  var gear = document.getElementById('btnGear');
+  var label = document.getElementById('btnLabel');
+  btn.disabled = true;
+  gear.style.display = 'block';
+  label.textContent = 'جارٍ التجهيز…';
+  tick2(3000, function(){}, function(){
+    btn.disabled = false;
+    label.textContent = '✓ جاهز — افتح الرابط';
+    setTimeout(function(){ label.textContent = 'جهّز رابط التحميل'; }, 2500);
+  });
+}
+
+/* مفهوم ٣ — مراحل */
+function runStepper(){
+  var steps = document.querySelectorAll('#steps [data-step]');
+  var fill = document.getElementById('stepFill');
+  var pct = document.getElementById('stepPct');
+  var sub = document.getElementById('stepSub');
+  var labels = ['التحقق من الموقع المدعوم','فحص حالة الروابط','تجهيز بيانات اللعبة','إعداد صفحة التحويل'];
+  steps.forEach(function(s){ s.className = 'step'; });
+  var i = 0;
+  function next(){
+    if(i > 0) steps[i-1].className = 'step done';
+    if(i >= steps.length){
+      fill.style.width = '100%'; pct.textContent = '100%';
+      sub.textContent = '✓ اكتمل التجهيز — جاهز للانتقال';
+      return;
+    }
+    steps[i].className = 'step active';
+    sub.textContent = labels[i] + '…';
+    var p = Math.round((i + 1) / steps.length * 100);
+    fill.style.width = p + '%'; pct.textContent = p + '%';
+    i++;
+    setTimeout(next, 1400);
+  }
+  next();
+}
+</script>
+</body>
+</html>

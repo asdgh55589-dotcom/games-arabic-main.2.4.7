@@ -1,18 +1,15 @@
 /**
  * lib/telegram-bot.ts — Telegram Bot API integration
  *
- * Uses native fetch (no SDK dependency). Supports text messages,
- * photos, and inline keyboards.
+ * Refactored to delegate to TelegramClient (src/lib/telegram/client.ts).
+ * Public exports kept backward compatible.
+ *
+ * @deprecated Prefer TelegramClient from @/lib/telegram/client for new code.
  */
 
-const TELEGRAM_API = 'https://api.telegram.org/bot'
+import { TelegramClient } from '@/lib/telegram/client'
 
-interface TelegramResponse {
-  ok: boolean
-  result?: any
-  description?: string
-  error_code?: number
-}
+const TELEGRAM_API = 'https://api.telegram.org/bot'
 
 interface SendMessageOptions {
   chatId: string
@@ -37,113 +34,44 @@ function getChannelId(): string | null {
   return process.env.TELEGRAM_CHANNEL_ID || null
 }
 
-/**
- * Build the full Telegram Bot API URL for a given method.
- * Kept internal; callers should never log the returned URL directly
- * because it embeds the bot token. Use `redactTelegramUrl` for logging.
- */
 export function buildTelegramUrl(token: string, method: string): string {
   return `${TELEGRAM_API}${token}/${method}`
 }
 
-/**
- * Redact the bot token from a Telegram API URL so it is safe to log.
- * Replaces `/bot<TOKEN>/` with `/bot[REDACTED]/`.
- */
 export function redactTelegramUrl(url: string): string {
   return url.replace(/\/bot[^/]+\//, '/bot[REDACTED]/')
 }
 
-
-async function apiCall(method: string, body: object): Promise<TelegramResponse> {
-  const token = getBotToken()
-  if (!token) {
-    return { ok: false, description: 'Bot token not configured' }
-  }
-
-  const url = buildTelegramUrl(token, method)
-
-  const run = () =>
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
+export async function sendMessage(options: SendMessageOptions): Promise<any> {
+  const client = new TelegramClient()
   try {
-    // Retry network failures via cockatiel (2 attempts, fast backoff).
-    // Lazily imported: cockatiel ships ESM-only, which breaks Jest's CJS
-    // transform at load time — and the policy is optional hardening, not a
-    // correctness requirement. Any failure (import or network) still
-    // resolves to { ok: false } via the fallback plain fetch below.
-    let res: Response
-    try {
-      const { telegramPolicy } = await import('@/lib/resilience/policies')
-      res = await telegramPolicy.execute(run)
-    } catch {
-      res = await run()
-    }
-    return await res.json()
+    return await client.sendMessage({
+      chatId: options.chatId,
+      text: options.text,
+      parseMode: options.parseMode,
+      replyMarkup: options.replyMarkup,
+      disablePreview: options.disablePreview,
+    })
   } catch (err) {
-    const { reportError } = await import('@/lib/error-reporting').catch(() => ({
-      reportError: () => 'skipped' as const,
-    }))
-    reportError(err, { route: `telegram-bot:${method}` })
-    // Redact any token that might leak via error string / URL.
-    const safeDescription = redactTelegramUrl(String(err))
-    return { ok: false, description: safeDescription }
+    return { ok: false, description: redactTelegramUrl(String(err)) }
   }
 }
 
-/**
- * إرسال رسالة نصية
- */
-export async function sendMessage(options: SendMessageOptions): Promise<TelegramResponse> {
-  const { chatId, text, parseMode = 'HTML', replyMarkup, disablePreview } = options
-
-  if (text.length > 4096) {
-    // Split long messages
-    const chunks = splitMessage(text, 4096)
-    const results: TelegramResponse[] = []
-    for (const chunk of chunks) {
-      const result = await apiCall('sendMessage', {
-        chat_id: chatId,
-        text: chunk,
-        parse_mode: parseMode,
-        disable_web_page_preview: disablePreview,
-      })
-      results.push(result)
-    }
-    return results[results.length - 1]
+export async function sendPhoto(options: SendPhotoOptions): Promise<any> {
+  const client = new TelegramClient()
+  try {
+    return await client.sendPhoto({
+      chatId: options.chatId,
+      photo: options.photo,
+      caption: options.caption,
+      parseMode: options.parseMode,
+    })
+  } catch (err) {
+    return { ok: false, description: redactTelegramUrl(String(err)) }
   }
-
-  return apiCall('sendMessage', {
-    chat_id: chatId,
-    text,
-    parse_mode: parseMode,
-    disable_web_page_preview: disablePreview,
-    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-  })
 }
 
-/**
- * إرسال صورة مع تعليق
- */
-export async function sendPhoto(options: SendPhotoOptions): Promise<TelegramResponse> {
-  const { chatId, photo, caption, parseMode = 'HTML' } = options
-
-  return apiCall('sendPhoto', {
-    chat_id: chatId,
-    photo,
-    caption: caption?.slice(0, 1024), // Telegram caption limit
-    parse_mode: parseMode,
-  })
-}
-
-/**
- * إرسال منشور إلى القناة
- */
-export async function sendToChannel(text: string, photoUrl?: string): Promise<TelegramResponse> {
+export async function sendToChannel(text: string, photoUrl?: string): Promise<any> {
   const channelId = getChannelId()
   if (!channelId) {
     return { ok: false, description: 'Channel ID not configured' }
@@ -164,9 +92,6 @@ export async function sendToChannel(text: string, photoUrl?: string): Promise<Te
   })
 }
 
-/**
- * التحقق من إعدادات البوت
- */
 export async function verifyBot(): Promise<{
   configured: boolean
   botInfo?: { username: string; first_name: string }
@@ -177,20 +102,18 @@ export async function verifyBot(): Promise<{
     return { configured: false, error: 'TELEGRAM_BOT_TOKEN not set' }
   }
 
-  const result = await apiCall('getMe', {})
-  if (result.ok) {
-    return {
-      configured: true,
-      botInfo: result.result,
+  const client = new TelegramClient(token)
+  try {
+    const result = await client.getMe()
+    if (result.ok) {
+      return { configured: true, botInfo: result.result }
     }
+    return { configured: false, error: result.description }
+  } catch (err) {
+    return { configured: false, error: redactTelegramUrl(String(err)) }
   }
-
-  return { configured: false, error: result.description }
 }
 
-/**
- * التحقق من صلاحية البوت في القناة
- */
 export async function verifyChannel(): Promise<{
   configured: boolean
   channelInfo?: { title: string; id: number }
@@ -201,41 +124,14 @@ export async function verifyChannel(): Promise<{
     return { configured: false, error: 'TELEGRAM_CHANNEL_ID not set' }
   }
 
-  const result = await apiCall('getChat', { chat_id: channelId })
-  if (result.ok) {
-    return {
-      configured: true,
-      channelInfo: result.result,
+  const client = new TelegramClient()
+  try {
+    const result = await client.getChat(channelId)
+    if (result.ok) {
+      return { configured: true, channelInfo: result.result }
     }
+    return { configured: false, error: result.description }
+  } catch (err) {
+    return { configured: false, error: redactTelegramUrl(String(err)) }
   }
-
-  return { configured: false, error: result.description }
-}
-
-/**
- * تقسيم الرسائل الطويلة
- */
-function splitMessage(text: string, maxLength: number): string[] {
-  if (text.length <= maxLength) return [text]
-
-  const chunks: string[] = []
-  let remaining = text
-
-  while (remaining.length > 0) {
-    if (remaining.length <= maxLength) {
-      chunks.push(remaining)
-      break
-    }
-
-    // Find last newline before limit
-    let splitIdx = remaining.lastIndexOf('\n', maxLength)
-    if (splitIdx === 0 || splitIdx === -1) {
-      splitIdx = maxLength
-    }
-
-    chunks.push(remaining.slice(0, splitIdx))
-    remaining = remaining.slice(splitIdx).trimStart()
-  }
-
-  return chunks
 }

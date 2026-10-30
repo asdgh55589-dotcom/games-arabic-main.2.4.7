@@ -1,0 +1,165 @@
+<!-- DESIGN PHILOSOPHY: "Neon Arcade" — dark-mode glassmorphism for a gaming audience.
+  ONE coherent language (fixes flaw #1): deep navy base, frosted-glass cards
+  (backdrop-blur + 1px translucent borders), and exactly TWO neons — teal #2DD4BF
+  (interactive/brand) + magenta #F0F (energy/alerts). Platform colors are demoted to
+  tiny dot markers so the rainbow (flaw #2) disappears. Single hero focal point,
+  generous 16px radii, soft outer glows instead of hard shadows, static ticker. -->
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games Arabic — Neon Glass Concept</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#070B18;--bg2:#0C1329;--teal:#2DD4BF;--mag:#E879F9;--txt:#F1F5FF;--mut:#9AA7C7;--line:rgba(255,255,255,.1);--glass:rgba(255,255,255,.05)}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.8;overflow-x:hidden}
+.orb{position:fixed;border-radius:50%;filter:blur(110px);opacity:.35;pointer-events:none;z-index:0}
+.o1{width:520px;height:520px;background:#0d9488;top:-160px;left:-120px}
+.o2{width:460px;height:460px;background:#701a75;bottom:-140px;right:-100px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+/* header */
+header.top{position:sticky;top:0;z-index:10;background:rgba(7,11,24,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:16px;padding:14px 0}
+.logo{font-size:24px;font-weight:900;white-space:nowrap}
+.logo b{color:var(--teal);text-shadow:0 0 18px rgba(45,212,191,.8)}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav a{padding:8px 14px;font-size:14px;font-weight:700;color:var(--mut);border-radius:10px;white-space:nowrap}
+nav a:hover{color:#fff;background:var(--glass)}
+nav a.on{color:var(--teal);background:rgba(45,212,191,.12)}
+.search{margin-right:auto;display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:8px 14px;min-width:180px;color:var(--mut);font-size:13px}
+.login{background:var(--teal);color:#04251f;font-weight:800;border-radius:12px;padding:9px 22px;font-size:14px;box-shadow:0 0 24px rgba(45,212,191,.45);white-space:nowrap}
+/* hero */
+.hero{margin:28px 0;border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(45,212,191,.14),rgba(232,121,249,.1)),var(--bg2);padding:56px 48px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(45,212,191,.35),transparent 70%);top:-120px;left:-80px}
+.kicker{display:inline-block;font-size:12px;font-weight:800;color:var(--mag);border:1px solid rgba(232,121,249,.5);border-radius:99px;padding:3px 16px;margin-bottom:14px;box-shadow:0 0 16px rgba(232,121,249,.3)}
+.hero h1{font-size:52px;font-weight:900;line-height:1.4;max-width:16ch}
+.hero h1 .g{background:linear-gradient(90deg,var(--teal),var(--mag));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);max-width:56ch;margin:12px 0 26px;font-size:17px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{padding:13px 34px;border-radius:14px;font-weight:800;font-size:15px}
+.btn.p{background:var(--teal);color:#04251f;box-shadow:0 0 28px rgba(45,212,191,.5)}
+.btn.g{border:1px solid var(--line);background:var(--glass);color:#fff}
+.hstats{display:flex;gap:28px;margin-top:30px;flex-wrap:wrap}
+.hstats div b{font-size:24px;display:block}
+.hstats div span{font-size:12px;color:var(--mut)}
+/* sections */
+.sec{margin:44px 0}
+.shead{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.shead h2{font-size:24px;font-weight:900}
+.shead .ln{flex:1;height:1px;background:linear-gradient(to left,transparent,var(--line))}
+.shead a{font-size:13px;font-weight:700;color:var(--teal);white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:18px;overflow:hidden;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(45,212,191,.18);border-color:rgba(45,212,191,.4)}
+.art{aspect-ratio:16/9;background:linear-gradient(135deg,#123,#456);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-size:13px}
+.a1{background:linear-gradient(135deg,#134e4a,#0e7490)}.a2{background:linear-gradient(135deg,#4a044e,#7e22ce)}.a3{background:linear-gradient(135deg,#1e3a8a,#0ea5e9)}.a4{background:linear-gradient(135deg,#7c2d12,#ea580c)}.a5{background:linear-gradient(135deg,#14532d,#16a34a)}.a6{background:linear-gradient(135deg,#881337,#e11d48)}
+.pad{padding:16px 18px}
+.tag{font-size:11px;font-weight:800;padding:2px 12px;border-radius:99px;background:rgba(45,212,191,.14);color:var(--teal)}
+.tag.hot{background:rgba(232,121,249,.16);color:var(--mag)}
+.card h3{font-size:17px;margin:8px 0 4px}
+.meta{font-size:13px;color:var(--mut);display:flex;gap:14px;flex-wrap:wrap}
+/* trending */
+.trend{display:flex;flex-direction:column;gap:12px}
+.trow{display:flex;align-items:center;gap:16px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:12px 18px;backdrop-filter:blur(12px)}
+.trow:hover{border-color:rgba(232,121,249,.45)}
+.rk{font-size:28px;font-weight:900;color:transparent;-webkit-text-stroke:1.5px var(--teal);min-width:52px;text-align:center}
+.trow:first-child .rk{-webkit-text-stroke:0;color:var(--mag);text-shadow:0 0 16px rgba(232,121,249,.7)}
+.trow .im{width:88px;height:52px;border-radius:10px;flex-shrink:0}
+.trow h4{font-size:16px}
+.trow .dl{margin-right:auto;color:var(--teal);font-weight:800;white-space:nowrap}
+/* platforms */
+.plats{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.plat{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:22px 10px;text-align:center;font-weight:800;font-size:15px;backdrop-filter:blur(12px)}
+.plat:hover{border-color:rgba(45,212,191,.5);box-shadow:0 0 24px rgba(45,212,191,.2)}
+.plat i{display:block;width:12px;height:12px;border-radius:50%;margin:0 auto 10px}
+.plat small{display:block;color:var(--mut);font-weight:400;font-size:12px;margin-top:4px}
+/* series teams */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:22px;backdrop-filter:blur(12px)}
+.panel h3{font-size:18px;margin-bottom:14px}
+.panel a.row{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:15px}
+.panel a.row:last-child{border:0}
+.panel a.row:hover{color:var(--teal)}
+.panel .n{color:var(--mut);font-size:13px}
+/* ticker static */
+.tick{display:flex;gap:10px;align-items:center;background:rgba(232,121,249,.08);border:1px solid rgba(232,121,249,.3);border-radius:14px;padding:10px 18px;font-size:14px;margin-top:20px;overflow:hidden}
+.tick b{color:var(--mag);white-space:nowrap}
+/* footer */
+footer{margin-top:56px;border-top:1px solid var(--line);background:rgba(255,255,255,.02);backdrop-filter:blur(12px)}
+.fgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;padding:40px 0}
+.fgrid h5{font-size:12px;color:var(--mut);margin-bottom:12px}
+.fgrid a{display:block;font-size:14px;color:var(--mut);padding:3px 0}
+.fgrid a:hover{color:var(--teal)}
+.copy{display:flex;justify-content:space-between;padding:16px 0 24px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);flex-wrap:wrap;gap:8px}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.plats{grid-template-columns:repeat(3,1fr)}.duo{grid-template-columns:1fr}.hero{padding:36px 24px}.hero h1{font-size:34px}nav{display:none}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.fgrid{grid-template-columns:1fr 1fr}.search{display:none}.trow .dl{display:none}}
+</style>
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div>
+<header class="top"><div class="wrap bar">
+<div class="logo">Games<b>Arabic</b></div>
+<nav><a href="#" class="on">الرئيسية</a><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a><a href="#">المجتمع</a></nav>
+<div class="search">⌕ &nbsp;ابحث عن تعريب…</div>
+<a class="login" href="#">دخول</a>
+</div></header>
+<div class="wrap">
+<section class="hero">
+<span class="kicker">✦ تعريب مميز — PC</span>
+<h1>Red Dead Redemption 2 <span class="g">بالعربية الكاملة</span></h1>
+<p>ترجمة احترافية للقصة والحوارات والقوائم — 120 ألف سطر بمراجعة لغوية، متوافقة مع آخر تحديث. انضم إلى 8.4 مليون تحميل.</p>
+<div class="cta"><a class="btn p" href="#">⬇ حمّل التعريب</a><a class="btn g" href="#">تصفّح الكل</a></div>
+<div class="hstats"><div><b class="num">2,481</b><span>تعريب</span></div><div><b class="num">8.4M</b><span>تحميل</span></div><div><b class="num">312</b><span>فريق</span></div><div><b class="num">4.9★</b><span>متوسط التقييم</span></div></div>
+</section>
+<div class="tick"><b>عاجل</b><span>تحديث تعريب Elden Ring v2.4 — إصلاح 300 سطر حوار · انطلاق مسابقة أفضل مراجعة لشهر أكتوبر</span></div>
+<section class="sec"><div class="shead"><span class="dot"></span><h2>تعريبات مميزة</h2><span class="ln"></span><a href="#">عرض الكل ←</a></div>
+<div class="grid">
+<article class="card"><div class="art a1">[ ARTWORK ]</div><div class="pad"><span class="tag hot">الأعلى تقييماً</span><h3>تعريب Elden Ring الأسطوري</h3><div class="meta"><span>PC · PS5</span><span class="num">412K تحميل</span><span>★ 4.9</span></div></div></article>
+<article class="card"><div class="art a2">[ ARTWORK ]</div><div class="pad"><span class="tag">مميز</span><h3>تعريب God of War Ragnarök</h3><div class="meta"><span>PS5</span><span class="num">301K تحميل</span><span>★ 4.8</span></div></div></article>
+<article class="card"><div class="art a3">[ ARTWORK ]</div><div class="pad"><span class="tag">مميز</span><h3>تعريب Cyberpunk 2077 — نسخة 2.0</h3><div class="meta"><span>PC</span><span class="num">276K تحميل</span><span>★ 4.7</span></div></div></article>
+</div></section>
+<section class="sec"><div class="shead"><span class="dot"></span><h2>الأكثر رواجاً</h2><span class="ln"></span><a href="#">عرض الكل ←</a></div>
+<div class="trend">
+<a class="trow" href="#"><span class="rk num">1</span><span class="im a4"></span><h4>تعريب Baldur's Gate 3</h4><span class="dl num">▲ 188K</span></a>
+<a class="trow" href="#"><span class="rk num">2</span><span class="im a5"></span><h4>تعريب Spider-Man 2</h4><span class="dl num">▲ 156K</span></a>
+<a class="trow" href="#"><span class="rk num">3</span><span class="im a6"></span><h4>تعريب Starfield</h4><span class="dl num">▲ 121K</span></a>
+<a class="trow" href="#"><span class="rk num">4</span><span class="im a1"></span><h4>تعريب Final Fantasy XVI</h4><span class="dl num">▲ 98K</span></a>
+<a class="trow" href="#"><span class="rk num">5</span><span class="im a2"></span><h4>تعريب Hollow Knight</h4><span class="dl num">▲ 87K</span></a>
+</div></section>
+<section class="sec"><div class="shead"><span class="dot"></span><h2>وصل حديثاً</h2><span class="ln"></span><a href="#">عرض الكل ←</a></div>
+<div class="grid">
+<article class="card"><div class="art a4">[ ARTWORK ]</div><div class="pad"><span class="tag hot">جديد</span><h3>تعريب Alan Wake 2</h3><div class="meta"><span>PC</span><span>قبل 3 ساعات</span></div></div></article>
+<article class="card"><div class="art a5">[ ARTWORK ]</div><div class="pad"><span class="tag hot">جديد</span><h3>تعريب Resident Evil 4 Remake</h3><div class="meta"><span>PS5</span><span>قبل 6 ساعات</span></div></div></article>
+<article class="card"><div class="art a6">[ ARTWORK ]</div><div class="pad"><span class="tag">محدّث</span><h3>تعريب GTA V — تحديث الصيف</h3><div class="meta"><span>PC</span><span>أمس</span></div></div></article>
+</div></section>
+<section class="sec"><div class="shead"><span class="dot"></span><h2>تصفّح حسب المنصة</h2><span class="ln"></span></div>
+<div class="plats">
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>PC<small class="num">842</small></a>
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>PS5<small class="num">416</small></a>
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>PS4<small class="num">533</small></a>
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>Xbox<small class="num">298</small></a>
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>Switch<small class="num">187</small></a>
+<a class="plat" href="#"><i style="background:#7dd3fc"></i>Android<small class="num">205</small></a>
+</div></section>
+<section class="sec"><div class="duo">
+<div class="panel"><h3>⛓ سلاسل التعريبات</h3>
+<a class="row" href="#"><span>سلسلة Souls</span><span class="n num">34 تعريب</span></a>
+<a class="row" href="#"><span>سلسلة Zelda</span><span class="n num">21 تعريب</span></a>
+<a class="row" href="#"><span>سلسلة GTA</span><span class="n num">18 تعريب</span></a>
+<a class="row" href="#"><span>سلسلة Final Fantasy</span><span class="n num">27 تعريب</span></a></div>
+<div class="panel"><h3>✦ فرق التعريب</h3>
+<a class="row" href="#"><span>فريق التعريب الرسمي</span><span class="n num">412 عمل</span></a>
+<a class="row" href="#"><span>عرب غيمرز</span><span class="n num">188 عمل</span></a>
+<a class="row" href="#"><span>ترجمة بلا حدود</span><span class="n num">96 عمل</span></a>
+<a class="row" href="#"><span>ديوان الألعاب</span><span class="n num">74 عمل</span></a></div>
+</div></section>
+</div>
+<footer><div class="wrap"><div class="fgrid"><div><div class="logo">Games<b>Arabic</b></div><p style="font-size:13px;color:var(--mut)">منصة المجتمع العربي لتعريب الألعاب منذ 2019.</p></div><div><h5>الأقسام</h5><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a></div><div><h5>استكشاف</h5><a href="#">الأخبار</a><a href="#">المجتمع</a><a href="#">المتصدرون</a></div><div><h5>الدعم</h5><a href="#">حول</a><a href="#">الدعم</a><a href="#">الخصوصية</a></div></div>
+<div class="copy"><span>© 2026 Games Arabic</span><span>NEON-GLASS CONCEPT · TEAL + MAGENTA ONLY</span></div></div></footer>
+</body>
+</html>

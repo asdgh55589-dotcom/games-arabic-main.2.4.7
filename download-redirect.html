@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>صفحة التحويل لرابط التحميل — ثلاثة مفاهيم</title>
+<style>
+  :root{
+    --bg:#0a0e14;--panel:#10151d;--panel-2:#151b25;
+    --line:#232b38;--line-soft:#1b2330;
+    --txt:#e8edf4;--txt-dim:#8b96a7;--txt-faint:#5c6678;
+    --teal-deep:#0b3d3a;--teal-deep-hi:#0f524d;--teal:#2dd4bf;
+    --amber:#f0b429;--amber-bg:rgba(240,180,41,.08);--amber-line:rgba(240,180,41,.35);
+    --red:#f87171;--red-bg:rgba(248,113,113,.07);
+    --green:#34d399;--radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,sans-serif;font-size:14px;line-height:1.6;padding-bottom:80px}
+  .nav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;padding:12px;background:rgba(10,14,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .nav a{color:var(--txt-dim);text-decoration:none;font-weight:700;font-size:13px;padding:7px 16px;border:1px solid var(--line);border-radius:999px;transition:.15s}
+  .nav a:hover{color:var(--txt);border-color:var(--txt-faint)}
+  .concept{max-width:860px;margin:0 auto;padding:36px 16px 8px}
+  .concept-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .concept-num{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--teal-deep);color:var(--teal);font-weight:900;font-size:15px;flex:none}
+  .concept-head h2{font-size:20px;font-weight:900}
+  .concept-tag{font-size:11px;font-weight:700;color:var(--txt-dim);background:var(--panel-2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+  .concept-desc{color:var(--txt-dim);font-size:13px;margin-bottom:18px;max-width:70ch}
+  .concept-desc b{color:var(--txt)}
+  .demo-frame{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+  .frame-label{font-size:10px;letter-spacing:.12em;color:var(--txt-faint);font-weight:800;margin-bottom:12px}
+  hr.sep{border:none;border-top:1px solid var(--line);margin:44px 0 0}
+  svg.ic{width:15px;height:15px;flex:none;display:block}
+
+  .btn-demo{
+    font:inherit;font-size:12px;font-weight:800;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    padding:7px 14px;border-radius:7px;transition:.15s;
+  }
+  .btn-demo:hover{background:#146b63}
+
+  /* عنصر مشترك: صف الموقع */
+  .site-row{display:flex;align-items:center;gap:10px}
+  .site-fav{width:34px;height:34px;border-radius:8px;background:#0d1219;border:1px solid var(--line);object-fit:contain;padding:3px;flex:none}
+  .site-name{font-size:14px;font-weight:900}
+  .site-domain{font-size:10.5px;font-weight:800;color:var(--txt-faint);background:var(--line-soft);border:1px solid var(--line);padding:1px 8px;border-radius:999px;direction:ltr;display:inline-block}
+  .badge-ok{font-size:9.5px;font-weight:900;color:var(--green);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);padding:1px 7px;border-radius:999px}
+
+  /* صنف مشترك: تنبيه كراك */
+  .crack-warn{
+    display:flex;gap:9px;align-items:flex-start;
+    background:var(--amber-bg);border:1px solid var(--amber-line);
+    border-radius:8px;padding:9px 11px;
+    font-size:12px;font-weight:700;color:#f5d78e;line-height:1.7;
+  }
+  .crack-warn .ic{color:var(--amber);margin-top:3px}
+  .crack-warn b{color:#ffe9ad}
+
+  /* قائمة تأكيد */
+  .checklist{display:flex;flex-direction:column;gap:6px}
+  .check-item{
+    display:flex;gap:9px;align-items:flex-start;
+    font-size:12px;font-weight:700;color:var(--txt-dim);
+    cursor:pointer;padding:4px 2px;border-radius:6px;transition:.15s;
+  }
+  .check-item:hover{color:var(--txt)}
+  .check-item input{
+    appearance:none;width:17px;height:17px;flex:none;margin-top:2px;
+    border:2px solid var(--line);border-radius:5px;cursor:pointer;transition:.15s;
+    display:grid;place-items:center;
+  }
+  .check-item input:checked{background:var(--teal-deep);border-color:var(--teal)}
+  .check-item input:checked::after{content:"✓";color:var(--teal);font-size:11px;font-weight:900}
+
+  /* عدّاد */
+  .count-num{font-variant-numeric:tabular-nums;font-weight:900;color:var(--teal)}
+  .pring{
+    width:64px;height:64px;border-radius:50%;flex:none;position:relative;
+    display:grid;place-items:center;
+    background:conic-gradient(var(--teal) calc(var(--p,0)*1%),var(--line) 0);
+  }
+  .pring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--panel-2)}
+  .pring span{position:relative;font-size:18px;font-weight:900;color:var(--teal);font-variant-numeric:tabular-nums}
+  .pbar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
+  .pbar .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--teal-deep-hi),var(--teal));border-radius:99px;transition:width 1s linear}
+
+  .act-row{display:flex;gap:8px;flex-wrap:wrap}
+  .act-go{
+    display:inline-flex;align-items:center;gap:7px;
+    font:inherit;font-size:13px;font-weight:900;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    padding:10px 22px;border-radius:9px;transition:.15s;min-height:44px;
+  }
+  .act-go:hover{background:#146b63}
+  .act-back{
+    font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;
+    background:transparent;color:var(--txt-dim);border:1px solid var(--line);
+    padding:10px 18px;border-radius:9px;transition:.15s;min-height:44px;
+  }
+  .act-back:hover{color:var(--txt);border-color:var(--txt-faint)}
+
+  /* ========== مفهوم ١: صفحة كاملة ========== */
+  .p1{
+    max-width:460px;margin:0 auto;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:16px;
+    overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);
+  }
+  .p1-head{padding:18px 18px 14px;border-bottom:1px solid var(--line-soft);background:linear-gradient(to left,rgba(45,212,191,.06),transparent)}
+  .p1-title{font-size:15.5px;font-weight:900;margin-bottom:12px}
+  .p1-title .ic{display:inline;vertical-align:-2px;margin-left:5px;color:var(--teal)}
+  .p1-facts{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+  .fact{display:flex;gap:8px;font-size:12.5px;align-items:baseline}
+  .fact-k{color:var(--txt-faint);font-weight:800;font-size:11.5px;flex:none;width:64px}
+  .fact-v{color:var(--txt);font-weight:800;min-width:0}
+  .fact-v .ic{display:inline;vertical-align:-2px;color:var(--txt-faint);margin-left:4px}
+  .p1-body{padding:14px 18px;display:flex;flex-direction:column;gap:11px}
+  .p1-foot{padding:14px 18px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:10px}
+  .cd-row{display:flex;align-items:center;gap:11px}
+  .cd-text{font-size:12px;font-weight:800;color:var(--txt-dim)}
+  .cd-text b{color:var(--teal)}
+
+  /* ========== مفهوم ٢: بطاقة مدمجة ========== */
+  .p2{
+    max-width:400px;margin:0 auto;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:14px;
+    padding:16px;box-shadow:0 18px 45px rgba(0,0,0,.4);
+  }
+  .p2-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .p2-msg{font-size:12.5px;font-weight:700;color:var(--txt-dim);line-height:1.8;margin-bottom:11px}
+  .p2-msg b{color:var(--txt)}
+  .p2-msg .hl{color:var(--teal);font-weight:900}
+  .p2-foot{display:flex;align-items:center;gap:10px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .p2-foot .pbar{max-width:140px}
+  .p2-count{font-size:13px;font-weight:900;color:var(--txt-dim);margin-right:auto}
+  .p2-count .count-num{font-size:16px}
+
+  /* ========== مفهوم ٣: خطوات ========== */
+  .p3{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:0}
+  .p3-step{
+    background:var(--panel-2);border:1px solid var(--line);
+    padding:14px 16px;position:relative;
+  }
+  .p3-step:first-child{border-radius:14px 14px 0 0}
+  .p3-step:last-child{border-radius:0 0 14px 14px;border-top:none}
+  .p3-step.locked{opacity:.45;pointer-events:none;filter:saturate(.4)}
+  .p3-step.active{border-color:rgba(45,212,191,.4)}
+  .p3-num{
+    width:24px;height:24px;border-radius:50%;flex:none;
+    background:var(--teal-deep);color:var(--teal);
+    display:grid;place-items:center;font-size:12px;font-weight:900;
+    position:absolute;top:14px;right:16px;
+  }
+  .p3-step.done .p3-num{background:var(--teal);color:#062a27}
+  .p3-h{font-size:13px;font-weight:900;margin-bottom:6px;padding-right:32px}
+  .p3-c{font-size:12px;font-weight:600;color:var(--txt-dim);display:flex;flex-direction:column;gap:9px}
+  .p3-actions{padding:12px 16px;background:var(--panel-2);border:1px solid var(--line);border-top:none;border-radius:0 0 14px 14px;display:none;align-items:center;gap:10px}
+  .p3-actions.show{display:flex}
+  .p3-actions .pbar{max-width:150px}
+  .p3-count{margin-right:auto;font-size:12.5px;font-weight:900;color:var(--txt-dim)}
+  .p3-count .count-num{font-size:15px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#c1">١ — صفحة كاملة</a>
+  <a href="#c2">٢ — بطاقة مدمجة</a>
+  <a href="#c3">٣ — خطوات تأكيد</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="ic-warn" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 2.5 20h19L12 3zM12 9v5m0 3.5v.1"/></symbol>
+  <symbol id="ic-ext" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4 11 13M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="ic-game" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9h4m-2-2v4m7-1h.01M18 9h.01M5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5v-9A2.5 2.5 0 0 1 5.5 5z"/></symbol>
+  <symbol id="ic-page" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6"/></symbol>
+  <symbol id="ic-skull" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 2a8 8 0 0 0-8 8c0 2.9 1.5 5.4 3.7 6.8V20a1 1 0 0 0 1 1h6.6a1 1 0 0 0 1-1v-3.2A8 8 0 0 0 12 2z"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><circle cx="15" cy="11" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="ic-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M9 14 4 9l5-5M4 9h16"/></symbol>
+  <symbol id="ic-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4 11 13"/></symbol>
+</defs></svg>
+
+<!-- ========================= المفهوم ١ ========================= -->
+<section class="concept" id="c1">
+  <div class="concept-head">
+    <span class="concept-num">١</span>
+    <h2>صفحة كاملة</h2>
+    <span class="concept-tag">عدّاد دائري • كل البيانات</span>
+  </div>
+  <p class="concept-desc">
+    صفحة مخصّصة كاملة: <b>الوجهة</b> (الموقع + الصفحة + اللعبة) بحقول واضحة + تنبيه الكراك + قائمة تأكيد
+    «قرأت المواصفات والتوصيات» + عدّاد دائري ينزل تلقائياً ثم زر الانتقال.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">معاينة — العدّاد يبدأ من ١٥ ثانية</div>
+    <div class="p1">
+      <div class="p1-head">
+        <div class="p1-title"><svg class="ic"><use href="#ic-ext"/></svg> أنت على وشك الانتقال إلى موقع خارجي</div>
+        <div class="site-row">
+          <img class="site-fav" src="https://www.google.com/s2/favicons?domain=fitgirl-repacks.site&sz=64" alt="" />
+          <div style="min-width:0">
+            <div class="site-name">FitGirl Repacks</div>
+            <span class="site-domain">fitgirl-repacks.site</span>
+            <span class="badge-ok">موقع مدعوم</span>
+          </div>
+        </div>
+        <div class="p1-facts">
+          <div class="fact"><span class="fact-k">الصفحة</span><span class="fact-v"><svg class="ic"><use href="#ic-page"/></svg> Red Dead Redemption 2 — Repack</span></div>
+          <div class="fact"><span class="fact-k">اللعبة</span><span class="fact-v"><svg class="ic"><use href="#ic-game"/></svg> Red Dead Redemption 2</span></div>
+          <div class="fact"><span class="fact-k">النوع</span><span class="fact-v">نسخة مضغوطة (Repack) — تثبيت مطوّل</span></div>
+        </div>
+      </div>
+      <div class="p1-body">
+        <div class="crack-warn">
+          <svg class="ic"><use href="#ic-skull"/></svg>
+          <div>هذه <b>نسخة مقرّقة</b> من اللعبة. الموقع مسؤول عن محتواه وليس المنصة. احمِ جهازك: لا تعطِّل الحماية نهائياً، وافحص الملف بعد الفك.</div>
+        </div>
+        <div class="checklist" id="p1check">
+          <label class="check-item"><input type="checkbox" /> قرأت مواصفات اللعبة وتأكدت أن جهازها يفي بالحد الأدنى</label>
+          <label class="check-item"><input type="checkbox" /> أعرف أن التثبيت قد يستغرق وقتاً طويلاً بسبب الضغط</label>
+          <label class="check-item"><input type="checkbox" /> أقبل بأن الرابط خارجي والتحميل على مسؤوليتي</label>
+        </div>
+      </div>
+      <div class="p1-foot">
+        <div class="cd-row">
+          <div class="pring" id="p1ring" style="--p:0"><span id="p1num">15</span></div>
+          <div class="cd-text">سيتم تحويلك تلقائياً بعد<br /><b id="p1sec">١٥ ثانية</b> — أو انتقل الآن</div>
+        </div>
+        <div class="act-row">
+          <button class="act-go" id="p1go" disabled style="opacity:.45;cursor:not-allowed">أكمل القائمة أولاً <svg class="ic"><use href="#ic-arrow"/></svg></button>
+          <button class="act-back"><svg class="ic"><use href="#ic-back"/></svg> رجوع</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٢ ========================= -->
+<section class="concept" id="c2">
+  <div class="concept-head">
+    <span class="concept-num">٢</span>
+    <h2>بطاقة مدمجة</h2>
+    <span class="concept-tag">رسالة واحدة قوية • عدّاد شريطي</span>
+  </div>
+  <p class="concept-desc">
+    بطاقة صغيرة تظهر <b>فوق الصفحة</b> (modal أو overlay) — رسالة مباشرة: «أنت الآن ذاهب إلى…»
+    + تنبيه الكراك + شريط عدّاد أفقي + زرّي «اذهب الآن» و«إلغاء». بلا قوائم طويلة.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">معاينة — اضغط «تشغيل» لإعادة العدّاد</div>
+    <button class="btn-demo" onclick="runP2()">▶ تشغيل البطاقة</button>
+    <div style="min-height:230px;display:grid;place-items:center;padding-top:8px" id="p2root">
+      <div class="p2">
+        <div class="p2-top">
+          <img class="site-fav" src="https://www.google.com/s2/favicons?domain=dodi-repacks.site&sz=64" alt="" />
+          <div style="min-width:0">
+            <div class="site-name">DODI Repacks</div>
+            <span class="site-domain">dodi-repacks.site</span>
+          </div>
+        </div>
+        <div class="p2-msg">
+          أنت الآن ذاهب إلى <span class="hl">dodi-repacks.site</span> — صفحة
+          <b>«Control Ultimate Edition»</b> لتحميل لعبة <b>Control</b>.
+          الموقع يوزّع نسخاً مقرّقة: <b>تأكد من قراءة التوصيات والتعليقات</b> قبل التحميل، ولا تفتح ملفات التنفيذ قبل فحصها.
+        </div>
+        <div class="crack-warn" style="font-size:11.5px">
+          <svg class="ic"><use href="#ic-warn"/></svg>
+          <div>بعض المواقع تطلب تعطيل مُكتشف الفيروسات — <b>لا تفعل ذلك نهائياً</b>، وأضف المجلد للاستثناءات فقط.</div>
+        </div>
+        <div class="p2-foot">
+          <div class="pbar"><div class="fill" id="p2fill"></div></div>
+          <span class="p2-count">التحويل بعد <span class="count-num" id="p2num">10</span> ث</span>
+          <button class="act-go" style="padding:8px 16px;font-size:12px;min-height:38px">اذهب الآن <svg class="ic"><use href="#ic-arrow"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٣ ========================= -->
+<section class="concept" id="c3">
+  <div class="concept-head">
+    <span class="concept-num">٣</span>
+    <h2>خطوات تأكيد</h2>
+    <span class="concept-tag">بيانات ← تنبيهات ← تأكيد</span>
+  </div>
+  <p class="concept-desc">
+    ثلاث خطوات <b>مقفلة بالتتابع</b>: أولًا بيانات الوجهة، ثانيًا ملاحظات ومخاطر الموقع، ثالثًا
+    استمارة تأكيد — وبعد الإكمال فقط يظهر العدّاد وزر الانتقال. يمنع الانتقال العشوائي.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">اضغط «ابدأ» — الخطوات تُفتح بالتتابع</div>
+    <button class="btn-demo" onclick="runP3()">▶ ابدأ العملية</button>
+    <div class="p3" id="p3">
+      <div class="p3-step locked" id="s1">
+        <span class="p3-num">١</span>
+        <div class="p3-h">بيانات الوجهة</div>
+        <div class="p3-c">
+          <div class="site-row">
+            <img class="site-fav" src="https://www.google.com/s2/favicons?domain=fitgirl-repacks.site&sz=64" alt="" style="width:28px;height:28px" />
+            <div style="min-width:0">
+              <div style="font-size:12.5px;font-weight:900;color:var(--txt)">FitGirl Repacks</div>
+              <span class="site-domain">fitgirl-repacks.site</span>
+            </div>
+          </div>
+          <div>صفحة: <b style="color:var(--txt)">Red Dead Redemption 2</b> — لعبة: <b style="color:var(--txt)">Red Dead Redemption 2</b> — نوعها: نسخة مضغوطة.</div>
+        </div>
+      </div>
+      <div class="p3-step locked" id="s2">
+        <span class="p3-num">٢</span>
+        <div class="p3-h">ملاحظات ومخاطر — اقرأها</div>
+        <div class="p3-c">
+          <div class="crack-warn">
+            <svg class="ic"><use href="#ic-skull"/></svg>
+            <div>نسخة مقرّقة من مصدر خارجي — المنصة غير مسؤولة عن محتواه أو أضراره.</div>
+          </div>
+          <div>• التثبيت قد يستغرق <b style="color:var(--txt)">ساعات</b> بسبب فك الضغط.<br />
+              • راجع <b style="color:var(--txt)">تعليقات المستخدمين</b> على الصفحة قبل التحميل.<br />
+              • لا تثبّت أي أدوات «مفعّلة» يطلبها الموقع مع اللعبة.<br />
+              • تأكد من مطابقة <b style="color:var(--txt)">المواصفات الدنيا</b> لجهازك.</div>
+        </div>
+      </div>
+      <div class="p3-step locked" id="s3">
+        <span class="p3-num">٣</span>
+        <div class="p3-h">تأكيد</div>
+        <div class="p3-c">
+          <label class="check-item"><input type="checkbox" id="p3ck" onchange="p3check()" /> قرأت البيانات والملاحظات ووافقتك على المتابعة على مسؤوليتي</label>
+        </div>
+      </div>
+      <div class="p3-actions" id="p3act">
+        <div class="pbar"><div class="fill" id="p3fill"></div></div>
+        <span class="p3-count">التحويل بعد <span class="count-num" id="p3num">12</span> ث</span>
+        <button class="act-go" style="padding:8px 16px;font-size:12px;min-height:38px">اذهب الآن <svg class="ic"><use href="#ic-arrow"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* بيانات مشتركة */
+var CD1 = 15, CD2 = 10, CD3 = 12;
+
+/* ===== مفهوم ١ ===== */
+var p1Timer = null;
+function startP1Countdown(){
+  clearInterval(p1Timer);
+  var n = CD1, total = CD1;
+  p1Timer = setInterval(function(){
+    n--;
+    var num = document.getElementById('p1num');
+    var ring = document.getElementById('p1ring');
+    var sec = document.getElementById('p1sec');
+    if(!num){ clearInterval(p1Timer); return; }
+    num.textContent = Math.max(0, n);
+    ring.style.setProperty('--p', ((total - n) / total * 100).toFixed(1));
+    sec.textContent = n > 0 ? (n.toLocaleString('ar-EG') + ' ثانية') : 'لحظات';
+    if(n <= 0){
+      clearInterval(p1Timer);
+      sec.textContent = 'الانتقال الآن…';
+    }
+  }, 1000);
+}
+/* العدّاد يعمل فقط بعد إكمال القائمة */
+document.querySelectorAll('#p1check input').forEach(function(cb){
+  cb.addEventListener('change', function(){
+    var all = document.querySelectorAll('#p1check input');
+    var ok = true;
+    all.forEach(function(c){ if(!c.checked) ok = false; });
+    var go = document.getElementById('p1go');
+    if(ok){
+      go.disabled = false; go.style.opacity = 1; go.style.cursor = 'pointer';
+      go.firstChild.textContent = 'اذهب الآن ';
+      startP1Countdown();
+    }else{
+      go.disabled = true; go.style.opacity = .45; go.style.cursor = 'not-allowed';
+      go.firstChild.textContent = 'أكمل القائمة أولاً ';
+      clearInterval(p1Timer);
+      document.getElementById('p1num').textContent = CD1;
+      document.getElementById('p1ring').style.setProperty('--p', 0);
+      document.getElementById('p1sec').textContent = '١٥ ثانية';
+    }
+  });
+});
+
+/* ===== مفهوم ٢ ===== */
+function runP2(){
+  var n = CD2, total = CD2;
+  var num = document.getElementById('p2num');
+  var fill = document.getElementById('p2fill');
+  clearInterval(window._p2t);
+  num.textContent = n; fill.style.width = '0%';
+  window._p2t = setInterval(function(){
+    n--;
+    num.textContent = Math.max(0, n);
+    fill.style.width = ((total - n) / total * 100) + '%';
+    if(n <= 0){ clearInterval(window._p2t); num.textContent = '0'; }
+  }, 1000);
+}
+/* عدّاد تلقائي عند تحميل المفهوم ٢ */
+runP2();
+
+/* ===== مفهوم ٣ ===== */
+function runP3(){
+  ['s1','s2','s3'].forEach(function(id, i){
+    var el = document.getElementById(id);
+    el.className = 'p3-step locked';
+  });
+  document.getElementById('p3act').classList.remove('show');
+  document.getElementById('p3ck').checked = false;
+  document.getElementById('s1').className = 'p3-step active';
+  setTimeout(function(){
+    document.getElementById('s1').className = 'p3-step done';
+    document.getElementById('s2').className = 'p3-step active';
+    setTimeout(function(){
+      document.getElementById('s2').className = 'p3-step done';
+      document.getElementById('s3').className = 'p3-step active';
+    }, 1600);
+  }, 1600);
+}
+function p3check(){
+  var ck = document.getElementById('p3ck').checked;
+  var act = document.getElementById('p3act');
+  if(!ck){ act.classList.remove('show'); return; }
+  document.getElementById('s3').className = 'p3-step done';
+  act.classList.add('show');
+  var n = CD3, total = CD3;
+  var num = document.getElementById('p3num');
+  var fill = document.getElementById('p3fill');
+  clearInterval(window._p3t);
+  num.textContent = n; fill.style.width = '0%';
+  window._p3t = setInterval(function(){
+    n--;
+    num.textContent = Math.max(0, n);
+    fill.style.width = ((total - n) / total * 100) + '%';
+    if(n <= 0){ clearInterval(window._p3t); num.textContent = '0'; }
+  }, 1000);
+}
+</script>
+</body>
+</html>

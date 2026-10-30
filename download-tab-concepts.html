@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>تبويبة التحميل — ثلاثة مفاهيم</title>
+<style>
+  /* ============================================================
+     أساسيات مشتركة — ثيم داكن، خط عربي، RTL
+     ============================================================ */
+  :root{
+    --bg:#0a0e14;
+    --panel:#10151d;
+    --panel-2:#151b25;
+    --line:#232b38;
+    --line-soft:#1b2330;
+    --txt:#e8edf4;
+    --txt-dim:#8b96a7;
+    --txt-faint:#5c6678;
+    --teal-deep:#0b3d3a;
+    --teal-deep-hi:#0f524d;
+    --teal:#2dd4bf;
+    --amber:#f0b429;
+    --green:#34d399;
+    --red:#f87171;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,sans-serif;
+    font-size:14px;
+    line-height:1.6;
+    padding-bottom:80px;
+  }
+  .tabular{font-variant-numeric:tabular-nums}
+
+  /* قسم قابل لإعادة التسمية (اضغط وعدّل النص) */
+  .rename-label{
+    display:flex;align-items:center;gap:8px;
+    font-size:11.5px;font-weight:900;color:var(--txt-faint);
+    letter-spacing:.04em;
+    cursor:text;
+    border-radius:5px;padding:1px 4px;
+    outline:none;transition:.15s;
+    width:max-content;max-width:100%;
+  }
+  .rename-label:hover,.rename-label:focus{
+    color:var(--txt);
+    background:rgba(45,212,191,.08);
+    box-shadow:0 0 0 1px rgba(45,212,191,.35);
+  }
+  .rename-label:empty::before{content:"اكتب اسم القسم";color:var(--txt-faint);font-weight:700}
+  .rename-label::after{
+    content:"✎";font-size:9px;color:var(--txt-faint);opacity:0;transition:.15s;flex:none;
+  }
+  .rename-label:hover::after,.rename-label:focus::after{opacity:.8}
+  .rename-hint{
+    font-size:9.5px;font-weight:700;color:var(--txt-faint);
+    background:var(--line-soft);border:1px solid var(--line);
+    padding:1px 6px;border-radius:999px;flex:none;white-space:nowrap;
+  }
+  .label-row{display:flex;align-items:center;gap:8px;margin:12px 0 8px}
+
+  /* وصف الملف — مستقل عن التنبيه */
+  .file-desc{
+    font-size:12px;line-height:1.7;color:var(--txt-dim);font-weight:600;
+    border-right:2px solid var(--line);
+    padding:2px 10px 2px 6px;
+  }
+
+  /* شبكة مصغّرات داخل الصندوق المفتوح */
+  .nested-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+  .nmini{
+    display:flex;align-items:center;gap:7px;
+    background:#0d1219;border:1px solid var(--line-soft);
+    border-radius:6px;padding:6px 9px;font-size:11.5px;
+  }
+  .nmini-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .nmini .v-badge{font-size:9.5px;padding:1px 5px}
+  .nmini-size{color:var(--txt-dim);font-weight:700;font-size:10.5px;flex:none;font-variant-numeric:tabular-nums}
+  .nmini-alert{color:var(--amber);flex:none;display:flex}
+  .nmini-alert svg{width:11px;height:11px}
+  .nmini-btn{
+    flex:none;display:inline-flex;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:900;padding:3px 8px;border-radius:5px;
+    cursor:pointer;font-family:inherit;
+    transition:.15s;
+  }
+  .nmini-btn svg{width:10px;height:10px}
+  /* زر مصغّر بنفس لون زر المفهوم */
+  .nmini-btn.teal{background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e}
+  .nmini-btn.teal:hover{background:#146b63}
+  .nmini-btn.bw{background:#f2f5f8;color:#0a0e14;border:1px solid #f2f5f8}
+  .nmini-btn.bw:hover{background:#fff}
+  .nmini-btn.mini{background:transparent;color:var(--txt);border:1px solid var(--txt-faint)}
+  .nmini-btn.mini:hover{background:#f2f5f8;color:#0a0e14}
+
+  /* صفوف مصغّرة (أسلوب المفهوم ٣) */
+  .nrow{
+    display:flex;align-items:center;gap:9px;
+    padding:6px 12px 6px 10px;
+    border-bottom:1px solid var(--line-soft);
+    font-size:11.5px;
+  }
+  .nrow:last-child{border-bottom:none}
+  .nrow-name{font-weight:800;display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+  .nrow-size{color:var(--txt-dim);font-weight:700;font-size:10.5px;flex:none;font-variant-numeric:tabular-nums}
+
+  /* شريط تنقل بين المفاهيم */
+  .concept-nav{
+    position:sticky;top:0;z-index:50;
+    display:flex;gap:8px;justify-content:center;
+    padding:12px;
+    background:rgba(10,14,20,.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .concept-nav a{
+    color:var(--txt-dim);text-decoration:none;font-weight:700;font-size:13px;
+    padding:7px 16px;border:1px solid var(--line);border-radius:999px;
+    transition:.15s;
+  }
+  .concept-nav a:hover{color:var(--txt);border-color:var(--txt-faint)}
+
+  .concept{max-width:860px;margin:0 auto;padding:36px 16px 8px}
+  .concept-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .concept-num{
+    display:grid;place-items:center;width:30px;height:30px;border-radius:8px;
+    background:var(--teal-deep);color:var(--teal);font-weight:900;font-size:15px;flex:none;
+  }
+  .concept-head h2{font-size:20px;font-weight:900}
+  .concept-tag{
+    font-size:11px;font-weight:700;color:var(--txt-dim);
+    background:var(--panel-2);border:1px solid var(--line);
+    padding:3px 10px;border-radius:999px;
+  }
+  .concept-desc{color:var(--txt-dim);font-size:13px;margin-bottom:18px;max-width:70ch}
+  .concept-desc b{color:var(--txt)}
+
+  .demo-frame{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+  }
+  .frame-label{
+    font-size:10px;letter-spacing:.12em;color:var(--txt-faint);
+    font-weight:800;margin-bottom:12px;
+  }
+  hr.sep{border:none;border-top:1px solid var(--line);margin:44px 0 0}
+
+  /* تنبيه عام صغير أسفل الصفحة */
+  .hint{
+    max-width:860px;margin:34px auto 0;padding:12px 16px;
+    background:var(--panel-2);border:1px dashed var(--line);
+    border-radius:10px;color:var(--txt-dim);font-size:12.5px;
+  }
+  .hint b{color:var(--txt)}
+
+  /* أيقونات المنصات (SVG) */
+  .pf-ic{width:16px;height:16px;flex:none;display:block}
+
+  /* ============================================================
+     المفهوم ١ — «الشريط المضغوط»
+     سطر واحد متراص + فتح بالضغط يكشف صفوف المنصات بإحصائياتها
+     ============================================================ */
+  .c1-file{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .c1-main-row{
+    display:flex;align-items:center;gap:10px;
+    width:100%;padding:11px 14px;
+    background:none;border:none;color:inherit;cursor:pointer;
+    font:inherit;text-align:right;
+    transition:background .15s;
+  }
+  .c1-main-row:hover{background:#1a212d}
+  .c1-title{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .v-badge{
+    font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:5px;
+    background:var(--teal-deep);color:var(--teal);flex:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .c1-meta{
+    display:flex;gap:14px;margin-right:auto;
+    font-size:12px;color:var(--txt-dim);font-weight:700;flex:none;
+  }
+  .c1-meta span{display:flex;align-items:center;gap:5px}
+  .c1-chev{
+    width:14px;height:14px;flex:none;color:var(--txt-faint);
+    transition:transform .2s;
+  }
+  .c1-file.open .c1-chev{transform:rotate(180deg);color:var(--teal)}
+
+  /* لوحة المنصات — تنفتح بالضغط */
+  .c1-mirrors{display:none;border-top:1px solid var(--line-soft)}
+  .c1-file.open .c1-mirrors{display:block}
+  .c1-mirror{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 14px 9px 10px;
+    border-bottom:1px solid var(--line-soft);
+    font-size:12.5px;
+  }
+  .c1-mirror:last-child{border-bottom:none}
+  .c1-mirror-name{display:flex;align-items:center;gap:7px;font-weight:800;flex:none}
+  .c1-mirror-stats{
+    display:flex;gap:12px;margin-right:auto;
+    color:var(--txt-dim);font-size:11.5px;font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  /* زر التحميل: تركوازي غامق + أبيض (بدون مربع أيقونة غريب) */
+  .btn-dl{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--teal-deep-hi);
+    color:#eafffb;
+    border:1px solid #17655e;
+    font:inherit;font-size:12px;font-weight:800;
+    padding:6px 14px;border-radius:6px;cursor:pointer;
+    transition:.15s;flex:none;
+  }
+  .btn-dl:hover{background:#146b63}
+  .btn-dl svg{width:13px;height:13px}
+
+  /* ملفات إضافية */
+  .c1-extra-label{
+    display:flex;align-items:center;gap:10px;
+    margin:16px 0 10px;
+    font-size:11.5px;font-weight:900;color:var(--txt-faint);
+    letter-spacing:.05em;
+  }
+  .c1-extra-label::after{content:"";flex:1;border-top:1px solid var(--line-soft)}
+  .c1-extra-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+  .c1-xcard{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:9px 11px;
+    display:flex;flex-direction:column;gap:6px;
+    position:relative;
+  }
+  .c1-xcard-top{display:flex;align-items:center;gap:7px}
+  .c1-xcard-name{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .c1-xcard-bottom{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--txt-dim);font-weight:700}
+  .c1-xcard-bottom .btn-dl{margin-right:auto;padding:4px 10px;font-size:11px}
+  .alert-dot{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10px;font-weight:800;color:var(--amber);
+    background:rgba(240,180,41,.1);
+    border:1px solid rgba(240,180,41,.3);
+    padding:1px 7px;border-radius:999px;
+    flex:none;
+  }
+  /* نص التنبيه للكارت المفتوح */
+  .c1-alert-box{
+    display:none;
+    margin:0;padding:8px 14px;
+    background:rgba(240,180,41,.07);
+    border-top:1px solid rgba(240,180,41,.25);
+    color:#f5d78e;font-size:11.5px;font-weight:700;
+  }
+  .c1-file.open .c1-alert-box{display:block}
+
+  /* ============================================================
+     المفهوم ٢ — «الكارت المرآتي»
+     كارت مع هيدر + صف منصات أفقي بالألوان أبيض/أسود
+     ============================================================ */
+  .c2-card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .c2-card + .c2-card{margin-top:10px}
+  .c2-header{
+    display:flex;align-items:center;gap:9px;
+    width:100%;padding:10px 13px;
+    background:none;border:none;color:inherit;cursor:pointer;font:inherit;text-align:right;
+    transition:background .15s;
+  }
+  .c2-header:hover{background:#1a212d}
+  .c2-title{font-weight:900;font-size:13.5px}
+  .c2-meta{
+    display:flex;gap:12px;margin-right:auto;
+    font-size:11.5px;color:var(--txt-dim);font-weight:700;flex:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .c2-chevron{width:13px;height:13px;color:var(--txt-faint);transition:transform .2s;flex:none}
+  .c2-card.open .c2-chevron{transform:rotate(180deg);color:var(--teal)}
+
+  .c2-body{display:none;border-top:1px solid var(--line-soft);padding:10px 13px 12px}
+  .c2-card.open .c2-body{display:block}
+
+  .c2-mirror{
+    display:flex;align-items:center;gap:10px;
+    padding:7px 9px;
+    background:#0d1219;
+    border:1px solid var(--line-soft);
+    border-radius:7px;
+    font-size:12.5px;
+  }
+  .c2-mirror + .c2-mirror{margin-top:6px}
+  .c2-mirror-name{display:flex;align-items:center;gap:7px;font-weight:800}
+  .c2-mirror-stats{
+    display:flex;gap:10px;margin-right:auto;
+    color:var(--txt-dim);font-size:11px;font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat-chip{
+    background:#161d28;border:1px solid var(--line);
+    padding:2px 8px;border-radius:5px;
+    display:flex;align-items:center;gap:4px;
+  }
+  /* زر أبيض/أسود */
+  .btn-dl-bw{
+    display:inline-flex;align-items:center;gap:6px;
+    background:#f2f5f8;color:#0a0e14;
+    border:1px solid #f2f5f8;
+    font:inherit;font-size:11.5px;font-weight:900;
+    padding:5px 13px;border-radius:6px;cursor:pointer;
+    transition:.15s;flex:none;
+  }
+  .btn-dl-bw:hover{background:#fff}
+  .btn-dl-bw svg{width:12px;height:12px}
+
+  .c2-alert{
+    display:flex;align-items:flex-start;gap:7px;
+    margin-top:8px;padding:7px 9px;
+    background:rgba(240,180,41,.08);
+    border:1px solid rgba(240,180,41,.28);
+    border-radius:7px;
+    color:#f5d78e;font-size:11.5px;font-weight:700;
+  }
+  .c2-alert svg{width:13px;height:13px;flex:none;margin-top:2px}
+
+  .c2-extra-label{
+    display:flex;align-items:center;gap:10px;
+    margin:18px 0 10px;
+    font-size:11.5px;font-weight:900;color:var(--txt-faint);
+  }
+  .c2-extra-label::after{content:"";flex:1;border-top:1px solid var(--line-soft)}
+  .c2-extra-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+  .c2-xcard{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:9px;padding:9px 11px;
+  }
+  .c2-xcard-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+  .c2-xcard-name{font-size:12.5px;font-weight:800;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .c2-xcard-meta{
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;color:var(--txt-dim);font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .c2-xcard-meta .btn-dl-bw{margin-right:auto;padding:4px 10px;font-size:11px}
+
+  /* ============================================================
+     المفهوم ٣ — «القائمة الكثيفة»
+     صفوف رفيعة بفواصل فقط — بدون كروت، أسلوب احترافي شديد النحافة
+     ============================================================ */
+  .c3-wrap{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:4px 0;
+  }
+  .c3-row{
+    display:flex;align-items:center;gap:9px;
+    width:100%;padding:8px 14px;
+    background:none;border:none;color:inherit;
+    font:inherit;text-align:right;cursor:pointer;
+    border-bottom:1px solid var(--line-soft);
+    transition:background .12s;
+  }
+  .c3-row:hover{background:#171e2a}
+  .c3-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34ch}
+  .c3-meta{
+    display:flex;gap:13px;margin-right:auto;
+    font-size:11.5px;color:var(--txt-dim);font-weight:700;flex:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .c3-ic{width:13px;height:13px;color:var(--txt-faint);flex:none;transition:transform .2s}
+  .c3-item.open .c3-ic{transform:rotate(180deg);color:var(--teal)}
+
+  .c3-sub{display:none;background:#0d1219;border-bottom:1px solid var(--line-soft)}
+  .c3-item.open .c3-sub{display:block}
+  .c3-sub-row{
+    display:grid;
+    grid-template-columns:1fr auto auto auto;
+    gap:14px;align-items:center;
+    padding:7px 14px 7px 14px;
+    font-size:11.5px;
+    border-right:2px solid var(--teal-deep);
+    margin-right:14px;
+  }
+  .c3-sub-name{display:flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px}
+  .c3-sub-stat{color:var(--txt-dim);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .c3-sub-stat b{color:var(--txt);font-weight:900}
+  /* زر أبيض/أسود مضغوط */
+  .btn-dl-mini{
+    display:inline-flex;align-items:center;gap:5px;
+    background:transparent;color:var(--txt);
+    border:1px solid var(--txt-faint);
+    font:inherit;font-size:11px;font-weight:800;
+    padding:4px 11px;border-radius:5px;cursor:pointer;
+    transition:.15s;white-space:nowrap;
+  }
+  .btn-dl-mini:hover{background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8}
+  .btn-dl-mini svg{width:11px;height:11px}
+
+  .c3-alert{
+    display:flex;align-items:flex-start;gap:6px;
+    margin:7px 14px 9px 30px;
+    padding:6px 9px;
+    border:1px dashed rgba(240,180,41,.35);
+    border-radius:6px;
+    color:#f5d78e;font-size:11px;font-weight:700;
+  }
+  .c3-alert svg{width:12px;height:12px;flex:none;margin-top:2px}
+
+  .c3-extra-label{
+    display:flex;align-items:center;gap:10px;
+    margin:16px 0 8px;
+    font-size:11px;font-weight:900;color:var(--txt-faint);
+    letter-spacing:.05em;
+  }
+  .c3-extra-label::after{content:"";flex:1;border-top:1px solid var(--line-soft)}
+  .c3-xgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px}
+  .c3-xcard{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:7px 10px;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .c3-xcard-top{display:flex;align-items:center;gap:6px}
+  .c3-xcard-name{font-size:12px;font-weight:800;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .c3-xcard-meta{
+    display:flex;align-items:center;gap:7px;
+    font-size:10.5px;color:var(--txt-dim);font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .c3-xcard-meta .btn-dl-mini{margin-right:auto;padding:3px 9px;font-size:10.5px}
+
+  /* ============================================================
+     نوع الإضافة الثاني — رابط موقع متوافق
+     ============================================================ */
+  .site-entry{
+    display:flex;align-items:center;gap:9px;
+    background:#0d1219;border:1px solid var(--line-soft);
+    border-radius:6px;padding:6px 9px;
+    font-size:11.5px;text-decoration:none;color:inherit;
+    transition:.15s;
+  }
+  .site-entry:hover{border-color:var(--txt-faint);background:#111823}
+  .site-fav{
+    width:22px;height:22px;border-radius:5px;flex:none;
+    background:var(--panel);border:1px solid var(--line);
+    object-fit:contain;padding:2px;
+  }
+  .site-info{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.35}
+  .site-name{font-weight:900;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .site-title{
+    color:var(--txt-dim);font-size:10.5px;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .site-domain{
+    flex:none;font-size:9.5px;font-weight:800;color:var(--txt-faint);
+    background:var(--line-soft);border:1px solid var(--line);
+    padding:1px 7px;border-radius:999px;
+    direction:ltr;
+  }
+  .site-badge{
+    flex:none;font-size:9px;font-weight:900;color:var(--green);
+    background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);
+    padding:1px 6px;border-radius:999px;
+  }
+
+  /* ============================================================
+     صندوق الإضافة — الخياران (ملف / رابط موقع متوافق)
+     ============================================================ */
+  .add-\boxed{
+    margin-top:10px;
+    border:1px dashed var(--line);
+    border-radius:8px;
+    background:rgba(13,18,25,.6);
+    padding:9px 11px;
+  }
+  .add-box-hint{
+    font-size:10.5px;font-weight:800;color:var(--txt-faint);
+    margin-bottom:7px;display:flex;align-items:center;gap:6px;
+  }
+  .add-box-hint::before{content:"+";font-weight:900;color:var(--teal);font-size:13px}
+  .add-tabs{display:flex;gap:5px;margin-bottom:8px}
+  .add-tab{
+    font:inherit;font-size:11px;font-weight:800;
+    padding:4px 11px;border-radius:6px;cursor:pointer;
+    background:transparent;color:var(--txt-dim);
+    border:1px solid var(--line);
+    transition:.15s;
+  }
+  .add-tab.active{background:var(--teal-deep);color:var(--teal);border-color:#17655e}
+  .add-tab.bw-active.active{background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8}
+
+  .add-form{display:none}
+  .add-form.show{display:block}
+  .add-fields{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .add-input{
+    font:inherit;font-size:11.5px;font-weight:700;
+    background:#0a0e14;color:var(--txt);
+    border:1px solid var(--line);
+    border-radius:6px;padding:5px 9px;
+    min-width:0;flex:1 1 110px;
+    outline:none;transition:.15s;
+  }
+  .add-input:focus{border-color:var(--teal)}
+  .add-input.ltr{direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:11px;flex:1 1 200px}
+  .add-input::placeholder{color:var(--txt-faint);font-weight:600}
+  .btn-add{
+    font:inherit;font-size:11px;font-weight:900;
+    padding:5px 12px;border-radius:6px;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    transition:.15s;flex:none;
+  }
+  .btn-add:hover{background:#146b63}
+  .btn-add:disabled{opacity:.5;cursor:wait}
+
+  /* معاينة نتيجة جلب الرابط */
+  .fetch-preview{
+    display:none;margin-top:8px;padding:8px 9px;
+    border:1px solid rgba(52,211,153,.35);
+    background:rgba(52,211,153,.06);
+    border-radius:7px;
+  }
+  .fetch-preview.show{display:block}
+  .fetch-preview .site-entry{background:#0a0e14}
+  .fetch-loading{font-size:11px;font-weight:800;color:var(--txt-dim);display:flex;align-items:center;gap:6px}
+  .fetch-loading .spin{
+    width:11px;height:11px;border:2px solid var(--line);border-top-color:var(--teal);
+    border-radius:50%;animation:spin .7s linear infinite;flex:none;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .fetch-ok-note{font-size:10px;font-weight:800;color:var(--green);margin-top:6px}
+
+  @media (max-width:640px){
+    .c1-meta,.c2-meta{display:none}
+    .c3-meta span:nth-child(n+3){display:none}
+    .c3-sub-row{grid-template-columns:1fr auto;gap:8px}
+    .c3-sub-row .c3-sub-stat:nth-child(3){display:none}
+    .c3-name{max-width:20ch}
+  }
+</style>
+</head>
+<body>
+
+<!-- تنقل سريع بين المفاهيم -->
+<nav class="concept-nav">
+  <a href="#c1">المفهوم ١ — الشريط المضغوط</a>
+  <a href="#c2">المفهوم ٢ — الكارت المرآتي</a>
+  <a href="#c3">المفهوم ٣ — القائمة الكثيفة</a>
+</nav>
+
+<!-- ==========================================================
+     أيقونات المنصات (SVG مضمّن — في ما لا توجد أيقونة رسمية
+     نستخدم شعار الحرف)
+     ========================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Google Drive -->
+    <symbol id="ic-drive" viewBox="0 0 87.3 78">
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+    </symbol>
+    <!-- MediaFire (لهب) -->
+    <symbol id="ic-mediafire" viewBox="0 0 24 24">
+      <path fill="#1273eb" d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+      <path fill="#fff" d="M12.6 5.2c.4 2-1 3-2.1 4.2-1.4 1.5-2.8 3-2.8 5.6 0 2.5 1.8 4.4 4.3 4.4s4.3-1.8 4.3-4.4c0-1.6-.6-2.7-1.4-3.9-.1 1-.7 1.7-1.5 2.1.5-2.4-.6-5.6-.8-8z"/>
+    </symbol>
+    <!-- Mega -->
+    <symbol id="ic-mega" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="#d9272e"/>
+      <path fill="#fff" d="M6 16.5v-9h2.4l3.6 5 3.6-5H18v9h-2.2v-5.3L12.6 16h-1.2L8.2 11.2v5.3z"/>
+    </symbol>
+    <!-- Dropbox -->
+    <symbol id="ic-dropbox" viewBox="0 0 24 24">
+      <path fill="#0061ff" d="M7 3 2 6.3l5 3.2 5-3.2zM17 3l-5 3.3 5 3.2 5-3.2zM2 12.8l5 3.2 5-3.2-5-3.3zM17 9.5l-5 3.3 5 3.2 5-3.2zM7 17.1l5 3.2 5-3.2-5-3.2z"/>
+    </symbol>
+    <!-- سهم تحميل عام -->
+    <symbol id="ic-dl" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/>
+    </symbol>
+    <!-- تنبيه -->
+    <symbol id="ic-warn" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 2.5 20h19L12 3zM12 9v5m0 3.5v.1"/>
+    </symbol>
+    <!-- تقويم / هارد / تحميل صغير للميتا -->
+    <symbol id="ic-cal" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16v14H4zM4 10h16M8 3v4m8-4v4"/></symbol>
+    <symbol id="ic-hd" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="1.6" fill="currentColor"/><path d="M13 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="ic-eye" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  </defs>
+</svg>
+
+<!-- ==========================================================
+     المفهوم ١ — الشريط المضغوط
+     ========================================================== -->
+<section class="concept" id="c1">
+  <div class="concept-head">
+    <span class="concept-num">١</span>
+    <h2>الشريط المضغوط</h2>
+    <span class="concept-tag">متقارب • تركوازي غامق</span>
+  </div>
+  <p class="concept-desc">
+    ملف رئيسي <b>سطر واحد مضغوط</b> بدون أي فراغ في الوسط — التاريخ والحجم والتحميلات على اليمين مباشرة بجانب العنوان.
+    الضغط يفتح <b>صفوف المنصات</b> وكل صف فيه إحصائياته الخاصة. الملفات الإضافية تحت فاصل «ملفات إضافية».
+  </p>
+
+  <div class="demo-frame">
+    <div class="frame-label">معاينة حيّة — اضغط على أي ملف</div>
+
+    <!-- الملف الرئيسي -->
+    <div class="c1-file open" id="f1">
+      <button class="c1-main-row" onclick="document.getElementById('f1').classList.toggle('open')">
+        <span class="c1-title">الملف الرئيسي — تجربة كاملة</span>
+        <span class="v-badge">v1.0.0</span>
+        <span class="c1-meta">
+          <span><svg class="pf-ic"><use href="#ic-cal"/></svg> 29 أغسطس 2026</span>
+          <span><svg class="pf-ic"><use href="#ic-hd"/></svg> 65.7 MB</span>
+          <span><svg class="pf-ic"><use href="#ic-dl"/></svg> <b class="tabular">1.2K</b></span>
+        </span>
+        <svg class="c1-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <!-- لوحة المنصات — كل رابط وإحصائياته -->
+      <div class="c1-mirrors">
+        <div class="c1-mirror">
+          <span class="c1-mirror-name"><svg class="pf-ic"><use href="#ic-drive"/></svg> Google Drive</span>
+          <span class="c1-mirror-stats">
+            <span>⬇ <b class="tabular">843</b> تحميل</span>
+            <span>65.7 MB</span>
+            <span>✅ يعمل</span>
+          </span>
+          <button class="btn-dl"><svg><use href="#ic-dl"/></svg> تحميل</button>
+        </div>
+        <div class="c1-mirror">
+          <span class="c1-mirror-name"><svg class="pf-ic"><use href="#ic-mediafire"/></svg> MediaFire</span>
+          <span class="c1-mirror-stats">
+            <span>⬇ <b class="tabular">371</b> تحميل</span>
+            <span>65.7 MB</span>
+            <span>✅ يعمل</span>
+          </span>
+          <button class="btn-dl"><svg><use href="#ic-dl"/></svg> تحميل</button>
+        </div>
+      </div>
+      <!-- وصف الملف — مستقل عن التنبيه (فوقه) -->
+      <div class="c1-alert-box" style="background:none;border-top:1px solid var(--line-soft);padding-top:10px;padding-bottom:8px">
+        <p class="file-desc">
+          تجربة كاملة تشمل كل الترجمات والتعديلات المرئية والإصلاحات التقنية — محدثة لنسخة اللعبة 2.4.7 مع دعم كامل للـ DLC.
+        </p>
+      </div>
+
+      <div class="c1-alert-box">⚠ لا تُثبِّت فوق إصدار سابق بدون حذف ملفات الحفظ.</div>
+
+      <!-- ملفات إضافية داخل الصندوق — عنوان قابل للتسمية -->
+      <div class="c1-alert-box" style="background:none;border-top:1px solid var(--line-soft)">
+        <div class="label-row" style="margin-top:6px">
+          <div class="rename-label" contenteditable="true" spellcheck="false">روابط لعبة متوافقة</div>
+          <span class="rename-hint">اضغط وعدّل الاسم</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <!-- النوع ١: ملف تحميل -->
+          <div class="nmini">
+            <span class="nmini-name">ملف تصحيحي</span>
+            <span class="v-badge">v1.0.1</span>
+            <span class="nmini-size">12.3 MB</span>
+            <span class="nmini-alert" title="تنبيه: يُثبَّت فوق الإصدار السابق"><svg><use href="#ic-warn"/></svg></span>
+            <button class="nmini-btn teal"><svg><use href="#ic-dl"/></svg> تحميل</button>
+          </div>
+          <!-- النوع ٢: رابط موقع متوافق -->
+          <a class="site-entry" href="https://fitgirl-repacks.site/red-dead-redemption-2/" target="_blank" rel="noopener">
+            <img class="site-fav" src="https://www.google.com/s2/favicons?domain=fitgirl-repacks.site&sz=64" alt="" />
+            <span class="site-info">
+              <span class="site-name">FitGirl Repacks</span>
+              <span class="site-title">Red Dead Redemption 2</span>
+            </span>
+            <span class="site-badge">متوافق</span>
+            <span class="site-domain">fitgirl-repacks.site</span>
+          </a>
+        </div>
+
+        <!-- صندوق الإضافة بالداخل — الخياران -->
+        <div class="add-box" data-add-box>
+          <div class="add-box-hint">إضافة إلى هذا القسم</div>
+          <div class="add-tabs">
+            <button class="add-tab active" data-tab="file">ملف تحميل</button>
+            <button class="add-tab" data-tab="site">رابط موقع متوافق</button>
+          </div>
+          <!-- ملف تحميل -->
+          <div class="add-form show" data-form="file">
+            <div class="add-fields">
+              <input class="add-input" placeholder="اسم الملف" />
+              <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+              <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+              <input class="add-input ltr" placeholder="رابط التحميل" />
+              <button class="btn-add">إضافة</button>
+            </div>
+          </div>
+          <!-- رابط موقع متوافق -->
+          <div class="add-form" data-form="site">
+            <div class="add-fields">
+              <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." value="" />
+              <button class="btn-add" data-fetch-btn>جلب الرابط</button>
+            </div>
+            <div class="fetch-preview" data-fetch-preview>
+              <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+              <div data-fetch-result hidden>
+                <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+                  <img class="site-fav" data-fetch-fav src="" alt="" />
+                  <span class="site-info">
+                    <span class="site-name" data-fetch-name></span>
+                    <span class="site-title" data-fetch-title></span>
+                  </span>
+                  <span class="site-badge">متوافق</span>
+                  <span class="site-domain" data-fetch-domain></span>
+                </a>
+                <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ملفات إضافية بالخارج — عنوانها هو الآخر قابل للتسمية -->
+    <div class="label-row">
+      <div class="rename-label" contenteditable="true" spellcheck="false">تحديثات وإضافات</div>
+      <span class="rename-hint">اضغط وعدّل الاسم</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <!-- النوع ١: ملف تحميل -->
+      <div class="c1-xcard" style="flex-direction:row;align-items:center;gap:8px">
+        <div class="c1-xcard-top" style="flex:1;margin:0">
+          <span class="c1-xcard-name">ملف تصحيحي</span>
+          <span class="v-badge">v1.0.1</span>
+        </div>
+        <span style="font-size:11px;color:var(--txt-dim);font-weight:700">12.3 MB</span>
+        <span class="alert-dot"><svg style="width:10px;height:10px"><use href="#ic-warn"/></svg> تنبيه</span>
+        <button class="btn-dl"><svg><use href="#ic-dl"/></svg> تحميل</button>
+      </div>
+      <!-- النوع ٢: رابط موقع متوافق -->
+      <a class="site-entry" href="https://dodi-repacks.site/control-resonant/" target="_blank" rel="noopener">
+        <img class="site-fav" src="https://www.google.com/s2/favicons?domain=dodi-repacks.site&sz=64" alt="" />
+        <span class="site-info">
+          <span class="site-name">DODI Repacks</span>
+          <span class="site-title">Control Ultimate Edition</span>
+        </span>
+        <span class="site-badge">متوافق</span>
+        <span class="site-domain">dodi-repacks.site</span>
+      </a>
+    </div>
+
+    <!-- صندوق الإضافة بالخارج — نفس الخيارين -->
+    <div class="add-box" data-add-box>
+      <div class="add-box-hint">إضافة إلى هذا القسم</div>
+      <div class="add-tabs">
+        <button class="add-tab active" data-tab="file">ملف تحميل</button>
+        <button class="add-tab" data-tab="site">رابط موقع متوافق</button>
+      </div>
+      <div class="add-form show" data-form="file">
+        <div class="add-fields">
+          <input class="add-input" placeholder="اسم الملف" />
+          <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+          <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+          <input class="add-input ltr" placeholder="رابط التحميل" />
+          <button class="btn-add">إضافة</button>
+        </div>
+      </div>
+      <div class="add-form" data-form="site">
+        <div class="add-fields">
+          <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." />
+          <button class="btn-add" data-fetch-btn>جلب الرابط</button>
+        </div>
+        <div class="fetch-preview" data-fetch-preview>
+          <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+          <div data-fetch-result hidden>
+            <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+              <img class="site-fav" data-fetch-fav src="" alt="" />
+              <span class="site-info">
+                <span class="site-name" data-fetch-name></span>
+                <span class="site-title" data-fetch-title></span>
+              </span>
+              <span class="site-badge">متوافق</span>
+              <span class="site-domain" data-fetch-domain></span>
+            </a>
+            <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ==========================================================
+     المفهوم ٢ — الكارت المرآتي
+     ========================================================== -->
+<section class="concept" id="c2">
+  <div class="concept-head">
+    <span class="concept-num">٢</span>
+    <h2>الكارت المرآتي</h2>
+    <span class="concept-tag">أبيض / أسود</span>
+  </div>
+  <p class="concept-desc">
+    كارت مستقل لكل ملف — الهيدر فيه العنوان والنسخة والإحصائيات <b>متقاربة بدون فراغات</b>، والضغط ينزل <b>صفوف المرآة</b>
+    بداخل الكارت. كل صف مرآة = أيقونة المنصة + إحصائياته + زر تحميل <b>أبيض على أسود</b>.
+  </p>
+
+  <div class="demo-frame">
+    <div class="frame-label">معاينة حيّة — اضغط على أي كارت</div>
+
+    <!-- الملف الرئيسي -->
+    <div class="c2-card open" id="f2">
+      <button class="c2-header" onclick="document.getElementById('f2').classList.toggle('open')">
+        <span class="c2-title">الملف الرئيسي — تجربة كاملة</span>
+        <span class="v-badge">v1.0.0</span>
+        <span class="c2-meta">
+          <span>29 أغسطس 2026</span>
+          <span>65.7 MB</span>
+          <span>⬇ 1.2K</span>
+        </span>
+        <svg class="c2-chevron" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="c2-body">
+        <div class="c2-mirror">
+          <span class="c2-mirror-name"><svg class="pf-ic"><use href="#ic-drive"/></svg> Google Drive</span>
+          <span class="c2-mirror-stats">
+            <span class="stat-chip">⬇ <b class="tabular">843</b></span>
+            <span class="stat-chip">65.7 MB</span>
+            <span class="stat-chip">✅ يعمل</span>
+          </span>
+          <button class="btn-dl-bw"><svg><use href="#ic-dl"/></svg> تحميل</button>
+        </div>
+        <div class="c2-mirror">
+          <span class="c2-mirror-name"><svg class="pf-ic"><use href="#ic-mediafire"/></svg> MediaFire</span>
+          <span class="c2-mirror-stats">
+            <span class="stat-chip">⬇ <b class="tabular">371</b></span>
+            <span class="stat-chip">65.7 MB</span>
+            <span class="stat-chip">✅ يعمل</span>
+          </span>
+          <button class="btn-dl-bw"><svg><use href="#ic-dl"/></svg> تحميل</button>
+        </div>
+        <!-- وصف الملف — مستقل عن التنبيه (فوقه) -->
+        <p class="file-desc" style="margin-top:10px;margin-bottom:8px">
+          تجربة كاملة تشمل كل الترجمات والتعديلات المرئية والإصلاحات التقنية — محدثة لنسخة اللعبة 2.4.7 مع دعم كامل للـ DLC.
+        </p>
+
+        <div class="c2-alert">
+          <svg><use href="#ic-warn"/></svg>
+          لا تُثبِّت فوق إصدار سابق بدون حذف ملفات الحفظ.
+        </div>
+
+        <!-- ملفات إضافية داخل الكارت — عنوان قابل للتسمية -->
+        <div class="label-row" style="margin-bottom:6px">
+          <div class="rename-label" contenteditable="true" spellcheck="false">روابط لعبة متوافقة</div>
+          <span class="rename-hint">اضغط وعدّل الاسم</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="nmini">
+            <span class="nmini-name">ملف تصحيحي</span>
+            <span class="v-badge">v1.0.1</span>
+            <span class="nmini-size">12.3 MB</span>
+            <span class="nmini-alert" title="تنبيه: يُثبَّت فوق الإصدار السابق"><svg><use href="#ic-warn"/></svg></span>
+            <button class="nmini-btn bw"><svg><use href="#ic-dl"/></svg> تحميل</button>
+          </div>
+          <a class="site-entry" href="https://fitgirl-repacks.site/red-dead-redemption-2/" target="_blank" rel="noopener">
+            <img class="site-fav" src="https://www.google.com/s2/favicons?domain=fitgirl-repacks.site&sz=64" alt="" />
+            <span class="site-info">
+              <span class="site-name">FitGirl Repacks</span>
+              <span class="site-title">Red Dead Redemption 2</span>
+            </span>
+            <span class="site-badge">متوافق</span>
+            <span class="site-domain">fitgirl-repacks.site</span>
+          </a>
+        </div>
+
+        <!-- صندوق الإضافة بالداخل — الخياران -->
+        <div class="add-box" data-add-box>
+          <div class="add-box-hint">إضافة إلى هذا القسم</div>
+          <div class="add-tabs">
+            <button class="add-tab bw-active active" data-tab="file">ملف تحميل</button>
+            <button class="add-tab bw-active" data-tab="site">رابط موقع متوافق</button>
+          </div>
+          <div class="add-form show" data-form="file">
+            <div class="add-fields">
+              <input class="add-input" placeholder="اسم الملف" />
+              <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+              <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+              <input class="add-input ltr" placeholder="رابط التحميل" />
+              <button class="btn-add" style="background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8">إضافة</button>
+            </div>
+          </div>
+          <div class="add-form" data-form="site">
+            <div class="add-fields">
+              <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." />
+              <button class="btn-add" data-fetch-btn style="background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8">جلب الرابط</button>
+            </div>
+            <div class="fetch-preview" data-fetch-preview>
+              <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+              <div data-fetch-result hidden>
+                <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+                  <img class="site-fav" data-fetch-fav src="" alt="" />
+                  <span class="site-info">
+                    <span class="site-name" data-fetch-name></span>
+                    <span class="site-title" data-fetch-title></span>
+                  </span>
+                  <span class="site-badge">متوافق</span>
+                  <span class="site-domain" data-fetch-domain></span>
+                </a>
+                <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ملفات إضافية بالخارج — عنوانها هو الآخر قابل للتسمية -->
+    <div class="label-row">
+      <div class="rename-label" contenteditable="true" spellcheck="false">تحديثات وإضافات</div>
+      <span class="rename-hint">اضغط وعدّل الاسم</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="c2-xcard" style="display:flex;flex-direction:row;align-items:center;gap:8px">
+        <div class="c2-xcard-top" style="flex:1;margin:0">
+          <span class="c2-xcard-name">ملف تصحيحي</span>
+          <span class="v-badge">v1.0.1</span>
+        </div>
+        <span style="font-size:11px;color:var(--txt-dim);font-weight:700">12.3 MB</span>
+        <span class="alert-dot"><svg style="width:10px;height:10px"><use href="#ic-warn"/></svg> تنبيه</span>
+        <button class="btn-dl-bw"><svg><use href="#ic-dl"/></svg> تحميل</button>
+      </div>
+      <a class="site-entry" href="https://dodi-repacks.site/control-resonant/" target="_blank" rel="noopener">
+        <img class="site-fav" src="https://www.google.com/s2/favicons?domain=dodi-repacks.site&sz=64" alt="" />
+        <span class="site-info">
+          <span class="site-name">DODI Repacks</span>
+          <span class="site-title">Control Ultimate Edition</span>
+        </span>
+        <span class="site-badge">متوافق</span>
+        <span class="site-domain">dodi-repacks.site</span>
+      </a>
+    </div>
+
+    <!-- صندوق الإضافة بالخارج — نفس الخيارين -->
+    <div class="add-box" data-add-box>
+      <div class="add-box-hint">إضافة إلى هذا القسم</div>
+      <div class="add-tabs">
+        <button class="add-tab bw-active active" data-tab="file">ملف تحميل</button>
+        <button class="add-tab bw-active" data-tab="site">رابط موقع متوافق</button>
+      </div>
+      <div class="add-form show" data-form="file">
+        <div class="add-fields">
+          <input class="add-input" placeholder="اسم الملف" />
+          <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+          <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+          <input class="add-input ltr" placeholder="رابط التحميل" />
+          <button class="btn-add" style="background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8">إضافة</button>
+        </div>
+      </div>
+      <div class="add-form" data-form="site">
+        <div class="add-fields">
+          <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." />
+          <button class="btn-add" data-fetch-btn style="background:#f2f5f8;color:#0a0e14;border-color:#f2f5f8">جلب الرابط</button>
+        </div>
+        <div class="fetch-preview" data-fetch-preview>
+          <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+          <div data-fetch-result hidden>
+            <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+              <img class="site-fav" data-fetch-fav src="" alt="" />
+              <span class="site-info">
+                <span class="site-name" data-fetch-name></span>
+                <span class="site-title" data-fetch-title></span>
+              </span>
+              <span class="site-badge">متوافق</span>
+              <span class="site-domain" data-fetch-domain></span>
+            </a>
+            <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ==========================================================
+     المفهوم ٣ — القائمة الكثيفة
+     ========================================================== -->
+<section class="concept" id="c3">
+  <div class="concept-head">
+    <span class="concept-num">٣</span>
+    <h2>القائمة الكثيفة</h2>
+    <span class="concept-tag">أنحف شكل • بدون كروت</span>
+  </div>
+  <p class="concept-desc">
+    صفوف رفيعة بفواصل فقط — <b>بدون مربعات زائدة</b>، الأرقام محاذية (tabular) بأسلوب جداول الوسائط.
+    الضغط يوسّع الصف لصفوف المنصات بعمود إحصائيات واضح، والملفات الإضافية كمصغّرات أنيقة.
+  </p>
+
+  <div class="demo-frame">
+    <div class="frame-label">معاينة حيّة — اضغط على أي صف</div>
+
+    <div class="c3-wrap">
+      <!-- الملف الرئيسي -->
+      <div class="c3-item open" id="f3">
+        <button class="c3-row" onclick="document.getElementById('f3').classList.toggle('open')">
+          <span class="c3-name">الملف الرئيسي — تجربة كاملة</span>
+          <span class="v-badge">v1.0.0</span>
+          <span class="c3-meta">
+            <span>29 أغسطس 2026</span>
+            <span>65.7 MB</span>
+            <span>⬇ <b class="tabular">1.2K</b></span>
+          </span>
+          <svg class="c3-ic" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="m6 9 6 6 6-6"/></svg>
+        </button>
+
+        <div class="c3-sub">
+          <div class="c3-sub-row">
+            <span class="c3-sub-name"><svg class="pf-ic"><use href="#ic-drive"/></svg> Google Drive</span>
+            <span class="c3-sub-stat">⬇ <b class="tabular">843</b></span>
+            <span class="c3-sub-stat">65.7 MB · يعمل</span>
+            <button class="btn-dl-mini"><svg><use href="#ic-dl"/></svg> تحميل</button>
+          </div>
+          <div class="c3-sub-row">
+            <span class="c3-sub-name"><svg class="pf-ic"><use href="#ic-mediafire"/></svg> MediaFire</span>
+            <span class="c3-sub-stat">⬇ <b class="tabular">371</b></span>
+            <span class="c3-sub-stat">65.7 MB · يعمل</span>
+            <button class="btn-dl-mini"><svg><use href="#ic-dl"/></svg> تحميل</button>
+          </div>
+          <div class="c3-alert">
+            <svg><use href="#ic-warn"/></svg>
+            لا تُثبِّت فوق إصدار سابق بدون حذف ملفات الحفظ.
+          </div>
+        </div>
+      </div>
+
+      <!-- ملف إضافي كصف ثانٍ -->
+      <div class="c3-item" id="f4">
+        <button class="c3-row" onclick="document.getElementById('f4').classList.toggle('open')">
+          <span class="c3-name">ملف تصحيحي</span>
+          <span class="v-badge">v1.0.1</span>
+          <span class="c3-meta">
+            <span>12.3 MB</span>
+            <span>⬇ <b class="tabular">204</b></span>
+          </span>
+          <svg class="c3-ic" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="c3-sub">
+          <div class="c3-sub-row">
+            <span class="c3-sub-name"><svg class="pf-ic"><use href="#ic-drive"/></svg> Google Drive</span>
+            <span class="c3-sub-stat">⬇ <b class="tabular">204</b></span>
+            <span class="c3-sub-stat">12.3 MB · يعمل</span>
+            <button class="btn-dl-mini"><svg><use href="#ic-dl"/></svg> تحميل</button>
+          </div>
+          <!-- وصف الملف — مستقل عن التنبيه (فوقه) -->
+          <p class="file-desc" style="margin:8px 14px 6px 30px">
+            تجربة كاملة تشمل كل الترجمات والتعديلات المرئية والإصلاحات التقنية — محدثة لنسخة اللعبة 2.4.7 مع دعم كامل للـ DLC.
+          </p>
+
+          <div class="c3-alert">
+            <svg><use href="#ic-warn"/></svg>
+            لا تُثبِّت فوق إصدار سابق بدون حذف ملفات الحفظ.
+          </div>
+
+          <!-- ملفات إضافية داخل الصف — عنوان قابل للتسمية -->
+          <div class="label-row" style="margin:4px 14px 4px 30px">
+            <div class="rename-label" contenteditable="true" spellcheck="false">روابط لعبة متوافقة</div>
+            <span class="rename-hint">اضغط وعدّل الاسم</span>
+          </div>
+          <div style="margin:0 14px 8px 30px;border:1px solid var(--line-soft);border-radius:6px;overflow:hidden">
+            <div class="nrow">
+              <span class="nrow-name">ملف تصحيحي <span class="v-badge">v1.0.1</span></span>
+              <span class="nrow-size">12.3 MB</span>
+              <span class="nmini-alert" title="تنبيه: يُثبَّت فوق الإصدار السابق"><svg><use href="#ic-warn"/></svg></span>
+              <button class="nmini-btn mini"><svg><use href="#ic-dl"/></svg> تحميل</button>
+            </div>
+            <a class="site-entry" style="border:none;border-radius:0;border-bottom:1px solid var(--line-soft)" href="https://fitgirl-repacks.site/red-dead-redemption-2/" target="_blank" rel="noopener">
+              <img class="site-fav" src="https://www.google.com/s2/favicons?domain=fitgirl-repacks.site&sz=64" alt="" />
+              <span class="site-info">
+                <span class="site-name">FitGirl Repacks</span>
+                <span class="site-title">Red Dead Redemption 2</span>
+              </span>
+              <span class="site-badge">متوافق</span>
+              <span class="site-domain">fitgirl-repacks.site</span>
+            </a>
+          </div>
+
+          <!-- صندوق الإضافة بالداخل — الخياران -->
+          <div class="add-box" style="margin:0 14px 10px 30px" data-add-box>
+            <div class="add-box-hint">إضافة إلى هذا القسم</div>
+            <div class="add-tabs">
+              <button class="add-tab active" data-tab="file">ملف تحميل</button>
+              <button class="add-tab" data-tab="site">رابط موقع متوافق</button>
+            </div>
+            <div class="add-form show" data-form="file">
+              <div class="add-fields">
+                <input class="add-input" placeholder="اسم الملف" />
+                <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+                <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+                <input class="add-input ltr" placeholder="رابط التحميل" />
+                <button class="btn-add">إضافة</button>
+              </div>
+            </div>
+            <div class="add-form" data-form="site">
+              <div class="add-fields">
+                <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." />
+                <button class="btn-add" data-fetch-btn>جلب الرابط</button>
+              </div>
+              <div class="fetch-preview" data-fetch-preview>
+                <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+                <div data-fetch-result hidden>
+                  <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+                    <img class="site-fav" data-fetch-fav src="" alt="" />
+                    <span class="site-info">
+                      <span class="site-name" data-fetch-name></span>
+                      <span class="site-title" data-fetch-title></span>
+                    </span>
+                    <span class="site-badge">متوافق</span>
+                    <span class="site-domain" data-fetch-domain></span>
+                  </a>
+                  <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ملفات إضافية بالخارج — عنوانها هو الآخر قابل للتسمية -->
+    <div class="label-row">
+      <div class="rename-label" contenteditable="true" spellcheck="false">تحديثات وإضافات</div>
+      <span class="rename-hint">اضغط وعدّل الاسم</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="c3-xcard" style="flex-direction:row;align-items:center;gap:8px">
+        <div class="c3-xcard-top" style="flex:1;margin:0">
+          <span class="c3-xcard-name">ملف تصحيحي</span>
+          <span class="v-badge">v1.0.1</span>
+        </div>
+        <span style="font-size:10.5px;color:var(--txt-dim);font-weight:700">12.3 MB</span>
+        <span class="alert-dot"><svg style="width:10px;height:10px"><use href="#ic-warn"/></svg> تنبيه</span>
+        <button class="btn-dl-mini"><svg><use href="#ic-dl"/></svg> تحميل</button>
+      </div>
+      <a class="site-entry" href="https://dodi-repacks.site/control-resonant/" target="_blank" rel="noopener">
+        <img class="site-fav" src="https://www.google.com/s2/favicons?domain=dodi-repacks.site&sz=64" alt="" />
+        <span class="site-info">
+          <span class="site-name">DODI Repacks</span>
+          <span class="site-title">Control Ultimate Edition</span>
+        </span>
+        <span class="site-badge">متوافق</span>
+        <span class="site-domain">dodi-repacks.site</span>
+      </a>
+    </div>
+
+    <!-- صندوق الإضافة بالخارج — نفس الخيارين -->
+    <div class="add-box" data-add-box>
+      <div class="add-box-hint">إضافة إلى هذا القسم</div>
+      <div class="add-tabs">
+        <button class="add-tab active" data-tab="file">ملف تحميل</button>
+        <button class="add-tab" data-tab="site">رابط موقع متوافق</button>
+      </div>
+      <div class="add-form show" data-form="file">
+        <div class="add-fields">
+          <input class="add-input" placeholder="اسم الملف" />
+          <input class="add-input" placeholder="v1.0.0" style="flex:0 1 70px" />
+          <input class="add-input" placeholder="الحجم" style="flex:0 1 70px" />
+          <input class="add-input ltr" placeholder="رابط التحميل" />
+          <button class="btn-add">إضافة</button>
+        </div>
+      </div>
+      <div class="add-form" data-form="site">
+        <div class="add-fields">
+          <input class="add-input ltr" data-site-url placeholder="https://fitgirl-repacks.site/..." />
+          <button class="btn-add" data-fetch-btn>جلب الرابط</button>
+        </div>
+        <div class="fetch-preview" data-fetch-preview>
+          <div class="fetch-loading" data-fetch-loading><span class="spin"></span> جارٍ جلب أيقونة الموقع والعنوان…</div>
+          <div data-fetch-result hidden>
+            <a class="site-entry" href="#" target="_blank" rel="noopener" data-fetch-link>
+              <img class="site-fav" data-fetch-fav src="" alt="" />
+              <span class="site-info">
+                <span class="site-name" data-fetch-name></span>
+                <span class="site-title" data-fetch-title></span>
+              </span>
+              <span class="site-badge">متوافق</span>
+              <span class="site-domain" data-fetch-domain></span>
+            </a>
+            <div class="fetch-ok-note">✓ الموقع ضمن القائمة المدعومة — اضغط «إضافة» لحفظه في القسم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hint">
+  <b>ملحوظة:</b> كل الأرقام تجريبية. الأيقونات مرسومة SVG (Drive/MediaFire/Mega/Dropbox) —
+  في النسخة الحقيقية نستبدلها بأيقونات المنصات الفعلية أو شعار الحرف لما لا تتوفر أيقونة رسمية.
+  الأزرار بالتركوازي الغامق (١) أو الأبيض/الأسود (٢ و٣) — لا مربع أيقونة منفصل.
+</div>
+<script>
+/* ============================================================
+   صناديق الإضافة — تبديل النوع (ملف / موقع) + محاكاة جلب الرابط
+   في النسخة الحقيقية: الجلب من API داخلي يقرأ جدول المواقع
+   المدعومة + عنوان الصفحة من الخادم (بلا CORS).
+   ============================================================ */
+(function(){
+  /* جدول المواقع المدعومة (تجريبي) — في النسخة الحقيقية من قاعدة البيانات */
+  var SUPPORTED = {
+    'fitgirl-repacks.site': 'FitGirl Repacks',
+    'dodi-repacks.site': 'DODI Repacks',
+    'steamrip.com': 'SteamRIP',
+    'gog-games.com': 'GOG Games',
+    'onlinefix.me': 'OnlineFix'
+  };
+
+  function hostnameOf(url){
+    try{
+      var u = new URL(url.trim().startsWith('http') ? url.trim() : 'https://' + url.trim());
+      return u.hostname.replace(/^www\./, '');
+    }catch(e){ return ''; }
+  }
+
+  function titleFromUrl(url){
+    try{
+      var u = new URL(url.trim().startsWith('http') ? url.trim() : 'https://' + url.trim());
+      var slug = u.pathname.split('/').filter(Boolean).pop() || '';
+      return slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    }catch(e){ return ''; }
+  }
+
+  document.querySelectorAll('[data-add-box]').forEach(function(box){
+    var tabs = box.querySelectorAll('.add-tab');
+    tabs.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        tabs.forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+        box.querySelectorAll('.add-form').forEach(function(f){ f.classList.remove('show'); });
+        var form = box.querySelector('[data-form="' + tab.dataset.tab + '"]');
+        if(form) form.classList.add('show');
+      });
+    });
+
+    var fetchBtn = box.querySelector('[data-fetch-btn]');
+    if(!fetchBtn) return;
+    fetchBtn.addEventListener('click', function(){
+      var input = box.querySelector('[data-site-url]');
+      var preview = box.querySelector('[data-fetch-preview]');
+      var loading = box.querySelector('[data-fetch-loading]');
+      var result = box.querySelector('[data-fetch-result]');
+      var host = hostnameOf(input.value || '');
+
+      preview.classList.add('show');
+      loading.style.display = 'flex';
+      result.hidden = true;
+
+      fetchBtn.disabled = true;
+
+      /* محاكاة زمن جلب الشبكة */
+      setTimeout(function(){
+        fetchBtn.disabled = false;
+        var siteName = SUPPORTED[host];
+        if(!siteName){
+          loading.innerHTML = '✕ الموقع <b style="margin:0 4px;color:var(--red)">' + (host || 'غير صحيح') +
+            '</b> غير مدعوم حالياً — أضفه لجدول المواقع المدعومة أولاً.';
+          loading.style.color = 'var(--red)';
+          return;
+        }
+        loading.style.display = 'none';
+        result.hidden = false;
+        var fav = box.querySelector('[data-fetch-fav]');
+        var link = box.querySelector('[data-fetch-link]');
+        var title = titleFromUrl(input.value);
+        fav.src = 'https://www.google.com/s2/favicons?domain=' + host + '&sz=64';
+        fav.onerror = function(){
+          /* لو الأيقونة فشلت: شعار الحرف */
+          this.style.display = 'none';
+        };
+        link.href = input.value.trim().startsWith('http') ? input.value.trim() : 'https://' + input.value.trim();
+        box.querySelector('[data-fetch-name]').textContent = siteName;
+        box.querySelector('[data-fetch-title]').textContent = title;
+        box.querySelector('[data-fetch-domain]').textContent = host;
+      }, 900);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
