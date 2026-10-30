@@ -1,0 +1,177 @@
+<!-- DESIGN PHILOSOPHY: International Typographic Style (Swiss), adapted to Arabic RTL.
+  Grid is the design: strict 12-column layout, hairline 1px rules as the ONLY separators,
+  black/white + ONE red accent (#E30613). Type carries all hierarchy — oversized black
+  Arabic headlines, mono meta rows, numbered sections 01–07. Asymmetric hero (7/4 split).
+  No shadows, no gradients, no border-radius, no letter-spacing on Arabic, no autoplay. -->
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games Arabic — Swiss Concept</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#111;--paper:#fff;--grey:#6b6b6b;--line:#e2e2e2;--accent:#E30613;--mono:"IBM Plex Mono","Courier New",monospace}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--paper);color:var(--ink);line-height:1.7}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.02em}
+a{color:inherit;text-decoration:none}
+/* ===== header ===== */
+.topbar{border-bottom:1px solid var(--ink);font-family:var(--mono);font-size:11px;display:flex;justify-content:space-between;padding:8px 0;color:var(--grey)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid var(--ink);padding:20px 0 14px}
+.brand{font-size:40px;font-weight:900;line-height:1.2}
+.brand span{color:var(--accent)}
+.tagline{font-size:13px;color:var(--grey);max-width:280px;line-height:1.6}
+nav.main{display:flex;gap:0;border-bottom:1px solid var(--ink);overflow-x:auto}
+nav.main a{padding:12px 18px;font-size:14px;font-weight:700;border-left:1px solid var(--line);white-space:nowrap}
+nav.main a:first-child{border-right:1px solid var(--line)}
+nav.main a:hover{background:var(--ink);color:#fff}
+nav.main a.cta{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* ===== hero: asymmetric 7/4 ===== */
+.hero{display:grid;grid-template-columns:repeat(12,1fr);gap:24px;padding:56px 0;border-bottom:1px solid var(--ink)}
+.hero-type{grid-column:1/span 7}
+.hero h1{font-size:64px;font-weight:900;line-height:1.25;margin:12px 0 16px}
+.hero h1 em{font-style:normal;border-bottom:8px solid var(--accent)}
+.hero p.lead{font-size:18px;color:#333;max-width:52ch;margin-bottom:24px}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;padding:12px 28px;font-weight:800;font-size:15px;border:2px solid var(--ink)}
+.btn.solid{background:var(--ink);color:#fff}
+.btn.solid:hover{background:var(--accent);border-color:var(--accent)}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+.hero-meta{grid-column:9/span 4;border-right:1px solid var(--ink);padding-right:24px;font-size:14px}
+.hero-meta dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:16px 0}
+.hero-meta dt{font-family:var(--mono);font-size:12px;color:var(--grey)}
+.hero-meta dd{font-weight:800;font-size:20px}
+.statstrip{display:flex;border:1px solid var(--ink);margin-top:20px}
+.statstrip div{flex:1;padding:10px 14px;border-left:1px solid var(--line)}
+.statstrip div:last-child{border-left:0}
+.statstrip b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+/* ===== sections ===== */
+section.block{padding:48px 0;border-bottom:1px solid var(--ink)}
+.shead{display:flex;align-items:baseline;gap:16px;margin-bottom:24px}
+.snum{font-family:var(--mono);font-size:13px;color:#fff;background:var(--ink);padding:2px 10px}
+.shead h2{font-size:32px;font-weight:900}
+.shead a.more{margin-right:auto;font-size:13px;font-weight:700;border-bottom:2px solid var(--accent)}
+/* featured: 1 large + list */
+.feat{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+.feat-main{grid-column:1/span 7;border:1px solid var(--ink);padding:0}
+.ph{aspect-ratio:16/8;background:repeating-linear-gradient(-45deg,#111 0 12px,#1c1c1c 12px 24px);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px}
+.feat-main .txt{padding:20px}
+.feat-main h3{font-size:26px;font-weight:900;margin:6px 0}
+.feat-list{grid-column:8/span 5;display:flex;flex-direction:column}
+.feat-list a{display:flex;gap:14px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line)}
+.feat-list a:hover h4{color:var(--accent)}
+.feat-list .i{font-family:var(--mono);color:var(--grey)}
+.feat-list h4{font-size:16px;font-weight:800}
+/* trending rank table */
+.rank{width:100%;border-collapse:collapse}
+.rank td,.rank th{padding:12px 8px;border-bottom:1px solid var(--line);text-align:right;font-size:15px}
+.rank th{font-family:var(--mono);font-size:11px;color:var(--grey);font-weight:400}
+.rank tr:hover td{background:#f5f5f5}
+.rank .n{font-family:var(--mono);font-weight:700;width:48px}
+.rank tr:first-child .n{color:var(--accent)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* latest grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--ink)}
+.card{border-left:1px solid var(--line);padding:0;display:flex;flex-direction:column}
+.card:last-child{border-left:0}
+.card .ph{aspect-ratio:16/9}
+.card .txt{padding:16px}
+.card h4{font-size:17px;font-weight:800;margin:4px 0 6px}
+.pill{display:inline-block;font-size:11px;font-weight:700;border:1px solid var(--ink);padding:1px 10px;margin-bottom:8px}
+.pill.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.card small{color:var(--grey);font-size:12px}
+/* platforms: ledger rows */
+.plat a{display:grid;grid-template-columns:64px 1fr auto auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.plat a:hover{background:#f5f5f5}
+.plat .k{font-family:var(--mono);font-size:12px;color:#fff;background:var(--ink);text-align:center;padding:6px 0}
+.plat h4{font-size:19px;font-weight:900}
+.plat .c{font-size:13px;color:var(--grey)}
+.plat .go{font-weight:900;font-size:18px}
+/* series + teams */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--ink)}
+.cell{padding:20px;border-left:1px solid var(--line)}
+.cell:last-child{border-left:0}
+.cell:hover{background:var(--ink);color:#fff}
+.cell:hover small{color:#bbb}
+.cell h4{font-size:18px;font-weight:900}
+.cell small{color:var(--grey);font-size:12px}
+.sw{width:100%;height:10px;background:var(--ink);margin-bottom:12px}
+/* footer */
+footer{padding:40px 0 24px}
+.fgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;margin-bottom:32px}
+.fgrid h5{font-family:var(--mono);font-size:11px;color:var(--grey);margin-bottom:12px;font-weight:400}
+.fgrid a{display:block;font-size:14px;padding:3px 0}
+.fgrid a:hover{color:var(--accent)}
+.copy{border-top:3px solid var(--ink);padding-top:14px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--grey);flex-wrap:wrap;gap:8px}
+@media(max-width:860px){
+.hero{grid-template-columns:1fr;padding:36px 0}
+.hero-type,.hero-meta{grid-column:1/-1}
+.hero h1{font-size:38px}
+.hero-meta{border-right:0;border-top:1px solid var(--ink);padding:20px 0 0}
+.feat,.feat-main,.feat-list{grid-column:1/-1;display:block}
+.grid3,.grid4{grid-template-columns:1fr 1fr}
+.card,.cell{border-bottom:1px solid var(--line)}
+.fgrid{grid-template-columns:1fr 1fr}
+.brand{font-size:30px}
+.plat a{grid-template-columns:48px 1fr auto}
+.plat .c{display:none}
+}
+@media(max-width:520px){.grid3,.grid4{grid-template-columns:1fr}.statstrip{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar"><span>EST. 2019 — ARABIC GAME LOCALIZATION</span><span>TR RIYADH 14:32 · 1,248 ONLINE</span></div>
+<header>
+<div class="masthead"><div class="brand">Games<span>Arabic</span></div><p class="tagline">أكبر منصة عربية لتعريب الألعاب — ترجمات احترافية بمقاييس سويسرية.</p></div>
+<nav class="main"><a href="#">الرئيسية</a><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a><a href="#">الأخبار</a><a href="#">المجتمع</a><a href="#" class="cta">دخول</a></nav>
+</header>
+<div class="hero">
+<div class="hero-type">
+<div class="mono">FEATURED LOCALIZATION — № 2481 · PC</div>
+<h1>تعريب <em>Red Dead Redemption 2</em> الكامل بالعربية</h1>
+<p class="lead">ترجمة احترافية للقصة والحوارات والقوائم — 120 ألف سطر مراجعة لغوية، متوافقة مع آخر تحديث رسمي.</p>
+<div class="btnrow"><a class="btn solid" href="#">حمّل التعريب</a><a class="btn ghost" href="#">تصفّح الكل</a></div>
+<div class="statstrip"><div><b class="num">2,481</b><span class="mono">MODS</span></div><div><b class="num">8.4M</b><span class="mono">DOWNLOADS</span></div><div><b class="num">312</b><span class="mono">TEAMS</span></div><div><b class="num">96K</b><span class="mono">MEMBERS</span></div></div>
+</div>
+<aside class="hero-meta">
+<div class="mono">SPEC / 001</div>
+<dl><dt>VERSION</dt><dd class="num">v2.4.1</dd><dt>SIZE</dt><dd class="num">84 MB</dd><dt>RATING</dt><dd class="num">4.9 / 5</dd><dt>UPDATED</dt><dd>قبل يومين</dd></dl>
+<div class="mono" style="color:var(--grey)">PC · PS5 · XBOX — AR/EN SUBS</div>
+</aside>
+</div>
+<section class="block"><div class="shead"><span class="snum">01</span><h2>تعريبات مميزة</h2><a class="more" href="#">عرض الكل ←</a></div>
+<div class="feat"><article class="feat-main"><div class="ph">[ 16:9 ARTWORK ]</div><div class="txt"><span class="pill hot">الأعلى تقييماً</span><h3>تعريب Elden Ring — الترجمة الأسطورية</h3><p style="color:#444;font-size:15px">ترجمة كاملة لعالم FromSoftware الغامض مع الحفاظ على الأسلوب الأدبي. <span class="num">412K</span> تحميل.</p></div></article>
+<div class="feat-list"><a href="#"><span class="i">02</span><h4>تعريب God of War Ragnarök للـ PS5</h4></a><a href="#"><span class="i">03</span><h4>تعريب Cyberpunk 2077 — نسخة 2.0</h4></a><a href="#"><span class="i">04</span><h4>تعريب The Witcher 3: الدم والنبيذ</h4></a><a href="#"><span class="i">05</span><h4>تعريب Zelda: Tears of the Kingdom</h4></a></div></div></section>
+<section class="block"><div class="shead"><span class="snum">02</span><h2>الأكثر رواجاً</h2><a class="more" href="#">عرض الكل ←</a></div>
+<table class="rank"><tr><th>#</th><th>التعريب</th><th>المنصة</th><th>تحميلات</th></tr>
+<tr><td class="n">01</td><td><b>تعريب Baldur's Gate 3</b></td><td>PC</td><td class="num">188,204 ▲</td></tr>
+<tr><td class="n">02</td><td><b>تعريب Spider-Man 2</b></td><td>PS5</td><td class="num">156,930 ▲</td></tr>
+<tr><td class="n">03</td><td><b>تعريب Starfield</b></td><td>PC / XBOX</td><td class="num">121,447 ▲</td></tr>
+<tr><td class="n">04</td><td><b>تعريب Final Fantasy XVI</b></td><td>PS5</td><td class="num">98,311 ▲</td></tr>
+<tr><td class="n">05</td><td><b>تعريب Hollow Knight</b></td><td>Switch</td><td class="num">87,562 ▲</td></tr></table></section>
+<section class="block"><div class="shead"><span class="snum">03</span><h2>وصل حديثاً</h2><a class="more" href="#">عرض الكل ←</a></div>
+<div class="grid3">
+<article class="card"><div class="ph">[ ART ]</div><div class="txt"><span class="pill hot">جديد</span><h4>تعريب Alan Wake 2</h4><small>PC · قبل 3 ساعات · <span class="num">12K</span> تحميل</small></div></article>
+<article class="card"><div class="ph">[ ART ]</div><div class="txt"><span class="pill hot">جديد</span><h4>تعريب Resident Evil 4 Remake</h4><small>PS5 · قبل 6 ساعات · <span class="num">9K</span> تحميل</small></div></article>
+<article class="card"><div class="ph">[ ART ]</div><div class="txt"><span class="pill">محدّث</span><h4>تعريب GTA V — تحديث الصيف</h4><small>PC · أمس · <span class="num">44K</span> تحميل</small></div></article>
+</div></section>
+<section class="block"><div class="shead"><span class="snum">04</span><h2>تصفّح حسب المنصة</h2></div>
+<div class="plat">
+<a href="#"><span class="k">PC</span><h4>تعريبات الحاسب</h4><span class="c num">842 localization</span><span class="go">←</span></a>
+<a href="#"><span class="k">PS5</span><h4>تعريبات بلايستيشن 5</h4><span class="c num">416 localization</span><span class="go">←</span></a>
+<a href="#"><span class="k">PS4</span><h4>تعريبات بلايستيشن 4</h4><span class="c num">533 localization</span><span class="go">←</span></a>
+<a href="#"><span class="k">XBX</span><h4>تعريبات إكس بوكس</h4><span class="c num">298 localization</span><span class="go">←</span></a>
+<a href="#"><span class="k">NSW</span><h4>تعريبات نينتندو سويتش</h4><span class="c num">187 localization</span><span class="go">←</span></a>
+<a href="#"><span class="k">AND</span><h4>تعريبات أندرويد</h4><span class="c num">205 localization</span><span class="go">←</span></a>
+</div></section>
+<section class="block"><div class="shead"><span class="snum">05</span><h2>سلاسل التعريبات</h2><a class="more" href="#">عرض الكل ←</a></div>
+<div class="grid4"><a class="cell" href="#"><div class="sw"></div><h4>سلسلة Souls</h4><small class="num">34 localization</small></a><a class="cell" href="#"><div class="sw"></div><h4>سلسلة Zelda</h4><small class="num">21 localization</small></a><a class="cell" href="#"><div class="sw"></div><h4>سلسلة GTA</h4><small class="num">18 localization</small></a><a class="cell" href="#"><div class="sw"></div><h4>سلسلة Final Fantasy</h4><small class="num">27 localization</small></a></div></section>
+<section class="block" style="border-bottom:0"><div class="shead"><span class="snum">06</span><h2>فرق التعريب</h2><a class="more" href="#">عرض الكل ←</a></div>
+<div class="grid4"><a class="cell" href="#"><div class="sw"></div><h4>فريق التعريب الرسمي</h4><small class="num">412 works</small></a><a class="cell" href="#"><div class="sw"></div><h4>عرب غيمرز</h4><small class="num">188 works</small></a><a class="cell" href="#"><div class="sw"></div><h4>ترجمة بلا حدود</h4><small class="num">96 works</small></a><a class="cell" href="#"><div class="sw"></div><h4>ديوان الألعاب</h4><small class="num">74 works</small></a></div></section>
+<footer><div class="fgrid"><div><div class="brand" style="font-size:28px">Games<span>Arabic</span></div><p style="font-size:13px;color:var(--grey);margin-top:8px">منصة المجتمع العربي لتعريب الألعاب منذ 2019.</p></div><div><h5>SECTIONS</h5><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a></div><div><h5>EXPLORE</h5><a href="#">الأخبار</a><a href="#">المجتمع</a><a href="#">المتصدرون</a><a href="#">المفضلة</a></div><div><h5>SUPPORT</h5><a href="#">حول</a><a href="#">الدعم</a><a href="#">الخصوصية</a><a href="#">الشروط</a></div></div>
+<div class="copy"><span>© 2026 GAMES ARABIC</span><span>SET IN SYSTEM SANS · GRID 12-COL</span></div></footer>
+</div>
+</body>
+</html>

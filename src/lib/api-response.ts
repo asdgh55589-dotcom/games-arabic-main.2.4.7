@@ -160,6 +160,10 @@ export const unauthorized = (msg = 'Unauthorized', instance?: string) =>
 export const forbidden = (msg = 'Forbidden', instance?: string) =>
   fail('FORBIDDEN', msg, 403, undefined, undefined, instance)
 
+/** 400 — Bad request */
+export const badRequest = (msg = 'Bad request', instance?: string) =>
+  fail('BAD_REQUEST', msg, 400, undefined, undefined, instance)
+
 /** 422 — Validation failed (ALWAYS 422, never 400 for validation errors).
  * `message` is the user-facing Arabic/English message shown in `error.message`.
  * If omitted, defaults to 'Invalid input' for backward compatibility.

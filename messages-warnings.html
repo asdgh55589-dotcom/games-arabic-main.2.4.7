@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>رسائل التحذيرات — ثلاثة مفاهيم</title>
+<style>
+  :root{
+    --bg:#0a0e14;--panel:#10151d;--panel-2:#151b25;
+    --line:#232b38;--line-soft:#1b2330;
+    --txt:#e8edf4;--txt-dim:#8b96a7;--txt-faint:#5c6678;
+    --teal-deep:#0b3d3a;--teal-deep-hi:#0f524d;--teal:#2dd4bf;
+    --amber:#f0b429;--amber-bg:rgba(240,180,41,.08);--amber-line:rgba(240,180,41,.35);
+    --red:#f87171;--red-bg:rgba(248,113,113,.08);--red-line:rgba(248,113,113,.35);
+    --blue:#60a5fa;--blue-bg:rgba(96,165,250,.08);--blue-line:rgba(96,165,250,.35);
+    --radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,sans-serif;font-size:14px;line-height:1.6;padding-bottom:80px}
+  .nav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;padding:12px;background:rgba(10,14,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .nav a{color:var(--txt-dim);text-decoration:none;font-weight:700;font-size:13px;padding:7px 16px;border:1px solid var(--line);border-radius:999px;transition:.15s}
+  .nav a:hover{color:var(--txt);border-color:var(--txt-faint)}
+  .concept{max-width:860px;margin:0 auto;padding:36px 16px 8px}
+  .concept-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .concept-num{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--teal-deep);color:var(--teal);font-weight:900;font-size:15px;flex:none}
+  .concept-head h2{font-size:20px;font-weight:900}
+  .concept-tag{font-size:11px;font-weight:700;color:var(--txt-dim);background:var(--panel-2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+  .concept-desc{color:var(--txt-dim);font-size:13px;margin-bottom:18px;max-width:70ch}
+  .concept-desc b{color:var(--txt)}
+  .demo-frame{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+  .frame-label{font-size:10px;letter-spacing:.12em;color:var(--txt-faint);font-weight:800;margin-bottom:12px}
+  hr.sep{border:none;border-top:1px solid var(--line);margin:44px 0 0}
+  svg.ic{width:16px;height:16px;flex:none;display:block}
+
+  .demo-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .btn-demo{
+    font:inherit;font-size:12px;font-weight:800;cursor:pointer;
+    background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e;
+    padding:7px 14px;border-radius:7px;transition:.15s;
+  }
+  .btn-demo:hover{background:#146b63}
+  .btn-demo.red{background:rgba(248,113,113,.12);color:var(--red);border-color:var(--red-line)}
+  .btn-demo.amber{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-line)}
+  .btn-demo.blue{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-line)}
+
+  /* ========== مفهوم ١: أشرطة (Banners) ========== */
+  .banners{display:flex;flex-direction:column;gap:8px;min-height:60px}
+  .banner{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:10px 12px;border-radius:var(--radius);
+    font-size:12.5px;font-weight:700;
+    border:1px solid;animation:slideIn .25s ease;
+  }
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .banner.amber{background:var(--amber-bg);border-color:var(--amber-line);color:#f5d78e}
+  .banner.red{background:var(--red-bg);border-color:var(--red-line);color:#fecaca}
+  .banner.blue{background:var(--blue-bg);border-color:var(--blue-line);color:#bfdbfe}
+  .banner .ic{margin-top:2px}
+  .banner-body{flex:1;min-width:0}
+  .banner-title{font-weight:900;font-size:12.5px;margin-bottom:1px;color:inherit}
+  .banner-text{font-weight:600;opacity:.85;font-size:11.5px}
+  .banner-close{
+    flex:none;background:none;border:none;cursor:pointer;
+    color:inherit;opacity:.5;font-size:15px;font-weight:900;
+    padding:0 4px;line-height:1;transition:.15s;
+  }
+  .banner-close:hover{opacity:1}
+  .banner-acts{display:flex;gap:6px;margin-top:7px}
+  .banner-acts button{
+    font:inherit;font-size:11px;font-weight:900;cursor:pointer;
+    padding:4px 11px;border-radius:5px;transition:.15s;
+  }
+  .banner-acts .go{background:currentColor;border:none;opacity:.95}
+  .banner-acts .go span{filter:brightness(.25)}
+  .banner-acts .no{background:transparent;border:1px solid currentColor;color:inherit}
+
+  /* ========== مفهوم ٢: نافذة تحذير ========== */
+  .modal-root{position:relative;min-height:340px;border-radius:10px;background:#0d1219;border:1px solid var(--line-soft);display:grid;place-items:center;padding:20px}
+  .modal-root .hint-idle{color:var(--txt-faint);font-size:12px;font-weight:700;text-align:center}
+  .overlay{
+    position:absolute;inset:0;display:grid;place-items:center;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+    border-radius:10px;padding:16px;
+    animation:fadeIn .2s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal{
+    width:100%;max-width:380px;
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);
+    animation:pop .22s cubic-bezier(.34,1.4,.64,1);
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--line-soft)}
+  .modal-head.amber{background:linear-gradient(to left,var(--amber-bg),transparent)}
+  .modal-head.red{background:linear-gradient(to left,var(--red-bg),transparent)}
+  .modal-ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none}
+  .modal-head.amber .modal-ic{background:rgba(240,180,41,.15);color:var(--amber)}
+  .modal-head.red .modal-ic{background:rgba(248,113,113,.15);color:var(--red)}
+  .modal-ic .ic{width:19px;height:19px}
+  .modal-title{font-size:14px;font-weight:900}
+  .modal-sub{font-size:11px;color:var(--txt-dim);font-weight:700}
+  .modal-body{padding:13px 16px;font-size:12.5px;font-weight:700;color:var(--txt-dim);line-height:1.75}
+  .modal-body b{color:var(--txt)}
+  .modal-info{
+    display:flex;align-items:center;gap:8px;
+    margin-top:10px;padding:8px 10px;
+    background:#0d1219;border:1px solid var(--line-soft);border-radius:7px;
+    font-size:11.5px;font-weight:800;color:var(--txt);
+  }
+  .modal-info .ic{color:var(--teal)}
+  .modal-url{
+    margin-top:8px;padding:7px 9px;
+    background:#0a0e14;border:1px solid var(--line);border-radius:6px;
+    font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
+    color:var(--teal);direction:ltr;text-align:left;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .modal-acts{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line-soft)}
+  .modal-acts button{font:inherit;font-size:12.5px;font-weight:900;cursor:pointer;padding:8px 18px;border-radius:8px;transition:.15s;min-height:40px}
+  .modal-acts .cancel{background:transparent;color:var(--txt-dim);border:1px solid var(--line)}
+  .modal-acts .cancel:hover{color:var(--txt);border-color:var(--txt-faint)}
+  .modal-acts .proceed{background:var(--teal-deep-hi);color:#eafffb;border:1px solid #17655e}
+  .modal-acts .proceed:hover{background:#146b63}
+  .modal-acts .proceed.danger{background:rgba(248,113,113,.15);color:var(--red);border-color:var(--red-line)}
+  .modal-acts .proceed.danger:hover{background:rgba(248,113,113,.25)}
+
+  /* ========== مفهوم ٣: بطاقات مدمجة داخل التدفق ========== */
+  .flow{display:flex;flex-direction:column;gap:8px}
+  .fcard{
+    border:1px dashed;border-radius:var(--radius);
+    padding:9px 11px;font-size:12px;font-weight:700;
+    display:flex;gap:9px;align-items:flex-start;
+  }
+  .fcard.amber{border-color:var(--amber-line);background:var(--amber-bg);color:#f5d78e}
+  .fcard.red{border-color:var(--red-line);background:var(--red-bg);color:#fecaca}
+  .fcard.blue{border-color:var(--blue-line);background:var(--blue-bg);color:#bfdbfe}
+  .fcard .ic{margin-top:2px}
+  .fcard-body{flex:1;min-width:0}
+  .fcard-text{font-weight:700;font-size:12px}
+  .fcard-more{
+    display:none;margin-top:7px;padding-top:7px;
+    border-top:1px dashed currentColor;opacity:.9;
+    font-size:11.5px;font-weight:600;
+  }
+  .fcard.open .fcard-more{display:block}
+  .fcard-toggle{
+    font:inherit;font-size:10.5px;font-weight:900;cursor:pointer;
+    background:transparent;border:1px solid currentColor;color:inherit;
+    border-radius:999px;padding:2px 10px;margin-top:6px;transition:.15s;opacity:.75;
+  }
+  .fcard-toggle:hover{opacity:1}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#c1">١ — أشرطة التحذير</a>
+  <a href="#c2">٢ — نافذة التحذير</a>
+  <a href="#c3">٣ — بطاقات مدمجة</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="ic-warn" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 2.5 20h19L12 3zM12 9v5m0 3.5v.1"/></symbol>
+  <symbol id="ic-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 2 4 5.5v6c0 5 3.4 8.6 8 10.5 4.6-1.9 8-5.5 8-10.5v-6L12 2zM9 12l2 2 4-4.5"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 11v6m0-10v.1"/></symbol>
+  <symbol id="ic-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7L11.5 7M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7L12.5 17"/></symbol>
+  <symbol id="ic-skull" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 2a8 8 0 0 0-8 8c0 2.9 1.5 5.4 3.7 6.8V20a1 1 0 0 0 1 1h6.6a1 1 0 0 0 1-1v-3.2A8 8 0 0 0 12 2z"/><circle cx="9" cy="11" r="1.6" fill="currentColor"/><circle cx="15" cy="11" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="ic-hd" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="1.6" fill="currentColor"/><path d="M13 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="ic-ext" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4 11 13M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></symbol>
+</defs></svg>
+
+<!-- ========================= المفهوم ١ ========================= -->
+<section class="concept" id="c1">
+  <div class="concept-head">
+    <span class="concept-num">١</span>
+    <h2>أشرطة التحذير</h2>
+    <span class="concept-tag">تظهر فوق المحتوى • قابلة للرفض</span>
+  </div>
+  <p class="concept-desc">
+    أشرطة تنزلق <b>فوق المحتوى مباشرة</b> — كل شريط لون حسب خطورته (أزرق معلومة • أصفر تنبيه • أحمر خطر)
+    مع زر «إغلاق» وأزرار إجراء (متابعة/إلغاء) للتحذيرات اللي تحتاج قرار.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">اضغط الأزرار — الأشرطة تتكدس</div>
+    <div class="demo-actions">
+      <button class="btn-demo blue" onclick="addBanner('blue','معلومة','هذا الموقع يستخدم روابط مختصرة — تحقق من الرابط النهائي قبل التحميل.')">شريط معلومة</button>
+      <button class="btn-demo amber" onclick="addBanner('amber','رابط خارجي','أنت على وشك فتح رابط خارجي غير موثوق — تأكد من أن الموقع مطابق للوصف.','go')">تحذير خارجي + إجراء</button>
+      <button class="btn-demo red" onclick="addBanner('red','موقع كراك','هذه الصفحة توزّع ملفات مقرّقة — قد تضر بجهازك وحساباتك. حمّل على مسؤوليتك.','go')">خطر: موقع كراك</button>
+    </div>
+    <div class="banners" id="banners">
+      <div class="banner amber">
+        <svg class="ic"><use href="#ic-warn"/></svg>
+        <div class="banner-body">
+          <div class="banner-title">رابط خارجي</div>
+          <div class="banner-text">أنت على وشك فتح رابط خارجي غير موثوق — تأكد من أن الموقع مطابق للوصف.</div>
+          <div class="banner-acts">
+            <button class="go" onclick="this.closest('.banner').remove()"><span>متابعة</span></button>
+            <button class="no" onclick="this.closest('.banner').remove()">إلغاء</button>
+          </div>
+        </div>
+        <button class="banner-close" onclick="this.closest('.banner').remove()">✕</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٢ ========================= -->
+<section class="concept" id="c2">
+  <div class="concept-head">
+    <span class="concept-num">٢</span>
+    <h2>نافذة التحذير</h2>
+    <span class="concept-tag">تجمّد الشاشة • قرار إجباري</span>
+  </div>
+  <p class="concept-desc">
+    <b>نافذة مركزية</b> توقف المستخدم تماماً قبل أي رابط خارجي/خطير — أيقونة بارزة + رسالة + معلومات الملف + الرابط
+    + زر إلغاء وزر متابعة. الشدة تتغير باللون (أصفر تحذير / أحمر خطر).
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">معاينة — اختر نوع التحذير</div>
+    <div class="demo-actions">
+      <button class="btn-demo amber" onclick="openModal('amber')">رابط إعلاني خارجي</button>
+      <button class="btn-demo red" onclick="openModal('red')">موقع كراك / تحميل مقرّق</button>
+    </div>
+    <div class="modal-root" id="modalRoot">
+      <div class="hint-idle">اضغط أحد الأزرار لعرض النافذة…</div>
+    </div>
+  </div>
+</section>
+
+<hr class="sep" />
+
+<!-- ========================= المفهوم ٣ ========================= -->
+<section class="concept" id="c3">
+  <div class="concept-head">
+    <span class="concept-num">٣</span>
+    <h2>بطاقات مدمجة</h2>
+    <span class="concept-tag">داخل التدفق • بدون إيقاف</span>
+  </div>
+  <p class="concept-desc">
+    تحذيرات <b>ضمن المحتوى نفسه</b> بإطار متقطع — لا توقف المستخدم، وتُفتح بالضغط لتفاصيل أكثر.
+    مناسبة لتنبيهات ثانوية: اختلاف الإصدار، روابط مختصرة، ملاحظات تثبيت.
+  </p>
+  <div class="demo-frame">
+    <div class="frame-label">اضغط «تفاصيل» لفتح كل بطاقة</div>
+    <div class="flow">
+      <div class="fcard amber">
+        <svg class="ic"><use href="#ic-warn"/></svg>
+        <div class="fcard-body">
+          <div class="fcard-text">إصدار اللعبة لديك (2.4.6) أقدم من إصدار التعريب (2.4.7) — حدّث اللعبة أولاً.</div>
+          <button class="fcard-toggle" onclick="this.closest('.fcard').classList.toggle('open')">تفاصيل</button>
+          <div class="fcard-more">تحديث اللعبة مطلوب لعمل الترجمة. لو لم تحدّث، قد تظهر أخطاء في النصوص أو تنهار اللعبة عند فتح القوائم. رابط التحديث الرسمي متوفّر في قسم «التحديثات».</div>
+        </div>
+      </div>
+      <div class="fcard blue">
+        <svg class="ic"><use href="#ic-info"/></svg>
+        <div class="fcard-body">
+          <div class="fcard-text">هذا الملف مرفوع على رابط مختصر إعلاني — سيظهر إعلان قبل التحميل.</div>
+          <button class="fcard-toggle" onclick="this.closest('.fcard').classList.toggle('open')">تفاصيل</button>
+          <div class="fcard-more">انتظر ٥ ثوانٍ ثم اضغط «Skip Ad» في أعلى الصفحة. لا تنقر على أي زر «Download» داخل الإعلان — الأزرار الحقيقية موجودة في هذه الصفحة فقط.</div>
+        </div>
+      </div>
+      <div class="fcard red">
+        <svg class="ic"><use href="#ic-skull"/></svg>
+        <div class="fcard-body">
+          <div class="fcard-text">تنبيه أمان: أغلق مُكتشف الفيروسات أثناء فك ضغط التعريب، وإلا قد يُحذف ملفات الترجمة.</div>
+          <button class="fcard-toggle" onclick="this.closest('.fcard').classList.toggle('open')">تفاصيل</button>
+          <div class="fcard-more">ملفات التعريب تحتوي على ملفات تعديل (DLL) يصنّفها بعض مضادات الفيروسات كـ PUA/Heuristic. أضف مجلد التعريب للاستثناءات مؤقتاً أثناء الفك، ثم أعد التفعيل. لا تعطّل الحماية نهائياً.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* أشرطة المفهوم ١ */
+var bannerIcons = {blue:'ic-info', amber:'ic-warn', red:'ic-skull'};
+function addBanner(kind, title, text, withActs){
+  var el = document.createElement('div');
+  el.className = 'banner ' + kind;
+  el.innerHTML =
+    '<svg class="ic"><use href="#' + bannerIcons[kind] + '"/></svg>' +
+    '<div class="banner-body">' +
+      '<div class="banner-title">' + title + '</div>' +
+      '<div class="banner-text">' + text + '</div>' +
+      (withActs ? '<div class="banner-acts"><button class="go"><span>متابعة</span></button><button class="no">إلغاء</button></div>' : '') +
+    '</div>' +
+    '<button class="banner-close">✕</button>';
+  el.querySelector('.banner-close').onclick = function(){ el.remove(); };
+  var go = el.querySelector('.go'); if(go) go.onclick = function(){ el.remove(); };
+  var no = el.querySelector('.no'); if(no) no.onclick = function(){ el.remove(); };
+  document.getElementById('banners').prepend(el);
+}
+
+/* نوافذ المفهوم ٢ */
+var MODALS = {
+  amber: {
+    headClass:'amber', icon:'ic-ext', title:'رابط خارجي — إعلانات',
+    sub:'ليست من خدمات التخزين المعتمدة',
+    body:'سيتم فتح موقع خارجي قد يعرض إعلانات أو روابط مختصرة. <b>لا تنقر على أزرار التحميل الوهمية</b> داخل الإعلان — الزر الصحيح هنا فقط.',
+    info:'الحجم المتوقع: 65.7 MB', url:'https://shorte.st/xxxxx → example-filehost.com/file',
+    danger:false
+  },
+  red: {
+    headClass:'red', icon:'ic-skull', title:'موقع كراك — خطر عالي',
+    sub:'ملفات غير موثوقة',
+    body:'هذا الموقع يوزّع نسخاً <b>مقرّقة</b> قد تحتوي على برامج خبيثة أو تعطّل ملفات النظام. <b>راجع تعليقات المستخدمين</b> وتأكد أنك حمّلت من المصدر الصحيح. ننصح بالشراء من المتجر الرسمي.',
+    info:'فحص المجتمع: ٣ تحذيرات في آخر ٧ أيام', url:'https://crack-site.example/game-repack',
+    danger:true
+  }
+};
+function openModal(kind){
+  var m = MODALS[kind];
+  var root = document.getElementById('modalRoot');
+  root.innerHTML =
+    '<div class="overlay">' +
+      '<div class="modal">' +
+        '<div class="modal-head ' + m.headClass + '">' +
+          '<div class="modal-ic"><svg class="ic"><use href="#' + m.icon + '"/></svg></div>' +
+          '<div><div class="modal-title">' + m.title + '</div><div class="modal-sub">' + m.sub + '</div></div>' +
+        '</div>' +
+        '<div class="modal-body">' + m.body +
+          '<div class="modal-info"><svg class="ic"><use href="#ic-hd"/></svg>' + m.info + '</div>' +
+          '<div class="modal-url">' + m.url + '</div>' +
+        '</div>' +
+        '<div class="modal-acts">' +
+          '<button class="cancel">إلغاء</button>' +
+          '<button class="proceed' + (m.danger ? ' danger' : '') + '">متابعة على مسؤوليتك</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  root.querySelector('.cancel').onclick = function(){ root.innerHTML = '<div class="hint-idle">تم الإلغاء — اضغط الزر مرة أخرى…</div>'; };
+  root.querySelector('.proceed').onclick = function(){ root.innerHTML = '<div class="hint-idle">✓ تمت المتابعة — (في التطبيق: فتح الرابط)</div>'; };
+}
+</script>
+</body>
+</html>

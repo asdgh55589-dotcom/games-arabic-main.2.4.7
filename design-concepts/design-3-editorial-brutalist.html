@@ -1,0 +1,159 @@
+<!-- DESIGN PHILOSOPHY: "Editorial Brutalist" — the homepage as a printed gaming magazine.
+  Warm paper (#F4EFE6), ink black, ONE stamp-orange accent (#E14D00). Heavy 4px rules,
+  rotated stamp badges, oversized serif headlines with a drop-cap lede, and a strict
+  3-level type scale (fixes flaws #4–6: no letter-spacing on Arabic, one voice per level).
+  Platform sections become a classified index (fixes #7–8: weight by content, not chrome).
+  Zero motion, zero shadows, zero gradients. -->
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games Arabic — Editorial Brutalist Concept</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--paper:#F4EFE6;--card:#FBF8F1;--ink:#191410;--mut:#6E6257;--rule:#191410;--acc:#E14D00;--serif:Georgia,"Times New Roman",serif}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--paper);color:var(--ink);line-height:1.8;background-image:radial-gradient(rgba(25,20,16,.06) 1px,transparent 1px);background-size:22px 22px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+/* masthead */
+.dateline{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--mut);padding:10px 0;border-bottom:1px solid var(--rule)}
+.mast{border-bottom:4px double var(--rule);padding:18px 0 14px;text-align:center}
+.mast .name{font-family:var(--serif);font-size:56px;font-weight:900;line-height:1.2}
+.mast .name i{font-style:normal;color:var(--acc)}
+.mast p{font-size:14px;color:var(--mut)}
+nav{display:flex;justify-content:center;gap:26px;border-bottom:4px solid var(--rule);padding:10px 0;overflow-x:auto}
+nav a{font-weight:800;font-size:15px;white-space:nowrap}
+nav a:hover{color:var(--acc)}
+/* cover story hero */
+.cover{display:grid;grid-template-columns:7fr 5fr;gap:0;margin:26px 0;border:4px solid var(--rule);background:var(--card)}
+.cover .art{background:repeating-linear-gradient(45deg,#191410 0 14px,#2a2118 14px 28px);min-height:340px;display:flex;align-items:center;justify-content:center;color:var(--paper);font-size:14px;position:relative}
+.stamp{position:absolute;top:18px;right:18px;background:var(--acc);color:#fff;font-weight:900;font-size:14px;padding:8px 18px;transform:rotate(-6deg);border:3px solid #fff;box-shadow:3px 3px 0 var(--ink)}
+.cover .txt{padding:30px 28px;border-right:4px solid var(--rule)}
+.kick{font-size:12px;font-weight:800;color:var(--acc);margin-bottom:6px}
+.cover h1{font-family:var(--serif);font-size:42px;line-height:1.4;margin-bottom:12px}
+.lede{font-size:16px;color:#3a322a}
+.lede::first-letter{font-family:var(--serif);font-size:52px;font-weight:900;float:right;line-height:1;margin-left:8px;color:var(--acc)}
+.byline{margin-top:14px;font-size:13px;color:var(--mut);border-top:1px solid var(--rule);padding-top:10px}
+.read{display:inline-block;margin-top:14px;background:var(--ink);color:var(--paper);font-weight:800;padding:10px 30px;font-size:15px}
+.read:hover{background:var(--acc)}
+/* section heads */
+.sec{margin:34px 0}
+.shead{border-top:4px solid var(--rule);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:14px;padding:8px 0;margin-bottom:18px}
+.shead h2{font-family:var(--serif);font-size:28px;font-weight:900}
+.shead .no{background:var(--ink);color:var(--paper);font-size:12px;font-weight:800;padding:2px 12px}
+.shead a{margin-right:auto;font-size:13px;font-weight:800;color:var(--acc)}
+/* featured */
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.fcard{background:var(--card);border:3px solid var(--rule);padding:0}
+.fcard .im{height:150px;display:flex;align-items:center;justify-content:center;color:var(--paper);font-size:13px;border-bottom:3px solid var(--rule)}
+.i1{background:#5b3a1e}.i2{background:#1e3a5b}.i3{background:#3a1e5b}
+.fcard .t{padding:14px 16px}
+.fcard h3{font-family:var(--serif);font-size:20px;margin:4px 0}
+.fcard p{font-size:13px;color:var(--mut)}
+.chip{display:inline-block;background:var(--ink);color:var(--paper);font-size:11px;font-weight:800;padding:1px 12px}
+/* trending: chart */
+.chart{border:3px solid var(--rule);background:var(--card)}
+.chart a{display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--rule)}
+.chart a:last-child{border:0}
+.chart a:hover{background:#efe4d2}
+.pos{font-family:var(--serif);font-size:34px;font-weight:900}
+.chart a:first-child .pos{color:var(--acc)}
+.chart h4{font-size:17px}
+.chart small{color:var(--mut);font-size:13px}
+.bar{height:8px;background:#ddd2bf;margin-top:6px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--ink)}
+.chart a:first-child .bar i{background:var(--acc)}
+/* latest list */
+.latest{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.lrow{display:flex;gap:14px;background:var(--card);border:3px solid var(--rule);padding:12px}
+.lrow .th{width:120px;min-height:96px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.l1{background:#0f5257}.l2{background:#7c2d12}.l3{background:#3b0764}.l4{background:#14532d}
+.lrow h4{font-size:16px}
+.lrow p{font-size:13px;color:var(--mut)}
+.newtag{color:var(--acc);font-weight:900;font-size:12px}
+/* platforms classified */
+.class{border:3px solid var(--rule);background:var(--card);columns:2;column-rule:1px solid var(--rule);padding:6px 20px}
+.class a{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dotted #b9ab97;font-weight:800;font-size:16px;break-inside:avoid}
+.class a:hover{color:var(--acc)}
+.class small{color:var(--mut);font-size:13px}
+/* series + teams */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.box{border:3px solid var(--rule);background:var(--ink);color:var(--paper);padding:20px}
+.box h3{font-family:var(--serif);font-size:22px;border-bottom:1px solid #55504a;padding-bottom:10px;margin-bottom:8px}
+.box a{display:flex;justify-content:space-between;padding:8px 0;font-size:15px;border-bottom:1px dotted #55504a}
+.box a:last-child{border:0}
+.box a:hover{color:var(--acc)}
+.box .n{font-size:13px;color:#b9ab97}
+/* footer */
+footer{border-top:4px solid var(--rule);margin-top:40px;background:var(--ink);color:var(--paper)}
+.fgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:22px;padding:34px 0}
+.fgrid h5{color:var(--acc);font-size:13px;margin-bottom:10px}
+.fgrid a{display:block;font-size:14px;color:#d8cfc2;padding:2px 0}
+.fin{border-top:1px solid #55504a;padding:14px 0 22px;display:flex;justify-content:space-between;font-size:12px;color:#b9ab97;flex-wrap:wrap;gap:8px}
+@media(max-width:860px){.cover{grid-template-columns:1fr}.cover .txt{border-right:0;border-top:4px solid var(--rule)}.mast .name{font-size:38px}.cover h1{font-size:30px}.feat{grid-template-columns:1fr}.latest{grid-template-columns:1fr}.duo{grid-template-columns:1fr}.class{columns:1}.fgrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="dateline"><span>العدد 2481 — أكتوبر 2026</span><span>الطبعة اليومية · القاهرة</span></div>
+<header class="mast"><div class="name">Games <i>Arabic</i></div><p>مجلة التعريب العربية الأولى — تصدر عن مجتمع اللاعبين منذ 2019</p></header>
+<nav><a href="#">الرئيسية</a><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a><a href="#">الأخبار</a><a href="#">دخول</a></nav>
+<section class="cover">
+<div class="art"><span class="stamp">قصة الغلاف</span><span>[ لوحة الغلاف ]</span></div>
+<div class="txt"><div class="kick">ملف خاص · PC — تحقيق موسّع</div>
+<h1>كيف عرّب الهواة ملحمة الغرب الأمريكي؟</h1>
+<p class="lede">خلف تعريب Red Dead Redemption 2 الكامل يقف 40 متطوعاً و120 ألف سطر وثلاث سنوات من العمل الصامت. التقينا الفريق وسألناهم: لماذا؟</p>
+<div class="byline">بقلم فريق التحرير · <span class="num">12</span> دقيقة قراءة · <span class="num">8.4M</span> تحميل</div>
+<a class="read" href="#">اقرأ التحقيق</a></div>
+</section>
+<section class="sec"><div class="shead"><span class="no">01</span><h2>مختارات المحررين</h2><a href="#">كل المختارات ←</a></div>
+<div class="feat">
+<article class="fcard"><div class="im i1">[ صورة ]</div><div class="t"><span class="chip">الأعلى تقييماً</span><h3>تعريب Elden Ring</h3><p>الترجمة الأسطورية لعالم ميازاكي الغامض · <span class="num">412K</span> تحميل · ★ <span class="num">4.9</span></p></div></article>
+<article class="fcard"><div class="im i2">[ صورة ]</div><div class="t"><span class="chip">مميز</span><h3>تعريب God of War Ragnarök</h3><p>ملحمة كريتوس وأتريوس بالعربية الفصيحة · <span class="num">301K</span> تحميل · ★ <span class="num">4.8</span></p></div></article>
+<article class="fcard"><div class="im i3">[ صورة ]</div><div class="t"><span class="chip">مميز</span><h3>تعريب Cyberpunk 2077</h3><p>مدينة الليل تتكلم العربية في نسخة 2.0 · <span class="num">276K</span> تحميل · ★ <span class="num">4.7</span></p></div></article>
+</div></section>
+<section class="sec"><div class="shead"><span class="no">02</span><h2>جدول الأكثر رواجاً</h2><a href="#">الجدول الكامل ←</a></div>
+<div class="chart">
+<a href="#"><span class="pos num">1</span><span><h4>تعريب Baldur's Gate 3</h4><div class="bar"><i style="width:100%"></i></div><small>PC · <span class="num">188,204</span> تحميل هذا الأسبوع</small></span><span class="num">▲</span></a>
+<a href="#"><span class="pos num">2</span><span><h4>تعريب Spider-Man 2</h4><div class="bar"><i style="width:83%"></i></div><small>PS5 · <span class="num">156,930</span> تحميل</small></span><span class="num">▲</span></a>
+<a href="#"><span class="pos num">3</span><span><h4>تعريب Starfield</h4><div class="bar"><i style="width:64%"></i></div><small>PC / Xbox · <span class="num">121,447</span> تحميل</small></span><span class="num">▲</span></a>
+<a href="#"><span class="pos num">4</span><span><h4>تعريب Final Fantasy XVI</h4><div class="bar"><i style="width:52%"></i></div><small>PS5 · <span class="num">98,311</span> تحميل</small></span><span class="num">–</span></a>
+<a href="#"><span class="pos num">5</span><span><h4>تعريب Hollow Knight</h4><div class="bar"><i style="width:46%"></i></div><small>Switch · <span class="num">87,562</span> تحميل</small></span><span class="num">▲</span></a>
+</div></section>
+<section class="sec"><div class="shead"><span class="no">03</span><h2>صدر هذا الأسبوع</h2><a href="#">الأرشيف ←</a></div>
+<div class="latest">
+<a class="lrow" href="#"><span class="th l1">[ مصغّر ]</span><span><span class="newtag">● جديد</span><h4>تعريب Alan Wake 2</h4><p>PC · قبل 3 ساعات · <span class="num">12K</span> تحميل</p></span></a>
+<a class="lrow" href="#"><span class="th l2">[ مصغّر ]</span><span><span class="newtag">● جديد</span><h4>تعريب Resident Evil 4 Remake</h4><p>PS5 · قبل 6 ساعات · <span class="num">9K</span> تحميل</p></span></a>
+<a class="lrow" href="#"><span class="th l3">[ مصغّر ]</span><span><span class="newtag" style="color:var(--mut)">● محدّث</span><h4>تعريب GTA V — تحديث الصيف</h4><p>PC · أمس · <span class="num">44K</span> تحميل</p></span></a>
+<a class="lrow" href="#"><span class="th l4">[ مصغّر ]</span><span><span class="newtag">● جديد</span><h4>تعريب Lies of P</h4><p>PC / PS5 · أمس · <span class="num">18K</span> تحميل</p></span></a>
+</div></section>
+<section class="sec"><div class="shead"><span class="no">04</span><h2>دليل المنصات المبوبة</h2></div>
+<div class="class">
+<a href="#">تعريبات الحاسب PC <small class="num">842 إعلان</small></a>
+<a href="#">بلايستيشن 5 <small class="num">416 إعلان</small></a>
+<a href="#">بلايستيشن 4 <small class="num">533 إعلان</small></a>
+<a href="#">بلايستيشن 3 <small class="num">198 إعلان</small></a>
+<a href="#">إكس بوكس <small class="num">298 إعلان</small></a>
+<a href="#">نينتندو سويتش <small class="num">187 إعلان</small></a>
+<a href="#">أندرويد <small class="num">205 إعلان</small></a>
+<a href="#">أرشيف PS1 / PS2 <small class="num">164 إعلان</small></a>
+</div></section>
+<section class="sec"><div class="duo">
+<div class="box"><h3>السلاسل الكبرى</h3>
+<a href="#">سلسلة Souls <span class="n num">34 جزءاً</span></a>
+<a href="#">سلسلة Zelda <span class="n num">21 جزءاً</span></a>
+<a href="#">سلسلة GTA <span class="n num">18 جزءاً</span></a>
+<a href="#">سلسلة Final Fantasy <span class="n num">27 جزءاً</span></a></div>
+<div class="box"><h3>دور النشر — فرق التعريب</h3>
+<a href="#">فريق التعريب الرسمي <span class="n num">412 عملاً</span></a>
+<a href="#">عرب غيمرز <span class="n num">188 عملاً</span></a>
+<a href="#">ترجمة بلا حدود <span class="n num">96 عملاً</span></a>
+<a href="#">ديوان الألعاب <span class="n num">74 عملاً</span></a></div>
+</div></section>
+</div>
+<footer><div class="wrap"><div class="fgrid"><div><div class="name" style="font-family:var(--serif);font-size:30px;font-weight:900">Games <span style="color:var(--acc)">Arabic</span></div><p style="font-size:13px;color:#b9ab97">مجلة المجتمع العربي لتعريب الألعاب — عدد جديد كل يوم.</p></div><div><h5>الأقسام</h5><a href="#">التعريبات</a><a href="#">الألعاب</a><a href="#">السلاسل</a><a href="#">الفرق</a></div><div><h5>استكشاف</h5><a href="#">الأخبار</a><a href="#">المجتمع</a><a href="#">المتصدرون</a></div><div><h5>الدار</h5><a href="#">حول</a><a href="#">الدعم</a><a href="#">الخصوصية</a></div></div>
+<div class="fin"><span>© 2026 Games Arabic — جميع الحقوق محفوظة</span><span>EDITORIAL-BRUTALIST · PAPER + INK + ONE STAMP</span></div></div></footer>
+</body>
+</html>

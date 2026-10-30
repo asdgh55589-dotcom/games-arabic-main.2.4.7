@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_REH8k4Knw3m0FXNoxh6Bc23idbT5",
+      "name": "games-arabic",
+      "directory": ".",
+      "orgId": "team_1hLmXGBVtQDNRoCXrBzIw3oU"
+    }
+  ]
+}
