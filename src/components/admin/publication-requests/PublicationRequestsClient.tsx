@@ -397,6 +397,12 @@ export function PublicationRequestsClient({
               body: JSON.stringify({ workflowStatus: 'APPROVED' }),
             })
           })
+          // إنهاء الموافقة بالنشر (IN_REVIEW→APPROVED→PUBLISHED) — مثل "موافقة ونشر" الفردية
+          await fetch(`/api/admin/mods/${id}/workflow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ toStatus: 'PUBLISHED' }),
+          }).catch(() => {})
         }
         router.refresh()
       },

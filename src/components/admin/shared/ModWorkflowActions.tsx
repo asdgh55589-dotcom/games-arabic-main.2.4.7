@@ -10,6 +10,7 @@ import {
   History,
   MessageSquare,
   MoreHorizontal,
+  Rocket,
   Trash2,
   UserPlus,
   XCircle,
@@ -43,6 +44,7 @@ export type ModAction =
   | 'viewDiff'
   | 'preview'
   | 'approve'
+  | 'publish'
   | 'reject'
   | 'archive'
   | 'requestChanges'
@@ -111,6 +113,8 @@ export function ModWorkflowActions({
         return true
       case 'approve':
         return mod.workflowStatus === 'IN_REVIEW'
+      case 'publish':
+        return mod.workflowStatus === 'APPROVED'
       case 'reject':
         return mod.workflowStatus === 'IN_REVIEW'
       case 'archive':
@@ -140,7 +144,6 @@ export function ModWorkflowActions({
         body: JSON.stringify({ action: 'approve', toStatus: 'APPROVED', comment: approveComment }),
       })
       // Fallback to PUT /api/admin/mods/[id]/workflow or bulk
-      let data: unknown = null
       if (!res.ok) {
         const alt = await fetch(`/api/admin/mods/${mod.id}`, {
           method: 'PUT',
@@ -148,13 +151,60 @@ export function ModWorkflowActions({
           body: JSON.stringify({ workflowStatus: 'APPROVED' }),
         })
         if (!alt.ok) throw new Error('فشل الموافقة')
-        data = await alt.json()
-      } else {
-        data = await res.json()
       }
-      toast({ title: 'تمت الموافقة بنجاح', description: `تمت الموافقة على "${mod.name}" وسيُنشر` })
+      // موافقة ونشر في خطوة واحدة — IN_REVIEW→APPROVED→PUBLISHED (نفس صلاحيات الإدارة)
+      let published = false
+      try {
+        const pub = await fetch(`/api/admin/mods/${mod.id}/workflow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toStatus: 'PUBLISHED' }),
+        })
+        // إذا فشل النشر يفضل معتمد — يظهر زر "نشر الآن" في القائمة
+        published = pub.ok
+      } catch {
+        published = false
+      }
+      if (published) {
+        toast({
+          title: 'تمت الموافقة والنشر',
+          description: `"${mod.name}" منشور الآن`,
+        })
+      } else {
+        toast({
+          title: 'تمت الموافقة (بدون نشر)',
+          description: `"${mod.name}" معتمد — استخدم "نشر الآن" لإكمال النشر`,
+          variant: 'destructive',
+        })
+      }
       setOpenDialog(null)
       setApproveComment('')
+      onActionComplete()
+    } catch (e) {
+      toast({
+        title: 'خطأ',
+        description: e instanceof Error ? e.message : 'فشل',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePublish = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/mods/${mod.id}/workflow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toStatus: 'PUBLISHED' }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error?.message || 'فشل النشر')
+      }
+      toast({ title: 'تم النشر', description: `"${mod.name}" ظاهر الآن للجميع` })
+      setOpenDialog(null)
       onActionComplete()
     } catch (e) {
       toast({
@@ -430,6 +480,12 @@ export function ModWorkflowActions({
             <CheckCircle className="h-4 w-4 text-green-500" /> موافقة ونشر
           </DropdownMenuItem>
           <DropdownMenuItem
+            onClick={() => setOpenDialog('publish')}
+            disabled={!isActionEnabled('publish')}
+          >
+            <Rocket className="h-4 w-4 text-primary" /> نشر الآن (معتمد)
+          </DropdownMenuItem>
+          <DropdownMenuItem
             onClick={() => setOpenDialog('reject')}
             disabled={!isActionEnabled('reject')}
             variant="destructive"
@@ -566,6 +622,27 @@ export function ModWorkflowActions({
               className="bg-green-600 hover:bg-green-700"
             >
               {loading ? 'جاري...' : 'تأكيد الموافقة والنشر'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== نشر (معتمد) ===== */}
+      <Dialog open={openDialog === 'publish'} onOpenChange={(o) => !o && setOpenDialog(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>نشر التعريب</DialogTitle>
+            <DialogDescription>
+              التعريب <span className="font-bold">"{mod.name}"</span> معتمد. النشر سيجعله ظاهراً
+              للجميع مباشرة في الموقع والبحث.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
+              إلغاء
+            </Button>
+            <Button onClick={handlePublish} disabled={loading}>
+              {loading ? 'جاري...' : 'نشر الآن'}
             </Button>
           </DialogFooter>
         </DialogContent>
