@@ -19,9 +19,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +29,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +40,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
-import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import { useRealtimeSync } from '@/hooks/use-realtime-sync'
+import { useToast } from '@/hooks/use-toast'
 import { formatNumber } from '@/lib/format'
 import { useStudioLanguage } from '@/lib/studio-i18n/context'
-import { useAuth } from '@/contexts/auth-context'
 import type { StudioDict } from '@/lib/studio-i18n/types'
 import { cn } from '@/lib/utils'
 
@@ -108,6 +108,30 @@ function statusFilters(mods: StudioDict['mods']): { value: string; label: string
   ]
 }
 
+function confirmMessage(action: string, mods: StudioDict['mods']): string {
+  switch (action) {
+    case 'submit':
+      return mods.confirmSubmit
+    case 'archive':
+      return mods.confirmArchive
+    case 'delete':
+      return mods.confirmDelete
+    default:
+      return ''
+  }
+}
+
+function confirmActionLabel(action: string, mods: StudioDict['mods']): string {
+  switch (action) {
+    case 'submit':
+      return mods.submitReview
+    case 'archive':
+      return mods.archive
+    default:
+      return mods.remove
+  }
+}
+
 export function ModsListClient({
   initialStatus,
   initialQuery,
@@ -128,7 +152,9 @@ export function ModsListClient({
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
   const [page, setPage] = useState(1)
-  const [pendingConfirm, setPendingConfirm] = useState<{ modId: string; action: string } | null>(null)
+  const [pendingConfirm, setPendingConfirm] = useState<{ modId: string; action: string } | null>(
+    null,
+  )
 
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery || '')
 
@@ -219,13 +245,8 @@ export function ModsListClient({
       return
     }
 
-    const confirmMessages: Record<string, string> = {
-      submit: dict.mods.confirmSubmit,
-      archive: dict.mods.confirmArchive,
-      delete: dict.mods.confirmDelete,
-    }
     // RTL AlertDialog instead of native confirm() (no dir/contrast control).
-    if (confirmMessages[action]) {
+    if (confirmMessage(action, dict.mods)) {
       setPendingConfirm({ modId, action })
       return
     }
@@ -291,11 +312,7 @@ export function ModsListClient({
         <EmptyState
           icon="inbox"
           title={dict.mods.emptyTitle}
-          description={
-            query
-              ? dict.mods.emptySearch
-              : dict.mods.emptyCreate
-          }
+          description={query ? dict.mods.emptySearch : dict.mods.emptyCreate}
           action={{ label: dict.mods.createNew, href: '/creator/mods/new' }}
         />
       ) : (
@@ -331,23 +348,28 @@ export function ModsListClient({
         </div>
       )}
 
-      <AlertDialog open={pendingConfirm !== null} onOpenChange={(open) => !open && setPendingConfirm(null)}>
+      <AlertDialog
+        open={pendingConfirm !== null}
+        onOpenChange={(open) => !open && setPendingConfirm(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{dict.mods.actions}</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingConfirm
-                ? { submit: dict.mods.confirmSubmit, archive: dict.mods.confirmArchive, delete: dict.mods.confirmDelete }[pendingConfirm.action]
-                : ''}
+              {pendingConfirm ? confirmMessage(pendingConfirm.action, dict.mods) : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{dict.commentsMgr.cancel}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => pendingConfirm && runModAction(pendingConfirm.modId, pendingConfirm.action)}
+              onClick={() =>
+                pendingConfirm && runModAction(pendingConfirm.modId, pendingConfirm.action)
+              }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {dict.mods.remove}
+              {pendingConfirm
+                ? confirmActionLabel(pendingConfirm.action, dict.mods)
+                : dict.mods.remove}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -390,7 +412,9 @@ function ModCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-medium truncate">{(mod as { headline?: string }).headline || mod.name}</h3>
+              <h3 className="font-medium truncate">
+                {(mod as { headline?: string }).headline || mod.name}
+              </h3>
               <Badge className={cn('text-white', meta.color)}>
                 <StatusIcon className="h-3 w-3 me-1" />
                 {statusLabel(mod.workflowStatus, dict.mods)}
@@ -402,14 +426,17 @@ function ModCard({
               )}
               {mod.scheduledAt && (
                 <Badge variant="outline" className="text-amber-600 border-amber-500">
-                  ⏰ {dict.mods.scheduledUntil}{' '}
-                  {new Date(mod.scheduledAt).toLocaleDateString(tag)}
+                  ⏰ {dict.mods.scheduledUntil} {new Date(mod.scheduledAt).toLocaleDateString(tag)}
                 </Badge>
               )}
             </div>
 
             <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-              {mod.game?.name && <span>{dict.mods.game}: {mod.game.name}</span>}
+              {mod.game?.name && (
+                <span>
+                  {dict.mods.game}: {mod.game.name}
+                </span>
+              )}
               <span className="hidden sm:inline">•</span>
               <span>{new Date(mod.createdAt).toLocaleDateString(tag)}</span>
             </div>
