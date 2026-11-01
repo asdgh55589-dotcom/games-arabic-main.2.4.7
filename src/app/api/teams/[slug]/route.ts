@@ -9,8 +9,9 @@ import { withReadObserveHeaders } from '@/lib/read-observe'
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params
+    // fallback بالاسم — روابط قديمة من الرشد/الرئيسية كانت تنشر الاسم مش الslug
     const team = await db.team.findFirst({
-      where: { slug, archivedAt: null },
+      where: { OR: [{ slug }, { name: slug }], archivedAt: null },
       include: {
         memberships: {
           orderBy: { joinedAt: 'desc' },

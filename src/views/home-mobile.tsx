@@ -174,7 +174,7 @@ export function HomeMobile({
             : homeData?.topSeries?.slice(0, 3).map((s) => (
                 <ErrorBoundary key={s.name} label="series card" fallback={null}>
                   <Link
-                    href={`/series/${encodeURIComponent(s.name)}`}
+                    href={s.slug ? `/series/${s.slug}` : `/series/${encodeURIComponent(s.name)}`}
                   className="group relative flex h-24 flex-col justify-end overflow-hidden border-[2px] border-border bg-card p-2.5 shadow-[2px_2px_0_0_var(--border)]"
                 >
                   {s.thumbnailUrl ? (

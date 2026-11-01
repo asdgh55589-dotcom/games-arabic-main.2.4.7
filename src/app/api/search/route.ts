@@ -147,11 +147,13 @@ async function searchViaMeili({ q, platforms, minTier, limit, page, want }: Sear
     const visible = ids.length
       ? await db.team.findMany({
           where: { id: { in: ids }, archivedAt: null },
-          select: { id: true },
+          select: { id: true, slug: true },
         })
       : []
-    const visibleIds = new Set(visible.map((t) => t.id))
-    teams = hits.filter((h) => visibleIds.has(h.id))
+    const slugById = new Map(visible.map((t) => [t.id, t.slug] as const))
+    teams = hits
+      .filter((h) => slugById.has(h.id))
+      .map((h) => ({ ...h, slug: slugById.get(h.id) }))
   }
 
   if (usersRes) {

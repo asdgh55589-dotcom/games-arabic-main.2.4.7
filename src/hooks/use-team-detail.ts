@@ -4,12 +4,13 @@ import { useParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
+import { decodePathParam } from '@/lib/url-params'
 import type { TabKey } from '@/lib/team-constants'
 import type { TeamDetail } from '@/lib/types'
 
 export function useTeamDetail() {
   const params = useParams()
-  const teamSlug = (params.slug as string) || ''
+  const teamSlug = decodePathParam((params.slug as string) || '')
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   useDocumentTitle('فريق التعريب')
 

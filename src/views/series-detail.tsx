@@ -21,6 +21,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useFetch } from '@/hooks/use-fetch'
 import { formatNumber } from '@/lib/format'
 import type { ModSummary } from '@/lib/types'
+import { decodePathParam } from '@/lib/url-params'
 import { SeriesDetailMobile } from './series-detail-mobile'
 
 interface SeriesInfo {
@@ -38,7 +39,7 @@ interface SeriesInfo {
 export function SeriesDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const seriesParam = (params.slug as string) || ''
+  const seriesParam = decodePathParam((params.slug as string) || '')
   useDocumentTitle('سلسلة التعريبات')
 
   const [search, setSearch] = useState('')
@@ -62,17 +63,18 @@ export function SeriesDetailPage() {
     )
   }, [allSeries, seriesParam])
 
-  // Fetch mods in series
+  // Fetch mods in series — استعلم بالـ slug الأساسي (الـ API بيدعم id/slug بس)
+  const seriesQuery = seriesInfo?.slug || seriesInfo?.id || seriesParam
   const url = useMemo(() => {
-    if (!seriesParam) return null
+    if (!seriesQuery) return null
     const params = new URLSearchParams()
-    params.set('series', seriesParam)
+    params.set('series', seriesQuery)
     params.set('sort', sort)
     params.set('page', String(page))
     params.set('limit', '24')
     if (debouncedSearch) params.set('search', debouncedSearch)
     return `/api/series/mods?${params.toString()}`
-  }, [seriesParam, sort, page, debouncedSearch])
+  }, [seriesQuery, sort, page, debouncedSearch])
 
   const { data, loading } = useFetch<{
     data: ModSummary[]

@@ -31,9 +31,9 @@ export async function GET(req: NextRequest) {
     return validationFail('series is required')
   }
 
-  // Find series by id or slug
+  // Find series by id, slug or name (روابط قديمة بالاسم كانت شائعة) + fallback بالاسم
   const series = await db.series.findFirst({
-    where: { OR: [{ id: seriesParam }, { slug: seriesParam }] },
+    where: { OR: [{ id: seriesParam }, { slug: seriesParam }, { name: seriesParam }] },
     select: { id: true },
   })
 
