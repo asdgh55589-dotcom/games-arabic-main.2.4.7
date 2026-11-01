@@ -29,6 +29,10 @@ const AdSection = dynamic(() => import('@/components/ad-section').then((m) => m.
   ssr: false,
 })
 
+// تعطيل مؤقت للشريط الجانبي (الإعلان + فريق الموقع + الصدارة + أحدث/رائجة/أعجباً) —
+// المحتوى الرئيسي ياخد العرض كامل. للرجوع: بدّل القيمة لـ true
+const SIDEBAR_ENABLED = false
+
 interface SectionItem {
   id: string
   slug: string
@@ -295,7 +299,8 @@ export function HomePage() {
             className="mx-auto flex max-w-[1840px] flex-col gap-6 py-4 px-4 lg:flex-row lg:gap-6 lg:px-4"
             dir="rtl"
           >
-            {/* ===== اليمين: الشريط الجانبي (sticky متأخر — نقطة الوقفة تُحسب تلقائياً) ===== */}
+            {/* ===== اليمين: الشريط الجانبي (sticky متأخر — نقطة الوقفة تُحسب تلقائياً) — معطل مؤقتاً ===== */}
+            {SIDEBAR_ENABLED && (
             <div
               ref={sidebarRef}
               className="order-2 w-full space-y-4 lg:order-1 lg:w-[340px] lg:shrink-0 lg:sticky lg:top-[60px] lg:self-start"
@@ -325,6 +330,7 @@ export function HomePage() {
                 </ErrorBoundary>
               )}
             </div>
+            )}
 
             {/* ===== المحتوى الرئيسي — في المنتصف ===== */}
             <div
