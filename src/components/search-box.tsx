@@ -354,7 +354,11 @@ export function SearchBox({ onNavigate, autoFocus = false }: SearchBoxProps) {
               {suggestions.teams?.map((t) => (
                 <Link
                   key={t.id}
-                  href={`/teams/${encodeURIComponent(t.name)}`}
+                  href={
+                    (t as { slug?: string }).slug
+                      ? `/teams/${(t as { slug?: string }).slug}`
+                      : `/teams/${encodeURIComponent(t.name)}`
+                  }
                   onClick={clearSuggestions}
                   role="option"
                   aria-selected={false}

@@ -414,7 +414,7 @@ export function HomePage() {
                     : homeData?.topSeries?.slice(0, 6).map((s) => (
                         <ErrorBoundary key={s.name} label="series card" fallback={null}>
                           <Link
-                            href={`/series/${encodeURIComponent(s.name)}`}
+                            href={s.slug ? `/series/${s.slug}` : `/series/${encodeURIComponent(s.name)}`}
                           className="group relative flex h-24 flex-col justify-end overflow-hidden border-[3px] border-border bg-card p-3 shadow-[4px_4px_0_0_var(--border)] transition-all duration-150 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0_0_var(--border)] sm:h-28"
                         >
                           {s.thumbnailUrl ? (

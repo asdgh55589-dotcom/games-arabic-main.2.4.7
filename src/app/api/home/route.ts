@@ -324,6 +324,7 @@ export const GET = withRequestLogger(async (req: NextRequest, _ctx: unknown, log
     // السلاسل جاهزة من Series model — نحولها للشكل المتوقع
     const topSeries: SeriesSummary[] = topSeriesRaw.map((s) => ({
       name: s.name,
+      slug: s.slug,
       count: s.modCount,
       downloads: s.totalDownloads,
       endorsements: s.totalEndorsements,

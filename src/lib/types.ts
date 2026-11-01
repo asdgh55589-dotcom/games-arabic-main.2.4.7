@@ -343,6 +343,7 @@ export interface SiteStats {
 
 export interface SeriesSummary {
   name: string
+  slug?: string
   count: number
   downloads: number
   endorsements: number
