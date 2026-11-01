@@ -28,8 +28,10 @@ coverage/
 
 # Tooling
 tool-results/
+# Root-anchored: a bare `download/` glob silently excluded the source route
+# src/app/api/mods/[slug]/download/ — breaking download tracking on deploy
 upload/
-download/
+/download/
 skills/
 mini-services/
 examples/
