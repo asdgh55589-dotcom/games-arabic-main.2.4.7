@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import { isCreatorRole } from '@/lib/roles'
 import { redirect } from 'next/navigation'
-import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { ModsListClient } from '@/components/creator/mods-list-client'
+import { SectionCard, StudioPageHeader } from '@/components/creator-dashboard/section-card'
 import { getSession } from '@/lib/auth'
-import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
+import { isCreatorRole } from '@/lib/roles'
 import { ar } from '@/lib/studio-i18n/ar'
 import { en } from '@/lib/studio-i18n/en'
+import { getStudioDict, getStudioLocale } from '@/lib/studio-i18n/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +33,9 @@ export default async function MyModsPage({
 
   const params = await searchParams
   const rawStatus = params?.status || 'all'
-  const status = rawStatus.toLowerCase() === 'pending' ? 'IN_REVIEW' : rawStatus.toUpperCase()
+  const rawLower = rawStatus.toLowerCase()
+  const status =
+    rawLower === 'pending' ? 'IN_REVIEW' : rawLower === 'all' ? 'all' : rawStatus.toUpperCase()
   const q = params?.q || ''
   const { dict } = await getStudioDict()
 
