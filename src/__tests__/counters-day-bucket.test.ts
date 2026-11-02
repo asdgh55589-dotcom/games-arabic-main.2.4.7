@@ -1,8 +1,10 @@
 /**
- * C3 — `dayBucket`: بداية اليوم بتوقيت UTC.
+ * C3 — `dayBucket`: بداية اليوم بتوقيت UTC (المشاهدات) — والتحميلات بنوافذ
+ * ثلاث ساعات (`startOfUtcThreeHourWindow`) حتى لا يُعدّ التحميل بعد فجوة
+ * طويلة داخل نفس اليوم مجرد نقرة مكرّرة.
  *
  * يُكتب في ModView و DownloadClick ليُبنى الـ dedup الدائم (unique index)
- * على (اليوم + الهوية) — بدلاً من dedup داخل الذاكرة فقط.
+ * على (النافذة + الهوية) — بدلاً من dedup داخل الذاكرة فقط.
  */
 jest.mock('@/lib/auth', () => ({
   getUserIdFromRequestCookies: jest.fn().mockResolvedValue(null),
@@ -14,7 +16,12 @@ jest.mock('@/lib/meilisearch/indexer', () => ({
 }))
 
 import { getUserIdFromRequestCookies } from '@/lib/auth'
-import { recordDownload, recordModView, startOfUtcDay } from '@/lib/counters'
+import {
+  recordDownload,
+  recordModView,
+  startOfUtcDay,
+  startOfUtcThreeHourWindow,
+} from '@/lib/counters'
 
 const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<
   typeof getUserIdFromRequestCookies
@@ -86,6 +93,35 @@ describe('startOfUtcDay — منتصف ليل UTC', () => {
   })
 })
 
+describe('startOfUtcThreeHourWindow — نوافذ 3 ساعات محاذاة للـ epoch', () => {
+  it('لحظة 13:45 تقع في نافذة تبدأ 12:00', () => {
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T13:45:12.345Z')).toISOString()).toBe(
+      '2026-10-21T12:00:00.000Z',
+    )
+  })
+
+  it('نافذة 16:00 تنتمي لنافذة تبدأ 15:00', () => {
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T16:00:00.000Z')).toISOString()).toBe(
+      '2026-10-21T15:00:00.000Z',
+    )
+  })
+
+  it('آخر لحظة قبل انتقال النافذة', () => {
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T15:59:59.999Z')).toISOString()).toBe(
+      '2026-10-21T15:00:00.000Z',
+    )
+  })
+
+  it('تجاوز منتصف الليل يبقى محاذاً (الشهور والسنوات)', () => {
+    expect(startOfUtcThreeHourWindow(new Date('2026-11-01T00:30:00.000Z')).toISOString()).toBe(
+      '2026-11-01T00:00:00.000Z',
+    )
+    expect(startOfUtcThreeHourWindow(new Date('2026-01-01T05:00:00.000Z')).toISOString()).toBe(
+      '2026-01-01T03:00:00.000Z',
+    )
+  })
+})
+
 describe('dayBucket في الصفوف المكتوبة', () => {
   // نثبّت "الآن" على لحظة ثابتة mid-day (الساعة 13:45 UTC) — اليوم ليس منتصف ليل.
   const NOW = new Date('2026-10-21T13:45:12.345Z')
@@ -123,7 +159,7 @@ describe('dayBucket في الصفوف المكتوبة', () => {
     expect((data.dayBucket as Date).toISOString()).toBe(EXPECTED.toISOString())
   })
 
-  it('downloadClick.create يستقبل dayBucket = منتصف ليل UTC', async () => {
+  it('downloadClick.create يستقبل dayBucket = بداية نافذة الـ 4 ساعات (وليس منتصف الليل)', async () => {
     const db = makeDb()
     const result = await recordDownload(
       { modId: 'mod-day-dl', linkId: 'l1', fileId: 'f1', linkUrl: 'http://x/a' },
@@ -132,9 +168,11 @@ describe('dayBucket في الصفوف المكتوبة', () => {
     )
 
     expect(result.counted).toBe(true)
+    // 13:45 UTC تقع داخل النافذة التي تبدأ 12:00 UTC — dedup التحميلات
+    // أصبح بنوافذ 4 ساعات حتى يُعدّ التحميل بعد فجوة طويلة تحميلاً جديداً.
     const data = db.downloadClick.create.mock.calls[0][0].data
     expect(data.dayBucket).toBeInstanceOf(Date)
-    expect((data.dayBucket as Date).toISOString()).toBe(EXPECTED.toISOString())
+    expect((data.dayBucket as Date).toISOString()).toBe('2026-10-21T12:00:00.000Z')
   })
 
   it('dayBucket يقع ضمن نفس اليوم UTC', async () => {
