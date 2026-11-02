@@ -267,7 +267,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   return ok(serialize(modWithFileCounts), {
     headers: {
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      // الطلب الداخلي (ISR self-fetch) يحتفظ بكاش HTTP — أما المتصفح فيحصل
+      // على no-store: كان `max-age=60` يخدّم العدّادات القديمة من كاش
+      // المتصفح بعد التحميل (ريفريش لا يحدّث الأرقام إلا بعد دقيقة).
+      'Cache-Control': isInternalRequest(req)
+        ? 'public, max-age=60, stale-while-revalidate=300'
+        : 'no-store',
     },
   })
 }

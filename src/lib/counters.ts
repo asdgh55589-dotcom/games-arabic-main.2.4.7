@@ -99,6 +99,23 @@ export function startOfUtcDay(d: Date): Date {
   return out
 }
 
+/**
+ * نافذة dedup التحميلات (4 ساعات، محاذاة للـ epoch وليس لليوم).
+ *
+ * كان الـ dedup الدائم للتحميلات "لكل يوم UTC" — أي مستخدم يحمّل مرتين
+ * بفاصل 10-20 ساعة داخل نفس اليوم لم يُعدّ التحميل الثاني أبداً.
+ * الآن تنقسم الأربع والعشرون ساعة إلى 6 نوافذ بأربعة ساعات —
+ * التحميل بعد فجوة أطول من 4 ساعات يُعدّ تحميلاً جديداً (حتى 6/يوم)،
+ * والنقرات المتكررة خلال دقائق تبقى محسوبة مرة واحدة.
+ * بدايات النوافذ الزمنية: 00:00 / 04:00 / 08:00 … UTC.
+ */
+export const DOWNLOAD_DEDUP_WINDOW_S = 4 * 3600
+
+export function startOfUtcFourHourWindow(d: Date): Date {
+  const FOURS_MS = 4 * 3600 * 1000
+  return new Date(Math.floor(d.getTime() / FOURS_MS) * FOURS_MS)
+}
+
 /** هل هذا خطأ من Prisma يعني انتهاك قيد التفرّد (unique index)؟ */
 function isUniqueViolation(err: unknown): boolean {
   return (
@@ -148,13 +165,21 @@ async function resolveIdentity(req: Request): Promise<CounterIdentity> {
   if (!ua) {
     if (userId) return { identity: `u:${userId}`, ttl: 1800, authenticated: true }
     const ip = getClientIP(req)
-    return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA('unknown')}`, ttl: 1800, authenticated: false }
+    return {
+      identity: `i:${await hashRedisIdentifier(ip)}:${hashUA('unknown')}`,
+      ttl: 1800,
+      authenticated: false,
+    }
   }
   if (userId) {
     return { identity: `u:${userId}`, ttl: DAY, authenticated: true }
   }
   const ip = getClientIP(req)
-  return { identity: `i:${await hashRedisIdentifier(ip)}:${hashUA(ua)}`, ttl: HOUR, authenticated: false }
+  return {
+    identity: `i:${await hashRedisIdentifier(ip)}:${hashUA(ua)}`,
+    ttl: HOUR,
+    authenticated: false,
+  }
 }
 
 /**
@@ -180,17 +205,21 @@ async function resolveIdentity(req: Request): Promise<CounterIdentity> {
 async function shouldCount(
   scope: string,
   req: Request,
+  windowSeconds?: number,
 ): Promise<{ fresh: boolean; identity: CounterIdentity }> {
   const identity = await resolveIdentity(req)
+  // الـ callers قد يقصران النافذة (التحميلات: 4 ساعات) — لا تُمدَّد أبداً
+  // فوق نافذة الهوية الأصلية (الزائر ساعة / المسجَّل 24 ساعة).
+  const ttl = windowSeconds ? Math.min(windowSeconds, identity.ttl) : identity.ttl
   const key = `count:${scope}:${identity.identity}`
   if (!REDIS_CONFIGURED && process.env.NODE_ENV !== 'production') {
     // تطوير/اختبار بدون Redis — المخزن المحلي هو المرجع الوحيد.
-    return { fresh: localSetNX(key, identity.ttl), identity }
+    return { fresh: localSetNX(key, ttl), identity }
   }
   // cast محدَّد (وليس any): الخيار الثالث `failClosed` مُنفَّذ في lib/redis.ts
   // (redisSetNX(key, ttlSeconds, opts?: { failClosed?: boolean })) — التوقيع
   // مطابق تماماً فلا حاجة لـ cast بعد وصوله.
-  const fresh = await redisSetNX(key, identity.ttl, { failClosed: true })
+  const fresh = await redisSetNX(key, ttl, { failClosed: true })
   return { fresh, identity }
 }
 
@@ -327,7 +356,8 @@ export async function recordDownload(
 
   // R24 — النطاق لكل ملف (وليس لكل رابط)
   const scopeKey = opts.fileId ? `dl:file:${opts.fileId}` : `dl:mod:${opts.modId}`
-  const { fresh } = await shouldCount(scopeKey, req)
+  // نافذة قصيرة (4 ساعات): تحميل بعد فجوة طويلة يُعدّ جديداً
+  const { fresh } = await shouldCount(scopeKey, req, DOWNLOAD_DEDUP_WINDOW_S)
   if (!fresh) return { counted: false }
 
   const identityUserId = opts.userId ?? null
@@ -335,7 +365,8 @@ export async function recordDownload(
   const referrer = req.headers.get('referer')
   // R30 — العمود يحمل معرّفاً مُجزّأً (hash) لا عنوان IP خاماً (GDPR)
   const ipHash = hashIdentity(ip)
-  const dayBucket = startOfUtcDay(new Date())
+  // dedup الدائم بنوافذ 4 ساعات (وليس كل يوم) — انظر DOWNLOAD_DEDUP_WINDOW_S
+  const dayBucket = startOfUtcFourHourWindow(new Date())
 
   const downloadClickData = {
     modId: opts.modId,
