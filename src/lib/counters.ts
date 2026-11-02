@@ -100,20 +100,20 @@ export function startOfUtcDay(d: Date): Date {
 }
 
 /**
- * نافذة dedup التحميلات (4 ساعات، محاذاة للـ epoch وليس لليوم).
+ * نافذة dedup التحميلات (3 ساعات، محاذاة للـ epoch وليس لليوم).
  *
  * كان الـ dedup الدائم للتحميلات "لكل يوم UTC" — أي مستخدم يحمّل مرتين
  * بفاصل 10-20 ساعة داخل نفس اليوم لم يُعدّ التحميل الثاني أبداً.
- * الآن تنقسم الأربع والعشرون ساعة إلى 6 نوافذ بأربعة ساعات —
- * التحميل بعد فجوة أطول من 4 ساعات يُعدّ تحميلاً جديداً (حتى 6/يوم)،
+ * الآن تنقسم الأربع والعشرون ساعة إلى 8 نوافذ بثلاث ساعات —
+ * التحميل بعد فجوة أطول من 3 ساعات يُعدّ تحميلاً جديداً (حتى 8/يوم)،
  * والنقرات المتكررة خلال دقائق تبقى محسوبة مرة واحدة.
- * بدايات النوافذ الزمنية: 00:00 / 04:00 / 08:00 … UTC.
+ * بدايات النوافذ الزمنية: 00:00 / 03:00 / 06:00 … UTC.
  */
-export const DOWNLOAD_DEDUP_WINDOW_S = 4 * 3600
+export const DOWNLOAD_DEDUP_WINDOW_S = 3 * 3600
 
-export function startOfUtcFourHourWindow(d: Date): Date {
-  const FOURS_MS = 4 * 3600 * 1000
-  return new Date(Math.floor(d.getTime() / FOURS_MS) * FOURS_MS)
+export function startOfUtcThreeHourWindow(d: Date): Date {
+  const HOURS_MS = 3 * 3600 * 1000
+  return new Date(Math.floor(d.getTime() / HOURS_MS) * HOURS_MS)
 }
 
 /** هل هذا خطأ من Prisma يعني انتهاك قيد التفرّد (unique index)؟ */
@@ -365,8 +365,8 @@ export async function recordDownload(
   const referrer = req.headers.get('referer')
   // R30 — العمود يحمل معرّفاً مُجزّأً (hash) لا عنوان IP خاماً (GDPR)
   const ipHash = hashIdentity(ip)
-  // dedup الدائم بنوافذ 4 ساعات (وليس كل يوم) — انظر DOWNLOAD_DEDUP_WINDOW_S
-  const dayBucket = startOfUtcFourHourWindow(new Date())
+  // dedup الدائم بنوافذ 3 ساعات (وليس كل يوم) — انظر DOWNLOAD_DEDUP_WINDOW_S
+  const dayBucket = startOfUtcThreeHourWindow(new Date())
 
   const downloadClickData = {
     modId: opts.modId,

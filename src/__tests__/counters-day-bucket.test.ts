@@ -1,6 +1,6 @@
 /**
  * C3 — `dayBucket`: بداية اليوم بتوقيت UTC (المشاهدات) — والتحميلات بنوافذ
- * أربع ساعات (`startOfUtcFourHourWindow`) حتى لا يُعدّ التحميل بعد فجوة
+ * ثلاث ساعات (`startOfUtcThreeHourWindow`) حتى لا يُعدّ التحميل بعد فجوة
  * طويلة داخل نفس اليوم مجرد نقرة مكرّرة.
  *
  * يُكتب في ModView و DownloadClick ليُبنى الـ dedup الدائم (unique index)
@@ -20,7 +20,7 @@ import {
   recordDownload,
   recordModView,
   startOfUtcDay,
-  startOfUtcFourHourWindow,
+  startOfUtcThreeHourWindow,
 } from '@/lib/counters'
 
 const mockGetUserId = getUserIdFromRequestCookies as jest.MockedFunction<
@@ -93,31 +93,31 @@ describe('startOfUtcDay — منتصف ليل UTC', () => {
   })
 })
 
-describe('startOfUtcFourHourWindow — نوافذ 4 ساعات محاذاة للـ epoch', () => {
+describe('startOfUtcThreeHourWindow — نوافذ 3 ساعات محاذاة للـ epoch', () => {
   it('لحظة 13:45 تقع في نافذة تبدأ 12:00', () => {
-    expect(startOfUtcFourHourWindow(new Date('2026-10-21T13:45:12.345Z')).toISOString()).toBe(
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T13:45:12.345Z')).toISOString()).toBe(
       '2026-10-21T12:00:00.000Z',
     )
   })
 
-  it('بداية النافذة تبقى كما هي', () => {
-    expect(startOfUtcFourHourWindow(new Date('2026-10-21T16:00:00.000Z')).toISOString()).toBe(
-      '2026-10-21T16:00:00.000Z',
+  it('نافذة 16:00 تنتمي لنافذة تبدأ 15:00', () => {
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T16:00:00.000Z')).toISOString()).toBe(
+      '2026-10-21T15:00:00.000Z',
     )
   })
 
   it('آخر لحظة قبل انتقال النافذة', () => {
-    expect(startOfUtcFourHourWindow(new Date('2026-10-21T15:59:59.999Z')).toISOString()).toBe(
-      '2026-10-21T12:00:00.000Z',
+    expect(startOfUtcThreeHourWindow(new Date('2026-10-21T15:59:59.999Z')).toISOString()).toBe(
+      '2026-10-21T15:00:00.000Z',
     )
   })
 
   it('تجاوز منتصف الليل يبقى محاذاً (الشهور والسنوات)', () => {
-    expect(startOfUtcFourHourWindow(new Date('2026-11-01T00:30:00.000Z')).toISOString()).toBe(
+    expect(startOfUtcThreeHourWindow(new Date('2026-11-01T00:30:00.000Z')).toISOString()).toBe(
       '2026-11-01T00:00:00.000Z',
     )
-    expect(startOfUtcFourHourWindow(new Date('2026-01-01T05:00:00.000Z')).toISOString()).toBe(
-      '2026-01-01T04:00:00.000Z',
+    expect(startOfUtcThreeHourWindow(new Date('2026-01-01T05:00:00.000Z')).toISOString()).toBe(
+      '2026-01-01T03:00:00.000Z',
     )
   })
 })
